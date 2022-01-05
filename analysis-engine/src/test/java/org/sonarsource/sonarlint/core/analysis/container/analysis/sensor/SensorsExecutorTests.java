@@ -41,7 +41,7 @@ class SensorsExecutorTests {
       }
     };
 
-    Object withoutToString = new Object();
+    var withoutToString = new Object();
 
     assertThat(SensorsExecutor.describe(withToString)).isEqualTo(("desc"));
     assertThat(SensorsExecutor.describe(withoutToString)).isEqualTo("java.lang.Object");

@@ -81,7 +81,7 @@ public class SonarLintInputDir implements InputDir {
       return false;
     }
 
-    SonarLintInputDir that = (SonarLintInputDir) o;
+    var that = (SonarLintInputDir) o;
     return path().equals(that.path());
   }
 

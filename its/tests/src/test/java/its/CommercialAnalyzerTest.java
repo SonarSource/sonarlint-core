@@ -122,9 +122,9 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
   public void analysisC_old_build_wrapper_prop() throws Exception {
     updateGlobal();
     updateProject(PROJECT_KEY_C);
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
 
-    String buildWrapperContent = "{\"version\":0,\"captures\":[" +
+    var buildWrapperContent = "{\"version\":0,\"captures\":[" +
       "{" +
       "\"compiler\": \"clang\"," +
       "\"executable\": \"compiler\"," +
@@ -141,9 +141,9 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
       Paths.get("projects/" + PROJECT_KEY_C).toAbsolutePath().toString().replace("\\", "\\\\") +
       "\",\"executable\":\"compiler\",\"cmd\":[\"cc\",\"src/file.c\"]}]}";
 
-    File buildWrapperOutput = temp.newFolder();
+    var buildWrapperOutput = temp.newFolder();
     FileUtils.write(new File(buildWrapperOutput, "build-wrapper-dump.json"), buildWrapperContent, StandardCharsets.UTF_8);
-    ConnectedAnalysisConfiguration analysisConfiguration = createAnalysisConfiguration(PROJECT_KEY_C, PROJECT_KEY_C, "src/file.c", "sonar.cfamily.build-wrapper-output",
+    var analysisConfiguration = createAnalysisConfiguration(PROJECT_KEY_C, PROJECT_KEY_C, "src/file.c", "sonar.cfamily.build-wrapper-output",
       buildWrapperOutput.getAbsolutePath());
 
     engine.analyze(analysisConfiguration, issueListener, null, null);
@@ -157,9 +157,9 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
 
     updateGlobal();
     updateProject(PROJECT_KEY_C);
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
 
-    String buildWrapperContent = "{\"version\":0,\"captures\":[" +
+    var buildWrapperContent = "{\"version\":0,\"captures\":[" +
       "{" +
       "\"compiler\": \"clang\"," +
       "\"executable\": \"compiler\"," +
@@ -176,7 +176,7 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
       Paths.get("projects/" + PROJECT_KEY_C).toAbsolutePath().toString().replace("\\", "\\\\") +
       "\",\"executable\":\"compiler\",\"cmd\":[\"cc\",\"src/file.c\"]}]}";
 
-    ConnectedAnalysisConfiguration analysisConfiguration = createAnalysisConfiguration(PROJECT_KEY_C, PROJECT_KEY_C, "src/file.c", "sonar.cfamily.build-wrapper-content",
+    var analysisConfiguration = createAnalysisConfiguration(PROJECT_KEY_C, PROJECT_KEY_C, "src/file.c", "sonar.cfamily.build-wrapper-content",
       buildWrapperContent);
 
     engine.analyze(analysisConfiguration, issueListener, null, null);
@@ -187,7 +187,7 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
   public void analysisCobol() throws Exception {
     updateGlobal();
     updateProject(PROJECT_KEY_COBOL);
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_COBOL, PROJECT_KEY_COBOL, "src/Custmnt2.cbl",
       "sonar.cobol.file.suffixes", "cbl"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
@@ -198,7 +198,7 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(PROJECT_KEY_TSQL);
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_TSQL, PROJECT_KEY_TSQL, "src/file.tsql"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -208,7 +208,7 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(PROJECT_KEY_APEX);
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_APEX, PROJECT_KEY_APEX, "src/file.cls"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }

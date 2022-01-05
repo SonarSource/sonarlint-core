@@ -158,7 +158,7 @@ class TelemetryLocalStorage {
   }
 
   private void markSonarLintAsUsedToday() {
-    LocalDate now = LocalDate.now();
+    var now = LocalDate.now();
     if (lastUseDate == null || !lastUseDate.equals(now)) {
       numUseDays++;
     }
@@ -171,7 +171,7 @@ class TelemetryLocalStorage {
   void setUsedAnalysis(String language, int analysisTimeMs) {
     markSonarLintAsUsedToday();
 
-    TelemetryAnalyzerPerformance analyzer = analyzers.computeIfAbsent(language, x -> new TelemetryAnalyzerPerformance());
+    var analyzer = analyzers.computeIfAbsent(language, x -> new TelemetryAnalyzerPerformance());
     analyzer.registerAnalysis(analysisTimeMs);
   }
 
@@ -184,7 +184,7 @@ class TelemetryLocalStorage {
   }
 
   static TelemetryLocalStorage validateAndMigrate(TelemetryLocalStorage data) {
-    LocalDate today = LocalDate.now();
+    var today = LocalDate.now();
 
     // migrate deprecated installDate
     if (data.installDate() != null && (data.installTime() == null || data.installTime().toLocalDate().isAfter(data.installDate()))) {
@@ -197,7 +197,7 @@ class TelemetryLocalStorage {
     }
 
     // calculate use days
-    LocalDate lastUseDate = data.lastUseDate();
+    var lastUseDate = data.lastUseDate();
     if (lastUseDate == null) {
       data.setNumUseDays(0);
       data.analyzers.clear();
@@ -210,7 +210,7 @@ class TelemetryLocalStorage {
       data.setLastUseDate(today);
     }
 
-    long maxUseDays = data.installTime().toLocalDate().until(data.lastUseDate(), DAYS) + 1;
+    var maxUseDays = data.installTime().toLocalDate().until(data.lastUseDate(), DAYS) + 1;
     if (data.numUseDays() > maxUseDays) {
       data.setNumUseDays(maxUseDays);
       data.setLastUseDate(data.lastUseDate());

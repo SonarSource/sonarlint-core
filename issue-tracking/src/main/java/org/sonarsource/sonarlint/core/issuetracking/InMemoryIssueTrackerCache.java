@@ -40,7 +40,7 @@ public class InMemoryIssueTrackerCache<T> implements IssueTrackerCache<T> {
 
   @Override
   public Collection<Trackable<T>> getLiveOrFail(String file) {
-    Collection<Trackable<T>> trackables = cache.get(file);
+    var trackables = cache.get(file);
     if (trackables == null) {
       throw new IllegalStateException("file should have been already analyzed: " + file);
     }

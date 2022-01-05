@@ -72,11 +72,11 @@ class NodeJsHelperTests {
 
       @Override
       public Integer answer(InvocationOnMock invocation) throws Throwable {
-        Command c = invocation.getArgument(0, Command.class);
+        var c = invocation.getArgument(0, Command.class);
         for (Entry<Predicate<Command>, BiFunction<StreamConsumer, StreamConsumer, Integer>> answer : registeredCommandAnswers.entrySet()) {
           if (answer.getKey().test(c)) {
-            StreamConsumer stdOut = invocation.getArgument(1, StreamConsumer.class);
-            StreamConsumer stdErr = invocation.getArgument(2, StreamConsumer.class);
+            var stdOut = invocation.getArgument(1, StreamConsumer.class);
+            var stdErr = invocation.getArgument(2, StreamConsumer.class);
             return answer.getValue().apply(stdOut, stdErr);
           }
         }
@@ -90,7 +90,7 @@ class NodeJsHelperTests {
 
     registerNodeVersionAnswer("v10.5.4");
 
-    NodeJsHelper underTest = new NodeJsHelper(system2, null, commandExecutor);
+    var underTest = new NodeJsHelper(system2, null, commandExecutor);
     underTest.detect(FAKE_NODE_PATH);
 
     assertThat(logTester.logs()).containsExactly(
@@ -108,7 +108,7 @@ class NodeJsHelperTests {
 
     registerNodeVersionAnswer("v15.0.0-nightly20200921039c274dde");
 
-    NodeJsHelper underTest = new NodeJsHelper(system2, null, commandExecutor);
+    var underTest = new NodeJsHelper(system2, null, commandExecutor);
     underTest.detect(FAKE_NODE_PATH);
 
     assertThat(logTester.logs()).containsExactly(
@@ -128,7 +128,7 @@ class NodeJsHelperTests {
       return -1;
     });
 
-    NodeJsHelper underTest = new NodeJsHelper(system2, null, commandExecutor);
+    var underTest = new NodeJsHelper(system2, null, commandExecutor);
     underTest.detect(FAKE_NODE_PATH);
 
     assertThat(logTester.logs()).containsExactly(
@@ -145,7 +145,7 @@ class NodeJsHelperTests {
   void handleErrorDuringVersionCheck() throws IOException {
     registerNodeVersionAnswer("wrong_version");
 
-    NodeJsHelper underTest = new NodeJsHelper(system2, null, commandExecutor);
+    var underTest = new NodeJsHelper(system2, null, commandExecutor);
     underTest.detect(FAKE_NODE_PATH);
 
     assertThat(logTester.logs()).containsExactly(
@@ -164,7 +164,7 @@ class NodeJsHelperTests {
     registerWhichAnswer(FAKE_NODE_PATH.toString());
     registerNodeVersionAnswer("v10.5.4");
 
-    NodeJsHelper underTest = new NodeJsHelper(system2, null, commandExecutor);
+    var underTest = new NodeJsHelper(system2, null, commandExecutor);
     underTest.detect(null);
 
     assertThat(logTester.logs()).containsExactly(
@@ -187,7 +187,7 @@ class NodeJsHelperTests {
       return -1;
     });
 
-    NodeJsHelper underTest = new NodeJsHelper(system2, null, commandExecutor);
+    var underTest = new NodeJsHelper(system2, null, commandExecutor);
     underTest.detect(null);
 
     assertThat(logTester.logs()).containsExactly(
@@ -205,7 +205,7 @@ class NodeJsHelperTests {
 
     registerWhereAnswer();
 
-    NodeJsHelper underTest = new NodeJsHelper(system2, null, commandExecutor);
+    var underTest = new NodeJsHelper(system2, null, commandExecutor);
     underTest.detect(null);
 
     assertThat(logTester.logs()).containsExactly(
@@ -224,7 +224,7 @@ class NodeJsHelperTests {
     registerWhereAnswer(FAKE_NODE_PATH.toString());
     registerNodeVersionAnswer("v10.5.4");
 
-    NodeJsHelper underTest = new NodeJsHelper(system2, null, commandExecutor);
+    var underTest = new NodeJsHelper(system2, null, commandExecutor);
     underTest.detect(null);
 
     assertThat(logTester.logs()).containsExactly(
@@ -245,12 +245,12 @@ class NodeJsHelperTests {
   void whereOnWindowsCanReturnMultipleCandidates() throws IOException {
     when(system2.isOsWindows()).thenReturn(true);
 
-    Path fake_node_path2 = Paths.get("foo2/node");
+    var fake_node_path2 = Paths.get("foo2/node");
 
     registerWhereAnswer(FAKE_NODE_PATH.toString(), fake_node_path2.toString());
     registerNodeVersionAnswer("v10.5.4");
 
-    NodeJsHelper underTest = new NodeJsHelper(system2, null, commandExecutor);
+    var underTest = new NodeJsHelper(system2, null, commandExecutor);
     underTest.detect(null);
 
     assertThat(logTester.logs()).containsExactly(
@@ -277,9 +277,9 @@ class NodeJsHelperTests {
     registerNodeVersionAnswer("v10.5.4");
 
     // Need a true file since we are checking if file exists
-    Path fakePathHelper = tempDir.resolve("path_helper.sh");
+    var fakePathHelper = tempDir.resolve("path_helper.sh");
     Files.createFile(fakePathHelper);
-    NodeJsHelper underTest = new NodeJsHelper(system2, fakePathHelper, commandExecutor);
+    var underTest = new NodeJsHelper(system2, fakePathHelper, commandExecutor);
     underTest.detect(null);
 
     assertThat(logTester.logs()).containsExactly(
@@ -305,9 +305,9 @@ class NodeJsHelperTests {
     registerNodeVersionAnswer("v10.5.4");
 
     // Need a true file since we are checking if file exists
-    Path fakePathHelper = tempDir.resolve("path_helper.sh");
+    var fakePathHelper = tempDir.resolve("path_helper.sh");
     Files.createFile(fakePathHelper);
-    NodeJsHelper underTest = new NodeJsHelper(system2, fakePathHelper, commandExecutor);
+    var underTest = new NodeJsHelper(system2, fakePathHelper, commandExecutor);
     underTest.detect(null);
 
     assertThat(logTester.logs()).containsExactly(
@@ -333,7 +333,7 @@ class NodeJsHelperTests {
     registerWhichAnswerIfPathIsSet(FAKE_NODE_PATH.toString(), System.getenv("PATH"));
     registerNodeVersionAnswer("v10.5.4");
 
-    NodeJsHelper underTest = new NodeJsHelper(system2, Paths.get("not_exists"), commandExecutor);
+    var underTest = new NodeJsHelper(system2, Paths.get("not_exists"), commandExecutor);
     underTest.detect(null);
 
     assertThat(logTester.logs()).containsExactly(
@@ -351,7 +351,7 @@ class NodeJsHelperTests {
 
   @Test
   void logWhenUnableToGetNodeVersion() {
-    NodeJsHelper underTest = new NodeJsHelper();
+    var underTest = new NodeJsHelper();
     underTest.detect(Paths.get("not_node"));
 
     assertThat(logTester.logs(Level.DEBUG)).anyMatch(s -> s.startsWith("Unable to execute the command"));

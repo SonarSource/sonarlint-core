@@ -44,7 +44,7 @@ public class InputFileFinder {
   };
 
   public InputFileFinder(@Nullable String srcGlobPattern) {
-    FileSystem fs = FileSystems.getDefault();
+    var fs = FileSystems.getDefault();
     try {
       if (srcGlobPattern != null) {
         srcMatcher = fs.getPathMatcher("glob:" + srcGlobPattern);
@@ -71,7 +71,7 @@ public class InputFileFinder {
 
     @Override
     public FileVisitResult visitFile(final Path file, BasicFileAttributes attrs) throws IOException {
-      boolean isSrc = srcMatcher.matches(file);
+      var isSrc = srcMatcher.matches(file);
 
       if (isSrc) {
         files.add(file);

@@ -38,9 +38,9 @@ class TelemetryPayloadTests {
 
   @Test
   void testGenerationJson() {
-    OffsetDateTime installTime = OffsetDateTime.of(2017, 11, 10, 12, 1, 14, 984_123_123, ZoneOffset.ofHours(2));
-    OffsetDateTime systemTime = installTime.plusMinutes(1);
-    TelemetryAnalyzerPerformancePayload[] perf = new TelemetryAnalyzerPerformancePayload[1];
+    var installTime = OffsetDateTime.of(2017, 11, 10, 12, 1, 14, 984_123_123, ZoneOffset.ofHours(2));
+    var systemTime = installTime.plusMinutes(1);
+    var perf = new TelemetryAnalyzerPerformancePayload[1];
     Map<String, BigDecimal> distrib = new LinkedHashMap<>();
     distrib.put("0-300", BigDecimal.valueOf(9.90));
     distrib.put("1000-2000", BigDecimal.valueOf(90.10));
@@ -48,10 +48,10 @@ class TelemetryPayloadTests {
     Map<String, TelemetryNotificationsCounterPayload> counters = new HashMap<>();
     counters.put("QUALITY_GATE", new TelemetryNotificationsCounterPayload(5, 3));
     counters.put("NEW_ISSUES", new TelemetryNotificationsCounterPayload(10, 1));
-    TelemetryNotificationsPayload notifPayload = new TelemetryNotificationsPayload(true, counters);
-    ShowHotspotPayload showHotspotPayload = new ShowHotspotPayload(4);
-    TaintVulnerabilitiesPayload taintVulnerabilitiesPayload = new TaintVulnerabilitiesPayload(6, 7);
-    TelemetryRulesPayload rulesPayload = new TelemetryRulesPayload(Arrays.asList("enabledRuleKey1", "enabledRuleKey2"), Arrays.asList("disabledRuleKey1", "disabledRuleKey2"),
+    var notifPayload = new TelemetryNotificationsPayload(true, counters);
+    var showHotspotPayload = new ShowHotspotPayload(4);
+    var taintVulnerabilitiesPayload = new TaintVulnerabilitiesPayload(6, 7);
+    var rulesPayload = new TelemetryRulesPayload(Arrays.asList("enabledRuleKey1", "enabledRuleKey2"), Arrays.asList("disabledRuleKey1", "disabledRuleKey2"),
       Arrays.asList("reportedRuleKey1", "reportedRuleKey2"), Arrays.asList("quickFixedRuleKey1", "quickFixedRuleKey2"));
     Map<String, Object> additionalProps = new LinkedHashMap<>();
     additionalProps.put("aString", "stringValue");
@@ -60,9 +60,9 @@ class TelemetryPayloadTests {
     Map<String, Object> additionalPropsSub = new LinkedHashMap<>();
     additionalPropsSub.put("aSubNumber", 2);
     additionalProps.put("sub", additionalPropsSub);
-    TelemetryPayload m = new TelemetryPayload(4, 15, "SLI", "2.4", "Pycharm 3.2",
+    var m = new TelemetryPayload(4, 15, "SLI", "2.4", "Pycharm 3.2",
       true, true, systemTime, installTime, "Windows 10", "1.8.0", "10.5.2", perf, notifPayload, showHotspotPayload, taintVulnerabilitiesPayload, rulesPayload, additionalProps);
-    String s = m.toJson();
+    var s = m.toJson();
 
     assertThat(s).isEqualTo("{\"days_since_installation\":4,"
       + "\"days_of_use\":15,"
@@ -106,13 +106,13 @@ class TelemetryPayloadTests {
   void testMergeEmptyJson() {
     Map<String, Object> source = new LinkedHashMap<>();
     Map<String, Object> target = new LinkedHashMap<>();
-    Gson gson = new Gson();
-    Type type = new TypeToken<Map<String, Object>>() {
+    var gson = new Gson();
+    var type = new TypeToken<Map<String, Object>>() {
     }.getType();
-    JsonObject jsonSource = gson.toJsonTree(source, type).getAsJsonObject();
-    JsonObject jsonTarget = gson.toJsonTree(target, type).getAsJsonObject();
+    var jsonSource = gson.toJsonTree(source, type).getAsJsonObject();
+    var jsonTarget = gson.toJsonTree(target, type).getAsJsonObject();
 
-    String merged = gson.toJson(TelemetryPayload.mergeObjects(jsonSource, jsonTarget));
+    var merged = gson.toJson(TelemetryPayload.mergeObjects(jsonSource, jsonTarget));
     assertThat(merged).isEqualTo("{}");
   }
 
@@ -121,13 +121,13 @@ class TelemetryPayloadTests {
     Map<String, Object> source = new LinkedHashMap<>();
     source.put("keyInSource", "valueInSource");
     Map<String, Object> target = new LinkedHashMap<>();
-    Gson gson = new Gson();
-    Type type = new TypeToken<Map<String, Object>>() {
+    var gson = new Gson();
+    var type = new TypeToken<Map<String, Object>>() {
     }.getType();
-    JsonObject jsonSource = gson.toJsonTree(source, type).getAsJsonObject();
-    JsonObject jsonTarget = gson.toJsonTree(target, type).getAsJsonObject();
+    var jsonSource = gson.toJsonTree(source, type).getAsJsonObject();
+    var jsonTarget = gson.toJsonTree(target, type).getAsJsonObject();
 
-    String merged = gson.toJson(TelemetryPayload.mergeObjects(jsonSource, jsonTarget));
+    var merged = gson.toJson(TelemetryPayload.mergeObjects(jsonSource, jsonTarget));
     assertThat(merged).isEqualTo("{\"keyInSource\":\"valueInSource\"}");
   }
 
@@ -136,13 +136,13 @@ class TelemetryPayloadTests {
     Map<String, Object> source = new LinkedHashMap<>();
     Map<String, Object> target = new LinkedHashMap<>();
     target.put("keyInTarget", "valueInTarget");
-    Gson gson = new Gson();
-    Type type = new TypeToken<Map<String, Object>>() {
+    var gson = new Gson();
+    var type = new TypeToken<Map<String, Object>>() {
     }.getType();
-    JsonObject jsonSource = gson.toJsonTree(source, type).getAsJsonObject();
-    JsonObject jsonTarget = gson.toJsonTree(target, type).getAsJsonObject();
+    var jsonSource = gson.toJsonTree(source, type).getAsJsonObject();
+    var jsonTarget = gson.toJsonTree(target, type).getAsJsonObject();
 
-    String merged = gson.toJson(TelemetryPayload.mergeObjects(jsonSource, jsonTarget));
+    var merged = gson.toJson(TelemetryPayload.mergeObjects(jsonSource, jsonTarget));
     assertThat(merged).isEqualTo("{\"keyInTarget\":\"valueInTarget\"}");
   }
 
@@ -152,13 +152,13 @@ class TelemetryPayloadTests {
     source.put("keyInSource", "valueInSource");
     Map<String, Object> target = new LinkedHashMap<>();
     target.put("keyInTarget", "valueInTarget");
-    Gson gson = new Gson();
-    Type type = new TypeToken<Map<String, Object>>() {
+    var gson = new Gson();
+    var type = new TypeToken<Map<String, Object>>() {
     }.getType();
-    JsonObject jsonSource = gson.toJsonTree(source, type).getAsJsonObject();
-    JsonObject jsonTarget = gson.toJsonTree(target, type).getAsJsonObject();
+    var jsonSource = gson.toJsonTree(source, type).getAsJsonObject();
+    var jsonTarget = gson.toJsonTree(target, type).getAsJsonObject();
 
-    String merged = gson.toJson(TelemetryPayload.mergeObjects(jsonSource, jsonTarget));
+    var merged = gson.toJson(TelemetryPayload.mergeObjects(jsonSource, jsonTarget));
     assertThat(merged).isEqualTo("{\"keyInTarget\":\"valueInTarget\",\"keyInSource\":\"valueInSource\"}");
   }
 
@@ -172,13 +172,13 @@ class TelemetryPayloadTests {
     Map<String, Object> targetSub = new LinkedHashMap<>();
     target.put("key", targetSub);
     targetSub.put("sub1", "sub1Value");
-    Gson gson = new Gson();
-    Type type = new TypeToken<Map<String, Object>>() {
+    var gson = new Gson();
+    var type = new TypeToken<Map<String, Object>>() {
     }.getType();
-    JsonObject jsonSource = gson.toJsonTree(source, type).getAsJsonObject();
-    JsonObject jsonTarget = gson.toJsonTree(target, type).getAsJsonObject();
+    var jsonSource = gson.toJsonTree(source, type).getAsJsonObject();
+    var jsonTarget = gson.toJsonTree(target, type).getAsJsonObject();
 
-    String merged = gson.toJson(TelemetryPayload.mergeObjects(jsonSource, jsonTarget));
+    var merged = gson.toJson(TelemetryPayload.mergeObjects(jsonSource, jsonTarget));
     assertThat(merged).isEqualTo("{\"key\":{\"sub1\":\"sub1Value\",\"sub2\":\"sub2Value\"}}");
   }
 
@@ -188,13 +188,13 @@ class TelemetryPayloadTests {
     source.put("key", "valueInSource");
     Map<String, Object> target = new LinkedHashMap<>();
     target.put("key", "valueInTarget");
-    Gson gson = new Gson();
-    Type type = new TypeToken<Map<String, Object>>() {
+    var gson = new Gson();
+    var type = new TypeToken<Map<String, Object>>() {
     }.getType();
-    JsonObject jsonSource = gson.toJsonTree(source, type).getAsJsonObject();
-    JsonObject jsonTarget = gson.toJsonTree(target, type).getAsJsonObject();
+    var jsonSource = gson.toJsonTree(source, type).getAsJsonObject();
+    var jsonTarget = gson.toJsonTree(target, type).getAsJsonObject();
 
-    String merged = gson.toJson(TelemetryPayload.mergeObjects(jsonSource, jsonTarget));
+    var merged = gson.toJson(TelemetryPayload.mergeObjects(jsonSource, jsonTarget));
     assertThat(merged).isEqualTo("{\"key\":\"valueInTarget\"}");
   }
 

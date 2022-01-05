@@ -44,20 +44,20 @@ public class IssueStoreReader {
   }
 
   public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String ideFilePath) {
-    Sonarlint.ProjectConfiguration projectConfiguration = storageReader.readProjectConfig(projectBinding.projectKey());
+    var projectConfiguration = storageReader.readProjectConfig(projectBinding.projectKey());
 
     if (projectConfiguration == null) {
       throw new IllegalStateException("project not in storage: " + projectBinding.projectKey());
     }
 
-    String sqPath = issueStorePaths.idePathToSqPath(projectBinding, ideFilePath);
+    var sqPath = issueStorePaths.idePathToSqPath(projectBinding, ideFilePath);
     if (sqPath == null) {
       return Collections.emptyList();
     }
-    Path serverIssuesPath = projectStoragePaths.getServerIssuesPath(projectBinding.projectKey());
-    IssueStore issueStore = issueStoreFactory.apply(serverIssuesPath);
+    var serverIssuesPath = projectStoragePaths.getServerIssuesPath(projectBinding.projectKey());
+    var issueStore = issueStoreFactory.apply(serverIssuesPath);
 
-    List<Sonarlint.ServerIssue> loadedIssues = issueStore.load(sqPath);
+    var loadedIssues = issueStore.load(sqPath);
 
     return loadedIssues.stream()
       .map(pbIssue -> IssueStorePaths.toApiIssue(pbIssue, ideFilePath))

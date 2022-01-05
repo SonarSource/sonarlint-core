@@ -34,15 +34,15 @@ import static org.apache.commons.lang3.StringUtils.trimToNull;
 public class IssueStorePaths {
 
   public String sqPathToFileKey(Sonarlint.ProjectConfiguration projectConfiguration, String projectKey, String sqFilePath) {
-    Map<String, String> modulePaths = projectConfiguration.getModulePathByKeyMap();
+    var modulePaths = projectConfiguration.getModulePathByKeyMap();
 
     // find longest prefix match
-    String subModuleKey = projectKey;
+    var subModuleKey = projectKey;
     var prefixLen = 0;
 
     for (Map.Entry<String, String> entry : modulePaths.entrySet()) {
-      String entryModuleKey = entry.getKey();
-      String entryPath = entry.getValue();
+      var entryModuleKey = entry.getKey();
+      var entryPath = entry.getValue();
       if (!entryPath.isEmpty() && sqFilePath.startsWith(entryPath) && prefixLen <= entryPath.length()) {
         subModuleKey = entryModuleKey;
         prefixLen = entryPath.length() + 1;
@@ -55,7 +55,7 @@ public class IssueStorePaths {
 
   @CheckForNull
   public String idePathToFileKey(Sonarlint.ProjectConfiguration projectConfiguration, ProjectBinding projectBinding, String ideFilePath) {
-    String sqFilePath = idePathToSqPath(projectBinding, ideFilePath);
+    var sqFilePath = idePathToSqPath(projectBinding, ideFilePath);
 
     if (sqFilePath == null) {
       return null;
@@ -68,11 +68,11 @@ public class IssueStorePaths {
     if (!ideFilePath.startsWith(projectBinding.idePathPrefix())) {
       return null;
     }
-    int localPrefixLen = projectBinding.idePathPrefix().length();
+    var localPrefixLen = projectBinding.idePathPrefix().length();
     if (localPrefixLen > 0) {
       localPrefixLen++;
     }
-    String sqPathPrefix = projectBinding.sqPathPrefix();
+    var sqPathPrefix = projectBinding.sqPathPrefix();
     if (!sqPathPrefix.isEmpty()) {
       sqPathPrefix = sqPathPrefix + "/";
     }
@@ -80,10 +80,10 @@ public class IssueStorePaths {
   }
 
   public String fileKeyToSqPath(Sonarlint.ProjectConfiguration projectConfiguration, String fileModuleKey, String filePath) {
-    Map<String, String> modulePaths = projectConfiguration.getModulePathByKeyMap();
+    var modulePaths = projectConfiguration.getModulePathByKeyMap();
 
     // normally this should not be null, but the ModuleConfiguration could be out dated
-    String modulePath = modulePaths.getOrDefault(fileModuleKey, "");
+    var modulePath = modulePaths.getOrDefault(fileModuleKey, "");
     if (!modulePath.isEmpty()) {
       modulePath = modulePath + "/";
     }

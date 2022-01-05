@@ -31,7 +31,7 @@ class ReversePathTreeTests {
   void should_return_matching_prefix() {
     tree.index(Paths.get("A/src/main/java/File.java"));
 
-    ReversePathTree.Match match = tree.findLongestSuffixMatches(Paths.get("B/src/main/java/File.java"));
+    var match = tree.findLongestSuffixMatches(Paths.get("B/src/main/java/File.java"));
 
     assertThat(match.matchLen()).isEqualTo(4);
     assertThat(match.matchPrefixes()).containsExactly(Paths.get("A"));
@@ -43,7 +43,7 @@ class ReversePathTreeTests {
     tree.index(Paths.get("project2/src/main/java/File.java"));
     tree.index(Paths.get("project2/src/test/java/File.java"));
 
-    ReversePathTree.Match match = tree.findLongestSuffixMatches(Paths.get("src/main/java/File.java"));
+    var match = tree.findLongestSuffixMatches(Paths.get("src/main/java/File.java"));
 
     assertThat(match.matchLen()).isEqualTo(4);
     assertThat(match.matchPrefixes()).containsExactlyInAnyOrder(Paths.get("project1"), Paths.get("project2"));
@@ -55,7 +55,7 @@ class ReversePathTreeTests {
     tree.index(Paths.get("project2/src/main/java/File.java"));
     tree.index(Paths.get("project2/src/test/java/File.java"));
 
-    ReversePathTree.Match match = tree.findLongestSuffixMatches(Paths.get("project2/src/main/java/File.java"));
+    var match = tree.findLongestSuffixMatches(Paths.get("project2/src/main/java/File.java"));
 
     assertThat(match.matchLen()).isEqualTo(5);
     assertThat(match.matchPrefixes()).containsExactly(Paths.get(""));
@@ -67,7 +67,7 @@ class ReversePathTreeTests {
     tree.index(Paths.get("project2/src/main/java/File.java"));
     tree.index(Paths.get("project2/src/test/java/File.java"));
 
-    ReversePathTree.Match match = tree.findLongestSuffixMatches(Paths.get("File2.java"));
+    var match = tree.findLongestSuffixMatches(Paths.get("File2.java"));
 
     assertThat(match.matchLen()).isEqualTo(0);
     assertThat(match.matchPrefixes()).isEmpty();
@@ -78,7 +78,7 @@ class ReversePathTreeTests {
     tree.index(Paths.get("project1/A/pom.xml"));
     tree.index(Paths.get("project1/pom.xml"));
     tree.index(Paths.get("pom.xml"));
-    ReversePathTree.Match match = tree.findLongestSuffixMatches(Paths.get("pom.xml"));
+    var match = tree.findLongestSuffixMatches(Paths.get("pom.xml"));
     assertThat(match.matchLen()).isEqualTo(1);
     assertThat(match.matchPrefixes()).containsOnly(Paths.get(""), Paths.get("project1"), Paths.get("project1/A"));
   }

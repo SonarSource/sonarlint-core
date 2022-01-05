@@ -44,7 +44,7 @@ class RulesApiTests {
   void errorReadingRuleDescription() {
     mockServer.addStringResponse("/api/rules/show.protobuf?key=java:S1234", "trash");
 
-    RulesApi rulesApi = new RulesApi(mockServer.serverApiHelper());
+    var rulesApi = new RulesApi(mockServer.serverApiHelper());
 
     var error = catchThrowable(() -> rulesApi.getRule("java:S1234").get());
     assertThat(error).hasCauseInstanceOf(UnexpectedBodyException.class);

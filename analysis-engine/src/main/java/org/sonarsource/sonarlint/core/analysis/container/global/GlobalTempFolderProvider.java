@@ -55,7 +55,7 @@ public class GlobalTempFolderProvider extends ProviderAdapter implements Compone
     } catch (IOException e) {
       LOG.error(String.format("failed to clean global working directory: %s", workingPath), e);
     }
-    Path tempDir = createTempFolder(workingPath);
+    var tempDir = createTempFolder(workingPath);
     return new GlobalTempFolder(tempDir.toFile(), true);
   }
 
@@ -75,7 +75,7 @@ public class GlobalTempFolderProvider extends ProviderAdapter implements Compone
 
   private static void cleanTempFolders(Path path) throws IOException {
     if (Files.exists(path)) {
-      try (DirectoryStream<Path> stream = Files.newDirectoryStream(path, new CleanFilter())) {
+      try (var stream = Files.newDirectoryStream(path, new CleanFilter())) {
         for (Path p : stream) {
           FileUtils.deleteQuietly(p.toFile());
         }
@@ -86,15 +86,11 @@ public class GlobalTempFolderProvider extends ProviderAdapter implements Compone
   private static class CleanFilter implements DirectoryStream.Filter<Path> {
     @Override
     public boolean accept(Path path) throws IOException {
-      if (!Files.isDirectory(path)) {
+      if (!Files.isDirectory(path) || !path.getFileName().toString().startsWith(TMP_NAME_PREFIX)) {
         return false;
       }
 
-      if (!path.getFileName().toString().startsWith(TMP_NAME_PREFIX)) {
-        return false;
-      }
-
-      long threshold = System.currentTimeMillis() - CLEAN_MAX_AGE;
+      var threshold = System.currentTimeMillis() - CLEAN_MAX_AGE;
 
       // we could also check the timestamp in the name, instead
       BasicFileAttributes attrs;
@@ -106,7 +102,7 @@ public class GlobalTempFolderProvider extends ProviderAdapter implements Compone
         return false;
       }
 
-      long creationTime = attrs.creationTime().toMillis();
+      var creationTime = attrs.creationTime().toMillis();
       return creationTime < threshold;
     }
   }

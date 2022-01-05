@@ -34,7 +34,7 @@ import static org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorage.val
 class TelemetryLocalStorageTests {
   @Test
   void usedAnalysis_should_increment_num_days_on_first_run() {
-    TelemetryLocalStorage data = new TelemetryLocalStorage();
+    var data = new TelemetryLocalStorage();
     assertThat(data.numUseDays()).isZero();
 
     data.setUsedAnalysis();
@@ -43,7 +43,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void usedAnalysis_should_not_increment_num_days_on_same_day() {
-    TelemetryLocalStorage data = new TelemetryLocalStorage();
+    var data = new TelemetryLocalStorage();
     assertThat(data.numUseDays()).isZero();
 
     data.setUsedAnalysis();
@@ -55,7 +55,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void usedAnalysis_with_duration_should_register_analyzer_performance() {
-    TelemetryLocalStorage data = new TelemetryLocalStorage();
+    var data = new TelemetryLocalStorage();
     assertThat(data.numUseDays()).isZero();
     assertThat(data.analyzers()).isEmpty();
 
@@ -89,7 +89,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void usedAnalysis_should_increment_num_days_when_day_changed() {
-    TelemetryLocalStorage data = new TelemetryLocalStorage();
+    var data = new TelemetryLocalStorage();
     assertThat(data.numUseDays()).isZero();
 
     data.setUsedAnalysis();
@@ -105,7 +105,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void test_isOlder_LocalDate() {
-    LocalDate date = LocalDate.now();
+    var date = LocalDate.now();
 
     assertThat(isOlder((LocalDate) null, null)).isTrue();
     assertThat(isOlder(null, date)).isTrue();
@@ -116,7 +116,7 @@ class TelemetryLocalStorageTests {
 
   @Test
   void test_isOlder_LocalDateTime() {
-    LocalDateTime date = LocalDateTime.now();
+    var date = LocalDateTime.now();
 
     assertThat(isOlder((LocalDateTime) null, null)).isTrue();
     assertThat(isOlder(null, date)).isTrue();
@@ -127,8 +127,8 @@ class TelemetryLocalStorageTests {
 
   @Test
   void validate_should_reset_installTime_if_in_future() {
-    TelemetryLocalStorage data = new TelemetryLocalStorage();
-    OffsetDateTime now = OffsetDateTime.now();
+    var data = new TelemetryLocalStorage();
+    var now = OffsetDateTime.now();
 
     assertThat(validateAndMigrate(data).installTime()).is(within3SecOfNow);
 
@@ -137,19 +137,19 @@ class TelemetryLocalStorageTests {
   }
 
   private final Condition<OffsetDateTime> within3SecOfNow = new Condition<>(p -> {
-    OffsetDateTime now = OffsetDateTime.now();
+    var now = OffsetDateTime.now();
     return Math.abs(p.until(now, ChronoUnit.SECONDS)) < 3;
   }, "within3Sec");
 
   private final Condition<OffsetDateTime> about5DaysAgo = new Condition<>(p -> {
-    OffsetDateTime fiveDaysAgo = OffsetDateTime.now().minusDays(5);
+    var fiveDaysAgo = OffsetDateTime.now().minusDays(5);
     return Math.abs(p.until(fiveDaysAgo, ChronoUnit.SECONDS)) < 3;
   }, "about5DaysAgo");
 
   @Test
   void validate_should_reset_lastUseDate_if_in_future() {
-    TelemetryLocalStorage data = new TelemetryLocalStorage();
-    LocalDate today = LocalDate.now();
+    var data = new TelemetryLocalStorage();
+    var today = LocalDate.now();
 
     data.setLastUseDate(today.plusDays(1));
     assertThat(validateAndMigrate(data).lastUseDate()).isEqualTo(today);
@@ -157,15 +157,15 @@ class TelemetryLocalStorageTests {
 
   @Test
   void should_migrate_installDate() {
-    TelemetryLocalStorage data = new TelemetryLocalStorage();
+    var data = new TelemetryLocalStorage();
     data.setInstallDate(LocalDate.now().minusDays(5));
-    assertThat(data.validateAndMigrate(data).installTime()).is(about5DaysAgo);
+    assertThat(TelemetryLocalStorage.validateAndMigrate(data).installTime()).is(about5DaysAgo);
   }
 
   @Test
   void validate_should_reset_lastUseDate_if_before_installTime() {
-    TelemetryLocalStorage data = new TelemetryLocalStorage();
-    OffsetDateTime now = OffsetDateTime.now();
+    var data = new TelemetryLocalStorage();
+    var now = OffsetDateTime.now();
 
     data.setInstallTime(now);
     data.setLastUseDate(now.minusDays(1).toLocalDate());
@@ -174,26 +174,26 @@ class TelemetryLocalStorageTests {
 
   @Test
   void validate_should_reset_numDays_if_lastUseDate_unset() {
-    TelemetryLocalStorage data = new TelemetryLocalStorage();
+    var data = new TelemetryLocalStorage();
     data.setNumUseDays(3);
 
-    TelemetryLocalStorage valid = validateAndMigrate(data);
+    var valid = validateAndMigrate(data);
     assertThat(valid.lastUseDate()).isNull();
     assertThat(valid.numUseDays()).isZero();
   }
 
   @Test
   void validate_should_fix_numDays_if_incorrect() {
-    TelemetryLocalStorage data = new TelemetryLocalStorage();
-    OffsetDateTime installTime = OffsetDateTime.now().minusDays(10);
-    LocalDate lastUseDate = installTime.plusDays(3).toLocalDate();
+    var data = new TelemetryLocalStorage();
+    var installTime = OffsetDateTime.now().minusDays(10);
+    var lastUseDate = installTime.plusDays(3).toLocalDate();
     data.setInstallTime(installTime);
     data.setLastUseDate(lastUseDate);
 
-    long numUseDays = installTime.toLocalDate().until(lastUseDate, ChronoUnit.DAYS) + 1;
+    var numUseDays = installTime.toLocalDate().until(lastUseDate, ChronoUnit.DAYS) + 1;
     data.setNumUseDays(numUseDays * 2);
 
-    TelemetryLocalStorage valid = validateAndMigrate(data);
+    var valid = validateAndMigrate(data);
     assertThat(valid.numUseDays()).isEqualTo(numUseDays);
     assertThat(valid.installTime()).isEqualTo(installTime);
     assertThat(valid.lastUseDate()).isEqualTo(lastUseDate);

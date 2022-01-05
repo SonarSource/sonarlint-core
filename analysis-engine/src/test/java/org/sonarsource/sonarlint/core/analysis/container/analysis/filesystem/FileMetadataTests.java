@@ -43,10 +43,10 @@ class FileMetadataTests {
 
   @Test
   void empty_file(@TempDir Path temp) throws Exception {
-    Path tempFile = temp.resolve("tmpFile");
+    var tempFile = temp.resolve("tmpFile");
     Files.createFile(tempFile);
 
-    FileMetadata.Metadata metadata = underTest.readMetadata(tempFile.toFile(), StandardCharsets.UTF_8);
+    var metadata = underTest.readMetadata(tempFile.toFile(), StandardCharsets.UTF_8);
     assertThat(metadata.lines()).isEqualTo(1);
     assertThat(metadata.originalLineOffsets()).containsOnly(0);
     assertThat(metadata.lastValidOffset()).isZero();
@@ -54,10 +54,10 @@ class FileMetadataTests {
 
   @Test
   void windows_without_latest_eol(@TempDir Path temp) throws Exception {
-    File tempFile = temp.resolve("tmpFile").toFile();
+    var tempFile = temp.resolve("tmpFile").toFile();
     FileUtils.write(tempFile, "foo\r\nbar\r\nbaz", StandardCharsets.UTF_8, true);
 
-    FileMetadata.Metadata metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_8);
+    var metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_8);
     assertThat(metadata.lines()).isEqualTo(3);
     assertThat(metadata.originalLineOffsets()).containsOnly(0, 5, 10);
     assertThat(metadata.lastValidOffset()).isEqualTo(13);
@@ -65,39 +65,39 @@ class FileMetadataTests {
 
   @Test
   void read_with_wrong_encoding(@TempDir Path temp) throws Exception {
-    File tempFile = temp.resolve("tmpFile").toFile();
+    var tempFile = temp.resolve("tmpFile").toFile();
     FileUtils.write(tempFile, "marker´s\n", Charset.forName("cp1252"));
 
-    FileMetadata.Metadata metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_8);
+    var metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_8);
     assertThat(metadata.lines()).isEqualTo(2);
     assertThat(metadata.originalLineOffsets()).containsOnly(0, 9);
   }
 
   @Test
   void non_ascii_utf_8(@TempDir Path temp) throws Exception {
-    File tempFile = temp.resolve("tmpFile").toFile();
+    var tempFile = temp.resolve("tmpFile").toFile();
     FileUtils.write(tempFile, "föo\r\nbàr\r\n\u1D11Ebaßz\r\n", StandardCharsets.UTF_8, true);
 
-    FileMetadata.Metadata metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_8);
+    var metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_8);
     assertThat(metadata.lines()).isEqualTo(4);
     assertThat(metadata.originalLineOffsets()).containsOnly(0, 5, 10, 18);
   }
 
   @Test
   void non_ascii_utf_16(@TempDir Path temp) throws Exception {
-    File tempFile = temp.resolve("tmpFile").toFile();
+    var tempFile = temp.resolve("tmpFile").toFile();
     FileUtils.write(tempFile, "föo\r\nbàr\r\n\u1D11Ebaßz\r\n", StandardCharsets.UTF_16, true);
-    FileMetadata.Metadata metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_16);
+    var metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_16);
     assertThat(metadata.lines()).isEqualTo(4);
     assertThat(metadata.originalLineOffsets()).containsOnly(0, 5, 10, 18);
   }
 
   @Test
   void unix_without_latest_eol(@TempDir Path temp) throws Exception {
-    File tempFile = temp.resolve("tmpFile").toFile();
+    var tempFile = temp.resolve("tmpFile").toFile();
     FileUtils.write(tempFile, "foo\nbar\nbaz", StandardCharsets.UTF_8, true);
 
-    FileMetadata.Metadata metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_8);
+    var metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_8);
     assertThat(metadata.lines()).isEqualTo(3);
     assertThat(metadata.originalLineOffsets()).containsOnly(0, 4, 8);
     assertThat(metadata.lastValidOffset()).isEqualTo(11);
@@ -105,10 +105,10 @@ class FileMetadataTests {
 
   @Test
   void unix_with_latest_eol(@TempDir Path temp) throws Exception {
-    File tempFile = temp.resolve("tmpFile").toFile();
+    var tempFile = temp.resolve("tmpFile").toFile();
     FileUtils.write(tempFile, "foo\nbar\nbaz\n", StandardCharsets.UTF_8, true);
 
-    FileMetadata.Metadata metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_8);
+    var metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_8);
     assertThat(metadata.lines()).isEqualTo(4);
     assertThat(metadata.originalLineOffsets()).containsOnly(0, 4, 8, 12);
     assertThat(metadata.lastValidOffset()).isEqualTo(12);
@@ -116,10 +116,10 @@ class FileMetadataTests {
 
   @Test
   void mac_without_latest_eol(@TempDir Path temp) throws Exception {
-    File tempFile = temp.resolve("tmpFile").toFile();
+    var tempFile = temp.resolve("tmpFile").toFile();
     FileUtils.write(tempFile, "foo\rbar\rbaz", StandardCharsets.UTF_8, true);
 
-    FileMetadata.Metadata metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_8);
+    var metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_8);
     assertThat(metadata.lines()).isEqualTo(3);
     assertThat(metadata.originalLineOffsets()).containsOnly(0, 4, 8);
     assertThat(metadata.lastValidOffset()).isEqualTo(11);
@@ -127,10 +127,10 @@ class FileMetadataTests {
 
   @Test
   void mac_with_latest_eol(@TempDir Path temp) throws Exception {
-    File tempFile = temp.resolve("tmpFile").toFile();
+    var tempFile = temp.resolve("tmpFile").toFile();
     FileUtils.write(tempFile, "foo\rbar\rbaz\r", StandardCharsets.UTF_8, true);
 
-    FileMetadata.Metadata metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_8);
+    var metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_8);
     assertThat(metadata.lines()).isEqualTo(4);
     assertThat(metadata.originalLineOffsets()).containsOnly(0, 4, 8, 12);
     assertThat(metadata.lastValidOffset()).isEqualTo(12);
@@ -138,67 +138,67 @@ class FileMetadataTests {
 
   @Test
   void mix_of_newlines_with_latest_eol(@TempDir Path temp) throws Exception {
-    File tempFile = temp.resolve("tmpFile").toFile();
+    var tempFile = temp.resolve("tmpFile").toFile();
     FileUtils.write(tempFile, "foo\nbar\r\nbaz\n", StandardCharsets.UTF_8, true);
 
-    FileMetadata.Metadata metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_8);
+    var metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_8);
     assertThat(metadata.lines()).isEqualTo(4);
     assertThat(metadata.originalLineOffsets()).containsOnly(0, 4, 9, 13);
   }
 
   @Test
   void several_new_lines(@TempDir Path temp) throws Exception {
-    File tempFile = temp.resolve("tmpFile").toFile();
+    var tempFile = temp.resolve("tmpFile").toFile();
     FileUtils.write(tempFile, "foo\n\n\nbar", StandardCharsets.UTF_8, true);
 
-    FileMetadata.Metadata metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_8);
+    var metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_8);
     assertThat(metadata.lines()).isEqualTo(4);
     assertThat(metadata.originalLineOffsets()).containsOnly(0, 4, 5, 6);
   }
 
   @Test
   void mix_of_newlines_without_latest_eol(@TempDir Path temp) throws Exception {
-    File tempFile = temp.resolve("tmpFile").toFile();
+    var tempFile = temp.resolve("tmpFile").toFile();
     FileUtils.write(tempFile, "foo\nbar\r\nbaz", StandardCharsets.UTF_8, true);
 
-    FileMetadata.Metadata metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_8);
+    var metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_8);
     assertThat(metadata.lines()).isEqualTo(3);
     assertThat(metadata.originalLineOffsets()).containsOnly(0, 4, 9);
   }
 
   @Test
   void start_with_newline(@TempDir Path temp) throws Exception {
-    File tempFile = temp.resolve("tmpFile").toFile();
+    var tempFile = temp.resolve("tmpFile").toFile();
     FileUtils.write(tempFile, "\nfoo\nbar\r\nbaz", StandardCharsets.UTF_8, true);
 
-    FileMetadata.Metadata metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_8);
+    var metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_8);
     assertThat(metadata.lines()).isEqualTo(4);
     assertThat(metadata.originalLineOffsets()).containsOnly(0, 1, 5, 10);
   }
 
   @Test
   void start_with_bom(@TempDir Path temp) throws Exception {
-    File tempFile = temp.resolve("tmpFile").toFile();
+    var tempFile = temp.resolve("tmpFile").toFile();
     FileUtils.write(tempFile, "\uFEFFfoo\nbar\r\nbaz", StandardCharsets.UTF_8, true);
 
-    FileMetadata.Metadata metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_8);
+    var metadata = underTest.readMetadata(tempFile, StandardCharsets.UTF_8);
     assertThat(metadata.lines()).isEqualTo(3);
     assertThat(metadata.originalLineOffsets()).containsOnly(0, 4, 9);
   }
 
   @Test
   void should_throw_if_file_does_not_exist(@TempDir Path temp) {
-    File tempFolder = temp.toFile();
-    File file = new File(tempFolder, "doesNotExist.txt");
+    var tempFolder = temp.toFile();
+    var file = new File(tempFolder, "doesNotExist.txt");
 
     assertThrows(IllegalStateException.class, () -> underTest.readMetadata(file, StandardCharsets.UTF_8));
   }
 
   @Test
   void binary_file_with_unmappable_character() throws Exception {
-    File woff = new File(this.getClass().getResource("/glyphicons-halflings-regular.woff").toURI());
+    var woff = new File(this.getClass().getResource("/glyphicons-halflings-regular.woff").toURI());
 
-    FileMetadata.Metadata metadata = underTest.readMetadata(woff, StandardCharsets.UTF_8);
+    var metadata = underTest.readMetadata(woff, StandardCharsets.UTF_8);
     assertThat(metadata.lines()).isEqualTo(135);
 
     assertThat(logTester.logs(Level.WARN).get(0)).contains("Invalid character encountered in file");

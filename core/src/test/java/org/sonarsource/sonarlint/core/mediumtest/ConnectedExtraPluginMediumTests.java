@@ -70,10 +70,10 @@ class ConnectedExtraPluginMediumTests {
       .withProject("stale_module", ProjectStorageFixture.ProjectStorageBuilder::stale)
       .create(slHome);
 
-    NodeJsHelper nodeJsHelper = new NodeJsHelper();
+    var nodeJsHelper = new NodeJsHelper();
     nodeJsHelper.detect(null);
 
-    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.builder()
       .setConnectionId(SERVER_ID)
       .setSonarLintUserHome(slHome)
       .setStorageRoot(storage.getPath())
@@ -97,7 +97,7 @@ class ConnectedExtraPluginMediumTests {
 
   @Test
   void readRuleDescriptionFromExtraPlugin() throws Exception {
-    ConnectedRuleDetails ruleDetails = sonarlint.getActiveRuleDetails(null, null, "php:S3334", null).get();
+    var ruleDetails = sonarlint.getActiveRuleDetails(null, null, "php:S3334", null).get();
     assertThat(ruleDetails.getSeverity()).isEqualTo("BLOCKER");
     assertThat(ruleDetails.getExtendedDescription()).isEmpty();
     assertThat(sonarlint.getActiveRuleDetails(null, null, "php:S3334", JAVA_MODULE_KEY).get().getSeverity()).isEqualTo("BLOCKER");
@@ -105,7 +105,7 @@ class ConnectedExtraPluginMediumTests {
 
   @Test
   void analyzeFileWithExtraPlugin() throws Exception {
-    ClientInputFile inputFile = prepareJavaInputFile();
+    var inputFile = prepareJavaInputFile();
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
@@ -141,9 +141,9 @@ class ConnectedExtraPluginMediumTests {
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
-    final File file = new File(baseDir, relativePath);
+    final var file = new File(baseDir, relativePath);
     FileUtils.write(file, content, StandardCharsets.UTF_8);
-    ClientInputFile inputFile = TestUtils.createInputFile(file.toPath(), relativePath, isTest);
+    var inputFile = TestUtils.createInputFile(file.toPath(), relativePath, isTest);
     return inputFile;
   }
 

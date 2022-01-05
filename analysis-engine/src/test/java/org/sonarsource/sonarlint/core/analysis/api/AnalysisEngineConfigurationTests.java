@@ -35,7 +35,7 @@ class AnalysisEngineConfigurationTests {
 
   @Test
   void testDefaults() {
-    AnalysisEngineConfiguration config = AnalysisEngineConfiguration.builder()
+    var config = AnalysisEngineConfiguration.builder()
       .build();
     assertThat(config.getWorkDir()).isNull();
     assertThat(config.getEffectiveSettings()).isEmpty();
@@ -47,7 +47,7 @@ class AnalysisEngineConfigurationTests {
   void extraProps() {
     Map<String, String> extraProperties = new HashMap<>();
     extraProperties.put("foo", "bar");
-    AnalysisEngineConfiguration config = AnalysisEngineConfiguration.builder()
+    var config = AnalysisEngineConfiguration.builder()
       .setExtraProperties(extraProperties)
       .build();
     assertThat(config.getEffectiveSettings()).containsOnly(entry("foo", "bar"));
@@ -57,7 +57,7 @@ class AnalysisEngineConfigurationTests {
   void effectiveConfig_should_add_nodejs() {
     Map<String, String> extraProperties = new HashMap<>();
     extraProperties.put("foo", "bar");
-    AnalysisEngineConfiguration config = AnalysisEngineConfiguration.builder()
+    var config = AnalysisEngineConfiguration.builder()
       .setExtraProperties(extraProperties)
       .setNodeJs(Paths.get("nodejsPath"))
       .build();
@@ -66,8 +66,8 @@ class AnalysisEngineConfigurationTests {
 
   @Test
   void overrideDirs(@TempDir Path temp) throws Exception {
-    Path work = createDirectory(temp.resolve("work"));
-    AnalysisEngineConfiguration config = AnalysisEngineConfiguration.builder()
+    var work = createDirectory(temp.resolve("work"));
+    var config = AnalysisEngineConfiguration.builder()
       .setWorkDir(work)
       .build();
     assertThat(config.getWorkDir()).isEqualTo(work);
@@ -75,7 +75,7 @@ class AnalysisEngineConfigurationTests {
 
   @Test
   void configureLanguages() {
-    AnalysisEngineConfiguration config = AnalysisEngineConfiguration.builder()
+    var config = AnalysisEngineConfiguration.builder()
       .addEnabledLanguage(Language.JAVA)
       .addEnabledLanguages(Language.JS, Language.TS)
       .build();
@@ -84,7 +84,7 @@ class AnalysisEngineConfigurationTests {
 
   @Test
   void providePid() {
-    AnalysisEngineConfiguration config = AnalysisEngineConfiguration.builder().setClientPid(123).build();
+    var config = AnalysisEngineConfiguration.builder().setClientPid(123).build();
     assertThat(config.getClientPid()).isEqualTo(123);
   }
 }

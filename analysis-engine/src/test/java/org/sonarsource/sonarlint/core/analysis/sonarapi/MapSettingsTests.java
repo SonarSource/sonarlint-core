@@ -67,56 +67,56 @@ class MapSettingsTests {
 
   @Test
   void set_accepts_empty_value_and_trims_it() {
-    Random random = new Random();
-    String key = randomAlphanumeric(3);
+    var random = new Random();
+    var key = randomAlphanumeric(3);
 
-    MapSettings underTest = new MapSettings(Map.of(key, blank(random)));
+    var underTest = new MapSettings(Map.of(key, blank(random)));
 
     assertThat(underTest.getString(key)).isEmpty();
   }
 
   @Test
   void default_values_should_be_loaded_from_definitions() {
-    MapSettings settings = new MapSettings(definitions, Map.of());
+    var settings = new MapSettings(definitions, Map.of());
     assertThat(settings.getDefaultValue("hello")).isEqualTo("world");
   }
 
   @Test
   void set_property_string_array_trims_key() {
-    String key = randomAlphanumeric(3);
+    var key = randomAlphanumeric(3);
 
-    Random random = new Random();
-    String blankBefore = blank(random);
-    String blankAfter = blank(random);
+    var random = new Random();
+    var blankBefore = blank(random);
+    var blankAfter = blank(random);
 
-    MapSettings underTest = new MapSettings(new PropertyDefinitions(System2.INSTANCE, singletonList(PropertyDefinition.builder(key).multiValues(true).build())),
+    var underTest = new MapSettings(new PropertyDefinitions(System2.INSTANCE, singletonList(PropertyDefinition.builder(key).multiValues(true).build())),
       Map.of(blankBefore + key + blankAfter, "1,2"));
 
     assertThat(underTest.hasKey(key)).isTrue();
   }
 
   private static String blank(Random random) {
-    StringBuilder b = new StringBuilder();
+    var b = new StringBuilder();
     IntStream.range(0, random.nextInt(3)).mapToObj(s -> " ").forEach(b::append);
     return b.toString();
   }
 
   @Test
   void setProperty_methods_trims_value() {
-    Random random = new Random();
-    String blankBefore = blank(random);
-    String blankAfter = blank(random);
-    String key = randomAlphanumeric(3);
-    String value = randomAlphanumeric(3);
+    var random = new Random();
+    var blankBefore = blank(random);
+    var blankAfter = blank(random);
+    var key = randomAlphanumeric(3);
+    var value = randomAlphanumeric(3);
 
-    MapSettings underTest = new MapSettings(Map.of(key, blankBefore + value + blankAfter));
+    var underTest = new MapSettings(Map.of(key, blankBefore + value + blankAfter));
 
     assertThat(underTest.getString(key)).isEqualTo(value);
   }
 
   @Test
   void set_property_int() {
-    MapSettings settings = new MapSettings(Map.of("foo", "123"));
+    var settings = new MapSettings(Map.of("foo", "123"));
     assertThat(settings.getInt("foo")).isEqualTo(123);
     assertThat(settings.getString("foo")).isEqualTo("123");
     assertThat(settings.getBoolean("foo")).isFalse();
@@ -124,39 +124,39 @@ class MapSettingsTests {
 
   @Test
   void default_number_values_are_zero() {
-    MapSettings settings = new MapSettings(Map.of());
+    var settings = new MapSettings(Map.of());
     assertThat(settings.getInt("foo")).isZero();
     assertThat(settings.getLong("foo")).isZero();
   }
 
   @Test
   void getInt_value_must_be_valid() {
-    MapSettings settings = new MapSettings(Map.of("foo", "not a number"));
+    var settings = new MapSettings(Map.of("foo", "not a number"));
 
     assertThrows(NumberFormatException.class, () -> settings.getInt("foo"));
   }
 
   @Test
   void all_values_should_be_trimmed_set_property() {
-    MapSettings settings = new MapSettings(Map.of("foo", "   FOO "));
+    var settings = new MapSettings(Map.of("foo", "   FOO "));
     assertThat(settings.getString("foo")).isEqualTo("FOO");
   }
 
   @Test
   void test_get_default_value() {
-    MapSettings settings = new MapSettings(definitions, Map.of());
+    var settings = new MapSettings(definitions, Map.of());
     assertThat(settings.getDefaultValue("unknown")).isNull();
   }
 
   @Test
   void test_get_string() {
-    MapSettings settings = new MapSettings(definitions, Map.of("hello", "Russia"));
+    var settings = new MapSettings(definitions, Map.of("hello", "Russia"));
     assertThat(settings.getString("hello")).isEqualTo("Russia");
   }
 
   @Test
   void test_get_date() {
-    MapSettings settings = new MapSettings(definitions, Map.of());
+    var settings = new MapSettings(definitions, Map.of());
     assertThat(settings.getDate("unknown")).isNull();
     assertThat(settings.getDate("date").getDate()).isEqualTo(18);
     assertThat(settings.getDate("date").getMonth()).isEqualTo(4);
@@ -164,13 +164,13 @@ class MapSettingsTests {
 
   @Test
   void test_get_date_not_found() {
-    MapSettings settings = new MapSettings(definitions, Map.of());
+    var settings = new MapSettings(definitions, Map.of());
     assertThat(settings.getDate("unknown")).isNull();
   }
 
   @Test
   void test_get_datetime() {
-    MapSettings settings = new MapSettings(definitions, Map.of());
+    var settings = new MapSettings(definitions, Map.of());
     assertThat(settings.getDateTime("unknown")).isNull();
     assertThat(settings.getDateTime("datetime").getDate()).isEqualTo(18);
     assertThat(settings.getDateTime("datetime").getMonth()).isEqualTo(4);
@@ -179,71 +179,71 @@ class MapSettingsTests {
 
   @Test
   void test_get_double() {
-    MapSettings settings = new MapSettings(Map.of("from_string", "3.14159"));
+    var settings = new MapSettings(Map.of("from_string", "3.14159"));
     assertThat(settings.getDouble("from_string")).isEqualTo(3.14159, Offset.offset(0.00001));
     assertThat(settings.getDouble("unknown")).isNull();
   }
 
   @Test
   void test_get_float() {
-    MapSettings settings = new MapSettings(Map.of("from_string", "3.14159"));
+    var settings = new MapSettings(Map.of("from_string", "3.14159"));
     assertThat(settings.getDouble("from_string")).isEqualTo(3.14159f, Offset.offset(0.00001));
     assertThat(settings.getDouble("unknown")).isNull();
   }
 
   @Test
   void test_get_bad_float() {
-    MapSettings settings = new MapSettings(Map.of("foo", "bar"));
+    var settings = new MapSettings(Map.of("foo", "bar"));
 
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> settings.getFloat("foo"));
+    var thrown = assertThrows(IllegalStateException.class, () -> settings.getFloat("foo"));
     assertThat(thrown).hasMessage("The property 'foo' is not a float value");
   }
 
   @Test
   void test_get_bad_double() {
-    MapSettings settings = new MapSettings(Map.of("foo", "bar"));
+    var settings = new MapSettings(Map.of("foo", "bar"));
 
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> settings.getDouble("foo"));
+    var thrown = assertThrows(IllegalStateException.class, () -> settings.getDouble("foo"));
     assertThat(thrown).hasMessage("The property 'foo' is not a double value");
   }
 
   @Test
   void getStringArray() {
-    MapSettings settings = new MapSettings(definitions, Map.of());
-    String[] array = settings.getStringArray("array");
+    var settings = new MapSettings(definitions, Map.of());
+    var array = settings.getStringArray("array");
     assertThat(array).isEqualTo(new String[] {"one", "two", "three"});
   }
 
   @Test
   void getStringArray_no_value() {
-    MapSettings settings = new MapSettings(Map.of());
-    String[] array = settings.getStringArray("array");
+    var settings = new MapSettings(Map.of());
+    var array = settings.getStringArray("array");
     assertThat(array).isEmpty();
   }
 
   @Test
   void shouldTrimArray() {
-    MapSettings settings = new MapSettings(Map.of("foo", "  one,  two, three  "));
-    String[] array = settings.getStringArray("foo");
+    var settings = new MapSettings(Map.of("foo", "  one,  two, three  "));
+    var array = settings.getStringArray("foo");
     assertThat(array).isEqualTo(new String[] {"one", "two", "three"});
   }
 
   @Test
   void shouldKeepEmptyValuesWhenSplitting() {
-    MapSettings settings = new MapSettings(Map.of("foo", "  one,  , two"));
-    String[] array = settings.getStringArray("foo");
+    var settings = new MapSettings(Map.of("foo", "  one,  , two"));
+    var array = settings.getStringArray("foo");
     assertThat(array).isEqualTo(new String[] {"one", "", "two"});
   }
 
   @Test
   void testDefaultValueOfGetString() {
-    MapSettings settings = new MapSettings(definitions, Map.of());
+    var settings = new MapSettings(definitions, Map.of());
     assertThat(settings.getString("hello")).isEqualTo("world");
   }
 
   @Test
   void set_property_boolean() {
-    MapSettings settings = new MapSettings(Map.of("foo", "true", "bar", "false"));
+    var settings = new MapSettings(Map.of("foo", "true", "bar", "false"));
     assertThat(settings.getBoolean("foo")).isTrue();
     assertThat(settings.getBoolean("bar")).isFalse();
     assertThat(settings.getString("foo")).isEqualTo("true");
@@ -252,7 +252,7 @@ class MapSettingsTests {
 
   @Test
   void ignore_case_of_boolean_values() {
-    MapSettings settings = new MapSettings(Map.of("foo", "true", "bar", "TRUE",
+    var settings = new MapSettings(Map.of("foo", "true", "bar", "TRUE",
       // labels in UI
       "baz", "True"));
 
@@ -263,7 +263,7 @@ class MapSettingsTests {
 
   @Test
   void get_boolean() {
-    MapSettings settings = new MapSettings(definitions, Map.of());
+    var settings = new MapSettings(definitions, Map.of());
     assertThat(settings.getBoolean("boolean")).isTrue();
     assertThat(settings.getBoolean("falseboolean")).isFalse();
     assertThat(settings.getBoolean("unknown")).isFalse();
@@ -272,7 +272,7 @@ class MapSettingsTests {
 
   @Test
   void shouldCreateByIntrospectingComponent() {
-    MapSettings settings = new MapSettings(Map.of());
+    var settings = new MapSettings(Map.of());
     settings.getDefinitions().addComponent(MyComponent.class);
 
     // property definition has been loaded, ie for default value
@@ -291,13 +291,13 @@ class MapSettingsTests {
 
   @Test
   void getStringLines_single_line() {
-    MapSettings settings = new MapSettings(Map.of("foo", "the line"));
+    var settings = new MapSettings(Map.of("foo", "the line"));
     assertThat(settings.getStringLines("foo")).isEqualTo(new String[] {"the line"});
   }
 
   @Test
   void getStringLines_linux() {
-    MapSettings settings = new MapSettings(Map.of("foo", "one\ntwo"));
+    var settings = new MapSettings(Map.of("foo", "one\ntwo"));
     assertThat(settings.getStringLines("foo")).isEqualTo(new String[] {"one", "two"});
 
     settings = new MapSettings(Map.of("foo", "one\ntwo\n"));
@@ -306,7 +306,7 @@ class MapSettingsTests {
 
   @Test
   void getStringLines_windows() {
-    MapSettings settings = new MapSettings(Map.of("foo", "one\r\ntwo"));
+    var settings = new MapSettings(Map.of("foo", "one\r\ntwo"));
     assertThat(settings.getStringLines("foo")).isEqualTo(new String[] {"one", "two"});
 
     settings = new MapSettings(Map.of("foo", "one\r\ntwo\r\n"));
@@ -315,13 +315,13 @@ class MapSettingsTests {
 
   @Test
   void getStringLines_mix() {
-    MapSettings settings = new MapSettings(Map.of("foo", "one\r\ntwo\nthree"));
+    var settings = new MapSettings(Map.of("foo", "one\r\ntwo\nthree"));
     assertThat(settings.getStringLines("foo")).isEqualTo(new String[] {"one", "two", "three"});
   }
 
   @Test
   void getKeysStartingWith() {
-    MapSettings settings = new MapSettings(Map.of("sonar.jdbc.url", "foo", "sonar.jdbc.username", "bar", "sonar.security", "admin"));
+    var settings = new MapSettings(Map.of("sonar.jdbc.url", "foo", "sonar.jdbc.username", "bar", "sonar.security", "admin"));
 
     assertThat(settings.getKeysStartingWith("sonar")).containsOnly("sonar.jdbc.url", "sonar.jdbc.username", "sonar.security");
     assertThat(settings.getKeysStartingWith("sonar.jdbc")).containsOnly("sonar.jdbc.url", "sonar.jdbc.username");
@@ -330,7 +330,7 @@ class MapSettingsTests {
 
   @Test
   void should_fallback_deprecated_key_to_default_value_of_new_key() {
-    MapSettings settings = new MapSettings(definitions, Map.of());
+    var settings = new MapSettings(definitions, Map.of());
 
     assertThat(settings.getString("newKeyWithDefaultValue")).isEqualTo("default_value");
     assertThat(settings.getString("oldKeyWithDefaultValue")).isEqualTo("default_value");
@@ -338,7 +338,7 @@ class MapSettingsTests {
 
   @Test
   void should_fallback_deprecated_key_to_new_key() {
-    MapSettings settings = new MapSettings(definitions, Map.of("newKey", "value of newKey"));
+    var settings = new MapSettings(definitions, Map.of("newKey", "value of newKey"));
 
     assertThat(settings.getString("newKey")).isEqualTo("value of newKey");
     assertThat(settings.getString("oldKey")).isEqualTo("value of newKey");
@@ -347,7 +347,7 @@ class MapSettingsTests {
   @Test
   void should_load_value_of_deprecated_key() {
     // it's used for example when deprecated settings are set through command-line
-    MapSettings settings = new MapSettings(definitions, Map.of("oldKey", "value of oldKey"));
+    var settings = new MapSettings(definitions, Map.of("oldKey", "value of oldKey"));
 
     assertThat(settings.getString("newKey")).isEqualTo("value of oldKey");
     assertThat(settings.getString("oldKey")).isEqualTo("value of oldKey");
@@ -355,7 +355,7 @@ class MapSettingsTests {
 
   @Test
   void should_load_values_of_deprecated_key() {
-    MapSettings settings = new MapSettings(definitions, Map.of("oldKey", "a,b"));
+    var settings = new MapSettings(definitions, Map.of("oldKey", "a,b"));
 
     assertThat(settings.getStringArray("newKey")).containsOnly("a", "b");
     assertThat(settings.getStringArray("oldKey")).containsOnly("a", "b");
@@ -363,7 +363,7 @@ class MapSettingsTests {
 
   @Test
   void should_support_deprecated_props_with_multi_values() {
-    MapSettings settings = new MapSettings(definitions, Map.of("new_multi_values", " A , B "));
+    var settings = new MapSettings(definitions, Map.of("new_multi_values", " A , B "));
     assertThat(settings.getStringArray("new_multi_values")).isEqualTo(new String[] {"A", "B"});
     assertThat(settings.getStringArray("old_multi_values")).isEqualTo(new String[] {"A", "B"});
   }

@@ -129,8 +129,8 @@ public class IssueApi {
         } else if (response.code() != 200) {
           throw ServerApiHelper.handleError(response);
         }
-        InputStream input = response.bodyAsStream();
-        Parser<ScannerInput.ServerIssue> parser = ScannerInput.ServerIssue.parser();
+        var input = response.bodyAsStream();
+        var parser = ScannerInput.ServerIssue.parser();
         return readMessages(input, parser);
       },
       duration -> LOG.debug("Downloaded issues in {}ms", duration));

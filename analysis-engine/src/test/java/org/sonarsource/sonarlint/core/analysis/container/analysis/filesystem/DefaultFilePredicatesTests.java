@@ -34,9 +34,6 @@ import org.sonar.api.batch.fs.FilePredicate;
 import org.sonar.api.batch.fs.FilePredicates;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.InputFile.Type;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.DefaultFilePredicates;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileMetadata;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputFile;
 import org.sonarsource.sonarlint.core.commons.Language;
 import testutils.OnDiskTestClientInputFile;
 
@@ -55,10 +52,10 @@ class DefaultFilePredicatesTests {
   @BeforeEach
   void before() throws IOException {
     predicates = new DefaultFilePredicates();
-    Path filePath = baseDir.resolve("src/main/java/struts/Action.java");
+    var filePath = baseDir.resolve("src/main/java/struts/Action.java");
     Files.createDirectories(filePath.getParent());
     Files.write(filePath, "foo".getBytes(StandardCharsets.UTF_8));
-    OnDiskTestClientInputFile clientInputFile = new OnDiskTestClientInputFile(filePath, "src/main/java/struts/Action.java", false, StandardCharsets.UTF_8, Language.JAVA);
+    var clientInputFile = new OnDiskTestClientInputFile(filePath, "src/main/java/struts/Action.java", false, StandardCharsets.UTF_8, Language.JAVA);
     javaFile = new SonarLintInputFile(clientInputFile, f -> new FileMetadata().readMetadata(filePath.toFile(), StandardCharsets.UTF_8))
       .setType(Type.MAIN)
       .setLanguage(Language.JAVA);
@@ -109,7 +106,7 @@ class DefaultFilePredicatesTests {
 
   @Test
   void has_uri() {
-    URI uri = javaFile.uri();
+    var uri = javaFile.uri();
     assertThat(predicates.hasURI(uri).apply(javaFile)).isTrue();
 
     assertThat(predicates.hasURI(baseDir.resolve("another.php").toUri()).apply(javaFile)).isFalse();
@@ -117,7 +114,7 @@ class DefaultFilePredicatesTests {
 
   @Test
   void has_name() {
-    String fileName = javaFile.filename();
+    var fileName = javaFile.filename();
     assertThat(predicates.hasFilename(fileName).apply(javaFile)).isTrue();
 
     assertThat(predicates.hasFilename("another.php").apply(javaFile)).isFalse();
@@ -126,7 +123,7 @@ class DefaultFilePredicatesTests {
 
   @Test
   void has_extension() {
-    String extension = "java";
+    var extension = "java";
     assertThat(predicates.hasExtension(extension).apply(javaFile)).isTrue();
 
     assertThat(predicates.hasExtension("php").apply(javaFile)).isFalse();

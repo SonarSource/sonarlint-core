@@ -98,7 +98,7 @@ public class FileUtils {
 
     @Override
     public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-      Path targetPath = toPath.resolve(fromPath.relativize(dir));
+      var targetPath = toPath.resolve(fromPath.relativize(dir));
       if (!Files.exists(targetPath)) {
         Files.createDirectory(targetPath);
       }
@@ -150,7 +150,7 @@ public class FileUtils {
 
   private static boolean hasWindowsHiddenAttribute(Path path) {
     try {
-      DosFileAttributes dosFileAttributes = Files.readAttributes(path, DosFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+      var dosFileAttributes = Files.readAttributes(path, DosFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
       return dosFileAttributes.isHidden();
     } catch (UnsupportedOperationException | IOException e) {
       return path.toFile().isHidden();
@@ -246,7 +246,7 @@ public class FileUtils {
    * @param runnable the runnable whose execution should be retried
    */
   static void retry(IORunnable runnable, int maxRetries) throws IOException {
-    for (int retry = 0; retry < maxRetries; retry++) {
+    for (var retry = 0; retry < maxRetries; retry++) {
       try {
         runnable.run();
         return;

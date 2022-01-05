@@ -40,16 +40,16 @@ class AnalysisConfigurationTests {
     Map<String, String> props = new HashMap<>();
     props.put("sonar.java.libraries", "foo bar");
 
-    final Path srcFile1 = createDirectory(temp.resolve("src1"));
-    final Path srcFile2 = createDirectory(temp.resolve("src2"));
-    final Path srcFile3 = createDirectory(temp.resolve("src3"));
+    final var srcFile1 = createDirectory(temp.resolve("src1"));
+    final var srcFile2 = createDirectory(temp.resolve("src2"));
+    final var srcFile3 = createDirectory(temp.resolve("src3"));
     ClientInputFile inputFile = new TestClientInputFile(temp, srcFile1, false, StandardCharsets.UTF_8, null);
     ClientInputFile inputFileWithLanguage = new TestClientInputFile(temp, srcFile2, false, StandardCharsets.UTF_8, Language.JAVA);
     ClientInputFile testInputFile = new TestClientInputFile(temp, srcFile3, true, null, Language.PHP);
-    Path baseDir = createDirectory(temp.resolve("baseDir"));
-    ActiveRule activeRuleWithParams = new ActiveRule("php:S123", null);
+    var baseDir = createDirectory(temp.resolve("baseDir"));
+    var activeRuleWithParams = new ActiveRule("php:S123", null);
     activeRuleWithParams.setParams(Map.of("param1", "value1"));
-    AnalysisConfiguration config = AnalysisConfiguration.builder()
+    var config = AnalysisConfiguration.builder()
       .setBaseDir(baseDir)
       .addInputFile(inputFile)
       .addInputFiles(inputFileWithLanguage)

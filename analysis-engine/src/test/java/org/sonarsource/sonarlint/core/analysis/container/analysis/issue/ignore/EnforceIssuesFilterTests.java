@@ -66,12 +66,12 @@ class EnforceIssuesFilterTests {
 
   @Test
   void shouldPassToChainIfRuleDoesNotMatch() {
-    String rule = "rule";
-    RuleKey ruleKey = mock(RuleKey.class);
+    var rule = "rule";
+    var ruleKey = mock(RuleKey.class);
     when(ruleKey.toString()).thenReturn(rule);
     when(issue.ruleKey()).thenReturn(ruleKey);
 
-    IssuePattern matching = mock(IssuePattern.class);
+    var matching = mock(IssuePattern.class);
     when(matching.matchRule(ruleKey)).thenReturn(false);
     when(exclusionPatternInitializer.getMulticriteriaPatterns()).thenReturn(List.of(matching));
 
@@ -82,13 +82,13 @@ class EnforceIssuesFilterTests {
 
   @Test
   void shouldAcceptIssueIfFullyMatched() {
-    String rule = "rule";
-    String path = "org/sonar/api/Issue.java";
-    RuleKey ruleKey = mock(RuleKey.class);
+    var rule = "rule";
+    var path = "org/sonar/api/Issue.java";
+    var ruleKey = mock(RuleKey.class);
     when(ruleKey.toString()).thenReturn(rule);
     when(issue.ruleKey()).thenReturn(ruleKey);
 
-    IssuePattern matching = mock(IssuePattern.class);
+    var matching = mock(IssuePattern.class);
     when(matching.matchRule(ruleKey)).thenReturn(true);
     when(matching.matchFile(path)).thenReturn(true);
     when(exclusionPatternInitializer.getMulticriteriaPatterns()).thenReturn(List.of(matching));
@@ -106,15 +106,15 @@ class EnforceIssuesFilterTests {
 
   @Test
   void shouldRefuseIssueIfRuleMatchesButNotPath() {
-    String rule = "rule";
-    String path = "org/sonar/api/Issue.java";
-    String componentKey = "org.sonar.api.Issue";
-    RuleKey ruleKey = mock(RuleKey.class);
+    var rule = "rule";
+    var path = "org/sonar/api/Issue.java";
+    var componentKey = "org.sonar.api.Issue";
+    var ruleKey = mock(RuleKey.class);
     when(ruleKey.toString()).thenReturn(rule);
     when(issue.ruleKey()).thenReturn(ruleKey);
     when(issue.componentKey()).thenReturn(componentKey);
 
-    IssuePattern matching = mock(IssuePattern.class);
+    var matching = mock(IssuePattern.class);
     when(matching.matchRule(ruleKey)).thenReturn(true);
     when(matching.matchFile(path)).thenReturn(false);
     when(exclusionPatternInitializer.getMulticriteriaPatterns()).thenReturn(List.of(matching));
@@ -127,14 +127,14 @@ class EnforceIssuesFilterTests {
 
   @Test
   void shouldRefuseIssueIfRuleMatchesAndNotFile() throws IOException {
-    String rule = "rule";
-    String path = "org/sonar/api/Issue.java";
-    String componentKey = "org.sonar.api.Issue";
-    RuleKey ruleKey = mock(RuleKey.class);
+    var rule = "rule";
+    var path = "org/sonar/api/Issue.java";
+    var componentKey = "org.sonar.api.Issue";
+    var ruleKey = mock(RuleKey.class);
     when(ruleKey.toString()).thenReturn(rule);
     when(issue.ruleKey()).thenReturn(ruleKey);
 
-    IssuePattern matching = mock(IssuePattern.class);
+    var matching = mock(IssuePattern.class);
     when(matching.matchRule(ruleKey)).thenReturn(true);
     when(matching.matchFile(path)).thenReturn(true);
     when(exclusionPatternInitializer.getMulticriteriaPatterns()).thenReturn(List.of(matching));

@@ -45,10 +45,10 @@ class PluginInfoTests {
 
   @Test
   void test_equals() {
-    PluginInfo java1 = new PluginInfo("java").setVersion(Version.create("1.0"));
-    PluginInfo java2 = new PluginInfo("java").setVersion(Version.create("2.0"));
-    PluginInfo javaNoVersion = new PluginInfo("java");
-    PluginInfo cobol = new PluginInfo("cobol").setVersion(Version.create("1.0"));
+    var java1 = new PluginInfo("java").setVersion(Version.create("1.0"));
+    var java2 = new PluginInfo("java").setVersion(Version.create("2.0"));
+    var javaNoVersion = new PluginInfo("java");
+    var cobol = new PluginInfo("cobol").setVersion(Version.create("1.0"));
 
     assertThat(java1.equals(java1)).isTrue();
     assertThat(java1.equals(java2)).isFalse();
@@ -97,14 +97,14 @@ class PluginInfoTests {
 
   @Test
   void create_from_minimal_manifest(@TempDir Path temp) throws Exception {
-    SonarPluginManifest manifest = mock(SonarPluginManifest.class);
+    var manifest = mock(SonarPluginManifest.class);
     when(manifest.getKey()).thenReturn("java");
     when(manifest.getVersion()).thenReturn("1.0");
     when(manifest.getName()).thenReturn("Java");
     when(manifest.getMainClass()).thenReturn("org.foo.FooPlugin");
 
-    Path jarFile = temp.resolve("myPlugin.jar");
-    PluginInfo pluginInfo = PluginInfo.create(jarFile, manifest);
+    var jarFile = temp.resolve("myPlugin.jar");
+    var pluginInfo = PluginInfo.create(jarFile, manifest);
 
     assertThat(pluginInfo.getKey()).isEqualTo("java");
     assertThat(pluginInfo.getName()).isEqualTo("Java");
@@ -120,7 +120,7 @@ class PluginInfoTests {
 
   @Test
   void create_from_complete_manifest(@TempDir Path temp) throws Exception {
-    SonarPluginManifest manifest = mock(SonarPluginManifest.class);
+    var manifest = mock(SonarPluginManifest.class);
     when(manifest.getKey()).thenReturn("fbcontrib");
     when(manifest.getVersion()).thenReturn("2.0");
     when(manifest.getName()).thenReturn("Java");
@@ -131,8 +131,8 @@ class PluginInfoTests {
     when(manifest.getJreMinVersion()).thenReturn(Optional.of(Version.create("11")));
     when(manifest.getNodeJsMinVersion()).thenReturn(Optional.of(Version.create("12.18.3")));
 
-    Path jarFile = temp.resolve("myPlugin.jar");
-    PluginInfo pluginInfo = PluginInfo.create(jarFile, manifest);
+    var jarFile = temp.resolve("myPlugin.jar");
+    var pluginInfo = PluginInfo.create(jarFile, manifest);
 
     assertThat(pluginInfo.getBasePlugin()).isEqualTo("findbugs");
     assertThat(pluginInfo.getMinimalSqVersion().getName()).isEqualTo("4.5.1");
@@ -143,8 +143,8 @@ class PluginInfoTests {
 
   @Test
   void create_from_file() throws URISyntaxException {
-    Path checkstyleJar = Paths.get(getClass().getResource("/sonar-checkstyle-plugin-2.8.jar").toURI());
-    PluginInfo checkstyleInfo = PluginInfo.create(checkstyleJar);
+    var checkstyleJar = Paths.get(getClass().getResource("/sonar-checkstyle-plugin-2.8.jar").toURI());
+    var checkstyleInfo = PluginInfo.create(checkstyleJar);
 
     assertThat(checkstyleInfo.getName()).isEqualTo("Checkstyle");
     assertThat(checkstyleInfo.getMinimalSqVersion()).isEqualTo(Version.create("2.8"));
@@ -152,24 +152,24 @@ class PluginInfoTests {
 
   @Test
   void test_toString() throws Exception {
-    PluginInfo pluginInfo = new PluginInfo("java").setVersion(Version.create("1.1"));
+    var pluginInfo = new PluginInfo("java").setVersion(Version.create("1.1"));
     assertThat(pluginInfo).hasToString("[java / 1.1]");
   }
 
   @Test
   void fail_when_jar_is_not_a_plugin(@TempDir Path temp) throws IOException {
     // this JAR has a manifest but is not a plugin
-    File jarRootDir = Files.createTempDirectory(temp, "myPlugin").toFile();
+    var jarRootDir = Files.createTempDirectory(temp, "myPlugin").toFile();
     FileUtils.write(new File(jarRootDir, "META-INF/MANIFEST.MF"), "Build-Jdk: 1.6.0_15", StandardCharsets.UTF_8);
-    Path jar = temp.resolve("myPlugin.jar");
+    var jar = temp.resolve("myPlugin.jar");
     ZipUtils.zipDir(jarRootDir, jar.toFile());
 
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> PluginInfo.create(jar));
+    var thrown = assertThrows(IllegalStateException.class, () -> PluginInfo.create(jar));
     assertThat(thrown).hasMessage("Error while reading plugin manifest from jar: " + jar.toAbsolutePath());
   }
 
   PluginInfo withMinSqVersion(@Nullable String version) {
-    PluginInfo pluginInfo = new PluginInfo("foo");
+    var pluginInfo = new PluginInfo("foo");
     if (version != null) {
       pluginInfo.setMinimalSqVersion(Version.create(version));
     }

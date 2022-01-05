@@ -32,8 +32,8 @@ class StringStoreIndexTests {
 
   @Test
   void should_throw_if_cannot_read_from_index_file(@TempDir Path storeBasePath) throws IOException {
-    String indexFileName = "index.pb";
-    Path indexFilePath = storeBasePath.resolve(indexFileName);
+    var indexFileName = "index.pb";
+    var indexFilePath = storeBasePath.resolve(indexFileName);
 
     StoreIndex<String> index = new StringStoreIndex(storeBasePath, indexFileName);
     Files.write(indexFilePath, "garbage index data".getBytes());

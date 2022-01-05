@@ -52,7 +52,7 @@ class ServerIssueStoreTests {
 
   @Test
   void should_read_object_written() {
-    ServerIssue.Builder builder = ServerIssue.newBuilder();
+    var builder = ServerIssue.newBuilder();
     List<ServerIssue> issueList = new ArrayList<>();
 
     issueList.add(builder.setPrimaryLocation(Location.newBuilder().setPath(path1)).build());
@@ -68,8 +68,8 @@ class ServerIssueStoreTests {
 
   @Test
   void should_read_object_replaced() {
-    ServerIssue issue1 = ServerIssue.newBuilder().setPrimaryLocation(Location.newBuilder().setPath(path1).setTextRange(TextRange.newBuilder().setStartLine(11))).build();
-    ServerIssue issue2 = ServerIssue.newBuilder().setPrimaryLocation(Location.newBuilder().setPath(path1).setTextRange(TextRange.newBuilder().setStartLine(22))).build();
+    var issue1 = ServerIssue.newBuilder().setPrimaryLocation(Location.newBuilder().setPath(path1).setTextRange(TextRange.newBuilder().setStartLine(11))).build();
+    var issue2 = ServerIssue.newBuilder().setPrimaryLocation(Location.newBuilder().setPath(path1).setTextRange(TextRange.newBuilder().setStartLine(22))).build();
 
     store.save(Collections.singletonList(issue1));
     assertThat(store.load(path1)).containsOnly(issue1);
@@ -81,11 +81,11 @@ class ServerIssueStoreTests {
   @Test
   void should_fail_to_save_object_if_cannot_write_to_filesystem() throws IOException {
     // the sha1sum of path
-    String sha1sum = "074aeb9c5551d3b52d26cf3d6568599adbff99f1";
+    var sha1sum = "074aeb9c5551d3b52d26cf3d6568599adbff99f1";
 
     // Create a directory at the path where ServerIssueStore would want to create a file,
     // in order to obstruct the file creation
-    Path wouldBeFile = root.resolve("0").resolve("7").resolve(sha1sum);
+    var wouldBeFile = root.resolve("0").resolve("7").resolve(sha1sum);
     if (!wouldBeFile.toFile().mkdirs()) {
       fail("could not create dummy directory");
     }
@@ -96,13 +96,13 @@ class ServerIssueStoreTests {
 
   @Test
   void should_fail_to_delete_object() {
-    String fileKey = "module1:path1";
+    var fileKey = "module1:path1";
     // the sha1sum of fileKey
-    String sha1sum = "18054aada7bd3b7ddd6de55caf50ae7bee376430";
+    var sha1sum = "18054aada7bd3b7ddd6de55caf50ae7bee376430";
 
     // Create a dummy sub-directory at the path where ServerIssueStore would want to delete a file,
     // in order to obstruct the file deletion
-    Path dummySubDir = root.resolve("1").resolve("8").resolve(sha1sum).resolve("dummysub");
+    var dummySubDir = root.resolve("1").resolve("8").resolve(sha1sum).resolve("dummysub");
     if (!dummySubDir.toFile().mkdirs()) {
       fail("could not create dummy sub-directory");
     }
@@ -111,7 +111,7 @@ class ServerIssueStoreTests {
 
   @Test
   void should_delete_entries() {
-    ServerIssue.Builder builder = ServerIssue.newBuilder();
+    var builder = ServerIssue.newBuilder();
     List<ServerIssue> issueList = new ArrayList<>();
 
     issueList.add(builder.setPrimaryLocation(Location.newBuilder().setPath(path1)).build());

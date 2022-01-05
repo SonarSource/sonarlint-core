@@ -44,7 +44,7 @@ public class ModuleHierarchyDownloader {
    */
   public Map<String, String> fetchModuleHierarchy(ServerApiHelper serverApiHelper, String projectKey, ProgressMonitor progress) {
     var componentApi = new ServerApi(serverApiHelper).component();
-    List<ComponentPath> modules = componentApi.getSubProjects(projectKey, progress);
+    var modules = componentApi.getSubProjects(projectKey, progress);
 
     // doesn't include root
     Map<String, ComponentPath> modulesByKey = modules.stream().collect(Collectors.toMap(ComponentPath::getKey, Function.identity()));

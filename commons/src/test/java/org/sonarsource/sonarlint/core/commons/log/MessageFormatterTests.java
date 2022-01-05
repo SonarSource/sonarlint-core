@@ -157,10 +157,10 @@ class MessageFormatterTests {
 
   @Test
   void testNullArray() {
-    String msg0 = "msg0";
-    String msg1 = "msg1 {}";
-    String msg2 = "msg2 {} {}";
-    String msg3 = "msg3 {} {} {}";
+    var msg0 = "msg0";
+    var msg1 = "msg1 {}";
+    var msg2 = "msg2 {} {}";
+    var msg3 = "msg3 {} {} {}";
 
     Object[] args = null;
 
@@ -204,8 +204,8 @@ class MessageFormatterTests {
 
   @Test
   void testArrayValues() {
-    Integer p0 = i1;
-    Integer[] p1 = new Integer[] {i2, i3};
+    var p0 = i1;
+    var p1 = new Integer[] {i2, i3};
 
     result = MessageFormatter.format("{}{}", p0, p1).getMessage();
     assertEquals("1[2, 3]", result);
@@ -250,23 +250,23 @@ class MessageFormatterTests {
 
   @Test
   void testMultiDimensionalArrayValues() {
-    Integer[][] multiIntegerA = new Integer[][] {ia0, ia1};
+    var multiIntegerA = new Integer[][] {ia0, ia1};
     result = MessageFormatter.arrayFormat("{}{}", new Object[] {"a", multiIntegerA}).getMessage();
     assertEquals("a[[1, 2, 3], [10, 20, 30]]", result);
 
-    int[][] multiIntA = new int[][] {{1, 2}, {10, 20}};
+    var multiIntA = new int[][] {{1, 2}, {10, 20}};
     result = MessageFormatter.arrayFormat("{}{}", new Object[] {"a", multiIntA}).getMessage();
     assertEquals("a[[1, 2], [10, 20]]", result);
 
-    float[][] multiFloatA = new float[][] {{1, 2}, {10, 20}};
+    var multiFloatA = new float[][] {{1, 2}, {10, 20}};
     result = MessageFormatter.arrayFormat("{}{}", new Object[] {"a", multiFloatA}).getMessage();
     assertEquals("a[[1.0, 2.0], [10.0, 20.0]]", result);
 
-    Object[][] multiOA = new Object[][] {ia0, ia1};
+    var multiOA = new Object[][] {ia0, ia1};
     result = MessageFormatter.arrayFormat("{}{}", new Object[] {"a", multiOA}).getMessage();
     assertEquals("a[[1, 2, 3], [10, 20, 30]]", result);
 
-    Object[][][] _3DOA = new Object[][][] {multiOA, multiOA};
+    var _3DOA = new Object[][][] {multiOA, multiOA};
     result = MessageFormatter.arrayFormat("{}{}", new Object[] {"a", _3DOA}).getMessage();
     assertEquals("a[[[1, 2, 3], [10, 20, 30]], [[1, 2, 3], [10, 20, 30]]]", result);
   }
@@ -274,15 +274,15 @@ class MessageFormatterTests {
   @Test
   void testCyclicArrays() {
     {
-      Object[] cyclicA = new Object[1];
+      var cyclicA = new Object[1];
       cyclicA[0] = cyclicA;
       assertEquals("[[...]]", MessageFormatter.arrayFormat("{}", cyclicA).getMessage());
     }
     {
-      Object[] a = new Object[2];
+      var a = new Object[2];
       a[0] = i1;
-      Object[] c = new Object[] {i3, a};
-      Object[] b = new Object[] {i2, c};
+      var c = new Object[] {i3, a};
+      var b = new Object[] {i2, c};
       a[1] = b;
       assertEquals("1[2, [3, [1, [...]]]]", MessageFormatter.arrayFormat("{}{}", a).getMessage());
     }
@@ -291,8 +291,8 @@ class MessageFormatterTests {
   @Test
   void testArrayThrowable() {
     FormattingTuple ft;
-    Throwable t = new Throwable();
-    Object[] ia = new Object[] {i1, i2, i3, t};
+    var t = new Throwable();
+    var ia = new Object[] {i1, i2, i3, t};
 
     ft = MessageFormatter.arrayFormat("Value {} is smaller than {} and {}.", ia);
     assertEquals("Value 1 is smaller than 2 and 3.", ft.getMessage());

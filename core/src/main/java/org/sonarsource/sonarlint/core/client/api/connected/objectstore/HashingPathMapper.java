@@ -50,10 +50,10 @@ public class HashingPathMapper implements PathMapper<String> {
 
   @Override
   public Path apply(String key) {
-    String hashedHexString = toHexString(toHash(key));
+    var hashedHexString = toHexString(toHash(key));
 
-    Path path = base;
-    for (int i = 0; i < levels; i++) {
+    var path = base;
+    for (var i = 0; i < levels; i++) {
       path = path.resolve(hashedHexString.substring(i, i + 1));
     }
     return path.resolve(hashedHexString);
@@ -61,7 +61,7 @@ public class HashingPathMapper implements PathMapper<String> {
 
   private static byte[] toHash(String key) {
     try {
-      MessageDigest digest = MessageDigest.getInstance(HASHING_ALGORITHM);
+      var digest = MessageDigest.getInstance(HASHING_ALGORITHM);
       digest.update(key.getBytes(StandardCharsets.UTF_8));
       return digest.digest();
     } catch (NoSuchAlgorithmException e) {
@@ -70,7 +70,7 @@ public class HashingPathMapper implements PathMapper<String> {
   }
 
   private static String toHexString(byte[] bytes) {
-    final StringBuilder hex = new StringBuilder(2 * bytes.length);
+    final var hex = new StringBuilder(2 * bytes.length);
     for (byte b : bytes) {
       hex.append(HEX_LETTERS.charAt((b & 0xF0) >> 4)).append(HEX_LETTERS.charAt(b & 0x0F));
     }

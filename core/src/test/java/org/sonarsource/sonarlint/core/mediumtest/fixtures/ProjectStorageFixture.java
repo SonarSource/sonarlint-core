@@ -78,8 +78,8 @@ public class ProjectStorageFixture {
     }
 
     public ProjectStorage create(Path projectsRootPath) {
-      Path projectFolder = projectsRootPath.resolve(ProjectStoragePaths.encodeForFs(projectKey));
-      Sonarlint.StorageStatus storageStatus = Sonarlint.StorageStatus.newBuilder()
+      var projectFolder = projectsRootPath.resolve(ProjectStoragePaths.encodeForFs(projectKey));
+      var storageStatus = Sonarlint.StorageStatus.newBuilder()
         .setStorageVersion(isStale ? "0" : ProjectStoragePaths.STORAGE_VERSION)
         .setSonarlintCoreVersion("1.0")
         .setUpdateTimestamp(new Date().getTime())
@@ -99,7 +99,7 @@ public class ProjectStorageFixture {
         });
         protoRuleSets.put(ruleSet.languageKey, ruleSetBuilder.build());
       });
-      Sonarlint.AnalyzerConfiguration analyzerConfiguration = Sonarlint.AnalyzerConfiguration.newBuilder().putAllRuleSetsByLanguageKey(protoRuleSets).build();
+      var analyzerConfiguration = Sonarlint.AnalyzerConfiguration.newBuilder().putAllRuleSetsByLanguageKey(protoRuleSets).build();
       ProtobufUtil.writeToFile(analyzerConfiguration, projectFolder.resolve("analyzer_config.pb"));
       return new ProjectStorage(projectFolder);
     }

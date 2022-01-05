@@ -93,7 +93,7 @@ class ProjectStorageUpdateExecutorTests {
     mockServer.addProtobufResponse("/api/settings/values.protobuf?component=" + URLEncoder.encode(MODULE_KEY_WITH_BRANCH, StandardCharsets.UTF_8),
       ValuesWsResponse.newBuilder().build());
 
-    ValuesWsResponse response = ValuesWsResponse.newBuilder()
+    var response = ValuesWsResponse.newBuilder()
       .addSettings(Setting.newBuilder()
         .setKey("sonar.qualitygate")
         .setValue("1")
@@ -108,7 +108,7 @@ class ProjectStorageUpdateExecutorTests {
 
     mockServer.addProtobufResponse("/api/settings/values.protobufcomponent=" + MODULE_KEY_WITH_BRANCH_URLENCODED, response);
 
-    ServerInfoStore serverInfoStore = new ServerInfoStore(new StorageFolder.Default(tempDir));
+    var serverInfoStore = new ServerInfoStore(new StorageFolder.Default(tempDir));
     serverInfoStore.store(new ServerInfo("", "", ""));
 
     Map<String, String> modulesPath = new HashMap<>();
@@ -130,15 +130,15 @@ class ProjectStorageUpdateExecutorTests {
   void project_update(@Nullable String organizationKey, @TempDir Path tempDir) throws Exception {
     setUp(organizationKey, tempDir.resolve("tmp"));
 
-    Path storageDir = tempDir.resolve("destDir");
-    Path globalStoragePath = storageDir.resolve("global");
+    var storageDir = tempDir.resolve("destDir");
+    var globalStoragePath = storageDir.resolve("global");
     FileUtils.mkdirs(globalStoragePath);
 
     when(projectStoragePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(storageDir);
 
     underTest.update(serverApiHelper, MODULE_KEY_WITH_BRANCH, false, PROGRESS);
 
-    ProjectConfiguration projectConfiguration = ProtobufUtil.readFile(storageDir.resolve(ProjectStoragePaths.PROJECT_CONFIGURATION_PB), ProjectConfiguration.parser());
+    var projectConfiguration = ProtobufUtil.readFile(storageDir.resolve(ProjectStoragePaths.PROJECT_CONFIGURATION_PB), ProjectConfiguration.parser());
 
     assertThat(projectConfiguration.getModulePathByKeyMap()).containsOnly(
       entry(MODULE_KEY_WITH_BRANCH, ""),
@@ -151,27 +151,27 @@ class ProjectStorageUpdateExecutorTests {
   void test_server_issues_are_downloaded_and_stored(@Nullable String organizationKey, @TempDir Path tempDir) throws IOException {
     setUp(organizationKey, tempDir.resolve("tmp"));
 
-    Path storageDir = tempDir.resolve("destDir");
-    Path globalStoragePath = storageDir.resolve("global");
+    var storageDir = tempDir.resolve("destDir");
+    var globalStoragePath = storageDir.resolve("global");
     FileUtils.mkdirs(globalStoragePath);
 
     mockServer.addStringResponse(getQualityProfileUrl(organizationKey), "");
 
     when(projectStoragePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(storageDir);
 
-    ServerIssue fileIssue1 = ServerIssue.newBuilder()
+    var fileIssue1 = ServerIssue.newBuilder()
       .setPrimaryLocation(Location.newBuilder().setPath("some/path"))
       .setRuleKey("squid:x")
       .build();
-    ServerIssue fileIssue2 = ServerIssue.newBuilder()
+    var fileIssue2 = ServerIssue.newBuilder()
       .setPrimaryLocation(Location.newBuilder().setPath("some/path"))
       .setRuleKey("squid:y")
       .build();
-    ServerIssue anotherFileIssue = ServerIssue.newBuilder()
+    var anotherFileIssue = ServerIssue.newBuilder()
       .setPrimaryLocation(Location.newBuilder().setPath("another/path"))
       .build();
 
-    IssueDownloader issueDownloader = mock(IssueDownloader.class);
+    var issueDownloader = mock(IssueDownloader.class);
     var serverApiHelper = mock(ServerApiHelper.class);
     when(issueDownloader.download(eq(serverApiHelper), eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), eq(false), eq(null), any(ProgressMonitor.class)))
       .thenReturn(Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue));
@@ -190,11 +190,11 @@ class ProjectStorageUpdateExecutorTests {
   void test_update_components(@Nullable String organizationKey, @TempDir Path tempDir) throws IOException {
     setUp(organizationKey, tempDir.resolve("tmp"));
 
-    Path temp = tempDir.resolve("tmp2");
+    var temp = tempDir.resolve("tmp2");
     Files.createDirectories(temp);
     underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, projectConfigurationDownloader,
       projectFileListDownloader, serverIssueUpdater);
-    ProjectConfiguration.Builder projectConfigurationBuilder = ProjectConfiguration.newBuilder();
+    var projectConfigurationBuilder = ProjectConfiguration.newBuilder();
     projectConfigurationBuilder.putModulePathByKey("rootModule", "");
     projectConfigurationBuilder.putModulePathByKey("moduleA", "A");
     projectConfigurationBuilder.putModulePathByKey("moduleB", "B");
@@ -209,13 +209,13 @@ class ProjectStorageUpdateExecutorTests {
     when(projectFileListDownloader.get(eq(serverApiHelper), eq("rootModule"), any(ProgressMonitor.class))).thenReturn(fileList);
     underTest.updateComponents(serverApiHelper, "rootModule", temp, projectConfigurationBuilder.build(), mock(ProgressMonitor.class));
 
-    Sonarlint.ProjectComponents components = ProtobufUtil.readFile(temp.resolve(ProjectStoragePaths.COMPONENT_LIST_PB), Sonarlint.ProjectComponents.parser());
+    var components = ProtobufUtil.readFile(temp.resolve(ProjectStoragePaths.COMPONENT_LIST_PB), Sonarlint.ProjectComponents.parser());
     assertThat(components.getComponentList()).containsOnly(
       "pom.xml", "unknownFile", "A/a.java", "B/b.java");
   }
 
   private String getQualityProfileUrl(@Nullable String organizationKey) {
-    String url = "/api/qualityprofiles/search.protobuf?project=" + MODULE_KEY_WITH_BRANCH_URLENCODED;
+    var url = "/api/qualityprofiles/search.protobuf?project=" + MODULE_KEY_WITH_BRANCH_URLENCODED;
     if (organizationKey != null) {
       url += "&organization=" + organizationKey;
     }

@@ -45,7 +45,7 @@ public class ServerIssueUpdater {
   public void update(ServerApiHelper serverApiHelper, String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities,
     ProgressMonitor progress) {
     var target = projectStoragePaths.getServerIssuesPath(projectKey);
-    Path work = createTempDir(target);
+    var work = createTempDir(target);
     FileUtils.replaceDir(path -> updateServerIssues(serverApiHelper, projectKey, projectConfiguration, path, fetchTaintVulnerabilities, progress), target, work);
   }
 
@@ -59,7 +59,7 @@ public class ServerIssueUpdater {
 
   public void updateServerIssues(ServerApiHelper serverApiHelper, String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, Path path,
     boolean fetchTaintVulnerabilities, ProgressMonitor progress) {
-    List<Sonarlint.ServerIssue> issues = issueDownloader.download(serverApiHelper, projectKey, projectConfiguration, fetchTaintVulnerabilities, null, progress);
+    var issues = issueDownloader.download(serverApiHelper, projectKey, projectConfiguration, fetchTaintVulnerabilities, null, progress);
     issueStoreFactory.apply(path).save(issues);
   }
 

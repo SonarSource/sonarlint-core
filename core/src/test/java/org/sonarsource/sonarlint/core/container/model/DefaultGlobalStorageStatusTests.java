@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class DefaultGlobalStorageStatusTests {
   @Test
   void testGetters() {
-    DefaultGlobalStorageStatus status = new DefaultGlobalStorageStatus("version", new Date(1000), true);
+    var status = new DefaultGlobalStorageStatus("version", new Date(1000), true);
     assertThat(status.isStale()).isTrue();
     assertThat(status.getLastUpdateDate()).isEqualTo(new Date(1000));
     assertThat(status.getServerVersion()).isEqualTo("version");

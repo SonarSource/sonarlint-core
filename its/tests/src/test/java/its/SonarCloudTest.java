@@ -159,11 +159,11 @@ public class SonarCloudTest extends AbstractConnectedTest {
     associateProjectToQualityProfile(PROJECT_KEY_XML, "xml", "SonarLint IT XML");
 
     // Build project to have bytecode
-    String line = "mvn clean compile";
-    CommandLine cmdLine = CommandLine.parse(line);
-    DefaultExecutor executor = new DefaultExecutor();
+    var line = "mvn clean compile";
+    var cmdLine = CommandLine.parse(line);
+    var executor = new DefaultExecutor();
     executor.setWorkingDirectory(new File("projects/sample-java"));
-    int exitValue = executor.execute(cmdLine);
+    var exitValue = executor.execute(cmdLine);
     assertThat(exitValue).isZero();
   }
 
@@ -183,12 +183,12 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   private static void restoreProfile(String profile) {
-    File backupFile = new File("src/test/resources/" + profile);
+    var backupFile = new File("src/test/resources/" + profile);
     // XXX can't use RestoreRequest because of a bug
-    PostRequest request = new PostRequest("api/qualityprofiles/restore");
+    var request = new PostRequest("api/qualityprofiles/restore");
     request.setParam("organization", SONARCLOUD_ORGANIZATION);
     request.setPart("backup", new PostRequest.Part(MediaTypes.XML, backupFile));
-    try (WsResponse response = adminWsClient.wsConnector().call(request)) {
+    try (var response = adminWsClient.wsConnector().call(request)) {
     }
   }
 
@@ -210,7 +210,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
     globalProps.put("sonar.global.label", "It works");
     logs = new ArrayList<>();
 
-    NodeJsHelper nodeJsHelper = new NodeJsHelper();
+    var nodeJsHelper = new NodeJsHelper();
     nodeJsHelper.detect(null);
 
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
@@ -275,30 +275,30 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @Test
   public void parsingErrorJava() throws IOException {
-    String fileContent = "pac kage its; public class MyTest { }";
-    Path testFile = temp.newFile("MyTestParseError.java").toPath();
+    var fileContent = "pac kage its; public class MyTest { }";
+    var testFile = temp.newFile("MyTestParseError.java").toPath();
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
 
     updateGlobal();
     updateProject(projectKey(PROJECT_KEY_JAVA));
 
-    SaveIssueListener issueListener = new SaveIssueListener();
-    AnalysisResults results = engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA), testFile.toString()), issueListener, null, null);
+    var issueListener = new SaveIssueListener();
+    var results = engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA), testFile.toString()), issueListener, null, null);
 
     assertThat(results.failedAnalysisFiles()).hasSize(1);
   }
 
   @Test
   public void parsingErrorJavascript() throws IOException {
-    String fileContent = "asd asd";
-    Path testFile = temp.newFile("MyTest.js").toPath();
+    var fileContent = "asd asd";
+    var testFile = temp.newFile("MyTest.js").toPath();
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
 
     updateGlobal();
     updateProject(projectKey(PROJECT_KEY_JAVASCRIPT));
 
-    SaveIssueListener issueListener = new SaveIssueListener();
-    AnalysisResults results = engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVASCRIPT), testFile.toString()), issueListener, null, null);
+    var issueListener = new SaveIssueListener();
+    var results = engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVASCRIPT), testFile.toString()), issueListener, null, null);
 
     assertThat(results.failedAnalysisFiles()).hasSize(1);
   }
@@ -327,15 +327,15 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @Test
   public void verifyExtendedDescription() throws Exception {
-    String ruleKey = "java:S106";
+    var ruleKey = "java:S106";
 
-    String extendedDescription = "my dummy extended description";
+    var extendedDescription = "my dummy extended description";
 
     WsRequest request = new PostRequest("/api/rules/update")
       .setParam("key", ruleKey)
       .setParam("organization", SONARCLOUD_ORGANIZATION)
       .setParam("markdown_note", extendedDescription);
-    try (WsResponse response = adminWsClient.wsConnector().call(request)) {
+    try (var response = adminWsClient.wsConnector().call(request)) {
       assertThat(response.code()).isEqualTo(200);
     }
 
@@ -352,7 +352,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(projectKey(PROJECT_KEY_JAVASCRIPT));
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVASCRIPT), PROJECT_KEY_JAVASCRIPT, "src/Person.js"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -362,7 +362,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(projectKey(PROJECT_KEY_PHP));
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_PHP), PROJECT_KEY_PHP, "src/Math.php"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -372,7 +372,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(projectKey(PROJECT_KEY_PYTHON));
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_PYTHON), PROJECT_KEY_PYTHON, "src/hello.py"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -382,7 +382,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(projectKey(PROJECT_KEY_WEB));
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_WEB), PROJECT_KEY_WEB, "src/file.html"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -392,7 +392,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(projectKey(PROJECT_KEY_JAVA));
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA), PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
@@ -406,7 +406,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(projectKey(PROJECT_KEY_JAVA_HOTSPOT));
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
@@ -420,7 +420,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(projectKey(PROJECT_KEY_JAVA_PACKAGE));
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA_PACKAGE), PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
@@ -436,7 +436,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(projectKey(PROJECT_KEY_JAVA_EMPTY));
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA_EMPTY), PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
@@ -450,7 +450,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(projectKey(PROJECT_KEY_JAVA));
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA), PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
@@ -472,14 +472,14 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @Test
   public void downloadUserOrganizations() {
-    OrganizationApi helper = new ServerApi(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT)).organization();
+    var helper = new ServerApi(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT)).organization();
     assertThat(helper.listUserOrganizations(progress)).hasSize(1);
   }
 
   @Test
   public void getOrganization() {
-    OrganizationApi helper = new ServerApi(sonarcloudEndpoint(null), new SonarLintHttpClientOkHttpImpl(SC_CLIENT)).organization();
-    Optional<ServerOrganization> org = helper.getOrganization(SONARCLOUD_ORGANIZATION, progress);
+    var helper = new ServerApi(sonarcloudEndpoint(null), new SonarLintHttpClientOkHttpImpl(SC_CLIENT)).organization();
+    var org = helper.getOrganization(SONARCLOUD_ORGANIZATION, progress);
     assertThat(org).isPresent();
     assertThat(org.get().getKey()).isEqualTo(SONARCLOUD_ORGANIZATION);
     assertThat(org.get().getName()).isEqualTo("SonarLint IT Tests");
@@ -487,7 +487,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @Test
   public void getProject() {
-    ComponentApi api = new ServerApi(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT)).component();
+    var api = new ServerApi(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT)).component();
     assertThat(api.getProject(projectKey("foo"))).isNotPresent();
     assertThat(api.getProject(projectKey(PROJECT_KEY_RUBY))).isPresent();
   }
@@ -497,7 +497,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(projectKey(PROJECT_KEY_RUBY));
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_RUBY), PROJECT_KEY_RUBY, "src/hello.rb"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -507,7 +507,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(projectKey(PROJECT_KEY_KOTLIN));
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_KOTLIN), PROJECT_KEY_KOTLIN, "src/hello.kt"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -517,7 +517,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(projectKey(PROJECT_KEY_SCALA));
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_SCALA), PROJECT_KEY_SCALA, "src/Hello.scala"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -527,7 +527,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(projectKey(PROJECT_KEY_XML));
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_XML), PROJECT_KEY_XML, "src/foo.xml"), issueListener, (m, l) -> System.out.println(m), null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }

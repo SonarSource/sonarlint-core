@@ -70,22 +70,17 @@ public class SonarLintSensorStorage implements SensorStorage {
     if (!(issue instanceof DefaultSonarLintIssue)) {
       throw new IllegalArgumentException("Trying to store a non-SonarLint issue?");
     }
-    DefaultSonarLintIssue sonarLintIssue = (DefaultSonarLintIssue) issue;
+    var sonarLintIssue = (DefaultSonarLintIssue) issue;
     var inputComponent = sonarLintIssue.primaryLocation().inputComponent();
 
-    ActiveRuleAdapter activeRule = (ActiveRuleAdapter) activeRules.find(sonarLintIssue.ruleKey());
-    if (activeRule == null) {
-      // rule does not exist or is not enabled -> ignore the issue
+    var activeRule = (ActiveRuleAdapter) activeRules.find(sonarLintIssue.ruleKey());
+    if ((activeRule == null) || noSonar(inputComponent, sonarLintIssue)) {
       return;
     }
 
-    if (noSonar(inputComponent, sonarLintIssue)) {
-      return;
-    }
-
-    String primaryMessage = sonarLintIssue.primaryLocation().message();
-    List<org.sonarsource.sonarlint.core.analysis.api.Flow> flows = mapFlows(sonarLintIssue.flows());
-    List<QuickFix> quickFixes = sonarLintIssue.quickFixes();
+    var primaryMessage = sonarLintIssue.primaryLocation().message();
+    var flows = mapFlows(sonarLintIssue.flows());
+    var quickFixes = sonarLintIssue.quickFixes();
 
     var newIssue = new org.sonarsource.sonarlint.core.analysis.api.Issue(activeRule, primaryMessage,
       issue.primaryLocation().textRange(),

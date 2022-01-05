@@ -46,7 +46,7 @@ public class VersionUtils {
 
   static String getLibraryVersionFallback() {
     var version = "unknown";
-    URL resource = VersionUtils.class.getResource("/sl_core_version.txt");
+    var resource = VersionUtils.class.getResource("/sl_core_version.txt");
     if (resource != null) {
       try {
         version = IOUtils.toString(resource, StandardCharsets.UTF_8);

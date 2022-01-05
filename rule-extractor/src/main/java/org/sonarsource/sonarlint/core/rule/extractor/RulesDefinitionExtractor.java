@@ -47,7 +47,7 @@ public class RulesDefinitionExtractor {
       if (repoDef.isExternal()) {
         continue;
       }
-      Optional<Language> repoLanguage = Language.forKey(repoDef.language());
+      var repoLanguage = Language.forKey(repoDef.language());
       if (repoLanguage.isEmpty() || !enabledLanguages.contains(repoLanguage.get())) {
         continue;
       }

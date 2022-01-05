@@ -35,7 +35,7 @@ public class InMemoryIssueStore implements IssueStore {
 
   @Override
   public List<ServerIssue> load(String sqFilePath) {
-    List<ServerIssue> list = issuesMap.get(sqFilePath);
+    var list = issuesMap.get(sqFilePath);
     return list == null ? Collections.emptyList() : list;
   }
 

@@ -47,7 +47,7 @@ class ProtobufIssueStoreTests {
 
   @Test
   void contains_should_find_issues_after_added() throws IOException {
-    ProtobufIssueStore issueStore = newIssueStore();
+    var issueStore = newIssueStore();
 
     assertThat(issueStore.contains(key)).isFalse();
 
@@ -58,7 +58,7 @@ class ProtobufIssueStoreTests {
 
   @Test
   void contains_should_find_issues_even_if_empty_list() throws IOException {
-    ProtobufIssueStore issueStore = newIssueStore();
+    var issueStore = newIssueStore();
 
     assertThat(issueStore.contains(key)).isFalse();
 
@@ -68,7 +68,7 @@ class ProtobufIssueStoreTests {
 
   @Test
   void save_should_update() throws IOException {
-    ProtobufIssueStore issueStore = newIssueStore();
+    var issueStore = newIssueStore();
 
     Collection<Trackable> issues = Arrays.asList(newMockTrackable(), newMockTrackable());
     issueStore.save(key, issues);
@@ -80,7 +80,7 @@ class ProtobufIssueStoreTests {
 
   @Test
   void read_should_return_issues_with_matching_rule_keys() throws IOException {
-    ProtobufIssueStore issueStore = newIssueStore();
+    var issueStore = newIssueStore();
 
     Collection<Trackable> issues = Arrays.asList(newMockTrackable(), newMockTrackable());
     issueStore.save(key, issues);
@@ -91,13 +91,13 @@ class ProtobufIssueStoreTests {
 
   @Test
   void read_should_return_null_when_no_issues() throws IOException {
-    ProtobufIssueStore issueStore = newIssueStore();
+    var issueStore = newIssueStore();
     assertThat(issueStore.read("nonexistent")).isNull();
   }
 
   @Test
   void clear_should_empty_the_store() throws IOException {
-    ProtobufIssueStore issueStore = newIssueStore();
+    var issueStore = newIssueStore();
 
     issueStore.save(key, Collections.emptyList());
     assertThat(issueStore.contains(key)).isTrue();
@@ -108,12 +108,12 @@ class ProtobufIssueStoreTests {
 
   @Test
   void clean_should_remove_entries_without_valid_files(@TempDir Path base) throws IOException {
-    Path projectPath = base.resolve("project");
-    ProtobufIssueStore issueStore = new ProtobufIssueStore(base.resolve("store"), projectPath);
+    var projectPath = base.resolve("project");
+    var issueStore = new ProtobufIssueStore(base.resolve("store"), projectPath);
 
-    String nonexistentFileKey = "nonexistent";
-    String validFileKey = "some/relative/path";
-    Path validFile = projectPath.resolve(validFileKey);
+    var nonexistentFileKey = "nonexistent";
+    var validFileKey = "some/relative/path";
+    var validFile = projectPath.resolve(validFileKey);
     Files.createDirectories(validFile.getParent());
     Files.createFile(validFile);
 
@@ -130,7 +130,7 @@ class ProtobufIssueStoreTests {
 
   @Test
   void should_fail_to_create_issue_store_if_cannot_write_to_filesystem(@TempDir Path base) throws IOException {
-    Path storePath = base.resolve("store");
+    var storePath = base.resolve("store");
     // the presence of a file will effectively prevent writing to the store
     Files.createFile(storePath);
 
@@ -139,8 +139,8 @@ class ProtobufIssueStoreTests {
 
   @Test
   void should_fail_to_save_issues_if_cannot_write_to_filesystem(@TempDir Path base) throws IOException {
-    Path storePath = base.resolve("store");
-    ProtobufIssueStore issueStore = new ProtobufIssueStore(storePath, base.resolve("project"));
+    var storePath = base.resolve("store");
+    var issueStore = new ProtobufIssueStore(storePath, base.resolve("project"));
 
     Files.delete(storePath);
     // the presence of a file will effectively prevent writing to the store
@@ -150,7 +150,7 @@ class ProtobufIssueStoreTests {
   }
 
   private Trackable newMockTrackable() {
-    Trackable trackable = mock(Trackable.class);
+    var trackable = mock(Trackable.class);
     when(trackable.getRuleKey()).thenReturn("ruleKey" + counter.incrementAndGet());
     when(trackable.getMessage()).thenReturn("message" + counter.incrementAndGet());
 
@@ -162,8 +162,8 @@ class ProtobufIssueStoreTests {
   }
 
   private ProtobufIssueStore newIssueStore() throws IOException {
-    Path storePath = base.resolve("store");
-    Path projectPath = base.resolve("project");
+    var storePath = base.resolve("store");
+    var projectPath = base.resolve("project");
     return new ProtobufIssueStore(storePath, projectPath);
   }
 

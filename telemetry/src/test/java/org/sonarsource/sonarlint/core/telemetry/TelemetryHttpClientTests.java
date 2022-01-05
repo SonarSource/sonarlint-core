@@ -59,7 +59,7 @@ class TelemetryHttpClientTests {
   void opt_out() throws Exception {
     mockServer.addResponse("/", new MockResponse());
     underTest.optOut(new TelemetryLocalStorage(), attributes);
-    RecordedRequest takeRequest = mockServer.takeRequest();
+    var takeRequest = mockServer.takeRequest();
     assertThat(takeRequest.getMethod()).isEqualTo("DELETE");
     assertThat(takeRequest.getBody().readUtf8())
       .matches("\\{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",.*\\}");
@@ -69,7 +69,7 @@ class TelemetryHttpClientTests {
   void upload() throws Exception {
     mockServer.addResponse("/", new MockResponse());
     underTest.upload(new TelemetryLocalStorage(), attributes);
-    RecordedRequest takeRequest = mockServer.takeRequest();
+    var takeRequest = mockServer.takeRequest();
     assertThat(takeRequest.getMethod()).isEqualTo("POST");
     assertThat(takeRequest.getBody().readUtf8())
       .matches("\\{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",.*\\}");
@@ -78,14 +78,14 @@ class TelemetryHttpClientTests {
   @Test
   void should_not_crash_when_cannot_upload() throws Exception {
     underTest.upload(new TelemetryLocalStorage(), attributes);
-    RecordedRequest takeRequest = mockServer.takeRequest();
+    var takeRequest = mockServer.takeRequest();
     assertThat(takeRequest.getMethod()).isEqualTo("POST");
   }
 
   @Test
   void should_not_crash_when_cannot_opt_out() throws Exception {
     underTest.optOut(new TelemetryLocalStorage(), attributes);
-    RecordedRequest takeRequest = mockServer.takeRequest();
+    var takeRequest = mockServer.takeRequest();
     assertThat(takeRequest.getMethod()).isEqualTo("DELETE");
   }
 

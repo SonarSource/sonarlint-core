@@ -60,7 +60,7 @@ class ConnectedFileExclusionsMediumTests {
       .create(slHome);
     projectStorage = storage.getProjectStorages().get(0);
 
-    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.builder()
       .setConnectionId(SERVER_ID)
       .setSonarLintUserHome(slHome)
       .setStorageRoot(storage.getPath())
@@ -79,12 +79,12 @@ class ConnectedFileExclusionsMediumTests {
 
   @Test
   void fileInclusionsExclusions() throws Exception {
-    ClientInputFile mainFile1 = prepareInputFile("foo.xoo", "function xoo() {}", false);
-    ClientInputFile mainFile2 = prepareInputFile("src/foo2.xoo", "function xoo() {}", false);
-    ClientInputFile testFile1 = prepareInputFile("fooTest.xoo", "function xoo() {}", true);
-    ClientInputFile testFile2 = prepareInputFile("test/foo2Test.xoo", "function xoo() {}", true);
+    var mainFile1 = prepareInputFile("foo.xoo", "function xoo() {}", false);
+    var mainFile2 = prepareInputFile("src/foo2.xoo", "function xoo() {}", false);
+    var testFile1 = prepareInputFile("fooTest.xoo", "function xoo() {}", true);
+    var testFile2 = prepareInputFile("test/foo2Test.xoo", "function xoo() {}", true);
 
-    int result = count(mainFile1, mainFile2, testFile1, testFile2);
+    var result = count(mainFile1, mainFile2, testFile1, testFile2);
     assertThat(result).isEqualTo(4);
 
     storeProjectSettings(Map.of("sonar.inclusions", "src/**"));
@@ -118,15 +118,15 @@ class ConnectedFileExclusionsMediumTests {
 
   private int count(ClientInputFile mainFile1, ClientInputFile mainFile2, ClientInputFile testFile1, ClientInputFile testFile2) {
     List<String> filePaths = Arrays.asList(mainFile1.getPath(), mainFile2.getPath(), testFile1.getPath(), testFile2.getPath());
-    ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "");
+    var projectBinding = new ProjectBinding(PROJECT_KEY, "", "");
     List<String> result = sonarlint.getExcludedFiles(projectBinding, filePaths, Function.identity(), f -> f.contains("Test"));
     return filePaths.size() - result.size();
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
-    final File file = new File(baseDir, relativePath);
+    final var file = new File(baseDir, relativePath);
     FileUtils.write(file, content, StandardCharsets.UTF_8);
-    ClientInputFile inputFile = TestUtils.createInputFile(file.toPath(), relativePath, isTest);
+    var inputFile = TestUtils.createInputFile(file.toPath(), relativePath, isTest);
     return inputFile;
   }
 }

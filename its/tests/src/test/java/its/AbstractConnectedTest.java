@@ -72,8 +72,8 @@ public abstract class AbstractConnectedTest {
 
     @Override
     public Response post(String url, String contentType, String bodyContent) {
-      RequestBody body = RequestBody.create(MediaType.get(contentType), bodyContent);
-      Request request = new Request.Builder()
+      var body = RequestBody.create(MediaType.get(contentType), bodyContent);
+      var request = new Request.Builder()
         .url(url)
         .post(body)
         .build();
@@ -82,7 +82,7 @@ public abstract class AbstractConnectedTest {
 
     @Override
     public Response get(String url) {
-      Request request = new Request.Builder()
+      var request = new Request.Builder()
         .url(url)
         .build();
       return executeRequest(request);
@@ -90,15 +90,15 @@ public abstract class AbstractConnectedTest {
 
     @Override
     public CompletableFuture<Response> getAsync(String url) {
-      Request request = new Request.Builder()
+      var request = new Request.Builder()
         .url(url)
         .build();
       return executeRequestAsync(request);
     }
 
     private CompletableFuture<Response> executeRequestAsync(Request request) {
-      Call call = okClient.newCall(request);
-      CompletableFuture<Response> futureResponse = new CompletableFuture<Response>()
+      var call = okClient.newCall(request);
+      var futureResponse = new CompletableFuture<Response>()
         .whenComplete((response, error) -> {
           if (error instanceof CancellationException) {
             call.cancel();
@@ -120,8 +120,8 @@ public abstract class AbstractConnectedTest {
 
     @Override
     public Response delete(String url, String contentType, String bodyContent) {
-      RequestBody body = RequestBody.create(MediaType.get(contentType), bodyContent);
-      Request request = new Request.Builder()
+      var body = RequestBody.create(MediaType.get(contentType), bodyContent);
+      var request = new Request.Builder()
         .url(url)
         .delete(body)
         .build();
@@ -156,7 +156,7 @@ public abstract class AbstractConnectedTest {
 
         @Override
         public String bodyAsString() {
-          try (ResponseBody body = wrapped.body()) {
+          try (var body = wrapped.body()) {
             return body.string();
           } catch (IOException e) {
             throw new IllegalStateException("Unable to read response body: " + e.getMessage(), e);
@@ -194,7 +194,7 @@ public abstract class AbstractConnectedTest {
   }
 
   protected static WsClient newAdminWsClient(Orchestrator orchestrator) {
-    com.sonar.orchestrator.container.Server server = orchestrator.getServer();
+    var server = orchestrator.getServer();
     return WsClientFactories.getDefault().newClient(HttpConnector.newBuilder()
       .url(server.getUrl())
       .credentials(com.sonar.orchestrator.container.Server.ADMIN_LOGIN, com.sonar.orchestrator.container.Server.ADMIN_PASSWORD)
@@ -202,8 +202,8 @@ public abstract class AbstractConnectedTest {
   }
 
   protected ConnectedAnalysisConfiguration createAnalysisConfiguration(String projectKey, String projectDir, String filePath, String... properties) throws IOException {
-    final Path baseDir = Paths.get("projects/" + projectDir).toAbsolutePath();
-    final Path path = baseDir.resolve(filePath);
+    final var baseDir = Paths.get("projects/" + projectDir).toAbsolutePath();
+    final var path = baseDir.resolve(filePath);
     return ConnectedAnalysisConfiguration.builder()
       .setProjectKey(projectKey)
       .setBaseDir(new File("projects/" + projectDir).toPath().toAbsolutePath())
@@ -213,7 +213,7 @@ public abstract class AbstractConnectedTest {
   }
 
   protected ConnectedAnalysisConfiguration createAnalysisConfiguration(String projectKey, String absoluteFilePath) throws IOException {
-    final Path path = Paths.get(absoluteFilePath).toAbsolutePath();
+    final var path = Paths.get(absoluteFilePath).toAbsolutePath();
     return ConnectedAnalysisConfiguration.builder()
       .setProjectKey(projectKey)
       .setBaseDir(path.getParent())
@@ -224,10 +224,10 @@ public abstract class AbstractConnectedTest {
   static Map<String, String> toMap(String[] keyValues) {
     Preconditions.checkArgument(keyValues.length % 2 == 0, "Must be an even number of key/values");
     Map<String, String> map = Maps.newHashMap();
-    int index = 0;
+    var index = 0;
     while (index < keyValues.length) {
-      String key = keyValues[index++];
-      String value = keyValues[index++];
+      var key = keyValues[index++];
+      var value = keyValues[index++];
       map.put(key, value);
     }
     return map;

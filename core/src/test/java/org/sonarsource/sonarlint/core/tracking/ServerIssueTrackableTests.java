@@ -38,7 +38,7 @@ import static org.mockito.Mockito.when;
   void prepare() {
     when(serverIssue.lineHash()).thenReturn("blah");
     when(serverIssue.resolution()).thenReturn("non-empty");
-    TextRange serverTextRange = new TextRange(22);
+    var serverTextRange = new TextRange(22);
     when(serverIssue.getTextRange()).thenReturn(serverTextRange);
     trackable = new ServerIssueTrackable(serverIssue);
   }

@@ -67,9 +67,9 @@ public class SonarLintPathPattern {
   }
 
   public boolean match(String filePath, boolean caseSensitiveFileExtension) {
-    String path = PathUtils.sanitize(filePath);
+    var path = PathUtils.sanitize(filePath);
     if (!caseSensitiveFileExtension) {
-      String extension = sanitizeExtension(FilenameUtils.getExtension(path));
+      var extension = sanitizeExtension(FilenameUtils.getExtension(path));
       if (StringUtils.isNotBlank(extension)) {
         path = StringUtils.removeEndIgnoreCase(path, extension);
         path = path + extension;

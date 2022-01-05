@@ -103,11 +103,11 @@ public final class DefaultClientIssue implements Issue {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
+    var sb = new StringBuilder();
     sb.append("[");
     sb.append("rule=").append(ruleKey);
     sb.append(", severity=").append(severity);
-    Integer startLine = getStartLine();
+    var startLine = getStartLine();
     if (startLine != null) {
       sb.append(", line=").append(startLine);
     }

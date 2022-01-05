@@ -79,7 +79,7 @@ public abstract class AbstractAnalysisConfiguration {
       if (inputFile.isTest()) {
         sb.append(" [test]");
       }
-      Language language = inputFile.language();
+      var language = inputFile.language();
       if (language != null) {
         sb.append(" [" + language.getLanguageKey() + "]");
       }
@@ -89,7 +89,7 @@ public abstract class AbstractAnalysisConfiguration {
   }
 
   private static String getCharsetLabel(ClientInputFile inputFile) {
-    Charset charset = inputFile.getCharset();
+    var charset = inputFile.getCharset();
     return charset != null ? charset.displayName() : "default";
   }
 

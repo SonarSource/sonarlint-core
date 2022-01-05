@@ -56,7 +56,7 @@ class ConnectedStorageProblemsMediumTests {
   @Test
   void test_no_storage(@TempDir Path slHome, @TempDir Path baseDir) {
 
-    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.builder()
       .setConnectionId("localhost")
       .setSonarLintUserHome(slHome)
       .setLogOutput((msg, level) -> {
@@ -69,26 +69,26 @@ class ConnectedStorageProblemsMediumTests {
 
     assertThat(sonarlint.allProjectsByKey()).isEmpty();
 
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails(null, null, "rule", null));
+    var thrown = assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails(null, null, "rule", null));
     assertThat(thrown).hasMessage("Unable to find rule details for 'rule'");
 
     var analysisConfig = ConnectedAnalysisConfiguration.builder()
       .setBaseDir(baseDir)
       .build();
 
-    StorageException thrown2 = assertThrows(StorageException.class, () -> sonarlint.analyze(analysisConfig, i -> {
+    var thrown2 = assertThrows(StorageException.class, () -> sonarlint.analyze(analysisConfig, i -> {
     }, null, null));
     assertThat(thrown2).hasMessage("Missing storage for connection");
   }
 
   @Test
   void test_stale_storage(@TempDir Path slHome, @TempDir Path baseDir) {
-    String storageId = "localhost";
+    var storageId = "localhost";
     newStorage(storageId)
       .stale()
       .create(slHome);
 
-    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.builder()
       .setConnectionId(storageId)
       .setSonarLintUserHome(slHome)
       .setLogOutput((msg, level) -> {
@@ -101,32 +101,32 @@ class ConnectedStorageProblemsMediumTests {
 
     assertThat(sonarlint.allProjectsByKey()).isEmpty();
 
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails(null, null, "rule", null));
+    var thrown = assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails(null, null, "rule", null));
     assertThat(thrown).hasMessage("Unable to find rule details for 'rule'");
 
     var analysisConfig = ConnectedAnalysisConfiguration.builder()
       .setBaseDir(baseDir)
       .build();
 
-    StorageException thrown2 = assertThrows(StorageException.class, () -> sonarlint.analyze(analysisConfig, i -> {
+    var thrown2 = assertThrows(StorageException.class, () -> sonarlint.analyze(analysisConfig, i -> {
     }, null, null));
     assertThat(thrown2).hasMessage("Outdated storage for connection");
   }
 
   @Test
   void corrupted_plugin_should_not_prevent_startup(@TempDir Path slHome, @TempDir Path baseDir) throws Exception {
-    String storageId = "localhost";
+    var storageId = "localhost";
     var storage = newStorage(storageId)
       .withJSPlugin()
       .withJavaPlugin()
       .create(slHome);
 
-    Path cachedJSPlugin = storage.getPluginPaths().get(0);
+    var cachedJSPlugin = storage.getPluginPaths().get(0);
     FileUtils.write(cachedJSPlugin.toFile(), "corrupted jar", StandardCharsets.UTF_8);
 
     List<String> logs = new CopyOnWriteArrayList<>();
 
-    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.builder()
       .setConnectionId(storageId)
       .setSonarLintUserHome(slHome)
       .setStorageRoot(storage.getPath())
@@ -138,7 +138,7 @@ class ConnectedStorageProblemsMediumTests {
 
     assertThat(logs).contains("Unable to load plugin " + cachedJSPlugin);
 
-    ClientInputFile inputFile = prepareJavaInputFile(baseDir);
+    var inputFile = prepareJavaInputFile(baseDir);
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
@@ -163,9 +163,9 @@ class ConnectedStorageProblemsMediumTests {
   }
 
   private ClientInputFile prepareInputFile(Path baseDir, String relativePath, String content, final boolean isTest) throws IOException {
-    final File file = new File(baseDir.toFile(), relativePath);
+    final var file = new File(baseDir.toFile(), relativePath);
     FileUtils.write(file, content, StandardCharsets.UTF_8);
-    ClientInputFile inputFile = TestUtils.createInputFile(file.toPath(), relativePath, isTest);
+    var inputFile = TestUtils.createInputFile(file.toPath(), relativePath, isTest);
     return inputFile;
   }
 

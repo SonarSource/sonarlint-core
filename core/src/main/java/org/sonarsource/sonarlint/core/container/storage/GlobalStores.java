@@ -34,7 +34,7 @@ public class GlobalStores {
 
   public GlobalStores(ConnectedGlobalConfiguration globalConfiguration) {
     storageRoot = globalConfiguration.getStorageRoot().resolve(encodeForFs(globalConfiguration.getConnectionId()));
-    Path globalStorageRoot = storageRoot.resolve("global");
+    var globalStorageRoot = storageRoot.resolve("global");
     globalStorage = new ServerStorage(globalStorageRoot);
     this.serverProjectsStore = new ServerProjectsStore(globalStorage);
     this.serverInfoStore = new ServerInfoStore(globalStorage);

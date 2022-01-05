@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class MockWebServerExtensionWithProtobuf extends MockWebServerExtension {
 
   public void addProtobufResponse(String path, Message m) {
-    try (Buffer b = new Buffer()) {
+    try (var b = new Buffer()) {
       m.writeTo(b.outputStream());
       responsesByPath.put(path, new MockResponse().setBody(b));
     } catch (IOException e) {
@@ -45,7 +45,7 @@ public class MockWebServerExtensionWithProtobuf extends MockWebServerExtension {
   }
 
   public void addProtobufResponseDelimited(String path, Message... m) {
-    try (Buffer b = new Buffer()) {
+    try (var b = new Buffer()) {
       writeMessages(b.outputStream(), Arrays.asList(m).iterator());
       responsesByPath.put(path, new MockResponse().setBody(b));
     }

@@ -37,7 +37,7 @@ class QualityProfileApiTest {
 
   @Test
   void should_throw_when_the_endpoint_is_not_found() {
-    QualityProfileApi underTest = new QualityProfileApi(mockServer.serverApiHelper());
+    var underTest = new QualityProfileApi(mockServer.serverApiHelper());
 
     mockServer.addResponse("/api/qualityprofiles/search.protobuf?project=projectKey", new MockResponse().setResponseCode(404));
 
@@ -46,7 +46,7 @@ class QualityProfileApiTest {
 
   @Test
   void should_return_the_quality_profiles_of_a_given_project() {
-    QualityProfileApi underTest = new QualityProfileApi(mockServer.serverApiHelper());
+    var underTest = new QualityProfileApi(mockServer.serverApiHelper());
 
     mockServer.addProtobufResponse("/api/qualityprofiles/search.protobuf?project=projectKey", Qualityprofiles.SearchWsResponse.newBuilder()
       .addProfiles(Qualityprofiles.SearchWsResponse.QualityProfile.newBuilder()

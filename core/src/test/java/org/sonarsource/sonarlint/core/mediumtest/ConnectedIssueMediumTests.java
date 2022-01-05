@@ -90,10 +90,10 @@ class ConnectedIssueMediumTests {
       .withProject("stale_module", ProjectStorageFixture.ProjectStorageBuilder::stale)
       .create(slHome);
 
-    NodeJsHelper nodeJsHelper = new NodeJsHelper();
+    var nodeJsHelper = new NodeJsHelper();
     nodeJsHelper.detect(null);
 
-    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.builder()
       .setConnectionId(SERVER_ID)
       .setSonarLintUserHome(slHome)
       .setStorageRoot(storage.getPath())
@@ -122,7 +122,7 @@ class ConnectedIssueMediumTests {
   @Test
   void testStaleProject(@TempDir Path baseDir) {
     assertThat(sonarlint.getProjectStorageStatus("stale_module").isStale()).isTrue();
-    ConnectedAnalysisConfiguration config = ConnectedAnalysisConfiguration.builder()
+    var config = ConnectedAnalysisConfiguration.builder()
       .setProjectKey("stale_module")
       .setBaseDir(baseDir)
       .setModuleKey("key")
@@ -146,7 +146,7 @@ class ConnectedIssueMediumTests {
 
   @Test
   void simpleJavaBinded(@TempDir Path baseDir) throws Exception {
-    ClientInputFile inputFile = prepareJavaInputFile(baseDir);
+    var inputFile = prepareJavaInputFile(baseDir);
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=java:S1481", Rules.Rule.newBuilder().build());
 
     // Severity of java:S1481 changed to BLOCKER in the quality profile
@@ -195,7 +195,7 @@ class ConnectedIssueMediumTests {
 
   @Test
   void emptyQPJava(@TempDir Path baseDir) throws IOException {
-    ClientInputFile inputFile = prepareJavaInputFile(baseDir);
+    var inputFile = prepareJavaInputFile(baseDir);
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
@@ -234,9 +234,9 @@ class ConnectedIssueMediumTests {
   @Test
   void should_forward_module_file_event_to_listener() {
     // should not be located in global container in real life but easier for testing
-    FakeModuleFileListener moduleFileListener = new FakeModuleFileListener();
+    var moduleFileListener = new FakeModuleFileListener();
     sonarlint.getAnalysisContainer().add(moduleFileListener);
-    OnDiskTestClientInputFile clientInputFile = new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null);
+    var clientInputFile = new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null);
     sonarlint.declareModule(new ClientModuleInfo("moduleKey", anEmptyClientFileSystem()));
 
     sonarlint.fireModuleFileEvent("moduleKey", ClientModuleFileEvent.of(clientInputFile, ModuleFileEvent.Type.CREATED));
@@ -267,7 +267,7 @@ class ConnectedIssueMediumTests {
   }
 
   private ClientInputFile prepareInputFile(Path baseDir, String relativePath, String content, final boolean isTest) throws IOException {
-    final File file = new File(baseDir.toFile(), relativePath);
+    final var file = new File(baseDir.toFile(), relativePath);
     FileUtils.write(file, content);
     return TestUtils.createInputFile(file.toPath(), relativePath, isTest);
   }

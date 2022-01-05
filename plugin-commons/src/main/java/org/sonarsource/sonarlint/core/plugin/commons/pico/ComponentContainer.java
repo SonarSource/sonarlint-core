@@ -125,7 +125,7 @@ public class ComponentContainer {
 
   static RuntimeException unwrapPicoException(RuntimeException e) {
     if (e instanceof PicoLifecycleException) {
-      Throwable cause = e.getCause();
+      var cause = e.getCause();
       if (cause != null) {
         if ("wrapper".equals(cause.getMessage()) && cause.getCause() != null) {
           return unchecked(cause.getCause());
@@ -205,7 +205,7 @@ public class ComponentContainer {
   }
 
   public ComponentContainer addSingleton(Object component) {
-    Object key = componentKeys.of(component);
+    var key = componentKeys.of(component);
     if (component instanceof ComponentAdapter) {
       pico.addAdapter((ComponentAdapter<?>) component);
     } else {
@@ -220,7 +220,7 @@ public class ComponentContainer {
   }
 
   public ComponentContainer addExtension(@Nullable String pluginKey, Object extension) {
-    Object key = componentKeys.of(extension);
+    var key = componentKeys.of(extension);
     try {
       pico.as(Characteristics.CACHE).addComponent(key, extension);
     } catch (Throwable t) {

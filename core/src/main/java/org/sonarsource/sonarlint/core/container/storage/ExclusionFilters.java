@@ -75,7 +75,7 @@ public class ExclusionFilters {
     }
 
     if (inclusionPatterns.length > 0) {
-      boolean matchInclusion = false;
+      var matchInclusion = false;
       for (SonarLintPathPattern pattern : inclusionPatterns) {
         matchInclusion |= pattern.match(relativePath);
       }
@@ -114,7 +114,7 @@ public class ExclusionFilters {
   }
 
   SonarLintPathPattern[] prepareMainExclusions() {
-    String[] patterns = ArrayUtils.addAll(
+    var patterns = ArrayUtils.addAll(
       exclusionSettings.sourceExclusions(), computeTestInclusions());
     return SonarLintPathPattern.create(patterns);
   }

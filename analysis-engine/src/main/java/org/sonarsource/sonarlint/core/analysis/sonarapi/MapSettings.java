@@ -125,7 +125,7 @@ public class MapSettings extends Settings {
   @CheckForNull
   @Override
   public String getString(String key) {
-    String effectiveKey = definitions.validKey(key);
+    var effectiveKey = definitions.validKey(key);
     // default values cannot be encrypted, so return value as-is.
     return getRawString(effectiveKey)
       .orElseGet(() -> getDefaultValue(effectiveKey));
@@ -257,8 +257,8 @@ public class MapSettings extends Settings {
    */
   @Override
   public String[] getStringArray(String key) {
-    String effectiveKey = definitions.validKey(key);
-    Optional<PropertyDefinition> def = getDefinition(effectiveKey);
+    var effectiveKey = definitions.validKey(key);
+    var def = getDefinition(effectiveKey);
     if ((def.isPresent()) && (def.get().multiValues())) {
       var value = getString(key);
       if (value == null) {

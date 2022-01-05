@@ -69,7 +69,7 @@ class ProjectBranchesApiTest {
         "  ]\n" +
         "}");
 
-    Collection<String> branches = underTest.getAllBranchNames(PROJECT_KEY);
+    var branches = underTest.getAllBranchNames(PROJECT_KEY);
 
     assertThat(branches).hasSize(2);
   }
@@ -83,7 +83,7 @@ class ProjectBranchesApiTest {
         "  ]\n" +
         "}");
 
-    Collection<String> branches = underTest.getAllBranchNames(PROJECT_KEY);
+    var branches = underTest.getAllBranchNames(PROJECT_KEY);
 
     assertThat(branches).isEmpty();
   }

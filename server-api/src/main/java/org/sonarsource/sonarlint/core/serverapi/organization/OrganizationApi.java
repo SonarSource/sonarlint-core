@@ -58,7 +58,7 @@ public class OrganizationApi {
   }
 
   public Optional<ServerOrganization> fetchOrganization(String organizationKey, ProgressMonitor progress) {
-    String url = "api/organizations/search.protobuf?organizations=" + UrlUtils.urlEncode(organizationKey);
+    var url = "api/organizations/search.protobuf?organizations=" + UrlUtils.urlEncode(organizationKey);
     return getPaginatedOrganizations(url, progress)
       .stream()
       .findFirst();

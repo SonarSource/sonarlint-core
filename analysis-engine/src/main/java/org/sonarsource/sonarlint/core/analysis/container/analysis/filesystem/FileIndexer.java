@@ -78,7 +78,7 @@ public class FileIndexer {
       progressReport.stop(null);
       throw e;
     }
-    int totalIndexed = progress.count();
+    var totalIndexed = progress.count();
     progressReport.stop(totalIndexed + " " + pluralizeFiles(totalIndexed) + " indexed");
     analysisResult.setIndexedFileCount(totalIndexed);
   }
@@ -94,7 +94,7 @@ public class FileIndexer {
   }
 
   private void indexFile(InputFileIndex inputFileCache, Progress progress, ClientInputFile file) {
-    SonarLintInputFile inputFile = inputFileBuilder.create(file);
+    var inputFile = inputFileBuilder.create(file);
     if (accept(inputFile)) {
       analysisResult.setLanguageForFile(file, inputFile.getLanguage());
       indexFile(inputFileCache, progress, inputFile);
@@ -126,7 +126,7 @@ public class FileIndexer {
         throw MessageException.of("File " + inputFile + " can't be indexed twice.");
       }
       indexed.add(inputFile.uri());
-      int size = indexed.size();
+      var size = indexed.size();
       progressReport.message(() -> size + " files indexed...  (last one was " + inputFile.uri() + ")");
     }
 

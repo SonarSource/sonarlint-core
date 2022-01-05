@@ -26,6 +26,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEng
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
+import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.issuetracking.CachingIssueTracker;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
@@ -44,7 +45,7 @@ class ServerIssueTrackerTests {
 
   @Test
   void should_get_issues_from_engine_without_downloading() {
-    ServerIssueTracker tracker = new ServerIssueTracker(mock(CachingIssueTracker.class));
+    var tracker = new ServerIssueTracker(mock(CachingIssueTracker.class));
     tracker.update(engine, projectBinding, Collections.singleton(filePath));
     verify(engine).getServerIssues(projectBinding, filePath);
     verifyNoMoreInteractions(engine);
@@ -52,7 +53,7 @@ class ServerIssueTrackerTests {
 
   @Test
   void should_download_issues_from_engine() {
-    HttpClient client = MockWebServerExtensionWithProtobuf.httpClient();
+    var client = MockWebServerExtension.httpClient();
     tracker.update(endpoint, client, engine, projectBinding, Collections.singleton(filePath), true);
     verify(engine).downloadServerIssues(endpoint, client, projectBinding, filePath, true, null);
     verifyNoMoreInteractions(engine);
@@ -60,7 +61,7 @@ class ServerIssueTrackerTests {
 
   @Test
   void should_get_issues_from_engine_if_download_failed() {
-    HttpClient client = MockWebServerExtensionWithProtobuf.httpClient();
+    var client = MockWebServerExtension.httpClient();
     when(engine.downloadServerIssues(endpoint, client, projectBinding, filePath, false, null)).thenThrow(new DownloadException());
     tracker.update(endpoint, client, engine, projectBinding, Collections.singleton(filePath), false);
     verify(engine).downloadServerIssues(endpoint, client, projectBinding, filePath, false, null);

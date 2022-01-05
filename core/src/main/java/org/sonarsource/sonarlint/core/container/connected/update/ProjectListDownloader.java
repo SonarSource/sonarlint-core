@@ -38,7 +38,7 @@ public class ProjectListDownloader {
   }
 
   public Map<String, ServerProject> fetch(ProgressMonitor progress) {
-    List<ServerProject> allProjects = componentApi.getAllProjects(progress);
+    var allProjects = componentApi.getAllProjects(progress);
     store.store(allProjects);
     return store.getAll();
   }

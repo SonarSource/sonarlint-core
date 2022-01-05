@@ -67,10 +67,10 @@ public class TextSearchIndex<T> {
     if (objToWordFrequency.containsKey(obj)) {
       throw new IllegalArgumentException("Already indexed");
     }
-    List<String> terms = tokenize(text);
+    var terms = tokenize(text);
     objToWordFrequency.put(obj, terms.size());
 
-    int i = 0;
+    var i = 0;
     for (String s : terms) {
       addToDictionary(s, i, obj);
       i++;
@@ -84,7 +84,7 @@ public class TextSearchIndex<T> {
    * @return A map of results reverse-sorted by value (score). Can be empty, but never null
    */
   public Map<T, Double> search(String query) {
-    List<String> terms = tokenize(query);
+    var terms = tokenize(query);
 
     if (terms.isEmpty()) {
       return Collections.emptyMap();
@@ -93,11 +93,11 @@ public class TextSearchIndex<T> {
     List<SearchResult> matched;
 
     // positional search
-    Iterator<String> it = terms.iterator();
+    var it = terms.iterator();
     matched = searchTerm(it.next());
 
     while (it.hasNext()) {
-      List<SearchResult> termMatches = searchTerm(it.next());
+      var termMatches = searchTerm(it.next());
       matched = matchPositional(matched, termMatches, 1);
 
       if (matched.isEmpty()) {
@@ -118,7 +118,7 @@ public class TextSearchIndex<T> {
           continue;
         }
 
-        int dist = e2.lastIdx - e1.lastIdx;
+        var dist = e2.lastIdx - e1.lastIdx;
         if (dist > 0 && dist <= maxDistance) {
           e2.score += e1.score;
           matches.add(e2);
@@ -132,8 +132,8 @@ public class TextSearchIndex<T> {
     Map<T, Double> objToScore = new HashMap<>();
 
     for (SearchResult e : entries) {
-      double score = e.score / objToWordFrequency.get(e.obj);
-      Double previousScore = objToScore.get(e.obj);
+      var score = e.score / objToWordFrequency.get(e.obj);
+      var previousScore = objToScore.get(e.obj);
 
       if (previousScore == null || previousScore < score) {
         objToScore.put(e.obj, score);
@@ -151,12 +151,12 @@ public class TextSearchIndex<T> {
   private List<SearchResult> searchTerm(String termPrefix) {
     List<SearchResult> entries = new LinkedList<>();
 
-    SortedMap<String, List<DictEntry>> tailMap = termToObj.tailMap(termPrefix);
+    var tailMap = termToObj.tailMap(termPrefix);
     for (Entry<String, List<DictEntry>> e : tailMap.entrySet()) {
       if (!e.getKey().startsWith(termPrefix)) {
         break;
       }
-      double score = ((double) termPrefix.length()) / e.getKey().length();
+      var score = ((double) termPrefix.length()) / e.getKey().length();
       e.getValue().stream()
         .map(v -> new SearchResult(score, v.obj, v.tokenIndex))
         .forEach(entries::add);
@@ -178,7 +178,7 @@ public class TextSearchIndex<T> {
   }
 
   private void addToDictionary(String token, int tokenIndex, T obj) {
-    List<DictEntry> entries = termToObj.get(token);
+    var entries = termToObj.get(token);
 
     if (entries == null) {
       entries = new LinkedList<>();
@@ -189,7 +189,7 @@ public class TextSearchIndex<T> {
   }
 
   private static List<String> tokenize(String text) {
-    String[] split = text.split(SPLIT_PATTERN);
+    var split = text.split(SPLIT_PATTERN);
     List<String> terms = new ArrayList<>(split.length);
 
     for (String s : split) {

@@ -51,10 +51,10 @@ class ConnectedEmbeddedPluginMediumTests {
       .withProject("stale_module", ProjectStorageFixture.ProjectStorageBuilder::stale)
       .create(slHome);
 
-    NodeJsHelper nodeJsHelper = new NodeJsHelper();
+    var nodeJsHelper = new NodeJsHelper();
     nodeJsHelper.detect(null);
 
-    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.builder()
       .setConnectionId(SERVER_ID)
       .setSonarLintUserHome(slHome)
       .setStorageRoot(storage.getPath())

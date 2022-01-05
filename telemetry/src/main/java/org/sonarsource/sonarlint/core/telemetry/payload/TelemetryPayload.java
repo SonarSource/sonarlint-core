@@ -165,24 +165,24 @@ public class TelemetryPayload {
   }
 
   public String toJson() {
-    Gson gson = new GsonBuilder()
+    var gson = new GsonBuilder()
       .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter())
       .create();
-    JsonObject jsonPayload = gson.toJsonTree(this).getAsJsonObject();
-    JsonObject jsonAdditional = gson.toJsonTree(additionalAttributes, new TypeToken<Map<String, Object>>() {
+    var jsonPayload = gson.toJsonTree(this).getAsJsonObject();
+    var jsonAdditional = gson.toJsonTree(additionalAttributes, new TypeToken<Map<String, Object>>() {
     }.getType()).getAsJsonObject();
     return gson.toJson(mergeObjects(jsonAdditional, jsonPayload));
   }
 
   static JsonObject mergeObjects(JsonObject source, JsonObject target) {
     for (Entry<String, JsonElement> entry : source.entrySet()) {
-      JsonElement value = entry.getValue();
+      var value = entry.getValue();
       if (!target.has(entry.getKey())) {
         // new value for "key":
         target.add(entry.getKey(), value);
       } else if (value.isJsonObject()) {
         // existing value for "key" - recursively deep merge:
-        JsonObject valueJson = (JsonObject) value;
+        var valueJson = (JsonObject) value;
         mergeObjects(valueJson, target.getAsJsonObject(entry.getKey()));
       }
       // Don't override value if it already exists in the target

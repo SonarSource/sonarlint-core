@@ -65,9 +65,9 @@ class DefaultSonarLintIssueTests {
 
   @Test
   void build_file_issue() {
-    SensorStorage storage = mock(SensorStorage.class);
-    TextRange range = inputFile.selectLine(1);
-    DefaultSonarLintIssue issue = new DefaultSonarLintIssue(project, baseDir, storage)
+    var storage = mock(SensorStorage.class);
+    var range = inputFile.selectLine(1);
+    var issue = new DefaultSonarLintIssue(project, baseDir, storage)
       .at(new DefaultSonarLintIssueLocation()
         .on(inputFile)
         .at(range)
@@ -84,22 +84,22 @@ class DefaultSonarLintIssueTests {
       .isThrownBy(() -> issue.gap())
       .withMessage("No gap in SonarLint");
 
-    NewQuickFix newQuickFix = issue.newQuickFix().message("Fix this issue");
-    NewInputFileEdit newInputFileEdit = newQuickFix.newInputFileEdit().on(inputFile);
+    var newQuickFix = issue.newQuickFix().message("Fix this issue");
+    var newInputFileEdit = newQuickFix.newInputFileEdit().on(inputFile);
     newInputFileEdit.addTextEdit(newInputFileEdit.newTextEdit().at(range).withNewText("// Fixed!"));
     newQuickFix.addInputFileEdit(newInputFileEdit);
     issue.addQuickFix(newQuickFix);
 
-    List<QuickFix> quickFixes = ((QuickFixable) issue).quickFixes();
+    var quickFixes = ((QuickFixable) issue).quickFixes();
     assertThat(quickFixes).hasSize(1);
-    QuickFix quickFix = quickFixes.get(0);
+    var quickFix = quickFixes.get(0);
     assertThat(quickFix.message()).isEqualTo("Fix this issue");
-    List<ClientInputFileEdit> inputFileEdits = quickFix.inputFileEdits();
+    var inputFileEdits = quickFix.inputFileEdits();
     assertThat(inputFileEdits).hasSize(1);
-    ClientInputFileEdit inputFileEdit = inputFileEdits.get(0);
+    var inputFileEdit = inputFileEdits.get(0);
     assertThat(inputFileEdit.target()).isEqualTo(((SonarLintInputFile) inputFile).getClientInputFile());
     assertThat(inputFileEdit.textEdits()).hasSize(1);
-    TextEdit textEdit = inputFileEdit.textEdits().get(0);
+    var textEdit = inputFileEdit.textEdits().get(0);
     assertThat(textEdit.range().getStartLine()).isEqualTo(range.start().line());
     assertThat(textEdit.range().getStartLineOffset()).isEqualTo(range.start().lineOffset());
     assertThat(textEdit.range().getEndLine()).isEqualTo(range.end().line());
@@ -113,8 +113,8 @@ class DefaultSonarLintIssueTests {
 
   @Test
   void replace_null_characters() {
-    SensorStorage storage = mock(SensorStorage.class);
-    DefaultSonarLintIssue issue = new DefaultSonarLintIssue(project, baseDir, storage)
+    var storage = mock(SensorStorage.class);
+    var issue = new DefaultSonarLintIssue(project, baseDir, storage)
       .at(new DefaultSonarLintIssueLocation()
         .on(inputFile)
         .message("Wrong \u0000 use of NULL\u0000"))
@@ -129,15 +129,15 @@ class DefaultSonarLintIssueTests {
 
   @Test
   void truncate_and_trim() {
-    SensorStorage storage = mock(SensorStorage.class);
-    String prefix = "prefix: ";
-    DefaultSonarLintIssue issue = new DefaultSonarLintIssue(project, baseDir, storage)
+    var storage = mock(SensorStorage.class);
+    var prefix = "prefix: ";
+    var issue = new DefaultSonarLintIssue(project, baseDir, storage)
       .at(new DefaultSonarLintIssueLocation()
         .on(inputFile)
         .message("   " + prefix + repeat("a", 4000)))
       .forRule(RuleKey.of("repo", "rule"));
 
-    String ellipse = "...";
+    var ellipse = "...";
     assertThat(issue.primaryLocation().message()).isEqualTo(prefix + repeat("a", 4000 - prefix.length() - ellipse.length()) + ellipse);
 
     issue.save();
@@ -147,8 +147,8 @@ class DefaultSonarLintIssueTests {
 
   @Test
   void move_directory_issue_to_project_root() {
-    SensorStorage storage = mock(SensorStorage.class);
-    DefaultSonarLintIssue issue = new DefaultSonarLintIssue(project, baseDir, storage)
+    var storage = mock(SensorStorage.class);
+    var issue = new DefaultSonarLintIssue(project, baseDir, storage)
       .at(new DefaultSonarLintIssueLocation()
         .on(new SonarLintInputDir(baseDir.resolve("src/main")))
         .message("Wrong way!"))
@@ -168,8 +168,8 @@ class DefaultSonarLintIssueTests {
 
   @Test
   void build_project_issue() throws IOException {
-    SensorStorage storage = mock(SensorStorage.class);
-    DefaultSonarLintIssue issue = new DefaultSonarLintIssue(project, baseDir, storage)
+    var storage = mock(SensorStorage.class);
+    var issue = new DefaultSonarLintIssue(project, baseDir, storage)
       .at(new DefaultSonarLintIssueLocation()
         .on(project)
         .message("Wrong way!"))

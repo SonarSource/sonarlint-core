@@ -41,7 +41,7 @@ public class ProjectConfigurationDownloader {
   }
 
   private void fetchHierarchy(ServerApiHelper serverApiHelper, String projectKey, Sonarlint.ProjectConfiguration.Builder builder, ProgressMonitor progress) {
-    Map<String, String> moduleHierarchy = moduleHierarchyDownloader.fetchModuleHierarchy(serverApiHelper, projectKey, progress);
+    var moduleHierarchy = moduleHierarchyDownloader.fetchModuleHierarchy(serverApiHelper, projectKey, progress);
     builder.putAllModulePathByKey(moduleHierarchy);
   }
 }

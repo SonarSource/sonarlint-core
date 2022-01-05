@@ -44,7 +44,7 @@ public class DefaultStandaloneRuleParam implements StandaloneRuleParam {
     this.name = param.name();
     this.description = param.description();
     this.defaultValue = param.defaultValue();
-    SonarLintRuleParamType apiType = param.type();
+    var apiType = param.type();
     this.type = from(apiType);
     this.multiple = param.multiple();
     this.possibleValues = List.copyOf(param.possibleValues());

@@ -31,7 +31,7 @@ class PathStoreKeyValidatorTests {
 
   @Test
   void should_return_true_if_relative_path_exists(@TempDir Path projectBaseDir) throws IOException {
-    String filename = "dummy";
+    var filename = "dummy";
     Files.createFile(projectBaseDir.resolve(filename));
     assertThat(new PathStoreKeyValidator(projectBaseDir).apply(filename)).isTrue();
   }

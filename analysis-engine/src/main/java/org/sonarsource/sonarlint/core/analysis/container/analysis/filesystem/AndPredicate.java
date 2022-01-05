@@ -69,7 +69,7 @@ class AndPredicate extends AbstractFilePredicate {
 
   @Override
   public Iterable<InputFile> filter(Iterable<InputFile> target) {
-    Iterable<InputFile> result = target;
+    var result = target;
     for (OptimizedFilePredicate predicate : predicates) {
       result = predicate.filter(result);
     }
@@ -82,7 +82,7 @@ class AndPredicate extends AbstractFilePredicate {
       return index.inputFiles();
     }
     // Optimization, use get on first predicate then filter with next predicates
-    Iterable<InputFile> result = predicates.get(0).get(index);
+    var result = predicates.get(0).get(index);
     for (var i = 1; i < predicates.size(); i++) {
       result = predicates.get(i).filter(result);
     }

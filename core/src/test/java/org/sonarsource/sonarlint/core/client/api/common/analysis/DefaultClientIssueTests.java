@@ -48,10 +48,10 @@ class DefaultClientIssueTests {
 
   @Test
   void transformIssue() {
-    InputComponent currentFile = mock(InputComponent.class);
-    String currentFileKey = "currentFileKey";
+    var currentFile = mock(InputComponent.class);
+    var currentFileKey = "currentFileKey";
     when(currentFile.key()).thenReturn(currentFileKey);
-    InputComponent anotherFile = mock(InputComponent.class);
+    var anotherFile = mock(InputComponent.class);
     when(anotherFile.key()).thenReturn("anotherFileKey");
 
     textRange = new TextRange(1, 2, 2, 3);
@@ -60,9 +60,9 @@ class DefaultClientIssueTests {
     when(rule.getType()).thenReturn("BUG");
     when(rule.getSeverity()).thenReturn("MAJOR");
 
-    Issue issue = new Issue("rule:S123", "msg", textRange, clientInputFile, null, null);
+    var issue = new Issue("rule:S123", "msg", textRange, clientInputFile, null, null);
 
-    DefaultClientIssue underTest = new DefaultClientIssue(issue, rule);
+    var underTest = new DefaultClientIssue(issue, rule);
 
     assertThat(underTest.getStartLine()).isEqualTo(1);
     assertThat(underTest.getStartLineOffset()).isEqualTo(2);

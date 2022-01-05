@@ -28,10 +28,10 @@ class RuleKeyTests {
 
   @Test
   void test_ruleKey_accessors() {
-    String repository = "squid";
-    String rule = "1181";
+    var repository = "squid";
+    var rule = "1181";
 
-    RuleKey ruleKey = new RuleKey(repository, rule);
+    var ruleKey = new RuleKey(repository, rule);
     assertThat(ruleKey.repository()).isEqualTo(repository);
     assertThat(ruleKey.rule()).isEqualTo(rule);
     assertThat(ruleKey).hasToString(repository + ":" + rule);
@@ -39,11 +39,11 @@ class RuleKeyTests {
 
   @Test
   void ruleKey_equals_and_hashcode() {
-    String repository = "squid";
-    String rule = "1181";
+    var repository = "squid";
+    var rule = "1181";
 
-    RuleKey ruleKey1 = new RuleKey(repository, rule);
-    RuleKey ruleKey2 = new RuleKey(repository, rule);
+    var ruleKey1 = new RuleKey(repository, rule);
+    var ruleKey2 = new RuleKey(repository, rule);
     assertThat(ruleKey1)
       .isEqualTo(ruleKey1)
       .isEqualTo(ruleKey2)
@@ -55,11 +55,11 @@ class RuleKeyTests {
 
   @Test
   void ruleKey_equals_to_its_parsed_from_toString() {
-    String repository = "squid";
-    String rule = "1181";
+    var repository = "squid";
+    var rule = "1181";
 
-    RuleKey ruleKey1 = new RuleKey(repository, rule);
-    RuleKey ruleKey2 = RuleKey.parse(ruleKey1.toString());
+    var ruleKey1 = new RuleKey(repository, rule);
+    var ruleKey2 = RuleKey.parse(ruleKey1.toString());
     assertThat(ruleKey2).isEqualTo(ruleKey1);
   }
 

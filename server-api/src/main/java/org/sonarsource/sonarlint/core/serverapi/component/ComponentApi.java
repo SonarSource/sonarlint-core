@@ -52,7 +52,7 @@ public class ComponentApi {
   }
 
   public List<String> getAllFileKeys(String projectKey, ProgressMonitor progress) {
-    String path = buildAllFileKeysPath(projectKey);
+    var path = buildAllFileKeysPath(projectKey);
     List<String> files = new ArrayList<>();
 
     helper.getPaginated(path,

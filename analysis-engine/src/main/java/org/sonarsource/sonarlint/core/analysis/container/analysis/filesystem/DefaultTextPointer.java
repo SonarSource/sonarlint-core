@@ -51,7 +51,7 @@ public class DefaultTextPointer implements TextPointer {
     if (obj == null || obj.getClass() != this.getClass()) {
       return false;
     }
-    DefaultTextPointer other = (DefaultTextPointer) obj;
+    var other = (DefaultTextPointer) obj;
     return other.line == this.line && other.lineOffset == this.lineOffset;
   }
 

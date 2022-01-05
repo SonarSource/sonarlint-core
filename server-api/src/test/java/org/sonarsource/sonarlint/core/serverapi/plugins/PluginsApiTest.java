@@ -33,7 +33,7 @@ class PluginsApiTest {
 
   @Test
   void should_return_installed_plugins() {
-    PluginsApi underTest = new PluginsApi(mockServer.serverApiHelper());
+    var underTest = new PluginsApi(mockServer.serverApiHelper());
     mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": [" +
       "{\"key\": \"pluginKey\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"plugin-1.0.0.1234.jar\", \"sonarLintSupported\": true}" +
       "]}");
@@ -47,7 +47,7 @@ class PluginsApiTest {
 
   @Test
   void should_return_plugin_content() {
-    PluginsApi underTest = new PluginsApi(mockServer.serverApiHelper());
+    var underTest = new PluginsApi(mockServer.serverApiHelper());
     mockServer.addStringResponse("/api/plugins/download?plugin=pluginKey", "content");
 
     underTest.getPlugin("pluginKey", stream -> assertThat(stream).hasContent("content"));

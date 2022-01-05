@@ -56,7 +56,7 @@ class NotificationTimerTask extends TimerTask {
 
   @Override
   public void run() {
-    Map<ServerApiHelper, List<NotificationConfiguration>> mapByServer = groupByServer();
+    var mapByServer = groupByServer();
 
     for (Map.Entry<ServerApiHelper, List<NotificationConfiguration>> entry : mapByServer.entrySet()) {
       requestForServer(entry.getKey(), entry.getValue());
@@ -64,8 +64,8 @@ class NotificationTimerTask extends TimerTask {
   }
 
   private static ZonedDateTime getLastNotificationTime(NotificationConfiguration config) {
-    ZonedDateTime lastTime = config.lastNotificationTime().get();
-    ZonedDateTime oneDayAgo = ZonedDateTime.now().minusDays(1);
+    var lastTime = config.lastNotificationTime().get();
+    var oneDayAgo = ZonedDateTime.now().minusDays(1);
     return lastTime.isAfter(oneDayAgo) ? lastTime : oneDayAgo;
   }
 
@@ -75,10 +75,10 @@ class NotificationTimerTask extends TimerTask {
         .collect(Collectors.toMap(NotificationConfiguration::projectKey, NotificationTimerTask::getLastNotificationTime, MERGE_TIMES));
 
       var notificationChecker = notificationCheckerFactory.apply(serverApiHelper);
-      List<ServerNotification> notifications = notificationChecker.request(request);
+      var notifications = notificationChecker.request(request);
 
       for (var n : notifications) {
-        Stream<NotificationConfiguration> matchingConfStream = configs.stream();
+        var matchingConfStream = configs.stream();
         if (n.projectKey() != null) {
           matchingConfStream = matchingConfStream.filter(c -> c.projectKey().equals(n.projectKey()));
         }

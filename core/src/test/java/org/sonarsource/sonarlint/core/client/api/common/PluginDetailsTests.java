@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  class PluginDetailsTests {
   @Test
    void testRoundTrip() {
-    PluginDetails analyzer = new PluginDetails("key", "name", "version", SkipReason.IncompatiblePluginApi.INSTANCE);
+    var analyzer = new PluginDetails("key", "name", "version", SkipReason.IncompatiblePluginApi.INSTANCE);
     assertThat(analyzer.key()).isEqualTo("key");
     assertThat(analyzer.name()).isEqualTo("name");
     assertThat(analyzer.version()).isEqualTo("version");

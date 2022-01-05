@@ -38,9 +38,9 @@ public class LocalDateAdapter extends TypeAdapter<LocalDate> {
 
   @Override
   public LocalDate read(JsonReader jsonReader) throws IOException {
-    int year = 0;
-    int month = 0;
-    int day = 0;
+    var year = 0;
+    var month = 0;
+    var day = 0;
     jsonReader.beginObject();
     while(jsonReader.hasNext()) {
       switch(jsonReader.nextName()) {

@@ -44,7 +44,7 @@ class PicoComponentKeysTests {
 
   @Test
   void should_log_warning_if_toString_is_not_overridden() {
-    SonarLintLogger log = mock(SonarLintLogger.class);
+    var log = mock(SonarLintLogger.class);
     keys.of(new Object(), log);
     verifyNoInteractions(log);
 
@@ -55,10 +55,10 @@ class PicoComponentKeysTests {
 
   @Test
   void should_generate_unique_key_when_toString_is_not_overridden() {
-    Object key = keys.of(new WrongToStringImpl());
+    var key = keys.of(new WrongToStringImpl());
     assertThat(key).isNotEqualTo(WrongToStringImpl.KEY);
 
-    Object key2 = keys.of(new WrongToStringImpl());
+    var key2 = keys.of(new WrongToStringImpl());
     assertThat(key2).isNotEqualTo(key);
   }
 

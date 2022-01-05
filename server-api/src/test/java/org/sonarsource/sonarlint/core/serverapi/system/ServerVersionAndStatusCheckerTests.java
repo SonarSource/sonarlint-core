@@ -44,9 +44,9 @@ class ServerVersionAndStatusCheckerTests {
   void serverNotReady() throws ExecutionException, InterruptedException {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.5-SNAPSHOT\",\"status\": \"DOWN\"}");
 
-    CompletableFuture<ValidationResult> futureResult = underTest.validateStatusAndVersion();
+    var futureResult = underTest.validateStatusAndVersion();
 
-    ValidationResult validationResult = futureResult.get();
+    var validationResult = futureResult.get();
     assertThat(validationResult.success()).isFalse();
     assertThat(validationResult.message()).isEqualTo("Server not ready (DOWN)");
   }
@@ -55,7 +55,7 @@ class ServerVersionAndStatusCheckerTests {
   void failWhenServerNotReady() {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.5-SNAPSHOT\",\"status\": \"DOWN\"}");
 
-    Throwable throwable = catchThrowable(() -> underTest.checkVersionAndStatus());
+    var throwable = catchThrowable(() -> underTest.checkVersionAndStatus());
 
     assertThat(throwable).hasMessage("Server not ready (DOWN)");
   }
@@ -64,9 +64,9 @@ class ServerVersionAndStatusCheckerTests {
   void incompatibleVersion() throws ExecutionException, InterruptedException {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
 
-    CompletableFuture<ValidationResult> futureResult = underTest.validateStatusAndVersion();
+    var futureResult = underTest.validateStatusAndVersion();
 
-    ValidationResult validationResult = futureResult.get();
+    var validationResult = futureResult.get();
     assertThat(validationResult.success()).isFalse();
     assertThat(validationResult.message()).isEqualTo("SonarQube server has version 6.7. Version should be greater or equal to 7.9");
   }
@@ -75,7 +75,7 @@ class ServerVersionAndStatusCheckerTests {
   void failWhenIncompatibleVersion() {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
 
-    Throwable throwable = catchThrowable(() -> underTest.checkVersionAndStatus());
+    var throwable = catchThrowable(() -> underTest.checkVersionAndStatus());
 
     assertThat(throwable).hasMessage("SonarQube server has version 6.7. Version should be greater or equal to 7.9");
   }
@@ -84,7 +84,7 @@ class ServerVersionAndStatusCheckerTests {
   void responseParsingError() {
     mockServer.addStringResponse("/api/system/status", "bla bla");
 
-    Throwable throwable = catchThrowable(() -> underTest.checkVersionAndStatus());
+    var throwable = catchThrowable(() -> underTest.checkVersionAndStatus());
 
     assertThat(throwable).hasMessage("Unable to parse server infos from: bla bla");
   }

@@ -40,8 +40,8 @@ public class ExtensionInstaller {
 
   public ExtensionInstaller install(ComponentContainer container, Map<String, Plugin> pluginInstancesByKey, BiPredicate<String, Object> extensionFilter) {
     for (Entry<String, Plugin> pluginInstanceEntry : pluginInstancesByKey.entrySet()) {
-      Plugin plugin = pluginInstanceEntry.getValue();
-      Plugin.Context context = new PluginContextImpl.Builder()
+      var plugin = pluginInstanceEntry.getValue();
+      var context = new PluginContextImpl.Builder()
         .setSonarRuntime(sonarRuntime)
         .setBootConfiguration(bootConfiguration)
         .build();

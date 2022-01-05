@@ -58,13 +58,13 @@ public abstract class AbstractPatternInitializer {
     // Patterns Multicriteria
     multicriteriaPatterns = new ArrayList<>();
     for (String id : config.getStringArray(getMulticriteriaConfigurationKey())) {
-      String propPrefix = getMulticriteriaConfigurationKey() + "." + id + ".";
-      String filePathPattern = config.get(propPrefix + "resourceKey").orElse(null);
+      var propPrefix = getMulticriteriaConfigurationKey() + "." + id + ".";
+      var filePathPattern = config.get(propPrefix + "resourceKey").orElse(null);
       if (StringUtils.isBlank(filePathPattern)) {
         LOG.debug("Issue exclusions are misconfigured. File pattern is mandatory for each entry of '" + getMulticriteriaConfigurationKey() + "'");
         continue;
       }
-      String ruleKeyPattern = config.get(propPrefix + "ruleKey").orElse(null);
+      var ruleKeyPattern = config.get(propPrefix + "ruleKey").orElse(null);
       if (StringUtils.isBlank(ruleKeyPattern)) {
         LOG.debug("Issue exclusions are misconfigured. Rule key pattern is mandatory for each entry of '" + getMulticriteriaConfigurationKey() + "'");
         continue;

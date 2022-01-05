@@ -46,7 +46,7 @@ public class LineRange {
 
   public Set<Integer> toLines() {
     Set<Integer> lines = new LinkedHashSet<>(to - from + 1);
-    for (int index = from; index <= to; index++) {
+    for (var index = from; index <= to; index++) {
       lines.add(index);
     }
     return lines;
@@ -75,10 +75,7 @@ public class LineRange {
     if (this == obj) {
       return true;
     }
-    if (obj == null) {
-      return false;
-    }
-    if (getClass() != obj.getClass()) {
+    if ((obj == null) || (getClass() != obj.getClass())) {
       return false;
     }
     return !fieldsDiffer((LineRange) obj);

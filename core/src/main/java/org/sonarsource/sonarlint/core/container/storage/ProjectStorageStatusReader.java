@@ -37,11 +37,11 @@ public class ProjectStorageStatusReader implements Function<String, ProjectStora
   @Override
   @CheckForNull
   public ProjectStorageStatus apply(String projectKey) {
-    Path updateStatusPath = projectStoragePaths.getProjectUpdateStatusPath(projectKey);
+    var updateStatusPath = projectStoragePaths.getProjectUpdateStatusPath(projectKey);
 
     if (updateStatusPath.toFile().exists()) {
-      final Sonarlint.StorageStatus statusFromStorage = ProtobufUtil.readFile(updateStatusPath, Sonarlint.StorageStatus.parser());
-      final boolean stale = !statusFromStorage.getStorageVersion().equals(ProjectStoragePaths.STORAGE_VERSION);
+      final var statusFromStorage = ProtobufUtil.readFile(updateStatusPath, Sonarlint.StorageStatus.parser());
+      final var stale = !statusFromStorage.getStorageVersion().equals(ProjectStoragePaths.STORAGE_VERSION);
       return new DefaultProjectStorageStatus(new Date(statusFromStorage.getUpdateTimestamp()), stale);
     }
     return null;

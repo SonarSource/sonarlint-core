@@ -63,13 +63,13 @@ public interface SkipReason {
       if (!(obj instanceof LanguagesNotEnabled)) {
         return false;
       }
-      LanguagesNotEnabled other = (LanguagesNotEnabled) obj;
+      var other = (LanguagesNotEnabled) obj;
       return Objects.equals(languages, other.languages);
     }
 
     @Override
     public String toString() {
-      StringBuilder builder = new StringBuilder();
+      var builder = new StringBuilder();
       builder.append("LanguagesNotEnabled [languages=").append(languages).append("]");
       return builder.toString();
     }
@@ -100,13 +100,13 @@ public interface SkipReason {
       if (!(obj instanceof UnsatisfiedDependency)) {
         return false;
       }
-      UnsatisfiedDependency other = (UnsatisfiedDependency) obj;
+      var other = (UnsatisfiedDependency) obj;
       return Objects.equals(dependencyKey, other.dependencyKey);
     }
 
     @Override
     public String toString() {
-      StringBuilder builder = new StringBuilder();
+      var builder = new StringBuilder();
       builder.append("UnsatisfiedDependency [dependencyKey=").append(dependencyKey).append("]");
       return builder.toString();
     }
@@ -137,13 +137,13 @@ public interface SkipReason {
       if (!(obj instanceof IncompatiblePluginVersion)) {
         return false;
       }
-      IncompatiblePluginVersion other = (IncompatiblePluginVersion) obj;
+      var other = (IncompatiblePluginVersion) obj;
       return Objects.equals(minVersion, other.minVersion);
     }
 
     @Override
     public String toString() {
-      StringBuilder builder = new StringBuilder();
+      var builder = new StringBuilder();
       builder.append("IncompatiblePluginVersion [minVersion=").append(minVersion).append("]");
       return builder.toString();
     }
@@ -192,13 +192,13 @@ public interface SkipReason {
       if (!(obj instanceof UnsatisfiedRuntimeRequirement)) {
         return false;
       }
-      UnsatisfiedRuntimeRequirement other = (UnsatisfiedRuntimeRequirement) obj;
+      var other = (UnsatisfiedRuntimeRequirement) obj;
       return runtime == other.runtime && Objects.equals(currentVersion, other.currentVersion) && Objects.equals(minVersion, other.minVersion);
     }
 
     @Override
     public String toString() {
-      StringBuilder builder = new StringBuilder();
+      var builder = new StringBuilder();
       builder.append("UnsatisfiedRuntimeRequirement [runtime=").append(runtime).append(", currentVersion=").append(currentVersion).append(", minVersion=").append(minVersion)
         .append("]");
       return builder.toString();

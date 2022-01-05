@@ -27,8 +27,8 @@ import static org.mockito.Mockito.mock;
 class UpdateResultTests {
   @Test
   void testRoundTrip() {
-    GlobalStorageStatus status = mock(GlobalStorageStatus.class);
-    UpdateResult result = new UpdateResult(status);
+    var status = mock(GlobalStorageStatus.class);
+    var result = new UpdateResult(status);
     assertThat(result.status()).isEqualTo(status);
   }
 }

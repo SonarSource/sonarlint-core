@@ -134,7 +134,7 @@ public class FileMetadata {
    * For testing
    */
   Metadata readMetadata(File file, Charset encoding) {
-    InputStream stream = streamFile(file);
+    var stream = streamFile(file);
     return readMetadata(stream, encoding, file.toURI(), null);
   }
 
@@ -170,7 +170,7 @@ public class FileMetadata {
 
   private static void read(Reader reader, CharHandler... handlers) throws IOException {
     char c;
-    int i = reader.read();
+    var i = reader.read();
     var afterCR = false;
     while (i != -1) {
       c = (char) i;

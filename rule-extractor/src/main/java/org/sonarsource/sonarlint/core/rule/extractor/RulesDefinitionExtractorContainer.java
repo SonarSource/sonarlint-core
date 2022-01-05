@@ -55,9 +55,9 @@ public class RulesDefinitionExtractorContainer extends ComponentContainer {
         // Optimization, and allows to run with the Xoo plugin
         return false;
       }
-      SonarLintSide annotation = AnnotationUtils.getAnnotation(ext, SonarLintSide.class);
+      var annotation = AnnotationUtils.getAnnotation(ext, SonarLintSide.class);
       if (annotation != null) {
-        String lifespan = annotation.lifespan();
+        var lifespan = annotation.lifespan();
         return SonarLintSide.SINGLE_ANALYSIS.equals(lifespan);
       }
       return false;

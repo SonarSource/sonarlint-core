@@ -74,7 +74,7 @@ public class ServerIssueStore implements IssueStore {
   @Override
   public synchronized List<ServerIssue> load(String fileKey) {
     try {
-      Optional<List<ServerIssue>> issues = store.read(fileKey);
+      var issues = store.read(fileKey);
       return issues.orElse(Collections.emptyList());
     } catch (IOException e) {
       throw new StorageException("failed to load issues for fileKey = " + fileKey, e);

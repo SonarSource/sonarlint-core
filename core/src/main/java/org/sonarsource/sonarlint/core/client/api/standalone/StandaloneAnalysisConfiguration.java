@@ -66,7 +66,7 @@ public class StandaloneAnalysisConfiguration extends AbstractAnalysisConfigurati
   }
 
   private String generateToString() {
-    StringBuilder sb = new StringBuilder();
+    var sb = new StringBuilder();
     sb.append("[\n");
     generateToStringCommon(sb);
     sb.append("  excludedRules: ").append(excludedRules).append("\n");

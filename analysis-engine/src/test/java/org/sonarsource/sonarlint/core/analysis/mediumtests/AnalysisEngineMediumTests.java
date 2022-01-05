@@ -55,7 +55,7 @@ class AnalysisEngineMediumTests {
   @BeforeEach
   void prepare(@TempDir Path workDir) throws IOException {
     var enabledLanguages = Set.of(Language.PYTHON);
-    AnalysisEngineConfiguration analysisGlobalConfig = AnalysisEngineConfiguration.builder()
+    var analysisGlobalConfig = AnalysisEngineConfiguration.builder()
       .addEnabledLanguages(enabledLanguages)
       .setClientPid(1234L)
       .setWorkDir(workDir)
@@ -72,11 +72,11 @@ class AnalysisEngineMediumTests {
 
   @Test
   void should_analyze_a_single_file_outside_of_any_module(@TempDir Path baseDir) throws IOException {
-    String content = "def foo():\n"
+    var content = "def foo():\n"
       + "  x = 9; # trailing comment\n";
-    ClientInputFile inputFile = preparePythonInputFile(baseDir, content);
+    var inputFile = preparePythonInputFile(baseDir, content);
 
-    AnalysisConfiguration analysisConfig = AnalysisConfiguration.builder()
+    var analysisConfig = AnalysisConfiguration.builder()
       .addInputFiles(inputFile)
       .addActiveRules(trailingCommentRule())
       .setBaseDir(baseDir)
@@ -89,7 +89,7 @@ class AnalysisEngineMediumTests {
   }
 
   private ClientInputFile preparePythonInputFile(Path baseDir, String content) throws IOException {
-    final File file = new File(baseDir.toFile(), "file.py");
+    final var file = new File(baseDir.toFile(), "file.py");
     FileUtils.write(file, content, StandardCharsets.UTF_8);
     return new OnDiskTestClientInputFile(file.toPath(), "file.py", false, StandardCharsets.UTF_8, Language.PYTHON);
   }

@@ -39,13 +39,13 @@ class ComponentContainerTests {
 
   @Test
   void shouldRegisterItself() {
-    ComponentContainer container = new ComponentContainer();
+    var container = new ComponentContainer();
     assertThat(container.getComponentByType(ComponentContainer.class)).isSameAs(container);
   }
 
   @Test
   void should_start_and_stop() {
-    ComponentContainer container = spy(new ComponentContainer());
+    var container = spy(new ComponentContainer());
     container.addSingleton(StartableComponent.class);
     container.startComponents();
 
@@ -60,12 +60,12 @@ class ComponentContainerTests {
 
   @Test
   void should_start_and_stop_hierarchy_of_containers() {
-    StartableComponent parentComponent = new StartableComponent();
-    final StartableComponent childComponent = new StartableComponent();
+    var parentComponent = new StartableComponent();
+    final var childComponent = new StartableComponent();
     ComponentContainer parentContainer = new ComponentContainer() {
       @Override
       public void doAfterStart() {
-        ComponentContainer childContainer = new ComponentContainer(this);
+        var childContainer = new ComponentContainer(this);
         childContainer.add(childComponent);
         childContainer.execute();
       }
@@ -80,13 +80,13 @@ class ComponentContainerTests {
 
   @Test
   void should_stop_hierarchy_of_containers_on_failure() {
-    StartableComponent parentComponent = new StartableComponent();
-    final StartableComponent childComponent1 = new StartableComponent();
-    final UnstartableComponent childComponent2 = new UnstartableComponent();
+    var parentComponent = new StartableComponent();
+    final var childComponent1 = new StartableComponent();
+    final var childComponent2 = new UnstartableComponent();
     ComponentContainer parentContainer = new ComponentContainer() {
       @Override
       public void doAfterStart() {
-        ComponentContainer childContainer = new ComponentContainer(this);
+        var childContainer = new ComponentContainer(this);
         childContainer.add(childComponent1);
         childContainer.add(childComponent2);
         childContainer.execute();
@@ -106,10 +106,10 @@ class ComponentContainerTests {
 
   @Test
   void testChild() {
-    ComponentContainer parent = new ComponentContainer();
+    var parent = new ComponentContainer();
     parent.startComponents();
 
-    ComponentContainer child = parent.createChild();
+    var child = parent.createChild();
     child.addSingleton(StartableComponent.class);
     child.startComponents();
 
@@ -124,14 +124,14 @@ class ComponentContainerTests {
 
   @Test
   void shouldForwardStartAndStopToDescendants() {
-    ComponentContainer grandParent = new ComponentContainer();
-    ComponentContainer parent = grandParent.createChild();
-    ComponentContainer child = parent.createChild();
+    var grandParent = new ComponentContainer();
+    var parent = grandParent.createChild();
+    var child = parent.createChild();
     child.addSingleton(StartableComponent.class);
 
     grandParent.startComponents();
 
-    StartableComponent component = child.getComponentByType(StartableComponent.class);
+    var component = child.getComponentByType(StartableComponent.class);
     assertThat(component.started).isTrue();
 
     parent.stopComponents();
@@ -140,30 +140,30 @@ class ComponentContainerTests {
 
   @Test
   void shouldDeclareComponentProperties() {
-    ComponentContainer container = new ComponentContainer();
+    var container = new ComponentContainer();
     container.addSingleton(ComponentWithProperty.class);
 
-    PropertyDefinitions propertyDefinitions = container.getComponentByType(PropertyDefinitions.class);
+    var propertyDefinitions = container.getComponentByType(PropertyDefinitions.class);
     assertThat(propertyDefinitions.get("foo")).isNotNull();
     assertThat(propertyDefinitions.get("foo").defaultValue()).isEqualTo("bar");
   }
 
   @Test
   void shouldDeclareExtensionWithoutAddingIt() {
-    ComponentContainer container = new ComponentContainer();
+    var container = new ComponentContainer();
     container.declareProperties(ComponentWithProperty.class);
 
-    PropertyDefinitions propertyDefinitions = container.getComponentByType(PropertyDefinitions.class);
+    var propertyDefinitions = container.getComponentByType(PropertyDefinitions.class);
     assertThat(propertyDefinitions.get("foo")).isNotNull();
     assertThat(container.getComponentByType(ComponentWithProperty.class)).isNull();
   }
 
   @Test
   void shouldDeclareExtensionWhenAdding() {
-    ComponentContainer container = new ComponentContainer();
+    var container = new ComponentContainer();
     container.addExtension(null, ComponentWithProperty.class);
 
-    PropertyDefinitions propertyDefinitions = container.getComponentByType(PropertyDefinitions.class);
+    var propertyDefinitions = container.getComponentByType(PropertyDefinitions.class);
     assertThat(propertyDefinitions.get("foo")).isNotNull();
     assertThat(container.getComponentByType(ComponentWithProperty.class)).isNotNull();
     assertThat(container.getComponentByKey(ComponentWithProperty.class)).isNotNull();
@@ -171,7 +171,7 @@ class ComponentContainerTests {
 
   @Test
   void test_add_class() {
-    ComponentContainer container = new ComponentContainer();
+    var container = new ComponentContainer();
     container.add(ComponentWithProperty.class, SimpleComponent.class);
     assertThat(container.getComponentByType(ComponentWithProperty.class)).isNotNull();
     assertThat(container.getComponentByType(SimpleComponent.class)).isNotNull();
@@ -179,7 +179,7 @@ class ComponentContainerTests {
 
   @Test
   void test_add_collection() {
-    ComponentContainer container = new ComponentContainer();
+    var container = new ComponentContainer();
     container.add(Arrays.asList(ComponentWithProperty.class, SimpleComponent.class));
     assertThat(container.getComponentByType(ComponentWithProperty.class)).isNotNull();
     assertThat(container.getComponentByType(SimpleComponent.class)).isNotNull();
@@ -187,14 +187,14 @@ class ComponentContainerTests {
 
   @Test
   void test_add_adapter() {
-    ComponentContainer container = new ComponentContainer();
+    var container = new ComponentContainer();
     container.add(new SimpleComponentProvider());
     assertThat(container.getComponentByType(SimpleComponent.class)).isNotNull();
   }
 
   @Test
   void should_sanitize_pico_exception_on_start_failure() {
-    ComponentContainer container = new ComponentContainer();
+    var container = new ComponentContainer();
     container.add(UnstartableComponent.class);
 
     // do not expect a PicoException
@@ -203,11 +203,11 @@ class ComponentContainerTests {
 
   @Test
   void display_plugin_name_when_failing_to_add_extension() {
-    ComponentContainer container = new ComponentContainer();
+    var container = new ComponentContainer();
 
     container.startComponents();
 
-    IllegalStateException expected = assertThrows(IllegalStateException.class, () -> container.addExtension("myPlugin", UnstartableComponent.class));
+    var expected = assertThrows(IllegalStateException.class, () -> container.addExtension("myPlugin", UnstartableComponent.class));
     assertThat(expected.getMessage())
       .isEqualTo(
         "Unable to register extension org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainerTests$UnstartableComponent from plugin 'myPlugin'");
@@ -215,8 +215,8 @@ class ComponentContainerTests {
 
   @Test
   void test_start_failure() {
-    ComponentContainer container = new ComponentContainer();
-    StartableComponent startable = new StartableComponent();
+    var container = new ComponentContainer();
+    var startable = new StartableComponent();
     container.add(startable, UnstartableComponent.class);
 
     try {
@@ -232,8 +232,8 @@ class ComponentContainerTests {
 
   @Test
   void test_stop_failure() {
-    ComponentContainer container = new ComponentContainer();
-    StartableComponent startable = new StartableComponent();
+    var container = new ComponentContainer();
+    var startable = new StartableComponent();
     container.add(startable, UnstoppableComponent.class);
 
     try {
@@ -249,17 +249,17 @@ class ComponentContainerTests {
 
   @Test
   void stop_exception_should_not_hide_start_exception() {
-    ComponentContainer container = new ComponentContainer();
+    var container = new ComponentContainer();
     container.add(UnstartableComponentDependingOnUnstoppable.class, UnstoppableComponent.class);
 
-    IllegalStateException ex = assertThrows(IllegalStateException.class, () -> container.execute());
+    var ex = assertThrows(IllegalStateException.class, () -> container.execute());
     assertThat(ex).hasMessage("Fail to start");
   }
 
   @Test
   void should_execute_components() {
-    ComponentContainer container = new ComponentContainer();
-    StartableComponent component = new StartableComponent();
+    var container = new ComponentContainer();
+    var component = new StartableComponent();
     container.add(component);
 
     container.execute();
@@ -274,8 +274,8 @@ class ComponentContainerTests {
    */
   @Test
   void should_close_components_without_lifecycle() {
-    ComponentContainer container = new ComponentContainer();
-    CloseableComponent component = new CloseableComponent();
+    var container = new ComponentContainer();
+    var component = new CloseableComponent();
     container.add(component);
 
     container.execute();
@@ -288,8 +288,8 @@ class ComponentContainerTests {
    */
   @Test
   void should_close_components_with_lifecycle() {
-    ComponentContainer container = new ComponentContainer();
-    StartableCloseableComponent component = new StartableCloseableComponent();
+    var container = new ComponentContainer();
+    var component = new StartableCloseableComponent();
     container.add(component);
 
     container.execute();
@@ -325,21 +325,21 @@ class ComponentContainerTests {
 
   @Test
   void shouldReturnInitialUncheckedException() {
-    PicoLifecycleException newPicoLifecycleException = newPicoLifecycleException(false);
-    RuntimeException unwrapped = ComponentContainer.unwrapPicoException(newPicoLifecycleException);
+    var newPicoLifecycleException = newPicoLifecycleException(false);
+    var unwrapped = ComponentContainer.unwrapPicoException(newPicoLifecycleException);
     assertThat(unwrapped).isInstanceOf(IllegalStateException.class).hasMessage("A good reason to fail");
   }
 
   @Test
   void shouldReturnUncheckedExceptionWhenUnwrappingCheckedException() {
-    PicoLifecycleException newPicoLifecycleException = newPicoLifecycleException(true);
-    RuntimeException unwrapped = ComponentContainer.unwrapPicoException(newPicoLifecycleException);
+    var newPicoLifecycleException = newPicoLifecycleException(true);
+    var unwrapped = ComponentContainer.unwrapPicoException(newPicoLifecycleException);
     assertThat(unwrapped.getCause()).isInstanceOf(IOException.class);
     assertThat(unwrapped.getCause().getMessage()).isEqualTo("Checked");
   }
 
   private PicoLifecycleException newPicoLifecycleException(boolean initialCheckedException) {
-    MutablePicoContainer container = ComponentContainer.createPicoContainer().as(Characteristics.CACHE);
+    var container = ComponentContainer.createPicoContainer().as(Characteristics.CACHE);
     if (initialCheckedException) {
       container.addComponent(CheckedFailureComponent.class);
     } else {

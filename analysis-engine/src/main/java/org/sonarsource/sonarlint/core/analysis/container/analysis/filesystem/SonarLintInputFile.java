@@ -171,7 +171,7 @@ public class SonarLintInputFile implements InputFile {
       return false;
     }
 
-    SonarLintInputFile that = (SonarLintInputFile) o;
+    var that = (SonarLintInputFile) o;
     return uri().equals(that.uri());
   }
 
@@ -222,16 +222,16 @@ public class SonarLintInputFile implements InputFile {
   @Override
   public TextRange newRange(int startLine, int startLineOffset, int endLine, int endLineOffset) {
     checkMetadata();
-    TextPointer start = newPointer(startLine, startLineOffset);
-    TextPointer end = newPointer(endLine, endLineOffset);
+    var start = newPointer(startLine, startLineOffset);
+    var end = newPointer(endLine, endLineOffset);
     return newRangeValidPointers(start, end);
   }
 
   @Override
   public TextRange selectLine(int line) {
     checkMetadata();
-    TextPointer startPointer = newPointer(line, 0);
-    TextPointer endPointer = newPointer(line, lineLength(line));
+    var startPointer = newPointer(line, 0);
+    var endPointer = newPointer(line, lineLength(line));
     return newRangeValidPointers(startPointer, endPointer);
   }
 

@@ -77,7 +77,7 @@ public class ProtobufIssueStore<T> implements TrackableIssueStore<T> {
   @Override
   @CheckForNull
   public Collection<Trackable<T>> read(String key) throws IOException {
-    Optional<Sonarlint.Issues> issues = store.read(key);
+    var issues = store.read(key);
     return issues.map(this::transform).orElse(null);
   }
 

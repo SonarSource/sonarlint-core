@@ -31,26 +31,26 @@ public class DateUtils {
   }
 
   public static String toAge(long time) {
-    LocalDateTime creation = LocalDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneId.systemDefault());
-    LocalDateTime now = LocalDateTime.now();
+    var creation = LocalDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneId.systemDefault());
+    var now = LocalDateTime.now();
 
-    long years = ChronoUnit.YEARS.between(creation, now);
+    var years = ChronoUnit.YEARS.between(creation, now);
     if (years > 0) {
       return pluralize(years, "year");
     }
-    long months = ChronoUnit.MONTHS.between(creation, now);
+    var months = ChronoUnit.MONTHS.between(creation, now);
     if (months > 0) {
       return pluralize(months, "month");
     }
-    long days = ChronoUnit.DAYS.between(creation, now);
+    var days = ChronoUnit.DAYS.between(creation, now);
     if (days > 0) {
       return pluralize(days, "day");
     }
-    long hours = ChronoUnit.HOURS.between(creation, now);
+    var hours = ChronoUnit.HOURS.between(creation, now);
     if (hours > 0) {
       return pluralize(hours, "hour");
     }
-    long minutes = ChronoUnit.MINUTES.between(creation, now);
+    var minutes = ChronoUnit.MINUTES.between(creation, now);
     if (minutes > 0) {
       return pluralize(minutes, "minute");
     }

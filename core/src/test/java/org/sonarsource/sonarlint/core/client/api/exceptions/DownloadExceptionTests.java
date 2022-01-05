@@ -27,15 +27,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 class DownloadExceptionTests {
   @Test
   void testNoArgs() {
-    DownloadException exception = new DownloadException();
+    var exception = new DownloadException();
     assertThat(exception.getMessage()).isNull();
     assertThat(exception.getCause()).isNull();
   }
 
   @Test
   void testCauseAndMsg() {
-    IOException cause = new IOException("cause msg");
-    DownloadException exception = new DownloadException("msg", cause);
+    var cause = new IOException("cause msg");
+    var exception = new DownloadException("msg", cause);
     assertThat(exception.getMessage()).isEqualTo("msg");
     assertThat(exception.getCause()).isEqualTo(cause);
   }

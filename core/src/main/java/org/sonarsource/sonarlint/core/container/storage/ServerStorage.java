@@ -48,7 +48,7 @@ public class ServerStorage implements StorageFolder {
 
   public void replaceStorageWith(Path temp) {
     rwLock.write(() -> {
-      Path dest = folderPath;
+      var dest = folderPath;
       FileUtils.deleteRecursively(dest);
       FileUtils.mkdirs(dest.getParent());
       FileUtils.moveDir(temp, dest);

@@ -42,10 +42,10 @@ public class ConnectionValidator {
     var authChecker = new AuthenticationChecker(helper);
     return serverChecker.checkVersionAndStatusAsync()
       .thenApply(check -> {
-        ValidationResult validateCredentials = authChecker.validateCredentials();
-        Optional<String> organizationKey = helper.getOrganizationKey();
+        var validateCredentials = authChecker.validateCredentials();
+        var organizationKey = helper.getOrganizationKey();
         if (validateCredentials.success() && organizationKey.isPresent()) {
-          Optional<ServerOrganization> organization = new ServerApi(helper).organization().fetchOrganization(organizationKey.get(),
+          var organization = new ServerApi(helper).organization().fetchOrganization(organizationKey.get(),
             new ProgressMonitor(null));
           if (organization.isEmpty()) {
             return new DefaultValidationResult(false, "No organizations found for key: " + organizationKey.get());

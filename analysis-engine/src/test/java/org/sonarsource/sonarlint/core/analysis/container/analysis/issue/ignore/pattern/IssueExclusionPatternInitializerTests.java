@@ -35,7 +35,7 @@ class IssueExclusionPatternInitializerTests {
 
   @Test
   void testNoConfiguration() {
-    IssueExclusionPatternInitializer patternsInitializer = new IssueExclusionPatternInitializer(new MapSettings(Map.of()).asConfig());
+    var patternsInitializer = new IssueExclusionPatternInitializer(new MapSettings(Map.of()).asConfig());
     assertThat(patternsInitializer.hasConfiguredPatterns()).isFalse();
     assertThat(patternsInitializer.getMulticriteriaPatterns()).isEmpty();
   }
@@ -72,7 +72,7 @@ class IssueExclusionPatternInitializerTests {
     settings.put(IssueExclusionPatternInitializer.PATTERNS_BLOCK_KEY + ".2." + IssueExclusionPatternInitializer.END_BLOCK_REGEXP, "// FOO-ON");
     settings.put(IssueExclusionPatternInitializer.PATTERNS_BLOCK_KEY + ".3." + IssueExclusionPatternInitializer.BEGIN_BLOCK_REGEXP, "// IGNORE-TO-EOF");
     settings.put(IssueExclusionPatternInitializer.PATTERNS_BLOCK_KEY + ".3." + IssueExclusionPatternInitializer.END_BLOCK_REGEXP, "");
-    IssueExclusionPatternInitializer patternsInitializer = new IssueExclusionPatternInitializer(new MapSettings(settings).asConfig());
+    var patternsInitializer = new IssueExclusionPatternInitializer(new MapSettings(settings).asConfig());
 
     assertThat(patternsInitializer.hasConfiguredPatterns()).isTrue();
     assertThat(patternsInitializer.hasFileContentPattern()).isTrue();
@@ -99,7 +99,7 @@ class IssueExclusionPatternInitializerTests {
     settings.put(IssueExclusionPatternInitializer.PATTERNS_ALLFILE_KEY, "1,2");
     settings.put(IssueExclusionPatternInitializer.PATTERNS_ALLFILE_KEY + ".1." + IssueExclusionPatternInitializer.FILE_REGEXP, "@SONAR-IGNORE-ALL");
     settings.put(IssueExclusionPatternInitializer.PATTERNS_ALLFILE_KEY + ".2." + IssueExclusionPatternInitializer.FILE_REGEXP, "//FOO-IGNORE-ALL");
-    IssueExclusionPatternInitializer patternsInitializer = new IssueExclusionPatternInitializer(new MapSettings(settings).asConfig());
+    var patternsInitializer = new IssueExclusionPatternInitializer(new MapSettings(settings).asConfig());
 
     assertThat(patternsInitializer.hasConfiguredPatterns()).isTrue();
     assertThat(patternsInitializer.hasFileContentPattern()).isTrue();

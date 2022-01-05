@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 class ApiVersionsTests {
   @Test
   void can_load_sonar_plugin_api_version_from_embedded_resource() {
-    Version version = ApiVersions.loadSonarPluginApiVersion();
+    var version = ApiVersions.loadSonarPluginApiVersion();
 
     assertThat(version).isNotNull();
     assertThat(version.isGreaterThanOrEqual(Version.create(8, 5))).isTrue();
@@ -37,7 +37,7 @@ class ApiVersionsTests {
 
   @Test
   void can_load_sonarlint_plugin_api_version_from_embedded_resource() {
-    Version version = ApiVersions.loadSonarLintPluginApiVersion();
+    var version = ApiVersions.loadSonarLintPluginApiVersion();
 
     assertThat(version).isNotNull();
     assertThat(version.isGreaterThanOrEqual(Version.create(5, 4))).isTrue();
@@ -45,14 +45,14 @@ class ApiVersionsTests {
 
   @Test
   void should_throw_an_exception_if_resource_does_not_exist() {
-    Throwable throwable = catchThrowable(() -> ApiVersions.loadVersion(null, "wrongPath"));
+    var throwable = catchThrowable(() -> ApiVersions.loadVersion(null, "wrongPath"));
 
     assertThat(throwable).hasMessage("Can not load wrongPath from classpath");
   }
 
   @Test
   void should_throw_an_exception_if_resource_can_not_be_loaded() {
-    Throwable throwable = catchThrowable(() -> ApiVersions.loadVersion(new URL("file://wrong"), "wrongPath"));
+    var throwable = catchThrowable(() -> ApiVersions.loadVersion(new URL("file://wrong"), "wrongPath"));
 
     assertThat(throwable).hasMessage("Can not load wrongPath from classpath");
   }

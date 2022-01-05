@@ -96,7 +96,7 @@ public class ServerApiHelper {
 
   public CompletableFuture<HttpClient.Response> rawGetAsync(String relativePath) {
     var startTime = Instant.now();
-    String url = buildEndpointUrl(relativePath);
+    var url = buildEndpointUrl(relativePath);
 
     return client.getAsync(url)
       .whenComplete((response, error) -> {
@@ -107,7 +107,7 @@ public class ServerApiHelper {
 
   private String buildEndpointUrl(String relativePath) {
     var fullUrl = new StringBuilder();
-    String endpointUrl = endpointParams.getBaseUrl();
+    var endpointUrl = endpointParams.getBaseUrl();
     fullUrl.append(endpointUrl.endsWith("/") ? endpointUrl.substring(0, endpointUrl.length() - 1) : endpointUrl);
     fullUrl.append("/");
     fullUrl.append(relativePath.startsWith("/") ? relativePath.substring(1) : relativePath);
@@ -127,7 +127,7 @@ public class ServerApiHelper {
         return new NotFoundException(formatHttpFailedResponse(failedResponse, null));
       }
 
-      String errorMsg = tryParseAsJsonError(failedResponse);
+      var errorMsg = tryParseAsJsonError(failedResponse);
 
       return new IllegalStateException(formatHttpFailedResponse(failedResponse, errorMsg));
     }
@@ -182,16 +182,16 @@ public class ServerApiHelper {
       throw handleError(response);
     }
     G protoBufResponse;
-    try (InputStream body = response.bodyAsStream()) {
+    try (var body = response.bodyAsStream()) {
       protoBufResponse = responseParser.apply(body);
     }
 
-    List<F> items = itemExtractor.apply(protoBufResponse);
+    var items = itemExtractor.apply(protoBufResponse);
     for (F item : items) {
       itemConsumer.accept(item);
       loaded.incrementAndGet();
     }
-    boolean isEmpty = items.isEmpty();
+    var isEmpty = items.isEmpty();
     var paging = getPaging.apply(protoBufResponse);
     // SONAR-9150 Some WS used to miss the paging information, so iterate until response is empty
     stop.set(isEmpty || (paging.getTotal() > 0 && page.get() * PAGE_SIZE >= paging.getTotal()));
@@ -226,7 +226,7 @@ public class ServerApiHelper {
     var startTime = Instant.now();
     return futureResponse.thenApply(response -> {
       try (response) {
-        G processed = responseProcessor.apply(response);
+        var processed = responseProcessor.apply(response);
         durationConsumer.accept(Duration.between(startTime, Instant.now()).toMillis());
         return processed;
       } catch (IOException e) {

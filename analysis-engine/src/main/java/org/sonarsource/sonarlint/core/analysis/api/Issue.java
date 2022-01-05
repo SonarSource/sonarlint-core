@@ -83,7 +83,7 @@ public class Issue implements IssueLocation {
     sb.append("[");
     sb.append("rule=").append(ruleKey);
     if (textRange != null) {
-      Integer startLine = textRange.getStartLine();
+      var startLine = textRange.getStartLine();
       if (startLine != null) {
         sb.append(", line=").append(startLine);
       }

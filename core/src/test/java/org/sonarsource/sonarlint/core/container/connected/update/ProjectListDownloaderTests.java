@@ -39,25 +39,25 @@ class ProjectListDownloaderTests {
 
   @Test
   void update_modules(@TempDir Path tempDir) {
-    ServerProjectsStore serverProjectsStore = new ServerProjectsStore(new StorageFolder.Default(tempDir));
+    var serverProjectsStore = new ServerProjectsStore(new StorageFolder.Default(tempDir));
     mockServer.addResponseFromResource("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1", "/update/searchmodulesp1.pb");
-    ProjectListDownloader moduleListUpdate = new ProjectListDownloader(mockServer.serverApiHelper(), serverProjectsStore);
+    var moduleListUpdate = new ProjectListDownloader(mockServer.serverApiHelper(), serverProjectsStore);
 
     moduleListUpdate.fetch(new ProgressMonitor(null));
 
-    ProjectList moduleList = ProtobufUtil.readFile(tempDir.resolve(ServerProjectsStore.PROJECT_LIST_PB), ProjectList.parser());
+    var moduleList = ProtobufUtil.readFile(tempDir.resolve(ServerProjectsStore.PROJECT_LIST_PB), ProjectList.parser());
     assertThat(moduleList.getProjectsByKeyMap()).hasSize(282);
   }
 
   @Test
   void update_modules_with_org(@TempDir Path tempDir) {
-    ServerProjectsStore serverProjectsStore = new ServerProjectsStore(new StorageFolder.Default(tempDir));
+    var serverProjectsStore = new ServerProjectsStore(new StorageFolder.Default(tempDir));
     mockServer.addResponseFromResource("/api/components/search.protobuf?qualifiers=TRK&organization=myOrg&ps=500&p=1", "/update/searchmodulesp1.pb");
-    ProjectListDownloader moduleListUpdate = new ProjectListDownloader(mockServer.serverApiHelper("myOrg"), serverProjectsStore);
+    var moduleListUpdate = new ProjectListDownloader(mockServer.serverApiHelper("myOrg"), serverProjectsStore);
 
     moduleListUpdate.fetch(new ProgressMonitor(null));
 
-    ProjectList moduleList = ProtobufUtil.readFile(tempDir.resolve(ServerProjectsStore.PROJECT_LIST_PB), ProjectList.parser());
+    var moduleList = ProtobufUtil.readFile(tempDir.resolve(ServerProjectsStore.PROJECT_LIST_PB), ProjectList.parser());
     assertThat(moduleList.getProjectsByKeyMap()).hasSize(282);
   }
 }

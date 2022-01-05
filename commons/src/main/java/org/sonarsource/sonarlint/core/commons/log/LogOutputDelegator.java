@@ -28,7 +28,7 @@ class LogOutputDelegator {
   private final InheritableThreadLocal<ClientLogOutput> target = new InheritableThreadLocal<>();
 
   void log(String formattedMessage, Level level) {
-    ClientLogOutput output = target.get();
+    var output = target.get();
     if (output != null) {
       output.log(formattedMessage, level);
     }

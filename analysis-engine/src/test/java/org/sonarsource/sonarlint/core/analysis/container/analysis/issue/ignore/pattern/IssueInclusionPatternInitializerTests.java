@@ -31,7 +31,7 @@ class IssueInclusionPatternInitializerTests {
 
   @Test
   void testNoConfiguration() {
-    IssueInclusionPatternInitializer patternsInitializer = new IssueInclusionPatternInitializer(new MapSettings(Collections.emptyMap()).asConfig());
+    var patternsInitializer = new IssueInclusionPatternInitializer(new MapSettings(Collections.emptyMap()).asConfig());
     patternsInitializer.initPatterns();
     assertThat(patternsInitializer.hasConfiguredPatterns()).isFalse();
   }
@@ -44,7 +44,7 @@ class IssueInclusionPatternInitializerTests {
     settings.put("sonar.issue.enforce" + ".multicriteria" + ".1." + "ruleKey", "*");
     settings.put("sonar.issue.enforce" + ".multicriteria" + ".2." + "resourceKey", "org/foo/Hello.java");
     settings.put("sonar.issue.enforce" + ".multicriteria" + ".2." + "ruleKey", "checkstyle:MagicNumber");
-    IssueInclusionPatternInitializer patternsInitializer = new IssueInclusionPatternInitializer(new MapSettings(settings).asConfig());
+    var patternsInitializer = new IssueInclusionPatternInitializer(new MapSettings(settings).asConfig());
     patternsInitializer.initPatterns();
 
     assertThat(patternsInitializer.hasConfiguredPatterns()).isTrue();

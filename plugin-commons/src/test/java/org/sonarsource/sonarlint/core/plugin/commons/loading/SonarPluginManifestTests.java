@@ -35,7 +35,7 @@ class SonarPluginManifestTests {
 
   @Test
   void test_RequiredPlugin() throws Exception {
-    SonarPluginManifest.RequiredPlugin plugin = SonarPluginManifest.RequiredPlugin.parse("java:1.1");
+    var plugin = SonarPluginManifest.RequiredPlugin.parse("java:1.1");
     assertThat(plugin.getKey()).isEqualTo("java");
     assertThat(plugin.getMinimalVersion().getName()).isEqualTo("1.1");
 
@@ -44,14 +44,14 @@ class SonarPluginManifestTests {
 
   @Test
   void test() {
-    Path fake = Paths.get("fake.jar");
+    var fake = Paths.get("fake.jar");
     assertThrows(RuntimeException.class, () -> SonarPluginManifest.fromJar(fake));
   }
 
   @Test
   void should_create_manifest_from_jar() throws URISyntaxException, IOException {
-    Path checkstyleJar = Paths.get(getClass().getResource("/sonar-checkstyle-plugin-2.8.jar").toURI());
-    SonarPluginManifest manifest = SonarPluginManifest.fromJar(checkstyleJar);
+    var checkstyleJar = Paths.get(getClass().getResource("/sonar-checkstyle-plugin-2.8.jar").toURI());
+    var manifest = SonarPluginManifest.fromJar(checkstyleJar);
 
     assertThat(manifest.getKey()).isEqualTo("checkstyle");
     assertThat(manifest.getName()).isEqualTo("Checkstyle");
@@ -64,9 +64,9 @@ class SonarPluginManifestTests {
 
   @Test
   void should_add_requires_plugins() throws URISyntaxException, IOException {
-    URL jar = getClass().getResource("/SonarPluginManifestTests/plugin-with-require-plugins.jar");
+    var jar = getClass().getResource("/SonarPluginManifestTests/plugin-with-require-plugins.jar");
 
-    SonarPluginManifest manifest = SonarPluginManifest.fromJar(Paths.get(jar.toURI()));
+    var manifest = SonarPluginManifest.fromJar(Paths.get(jar.toURI()));
 
     assertThat(manifest.getRequiredPlugins())
       .usingRecursiveFieldByFieldElementComparator()
@@ -75,27 +75,27 @@ class SonarPluginManifestTests {
 
   @Test
   void should_parse_jre_min_version() throws URISyntaxException, IOException {
-    URL jar = getClass().getResource("/SonarPluginManifestTests/plugin-with-jre-min.jar");
+    var jar = getClass().getResource("/SonarPluginManifestTests/plugin-with-jre-min.jar");
 
-    SonarPluginManifest manifest = SonarPluginManifest.fromJar(Paths.get(jar.toURI()));
+    var manifest = SonarPluginManifest.fromJar(Paths.get(jar.toURI()));
 
     assertThat(manifest.getJreMinVersion()).contains(Version.create("11"));
   }
 
   @Test
   void should_default_jre_min_version_to_null() throws URISyntaxException, IOException {
-    URL jar = getClass().getResource("/SonarPluginManifestTests/plugin-without-jre-min.jar");
+    var jar = getClass().getResource("/SonarPluginManifestTests/plugin-without-jre-min.jar");
 
-    SonarPluginManifest manifest = SonarPluginManifest.fromJar(Paths.get(jar.toURI()));
+    var manifest = SonarPluginManifest.fromJar(Paths.get(jar.toURI()));
 
     assertThat(manifest.getJreMinVersion()).isEmpty();
   }
 
   @Test
   void should_parse_nodejs_min_version() throws URISyntaxException, IOException {
-    URL jar = getClass().getResource("/SonarPluginManifestTests/plugin-with-nodejs-min.jar");
+    var jar = getClass().getResource("/SonarPluginManifestTests/plugin-with-nodejs-min.jar");
 
-    SonarPluginManifest manifest = SonarPluginManifest.fromJar(Paths.get(jar.toURI()));
+    var manifest = SonarPluginManifest.fromJar(Paths.get(jar.toURI()));
 
     assertThat(manifest.getNodeJsMinVersion()).contains(Version.create("12.18.3"));
   }

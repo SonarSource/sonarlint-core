@@ -31,7 +31,7 @@ public class ExtensionUtils {
   }
 
   public static boolean isInstantiationStrategy(Object extension, String strategy) {
-    InstantiationStrategy annotation = AnnotationUtils.getAnnotation(extension, InstantiationStrategy.class);
+    var annotation = AnnotationUtils.getAnnotation(extension, InstantiationStrategy.class);
     if (annotation != null) {
       return strategy.equals(annotation.value());
     }

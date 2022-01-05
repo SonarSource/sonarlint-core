@@ -89,12 +89,12 @@ public class SonarLintFileSystem implements FileSystem {
 
   @Override
   public InputFile inputFile(FilePredicate predicate) {
-    Iterable<InputFile> files = inputFiles(predicate);
-    Iterator<InputFile> iterator = files.iterator();
+    var files = inputFiles(predicate);
+    var iterator = files.iterator();
     if (!iterator.hasNext()) {
       return null;
     }
-    InputFile first = iterator.next();
+    var first = iterator.next();
     if (!iterator.hasNext()) {
       return first;
     }

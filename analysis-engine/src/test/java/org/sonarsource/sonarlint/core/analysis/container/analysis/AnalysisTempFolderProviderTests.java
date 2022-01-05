@@ -21,16 +21,14 @@ package org.sonarsource.sonarlint.core.analysis.container.analysis;
 
 import org.junit.jupiter.api.Test;
 import org.sonar.api.utils.TempFolder;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.AnalysisTempFolderProvider;
-
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 class AnalysisTempFolderProviderTests {
 
   @Test
   void allMethodsShouldThrow() {
-    AnalysisTempFolderProvider underTest = new AnalysisTempFolderProvider();
-    TempFolder tempFolder = underTest.provide();
+    var underTest = new AnalysisTempFolderProvider();
+    var tempFolder = underTest.provide();
 
     assertThatExceptionOfType(UnsupportedOperationException.class)
       .isThrownBy(() -> tempFolder.newDir())

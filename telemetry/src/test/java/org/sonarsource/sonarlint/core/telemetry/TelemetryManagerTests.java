@@ -113,8 +113,8 @@ class TelemetryManagerTests {
 
   @Test
   void should_save_on_first_analysis(@TempDir Path temp) throws IOException {
-    TelemetryLocalStorageManager storage = mockTelemetryStorage();
-    TelemetryManager manager = stubbedTelemetryManager(temp, storage);
+    var storage = mockTelemetryStorage();
+    var manager = stubbedTelemetryManager(temp, storage);
     manager.analysisDoneOnMultipleFiles();
     verify(storage).tryUpdateAtomically(any(Consumer.class));
   }
@@ -123,13 +123,13 @@ class TelemetryManagerTests {
   void should_increment_numDays_on_analysis_once_per_day() throws IOException {
     createAndSaveSampleData(storage);
 
-    TelemetryLocalStorage data = storage.tryRead();
+    var data = storage.tryRead();
     assertThat(data.numUseDays()).isEqualTo(5);
 
     // note: the manager hasn't seen the saved data
     manager.analysisDoneOnMultipleFiles();
 
-    TelemetryLocalStorage reloaded = storage.tryRead();
+    var reloaded = storage.tryRead();
     assertThat(reloaded.numUseDays()).isEqualTo(6);
 
     manager.analysisDoneOnMultipleFiles();
@@ -156,8 +156,8 @@ class TelemetryManagerTests {
 
   @Test
   void disable_should_trigger_optout(@TempDir Path temp) throws IOException {
-    TelemetryLocalStorageManager storage = mockTelemetryStorage();
-    TelemetryManager manager = stubbedTelemetryManager(temp, storage);
+    var storage = mockTelemetryStorage();
+    var manager = stubbedTelemetryManager(temp, storage);
     manager.disable();
 
     verify(client).optOut(any(TelemetryLocalStorage.class), eq(attributes));
@@ -168,18 +168,18 @@ class TelemetryManagerTests {
   void uploadLazily_should_trigger_upload_once_per_day() throws IOException {
     storage.tryUpdateAtomically(d -> d.setUsedAnalysis("java", 1000));
 
-    TelemetryLocalStorage data = storage.tryRead();
+    var data = storage.tryRead();
     assertThat(data.analyzers()).isNotEmpty();
     assertThat(data.lastUploadTime()).isNull();
 
     manager.uploadLazily();
 
-    TelemetryLocalStorage reloaded = storage.tryRead();
+    var reloaded = storage.tryRead();
 
     // should reset performance after upload
     assertThat(reloaded.analyzers()).isEmpty();
 
-    LocalDateTime lastUploadTime = reloaded.lastUploadTime();
+    var lastUploadTime = reloaded.lastUploadTime();
     assertThat(lastUploadTime).isNotNull();
 
     manager.uploadLazily();
@@ -196,9 +196,9 @@ class TelemetryManagerTests {
     createAndSaveSampleData(storage);
     manager.uploadLazily();
 
-    TelemetryLocalStorage data = storage.tryRead();
+    var data = storage.tryRead();
 
-    LocalDateTime lastUploadTime = data.lastUploadTime()
+    var lastUploadTime = data.lastUploadTime()
       .minusDays(1)
       .minusHours(TelemetryManager.MIN_HOURS_BETWEEN_UPLOAD);
     storage.tryUpdateAtomically(d -> d.setLastUploadTime(lastUploadTime));
@@ -213,13 +213,13 @@ class TelemetryManagerTests {
   void enable_should_not_wipe_out_more_recent_data() {
     createAndSaveSampleData(storage);
 
-    TelemetryLocalStorage data = storage.tryRead();
+    var data = storage.tryRead();
     assertThat(data.enabled()).isFalse();
 
     // note: the manager hasn't seen the saved data
     manager.enable();
 
-    TelemetryLocalStorage reloaded = storage.tryRead();
+    var reloaded = storage.tryRead();
     assertThat(reloaded.enabled()).isTrue();
     assertThat(reloaded.installTime()).isEqualTo(data.installTime().truncatedTo(ChronoUnit.MILLIS));
     assertThat(reloaded.lastUseDate()).isEqualTo(data.lastUseDate());
@@ -232,13 +232,13 @@ class TelemetryManagerTests {
     createAndSaveSampleData(storage);
     storage.tryUpdateAtomically(data -> data.setEnabled(true));
 
-    TelemetryLocalStorage data = storage.tryRead();
+    var data = storage.tryRead();
     assertThat(data.enabled()).isTrue();
 
     // note: the manager hasn't seen the saved data
     manager.disable();
 
-    TelemetryLocalStorage reloaded = storage.tryRead();
+    var reloaded = storage.tryRead();
     assertThat(reloaded.enabled()).isFalse();
     assertThat(reloaded.installTime()).isEqualTo(data.installTime().truncatedTo(ChronoUnit.MILLIS));
     assertThat(reloaded.lastUseDate()).isEqualTo(data.lastUseDate());
@@ -251,12 +251,12 @@ class TelemetryManagerTests {
   void reporting_analysis_done_should_not_wipe_out_more_recent_data() throws IOException {
     createAndSaveSampleData(storage);
 
-    TelemetryLocalStorage data = storage.tryRead();
+    var data = storage.tryRead();
 
     // note: the manager hasn't seen the saved data
     manager.analysisDoneOnMultipleFiles();
 
-    TelemetryLocalStorage reloaded = storage.tryRead();
+    var reloaded = storage.tryRead();
     assertThat(reloaded.enabled()).isEqualTo(data.enabled());
     assertThat(reloaded.installTime()).isEqualTo(data.installTime().truncatedTo(ChronoUnit.MILLIS));
     assertThat(reloaded.lastUseDate()).isEqualTo(LocalDate.now());
@@ -270,12 +270,12 @@ class TelemetryManagerTests {
   void reporting_analysis_on_language() throws IOException {
     createAndSaveSampleData(storage);
 
-    TelemetryLocalStorage data = storage.tryRead();
+    var data = storage.tryRead();
 
     // note: the manager hasn't seen the saved data
     manager.analysisDoneOnSingleLanguage(Language.JAVA, 1000);
 
-    TelemetryLocalStorage reloaded = storage.tryRead();
+    var reloaded = storage.tryRead();
     assertThat(reloaded.enabled()).isEqualTo(data.enabled());
     assertThat(reloaded.installTime()).isEqualTo(data.installTime().truncatedTo(ChronoUnit.MILLIS));
     assertThat(reloaded.lastUseDate()).isEqualTo(LocalDate.now());
@@ -289,14 +289,14 @@ class TelemetryManagerTests {
   void accumulate_received_dev_notifications() throws IOException {
     createAndSaveSampleData(storage);
 
-    TelemetryLocalStorage data = storage.tryRead();
+    var data = storage.tryRead();
 
     // note: the manager hasn't seen the saved data
     manager.devNotificationsReceived(FOO_EVENT);
     manager.devNotificationsReceived(FOO_EVENT);
     manager.devNotificationsReceived(FOO_EVENT);
 
-    TelemetryLocalStorage reloaded = storage.tryRead();
+    var reloaded = storage.tryRead();
     assertThat(reloaded.enabled()).isEqualTo(data.enabled());
     assertThat(reloaded.installTime()).isEqualTo(data.installTime().truncatedTo(ChronoUnit.MILLIS));
     assertThat(reloaded.lastUseDate()).isEqualTo(data.lastUseDate());
@@ -310,13 +310,13 @@ class TelemetryManagerTests {
   void accumulate_clicked_dev_notifications() throws IOException {
     createAndSaveSampleData(storage);
 
-    TelemetryLocalStorage data = storage.tryRead();
+    var data = storage.tryRead();
 
     // note: the manager hasn't seen the saved data
     manager.devNotificationsClicked(FOO_EVENT);
     manager.devNotificationsClicked(FOO_EVENT);
 
-    TelemetryLocalStorage reloaded = storage.tryRead();
+    var reloaded = storage.tryRead();
 
     assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays() + 1);
     assertThat(reloaded.notifications().get(FOO_EVENT).getDevNotificationsClicked()).isEqualTo(DEFAULT_NOTIF_CLICKED + 2);
@@ -330,7 +330,7 @@ class TelemetryManagerTests {
     manager.showHotspotRequestReceived();
     manager.showHotspotRequestReceived();
 
-    TelemetryLocalStorage reloaded = storage.tryRead();
+    var reloaded = storage.tryRead();
 
     assertThat(reloaded.showHotspotRequestsCount()).isEqualTo(2);
   }
@@ -345,7 +345,7 @@ class TelemetryManagerTests {
     manager.taintVulnerabilitiesInvestigatedLocally();
     manager.taintVulnerabilitiesInvestigatedRemotely();
 
-    TelemetryLocalStorage reloaded = storage.tryRead();
+    var reloaded = storage.tryRead();
 
     assertThat(reloaded.taintVulnerabilitiesInvestigatedLocallyCount()).isEqualTo(3);
     assertThat(reloaded.taintVulnerabilitiesInvestigatedRemotelyCount()).isEqualTo(1);
@@ -366,7 +366,7 @@ class TelemetryManagerTests {
 
     manager.uploadLazily();
 
-    TelemetryLocalStorage reloaded = storage.tryRead();
+    var reloaded = storage.tryRead();
     assertThat(reloaded.analyzers()).isEmpty();
     assertThat(reloaded.showHotspotRequestsCount()).isZero();
     assertThat(reloaded.notifications()).isEmpty();
@@ -382,7 +382,7 @@ class TelemetryManagerTests {
 
     manager.addReportedRules(new HashSet<>(Arrays.asList("ruleKey1", "ruleKey1", "ruleKey2")));
 
-    TelemetryLocalStorage reloaded = storage.tryRead();
+    var reloaded = storage.tryRead();
     assertThat(reloaded.getRaisedIssuesRules()).hasSize(2);
     assertThat(reloaded.getRaisedIssuesRules()).contains("ruleKey1", "ruleKey2");
   }
@@ -395,7 +395,7 @@ class TelemetryManagerTests {
     manager.addQuickFixAppliedForRule("ruleKey2");
     manager.addQuickFixAppliedForRule("ruleKey1");
 
-    TelemetryLocalStorage reloaded = storage.tryRead();
+    var reloaded = storage.tryRead();
     assertThat(reloaded.getQuickFixesApplied()).containsExactlyInAnyOrder("ruleKey1", "ruleKey2");
   }
 
@@ -411,12 +411,12 @@ class TelemetryManagerTests {
   }
 
   private TelemetryLocalStorageManager mockTelemetryStorage() {
-    TelemetryLocalStorageManager storage = mock(TelemetryLocalStorageManager.class);
+    var storage = mock(TelemetryLocalStorageManager.class);
     when(storage.tryRead()).thenReturn(new TelemetryLocalStorage());
     doAnswer(new Answer<Void>() {
       @Override
       public Void answer(InvocationOnMock invocation) throws Throwable {
-        Object[] args = invocation.getArguments();
+        var args = invocation.getArguments();
         ((Consumer) args[0]).accept(mock(TelemetryLocalStorage.class));
         return null;
       }

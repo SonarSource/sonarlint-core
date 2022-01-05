@@ -33,14 +33,14 @@ class LineRangeTests {
 
   @Test
   void shouldConvertLineRangeToLines() {
-    LineRange range = new LineRange(12, 15);
+    var range = new LineRange(12, 15);
 
     assertThat(range.toLines()).containsOnly(12, 13, 14, 15);
   }
 
   @Test
   void shouldTestInclusionInRangeOfLines() {
-    LineRange range = new LineRange(12, 15);
+    var range = new LineRange(12, 15);
 
     assertThat(range.in(3)).isFalse();
     assertThat(range.in(12)).isTrue();
@@ -57,7 +57,7 @@ class LineRangeTests {
 
   @Test
   void testEquals() {
-    LineRange range = new LineRange(12, 15);
+    var range = new LineRange(12, 15);
     assertThat(range).isEqualTo(range)
       .isEqualTo(new LineRange(12, 15))
       .isNotEqualTo(new LineRange(12, 2000))

@@ -27,7 +27,7 @@ class VersionTests {
 
   @Test
   void test_fields_of_snapshot_versions() {
-    Version version = Version.create("1.2.3-SNAPSHOT");
+    var version = Version.create("1.2.3-SNAPSHOT");
     assertThat(version.getMajor()).isEqualTo(1);
     assertThat(version.getMinor()).isEqualTo(2);
     assertThat(version.getPatch()).isEqualTo(3);
@@ -37,7 +37,7 @@ class VersionTests {
 
   @Test
   void test_fields_of_releases() {
-    Version version = Version.create("1.2");
+    var version = Version.create("1.2");
     assertThat(version.getMajor()).isEqualTo(1);
     assertThat(version.getMinor()).isEqualTo(2);
     assertThat(version.getPatch()).isEqualTo(0);
@@ -47,8 +47,8 @@ class VersionTests {
 
   @Test
   void compare_releases() {
-    Version version12 = Version.create("1.2");
-    Version version121 = Version.create("1.2.1");
+    var version12 = Version.create("1.2");
+    var version121 = Version.create("1.2.1");
 
     assertThat(version12)
       .hasToString("1.2")
@@ -60,10 +60,10 @@ class VersionTests {
 
   @Test
   void compare_snapshots() {
-    Version version12 = Version.create("1.2");
-    Version version12Snapshot = Version.create("1.2-SNAPSHOT");
-    Version version121Snapshot = Version.create("1.2.1-SNAPSHOT");
-    Version version12RC = Version.create("1.2-RC1");
+    var version12 = Version.create("1.2");
+    var version12Snapshot = Version.create("1.2-SNAPSHOT");
+    var version121Snapshot = Version.create("1.2.1-SNAPSHOT");
+    var version12RC = Version.create("1.2-RC1");
 
     assertThat(version12).isGreaterThan(version12Snapshot);
     assertThat(version12Snapshot).isEqualByComparingTo(version12Snapshot);
@@ -73,10 +73,10 @@ class VersionTests {
 
   @Test
   void compare_release_candidates() {
-    Version version12 = Version.create("1.2");
-    Version version12Snapshot = Version.create("1.2-SNAPSHOT");
-    Version version12RC1 = Version.create("1.2-RC1");
-    Version version12RC2 = Version.create("1.2-RC2");
+    var version12 = Version.create("1.2");
+    var version12Snapshot = Version.create("1.2-SNAPSHOT");
+    var version12RC1 = Version.create("1.2-RC1");
+    var version12RC2 = Version.create("1.2-RC2");
 
     assertThat(version12RC1)
       .isLessThan(version12Snapshot)
@@ -87,7 +87,7 @@ class VersionTests {
 
   @Test
   void testTrim() {
-    Version version12 = Version.create("   1.2  ");
+    var version12 = Version.create("   1.2  ");
 
     assertThat(version12.getName()).isEqualTo("1.2");
     assertThat(version12).isEqualTo(Version.create("1.2"));
@@ -95,8 +95,8 @@ class VersionTests {
 
   @Test
   void testDefaultNumberIsZero() {
-    Version version12 = Version.create("1.2");
-    Version version120 = Version.create("1.2.0");
+    var version12 = Version.create("1.2");
+    var version120 = Version.create("1.2.0");
 
     assertThat(version12).isEqualTo(version120);
     assertThat(version120).isEqualTo(version12);
@@ -104,9 +104,9 @@ class VersionTests {
 
   @Test
   void testCompareOnTwoDigits() {
-    Version version1dot10 = Version.create("1.10");
-    Version version1dot1 = Version.create("1.1");
-    Version version1dot9 = Version.create("1.9");
+    var version1dot10 = Version.create("1.10");
+    var version1dot1 = Version.create("1.1");
+    var version1dot9 = Version.create("1.9");
 
     assertThat(version1dot10.compareTo(version1dot1) > 0).isTrue();
     assertThat(version1dot10.compareTo(version1dot9) > 0).isTrue();
@@ -114,7 +114,7 @@ class VersionTests {
 
   @Test
   void testFields() {
-    Version version = Version.create("1.10.2");
+    var version = Version.create("1.10.2");
 
     assertThat(version.getName()).isEqualTo("1.10.2");
     assertThat(version).hasToString("1.10.2");
@@ -126,7 +126,7 @@ class VersionTests {
 
   @Test
   void testPatchFieldsEquals() {
-    Version version = Version.create("1.2.3.4");
+    var version = Version.create("1.2.3.4");
 
     assertThat(version.getPatch()).isEqualTo(3);
     assertThat(version.getBuild()).isEqualTo(4);
@@ -139,7 +139,7 @@ class VersionTests {
 
   @Test
   void removeQualifier() {
-    Version version = Version.create("1.2.3-SNAPSHOT").removeQualifier();
+    var version = Version.create("1.2.3-SNAPSHOT").removeQualifier();
 
     assertThat(version.getMajor()).isEqualTo(1);
     assertThat(version.getMinor()).isEqualTo(2);

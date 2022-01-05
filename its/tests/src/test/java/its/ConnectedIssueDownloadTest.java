@@ -85,7 +85,7 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
 
   @BeforeClass
   public static void prepare() {
-    WsClient adminWsClient = newAdminWsClient(ORCHESTRATOR);
+    var adminWsClient = newAdminWsClient(ORCHESTRATOR);
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY, "Sample Xoo");
@@ -96,7 +96,7 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
     analyzeProject("sample-xoo-v2");
 
     // Mark a few issues as closed WF and closed FP
-    SearchWsResponse issueSearchResponse = adminWsClient.issues()
+    var issueSearchResponse = adminWsClient.issues()
       .search(new SearchRequest().setStatuses(asList("OPEN")).setTypes(asList("CODE_SMELL")).setComponentKeys(asList(PROJECT_KEY)));
     wfIssue = issueSearchResponse.getIssues(0);
     fpIssue = issueSearchResponse.getIssues(1);
@@ -143,8 +143,8 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
 
     engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, false, null);
 
-    List<ServerIssue> file1Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/500lines.xoo");
-    List<ServerIssue> file2Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/10000lines.xoo");
+    var file1Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/500lines.xoo");
+    var file2Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/10000lines.xoo");
 
     // Number of issues is not limited to 10k
     assertThat(file1Issues.size() + file2Issues.size()).isEqualTo(10_500);
@@ -165,7 +165,7 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
   }
 
   private static void analyzeProject(String projectDirName) {
-    Path projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
+    var projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
     ORCHESTRATOR.executeBuild(SonarScanner.create(projectDir.toFile())
       .setProjectKey(PROJECT_KEY)
       .setSourceDirs("src")

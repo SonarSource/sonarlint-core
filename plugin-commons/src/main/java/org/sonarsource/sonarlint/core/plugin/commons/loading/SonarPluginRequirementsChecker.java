@@ -85,8 +85,8 @@ public class SonarPluginRequirementsChecker {
 
   private PluginRequirementsCheckResult checkIfSkippedAndPopulateReason(PluginInfo plugin, Set<Language> enabledLanguages, Version jreCurrentVersion,
     Optional<Version> nodeCurrentVersion) {
-    String pluginKey = plugin.getKey();
-    Set<Language> languages = Language.getLanguagesByPluginKey(pluginKey);
+    var pluginKey = plugin.getKey();
+    var languages = Language.getLanguagesByPluginKey(pluginKey);
     if (!languages.isEmpty() && enabledLanguages.stream().noneMatch(languages::contains)) {
       if (languages.size() > 1) {
         LOG.debug("Plugin '{}' is excluded because none of languages '{}' are enabled. Skip loading it.", plugin.getName(),
@@ -102,13 +102,13 @@ public class SonarPluginRequirementsChecker {
         plugin.getMinimalSqVersion(), IMPLEMENTED_SQ_API);
       return new PluginRequirementsCheckResult(plugin, SkipReason.IncompatiblePluginApi.INSTANCE);
     }
-    String pluginMinVersion = pluginMinVersions.getMinimumVersion(pluginKey);
+    var pluginMinVersion = pluginMinVersions.getMinimumVersion(pluginKey);
     if (pluginMinVersion != null && !pluginMinVersions.isVersionSupported(pluginKey, plugin.getVersion())) {
       LOG.debug("Plugin '{}' version '{}' is not supported (minimal version is '{}'). Skip loading it.", plugin.getName(), plugin.getVersion(),
         pluginMinVersion);
       return new PluginRequirementsCheckResult(plugin, new SkipReason.IncompatiblePluginVersion(pluginMinVersion));
     }
-    Version jreMinVersion = plugin.getJreMinVersion();
+    var jreMinVersion = plugin.getJreMinVersion();
     if (jreMinVersion != null) {
       if (!jreCurrentVersion.satisfiesMinRequirement(jreMinVersion)) {
         LOG.debug("Plugin '{}' requires JRE {} while current is {}. Skip loading it.", plugin.getName(), jreMinVersion, jreCurrentVersion);
@@ -116,7 +116,7 @@ public class SonarPluginRequirementsChecker {
           new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.JRE, jreCurrentVersion.toString(), jreMinVersion.toString()));
       }
     }
-    Version nodeMinVersion = plugin.getNodeJsMinVersion();
+    var nodeMinVersion = plugin.getNodeJsMinVersion();
     if (nodeMinVersion != null) {
       if (nodeCurrentVersion.isEmpty()) {
         LOG.debug("Plugin '{}' requires Node.js {}. Skip loading it.", plugin.getName(), nodeMinVersion);
@@ -136,33 +136,30 @@ public class SonarPluginRequirementsChecker {
    * needed by the plugin.
    */
   static boolean isCompatibleWith(PluginInfo plugin, String implementedApi) {
-    Version sonarMinVersion = plugin.getMinimalSqVersion();
+    var sonarMinVersion = plugin.getMinimalSqVersion();
     if (sonarMinVersion == null) {
       // no constraint defined on the plugin
       return true;
     }
 
     // Ignore patch and build numbers since this should not change API compatibility
-    Version requestedApi = Version.create(sonarMinVersion.getMajor() + "." + sonarMinVersion.getMinor());
-    Version implementedApiVersion = Version.create(implementedApi);
+    var requestedApi = Version.create(sonarMinVersion.getMajor() + "." + sonarMinVersion.getMinor());
+    var implementedApiVersion = Version.create(implementedApi);
     return implementedApiVersion.compareToIgnoreQualifier(requestedApi) >= 0;
   }
 
   private static PluginRequirementsCheckResult checkUnsatisfiedPluginDependency(PluginRequirementsCheckResult currentResult,
     Map<String, PluginRequirementsCheckResult> currentResultsByKey) {
-    PluginInfo plugin = currentResult.getPlugin();
+    var plugin = currentResult.getPlugin();
     for (RequiredPlugin required : plugin.getRequiredPlugins()) {
-      if ("license".equals(required.getKey())) {
-        continue;
-      }
-      if (Language.JS.getPluginKey().equals(plugin.getKey()) && OLD_SONARTS_PLUGIN_KEY.equals(required.getKey())) {
+      if ("license".equals(required.getKey()) || (Language.JS.getPluginKey().equals(plugin.getKey()) && OLD_SONARTS_PLUGIN_KEY.equals(required.getKey()))) {
         // Workaround for SLCORE-259
         // This dependency was added to ease migration on SonarQube, but can be ignored on SonarLint
         // Note: The dependency was removed in SonarJS 6.3 but we should still keep the workaround as long as we want to support older
         // versions
         continue;
       }
-      PluginRequirementsCheckResult depInfo = currentResultsByKey.get(required.getKey());
+      var depInfo = currentResultsByKey.get(required.getKey());
       // We could possibly have a problem with transitive dependencies, since we evaluate in no specific order.
       // A -> B -> C
       // If C is skipped, then B should be skipped, then A should be skipped
@@ -173,9 +170,9 @@ public class SonarPluginRequirementsChecker {
         return new PluginRequirementsCheckResult(currentResult.getPlugin(), new SkipReason.UnsatisfiedDependency(required.getKey()));
       }
     }
-    String basePluginKey = plugin.getBasePlugin();
+    var basePluginKey = plugin.getBasePlugin();
     if (basePluginKey != null) {
-      PluginRequirementsCheckResult baseInfo = currentResultsByKey.get(basePluginKey);
+      var baseInfo = currentResultsByKey.get(basePluginKey);
       if (baseInfo == null || baseInfo.isSkipped()) {
         LOG.debug("Plugin '{}' dependency on '{}' is unsatisfied. Skip loading it.", currentResult.getPlugin().getName(), basePluginKey);
         return new PluginRequirementsCheckResult(currentResult.getPlugin(), new SkipReason.UnsatisfiedDependency(basePluginKey));

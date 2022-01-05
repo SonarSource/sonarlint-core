@@ -48,7 +48,7 @@ class NormalizedParameters {
       return null;
     }
 
-    final Object lastEntry = argArray[argArray.length - 1];
+    final var lastEntry = argArray[argArray.length - 1];
     if (lastEntry instanceof Throwable) {
       return (Throwable) lastEntry;
     }
@@ -68,7 +68,7 @@ class NormalizedParameters {
       throw new IllegalStateException("non-sensical empty or null argument array");
     }
 
-    final int trimmedLen = argArray.length - 1;
+    final var trimmedLen = argArray.length - 1;
 
     var trimmed = new Object[trimmedLen];
 

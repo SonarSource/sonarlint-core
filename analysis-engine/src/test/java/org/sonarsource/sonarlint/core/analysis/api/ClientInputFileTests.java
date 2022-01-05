@@ -26,15 +26,13 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ClientInputFileTests {
 
   @Test
   void testDefaults(@TempDir Path tempDir) throws IOException {
-    Path path = tempDir.resolve("Foo.java");
+    var path = tempDir.resolve("Foo.java");
     ClientInputFile underTest = new ClientInputFile() {
 
       @Override

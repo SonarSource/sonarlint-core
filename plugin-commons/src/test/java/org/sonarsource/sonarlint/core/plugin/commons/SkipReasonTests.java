@@ -35,7 +35,7 @@ class SkipReasonTests {
 
   @Test
   void testLanguageNotEnabled_getters_equals_hashcode_tostring() {
-    SkipReason.LanguagesNotEnabled underTest = new LanguagesNotEnabled(asList(Language.JAVA));
+    var underTest = new LanguagesNotEnabled(asList(Language.JAVA));
     // Getters
     assertThat(underTest.getNotEnabledLanguages())
       .containsExactly(Language.JAVA);
@@ -54,7 +54,7 @@ class SkipReasonTests {
 
   @Test
   void testUnsatisfiedDependency_getters_equals_hashcode_tostring() {
-    SkipReason.UnsatisfiedDependency underTest = new UnsatisfiedDependency("foo");
+    var underTest = new UnsatisfiedDependency("foo");
     // Getters
     assertThat(underTest.getDependencyKey()).isEqualTo("foo");
     assertThat(underTest)
@@ -72,7 +72,7 @@ class SkipReasonTests {
 
   @Test
   void testIncompatiblePluginVersion_getters_equals_hashcode_tostring() {
-    SkipReason.IncompatiblePluginVersion underTest = new IncompatiblePluginVersion("1.0");
+    var underTest = new IncompatiblePluginVersion("1.0");
     // Getters
     assertThat(underTest.getMinVersion()).isEqualTo("1.0");
     assertThat(underTest)
@@ -90,7 +90,7 @@ class SkipReasonTests {
 
   @Test
   void testUnsatisfiedRuntimeRequirement_getters_equals_hashcode_tostring() {
-    SkipReason.UnsatisfiedRuntimeRequirement underTest = new UnsatisfiedRuntimeRequirement(RuntimeRequirement.JRE, "1.0", "2.0");
+    var underTest = new UnsatisfiedRuntimeRequirement(RuntimeRequirement.JRE, "1.0", "2.0");
     // Getters
     assertThat(underTest.getMinVersion()).isEqualTo("2.0");
     assertThat(underTest.getCurrentVersion()).isEqualTo("1.0");

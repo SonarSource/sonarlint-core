@@ -43,7 +43,7 @@ class DevelopersApiTest {
 
   @Test
   void should_consider_notifications_unsupported_if_endpoint_does_not_exist() {
-    boolean supported = underTest.isSupported();
+    var supported = underTest.isSupported();
 
     assertThat(supported).isFalse();
   }
@@ -52,7 +52,7 @@ class DevelopersApiTest {
   void should_consider_notifications_supported_if_endpoint_exists() {
     mockServer.addStringResponse("/api/developers/search_events?projects=&from=", "");
 
-    boolean supported = underTest.isSupported();
+    var supported = underTest.isSupported();
 
     assertThat(supported).isTrue();
   }
@@ -70,7 +70,7 @@ class DevelopersApiTest {
       "]" +
       "}");
 
-    List<Event> events = underTest.getEvents(Map.of("projectKey", ZonedDateTime.parse("2022-01-01T12:00:00Z")));
+    var events = underTest.getEvents(Map.of("projectKey", ZonedDateTime.parse("2022-01-01T12:00:00Z")));
 
     assertThat(events)
       .extracting("category", "message", "link", "projectKey", "time")
@@ -89,14 +89,14 @@ class DevelopersApiTest {
       "]" +
       "}");
 
-    List<Event> events = underTest.getEvents(Map.of("projectKey", ZonedDateTime.parse("2022-01-01T12:00:00Z")));
+    var events = underTest.getEvents(Map.of("projectKey", ZonedDateTime.parse("2022-01-01T12:00:00Z")));
 
     assertThat(events).isEmpty();
   }
 
   @Test
   void should_return_no_event_if_the_request_fails() {
-    List<Event> events = underTest.getEvents(Map.of("projectKey", ZonedDateTime.parse("2022-01-01T12:00:00Z")));
+    var events = underTest.getEvents(Map.of("projectKey", ZonedDateTime.parse("2022-01-01T12:00:00Z")));
 
     assertThat(events).isEmpty();
   }

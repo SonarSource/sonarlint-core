@@ -75,7 +75,7 @@ public class ActiveRule {
     if (!(obj instanceof ActiveRule)) {
       return false;
     }
-    ActiveRule other = (ActiveRule) obj;
+    var other = (ActiveRule) obj;
     return Objects.equals(ruleKey, other.ruleKey);
   }
 

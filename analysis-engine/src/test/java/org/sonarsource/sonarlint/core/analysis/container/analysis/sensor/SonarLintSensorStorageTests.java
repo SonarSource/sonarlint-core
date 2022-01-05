@@ -37,49 +37,49 @@ class SonarLintSensorStorageTests {
 
   @Test
   void store_Measure_doesnt_interact_with_its_param() {
-    Measure measure = mock(Measure.class);
+    var measure = mock(Measure.class);
     underTest.store(measure);
     verifyNoInteractions(measure);
   }
 
   @Test
   void store_ExternalIssue_doesnt_interact_with_its_param() {
-    ExternalIssue externalIssue = mock(ExternalIssue.class);
+    var externalIssue = mock(ExternalIssue.class);
     underTest.store(externalIssue);
     verifyNoInteractions(externalIssue);
   }
 
   @Test
   void store_DefaultSignificantCode_doesnt_interact_with_its_param() {
-    NewSignificantCode significantCode = mock(NewSignificantCode.class);
+    var significantCode = mock(NewSignificantCode.class);
     underTest.store(significantCode);
     verifyNoInteractions(significantCode);
   }
 
   @Test
   void store_DefaultHighlighting_doesnt_interact_with_its_param() {
-    NewHighlighting highlighting = mock(NewHighlighting.class);
+    var highlighting = mock(NewHighlighting.class);
     underTest.store(highlighting);
     verifyNoInteractions(highlighting);
   }
 
   @Test
   void store_DefaultCoverage_doesnt_interact_with_its_param() {
-    NewCoverage coverage = mock(NewCoverage.class);
+    var coverage = mock(NewCoverage.class);
     underTest.store(coverage);
     verifyNoInteractions(coverage);
   }
 
   @Test
   void store_DefaultCpdTokens_doesnt_interact_with_its_param() {
-    NewCpdTokens cpdTokens = mock(NewCpdTokens.class);
+    var cpdTokens = mock(NewCpdTokens.class);
     underTest.store(cpdTokens);
     verifyNoInteractions(cpdTokens);
   }
 
   @Test
   void store_DefaultSymbolTable_doesnt_interact_with_its_param() {
-    NewSymbolTable symbolTable = mock(NewSymbolTable.class);
+    var symbolTable = mock(NewSymbolTable.class);
     underTest.store(symbolTable);
     verifyNoInteractions(symbolTable);
   }

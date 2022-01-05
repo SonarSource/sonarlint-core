@@ -43,7 +43,7 @@ class AuthenticationCheckerTests {
   void test_authentication_ok() {
     mockServer.addStringResponse("/api/authentication/validate?format=json", "{\"valid\": true}");
 
-    ValidationResult validationResult = underTest.validateCredentials();
+    var validationResult = underTest.validateCredentials();
 
     assertThat(validationResult.success()).isTrue();
     assertThat(validationResult.message()).isEqualTo("Authentication successful");
@@ -53,7 +53,7 @@ class AuthenticationCheckerTests {
   void test_authentication_ko() {
     mockServer.addStringResponse("/api/authentication/validate?format=json", "{\"valid\": false}");
 
-    ValidationResult validationResult = underTest.validateCredentials();
+    var validationResult = underTest.validateCredentials();
 
     assertThat(validationResult.success()).isFalse();
     assertThat(validationResult.message()).isEqualTo("Authentication failed");
@@ -63,7 +63,7 @@ class AuthenticationCheckerTests {
   void test_connection_issue() {
     mockServer.addResponse("/api/authentication/validate?format=json", new MockResponse().setResponseCode(500).setBody("Foo"));
 
-    ValidationResult validationResult = underTest.validateCredentials();
+    var validationResult = underTest.validateCredentials();
 
     assertThat(validationResult.success()).isFalse();
     assertThat(validationResult.message()).isEqualTo("HTTP Connection failed (500): Foo");

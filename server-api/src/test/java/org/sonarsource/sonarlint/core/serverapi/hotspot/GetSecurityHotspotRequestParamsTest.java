@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class GetSecurityHotspotRequestParamsTest {
   @Test
   void it_should_populate_fields_with_constructor_parameters() {
-    GetSecurityHotspotRequestParams params = new GetSecurityHotspotRequestParams("hotspotKey", "projectKey");
+    var params = new GetSecurityHotspotRequestParams("hotspotKey", "projectKey");
 
     assertThat(params.hotspotKey).isEqualTo("hotspotKey");
     assertThat(params.projectKey).isEqualTo("projectKey");

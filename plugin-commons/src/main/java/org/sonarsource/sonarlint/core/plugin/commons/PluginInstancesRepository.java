@@ -78,10 +78,10 @@ public class PluginInstancesRepository implements AutoCloseable {
   }
 
   public void init() {
-    String javaSpecVersion = Objects.requireNonNull(system2.property("java.specification.version"), "Missing Java property 'java.specification.version'");
+    var javaSpecVersion = Objects.requireNonNull(system2.property("java.specification.version"), "Missing Java property 'java.specification.version'");
     pluginCheckResultByKeys = pluginRequirementChecker.checkRequirements(configuration.pluginJarLocations, configuration.enabledLanguages, Version.create(javaSpecVersion),
       configuration.nodeCurrentVersion);
-    Collection<PluginInfo> nonSkippedPlugins = getNonSkippedPlugins();
+    var nonSkippedPlugins = getNonSkippedPlugins();
     pluginInstancesByKeys = pluginInstancesLoader.instantiatePluginClasses(nonSkippedPlugins);
 
     logPlugins(nonSkippedPlugins);

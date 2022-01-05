@@ -101,10 +101,10 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   }
 
   private ConnectedSonarLintEngine createEngine(Consumer<ConnectedGlobalConfiguration.Builder> configurator) {
-    NodeJsHelper nodeJsHelper = new NodeJsHelper();
+    var nodeJsHelper = new NodeJsHelper();
     nodeJsHelper.detect(null);
 
-    ConnectedGlobalConfiguration.Builder builder = ConnectedGlobalConfiguration.builder()
+    var builder = ConnectedGlobalConfiguration.builder()
       .setConnectionId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
       .setLogOutput((msg, level) -> {
@@ -160,8 +160,8 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
 
     engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP));
     // The description of SonarJava changed in 6.3, embedded in SQ 8.3
-    String javaDescription = ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 3) ? "Java Code Quality and Security" : "SonarJava";
-    String expectedLog = String.format("Plugin '%s' is excluded because language 'Java' is not enabled. Skip loading it.", javaDescription);
+    var javaDescription = ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 3) ? "Java Code Quality and Security" : "SonarJava";
+    var expectedLog = String.format("Plugin '%s' is excluded because language 'Java' is not enabled. Skip loading it.", javaDescription);
     assertThat(logs).contains(expectedLog);
     assertThat(engine.getPluginDetails()).extracting(PluginDetails::key, PluginDetails::skipReason)
       .contains(tuple(Language.JAVA.getPluginKey(), Optional.of(new SkipReason.LanguagesNotEnabled(asList(Language.JAVA)))));
@@ -178,7 +178,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
 
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVASCRIPT, false, null);
     engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVASCRIPT),null);
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, PROJECT_KEY_JAVASCRIPT, "src/Person.js"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -190,12 +190,12 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   */
   @Test
   public void dontAnalyzeTypescriptIfExcluded() throws Exception {
-    ConnectedAnalysisConfiguration tsAnalysisConfig = createAnalysisConfiguration(PROJECT_KEY_TYPESCRIPT, PROJECT_KEY_TYPESCRIPT, "src/Person.ts");
+    var tsAnalysisConfig = createAnalysisConfiguration(PROJECT_KEY_TYPESCRIPT, PROJECT_KEY_TYPESCRIPT, "src/Person.ts");
 
-    ProcessBuilder pb = new ProcessBuilder("npm" + (SystemUtils.IS_OS_WINDOWS ? ".cmd" : ""), "install")
+    var pb = new ProcessBuilder("npm" + (SystemUtils.IS_OS_WINDOWS ? ".cmd" : ""), "install")
       .directory(tsAnalysisConfig.baseDir().toFile())
       .inheritIO();
-    Process process = pb.start();
+    var process = pb.start();
     if (process.waitFor() != 0) {
       fail("Unable to run npm install");
     }
@@ -212,7 +212,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
 
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_TYPESCRIPT, false, null);
     engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_TYPESCRIPT), null);
-    SaveIssueListener issueListenerTs = new SaveIssueListener();
+    var issueListenerTs = new SaveIssueListener();
     engine.analyze(tsAnalysisConfig, issueListenerTs, null, null);
     assertThat(issueListenerTs.getIssues()).hasSize(0);
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 0)) {

@@ -47,7 +47,7 @@ class DefaultAnalysisErrorTests {
 
   @Test
   void test_analysis_error() {
-    DefaultAnalysisError analysisError = new DefaultAnalysisError(storage);
+    var analysisError = new DefaultAnalysisError(storage);
     analysisError.onFile(inputFile)
       .at(textPointer)
       .message("msg");
@@ -59,7 +59,7 @@ class DefaultAnalysisErrorTests {
 
   @Test
   void test_save() {
-    DefaultAnalysisError analysisError = new DefaultAnalysisError(storage);
+    var analysisError = new DefaultAnalysisError(storage);
     analysisError.onFile(inputFile).save();
 
     verify(storage).store(analysisError);
@@ -68,7 +68,7 @@ class DefaultAnalysisErrorTests {
 
   @Test
   void test_no_storage() {
-    DefaultAnalysisError analysisError = new DefaultAnalysisError();
+    var analysisError = new DefaultAnalysisError();
     assertThrows(NullPointerException.class, () -> analysisError.onFile(inputFile).save());
   }
 

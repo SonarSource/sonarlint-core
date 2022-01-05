@@ -36,7 +36,7 @@ class ConnectedGlobalConfigurationTests {
 
   @Test
   void testDefaults() {
-    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.builder()
       .build();
     assertThat(config.getConnectionId()).isNull();
     assertThat(config.getSonarLintUserHome()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint"));
@@ -51,7 +51,7 @@ class ConnectedGlobalConfigurationTests {
   void extraProps() {
     Map<String, String> extraProperties = new HashMap<>();
     extraProperties.put("foo", "bar");
-    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.builder()
       .setExtraProperties(extraProperties)
       .build();
     assertThat(config.extraProperties()).containsEntry("foo", "bar");
@@ -59,10 +59,10 @@ class ConnectedGlobalConfigurationTests {
 
   @Test
   void overrideDirs(@TempDir Path temp) throws Exception {
-    Path sonarUserHome = createDirectory(temp.resolve("userHome"));
-    Path storage = createDirectory(temp.resolve("storage"));
-    Path work = createDirectory(temp.resolve("work"));
-    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
+    var sonarUserHome = createDirectory(temp.resolve("userHome"));
+    var storage = createDirectory(temp.resolve("storage"));
+    var work = createDirectory(temp.resolve("work"));
+    var config = ConnectedGlobalConfiguration.builder()
       .setSonarLintUserHome(sonarUserHome)
       .setStorageRoot(storage)
       .setWorkDir(work)
@@ -74,7 +74,7 @@ class ConnectedGlobalConfigurationTests {
 
   @Test
   void enableLanguages() {
-    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.builder()
       .addEnabledLanguages(Language.JAVA, Language.ABAP)
       .addEnabledLanguage(Language.C)
       .build();
@@ -83,7 +83,7 @@ class ConnectedGlobalConfigurationTests {
 
   @Test
   void overridesPlugins() {
-    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.builder()
       .useEmbeddedPlugin(Language.JAVA.getLanguageKey(), Paths.get("java.jar"))
       .useEmbeddedPlugin(Language.ABAP.getLanguageKey(), Paths.get("abap.jar"))
       .build();
@@ -93,7 +93,7 @@ class ConnectedGlobalConfigurationTests {
 
   @Test
   void configureServerId() {
-    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.builder()
       .setConnectionId("myServer")
       .build();
     assertThat(config.getConnectionId()).isEqualTo("myServer");
@@ -101,7 +101,7 @@ class ConnectedGlobalConfigurationTests {
 
   @Test
   void validateServerId() {
-    ConnectedGlobalConfiguration.Builder builder = ConnectedGlobalConfiguration.builder();
+    var builder = ConnectedGlobalConfiguration.builder();
     expectFailure(builder, "");
     expectFailure(builder, null);
   }
@@ -117,7 +117,7 @@ class ConnectedGlobalConfigurationTests {
 
   @Test
   void providePid() {
-    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder().setClientPid(123).build();
+    var config = ConnectedGlobalConfiguration.builder().setClientPid(123).build();
     assertThat(config.getClientPid()).isEqualTo(123);
   }
 }

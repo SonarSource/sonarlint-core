@@ -44,10 +44,10 @@ class SonarLintInputFileTests {
 
   @Test
   void testGetters(@TempDir Path path) throws IOException {
-    Path filePath = path.resolve("foo.php");
+    var filePath = path.resolve("foo.php");
     Files.write(filePath, "test string".getBytes(StandardCharsets.UTF_8));
     ClientInputFile inputFile = new OnDiskTestClientInputFile(filePath, "file", false, StandardCharsets.UTF_8);
-    SonarLintInputFile file = new SonarLintInputFile(inputFile, f -> new FileMetadata().readMetadata(filePath.toFile(), StandardCharsets.UTF_8));
+    var file = new SonarLintInputFile(inputFile, f -> new FileMetadata().readMetadata(filePath.toFile(), StandardCharsets.UTF_8));
 
     assertThat(file.contents()).isEqualTo("test string");
     assertThat(file.charset()).isEqualByComparingTo(StandardCharsets.UTF_8);
@@ -60,8 +60,8 @@ class SonarLintInputFileTests {
       .isEqualTo(file)
       .isNotEqualTo(mock(SonarLintInputFile.class));
 
-    InputStream stream = file.inputStream();
-    try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
+    var stream = file.inputStream();
+    try (var reader = new BufferedReader(new InputStreamReader(stream))) {
       assertThat(reader.lines().collect(Collectors.joining())).isEqualTo("test string");
     }
 
@@ -70,8 +70,8 @@ class SonarLintInputFileTests {
   @Test
   void checkValidPointer() {
     ClientInputFile inputFile = new InMemoryTestClientInputFile("foo", "src/Foo.php", null, false, null);
-    FileMetadata.Metadata metadata = new FileMetadata.Metadata(2, new int[] {0, 10}, 16);
-    SonarLintInputFile file = new SonarLintInputFile(inputFile, f -> metadata);
+    var metadata = new FileMetadata.Metadata(2, new int[] {0, 10}, 16);
+    var file = new SonarLintInputFile(inputFile, f -> metadata);
     assertThat(file.newPointer(1, 0).line()).isEqualTo(1);
     assertThat(file.newPointer(1, 0).lineOffset()).isZero();
     // Don't fail
@@ -83,9 +83,9 @@ class SonarLintInputFileTests {
   @Test
   void selectLine() {
     ClientInputFile inputFile = new InMemoryTestClientInputFile("foo", "src/Foo.php", null, false, null);
-    FileMetadata.Metadata metadata = new FileMetadata().readMetadata(new ByteArrayInputStream("bla bla a\nabcde\n\nabc".getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8,
+    var metadata = new FileMetadata().readMetadata(new ByteArrayInputStream("bla bla a\nabcde\n\nabc".getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8,
       URI.create("file://foo.php"), null);
-    SonarLintInputFile file = new SonarLintInputFile(inputFile, f -> metadata);
+    var file = new SonarLintInputFile(inputFile, f -> metadata);
 
     assertThat(file.selectLine(1).start().line()).isEqualTo(1);
     assertThat(file.selectLine(1).start().lineOffset()).isZero();
@@ -102,8 +102,8 @@ class SonarLintInputFileTests {
   @Test
   void testRangeOverlap() {
     ClientInputFile inputFile = new InMemoryTestClientInputFile("foo", "src/Foo.php", null, false, null);
-    FileMetadata.Metadata metadata = new FileMetadata.Metadata(2, new int[] {0, 10}, 16);
-    SonarLintInputFile file = new SonarLintInputFile(inputFile, f -> metadata);
+    var metadata = new FileMetadata.Metadata(2, new int[] {0, 10}, 16);
+    var file = new SonarLintInputFile(inputFile, f -> metadata);
 
     // Don't fail
     assertThat(file.newRange(file.newPointer(1, 0), file.newPointer(1, 1)).overlap(file.newRange(file.newPointer(1, 0), file.newPointer(1, 1)))).isTrue();

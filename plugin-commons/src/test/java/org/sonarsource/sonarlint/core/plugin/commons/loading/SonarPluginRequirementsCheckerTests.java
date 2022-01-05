@@ -83,7 +83,7 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_no_plugins() {
-    Map<String, PluginRequirementsCheckResult> loadedPlugins = underTest.checkRequirements(Set.of(), NONE, null, null);
+    var loadedPlugins = underTest.checkRequirements(Set.of(), NONE, null, null);
 
     assertThat(loadedPlugins).isEmpty();
   }
@@ -91,7 +91,7 @@ class SonarPluginRequirementsCheckerTests {
   @Test
   void load_plugin_fail_if_missing_jar() {
     Set<Path> jars = Set.of(Paths.get("doesntexists.jar"));
-    Map<String, PluginRequirementsCheckResult> checkRequirements = underTest.checkRequirements(jars, NONE, null, null);
+    var checkRequirements = underTest.checkRequirements(jars, NONE, null, null);
 
     assertThat(checkRequirements).isEmpty();
     assertThat(logTester.logs(Level.ERROR)).contains("Unable to load plugin doesntexists.jar");
@@ -99,10 +99,10 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_plugin_skip_corrupted_jar(@TempDir Path storage) throws IOException {
-    Path fakePlugin = fakePlugin(storage, "sonarjs.jar");
+    var fakePlugin = fakePlugin(storage, "sonarjs.jar");
     Set<Path> jars = Set.of(fakePlugin);
 
-    Map<String, PluginRequirementsCheckResult> checkRequirements = underTest.checkRequirements(jars, NONE, null, null);
+    var checkRequirements = underTest.checkRequirements(jars, NONE, null, null);
 
     assertThat(checkRequirements).isEmpty();
     assertThat(logTester.logs(Level.ERROR)).contains("Unable to load plugin " + fakePlugin);
@@ -110,11 +110,11 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_plugin_skip_unsupported_plugins_api_version(@TempDir Path storage) throws IOException {
-    Path fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0,
+    var fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0,
       withSqApiVersion("99.9")));
     Set<Path> jars = Set.of(fakePlugin);
 
-    Map<String, PluginRequirementsCheckResult> loadedPlugins = underTest.checkRequirements(jars, NONE, null, null);
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, null);
 
     assertThat(loadedPlugins.values())
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
@@ -124,12 +124,12 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_plugin_skip_unsupported_plugins_version(@TempDir Path storage) throws IOException {
-    Path fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0));
+    var fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0));
     Set<Path> jars = Set.of(fakePlugin);
 
     when(pluginMinVersions.getMinimumVersion(FAKE_PLUGIN_KEY)).thenReturn("2.0");
 
-    Map<String, PluginRequirementsCheckResult> loadedPlugins = underTest.checkRequirements(jars, NONE, null, null);
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, null);
 
     assertThat(loadedPlugins.values())
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
@@ -139,10 +139,10 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_plugin_skip_not_enabled_languages(@TempDir Path storage) throws IOException {
-    Path fakePlugin = fakePlugin(storage, "sonarphp.jar", path -> createPluginManifest(path, Language.PHP.getPluginKey(), V1_0));
+    var fakePlugin = fakePlugin(storage, "sonarphp.jar", path -> createPluginManifest(path, Language.PHP.getPluginKey(), V1_0));
     Set<Path> jars = Set.of(fakePlugin);
 
-    Map<String, PluginRequirementsCheckResult> loadedPlugins = underTest.checkRequirements(jars, Set.of(Language.TS), null, null);
+    var loadedPlugins = underTest.checkRequirements(jars, Set.of(Language.TS), null, null);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("php", true, new SkipReason.LanguagesNotEnabled(new HashSet<>(asList(Language.PHP)))));
@@ -151,11 +151,11 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_plugin_skip_not_enabled_languages_multiple(@TempDir Path storage) throws IOException {
-    Path fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, Language.C.getPluginKey(), V1_0));
+    var fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, Language.C.getPluginKey(), V1_0));
     Set<Path> jars = Set.of(fakePlugin);
     doReturn(V1_0).when(pluginMinVersions).getMinimumVersion(Language.C.getPluginKey());
 
-    Map<String, PluginRequirementsCheckResult> loadedPlugins = underTest.checkRequirements(jars, Set.of(Language.JS), null, null);
+    var loadedPlugins = underTest.checkRequirements(jars, Set.of(Language.JS), null, null);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("cpp", true, new SkipReason.LanguagesNotEnabled(new HashSet<>(asList(Language.C, Language.CPP, Language.OBJC)))));
@@ -164,11 +164,11 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_plugin_load_even_if_only_one_language_enabled(@TempDir Path storage) throws IOException {
-    Path fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, Language.C.getPluginKey(), V1_0));
+    var fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, Language.C.getPluginKey(), V1_0));
     Set<Path> jars = Set.of(fakePlugin);
     doReturn(V1_0).when(pluginMinVersions).getMinimumVersion(Language.CPP.getPluginKey());
 
-    Map<String, PluginRequirementsCheckResult> loadedPlugins = underTest.checkRequirements(jars, Set.of(Language.CPP), null, null);
+    var loadedPlugins = underTest.checkRequirements(jars, Set.of(Language.CPP), null, null);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("cpp", false, null));
@@ -176,11 +176,11 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_plugin_skip_plugins_having_missing_base_plugin(@TempDir Path storage) throws IOException {
-    Path fakePlugin = fakePlugin(storage, "fake.jar",
+    var fakePlugin = fakePlugin(storage, "fake.jar",
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withBasePlugin(Language.JS.getPluginKey())));
     Set<Path> jars = Set.of(fakePlugin);
 
-    Map<String, PluginRequirementsCheckResult> loadedPlugins = underTest.checkRequirements(jars, NONE, null, null);
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, null);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, new SkipReason.UnsatisfiedDependency("javascript")));
@@ -189,16 +189,16 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_plugin_skip_plugins_having_skipped_base_plugin(@TempDir Path storage) throws IOException {
-    Path fakePlugin = fakePlugin(storage, "fake.jar",
+    var fakePlugin = fakePlugin(storage, "fake.jar",
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withBasePlugin(Language.JS.getPluginKey())));
-    Path fakeBasePlugin = fakePlugin(storage, "base.jar",
+    var fakeBasePlugin = fakePlugin(storage, "base.jar",
       path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0));
     Set<Path> jars = Set.of(fakePlugin, fakeBasePlugin);
 
     // Ensure base plugin is skipped because of min version
     doReturn("2.0").when(pluginMinVersions).getMinimumVersion(Language.JS.getPluginKey());
 
-    Map<String, PluginRequirementsCheckResult> loadedPlugins = underTest.checkRequirements(jars, Set.of(Language.JS), null, null);
+    var loadedPlugins = underTest.checkRequirements(jars, Set.of(Language.JS), null, null);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(
@@ -209,16 +209,16 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_plugin_having_base_plugin(@TempDir Path storage) throws IOException {
-    Path fakePlugin = fakePlugin(storage, "fake.jar",
+    var fakePlugin = fakePlugin(storage, "fake.jar",
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withBasePlugin(Language.JS.getPluginKey())));
-    Path fakeBasePlugin = fakePlugin(storage, "base.jar",
+    var fakeBasePlugin = fakePlugin(storage, "base.jar",
       path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0));
     Set<Path> jars = Set.of(fakePlugin, fakeBasePlugin);
 
     // Ensure base plugin is not skipped
     doReturn(V1_0).when(pluginMinVersions).getMinimumVersion(Language.JS.getPluginKey());
 
-    Map<String, PluginRequirementsCheckResult> loadedPlugins = underTest.checkRequirements(jars, Set.of(Language.JS), null, null);
+    var loadedPlugins = underTest.checkRequirements(jars, Set.of(Language.JS), null, null);
 
     assertThat(loadedPlugins.values())
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
@@ -229,11 +229,11 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_plugin_skip_plugins_having_missing_required_plugin(@TempDir Path storage) throws IOException {
-    Path fakePlugin = fakePlugin(storage, "fake.jar",
+    var fakePlugin = fakePlugin(storage, "fake.jar",
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withRequiredPlugins("required2:1.0")));
     Set<Path> jars = Set.of(fakePlugin);
 
-    Map<String, PluginRequirementsCheckResult> loadedPlugins = underTest.checkRequirements(jars, NONE, null, null);
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, null);
 
     assertThat(loadedPlugins.values())
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
@@ -243,11 +243,11 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_plugin_ignore_license_plugin_dependency(@TempDir Path storage) throws IOException {
-    Path fakePlugin = fakePlugin(storage, "fake.jar",
+    var fakePlugin = fakePlugin(storage, "fake.jar",
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withRequiredPlugins("license:1.0")));
     Set<Path> jars = Set.of(fakePlugin);
 
-    Map<String, PluginRequirementsCheckResult> loadedPlugins = underTest.checkRequirements(jars, NONE, null, null);
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, null);
 
     assertThat(loadedPlugins.values())
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped)
@@ -257,15 +257,15 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_plugin_skip_plugins_having_skipped_required_plugin(@TempDir Path storage) throws IOException {
-    Path fakePlugin = fakePlugin(storage, "fake.jar",
+    var fakePlugin = fakePlugin(storage, "fake.jar",
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withRequiredPlugins("required2:1.0")));
-    Path fakeDepPlugin = fakePlugin(storage, "dep.jar", path -> createPluginManifest(path, "required2", V1_0));
+    var fakeDepPlugin = fakePlugin(storage, "dep.jar", path -> createPluginManifest(path, "required2", V1_0));
     Set<Path> jars = Set.of(fakePlugin, fakeDepPlugin);
 
     // Ensure dep plugin is skipped because of min version
     doReturn("2.0").when(pluginMinVersions).getMinimumVersion("required2");
 
-    Map<String, PluginRequirementsCheckResult> loadedPlugins = underTest.checkRequirements(jars, NONE, null, null);
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, null);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, new SkipReason.UnsatisfiedDependency("required2")),
@@ -276,12 +276,12 @@ class SonarPluginRequirementsCheckerTests {
   // SLCORE-259
   @Test
   void load_plugin_ignore_dependency_between_sonarjs_and_sonarts(@TempDir Path storage) throws IOException {
-    Path fakePlugin = fakePlugin(storage, "sonarjs.jar",
+    var fakePlugin = fakePlugin(storage, "sonarjs.jar",
       path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, withRequiredPlugins("typescript:1.0")));
     Set<Path> jars = Set.of(fakePlugin);
     doReturn(true).when(pluginMinVersions).isVersionSupported(Language.JS.getPluginKey(), Version.create(V1_0));
 
-    Map<String, PluginRequirementsCheckResult> loadedPlugins = underTest.checkRequirements(jars, Set.of(Language.JS), null, null);
+    var loadedPlugins = underTest.checkRequirements(jars, Set.of(Language.JS), null, null);
 
     assertThat(loadedPlugins.values()).as(logsWithoutStartStop().collect(Collectors.joining("\n")))
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped)
@@ -290,11 +290,11 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_plugin(@TempDir Path storage) throws IOException {
-    Path fakePlugin = fakePlugin(storage, "fake.jar",
+    var fakePlugin = fakePlugin(storage, "fake.jar",
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withSqApiVersion("7.9")));
     Set<Path> jars = Set.of(fakePlugin);
 
-    Map<String, PluginRequirementsCheckResult> loadedPlugins = underTest.checkRequirements(jars, NONE, null, null);
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, null);
 
     assertThat(loadedPlugins.values()).as(logsWithoutStartStop().collect(Collectors.joining("\n")))
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped)
@@ -303,10 +303,10 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_plugin_skip_plugins_having_unsatisfied_jre(@TempDir Path storage) throws IOException {
-    Path fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withJreMinVersion("11")));
+    var fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withJreMinVersion("11")));
     Set<Path> jars = Set.of(fakePlugin);
 
-    Map<String, PluginRequirementsCheckResult> loadedPlugins = underTest.checkRequirements(jars, NONE, Version.create("1.8"), null);
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, Version.create("1.8"), null);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.JRE, "1.8", "11")));
@@ -315,11 +315,11 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_plugin_having_satisfied_nodejs(@TempDir Path storage) throws IOException {
-    Path fakePlugin = fakePlugin(storage, "fake.jar",
+    var fakePlugin = fakePlugin(storage, "fake.jar",
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withNodejsMinVersion("10.1.2")));
     Set<Path> jars = Set.of(fakePlugin);
 
-    Map<String, PluginRequirementsCheckResult> loadedPlugins = underTest.checkRequirements(jars, NONE, null, Optional.of(Version.create("10.1.3")));
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, Optional.of(Version.create("10.1.3")));
 
     assertThat(loadedPlugins.values())
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped)
@@ -328,11 +328,11 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_plugin_having_satisfied_nodejs_nightly(@TempDir Path storage) throws IOException {
-    Path fakePlugin = fakePlugin(storage, "fake.jar",
+    var fakePlugin = fakePlugin(storage, "fake.jar",
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withNodejsMinVersion("15.0.0")));
     Set<Path> jars = Set.of(fakePlugin);
 
-    Map<String, PluginRequirementsCheckResult> loadedPlugins = underTest.checkRequirements(jars, NONE, null, Optional.of(Version.create("15.0.0-nightly20200921039c274dde")));
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, Optional.of(Version.create("15.0.0-nightly20200921039c274dde")));
 
     assertThat(loadedPlugins.values())
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped)
@@ -341,11 +341,11 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_plugin_skip_plugins_having_unsatisfied_nodejs_version(@TempDir Path storage) throws IOException {
-    Path fakePlugin = fakePlugin(storage, "fake.jar",
+    var fakePlugin = fakePlugin(storage, "fake.jar",
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withNodejsMinVersion("10.1.2")));
     Set<Path> jars = Set.of(fakePlugin);
 
-    Map<String, PluginRequirementsCheckResult> loadedPlugins = underTest.checkRequirements(jars, NONE, null, Optional.of(Version.create("10.1.1")));
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, Optional.of(Version.create("10.1.1")));
 
     assertThat(loadedPlugins.values())
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
@@ -355,11 +355,11 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_plugin_skip_plugins_having_unsatisfied_nodejs(@TempDir Path storage) throws IOException {
-    Path fakePlugin = fakePlugin(storage, "fake.jar",
+    var fakePlugin = fakePlugin(storage, "fake.jar",
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withNodejsMinVersion("10.1.2")));
     Set<Path> jars = Set.of(fakePlugin);
 
-    Map<String, PluginRequirementsCheckResult> loadedPlugins = underTest.checkRequirements(jars, NONE, null, Optional.empty());
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, Optional.empty());
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.NODEJS, null, "10.1.2")));
@@ -368,10 +368,10 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_plugin_having_satisfied_jre(@TempDir Path storage) throws IOException {
-    Path fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withJreMinVersion("1.7")));
+    var fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withJreMinVersion("1.7")));
     Set<Path> jars = Set.of(fakePlugin);
 
-    Map<String, PluginRequirementsCheckResult> loadedPlugins = underTest.checkRequirements(jars, NONE, Version.create("1.8"), Optional.empty());
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, Version.create("1.8"), Optional.empty());
 
     assertThat(loadedPlugins.values())
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped)
@@ -412,22 +412,22 @@ class SonarPluginRequirementsCheckerTests {
   }
 
   PluginInfo withMinSqVersion(@Nullable String version) {
-    PluginInfo plugin = mock(PluginInfo.class);
+    var plugin = mock(PluginInfo.class);
     when(plugin.getKey()).thenReturn("foo");
     when(plugin.getMinimalSqVersion()).thenReturn(Optional.ofNullable(version).map(Version::create).orElse(null));
     return plugin;
   }
 
   private void createPluginManifest(Path path, String pluginKey, String version, Consumer<Attributes>... manifestAttributesPopulators) {
-    Path manifestPath = path.resolve(JarFile.MANIFEST_NAME);
+    var manifestPath = path.resolve(JarFile.MANIFEST_NAME);
     try {
       Files.createDirectories(manifestPath.getParent());
-      Manifest manifest = new Manifest();
+      var manifest = new Manifest();
       manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
       manifest.getMainAttributes().putValue(SonarPluginManifest.KEY_ATTRIBUTE, pluginKey);
       manifest.getMainAttributes().putValue(SonarPluginManifest.VERSION_ATTRIBUTE, version);
       Stream.of(manifestAttributesPopulators).forEach(p -> p.accept(manifest.getMainAttributes()));
-      try (OutputStream fos = Files.newOutputStream(manifestPath, StandardOpenOption.CREATE_NEW)) {
+      try (var fos = Files.newOutputStream(manifestPath, StandardOpenOption.CREATE_NEW)) {
         manifest.write(fos);
       }
     } catch (IOException e) {
@@ -456,8 +456,8 @@ class SonarPluginRequirementsCheckerTests {
   }
 
   private Path fakePlugin(Path storage, String filename, Consumer<Path>... populators) throws IOException {
-    Path pluginJar = storage.resolve(filename);
-    Path pluginTmpDir = Files.createTempDirectory(storage, "plugin");
+    var pluginJar = storage.resolve(filename);
+    var pluginTmpDir = Files.createTempDirectory(storage, "plugin");
     Stream.of(populators).forEach(p -> p.accept(pluginTmpDir));
     ZipUtils.zipDir(pluginTmpDir.toFile(), pluginJar.toFile());
     return pluginJar;

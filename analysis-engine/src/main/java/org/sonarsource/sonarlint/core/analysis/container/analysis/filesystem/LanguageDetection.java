@@ -49,10 +49,10 @@ public class LanguageDetection {
 
   public LanguageDetection(Configuration config) {
     for (Language language : Language.values()) {
-      String[] extensions = config.get(language.getFileSuffixesPropKey()).isPresent() ? config.getStringArray(language.getFileSuffixesPropKey())
+      var extensions = config.get(language.getFileSuffixesPropKey()).isPresent() ? config.getStringArray(language.getFileSuffixesPropKey())
         : language.getDefaultFileSuffixes();
       for (var i = 0; i < extensions.length; i++) {
-        String suffix = extensions[i];
+        var suffix = extensions[i];
         extensions[i] = sanitizeExtension(suffix);
       }
       extensionsByLanguage.put(language, extensions);

@@ -49,8 +49,8 @@ public class SettingsApi {
     ServerApiHelper.consumeTimed(
       () -> helper.get(url.toString()),
       response -> {
-        try (InputStream is = response.bodyAsStream()) {
-          Settings.ValuesWsResponse values = Settings.ValuesWsResponse.parseFrom(is);
+        try (var is = response.bodyAsStream()) {
+          var values = Settings.ValuesWsResponse.parseFrom(is);
           for (Settings.Setting s : values.getSettingsList()) {
             processSetting(settings::put, s);
           }

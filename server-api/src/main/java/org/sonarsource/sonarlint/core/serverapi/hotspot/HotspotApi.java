@@ -43,14 +43,14 @@ public class HotspotApi {
 
   public Optional<ServerHotspot> fetch(GetSecurityHotspotRequestParams params) {
     Hotspots.ShowWsResponse response;
-    try (var wsResponse = helper.get(getUrl(params.hotspotKey, params.projectKey)); InputStream is = wsResponse.bodyAsStream()) {
+    try (var wsResponse = helper.get(getUrl(params.hotspotKey, params.projectKey)); var is = wsResponse.bodyAsStream()) {
       response = Hotspots.ShowWsResponse.parseFrom(is);
     } catch (Exception e) {
       LOG.error("Error while fetching security hotspot", e);
       return Optional.empty();
     }
-    String fileKey = response.getComponent().getKey();
-    Optional<String> source = new SourceApi(helper).getRawSourceCode(fileKey);
+    var fileKey = response.getComponent().getKey();
+    var source = new SourceApi(helper).getRawSourceCode(fileKey);
     String codeSnippet;
     if (source.isPresent()) {
       try {

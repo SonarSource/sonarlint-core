@@ -29,8 +29,8 @@ class IssueStoreFactoryTest {
 
   @Test
   void testFactory(@TempDir Path tmp) {
-    IssueStoreFactory factory = new IssueStoreFactory();
-    IssueStore store = factory.apply(tmp);
+    var factory = new IssueStoreFactory();
+    var store = factory.apply(tmp);
 
     assertThat(store).isInstanceOf(IssueStore.class);
   }

@@ -34,11 +34,11 @@ class DefaultServerTests {
 
   @Test
   void shouldLoadServerProperties() {
-    SonarRuntime runtime = mock(SonarRuntime.class);
+    var runtime = mock(SonarRuntime.class);
     when(runtime.getApiVersion()).thenReturn(Version.create(2, 2));
-    MapSettings settings = new MapSettings(Map.of(CoreProperties.SERVER_ID, "123", CoreProperties.SERVER_STARTTIME, "2010-05-18T17:59:00+0000"));
+    var settings = new MapSettings(Map.of(CoreProperties.SERVER_ID, "123", CoreProperties.SERVER_STARTTIME, "2010-05-18T17:59:00+0000"));
 
-    DefaultServer metadata = new DefaultServer(settings, runtime);
+    var metadata = new DefaultServer(settings, runtime);
 
     assertThat(metadata.getId()).isEqualTo("123");
     assertThat(metadata.getVersion()).isEqualTo("2.2");
@@ -48,9 +48,9 @@ class DefaultServerTests {
 
   @Test
   void coverageUnusedMethods() {
-    SonarRuntime runtime = mock(SonarRuntime.class);
+    var runtime = mock(SonarRuntime.class);
     when(runtime.getApiVersion()).thenReturn(Version.create(2, 2));
-    DefaultServer metadata = new DefaultServer(new MapSettings(Map.of()), runtime);
+    var metadata = new DefaultServer(new MapSettings(Map.of()), runtime);
     assertThat(metadata.getStartedAt()).isNull();
     assertThat(metadata.getContextPath()).isNull();
     assertThat(metadata.isSecured()).isFalse();

@@ -54,11 +54,11 @@ public class ProjectBinding {
     if (!serverPath.startsWith(sqPathPrefix())) {
       return Optional.empty();
     }
-    int localPrefixLen = sqPathPrefix().length();
+    var localPrefixLen = sqPathPrefix().length();
     if (localPrefixLen > 0) {
       localPrefixLen++;
     }
-    String actualLocalPrefix = idePathPrefix();
+    var actualLocalPrefix = idePathPrefix();
     if (!actualLocalPrefix.isEmpty()) {
       actualLocalPrefix = actualLocalPrefix + "/";
     }
@@ -73,7 +73,7 @@ public class ProjectBinding {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ProjectBinding that = (ProjectBinding) o;
+    var that = (ProjectBinding) o;
     return Objects.equals(projectKey, that.projectKey) &&
       Objects.equals(sqPathPrefix, that.sqPathPrefix) &&
       Objects.equals(idePathPrefix, that.idePathPrefix);

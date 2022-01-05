@@ -28,7 +28,7 @@ class IssueLocationTests {
 
   @Test
   void it_should_return_text_range_details_if_provided() {
-    IssueLocation issueLocation = newIssueLocation(new TextRange(1, 2, 3, 4));
+    var issueLocation = newIssueLocation(new TextRange(1, 2, 3, 4));
 
     assertThat(issueLocation.getStartLine()).isEqualTo(1);
     assertThat(issueLocation.getStartLineOffset()).isEqualTo(2);
@@ -38,7 +38,7 @@ class IssueLocationTests {
 
   @Test
   void it_should_return_null_details_if_no_text_range_provided() {
-    IssueLocation issueLocation = newIssueLocation(null);
+    var issueLocation = newIssueLocation(null);
 
     assertThat(issueLocation.getStartLine()).isNull();
     assertThat(issueLocation.getStartLineOffset()).isNull();

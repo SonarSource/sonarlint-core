@@ -72,8 +72,8 @@ public class PluginInstancesLoader {
   }
 
   public Map<String, Plugin> instantiatePluginClasses(Collection<PluginInfo> plugins) {
-    Collection<PluginClassLoaderDef> defs = defineClassloaders(plugins.stream().collect(Collectors.toMap(PluginInfo::getKey, p -> p)));
-    Map<PluginClassLoaderDef, ClassLoader> classloaders = classloaderFactory.create(baseClassLoader, defs);
+    var defs = defineClassloaders(plugins.stream().collect(Collectors.toMap(PluginInfo::getKey, p -> p)));
+    var classloaders = classloaderFactory.create(baseClassLoader, defs);
     this.classloadersToClose.addAll(classloaders.values());
     return instantiatePluginClasses(classloaders);
   }
@@ -86,17 +86,17 @@ public class PluginInstancesLoader {
     Map<String, PluginClassLoaderDef> classloadersByBasePlugin = new HashMap<>();
 
     for (PluginInfo info : pluginsByKey.values()) {
-      String baseKey = basePluginKey(info, pluginsByKey);
+      var baseKey = basePluginKey(info, pluginsByKey);
       if (baseKey == null) {
         continue;
       }
-      PluginClassLoaderDef def = classloadersByBasePlugin.computeIfAbsent(baseKey, PluginClassLoaderDef::new);
+      var def = classloadersByBasePlugin.computeIfAbsent(baseKey, PluginClassLoaderDef::new);
       def.addFiles(List.of(info.getJarFile()));
       if (!info.getDependencies().isEmpty()) {
         LOG.warn("Plugin '{}' embeds dependencies. This will be deprecated soon. Plugin should be updated.", info.getKey());
-        Path tmpFolderForDeps = createTmpFolderForPluginDeps(info);
+        var tmpFolderForDeps = createTmpFolderForPluginDeps(info);
         for (String dependency : info.getDependencies()) {
-          Path tmpDepFile = extractDependencyInTempFolder(info, dependency, tmpFolderForDeps);
+          var tmpDepFile = extractDependencyInTempFolder(info, dependency, tmpFolderForDeps);
           def.addFiles(List.of(tmpDepFile.toFile()));
           filesToDelete.add(tmpDepFile);
         }
@@ -121,7 +121,7 @@ public class PluginInstancesLoader {
 
   private static Path extractDependencyInTempFolder(PluginInfo info, String dependency, Path tempFolder) {
     try {
-      Path tmpDepFile = tempFolder.resolve(dependency);
+      var tmpDepFile = tempFolder.resolve(dependency);
       if (!tmpDepFile.startsWith(tempFolder + File.separator)) {
         throw new IOException("Entry is outside of the target dir: " + dependency);
       }
@@ -150,13 +150,13 @@ public class PluginInstancesLoader {
     // instantiate plugins
     Map<String, Plugin> instancesByPluginKey = new HashMap<>();
     for (Map.Entry<PluginClassLoaderDef, ClassLoader> entry : classloaders.entrySet()) {
-      PluginClassLoaderDef def = entry.getKey();
-      ClassLoader classLoader = entry.getValue();
+      var def = entry.getKey();
+      var classLoader = entry.getValue();
 
       // the same classloader can be used by multiple plugins
       for (Map.Entry<String, String> mainClassEntry : def.getMainClassesByPluginKey().entrySet()) {
-        String pluginKey = mainClassEntry.getKey();
-        String mainClass = mainClassEntry.getValue();
+        var pluginKey = mainClassEntry.getKey();
+        var mainClass = mainClassEntry.getValue();
         try {
           instancesByPluginKey.put(pluginKey, (Plugin) classLoader.loadClass(mainClass).getDeclaredConstructor().newInstance());
         } catch (UnsupportedClassVersionError e) {
@@ -198,10 +198,10 @@ public class PluginInstancesLoader {
    */
   @CheckForNull
   static String basePluginKey(PluginInfo plugin, Map<String, PluginInfo> allPluginsPerKey) {
-    String base = plugin.getKey();
-    String parentKey = plugin.getBasePlugin();
+    var base = plugin.getKey();
+    var parentKey = plugin.getBasePlugin();
     while (isNotEmpty(parentKey)) {
-      PluginInfo parentPlugin = allPluginsPerKey.get(parentKey);
+      var parentPlugin = allPluginsPerKey.get(parentKey);
       if (parentPlugin == null) {
         LOG.warn("Unable to find base plugin '{}' referenced by plugin '{}'", parentKey, base);
         return null;

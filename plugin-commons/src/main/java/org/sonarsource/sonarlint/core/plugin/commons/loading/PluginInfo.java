@@ -203,7 +203,7 @@ public class PluginInfo {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    PluginInfo info = (PluginInfo) o;
+    var info = (PluginInfo) o;
     if (!key.equals(info.key)) {
       return false;
     }
@@ -213,7 +213,7 @@ public class PluginInfo {
 
   @Override
   public int hashCode() {
-    int result = key.hashCode();
+    var result = key.hashCode();
     result = 31 * result + (version != null ? version.hashCode() : 0);
     return result;
   }

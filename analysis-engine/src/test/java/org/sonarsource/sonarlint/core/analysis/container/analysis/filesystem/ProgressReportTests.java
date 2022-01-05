@@ -36,7 +36,7 @@ class ProgressReportTests {
 
   @Test
   void die_on_stop() {
-    ProgressReport underTest = new ProgressReport(THREAD_NAME, 100);
+    var underTest = new ProgressReport(THREAD_NAME, 100);
     underTest.start("start");
     assertThat(isThreadAlive(THREAD_NAME)).isTrue();
     underTest.stop("stop");
@@ -45,7 +45,7 @@ class ProgressReportTests {
 
   @Test
   void accept_no_stop_msg() {
-    ProgressReport underTest = new ProgressReport(THREAD_NAME, 100);
+    var underTest = new ProgressReport(THREAD_NAME, 100);
     underTest.start("start");
     assertThat(isThreadAlive(THREAD_NAME)).isTrue();
     underTest.stop(null);
@@ -54,7 +54,7 @@ class ProgressReportTests {
 
   @Test
   void do_not_block_app() {
-    ProgressReport underTest = new ProgressReport(THREAD_NAME, 100);
+    var underTest = new ProgressReport(THREAD_NAME, 100);
     underTest.start("start");
     assertThat(isDaemon(THREAD_NAME)).isTrue();
     underTest.stop("stop");
@@ -62,7 +62,7 @@ class ProgressReportTests {
 
   @Test
   void do_log() {
-    ProgressReport underTest = new ProgressReport(THREAD_NAME, 100);
+    var underTest = new ProgressReport(THREAD_NAME, 100);
     underTest.start("start");
     underTest.message(() -> "Some message");
     await().atMost(5, SECONDS).untilAsserted(() -> assertThat(logTester.logs()).contains("start", "Some message"));
@@ -71,17 +71,17 @@ class ProgressReportTests {
   }
 
   private static boolean isDaemon(String name) {
-    Thread t = getThread(name);
+    var t = getThread(name);
     return (t != null) && t.isDaemon();
   }
 
   private static boolean isThreadAlive(String name) {
-    Thread t = getThread(name);
+    var t = getThread(name);
     return (t != null) && t.isAlive();
   }
 
   private static Thread getThread(String name) {
-    Set<Thread> threads = Thread.getAllStackTraces().keySet();
+    var threads = Thread.getAllStackTraces().keySet();
 
     for (Thread t : threads) {
       if (t.getName().equals(name)) {

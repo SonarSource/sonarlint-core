@@ -55,7 +55,7 @@ public class PersistentIssueTrackerCache<T> implements IssueTrackerCache<T> {
         return false;
       }
 
-      String key = eldest.getKey();
+      var key = eldest.getKey();
       try {
         LOGGER.debug("Persisting issues for " + key);
         store.save(key, eldest.getValue());
@@ -73,7 +73,7 @@ public class PersistentIssueTrackerCache<T> implements IssueTrackerCache<T> {
 
   @Override
   public synchronized Collection<Trackable<T>> getLiveOrFail(String file) {
-    Collection<Trackable<T>> liveTrackables = cache.get(file);
+    var liveTrackables = cache.get(file);
     if (liveTrackables != null) {
       return liveTrackables;
     }
@@ -86,7 +86,7 @@ public class PersistentIssueTrackerCache<T> implements IssueTrackerCache<T> {
    */
   @Override
   public synchronized Collection<Trackable<T>> getCurrentTrackables(String file) {
-    Collection<Trackable<T>> liveTrackables = cache.get(file);
+    var liveTrackables = cache.get(file);
     if (liveTrackables != null) {
       return liveTrackables;
     }

@@ -193,7 +193,7 @@ class AnalysisExtensionInstallerTests {
 
   @Test
   void provide_sonarlint_context_for_plugin_definition() {
-    PluginStoringSonarLintPluginApiVersion pluginInstance = new PluginStoringSonarLintPluginApiVersion();
+    var pluginInstance = new PluginStoringSonarLintPluginApiVersion();
     when(pluginRepository.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, pluginInstance));
 
     underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, EMPTY_CONFIG, AnalysisEngineConfiguration.builder().build());

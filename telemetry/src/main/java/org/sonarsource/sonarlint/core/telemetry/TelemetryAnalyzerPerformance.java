@@ -46,7 +46,7 @@ public class TelemetryAnalyzerPerformance {
   }
 
   public void registerAnalysis(int analysisTimeMs) {
-    Entry<Integer, String> entry = INTERVALS.higherEntry(analysisTimeMs);
+    var entry = INTERVALS.higherEntry(analysisTimeMs);
     if (entry != null) {
       frequencies.compute(entry.getValue(), (k, v) -> v != null ? (v + 1) : 1);
       analysisCount++;

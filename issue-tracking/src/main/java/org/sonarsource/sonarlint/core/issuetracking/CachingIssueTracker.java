@@ -62,7 +62,7 @@ public class CachingIssueTracker extends IssueTracker {
       // whatever is the base, if current is empty, then nothing to do
       return Collections.emptyList();
     }
-    Collection<Trackable> tracked = apply(trackables, current, true);
+    var tracked = apply(trackables, current, true);
     cache.put(file, tracked);
     return tracked;
   }

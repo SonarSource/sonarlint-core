@@ -59,7 +59,7 @@ class NotificationTimerTaskTests {
 
   @Test
   void testSingleProjectWithoutNotifications() {
-    NotificationConfiguration project = createProject("myproject");
+    var project = createProject("myproject");
     timerTask.setProjects(Collections.singleton(project));
     timerTask.run();
     verify(notificationChecker).request(Collections.singletonMap("myproject", time));
@@ -69,7 +69,7 @@ class NotificationTimerTaskTests {
   @Test
   void testErrorParsing() {
     when(notificationChecker.request(anyMap())).thenThrow(new IllegalStateException());
-    NotificationConfiguration project = createProject("myproject");
+    var project = createProject("myproject");
     timerTask.setProjects(Collections.singleton(project));
     timerTask.run();
 
@@ -82,18 +82,18 @@ class NotificationTimerTaskTests {
     when(notificationTime.get()).thenReturn(ZonedDateTime.now().minusDays(30));
 
     // return one notification for our project
-    ServerNotification notif = mock(ServerNotification.class);
+    var notif = mock(ServerNotification.class);
     when(notif.projectKey()).thenReturn("myproject");
     when(notificationChecker.request(anyMap())).thenReturn(Collections.singletonList(notif));
 
     // execute with one project
-    NotificationConfiguration project = createProject("myproject");
+    var project = createProject("myproject");
     timerTask.setProjects(Collections.singleton(project));
     timerTask.run();
 
     // verify checker used once and notification was returned through the listener
     verify(notificationChecker).request(ArgumentMatchers.argThat(map -> {
-      ZonedDateTime time = map.values().iterator().next();
+      var time = map.values().iterator().next();
       return ChronoUnit.MINUTES.between(ZonedDateTime.now().minusDays(1), time) == 0;
     }));
 
@@ -103,12 +103,12 @@ class NotificationTimerTaskTests {
   @Test
   void testSingleProjectWithNotifications() {
     // return one notification for our project
-    ServerNotification notif = mock(ServerNotification.class);
+    var notif = mock(ServerNotification.class);
     when(notif.projectKey()).thenReturn("myproject");
     when(notificationChecker.request(Collections.singletonMap("myproject", time))).thenReturn(Collections.singletonList(notif));
 
     // execute with one project
-    NotificationConfiguration project = createProject("myproject");
+    var project = createProject("myproject");
     timerTask.setProjects(Collections.singleton(project));
     timerTask.run();
 
@@ -121,15 +121,15 @@ class NotificationTimerTaskTests {
   @Test
   void testRepeatedProject() {
     // return one notification for our project
-    ServerNotification notif = mock(ServerNotification.class);
+    var notif = mock(ServerNotification.class);
     when(notif.projectKey()).thenReturn("myproject");
     when(notificationChecker.request(Collections.singletonMap("myproject", time))).thenReturn(Collections.singletonList(notif));
 
     // execute with one project
-    NotificationConfiguration project = createProject("myproject");
-    NotificationConfiguration project2 = createProject("myproject");
+    var project = createProject("myproject");
+    var project2 = createProject("myproject");
 
-    LastNotificationTime notificationTime = mock(LastNotificationTime.class);
+    var notificationTime = mock(LastNotificationTime.class);
     when(notificationTime.get()).thenReturn(ZonedDateTime.now().minusHours(2));
     when(project2.lastNotificationTime()).thenReturn(notificationTime);
 
@@ -148,7 +148,7 @@ class NotificationTimerTaskTests {
   }
 
   private NotificationConfiguration createProject(String key, EndpointParams endpoint) {
-    NotificationConfiguration project = mock(NotificationConfiguration.class);
+    var project = mock(NotificationConfiguration.class);
 
     when(project.listener()).thenReturn(listener);
     when(project.projectKey()).thenReturn(key);

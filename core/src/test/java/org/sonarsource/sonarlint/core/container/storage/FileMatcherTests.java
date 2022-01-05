@@ -38,7 +38,7 @@ class FileMatcherTests {
   @Test
   void simple_case_without_prefixes() {
     List<Path> paths = Collections.singletonList(Paths.get("project1/src/main/java/File.java"));
-    FileMatcher.Result match = fileMatcher.match(paths, paths);
+    var match = fileMatcher.match(paths, paths);
     assertThat(match.idePrefix()).isEqualTo(Paths.get(""));
     assertThat(match.sqPrefix()).isEqualTo(Paths.get(""));
   }
@@ -47,7 +47,7 @@ class FileMatcherTests {
   void simple_case_with_prefixes() {
     List<Path> idePaths = Collections.singletonList(Paths.get("local/src/main/java/File.java"));
     List<Path> sqPaths = Collections.singletonList(Paths.get("sq/src/main/java/File.java"));
-    FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
+    var match = fileMatcher.match(sqPaths, idePaths);
     assertThat(match.idePrefix()).isEqualTo(Paths.get("local"));
     assertThat(match.sqPrefix()).isEqualTo(Paths.get("sq"));
   }
@@ -56,7 +56,7 @@ class FileMatcherTests {
   void no_match() {
     List<Path> idePaths = Collections.singletonList(Paths.get("local/src/main/java/File1.java"));
     List<Path> sqPaths = Collections.singletonList(Paths.get("sq/src/main/java/File2.java"));
-    FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
+    var match = fileMatcher.match(sqPaths, idePaths);
     assertThat(match.idePrefix()).isEqualTo(Paths.get(""));
     assertThat(match.sqPrefix()).isEqualTo(Paths.get(""));
   }
@@ -65,7 +65,7 @@ class FileMatcherTests {
   void empty_project_in_ide() {
     List<Path> idePaths = Collections.emptyList();
     List<Path> sqPaths = Collections.singletonList(Paths.get("sq/src/main/java/File2.java"));
-    FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
+    var match = fileMatcher.match(sqPaths, idePaths);
     assertThat(match.idePrefix()).isEqualTo(Paths.get(""));
     assertThat(match.sqPrefix()).isEqualTo(Paths.get(""));
   }
@@ -80,7 +80,7 @@ class FileMatcherTests {
       Paths.get("aq2/pom.xml"),
       Paths.get("pom.xml"),
       Paths.get("aq1/module1/pom.xml"));
-    FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
+    var match = fileMatcher.match(sqPaths, idePaths);
     assertThat(match.idePrefix()).isEqualTo(Paths.get(""));
     assertThat(match.sqPrefix()).isEqualTo(Paths.get(""));
 
@@ -122,7 +122,7 @@ class FileMatcherTests {
       Paths.get("sq/company/jobs/index.html"),
       Paths.get("sq/company/news/index.html"),
       Paths.get("sq/company/contact/index.html"));
-    FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
+    var match = fileMatcher.match(sqPaths, idePaths);
     assertThat(match.idePrefix()).isEqualTo(Paths.get("local/sub"));
     // sq/news is preferred to sq/products because of lexicographic order
     assertThat(match.sqPrefix()).isEqualTo(Paths.get("sq/news"));
@@ -131,19 +131,19 @@ class FileMatcherTests {
   @Disabled("Only used to investigate performance issues like SLCORE-266")
   @Test
   void performance_test_worst_case() throws Exception {
-    int depthFactor = 10;
-    int sqNbPerFolder = 10;
-    int sqDepth = 5;
-    int ideNbPerFolder = 10;
-    int ideDepth = 3;
-    List<Path> idePaths = generateChildren(Paths.get("local/sub/src/main/java/com/mycompany/myapp/foo/bar"), ideNbPerFolder, depthFactor, ideDepth * depthFactor);
+    var depthFactor = 10;
+    var sqNbPerFolder = 10;
+    var sqDepth = 5;
+    var ideNbPerFolder = 10;
+    var ideDepth = 3;
+    var idePaths = generateChildren(Paths.get("local/sub/src/main/java/com/mycompany/myapp/foo/bar"), ideNbPerFolder, depthFactor, ideDepth * depthFactor);
     System.out.println("IDE file count: " + idePaths.size());
     assertThat(idePaths).hasSize((int) Math.pow(ideNbPerFolder, ideDepth + 1));
-    List<Path> sqPaths = generateChildren(Paths.get("sq/src/main/java/com/mycompany/myapp/foo/bar"), sqNbPerFolder, depthFactor, sqDepth * depthFactor);
+    var sqPaths = generateChildren(Paths.get("sq/src/main/java/com/mycompany/myapp/foo/bar"), sqNbPerFolder, depthFactor, sqDepth * depthFactor);
     System.out.println("SQ file count: " + sqPaths.size());
     assertThat(sqPaths).hasSize((int) Math.pow(sqNbPerFolder, sqDepth + 1));
-    Instant start = Instant.now();
-    FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
+    var start = Instant.now();
+    var match = fileMatcher.match(sqPaths, idePaths);
     System.out.println(Duration.between(start, Instant.now()).toMillis() + "ms ellapsed");
     assertThat(match.idePrefix()).isEqualTo(Paths.get("local/sub/src/main/java/com/mycompany/myapp/foo/bar"));
     // sq/folder0/[...]/folder0 is preferred to other sq/folderx because of lexicographic order
@@ -154,24 +154,24 @@ class FileMatcherTests {
   @Disabled("Only used to investigate performance issues like SLCORE-266")
   @Test
   void performance_test_only_index_files_with_same_filename() throws Exception {
-    int depthFactor = 10;
-    int sqNbPerFolder = 10;
-    int sqDepth = 5;
+    var depthFactor = 10;
+    var sqNbPerFolder = 10;
+    var sqDepth = 5;
     // IDE contains only paths with filename 'file1.txt'
-    int ideNbPerFolder = 1;
-    int ideDepth = 3;
+    var ideNbPerFolder = 1;
+    var ideDepth = 3;
     performance_test(depthFactor, sqNbPerFolder, sqDepth, ideNbPerFolder, ideDepth);
   }
 
   private void performance_test(int depthFactor, int sqNbPerFolder, int sqDepth, int ideNbPerFolder, int ideDepth) {
-    List<Path> idePaths = generateChildren(Paths.get("local/sub/src/main/java/com/mycompany/myapp/foo/bar"), ideNbPerFolder, depthFactor, ideDepth * depthFactor);
+    var idePaths = generateChildren(Paths.get("local/sub/src/main/java/com/mycompany/myapp/foo/bar"), ideNbPerFolder, depthFactor, ideDepth * depthFactor);
     System.out.println("IDE file count: " + idePaths.size());
     assertThat(idePaths).hasSize((int) Math.pow(ideNbPerFolder, ideDepth + 1));
-    List<Path> sqPaths = generateChildren(Paths.get("sq/src/main/java/com/mycompany/myapp/foo/bar"), sqNbPerFolder, depthFactor, sqDepth * depthFactor);
+    var sqPaths = generateChildren(Paths.get("sq/src/main/java/com/mycompany/myapp/foo/bar"), sqNbPerFolder, depthFactor, sqDepth * depthFactor);
     System.out.println("SQ file count: " + sqPaths.size());
     assertThat(sqPaths).hasSize((int) Math.pow(sqNbPerFolder, sqDepth + 1));
-    Instant start = Instant.now();
-    FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
+    var start = Instant.now();
+    var match = fileMatcher.match(sqPaths, idePaths);
     System.out.println(Duration.between(start, Instant.now()).toMillis() + "ms ellapsed");
     assertThat(match.idePrefix()).isEqualTo(Paths.get("local/sub/src/main/java/com/mycompany/myapp/foo/bar"));
     // sq/folder0/[...]/folder0 is preferred to other sq/folderx because of lexicographic order
@@ -182,16 +182,16 @@ class FileMatcherTests {
   private List<Path> generateChildren(Path parent, int count, int everyDepth, int depth) {
     List<Path> result = new ArrayList<>();
     if (depth == 0) {
-      for (int i = 0; i < count; i++) {
+      for (var i = 0; i < count; i++) {
         result.add(parent.resolve("file" + i + ".txt"));
       }
     } else if (depth % everyDepth == 0) {
-      for (int i = 0; i < count; i++) {
-        Path current = parent.resolve("folder" + i);
+      for (var i = 0; i < count; i++) {
+        var current = parent.resolve("folder" + i);
         result.addAll(generateChildren(current, count, everyDepth, depth - 1));
       }
     } else {
-      Path current = parent.resolve("extra" + depth);
+      var current = parent.resolve("extra" + depth);
       result.addAll(generateChildren(current, count, everyDepth, depth - 1));
     }
     return result;
@@ -210,7 +210,7 @@ class FileMatcherTests {
       Paths.get("sq1/src/main/java/B.java")
 
     );
-    FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
+    var match = fileMatcher.match(sqPaths, idePaths);
     assertThat(match.idePrefix()).isEqualTo(Paths.get("local1"));
     assertThat(match.sqPrefix()).isEqualTo(Paths.get("sq1"));
   }
@@ -228,7 +228,7 @@ class FileMatcherTests {
       Paths.get("sq2/src/main/java/com/foo/A.java")
 
     );
-    FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
+    var match = fileMatcher.match(sqPaths, idePaths);
     assertThat(match.idePrefix()).isEqualTo(Paths.get("local1"));
     assertThat(match.sqPrefix()).isEqualTo(Paths.get("sq2"));
   }
@@ -250,17 +250,17 @@ class FileMatcherTests {
       Paths.get("sq4/src/A.java")
 
     );
-    FileMatcher.Result match = fileMatcher.match(sqPaths, idePaths);
+    var match = fileMatcher.match(sqPaths, idePaths);
     assertThat(match.idePrefix()).isEqualTo(Paths.get("local1"));
     assertThat(match.sqPrefix()).isEqualTo(Paths.get("sq4"));
   }
 
   @Test
   void verify_equals_and_hashcode_of_result() {
-    FileMatcher.Result r1 = new FileMatcher.Result(Paths.get("ide1"), Paths.get("sq1"));
-    FileMatcher.Result r2 = new FileMatcher.Result(Paths.get("ide2"), Paths.get("sq1"));
-    FileMatcher.Result r3 = new FileMatcher.Result(Paths.get("ide1"), Paths.get("sq2"));
-    FileMatcher.Result r4 = new FileMatcher.Result(Paths.get("ide1"), Paths.get("sq1"));
+    var r1 = new FileMatcher.Result(Paths.get("ide1"), Paths.get("sq1"));
+    var r2 = new FileMatcher.Result(Paths.get("ide2"), Paths.get("sq1"));
+    var r3 = new FileMatcher.Result(Paths.get("ide1"), Paths.get("sq2"));
+    var r4 = new FileMatcher.Result(Paths.get("ide1"), Paths.get("sq1"));
 
     assertThat(r1.equals(r1)).isTrue();
     assertThat(r1.equals(r4)).isTrue();

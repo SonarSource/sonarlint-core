@@ -92,11 +92,11 @@ class GlobalStorageUpdateExecutorTests {
   void testUpdate() {
     globalUpdate.update(mockServer.serverApiHelper(), PROGRESS);
 
-    StorageStatus updateStatus = ProtobufUtil.readFile(destDir.resolve(ProjectStoragePaths.STORAGE_STATUS_PB), StorageStatus.parser());
+    var updateStatus = ProtobufUtil.readFile(destDir.resolve(ProjectStoragePaths.STORAGE_STATUS_PB), StorageStatus.parser());
     assertThat(updateStatus.getSonarlintCoreVersion()).isEqualTo(VersionUtils.getLibraryVersion());
     assertThat(updateStatus.getUpdateTimestamp()).isNotZero();
 
-    ServerInfos serverInfos = ProtobufUtil.readFile(destDir.resolve(ServerInfoStore.SERVER_INFO_PB), ServerInfos.parser());
+    var serverInfos = ProtobufUtil.readFile(destDir.resolve(ServerInfoStore.SERVER_INFO_PB), ServerInfos.parser());
     assertThat(serverInfos.getId()).isEqualTo("20160308094653");
     assertThat(serverInfos.getVersion()).isEqualTo("7.9");
   }
@@ -105,10 +105,10 @@ class GlobalStorageUpdateExecutorTests {
   void dontCopyOnError() throws IOException {
     Files.createDirectories(destDir);
     Files.createFile(destDir.resolve("test"));
-    ProgressMonitor mockProgress = mock(ProgressMonitor.class);
+    var mockProgress = mock(ProgressMonitor.class);
     when(mockProgress.subProgress(anyFloat(), anyFloat(), anyString())).thenReturn(mockProgress);
     doThrow(new IllegalStateException("Boom")).when(mockProgress).executeNonCancelableSection(any());
-    Throwable throwable = catchThrowable(() -> globalUpdate.update(mockServer.serverApiHelper(), mockProgress));
+    var throwable = catchThrowable(() -> globalUpdate.update(mockServer.serverApiHelper(), mockProgress));
 
     assertThat(throwable).isInstanceOf(IllegalStateException.class);
     // dest left untouched

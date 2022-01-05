@@ -29,7 +29,7 @@ class DefaultSensorDescriptorTests {
 
   @Test
   void describe() {
-    DefaultSensorDescriptor descriptor = new DefaultSensorDescriptor();
+    var descriptor = new DefaultSensorDescriptor();
     descriptor
       .name("Foo")
       .onlyOnLanguage("java")
@@ -40,7 +40,7 @@ class DefaultSensorDescriptorTests {
     assertThat(descriptor.name()).isEqualTo("Foo");
     assertThat(descriptor.languages()).containsOnly("java");
     assertThat(descriptor.type()).isEqualTo(InputFile.Type.MAIN);
-    MapSettings settings = new MapSettings(Map.of("sonar.foo.reportPath", "foo"));
+    var settings = new MapSettings(Map.of("sonar.foo.reportPath", "foo"));
     assertThat(descriptor.configurationPredicate().test(settings.asConfig())).isFalse();
     settings = new MapSettings(Map.of("sonar.foo.reportPath", "foo", "sonar.foo.reportPath2", "foo"));
     assertThat(descriptor.configurationPredicate().test(settings.asConfig())).isTrue();

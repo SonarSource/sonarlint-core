@@ -41,7 +41,7 @@ public class ServerVersionAndStatusChecker {
     } catch (InterruptedException e) {
       throw new IllegalStateException("Cannot check server version and status", e);
     } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
+      var cause = e.getCause();
       if (cause instanceof RuntimeException) {
         throw (RuntimeException) cause;
       }

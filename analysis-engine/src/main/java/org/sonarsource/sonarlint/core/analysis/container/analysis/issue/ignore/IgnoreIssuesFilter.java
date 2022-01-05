@@ -41,11 +41,8 @@ public class IgnoreIssuesFilter implements IssueFilter {
 
   @Override
   public boolean accept(FilterableIssue issue, IssueFilterChain chain) {
-    InputComponent component = ((DefaultFilterableIssue) issue).getComponent();
-    if (component.isFile() && ((SonarLintInputFile) component).isIgnoreAllIssues()) {
-      return false;
-    }
-    if (component.isFile() && ((SonarLintInputFile) component).isIgnoreAllIssuesOnLine(issue.line())) {
+    var component = ((DefaultFilterableIssue) issue).getComponent();
+    if ((component.isFile() && ((SonarLintInputFile) component).isIgnoreAllIssues()) || (component.isFile() && ((SonarLintInputFile) component).isIgnoreAllIssuesOnLine(issue.line()))) {
       return false;
     }
     if (hasRuleMatchFor(component, issue)) {

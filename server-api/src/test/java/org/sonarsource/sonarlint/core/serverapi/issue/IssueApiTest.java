@@ -49,7 +49,7 @@ class IssueApiTest {
   void should_download_all_issues_as_batch() {
     mockServer.addProtobufResponseDelimited("/batch/issues?key=keyyy", ScannerInput.ServerIssue.newBuilder().setRuleKey("ruleKey").build());
 
-    List<ScannerInput.ServerIssue> issues = underTest.downloadAllFromBatchIssues("keyyy", null);
+    var issues = underTest.downloadAllFromBatchIssues("keyyy", null);
 
     assertThat(issues)
       .extracting("ruleKey")
@@ -60,7 +60,7 @@ class IssueApiTest {
   void should_download_all_issues_as_batch_from_branch() {
     mockServer.addProtobufResponseDelimited("/batch/issues?key=keyyy&branch=branchName", ScannerInput.ServerIssue.newBuilder().setRuleKey("ruleKey").build());
 
-    List<ScannerInput.ServerIssue> issues = underTest.downloadAllFromBatchIssues("keyyy", "branchName");
+    var issues = underTest.downloadAllFromBatchIssues("keyyy", "branchName");
 
     assertThat(issues)
       .extracting("ruleKey")
@@ -71,7 +71,7 @@ class IssueApiTest {
   void should_return_no_batch_issue_if_download_is_forbidden() {
     mockServer.addResponse("/batch/issues?key=keyyy", new MockResponse().setResponseCode(403));
 
-    List<ScannerInput.ServerIssue> issues = underTest.downloadAllFromBatchIssues("keyyy", null);
+    var issues = underTest.downloadAllFromBatchIssues("keyyy", null);
 
     assertThat(issues).isEmpty();
   }
@@ -80,7 +80,7 @@ class IssueApiTest {
   void should_return_no_batch_issue_if_endpoint_is_not_found() {
     mockServer.addResponse("/batch/issues?key=keyyy", new MockResponse().setResponseCode(404));
 
-    List<ScannerInput.ServerIssue> issues = underTest.downloadAllFromBatchIssues("keyyy", null);
+    var issues = underTest.downloadAllFromBatchIssues("keyyy", null);
 
     assertThat(issues).isEmpty();
   }
@@ -110,7 +110,7 @@ class IssueApiTest {
     mockServer.addProtobufResponse("/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys=keyyy&rules=ruleKey&ps=500&p=2",
       Issues.SearchWsResponse.newBuilder().addComponents(Issues.Component.newBuilder().setKey("componentKey").setPath("componentPath").build()).build());
 
-    IssueApi.DownloadIssuesResult result = underTest.downloadVulnerabilitiesForRules("keyyy", Set.of("ruleKey"), null, new ProgressMonitor(null));
+    var result = underTest.downloadVulnerabilitiesForRules("keyyy", Set.of("ruleKey"), null, new ProgressMonitor(null));
 
     assertThat(result.getIssues())
       .extracting("key")

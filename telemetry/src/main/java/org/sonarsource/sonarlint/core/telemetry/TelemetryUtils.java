@@ -59,9 +59,9 @@ class TelemetryUtils {
   }
 
   private static TelemetryAnalyzerPerformancePayload toPayload(Map.Entry<String, TelemetryAnalyzerPerformance> entry) {
-    TelemetryAnalyzerPerformance analyzerPerformance = entry.getValue();
-    String language = entry.getKey();
-    int analysisCount = analyzerPerformance.analysisCount();
+    var analyzerPerformance = entry.getValue();
+    var language = entry.getKey();
+    var analysisCount = analyzerPerformance.analysisCount();
     Map<String, BigDecimal> distribution = analyzerPerformance
       .frequencies().entrySet().stream()
       .collect(Collectors.toMap(Map.Entry::getKey, e -> {
