@@ -139,9 +139,9 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
   @Test
   public void download_all_issues_not_limited_to_10k() throws IOException {
     engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
-    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, false, null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, false, null,null);
 
-    engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, false, null);
+    engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, false, null, null);
 
     List<ServerIssue> file1Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/500lines.xoo");
     List<ServerIssue> file2Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/10000lines.xoo");

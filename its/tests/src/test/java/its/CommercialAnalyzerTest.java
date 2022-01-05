@@ -218,7 +218,7 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
   }
 
   private void updateProject(String projectKey) {
-    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, false, null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, false, null,null);
   }
 
   private void updateGlobal() {
