@@ -46,14 +46,14 @@ public class DevelopersApi {
   }
 
   public boolean isSupported() {
-    String path = getWsPath(Collections.emptyMap());
+    var path = getWsPath(Collections.emptyMap());
     try (var wsResponse = helper.rawGet(path)) {
       return wsResponse.isSuccessful();
     }
   }
 
   public List<Event> getEvents(Map<String, ZonedDateTime> projectTimestamps) {
-    String path = getWsPath(projectTimestamps);
+    var path = getWsPath(projectTimestamps);
     try (var wsResponse = helper.rawGet(path)) {
       if (!wsResponse.isSuccessful()) {
         LOG.debug("Failed to get notifications: {}, {}", wsResponse.code(), wsResponse.bodyAsString());
@@ -73,11 +73,11 @@ public class DevelopersApi {
 
       for (JsonElement el : events) {
         var event = el.getAsJsonObject();
-        String category = getOrFail(event, "category");
-        String message = getOrFail(event, "message");
-        String link = getOrFail(event, "link");
-        String projectKey = getOrFail(event, "project");
-        String dateTime = getOrFail(event, "date");
+        var category = getOrFail(event, "category");
+        var message = getOrFail(event, "message");
+        var link = getOrFail(event, "link");
+        var projectKey = getOrFail(event, "project");
+        var dateTime = getOrFail(event, "date");
         var time = ZonedDateTime.parse(dateTime, TIME_FORMATTER);
         notifications.add(new Event(category, message, link, projectKey, time));
       }
@@ -90,7 +90,7 @@ public class DevelopersApi {
   }
 
   private static String getOrFail(JsonObject parent, String name) {
-    JsonElement element = parent.get(name);
+    var element = parent.get(name);
     if (element == null) {
       throw new IllegalStateException("Failed to parse response. Missing field '" + name + "'.");
     }

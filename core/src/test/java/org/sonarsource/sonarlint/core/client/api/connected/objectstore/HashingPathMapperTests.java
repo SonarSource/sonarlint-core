@@ -44,7 +44,7 @@ class HashingPathMapperTests {
 
   @Test
   void should_throw_if_levels_below_1() {
-    Path base = Paths.get(".");
+    var base = Paths.get(".");
     assertThrows(IllegalArgumentException.class, () -> {
       new HashingPathMapper(base, 0);
     });
@@ -52,7 +52,7 @@ class HashingPathMapperTests {
 
   @Test
   void should_throw_if_levels_above_40() {
-    Path base = Paths.get(".");
+    var base = Paths.get(".");
     assertThrows(IllegalArgumentException.class, () -> {
       new HashingPathMapper(base, 41);
     });

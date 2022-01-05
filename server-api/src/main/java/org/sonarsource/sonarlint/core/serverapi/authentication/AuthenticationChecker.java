@@ -34,7 +34,7 @@ public class AuthenticationChecker {
 
   public ValidationResult validateCredentials() {
     try (var response = serverApiHelper.rawGet("api/authentication/validate?format=json")) {
-      int code = response.code();
+      var code = response.code();
       if (response.isSuccessful()) {
         var responseStr = response.bodyAsString();
         var validateResponse = new Gson().fromJson(responseStr, ValidateResponse.class);

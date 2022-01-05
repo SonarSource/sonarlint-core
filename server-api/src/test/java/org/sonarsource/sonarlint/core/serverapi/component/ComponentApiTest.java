@@ -51,7 +51,7 @@ class ComponentApiTest {
   void should_get_files() {
     mockServer.addResponseFromResource("/api/components/tree.protobuf?qualifiers=FIL,UTS&component=project1&ps=500&p=1", "/update/component_tree.pb");
 
-    List<String> files = underTest.getAllFileKeys(PROJECT_KEY, progress);
+    var files = underTest.getAllFileKeys(PROJECT_KEY, progress);
 
     assertThat(files).hasSize(187);
     assertThat(files.get(0)).isEqualTo("org.sonarsource.sonarlint.intellij:sonarlint-intellij:src/main/java/org/sonarlint/intellij/ui/AbstractIssuesPanel.java");
@@ -62,7 +62,7 @@ class ComponentApiTest {
     underTest = new ComponentApi(mockServer.serverApiHelper("myorg"));
     mockServer.addResponseFromResource("/api/components/tree.protobuf?qualifiers=FIL,UTS&component=project1&organization=myorg&ps=500&p=1", "/update/component_tree.pb");
 
-    List<String> files = underTest.getAllFileKeys(PROJECT_KEY, progress);
+    var files = underTest.getAllFileKeys(PROJECT_KEY, progress);
 
     assertThat(files).hasSize(187);
     assertThat(files.get(0)).isEqualTo("org.sonarsource.sonarlint.intellij:sonarlint-intellij:src/main/java/org/sonarlint/intellij/ui/AbstractIssuesPanel.java");
@@ -72,7 +72,7 @@ class ComponentApiTest {
   void should_get_empty_files_if_tree_is_empty() {
     mockServer.addResponseFromResource("/api/components/tree.protobuf?qualifiers=FIL,UTS&component=project1&ps=500&p=1", "/update/empty_component_tree.pb");
 
-    List<String> files = underTest.getAllFileKeys(PROJECT_KEY, progress);
+    var files = underTest.getAllFileKeys(PROJECT_KEY, progress);
 
     assertThat(files.size()).isZero();
   }
@@ -83,7 +83,7 @@ class ComponentApiTest {
       .addComponents(Components.Component.newBuilder().setKey("componentKey").setPath("componentPath").build()).build());
     mockServer.addProtobufResponse("/api/components/tree.protobuf?qualifiers=BRC&component=component%3Akey&ps=500&p=2", Components.TreeWsResponse.newBuilder().build());
 
-    List<ComponentPath> componentPaths = underTest.getSubProjects("component:key", progress);
+    var componentPaths = underTest.getSubProjects("component:key", progress);
 
     assertThat(componentPaths)
       .extracting("key", "path")
@@ -96,7 +96,7 @@ class ComponentApiTest {
       .addComponents(Components.Component.newBuilder().setKey("projectKey").setName("projectName").build()).build());
     mockServer.addProtobufResponse("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=2", Components.SearchWsResponse.newBuilder().build());
 
-    List<ServerProject> projects = underTest.getAllProjects(progress);
+    var projects = underTest.getAllProjects(progress);
 
     assertThat(projects)
       .extracting("key", "name")
@@ -110,7 +110,7 @@ class ComponentApiTest {
     mockServer.addProtobufResponse("/api/components/search.protobuf?qualifiers=TRK&organization=org%3Akey&ps=500&p=2", Components.SearchWsResponse.newBuilder().build());
     var componentApi = new ComponentApi(mockServer.serverApiHelper("org:key"));
 
-    List<ServerProject> projects = componentApi.getAllProjects(progress);
+    var projects = componentApi.getAllProjects(progress);
 
     assertThat(projects)
       .extracting("key", "name")
@@ -122,7 +122,7 @@ class ComponentApiTest {
     mockServer.addProtobufResponse("/api/components/show.protobuf?component=project%3Akey", Components.ShowWsResponse.newBuilder()
       .setComponent(Components.Component.newBuilder().setKey("projectKey").setName("projectName").build()).build());
 
-    Optional<ServerProject> project = underTest.getProject("project:key");
+    var project = underTest.getProject("project:key");
 
     assertThat(project).hasValueSatisfying(p -> {
       assertThat(p.getKey()).isEqualTo("projectKey");
@@ -132,7 +132,7 @@ class ComponentApiTest {
 
   @Test
   void should_get_empty_project_details_if_request_fails() {
-    Optional<ServerProject> project = underTest.getProject("project:key");
+    var project = underTest.getProject("project:key");
 
     assertThat(project).isEmpty();
   }
@@ -142,7 +142,7 @@ class ComponentApiTest {
     mockServer.addProtobufResponse("/api/components/show.protobuf?component=project%3Akey", Components.ShowWsResponse.newBuilder()
       .addAncestors(Components.Component.newBuilder().setKey("ancestorKey").build()).build());
 
-    Optional<String> project = underTest.fetchFirstAncestorKey("project:key");
+    var project = underTest.fetchFirstAncestorKey("project:key");
 
     assertThat(project).contains("ancestorKey");
   }

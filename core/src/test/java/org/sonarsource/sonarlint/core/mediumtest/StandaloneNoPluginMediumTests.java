@@ -72,9 +72,9 @@ class StandaloneNoPluginMediumTests {
 
     assertThat(sonarlint.getPluginDetails()).isEmpty();
 
-    ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
+    var inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
 
-    AnalysisResults results = sonarlint.analyze(
+    var results = sonarlint.analyze(
       StandaloneAnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
@@ -89,7 +89,7 @@ class StandaloneNoPluginMediumTests {
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
-    final File file = new File(baseDir, relativePath);
+    final var file = new File(baseDir, relativePath);
     FileUtils.write(file, content, StandardCharsets.UTF_8);
     return TestUtils.createInputFile(file.toPath(), relativePath, isTest);
   }

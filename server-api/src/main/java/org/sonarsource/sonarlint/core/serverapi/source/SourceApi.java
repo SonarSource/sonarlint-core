@@ -42,7 +42,7 @@ public class SourceApi {
    * @param key project key, or file key.
    */
   public Optional<String> getRawSourceCode(String fileKey) {
-    try (Response r = serverApiHelper.get("/api/sources/raw?key=" + UrlUtils.urlEncode(fileKey))) {
+    try (var r = serverApiHelper.get("/api/sources/raw?key=" + UrlUtils.urlEncode(fileKey))) {
       return Optional.of(r.bodyAsString());
     } catch (Exception e) {
       LOG.debug("Unable to fetch source code of '" + fileKey + "'", e);

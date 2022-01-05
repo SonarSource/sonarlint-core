@@ -37,7 +37,7 @@ class GlobalSettingsTests {
 
   @Test
   void emptyNodePathPropertyForSonarJS() {
-    GlobalSettings underTest = new GlobalSettings(AnalysisEngineConfiguration.builder().build(), new PropertyDefinitions(System2.INSTANCE));
+    var underTest = new GlobalSettings(AnalysisEngineConfiguration.builder().build(), new PropertyDefinitions(System2.INSTANCE));
 
     var nodeJsExecutableValue = underTest.getString("sonar.nodejs.executable");
 
@@ -46,8 +46,8 @@ class GlobalSettingsTests {
 
   @Test
   void customNodePathPropertyForSonarJS() {
-    Path providedNodePath = Paths.get("foo/bar/node");
-    GlobalSettings underTest = new GlobalSettings(AnalysisEngineConfiguration.builder().setNodeJs(providedNodePath).build(),
+    var providedNodePath = Paths.get("foo/bar/node");
+    var underTest = new GlobalSettings(AnalysisEngineConfiguration.builder().setNodeJs(providedNodePath).build(),
       new PropertyDefinitions(System2.INSTANCE));
 
     var nodeJsExecutableValue = underTest.getString("sonar.nodejs.executable");

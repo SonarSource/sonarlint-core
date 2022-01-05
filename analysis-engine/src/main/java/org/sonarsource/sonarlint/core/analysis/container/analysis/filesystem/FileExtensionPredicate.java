@@ -46,7 +46,7 @@ public class FileExtensionPredicate extends AbstractFilePredicate {
   }
 
   static String getExtension(String name) {
-    int index = name.lastIndexOf('.');
+    var index = name.lastIndexOf('.');
     if (index < 0) {
       return "";
     }

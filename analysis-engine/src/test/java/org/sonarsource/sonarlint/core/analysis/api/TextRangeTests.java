@@ -20,15 +20,13 @@
 package org.sonarsource.sonarlint.core.analysis.api;
 
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.analysis.api.TextRange;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 class TextRangeTests {
   @Test
   void should_initialize_unknown_fields_with_null_for_line_only_TextRange() {
-    int line = 7;
-    TextRange lineOnlyTextRange = new TextRange(line);
+    var line = 7;
+    var lineOnlyTextRange = new TextRange(line);
     assertThat(lineOnlyTextRange.getStartLine()).isEqualTo(line);
     assertThat(lineOnlyTextRange.getStartLineOffset()).isNull();
     assertThat(lineOnlyTextRange.getEndLine()).isNull();

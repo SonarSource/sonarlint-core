@@ -48,7 +48,7 @@ class LanguageDetectionTests {
 
   @Test
   void search_by_file_extension() throws Exception {
-    LanguageDetection detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
+    var detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
 
     assertThat(detection.language(newInputFile("Foo.java"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.JAVA);
     assertThat(detection.language(newInputFile("src/Foo.java"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.JAVA);
@@ -65,17 +65,17 @@ class LanguageDetectionTests {
 
   @Test
   void should_not_fail_if_no_language() throws Exception {
-    LanguageDetection detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
+    var detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
     assertThat(detection.language(newInputFile("Foo.blabla"))).isNull();
   }
 
   @Test
   void fail_if_conflicting_language_suffix() throws Exception {
-    MapSettings settings = new MapSettings(Map.of(org.sonarsource.sonarlint.core.commons.Language.XML.getFileSuffixesPropKey(), "xhtml",
+    var settings = new MapSettings(Map.of(org.sonarsource.sonarlint.core.commons.Language.XML.getFileSuffixesPropKey(), "xhtml",
       org.sonarsource.sonarlint.core.commons.Language.HTML.getFileSuffixesPropKey(), "xhtml"));
-    LanguageDetection detection = new LanguageDetection(settings.asConfig());
-    InputFile inputFile = newInputFile("abc.xhtml");
-    MessageException e = assertThrows(MessageException.class, () -> detection.language(inputFile));
+    var detection = new LanguageDetection(settings.asConfig());
+    var inputFile = newInputFile("abc.xhtml");
+    var e = assertThrows(MessageException.class, () -> detection.language(inputFile));
     assertThat(e.getMessage())
       .contains("Language of file 'file://")
       .contains("abc.xhtml' can not be decided as the file extension matches both ")

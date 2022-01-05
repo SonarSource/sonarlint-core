@@ -29,10 +29,10 @@ import static org.mockito.Mockito.mock;
 class DefaultLocationTests {
   @Test
   void verify_accessors() {
-    ClientInputFile inputFile = mock(ClientInputFile.class);
-    String message = "fummy";
-    DefaultTextRange sqApiTextRange = new DefaultTextRange(new DefaultTextPointer(1, 2), new DefaultTextPointer(3, 4));
-    DefaultLocation defaultLocation = new DefaultLocation(inputFile, sqApiTextRange, message);
+    var inputFile = mock(ClientInputFile.class);
+    var message = "fummy";
+    var sqApiTextRange = new DefaultTextRange(new DefaultTextPointer(1, 2), new DefaultTextPointer(3, 4));
+    var defaultLocation = new DefaultLocation(inputFile, sqApiTextRange, message);
 
     assertThat(defaultLocation.getInputFile()).isSameAs(inputFile);
     assertThat(defaultLocation.getMessage()).isSameAs(message);
@@ -44,9 +44,9 @@ class DefaultLocationTests {
 
   @Test
   void text_range_can_be_null() {
-    ClientInputFile inputFile = mock(ClientInputFile.class);
-    String message = "fummy";
-    DefaultLocation defaultLocation = new DefaultLocation(inputFile, null, message);
+    var inputFile = mock(ClientInputFile.class);
+    var message = "fummy";
+    var defaultLocation = new DefaultLocation(inputFile, null, message);
 
     assertThat(defaultLocation.getTextRange()).isNull();
   }

@@ -54,7 +54,7 @@ public class PluginsMinVersions {
   }
 
   public boolean isVersionSupported(String key, @Nullable Version version) {
-    String minVersion = getMinimumVersion(key);
+    var minVersion = getMinimumVersion(key);
     if (version != null && minVersion != null) {
       var minimalVersion = Version.create(minVersion);
       return version.compareToIgnoreQualifier(minimalVersion) >= 0;

@@ -98,7 +98,7 @@ public class TaintVulnerabilitiesDownloadTest extends AbstractConnectedTest {
 
   @Before
   public void prepare() throws Exception {
-    WsClient adminWsClient = newAdminWsClient(ORCHESTRATOR);
+    var adminWsClient = newAdminWsClient(ORCHESTRATOR);
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY, "Java With Taint Vulnerabilities");
@@ -130,7 +130,7 @@ public class TaintVulnerabilitiesDownloadTest extends AbstractConnectedTest {
     engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, true, null);
 
-    List<ServerIssue> sinkIssues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/main/java/foo/DbHelper.java");
+    var sinkIssues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/main/java/foo/DbHelper.java");
     assertThat(sinkIssues.size()).isEqualTo(1);
 
     // Reload
@@ -139,18 +139,18 @@ public class TaintVulnerabilitiesDownloadTest extends AbstractConnectedTest {
     sinkIssues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/main/java/foo/DbHelper.java");
     assertThat(sinkIssues.size()).isEqualTo(1);
 
-    ServerIssue taintIssue = sinkIssues.get(0);
+    var taintIssue = sinkIssues.get(0);
     assertThat(taintIssue.getCodeSnippet()).isEqualTo("statement.executeQuery(query)");
     assertThat(taintIssue.getFlows()).isNotEmpty();
-    Flow flow = taintIssue.getFlows().get(0);
+    var flow = taintIssue.getFlows().get(0);
     assertThat(flow.locations()).isNotEmpty();
     assertThat(flow.locations().get(0).getCodeSnippet()).isEqualTo("statement.executeQuery(query)");
     assertThat(flow.locations().get(flow.locations().size() - 1).getCodeSnippet()).isIn("request.getParameter(\"user\")", "request.getParameter(\"pass\")");
   }
 
   private void analyzeMavenProject(String projectDirName) {
-    Path projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
-    Path pom = projectDir.resolve("pom.xml");
+    var projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
+    var pom = projectDir.resolve("pom.xml");
     ORCHESTRATOR.executeBuild(MavenBuild.create(pom.toFile())
       .setCleanPackageSonarGoals()
       .setProperty("sonar.projectKey", projectDirName)

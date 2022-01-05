@@ -46,16 +46,16 @@ public class StorageFileExclusions {
     List<G> excluded = new ArrayList<>();
 
     for (G file : files) {
-      String idePath = fileIdePathExtractor.apply(file);
+      var idePath = fileIdePathExtractor.apply(file);
       if (idePath == null) {
         continue;
       }
-      String sqPath = issueStorePaths.idePathToSqPath(projectBinding, idePath);
+      var sqPath = issueStorePaths.idePathToSqPath(projectBinding, idePath);
       if (sqPath == null) {
         // we can't map it to a SonarQube path, so just apply exclusions to the original ide path
         sqPath = idePath;
       }
-      Type type = testFilePredicate.test(file) ? Type.TEST : Type.MAIN;
+      var type = testFilePredicate.test(file) ? Type.TEST : Type.MAIN;
       if (!exclusionFilters.accept(sqPath, type)) {
         excluded.add(file);
       }

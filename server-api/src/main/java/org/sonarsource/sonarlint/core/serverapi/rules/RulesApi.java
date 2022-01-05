@@ -67,7 +67,7 @@ public class RulesApi {
 
     while (true) {
       page++;
-      Rules.SearchResponse response = loadFromStream(helper.get(getSearchByQualityProfileUrl(qualityProfileKey, page)));
+      var response = loadFromStream(helper.get(getSearchByQualityProfileUrl(qualityProfileKey, page)));
       var rules = response.getRulesList();
       for (var entry : response.getActives().getActivesMap().entrySet()) {
         var ruleKey = entry.getKey();
@@ -101,7 +101,7 @@ public class RulesApi {
   }
 
   private static Rules.SearchResponse loadFromStream(HttpClient.Response response) {
-    try (var toBeClosed = response; InputStream is = toBeClosed.bodyAsStream()) {
+    try (var toBeClosed = response; var is = toBeClosed.bodyAsStream()) {
       return Rules.SearchResponse.parseFrom(is);
     } catch (IOException e) {
       throw new IllegalStateException("Failed to load rules", e);

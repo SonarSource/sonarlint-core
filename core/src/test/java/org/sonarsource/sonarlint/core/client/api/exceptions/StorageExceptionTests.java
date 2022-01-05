@@ -27,8 +27,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class StorageExceptionTests {
   @Test
   void withCauseAndMessage() {
-    IOException cause = new IOException("cause");
-    StorageException ex = new StorageException("msg", cause);
+    var cause = new IOException("cause");
+    var ex = new StorageException("msg", cause);
     assertThat(ex.getCause()).isEqualTo(cause);
     assertThat(ex.getMessage()).isEqualTo("msg");
     assertThat(ex.getStackTrace()).isNotEmpty();

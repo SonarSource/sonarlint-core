@@ -27,6 +27,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarqube.ws.Common;
 import org.sonarqube.ws.Hotspots;
 import org.sonarqube.ws.Issues;
+import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
@@ -43,14 +44,14 @@ class HotspotApiTests {
 
   @BeforeEach
   void setUp() {
-    underTest = new ServerApi(mockServer.endpointParams(), MockWebServerExtensionWithProtobuf.httpClient()).hotspot();
+    underTest = new ServerApi(mockServer.endpointParams(), MockWebServerExtension.httpClient()).hotspot();
   }
 
   @Test
   void it_should_call_the_expected_api_endpoint_when_fetching_hotspot_details() {
     underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
 
-    RecordedRequest recordedRequest = mockServer.takeRequest();
+    var recordedRequest = mockServer.takeRequest();
     assertThat(recordedRequest.getPath()).isEqualTo("/api/hotspots/show.protobuf?projectKey=p&hotspot=h");
   }
 
@@ -58,7 +59,7 @@ class HotspotApiTests {
   void it_should_urlencode_the_hotspot_and_project_keys_when_fetching_hotspot_details() {
     underTest.fetch(new GetSecurityHotspotRequestParams("hot/spot", "pro/ject"));
 
-    RecordedRequest recordedRequest = mockServer.takeRequest();
+    var recordedRequest = mockServer.takeRequest();
     assertThat(recordedRequest.getPath()).isEqualTo("/api/hotspots/show.protobuf?projectKey=pro%2Fject&hotspot=hot%2Fspot");
   }
 
@@ -82,10 +83,10 @@ class HotspotApiTests {
       .build());
     mockServer.addStringResponse("/api/sources/raw?key=" + UrlUtils.urlEncode("myproject:path"), "Even\nBefore My\n\tCode\n  Snippet And\n After");
 
-    Optional<ServerHotspot> remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
+    var remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
 
     assertThat(remoteHotspot).isNotEmpty();
-    ServerHotspot hotspot = remoteHotspot.get();
+    var hotspot = remoteHotspot.get();
     assertThat(hotspot.message).isEqualTo("message");
     assertThat(hotspot.filePath).isEqualTo("path");
     assertThat(hotspot.textRange).usingRecursiveComparison().isEqualTo(new ServerHotspot.TextRange(2, 7, 4, 9));
@@ -122,16 +123,16 @@ class HotspotApiTests {
       .build());
     mockServer.addStringResponse("/api/sources/raw?key=" + UrlUtils.urlEncode("myproject:path"), "Even\nBefore My\n\tCode\n  Snippet And\n After");
 
-    Optional<ServerHotspot> remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
+    var remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
 
     assertThat(remoteHotspot).isNotEmpty();
-    ServerHotspot hotspot = remoteHotspot.get();
+    var hotspot = remoteHotspot.get();
     assertThat(hotspot.codeSnippet).isEqualTo("My");
   }
 
   @Test
   void it_should_return_empty_optional_when_ws_client_throws_an_exception() {
-    Optional<ServerHotspot> remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
+    var remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
     assertThat(remoteHotspot).isEmpty();
   }
 
@@ -159,10 +160,10 @@ class HotspotApiTests {
         .build())
       .build());
 
-    Optional<ServerHotspot> remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
+    var remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
 
     assertThat(remoteHotspot).isNotEmpty();
-    ServerHotspot hotspot = remoteHotspot.get();
+    var hotspot = remoteHotspot.get();
     assertThat(hotspot.resolution).isNull();
   }
 }

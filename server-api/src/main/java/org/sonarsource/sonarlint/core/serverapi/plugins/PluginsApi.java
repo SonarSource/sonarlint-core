@@ -40,7 +40,7 @@ public class PluginsApi {
     return ServerApiHelper.processTimed(
       () -> helper.get("/api/plugins/installed"),
       response -> {
-        InstalledPluginsPayload plugins = new Gson().fromJson(response.bodyAsString(), InstalledPluginsPayload.class);
+        var plugins = new Gson().fromJson(response.bodyAsString(), InstalledPluginsPayload.class);
         return Arrays.stream(plugins.plugins).map(PluginsApi::toInstalledPlugin).collect(Collectors.toList());
       },
       duration -> LOG.info("Downloaded plugin list in {}ms", duration));
@@ -51,7 +51,7 @@ public class PluginsApi {
   }
 
   public void getPlugin(String key, ServerApiHelper.IOConsumer<InputStream> pluginFileConsumer) {
-    String url = "api/plugins/download?plugin=" + key;
+    var url = "api/plugins/download?plugin=" + key;
     ServerApiHelper.consumeTimed(
       () -> helper.get(url),
       response -> pluginFileConsumer.accept(response.bodyAsStream()),

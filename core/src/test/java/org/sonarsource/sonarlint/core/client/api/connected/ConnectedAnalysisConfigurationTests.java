@@ -39,14 +39,14 @@ class ConnectedAnalysisConfigurationTests {
     Map<String, String> props = new HashMap<>();
     props.put("sonar.java.libraries", "foo bar");
 
-    final Path srcFile1 = createDirectory(temp.resolve("src1"));
-    final Path srcFile2 = createDirectory(temp.resolve("src2"));
+    final var srcFile1 = createDirectory(temp.resolve("src1"));
+    final var srcFile2 = createDirectory(temp.resolve("src2"));
 
     ClientInputFile inputFile = new TestClientInputFile(temp, srcFile1, false, StandardCharsets.UTF_8, null);
     ClientInputFile testInputFile = new TestClientInputFile(temp, srcFile2, true, StandardCharsets.UTF_8, null);
 
-    Path baseDir = createDirectory(temp.resolve("baseDir"));
-    ConnectedAnalysisConfiguration config = ConnectedAnalysisConfiguration.builder()
+    var baseDir = createDirectory(temp.resolve("baseDir"));
+    var config = ConnectedAnalysisConfiguration.builder()
       .setProjectKey("foo")
       .setBaseDir(baseDir)
       .addInputFiles(inputFile, testInputFile)

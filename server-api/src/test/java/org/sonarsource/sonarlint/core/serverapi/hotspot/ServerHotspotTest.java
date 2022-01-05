@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ServerHotspotTest {
   @Test
   void it_should_populate_fields_with_constructor_parameters() {
-    ServerHotspot hotspot = new ServerHotspot("message",
+    var hotspot = new ServerHotspot("message",
       "path",
       new ServerHotspot.TextRange(0, 1, 2, 3),
       "author",

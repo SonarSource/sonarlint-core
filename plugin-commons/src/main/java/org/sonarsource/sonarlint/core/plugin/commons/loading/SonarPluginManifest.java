@@ -84,7 +84,7 @@ public class SonarPluginManifest {
       if (!PARSER.matcher(s).matches()) {
         throw new IllegalArgumentException("Manifest field does not have correct format: " + s);
       }
-      String[] fields = StringUtils.split(s, ':');
+      var fields = StringUtils.split(s, ':');
       return new RequiredPlugin(fields[0], Version.create(fields[1]).removeQualifier());
     }
 
@@ -115,10 +115,10 @@ public class SonarPluginManifest {
     this.sonarMinVersion = Optional.ofNullable(attributes.getValue(SONAR_VERSION_ATTRIBUTE)).map(Version::create);
     this.basePluginKey = attributes.getValue(BASE_PLUGIN);
 
-    String deps = attributes.getValue(DEPENDENCIES_ATTRIBUTE);
+    var deps = attributes.getValue(DEPENDENCIES_ATTRIBUTE);
     this.dependencies = List.of(StringUtils.split(StringUtils.defaultString(deps), ' '));
 
-    String requires = attributes.getValue(REQUIRE_PLUGINS_ATTRIBUTE);
+    var requires = attributes.getValue(REQUIRE_PLUGINS_ATTRIBUTE);
     this.requiredPlugins = Stream.of(StringUtils.split(StringUtils.defaultString(requires), ',')).map(RequiredPlugin::parse).collect(toList());
     this.jreMinVersion = Optional.ofNullable(attributes.getValue(JRE_MIN_VERSION)).map(Version::create);
     this.nodeJsMinVersion = Optional.ofNullable(attributes.getValue(NODEJS_MIN_VERSION)).map(Version::create);

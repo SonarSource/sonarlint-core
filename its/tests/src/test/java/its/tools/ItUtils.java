@@ -29,7 +29,7 @@ public class ItUtils {
   }
 
   private static String getSonarVersion() {
-    String versionProperty = System.getProperty("sonar.runtimeVersion");
+    var versionProperty = System.getProperty("sonar.runtimeVersion");
     return versionProperty != null ? versionProperty : LATEST_RELEASE;
   }
 

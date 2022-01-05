@@ -36,13 +36,13 @@ class VersionUtilsTests {
 
   @Test
   void testVersionFallback() {
-    String version = VersionUtils.getLibraryVersionFallback();
+    var version = VersionUtils.getLibraryVersionFallback();
     assertThat(isVersion(version)).isTrue();
   }
 
   @Test
   void testVersion() {
-    String version = VersionUtils.getLibraryVersion();
+    var version = VersionUtils.getLibraryVersion();
     assertThat(isVersion(version)).isTrue();
   }
 
@@ -60,9 +60,9 @@ class VersionUtilsTests {
     if (version == null) {
       return false;
     }
-    String regex = "(\\d+\\.\\d+(?:\\.\\d+)*).*";
-    Pattern pattern = Pattern.compile(regex);
-    Matcher matcher = pattern.matcher(version);
+    var regex = "(\\d+\\.\\d+(?:\\.\\d+)*).*";
+    var pattern = Pattern.compile(regex);
+    var matcher = pattern.matcher(version);
 
     return matcher.find();
   }

@@ -43,9 +43,9 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void test_default_data() {
-    TelemetryLocalStorageManager storage = new TelemetryLocalStorageManager(filePath);
+    var storage = new TelemetryLocalStorageManager(filePath);
 
-    TelemetryLocalStorage data = storage.tryRead();
+    var data = storage.tryRead();
     assertThat(filePath).doesNotExist();
 
     assertThat(data.installTime()).is(within3SecOfNow);
@@ -55,13 +55,13 @@ class TelemetryLocalStorageManagerTests {
   }
 
   private final Condition<OffsetDateTime> within3SecOfNow = new Condition<>(p -> {
-    OffsetDateTime now = OffsetDateTime.now();
+    var now = OffsetDateTime.now();
     return Math.abs(p.until(now, ChronoUnit.SECONDS)) < 3;
   }, "within3Sec");
 
   @Test
   void should_update_data() {
-    TelemetryLocalStorageManager storage = new TelemetryLocalStorageManager(filePath);
+    var storage = new TelemetryLocalStorageManager(filePath);
 
     storage.tryRead();
     assertThat(filePath).doesNotExist();
@@ -69,7 +69,7 @@ class TelemetryLocalStorageManagerTests {
     storage.tryUpdateAtomically(TelemetryLocalStorage::setUsedAnalysis);
     assertThat(filePath).exists();
 
-    TelemetryLocalStorage data2 = storage.tryRead();
+    var data2 = storage.tryRead();
 
     assertThat(data2.lastUseDate()).isEqualTo(today);
     assertThat(data2.numUseDays()).isEqualTo(1);
@@ -77,14 +77,14 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void should_fix_invalid_installTime() {
-    TelemetryLocalStorageManager storage = new TelemetryLocalStorageManager(filePath);
+    var storage = new TelemetryLocalStorageManager(filePath);
 
     storage.tryUpdateAtomically(data -> {
       data.setInstallTime(null);
       data.setNumUseDays(100);
     });
 
-    TelemetryLocalStorage data2 = storage.tryRead();
+    var data2 = storage.tryRead();
     assertThat(data2.installTime()).is(within3SecOfNow);
     assertThat(data2.lastUseDate()).isNull();
     assertThat(data2.numUseDays()).isZero();
@@ -92,9 +92,9 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void should_fix_invalid_numDays() {
-    TelemetryLocalStorageManager storage = new TelemetryLocalStorageManager(filePath);
+    var storage = new TelemetryLocalStorageManager(filePath);
 
-    OffsetDateTime tenDaysAgo = OffsetDateTime.now().minusDays(10);
+    var tenDaysAgo = OffsetDateTime.now().minusDays(10);
 
     storage.tryUpdateAtomically(data -> {
       data.setInstallTime(tenDaysAgo);
@@ -102,7 +102,7 @@ class TelemetryLocalStorageManagerTests {
       data.setNumUseDays(100);
     });
 
-    TelemetryLocalStorage data2 = storage.tryRead();
+    var data2 = storage.tryRead();
     // Truncate because nano precision is lost during JSON serialization
     assertThat(data2.installTime()).isEqualTo(tenDaysAgo.truncatedTo(ChronoUnit.MILLIS));
     assertThat(data2.lastUseDate()).isEqualTo(today);
@@ -111,7 +111,7 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void should_fix_dates_in_future() {
-    TelemetryLocalStorageManager storage = new TelemetryLocalStorageManager(filePath);
+    var storage = new TelemetryLocalStorageManager(filePath);
 
     storage.tryUpdateAtomically(data -> {
       data.setInstallTime(OffsetDateTime.now().plusDays(5));
@@ -119,7 +119,7 @@ class TelemetryLocalStorageManagerTests {
       data.setNumUseDays(100);
     });
 
-    TelemetryLocalStorage data2 = storage.tryRead();
+    var data2 = storage.tryRead();
     assertThat(data2.installTime()).is(within3SecOfNow);
     assertThat(data2.lastUseDate()).isEqualTo(today);
     assertThat(data2.numUseDays()).isEqualTo(1);

@@ -37,7 +37,7 @@ public class UserAgentInterceptor implements Interceptor {
 
   @Override
   public Response intercept(Chain chain) throws IOException {
-    Request userAgentRequest = chain.request()
+    var userAgentRequest = chain.request()
       .newBuilder()
       .header("User-Agent", userAgent)
       .build();

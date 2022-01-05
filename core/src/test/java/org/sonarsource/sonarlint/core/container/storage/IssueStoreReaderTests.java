@@ -60,8 +60,8 @@ class IssueStoreReaderTests {
 
   @BeforeEach
   void setUp() {
-    IssueStoreFactory issueStoreFactory = mock(IssueStoreFactory.class);
-    Path storagePath = mock(Path.class);
+    var issueStoreFactory = mock(IssueStoreFactory.class);
+    var storagePath = mock(Path.class);
     when(projectStoragePaths.getServerIssuesPath(PROJECT_KEY)).thenReturn(storagePath);
     when(issueStoreFactory.apply(storagePath)).thenReturn(issueStore);
 
@@ -69,7 +69,7 @@ class IssueStoreReaderTests {
   }
 
   private void setModulePaths(Map<String, String> modulePaths) {
-    Builder moduleConfigBuilder = ProjectConfiguration.newBuilder();
+    var moduleConfigBuilder = ProjectConfiguration.newBuilder();
     moduleConfigBuilder.putAllModulePathByKey(modulePaths);
 
     when(storageReader.readProjectConfig(PROJECT_KEY)).thenReturn(moduleConfigBuilder.build());
@@ -108,8 +108,8 @@ class IssueStoreReaderTests {
       .isEmpty();
 
     // module not in storage
-    ProjectBinding nonExistent = new ProjectBinding("root:module1", "", "");
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> issueStoreReader.getServerIssues(nonExistent, "path2"));
+    var nonExistent = new ProjectBinding("root:module1", "", "");
+    var thrown = assertThrows(IllegalStateException.class, () -> issueStoreReader.getServerIssues(nonExistent, "path2"));
     assertThat(thrown).hasMessage("project not in storage: root:module1");
   }
 
@@ -154,15 +154,15 @@ class IssueStoreReaderTests {
       .isEmpty();
 
     // module not in storage
-    ProjectBinding nonExistent = new ProjectBinding("unknown", "", "");
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> issueStoreReader.getServerIssues(nonExistent, "path2"));
+    var nonExistent = new ProjectBinding("unknown", "", "");
+    var thrown = assertThrows(IllegalStateException.class, () -> issueStoreReader.getServerIssues(nonExistent, "path2"));
     assertThat(thrown).hasMessage("project not in storage: unknown");
   }
 
   @Test
   void return_empty_list_if_local_path_is_invalid() {
     setModulePaths(Collections.singletonMap(PROJECT_KEY, ""));
-    ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "local");
+    var projectBinding = new ProjectBinding(PROJECT_KEY, "", "local");
     issueStore.save(Collections.singletonList(createServerIssue("src/path1")));
     assertThat(issueStoreReader.getServerIssues(projectBinding, "src/path1"))
       .isEmpty();
@@ -171,7 +171,7 @@ class IssueStoreReaderTests {
   @Test
   void testSingleModuleWithBothPrefixes() {
     setModulePaths(Collections.singletonMap(PROJECT_KEY, ""));
-    ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "sq", "local");
+    var projectBinding = new ProjectBinding(PROJECT_KEY, "sq", "local");
 
     // setup issues
     issueStore.save(Collections.singletonList(createServerIssue("sq/src/path1")));
@@ -187,7 +187,7 @@ class IssueStoreReaderTests {
   @Test
   void testSingleModuleWithLocalPrefix() {
     setModulePaths(Collections.singletonMap(PROJECT_KEY, ""));
-    ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "local");
+    var projectBinding = new ProjectBinding(PROJECT_KEY, "", "local");
 
     // setup issues
     issueStore.save(Collections.singletonList(createServerIssue("src/path1")));
@@ -203,7 +203,7 @@ class IssueStoreReaderTests {
   @Test
   void testSingleModuleWithSQPrefix() {
     setModulePaths(Collections.singletonMap(PROJECT_KEY, ""));
-    ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "sq", "");
+    var projectBinding = new ProjectBinding(PROJECT_KEY, "sq", "");
 
     // setup issues
     issueStore.save(Collections.singletonList(createServerIssue("sq/src/path1")));
@@ -236,9 +236,9 @@ class IssueStoreReaderTests {
         .addLocation(Location.newBuilder().setPath("src/path2")))
       .build()));
 
-    List<ServerIssue> issuesReadFromStorage = issueStoreReader.getServerIssues(projectBinding, "src/path1");
+    var issuesReadFromStorage = issueStoreReader.getServerIssues(projectBinding, "src/path1");
     assertThat(issuesReadFromStorage).hasSize(1);
-    ServerIssue serverIssue = issuesReadFromStorage.get(0);
+    var serverIssue = issuesReadFromStorage.get(0);
     assertThat(serverIssue.getFilePath()).isEqualTo("src/path1");
     assertThat(serverIssue.getMessage()).isEqualTo("Primary");
     assertThat(serverIssue.getTextRange().getStartLine()).isEqualTo(1);

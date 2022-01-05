@@ -64,11 +64,11 @@ class NotificationCheckerTests {
 
   @Test
   void testSuccess() {
-    ZonedDateTime timestamp = ZonedDateTime.of(2017, 6, 4, 20, 0, 0, 0, ZoneOffset.ofHours(0));
-    String expectedUrl = "/api/developers/search_events?projects=myproject&from=2017-06-04T20%3A00%3A00%2B0000";
+    var timestamp = ZonedDateTime.of(2017, 6, 4, 20, 0, 0, 0, ZoneOffset.ofHours(0));
+    var expectedUrl = "/api/developers/search_events?projects=myproject&from=2017-06-04T20%3A00%3A00%2B0000";
     mockServer.addStringResponse(expectedUrl, VALID_RESPONSE);
 
-    List<ServerNotification> notifications = underTest.request(Collections.singletonMap("myproject", timestamp));
+    var notifications = underTest.request(Collections.singletonMap("myproject", timestamp));
 
     assertThat(notifications).hasSize(2);
     assertThat(notifications.get(0).category()).isEqualTo("QUALITY_GATE");
@@ -81,11 +81,11 @@ class NotificationCheckerTests {
 
   @Test
   void testFailParsing() {
-    ZonedDateTime timestamp = ZonedDateTime.of(2017, 6, 4, 20, 0, 0, 0, ZoneOffset.ofHours(0));
-    String expectedUrl = "/api/developers/search_events?projects=myproject&from=2017-06-04T20%3A00%3A00%2B0000";
+    var timestamp = ZonedDateTime.of(2017, 6, 4, 20, 0, 0, 0, ZoneOffset.ofHours(0));
+    var expectedUrl = "/api/developers/search_events?projects=myproject&from=2017-06-04T20%3A00%3A00%2B0000";
     mockServer.addStringResponse(expectedUrl, INVALID_RESPONSE);
 
-    List<ServerNotification> notifications = underTest.request(Collections.singletonMap("myproject", timestamp));
+    var notifications = underTest.request(Collections.singletonMap("myproject", timestamp));
     assertThat(notifications).isEmpty();
   }
 
@@ -96,7 +96,7 @@ class NotificationCheckerTests {
 
   @Test
   void testIsSupported() {
-    String expectedUrl = "/api/developers/search_events?projects=&from=";
+    var expectedUrl = "/api/developers/search_events?projects=&from=";
 
     mockServer.addResponse(expectedUrl, new MockResponse());
 
@@ -105,12 +105,12 @@ class NotificationCheckerTests {
 
   @Test
   void testFailCode() {
-    ZonedDateTime timestamp = ZonedDateTime.of(2017, 6, 4, 20, 0, 0, 0, ZoneOffset.ofHours(0));
-    String expectedUrl = "/api/developers/search_events?projects=myproject&from=2017-06-04T20%3A00%3A00%2B0000";
+    var timestamp = ZonedDateTime.of(2017, 6, 4, 20, 0, 0, 0, ZoneOffset.ofHours(0));
+    var expectedUrl = "/api/developers/search_events?projects=myproject&from=2017-06-04T20%3A00%3A00%2B0000";
 
     mockServer.addResponse(expectedUrl, new MockResponse().setResponseCode(500).setBody("failed"));
 
-    List<ServerNotification> notifications = underTest.request(Collections.singletonMap("myproject", timestamp));
+    var notifications = underTest.request(Collections.singletonMap("myproject", timestamp));
     assertThat(notifications).isEmpty();
   }
 }

@@ -76,7 +76,7 @@ public class IssueDownloader {
 
     List<Sonarlint.ServerIssue> result = new ArrayList<>();
 
-    List<ScannerInput.ServerIssue> batchIssues = issueApi.downloadAllFromBatchIssues(key, branchName);
+    var batchIssues = issueApi.downloadAllFromBatchIssues(key, branchName);
 
     Set<String> taintRuleKeys = new HashSet<>();
     for (ScannerInput.ServerIssue batchIssue : batchIssues) {
@@ -92,7 +92,7 @@ public class IssueDownloader {
     if (fetchTaintVulnerabilities && !taintRuleKeys.isEmpty()) {
       Map<String, String> sourceCodeByKey = new HashMap<>();
       try {
-        DownloadIssuesResult downloadVulnerabilitiesForRules = issueApi.downloadVulnerabilitiesForRules(key, taintRuleKeys, branchName, progress);
+        var downloadVulnerabilitiesForRules = issueApi.downloadVulnerabilitiesForRules(key, taintRuleKeys, branchName, progress);
         downloadVulnerabilitiesForRules.getIssues()
           .forEach(i -> result.add(
             convertTaintIssue(new ServerApi(serverApiHelper).source(), projectConfiguration, issueBuilder, locationBuilder, textRangeBuilder, flowBuilder, i,
@@ -108,7 +108,7 @@ public class IssueDownloader {
   public Sonarlint.ServerIssue toStorageIssue(ScannerInput.ServerIssue batchIssueFromWs, Sonarlint.ProjectConfiguration projectConfiguration,
     Sonarlint.ServerIssue.Builder issueBuilder, Location.Builder locationBuilder,
     Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder) {
-    String sqPath = issueStorePaths.fileKeyToSqPath(projectConfiguration, batchIssueFromWs.getModuleKey(), batchIssueFromWs.getPath());
+    var sqPath = issueStorePaths.fileKeyToSqPath(projectConfiguration, batchIssueFromWs.getModuleKey(), batchIssueFromWs.getPath());
 
     var primary = buildPrimaryLocationForBatchIssue(locationBuilder, textRangeBuilder, batchIssueFromWs, sqPath);
 
@@ -176,8 +176,8 @@ public class IssueDownloader {
       for (org.sonarqube.ws.Common.Location locationFromWs : flowFromWs.getLocationsList()) {
         locationBuilder.clear();
         locationBuilder.setMsg(locationFromWs.getMsg());
-        String componentPath = componentPathsByKey.get(locationFromWs.getComponent());
-        String sqPath = issueStorePaths.fileKeyToSqPath(projectConfiguration, issueFromWs.getSubProject(), componentPath);
+        var componentPath = componentPathsByKey.get(locationFromWs.getComponent());
+        var sqPath = issueStorePaths.fileKeyToSqPath(projectConfiguration, issueFromWs.getSubProject(), componentPath);
         locationBuilder.setPath(sqPath);
         if (locationFromWs.hasTextRange()) {
           copyTextRangeFromWs(locationBuilder, textRangeBuilder, locationFromWs.getTextRange());
@@ -195,8 +195,8 @@ public class IssueDownloader {
     Issue issueFromWs, Map<String, String> componentPathsByKey, Map<String, String> sourceCodeByKey) {
     locationBuilder.clear();
     locationBuilder.setMsg(issueFromWs.getMessage());
-    String componentPath = componentPathsByKey.get(issueFromWs.getComponent());
-    String sqPath = issueStorePaths.fileKeyToSqPath(projectConfiguration, issueFromWs.getSubProject(), componentPath);
+    var componentPath = componentPathsByKey.get(issueFromWs.getComponent());
+    var sqPath = issueStorePaths.fileKeyToSqPath(projectConfiguration, issueFromWs.getSubProject(), componentPath);
     locationBuilder.setPath(sqPath);
     if (issueFromWs.hasTextRange()) {
       copyTextRangeFromWs(locationBuilder, textRangeBuilder, issueFromWs.getTextRange());
@@ -215,7 +215,7 @@ public class IssueDownloader {
   }
 
   private static void setCodeSnippet(SourceApi sourceApi, Location.Builder locationBuilder, String fileKey, TextRange textRange, Map<String, String> sourceCodeByKey) {
-    String sourceCode = getOrFetchSourceCode(sourceApi, fileKey, sourceCodeByKey);
+    var sourceCode = getOrFetchSourceCode(sourceApi, fileKey, sourceCodeByKey);
     if (StringUtils.isEmpty(sourceCode)) {
       return;
     }

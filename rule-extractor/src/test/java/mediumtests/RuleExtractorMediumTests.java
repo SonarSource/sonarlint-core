@@ -58,7 +58,7 @@ class RuleExtractorMediumTests {
 
   @BeforeAll
   static void prepare() throws IOException {
-    Path dir = Paths.get("target/plugins/");
+    var dir = Paths.get("target/plugins/");
     allJars = Files.list(dir)
       .filter(x -> x.getFileName().toString().endsWith(".jar"))
       .collect(toSet());
@@ -67,10 +67,10 @@ class RuleExtractorMediumTests {
   @Test
   void extractAllRules() throws Exception {
     Set<Language> enabledLanguages = Set.of(Language.values());
-    PluginInstancesRepository.Configuration config = new PluginInstancesRepository.Configuration(allJars, enabledLanguages, empty());
-    try (PluginInstancesRepository pluginInstancesRepository = new PluginInstancesRepository(config)) {
+    var config = new PluginInstancesRepository.Configuration(allJars, enabledLanguages, empty());
+    try (var pluginInstancesRepository = new PluginInstancesRepository(config)) {
 
-      List<SonarLintRuleDefinition> allRules = new RulesDefinitionExtractor().extractRules(pluginInstancesRepository, enabledLanguages, false);
+      var allRules = new RulesDefinitionExtractor().extractRules(pluginInstancesRepository, enabledLanguages, false);
       if (COMMERCIAL_ENABLED) {
         assertThat(allJars).hasSize(19);
         assertThat(allRules).hasSize(ALL_RULES_COUNT_WITH_COMMERCIAL);
@@ -114,10 +114,10 @@ class RuleExtractorMediumTests {
   @Test
   void extractAllRules_include_rule_templates() throws Exception {
     Set<Language> enabledLanguages = Set.of(Language.values());
-    PluginInstancesRepository.Configuration config = new PluginInstancesRepository.Configuration(allJars, enabledLanguages, empty());
-    try (PluginInstancesRepository pluginInstancesRepository = new PluginInstancesRepository(config)) {
+    var config = new PluginInstancesRepository.Configuration(allJars, enabledLanguages, empty());
+    try (var pluginInstancesRepository = new PluginInstancesRepository(config)) {
 
-      List<SonarLintRuleDefinition> allRules = new RulesDefinitionExtractor().extractRules(pluginInstancesRepository, enabledLanguages, true);
+      var allRules = new RulesDefinitionExtractor().extractRules(pluginInstancesRepository, enabledLanguages, true);
       if (COMMERCIAL_ENABLED) {
         assertThat(allJars).hasSize(19);
         assertThat(allRules).hasSize(ALL_RULES_COUNT_WITH_COMMERCIAL + NON_COMMERCIAL_RULE_TEMPLATES_COUNT + COMMERCIAL_RULE_TEMPLATES_COUNT);
@@ -145,10 +145,10 @@ class RuleExtractorMediumTests {
       // Enable C but not C++
       enabledLanguages.add(Language.C);
     }
-    PluginInstancesRepository.Configuration config = new PluginInstancesRepository.Configuration(allJars, enabledLanguages, empty());
-    try (PluginInstancesRepository pluginInstancesRepository = new PluginInstancesRepository(config)) {
+    var config = new PluginInstancesRepository.Configuration(allJars, enabledLanguages, empty());
+    try (var pluginInstancesRepository = new PluginInstancesRepository(config)) {
 
-      List<SonarLintRuleDefinition> allRules = new RulesDefinitionExtractor().extractRules(pluginInstancesRepository, enabledLanguages, false);
+      var allRules = new RulesDefinitionExtractor().extractRules(pluginInstancesRepository, enabledLanguages, false);
 
       assertThat(allRules.stream().map(SonarLintRuleDefinition::getLanguage)).hasSameElementsAs(enabledLanguages);
     }
@@ -157,9 +157,9 @@ class RuleExtractorMediumTests {
   @Test
   void loadNoRuleIfThereIsNoPlugin() throws Exception {
     Set<Language> enabledLanguages = Set.of(Language.values());
-    PluginInstancesRepository.Configuration config = new PluginInstancesRepository.Configuration(Set.of(), enabledLanguages, empty());
-    try (PluginInstancesRepository pluginInstancesRepository = new PluginInstancesRepository(config)) {
-      List<SonarLintRuleDefinition> allRules = new RulesDefinitionExtractor().extractRules(pluginInstancesRepository, enabledLanguages, false);
+    var config = new PluginInstancesRepository.Configuration(Set.of(), enabledLanguages, empty());
+    try (var pluginInstancesRepository = new PluginInstancesRepository(config)) {
+      var allRules = new RulesDefinitionExtractor().extractRules(pluginInstancesRepository, enabledLanguages, false);
 
       assertThat(allRules).isEmpty();
     }

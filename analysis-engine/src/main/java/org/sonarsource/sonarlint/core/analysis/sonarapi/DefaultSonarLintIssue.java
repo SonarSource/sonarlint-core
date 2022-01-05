@@ -145,7 +145,7 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
     }
 
     if (dirOrModulePath.isPresent()) {
-      String path = PathUtils.sanitize(dirOrModulePath.get().toString());
+      var path = PathUtils.sanitize(dirOrModulePath.get().toString());
       var fixedLocation = new DefaultSonarLintIssueLocation();
       fixedLocation.on(project);
       var fullMessage = new StringBuilder();

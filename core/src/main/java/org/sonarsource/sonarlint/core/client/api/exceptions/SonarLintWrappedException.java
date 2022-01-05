@@ -39,11 +39,7 @@ public class SonarLintWrappedException extends SonarLintException {
       return null;
     }
 
-    if (t instanceof MessageException) {
-      return (SonarLintException) t;
-    }
-
-    if (t.getCause() == null && t instanceof SonarLintException) {
+    if ((t instanceof MessageException) || (t.getCause() == null && t instanceof SonarLintException)) {
       return (SonarLintException) t;
     }
 
@@ -52,7 +48,7 @@ public class SonarLintWrappedException extends SonarLintException {
       return (SonarLintException) cause;
     }
 
-    SonarLintWrappedException sonarLintException = new SonarLintWrappedException(t.toString(), t.getMessage(), cause);
+    var sonarLintException = new SonarLintWrappedException(t.toString(), t.getMessage(), cause);
     sonarLintException.setStackTrace(t.getStackTrace());
     for (Throwable suppressed : t.getSuppressed()) {
       sonarLintException.addSuppressed(wrap(suppressed));

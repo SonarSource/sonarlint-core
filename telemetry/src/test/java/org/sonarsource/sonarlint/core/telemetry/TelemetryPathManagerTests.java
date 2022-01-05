@@ -63,7 +63,7 @@ class TelemetryPathManagerTests {
 
   @Test
   void should_get_path_under_sonarlint_home() {
-    Path path = SonarLintUserHome.get().relativize(getPath("product"));
+    var path = SonarLintUserHome.get().relativize(getPath("product"));
     assertThat(path.startsWith("..")).isFalse();
   }
 

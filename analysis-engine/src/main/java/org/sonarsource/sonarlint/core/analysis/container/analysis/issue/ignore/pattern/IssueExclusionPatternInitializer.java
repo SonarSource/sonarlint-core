@@ -61,13 +61,13 @@ public class IssueExclusionPatternInitializer extends AbstractPatternInitializer
     // Patterns Block
     blockPatterns = new ArrayList<>();
     for (String id : getSettings().getStringArray(PATTERNS_BLOCK_KEY)) {
-      String propPrefix = PATTERNS_BLOCK_KEY + "." + id + ".";
-      String beginBlockRegexp = getSettings().get(propPrefix + BEGIN_BLOCK_REGEXP).orElse(null);
+      var propPrefix = PATTERNS_BLOCK_KEY + "." + id + ".";
+      var beginBlockRegexp = getSettings().get(propPrefix + BEGIN_BLOCK_REGEXP).orElse(null);
       if (StringUtils.isBlank(beginBlockRegexp)) {
         LOG.debug("Issue exclusions are misconfigured. Start block regexp is mandatory for each entry of '" + PATTERNS_BLOCK_KEY + "'");
         continue;
       }
-      String endBlockRegexp = getSettings().get(propPrefix + END_BLOCK_REGEXP).orElse(null);
+      var endBlockRegexp = getSettings().get(propPrefix + END_BLOCK_REGEXP).orElse(null);
       // As per configuration help, missing second field means: from start regexp to EOF
       var pattern = new BlockIssuePattern(nullToEmpty(beginBlockRegexp), nullToEmpty(endBlockRegexp));
       blockPatterns.add(pattern);
@@ -77,8 +77,8 @@ public class IssueExclusionPatternInitializer extends AbstractPatternInitializer
     // Patterns All File
     allFilePatterns = new ArrayList<>();
     for (String id : getSettings().getStringArray(PATTERNS_ALLFILE_KEY)) {
-      String propPrefix = PATTERNS_ALLFILE_KEY + "." + id + ".";
-      String allFileRegexp = getSettings().get(propPrefix + FILE_REGEXP).orElse(null);
+      var propPrefix = PATTERNS_ALLFILE_KEY + "." + id + ".";
+      var allFileRegexp = getSettings().get(propPrefix + FILE_REGEXP).orElse(null);
       if (StringUtils.isBlank(allFileRegexp)) {
         LOG.debug("Issue exclusions are misconfigured. Remove blank entries from '" + PATTERNS_ALLFILE_KEY + "'");
         continue;

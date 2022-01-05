@@ -57,9 +57,9 @@ public class AnalysisExtensionInstaller extends ExtensionInstaller {
   }
 
   private static ContainerLifespan getSonarLintSideLifespan(Object extension) {
-    SonarLintSide annotation = AnnotationUtils.getAnnotation(extension, SonarLintSide.class);
+    var annotation = AnnotationUtils.getAnnotation(extension, SonarLintSide.class);
     if (annotation != null) {
-      String lifespan = annotation.lifespan();
+      var lifespan = annotation.lifespan();
       if (SonarLintSide.MULTIPLE_ANALYSES.equals(lifespan) || "INSTANCE".equals(lifespan)) {
         return ContainerLifespan.INSTANCE;
       }

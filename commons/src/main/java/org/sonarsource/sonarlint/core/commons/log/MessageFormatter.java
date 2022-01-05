@@ -153,7 +153,7 @@ final class MessageFormatter {
 
   public static FormattingTuple arrayFormat(final String messagePattern, final Object[] argArray) {
     var throwableCandidate = MessageFormatter.getThrowableCandidate(argArray);
-    Object[] args = argArray;
+    var args = argArray;
     if (throwableCandidate != null) {
       args = MessageFormatter.trimmedCopy(argArray);
     }
@@ -275,7 +275,7 @@ final class MessageFormatter {
     sbuf.append('[');
     if (!seenMap.containsKey(a)) {
       seenMap.put(a, null);
-      final int len = a.length;
+      final var len = a.length;
       for (var i = 0; i < len; i++) {
         deeplyAppendParameter(sbuf, a[i], seenMap);
         if (i != len - 1) {
@@ -292,7 +292,7 @@ final class MessageFormatter {
 
   private static void booleanArrayAppend(StringBuilder sbuf, boolean[] a) {
     sbuf.append('[');
-    final int len = a.length;
+    final var len = a.length;
     for (var i = 0; i < len; i++) {
       sbuf.append(a[i]);
       if (i != len - 1) {
@@ -304,7 +304,7 @@ final class MessageFormatter {
 
   private static void byteArrayAppend(StringBuilder sbuf, byte[] a) {
     sbuf.append('[');
-    final int len = a.length;
+    final var len = a.length;
     for (var i = 0; i < len; i++) {
       sbuf.append(a[i]);
       if (i != len - 1) {
@@ -316,7 +316,7 @@ final class MessageFormatter {
 
   private static void charArrayAppend(StringBuilder sbuf, char[] a) {
     sbuf.append('[');
-    final int len = a.length;
+    final var len = a.length;
     for (var i = 0; i < len; i++) {
       sbuf.append(a[i]);
       if (i != len - 1) {
@@ -328,7 +328,7 @@ final class MessageFormatter {
 
   private static void shortArrayAppend(StringBuilder sbuf, short[] a) {
     sbuf.append('[');
-    final int len = a.length;
+    final var len = a.length;
     for (var i = 0; i < len; i++) {
       sbuf.append(a[i]);
       if (i != len - 1) {
@@ -340,7 +340,7 @@ final class MessageFormatter {
 
   private static void intArrayAppend(StringBuilder sbuf, int[] a) {
     sbuf.append('[');
-    final int len = a.length;
+    final var len = a.length;
     for (var i = 0; i < len; i++) {
       sbuf.append(a[i]);
       if (i != len - 1) {
@@ -352,7 +352,7 @@ final class MessageFormatter {
 
   private static void longArrayAppend(StringBuilder sbuf, long[] a) {
     sbuf.append('[');
-    final int len = a.length;
+    final var len = a.length;
     for (var i = 0; i < len; i++) {
       sbuf.append(a[i]);
       if (i != len - 1) {
@@ -364,7 +364,7 @@ final class MessageFormatter {
 
   private static void floatArrayAppend(StringBuilder sbuf, float[] a) {
     sbuf.append('[');
-    final int len = a.length;
+    final var len = a.length;
     for (var i = 0; i < len; i++) {
       sbuf.append(a[i]);
       if (i != len - 1) {
@@ -376,7 +376,7 @@ final class MessageFormatter {
 
   private static void doubleArrayAppend(StringBuilder sbuf, double[] a) {
     sbuf.append('[');
-    final int len = a.length;
+    final var len = a.length;
     for (var i = 0; i < len; i++) {
       sbuf.append(a[i]);
       if (i != len - 1) {

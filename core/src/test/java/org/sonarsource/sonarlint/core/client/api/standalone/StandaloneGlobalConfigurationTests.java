@@ -34,7 +34,7 @@ class StandaloneGlobalConfigurationTests {
 
   @Test
   void testDefaults() {
-    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
+    var config = StandaloneGlobalConfiguration.builder()
       .build();
     assertThat(config.getPluginPaths()).isEmpty();
     assertThat(config.getSonarLintUserHome()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint"));
@@ -48,7 +48,7 @@ class StandaloneGlobalConfigurationTests {
   void extraProps() {
     Map<String, String> extraProperties = new HashMap<>();
     extraProperties.put("foo", "bar");
-    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
+    var config = StandaloneGlobalConfiguration.builder()
       .setExtraProperties(extraProperties)
       .build();
     assertThat(config.extraProperties()).containsEntry("foo", "bar");
@@ -56,9 +56,9 @@ class StandaloneGlobalConfigurationTests {
 
   @Test
   void overrideDirs(@TempDir Path temp) throws Exception {
-    Path sonarUserHome = createDirectory(temp.resolve("userHome"));
-    Path work = createDirectory(temp.resolve("work"));
-    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
+    var sonarUserHome = createDirectory(temp.resolve("userHome"));
+    var work = createDirectory(temp.resolve("work"));
+    var config = StandaloneGlobalConfiguration.builder()
       .setSonarLintUserHome(sonarUserHome)
       .setWorkDir(work)
       .build();
@@ -68,10 +68,10 @@ class StandaloneGlobalConfigurationTests {
 
   @Test
   void configurePlugins() {
-    Path plugin1 = Paths.get("plugin1.jar");
-    Path plugin2 = Paths.get("plugin2.jar");
-    Path plugin3 = Paths.get("plugin3.jar");
-    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
+    var plugin1 = Paths.get("plugin1.jar");
+    var plugin2 = Paths.get("plugin2.jar");
+    var plugin3 = Paths.get("plugin3.jar");
+    var config = StandaloneGlobalConfiguration.builder()
       .addPlugin(plugin1)
       .addPlugins(plugin2, plugin3)
       .build();
@@ -80,7 +80,7 @@ class StandaloneGlobalConfigurationTests {
 
   @Test
   void configureLanguages() {
-    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
+    var config = StandaloneGlobalConfiguration.builder()
       .addEnabledLanguage(Language.JAVA)
       .addEnabledLanguages(Language.JS, Language.TS)
       .build();
@@ -89,7 +89,7 @@ class StandaloneGlobalConfigurationTests {
 
   @Test
   void providePid() {
-    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder().setClientPid(123).build();
+    var config = StandaloneGlobalConfiguration.builder().setClientPid(123).build();
     assertThat(config.getClientPid()).isEqualTo(123);
   }
 }

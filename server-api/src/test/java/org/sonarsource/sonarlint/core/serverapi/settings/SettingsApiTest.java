@@ -34,16 +34,16 @@ class SettingsApiTest {
 
   @Test
   void testFetchProjectSettings() {
-    Settings.FieldValues.Value.Builder valuesBuilder = Settings.FieldValues.Value.newBuilder();
+    var valuesBuilder = Settings.FieldValues.Value.newBuilder();
     valuesBuilder.putValue("filepattern", "**/*.xml");
     valuesBuilder.putValue("rulepattern", "*:S12345");
-    Settings.FieldValues.Value value1 = valuesBuilder.build();
+    var value1 = valuesBuilder.build();
     valuesBuilder.clear();
     valuesBuilder.putValue("filepattern", "**/*.java");
     valuesBuilder.putValue("rulepattern", "*:S456");
-    Settings.FieldValues.Value value2 = valuesBuilder.build();
+    var value2 = valuesBuilder.build();
 
-    Settings.ValuesWsResponse response = Settings.ValuesWsResponse.newBuilder()
+    var response = Settings.ValuesWsResponse.newBuilder()
       .addSettings(Settings.Setting.newBuilder()
         .setKey("sonar.inclusions")
         .setValues(Settings.Values.newBuilder().addValues("**/*.java")))

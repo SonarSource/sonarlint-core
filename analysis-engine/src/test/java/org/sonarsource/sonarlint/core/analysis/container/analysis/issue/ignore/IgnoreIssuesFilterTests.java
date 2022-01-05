@@ -57,7 +57,7 @@ import static org.mockito.Mockito.when;
 
   @Test
   void shouldRejectIfRulePatternMatches() {
-    WildcardPattern pattern = mock(WildcardPattern.class);
+    var pattern = mock(WildcardPattern.class);
     when(pattern.match(ruleKey.toString())).thenReturn(true);
     underTest.addRuleExclusionPatternForComponent(component, pattern);
 
@@ -66,7 +66,7 @@ import static org.mockito.Mockito.when;
 
   @Test
   void shouldAcceptIfRulePatternDoesNotMatch() {
-    WildcardPattern pattern = mock(WildcardPattern.class);
+    var pattern = mock(WildcardPattern.class);
     when(pattern.match(ruleKey.toString())).thenReturn(false);
     underTest.addRuleExclusionPatternForComponent(component, pattern);
 

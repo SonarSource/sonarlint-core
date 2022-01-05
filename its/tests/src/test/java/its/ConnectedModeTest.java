@@ -186,7 +186,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     globalProps.put("sonar.global.label", "It works");
     logs = new ArrayList<>();
 
-    NodeJsHelper nodeJsHelper = new NodeJsHelper();
+    var nodeJsHelper = new NodeJsHelper();
     nodeJsHelper.detect(null);
 
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
@@ -250,30 +250,30 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void parsingErrorJava() throws IOException {
-    String fileContent = "pac kage its; public class MyTest { }";
-    Path testFile = temp.newFile("MyTestParseError.java").toPath();
+    var fileContent = "pac kage its; public class MyTest { }";
+    var testFile = temp.newFile("MyTestParseError.java").toPath();
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
 
     updateGlobal();
     updateProject(PROJECT_KEY_JAVA);
 
-    SaveIssueListener issueListener = new SaveIssueListener();
-    AnalysisResults results = engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, testFile.toString()), issueListener, null, null);
+    var issueListener = new SaveIssueListener();
+    var results = engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, testFile.toString()), issueListener, null, null);
 
     assertThat(results.failedAnalysisFiles()).hasSize(1);
   }
 
   @Test
   public void parsingErrorJavascript() throws IOException {
-    String fileContent = "asd asd";
-    Path testFile = temp.newFile("MyTest.js").toPath();
+    var fileContent = "asd asd";
+    var testFile = temp.newFile("MyTest.js").toPath();
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
 
     updateGlobal();
     updateProject(PROJECT_KEY_JAVASCRIPT);
 
-    SaveIssueListener issueListener = new SaveIssueListener();
-    AnalysisResults results = engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, testFile.toString()), issueListener, null, null);
+    var issueListener = new SaveIssueListener();
+    var results = engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, testFile.toString()), issueListener, null, null);
 
     assertThat(results.failedAnalysisFiles()).hasSize(1);
   }
@@ -308,12 +308,12 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey("S106"), PROJECT_KEY_JAVA).get().getExtendedDescription()).isEmpty();
 
-    String extendedDescription = "my dummy extended description";
+    var extendedDescription = "my dummy extended description";
 
     WsRequest request = new PostRequest("/api/rules/update")
       .setParam("key", javaRuleKey("S106"))
       .setParam("markdown_note", extendedDescription);
-    try (WsResponse response = adminWsClient.wsConnector().call(request)) {
+    try (var response = adminWsClient.wsConnector().call(request)) {
       assertThat(response.code()).isEqualTo(200);
     }
 
@@ -325,7 +325,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(PROJECT_KEY_JAVASCRIPT);
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, PROJECT_KEY_JAVASCRIPT, "src/Person.js"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -335,7 +335,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(PROJECT_KEY_JAVA_CUSTOM);
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_CUSTOM, PROJECT_KEY_JAVA_CUSTOM,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
@@ -349,7 +349,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(PROJECT_KEY_PHP);
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_PHP, PROJECT_KEY_PHP, "src/Math.php"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -359,7 +359,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(PROJECT_KEY_PYTHON);
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_PYTHON, PROJECT_KEY_PYTHON, "src/hello.py"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -369,7 +369,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(PROJECT_KEY_WEB);
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_WEB, PROJECT_KEY_WEB, "src/file.html"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -379,7 +379,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(PROJECT_KEY_JAVA);
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
@@ -393,7 +393,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(PROJECT_KEY_JAVA_HOTSPOT);
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_HOTSPOT, PROJECT_KEY_JAVA_HOTSPOT,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
@@ -414,13 +414,13 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 6));
 
     analyzeMavenProject(PROJECT_KEY_JAVA_HOTSPOT);
-    HotspotApi securityHotspotsService = new ServerApi(endpointParams(ORCHESTRATOR), sqHttpClient()).hotspot();
+    var securityHotspotsService = new ServerApi(endpointParams(ORCHESTRATOR), sqHttpClient()).hotspot();
 
-    Optional<ServerHotspot> remoteHotspot = securityHotspotsService
+    var remoteHotspot = securityHotspotsService
       .fetch(new GetSecurityHotspotRequestParams(getFirstHotspotKey(PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT));
 
     assertThat(remoteHotspot).isNotEmpty();
-    ServerHotspot actualHotspot = remoteHotspot.get();
+    var actualHotspot = remoteHotspot.get();
     assertThat(actualHotspot.message).isEqualTo("Make sure using this hardcoded IP address is safe here.");
     assertThat(actualHotspot.filePath).isEqualTo("src/main/java/foo/Foo.java");
     assertThat(actualHotspot.textRange).isEqualToComparingFieldByField(new TextRange(5, 14, 5, 29));
@@ -432,12 +432,12 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   private String getFirstHotspotKey(String projectKey) throws InvalidProtocolBufferException {
-    HttpResponse response = ORCHESTRATOR.getServer()
+    var response = ORCHESTRATOR.getServer()
       .newHttpCall("/api/hotspots/search.protobuf")
       .setParam("projectKey", projectKey)
       .setAdminCredentials()
       .execute();
-    Parser<Hotspots.SearchWsResponse> parser = Hotspots.SearchWsResponse.parser();
+    var parser = Hotspots.SearchWsResponse.parser();
     return parser.parseFrom(response.getBody()).getHotspots(0).getKey();
   }
 
@@ -446,7 +446,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(PROJECT_KEY_JAVA_PACKAGE);
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_PACKAGE, PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
@@ -462,7 +462,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(PROJECT_KEY_JAVA_CUSTOM_SENSOR);
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_CUSTOM_SENSOR, PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
@@ -478,7 +478,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     assertThat(logs).contains("Start Global Extension It works");
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_GLOBAL_EXTENSION, PROJECT_KEY_GLOBAL_EXTENSION,
       "src/foo.glob",
       "sonar.cobol.file.suffixes", "glob"),
@@ -502,11 +502,11 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisTemplateRule() throws Exception {
-    SearchRequest searchReq = new SearchRequest();
+    var searchReq = new SearchRequest();
     searchReq.setQualityProfile("SonarLint IT Java");
     searchReq.setProject(PROJECT_KEY_JAVA);
     searchReq.setDefaults("false");
-    SearchWsResponse search = adminWsClient.qualityprofiles().search(searchReq);
+    var search = adminWsClient.qualityprofiles().search(searchReq);
     QualityProfile qp = null;
     for (QualityProfile q : search.getProfilesList()) {
       if (q.getName().equals("SonarLint IT Java")) {
@@ -522,14 +522,14 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       .setParam("params", "methodName=echo;className=foo.Foo;argumentTypes=int")
       .setParam("template_key", javaRuleKey("S2253"))
       .setParam("severity", "MAJOR");
-    try (WsResponse response = adminWsClient.wsConnector().call(request)) {
+    try (var response = adminWsClient.wsConnector().call(request)) {
       assertTrue(response.isSuccessful());
     }
 
     request = new PostRequest("/api/qualityprofiles/activate_rule")
       .setParam("key", qp.getKey())
       .setParam("rule", javaRuleKey("myrule"));
-    try (WsResponse response = adminWsClient.wsConnector().call(request)) {
+    try (var response = adminWsClient.wsConnector().call(request)) {
       assertTrue("Unable to activate custom rule", response.isSuccessful());
     }
 
@@ -538,7 +538,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       updateGlobal();
       updateProject(PROJECT_KEY_JAVA);
 
-      SaveIssueListener issueListener = new SaveIssueListener();
+      var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
         "src/main/java/foo/Foo.java",
         "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
@@ -552,7 +552,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
       request = new PostRequest("/api/rules/delete")
         .setParam("key", javaRuleKey("myrule"));
-      try (WsResponse response = adminWsClient.wsConnector().call(request)) {
+      try (var response = adminWsClient.wsConnector().call(request)) {
         assertTrue("Unable to delete custom rule", response.isSuccessful());
       }
     }
@@ -563,7 +563,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(PROJECT_KEY_JAVA_EMPTY);
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_EMPTY, PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
@@ -577,7 +577,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(PROJECT_KEY_JAVA);
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
@@ -612,7 +612,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void getProject() {
-    ComponentApi api = new ServerApi(endpointParams(ORCHESTRATOR), sqHttpClient()).component();
+    var api = new ServerApi(endpointParams(ORCHESTRATOR), sqHttpClient()).component();
     assertThat(api.getProject("foo")).isNotPresent();
     assertThat(api.getProject(PROJECT_KEY_RUBY)).isPresent();
   }
@@ -622,7 +622,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(PROJECT_KEY_RUBY);
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_RUBY, PROJECT_KEY_RUBY, "src/hello.rb"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -632,7 +632,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(PROJECT_KEY_KOTLIN);
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_KOTLIN, PROJECT_KEY_KOTLIN, "src/hello.kt"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -642,7 +642,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(PROJECT_KEY_SCALA);
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_SCALA, PROJECT_KEY_SCALA, "src/Hello.scala"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -652,7 +652,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(PROJECT_KEY_XML);
 
-    SaveIssueListener issueListener = new SaveIssueListener();
+    var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_XML, PROJECT_KEY_XML, "src/foo.xml"), issueListener, (m, l) -> System.out.println(m), null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -674,8 +674,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   private static void analyzeMavenProject(String projectDirName) {
-    Path projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
-    Path pom = projectDir.resolve("pom.xml");
+    var projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
+    var pom = projectDir.resolve("pom.xml");
     ORCHESTRATOR.executeBuild(MavenBuild.create(pom.toFile())
       .setCleanPackageSonarGoals()
       .setProperty("sonar.projectKey", projectDirName)

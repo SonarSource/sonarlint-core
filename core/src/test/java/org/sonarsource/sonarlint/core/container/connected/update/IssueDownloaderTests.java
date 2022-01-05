@@ -65,7 +65,7 @@ class IssueDownloaderTests {
 
   @Test
   void test_download_one_issue_no_taint() {
-    ScannerInput.ServerIssue response = ScannerInput.ServerIssue.newBuilder()
+    var response = ScannerInput.ServerIssue.newBuilder()
       .setRuleRepository("sonarjava")
       .setRuleKey("S123")
       .setChecksum("hash")
@@ -78,10 +78,10 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, response);
 
-    List<ServerIssue> issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, projectConfiguration, false, null, PROGRESS);
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, projectConfiguration, false, null, PROGRESS);
     assertThat(issues).hasSize(1);
 
-    ServerIssue serverIssue = issues.get(0);
+    var serverIssue = issues.get(0);
     assertThat(serverIssue.getLineHash()).isEqualTo("hash");
     assertThat(serverIssue.getPrimaryLocation().getMsg()).isEqualTo("Primary message");
     assertThat(serverIssue.getPrimaryLocation().getPath()).isEqualTo("foo/bar/Hello.java");
@@ -96,7 +96,7 @@ class IssueDownloaderTests {
 
   @Test
   void test_download_issues_fetch_vulnerabilities() {
-    ScannerInput.ServerIssue issue1 = ScannerInput.ServerIssue.newBuilder()
+    var issue1 = ScannerInput.ServerIssue.newBuilder()
       .setRuleRepository("sonarjava")
       .setRuleKey("S123")
       .setChecksum("hash1")
@@ -107,7 +107,7 @@ class IssueDownloaderTests {
       .setModuleKey("project")
       .build();
 
-    ScannerInput.ServerIssue taint1 = ScannerInput.ServerIssue.newBuilder()
+    var taint1 = ScannerInput.ServerIssue.newBuilder()
       .setRuleRepository("javasecurity")
       .setRuleKey("S789")
       .setChecksum("hash2")
@@ -119,7 +119,7 @@ class IssueDownloaderTests {
       .setModuleKey("project")
       .build();
 
-    Issues.SearchWsResponse response = Issues.SearchWsResponse.newBuilder()
+    var response = Issues.SearchWsResponse.newBuilder()
       .addIssues(Issues.Issue.newBuilder()
         .setRule("javasecurity:S789")
         .setHash("hash2")
@@ -159,17 +159,17 @@ class IssueDownloaderTests {
       response);
     mockServer.addStringResponse("/api/sources/raw?key=" + URLEncoder.encode(FILE_1_KEY, StandardCharsets.UTF_8), "Even\nBefore My\n\tCode\n  Snippet And\n After");
 
-    List<ServerIssue> issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, projectConfiguration, true, null, PROGRESS);
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, projectConfiguration, true, null, PROGRESS);
 
     assertThat(issues).hasSize(2);
 
-    ServerIssue issue = issues.get(0);
+    var issue = issues.get(0);
     assertThat(issue.getLineHash()).isEqualTo("hash1");
     assertThat(issue.getPrimaryLocation().getMsg()).isEqualTo("Primary message 1");
     assertThat(issue.getPrimaryLocation().getPath()).isEqualTo("foo/bar/Hello.java");
     assertThat(issue.getPrimaryLocation().getTextRange().getStartLine()).isEqualTo(1);
 
-    ServerIssue taintIssue = issues.get(1);
+    var taintIssue = issues.get(1);
 
     assertThat(taintIssue.getLineHash()).isEqualTo("hash2");
     assertThat(taintIssue.getPrimaryLocation().getMsg()).isEqualTo("Primary message 2");
@@ -183,7 +183,7 @@ class IssueDownloaderTests {
     assertThat(taintIssue.getFlowList()).hasSize(2);
     assertThat(taintIssue.getFlow(0).getLocationList()).hasSize(4);
 
-    Location flowLocation11 = taintIssue.getFlow(0).getLocation(0);
+    var flowLocation11 = taintIssue.getFlow(0).getLocation(0);
     assertThat(flowLocation11.getPath()).isEqualTo("foo/bar/Hello.java");
     assertThat(flowLocation11.getTextRange().getStartLine()).isEqualTo(5);
     assertThat(flowLocation11.getTextRange().getStartLineOffset()).isEqualTo(1);
@@ -205,7 +205,7 @@ class IssueDownloaderTests {
 
   @Test
   void test_download_issues_dont_fetch_resolved_vulnerabilities() {
-    ScannerInput.ServerIssue issue1 = ScannerInput.ServerIssue.newBuilder()
+    var issue1 = ScannerInput.ServerIssue.newBuilder()
       .setRuleRepository("sonarjava")
       .setRuleKey("S123")
       .setChecksum("hash1")
@@ -216,7 +216,7 @@ class IssueDownloaderTests {
       .setModuleKey("project")
       .build();
 
-    ScannerInput.ServerIssue taint1 = ScannerInput.ServerIssue.newBuilder()
+    var taint1 = ScannerInput.ServerIssue.newBuilder()
       .setRuleRepository("javasecurity")
       .setRuleKey("S789")
       .setChecksum("hash2")
@@ -230,7 +230,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, issue1, taint1);
 
-    List<ServerIssue> issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, projectConfiguration, true, null, PROGRESS);
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, projectConfiguration, true, null, PROGRESS);
 
     assertThat(issues).hasSize(1);
 
@@ -239,7 +239,7 @@ class IssueDownloaderTests {
 
   @Test
   void test_ignore_failure_when_fetching_taint_vulnerabilities() {
-    ScannerInput.ServerIssue issue1 = ScannerInput.ServerIssue.newBuilder()
+    var issue1 = ScannerInput.ServerIssue.newBuilder()
       .setRuleRepository("sonarjava")
       .setRuleKey("S123")
       .setChecksum("hash1")
@@ -250,7 +250,7 @@ class IssueDownloaderTests {
       .setModuleKey("project")
       .build();
 
-    ScannerInput.ServerIssue taint1 = ScannerInput.ServerIssue.newBuilder()
+    var taint1 = ScannerInput.ServerIssue.newBuilder()
       .setRuleRepository("javasecurity")
       .setRuleKey("S789")
       .setChecksum("hash2")
@@ -266,7 +266,7 @@ class IssueDownloaderTests {
       "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys=" + DUMMY_KEY + "&rules=javasecurity%3AS789&ps=500&p=1",
       new MockResponse().setResponseCode(404));
 
-    List<ServerIssue> issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, projectConfiguration, true, null, PROGRESS);
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, projectConfiguration, true, null, PROGRESS);
 
     assertThat(issues).hasSize(1);
   }
@@ -275,7 +275,7 @@ class IssueDownloaderTests {
   void test_download_no_issues() {
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY);
 
-    List<ServerIssue> issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, projectConfiguration, true, null, PROGRESS);
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, projectConfiguration, true, null, PROGRESS);
     assertThat(issues).isEmpty();
   }
 
@@ -283,7 +283,7 @@ class IssueDownloaderTests {
   void test_fail_other_codes() {
     mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, new MockResponse().setResponseCode(503));
 
-    IllegalStateException thrown = assertThrows(IllegalStateException.class,
+    var thrown = assertThrows(IllegalStateException.class,
       () -> underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, projectConfiguration, true, null, PROGRESS));
     assertThat(thrown).hasMessageContaining("Error 503");
   }
@@ -292,26 +292,26 @@ class IssueDownloaderTests {
   void test_return_empty_if_404() {
     mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, new MockResponse().setResponseCode(404));
 
-    List<ServerIssue> issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, projectConfiguration, true, null, PROGRESS);
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, projectConfiguration, true, null, PROGRESS);
     assertThat(issues).isEmpty();
   }
 
   @Test
   void test_filter_batch_issues_by_branch_if_branch_parameter_provided() {
-    ScannerInput.ServerIssue response = ScannerInput.ServerIssue.newBuilder()
+    var response = ScannerInput.ServerIssue.newBuilder()
       .setRuleRepository("sonarjava")
       .setRuleKey("S123")
       .build();
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY + "&branch=branchName", response);
 
-    List<ServerIssue> issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, projectConfiguration, false, "branchName", PROGRESS);
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, projectConfiguration, false, "branchName", PROGRESS);
     assertThat(issues).hasSize(1);
   }
 
   @Test
   void test_filter_taint_issues_by_branch_if_branch_parameter_provided() {
-    Issues.SearchWsResponse response = Issues.SearchWsResponse.newBuilder()
+    var response = Issues.SearchWsResponse.newBuilder()
       .addIssues(Issues.Issue.newBuilder()
         .setRule("javasecurity:S789")
         .setCreationDate("2021-01-11T18:17:31+0000")
@@ -324,7 +324,7 @@ class IssueDownloaderTests {
         .setPageSize(500)
         .setTotal(1))
       .build();
-    ScannerInput.ServerIssue taint1 = ScannerInput.ServerIssue.newBuilder()
+    var taint1 = ScannerInput.ServerIssue.newBuilder()
       .setRuleRepository("javasecurity")
       .setRuleKey("S789")
       .setStatus("OPEN")
@@ -333,7 +333,7 @@ class IssueDownloaderTests {
     mockServer.addProtobufResponse(
       "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys=dummyKey&rules=javasecurity%3AS789&branch=branchName&ps=500&p=1", response);
 
-    List<ServerIssue> issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, projectConfiguration, true, "branchName", PROGRESS);
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, projectConfiguration, true, "branchName", PROGRESS);
 
     assertThat(issues).hasSize(1);
   }

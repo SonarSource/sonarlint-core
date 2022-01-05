@@ -69,16 +69,16 @@ class StandaloneNodeJsTests {
     sonarlintUserHome = temp.resolve("home");
     fakeTypeScriptProjectPath = temp.resolve("ts");
     baseDir = temp.resolve("basedir");
-    Path packagejson = fakeTypeScriptProjectPath.resolve("package.json");
+    var packagejson = fakeTypeScriptProjectPath.resolve("package.json");
     FileUtils.write(packagejson.toFile(), "{"
       + "\"devDependencies\": {\n" +
       "    \"typescript\": \"2.6.1\"\n" +
       "  }"
       + "}", StandardCharsets.UTF_8);
-    ProcessBuilder pb = new ProcessBuilder("npm" + (SystemUtils.IS_OS_WINDOWS ? ".cmd" : ""), "install")
+    var pb = new ProcessBuilder("npm" + (SystemUtils.IS_OS_WINDOWS ? ".cmd" : ""), "install")
       .directory(fakeTypeScriptProjectPath.toFile())
       .inheritIO();
-    Process process = pb.start();
+    var process = pb.start();
     if (process.waitFor() != 0) {
       fail("Unable to run npm install");
     }
@@ -93,7 +93,7 @@ class StandaloneNodeJsTests {
   @Test
   void wrong_node_path() throws Exception {
     List<String> logs = new ArrayList<>();
-    StandaloneGlobalConfiguration.Builder configBuilder = StandaloneGlobalConfiguration.builder()
+    var configBuilder = StandaloneGlobalConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginPath())
       .addEnabledLanguages(Language.JS, Language.TS)
       .setSonarLintUserHome(sonarlintUserHome)
@@ -103,14 +103,14 @@ class StandaloneNodeJsTests {
 
     sonarlint = new StandaloneSonarLintEngineImpl(configBuilder.build());
 
-    StandaloneRuleDetails ruleDetails = sonarlint.getRuleDetails(JAVASCRIPT_S1481).get();
+    var ruleDetails = sonarlint.getRuleDetails(JAVASCRIPT_S1481).get();
     assertThat(ruleDetails.getName()).isEqualTo("Unused local variables and functions should be removed");
     assertThat(ruleDetails.getLanguage()).isEqualTo(Language.JS);
     assertThat(ruleDetails.getSeverity()).isEqualTo("MINOR");
     assertThat(ruleDetails.getTags()).containsOnly("unused");
     assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "If a local variable or a local function is declared but not used");
 
-    final List<Issue> issues = analyze();
+    final var issues = analyze();
     assertThat(issues).isEmpty();
 
     assertThat(logs).contains("Provided Node.js executable file does not exist. Property 'sonar.nodejs.executable' was to 'wrong'");
@@ -119,7 +119,7 @@ class StandaloneNodeJsTests {
   @Test
   void unsatisfied_node_version() throws Exception {
     List<String> logs = new ArrayList<>();
-    StandaloneGlobalConfiguration.Builder configBuilder = StandaloneGlobalConfiguration.builder()
+    var configBuilder = StandaloneGlobalConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginPath())
       .addEnabledLanguages(Language.JS, Language.TS)
       .setSonarLintUserHome(sonarlintUserHome)
@@ -130,26 +130,26 @@ class StandaloneNodeJsTests {
     sonarlint = new StandaloneSonarLintEngineImpl(configBuilder.build());
 
     assertThat(logs).contains("Plugin 'JavaScript/TypeScript Code Quality and Security' requires Node.js 8.0.0 while current is 1.0. Skip loading it.");
-    Optional<SkipReason> skipReason = sonarlint.getPluginDetails().stream().filter(p -> p.key().equals("javascript")).findFirst().get().skipReason();
+    var skipReason = sonarlint.getPluginDetails().stream().filter(p -> p.key().equals("javascript")).findFirst().get().skipReason();
     assertThat(skipReason).isNotEmpty();
     assertThat(skipReason.get()).isInstanceOf(SkipReason.UnsatisfiedRuntimeRequirement.class);
-    UnsatisfiedRuntimeRequirement unsatisfiedNode = (SkipReason.UnsatisfiedRuntimeRequirement) skipReason.get();
+    var unsatisfiedNode = (SkipReason.UnsatisfiedRuntimeRequirement) skipReason.get();
     assertThat(unsatisfiedNode.getRuntime()).isEqualTo(SkipReason.UnsatisfiedRuntimeRequirement.RuntimeRequirement.NODEJS);
     assertThat(unsatisfiedNode.getCurrentVersion()).isEqualTo("1.0");
     assertThat(unsatisfiedNode.getMinVersion()).isEqualTo("8.0.0");
     assertThat(sonarlint.getRuleDetails(JAVASCRIPT_S1481)).isEmpty();
 
-    final List<Issue> issues = analyze();
+    final var issues = analyze();
     assertThat(issues).isEmpty();
 
   }
 
   private List<Issue> analyze() throws IOException {
-    String content = "function foo() {\n"
+    var content = "function foo() {\n"
       + "  var x;\n"
       + "  var y; //NOSONAR\n"
       + "}";
-    ClientInputFile inputFile = prepareInputFile("foo.js", content, false);
+    var inputFile = prepareInputFile("foo.js", content, false);
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(
@@ -163,7 +163,7 @@ class StandaloneNodeJsTests {
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding, @Nullable Language language) throws IOException {
-    final File file = new File(baseDir.toFile(), relativePath);
+    final var file = new File(baseDir.toFile(), relativePath);
     FileUtils.write(file, content, encoding);
     return new OnDiskTestClientInputFile(file.toPath(), relativePath, isTest, encoding, language);
   }

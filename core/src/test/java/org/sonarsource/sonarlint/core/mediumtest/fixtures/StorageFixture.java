@@ -113,7 +113,7 @@ public class StorageFixture {
     }
 
     public Storage create(Path rootPath) {
-      Path storagePath = rootPath.resolve("storage");
+      var storagePath = rootPath.resolve("storage");
       var connectionStorage = storagePath.resolve(encodeForFs(connectionId));
       var globalFolderPath = connectionStorage.resolve("global");
       var pluginsFolderPath = connectionStorage.resolve("plugins");
@@ -147,7 +147,7 @@ public class StorageFixture {
     }
 
     private void createPluginReferences(Path pluginsFolderPath) {
-      Sonarlint.PluginReferences.Builder builder = Sonarlint.PluginReferences.newBuilder();
+      var builder = Sonarlint.PluginReferences.newBuilder();
       plugins.forEach(plugin -> builder.putPluginsByKey(plugin.key, Sonarlint.PluginReferences.PluginReference.newBuilder()
         .setFilename(plugin.jarName)
         .setHash(plugin.hash)
@@ -157,7 +157,7 @@ public class StorageFixture {
     }
 
     private static void createUpdateStatus(Path storage, String version) {
-      Sonarlint.StorageStatus storageStatus = Sonarlint.StorageStatus.newBuilder()
+      var storageStatus = Sonarlint.StorageStatus.newBuilder()
         .setStorageVersion(version)
         .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
         .setUpdateTimestamp(new Date().getTime())

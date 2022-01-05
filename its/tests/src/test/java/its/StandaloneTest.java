@@ -63,11 +63,11 @@ public class StandaloneTest {
 
   @BeforeClass
   public static void prepare() throws Exception {
-    Path sonarlintUserHome = temp.newFolder().toPath();
+    var sonarlintUserHome = temp.newFolder().toPath();
     logs = new ArrayList<>();
     Map<String, String> globalProps = new HashMap<>();
     globalProps.put("sonar.global.label", "It works");
-    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
+    var config = StandaloneGlobalConfiguration.builder()
       .addPlugin(Paths.get("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
       // The global-extension-plugin reuses the cobol plugin key to be whitelisted
       .addEnabledLanguage(Language.COBOL)
@@ -92,9 +92,9 @@ public class StandaloneTest {
 
   @Test
   public void checkRuleParameterDeclarations() {
-    Collection<StandaloneRuleDetails> ruleDetails = sonarlint.getAllRuleDetails();
+    var ruleDetails = sonarlint.getAllRuleDetails();
     assertThat(ruleDetails).hasSize(1);
-    StandaloneRuleDetails incRule = ruleDetails.iterator().next();
+    var incRule = ruleDetails.iterator().next();
     assertThat(incRule.paramDetails()).hasSize(8);
     assertRuleHasParam(incRule, "stringParam", StandaloneRuleParamType.STRING);
     assertRuleHasParam(incRule, "textParam", StandaloneRuleParamType.TEXT);
@@ -108,7 +108,7 @@ public class StandaloneTest {
 
   private static void assertRuleHasParam(StandaloneRuleDetails rule, String paramKey, StandaloneRuleParamType expectedType,
     String... possibleValues) {
-    Optional<StandaloneRuleParam> param = rule.paramDetails().stream().filter(p -> p.key().equals(paramKey)).findFirst();
+    var param = rule.paramDetails().stream().filter(p -> p.key().equals(paramKey)).findFirst();
     assertThat(param).isNotEmpty();
     assertThat(param.get())
       .extracting(StandaloneRuleParam::type, StandaloneRuleParam::possibleValues)
@@ -117,7 +117,7 @@ public class StandaloneTest {
 
   @Test
   public void globalExtension() throws Exception {
-    ClientInputFile inputFile = prepareInputFile("foo.glob", "foo", false);
+    var inputFile = prepareInputFile("foo.glob", "foo", false);
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(
@@ -169,7 +169,7 @@ public class StandaloneTest {
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding) throws IOException {
-    final File file = new File(baseDir, relativePath);
+    final var file = new File(baseDir, relativePath);
     FileUtils.write(file, content, encoding);
     return new TestClientInputFile(baseDir.toPath(), file.toPath(), isTest, encoding);
   }

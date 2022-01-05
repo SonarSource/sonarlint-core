@@ -31,12 +31,12 @@ import static org.mockito.Mockito.mock;
 class NotificationConfigurationTests {
   @Test
   void testGetters() {
-    ServerNotificationListener listener = mock(ServerNotificationListener.class);
-    LastNotificationTime lastNotificationTime = mock(LastNotificationTime.class);
-    String projectKey = "key";
-    EndpointParams endpoint = mock(EndpointParams.class);
-    HttpClient client = mock(HttpClient.class);
-    NotificationConfiguration configuration = new NotificationConfiguration(listener, lastNotificationTime, projectKey, () -> endpoint, () -> client);
+    var listener = mock(ServerNotificationListener.class);
+    var lastNotificationTime = mock(LastNotificationTime.class);
+    var projectKey = "key";
+    var endpoint = mock(EndpointParams.class);
+    var client = mock(HttpClient.class);
+    var configuration = new NotificationConfiguration(listener, lastNotificationTime, projectKey, () -> endpoint, () -> client);
 
     assertThat(configuration.lastNotificationTime()).isEqualTo(lastNotificationTime);
     assertThat(configuration.listener()).isEqualTo(listener);

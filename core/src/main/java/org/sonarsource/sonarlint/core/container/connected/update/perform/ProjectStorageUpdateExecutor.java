@@ -87,15 +87,15 @@ public class ProjectStorageUpdateExecutor {
   }
 
   void updateComponents(ServerApiHelper serverApiHelper, String projectKey, Path temp, ProjectConfiguration projectConfiguration, ProgressMonitor progress) {
-    List<String> sqFiles = projectFileListDownloader.get(serverApiHelper, projectKey, progress);
+    var sqFiles = projectFileListDownloader.get(serverApiHelper, projectKey, progress);
     var componentsBuilder = Sonarlint.ProjectComponents.newBuilder();
 
-    Map<String, String> modulePathByKey = projectConfiguration.getModulePathByKeyMap();
+    var modulePathByKey = projectConfiguration.getModulePathByKeyMap();
     for (String fileKey : sqFiles) {
-      int idx = StringUtils.lastIndexOf(fileKey, ":");
+      var idx = StringUtils.lastIndexOf(fileKey, ":");
       var moduleKey = fileKey.substring(0, idx);
       var relativePath = fileKey.substring(idx + 1);
-      String prefix = modulePathByKey.getOrDefault(moduleKey, "");
+      var prefix = modulePathByKey.getOrDefault(moduleKey, "");
       if (!prefix.isEmpty()) {
         prefix = prefix + "/";
       }
@@ -106,7 +106,7 @@ public class ProjectStorageUpdateExecutor {
 
   private void updateServerIssues(ServerApiHelper serverApiHelper, String projectKey, Path temp, ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities,
     ProgressMonitor progress) {
-    Path basedir = temp.resolve(ProjectStoragePaths.SERVER_ISSUES_DIR);
+    var basedir = temp.resolve(ProjectStoragePaths.SERVER_ISSUES_DIR);
     serverIssueUpdater.updateServerIssues(serverApiHelper, projectKey, projectConfiguration, basedir, fetchTaintVulnerabilities, progress);
   }
 

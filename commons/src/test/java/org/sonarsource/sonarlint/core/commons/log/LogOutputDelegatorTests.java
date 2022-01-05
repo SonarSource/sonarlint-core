@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.commons.log;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
 
@@ -57,7 +58,7 @@ class LogOutputDelegatorTests {
     delegator.setTarget(output);
     delegator.log("msg", Level.ERROR, new NullPointerException("error"));
     verify(output).log("msg", Level.ERROR);
-    verify(output).log(Mockito.startsWith("java.lang.NullPointerException: error"), Mockito.eq(Level.ERROR));
+    verify(output).log(ArgumentMatchers.startsWith("java.lang.NullPointerException: error"), ArgumentMatchers.eq(Level.ERROR));
     verifyNoMoreInteractions(output);
   }
 

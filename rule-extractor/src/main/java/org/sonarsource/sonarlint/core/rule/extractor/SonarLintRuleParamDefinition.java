@@ -43,7 +43,7 @@ public class SonarLintRuleParamDefinition {
     this.name = param.name();
     this.description = param.description();
     this.defaultValue = param.defaultValue();
-    RuleParamType apiType = param.type();
+    var apiType = param.type();
     this.type = from(apiType);
     this.multiple = apiType.multiple();
     this.possibleValues = Collections.unmodifiableList(apiType.values());

@@ -57,7 +57,7 @@ class LogMediumTests {
   @BeforeEach
   void prepare() throws IOException {
     logs = Multimaps.synchronizedListMultimap(LinkedListMultimap.create());
-    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
+    var config = StandaloneGlobalConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginPath())
       .setLogOutput(createLogOutput(logs))
       .setModulesProvider(() -> List.of(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class))))
@@ -93,7 +93,7 @@ class LogMediumTests {
   @Test
   void changeLogOutputForAnalysis() throws Exception {
     logs.clear();
-    ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {var x;}");
+    var inputFile = prepareInputFile("foo.js", "function foo() {var x;}");
     sonarlint.analyze(createConfig(inputFile), createNoOpIssueListener(), null, null);
     assertThat(logs.get(ClientLogOutput.Level.DEBUG)).isNotEmpty();
     logs.clear();
@@ -106,7 +106,7 @@ class LogMediumTests {
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content) throws IOException {
-    final File file = new File(baseDir, relativePath);
+    final var file = new File(baseDir, relativePath);
     FileUtils.write(file, content, StandardCharsets.UTF_8);
     return TestUtils.createInputFile(file.toPath(), relativePath, false);
   }

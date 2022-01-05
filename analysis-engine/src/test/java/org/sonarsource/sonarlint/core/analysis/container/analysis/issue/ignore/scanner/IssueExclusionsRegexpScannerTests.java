@@ -70,7 +70,7 @@ class IssueExclusionsRegexpScannerTests {
 
   @Test
   void shouldDetectPatternLastLine() throws URISyntaxException, IOException {
-    Path filePath = getResource("file-with-single-regexp-last-line.txt");
+    var filePath = getResource("file-with-single-regexp-last-line.txt");
     fileMetadata.readMetadata(Files.newInputStream(filePath), UTF_8, filePath.toUri(), regexpScanner);
 
     assertThat(javaFile.isIgnoreAllIssues()).isTrue();
@@ -78,7 +78,7 @@ class IssueExclusionsRegexpScannerTests {
 
   @Test
   void shouldDoNothing() throws Exception {
-    Path filePath = getResource("file-with-no-regexp.txt");
+    var filePath = getResource("file-with-no-regexp.txt");
     fileMetadata.readMetadata(Files.newInputStream(filePath), UTF_8, filePath.toUri(), regexpScanner);
 
     assertThat(javaFile.isIgnoreAllIssues()).isFalse();
@@ -86,7 +86,7 @@ class IssueExclusionsRegexpScannerTests {
 
   @Test
   void shouldExcludeAllIssues() throws Exception {
-    Path filePath = getResource("file-with-single-regexp.txt");
+    var filePath = getResource("file-with-single-regexp.txt");
     fileMetadata.readMetadata(Files.newInputStream(filePath), UTF_8, filePath.toUri(), regexpScanner);
 
     assertThat(javaFile.isIgnoreAllIssues()).isTrue();
@@ -94,7 +94,7 @@ class IssueExclusionsRegexpScannerTests {
 
   @Test
   void shouldExcludeAllIssuesEvenIfAlsoDoubleRegexps() throws Exception {
-    Path filePath = getResource("file-with-single-regexp-and-double-regexp.txt");
+    var filePath = getResource("file-with-single-regexp-and-double-regexp.txt");
     fileMetadata.readMetadata(Files.newInputStream(filePath), UTF_8, filePath.toUri(), regexpScanner);
 
     assertThat(javaFile.isIgnoreAllIssues()).isTrue();
@@ -102,7 +102,7 @@ class IssueExclusionsRegexpScannerTests {
 
   @Test
   void shouldExcludeLines() throws Exception {
-    Path filePath = getResource("file-with-double-regexp.txt");
+    var filePath = getResource("file-with-double-regexp.txt");
     fileMetadata.readMetadata(Files.newInputStream(filePath), UTF_8, filePath.toUri(), regexpScanner);
 
     assertThat(javaFile.isIgnoreAllIssues()).isFalse();
@@ -113,7 +113,7 @@ class IssueExclusionsRegexpScannerTests {
 
   @Test
   void shouldAddPatternToExcludeLinesTillTheEnd() throws Exception {
-    Path filePath = getResource("file-with-double-regexp-unfinished.txt");
+    var filePath = getResource("file-with-double-regexp-unfinished.txt");
     fileMetadata.readMetadata(Files.newInputStream(filePath), UTF_8, filePath.toUri(), regexpScanner);
 
     assertThat(javaFile.isIgnoreAllIssues()).isFalse();
@@ -123,7 +123,7 @@ class IssueExclusionsRegexpScannerTests {
 
   @Test
   void shouldAddPatternToExcludeSeveralLineRanges() throws Exception {
-    Path filePath = getResource("file-with-double-regexp-twice.txt");
+    var filePath = getResource("file-with-double-regexp-twice.txt");
     fileMetadata.readMetadata(Files.newInputStream(filePath), UTF_8, filePath.toUri(), regexpScanner);
 
     assertThat(javaFile.isIgnoreAllIssues()).isFalse();
@@ -135,7 +135,7 @@ class IssueExclusionsRegexpScannerTests {
 
   @Test
   void shouldAddPatternToExcludeLinesWithWrongOrder() throws Exception {
-    Path filePath = getResource("file-with-double-regexp-wrong-order.txt");
+    var filePath = getResource("file-with-double-regexp-wrong-order.txt");
     fileMetadata.readMetadata(Files.newInputStream(filePath), UTF_8, filePath.toUri(), regexpScanner);
 
     assertThat(IntStream.rangeClosed(1, 24).noneMatch(javaFile::isIgnoreAllIssuesOnLine)).isTrue();
@@ -144,7 +144,7 @@ class IssueExclusionsRegexpScannerTests {
 
   @Test
   void shouldAddPatternToExcludeLinesWithMess() throws Exception {
-    Path filePath = getResource("file-with-double-regexp-mess.txt");
+    var filePath = getResource("file-with-double-regexp-mess.txt");
     fileMetadata.readMetadata(Files.newInputStream(filePath), UTF_8, filePath.toUri(), regexpScanner);
 
     assertThat(IntStream.rangeClosed(1, 20).noneMatch(javaFile::isIgnoreAllIssuesOnLine)).isTrue();

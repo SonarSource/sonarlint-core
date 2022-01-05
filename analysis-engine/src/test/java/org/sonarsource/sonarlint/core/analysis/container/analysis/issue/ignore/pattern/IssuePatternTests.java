@@ -29,7 +29,7 @@ class IssuePatternTests {
 
   @Test
   void shouldMatchJavaFile() {
-    String javaFile = "org/foo/Bar.java";
+    var javaFile = "org/foo/Bar.java";
     assertThat(new IssuePattern("org/foo/Bar.java", "*").matchFile(javaFile)).isTrue();
     assertThat(new IssuePattern("org/foo/*", "*").matchFile(javaFile)).isTrue();
     assertThat(new IssuePattern("**Bar.java", "*").matchFile(javaFile)).isTrue();
@@ -45,7 +45,7 @@ class IssuePatternTests {
 
   @Test
   void shouldMatchRule() {
-    RuleKey rule = Rule.create("checkstyle", "IllegalRegexp", "").ruleKey();
+    var rule = Rule.create("checkstyle", "IllegalRegexp", "").ruleKey();
     assertThat(new IssuePattern("*", "*").matchRule(rule)).isTrue();
     assertThat(new IssuePattern("*", "checkstyle:*").matchRule(rule)).isTrue();
     assertThat(new IssuePattern("*", "checkstyle:IllegalRegexp").matchRule(rule)).isTrue();

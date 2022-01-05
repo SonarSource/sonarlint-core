@@ -115,7 +115,7 @@ public class SonarLintLogger {
   }
 
   private void doLogExtractingThrowable(Level level, String msg, Object[] argArray) {
-    FormattingTuple tuple = MessageFormatter.arrayFormat(msg, argArray);
+    var tuple = MessageFormatter.arrayFormat(msg, argArray);
     logOutput.log(tuple.getMessage(), level, tuple.getThrowable());
   }
 

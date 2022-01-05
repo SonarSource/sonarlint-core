@@ -34,7 +34,7 @@ public class PreemptiveAuthenticatorInterceptor implements Interceptor {
 
   @Override
   public Response intercept(Chain chain) throws IOException {
-    Request request = chain.request()
+    var request = chain.request()
       .newBuilder()
       .header("Authorization", credentials)
       .build();

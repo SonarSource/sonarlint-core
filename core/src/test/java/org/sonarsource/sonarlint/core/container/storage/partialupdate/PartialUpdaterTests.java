@@ -67,7 +67,7 @@ class PartialUpdaterTests {
 
   @Test
   void update_file_issues(@TempDir Path tmp) {
-    ServerIssue issue = ServerIssue.newBuilder().setKey("issue1").build();
+    var issue = ServerIssue.newBuilder().setKey("issue1").build();
     List<ServerIssue> issues = Collections.singletonList(issue);
     when(issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, "file")).thenReturn("module:file");
     when(projectStoragePaths.getServerIssuesPath("module")).thenReturn(tmp);
@@ -99,7 +99,7 @@ class PartialUpdaterTests {
 
   @Test
   void update_file_issues_by_project(@TempDir Path tmp) throws IOException {
-    ServerIssue issue = ServerIssue.newBuilder().setKey("issue1").build();
+    var issue = ServerIssue.newBuilder().setKey("issue1").build();
     List<ServerIssue> issues = Collections.singletonList(issue);
 
     when(projectStoragePaths.getServerIssuesPath(projectBinding.projectKey())).thenReturn(tmp);

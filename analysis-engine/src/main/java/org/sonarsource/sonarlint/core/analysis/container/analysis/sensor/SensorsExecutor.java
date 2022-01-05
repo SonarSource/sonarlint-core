@@ -129,7 +129,7 @@ public class SensorsExecutor {
   }
 
   private static void completePhaseDependencies(DirectAcyclicGraph dag, Object extension) {
-    Phase.Name phase = evaluatePhase(extension);
+    var phase = evaluatePhase(extension);
     dag.add(extension, phase);
     for (Phase.Name name : Phase.Name.values()) {
       if (phase.compareTo(name) < 0) {
@@ -170,7 +170,7 @@ public class SensorsExecutor {
       }
     }
 
-    Class<?>[] interfaces = extensionClass.getInterfaces();
+    var interfaces = extensionClass.getInterfaces();
     for (Class<?> anInterface : interfaces) {
       evaluateClass(anInterface, annotationClass, results);
     }

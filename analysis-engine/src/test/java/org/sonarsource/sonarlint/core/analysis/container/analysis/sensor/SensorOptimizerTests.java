@@ -58,14 +58,14 @@ class SensorOptimizerTests {
 
   @Test
   void should_run_analyzer_with_no_metadata() {
-    DefaultSensorDescriptor descriptor = new DefaultSensorDescriptor();
+    var descriptor = new DefaultSensorDescriptor();
 
     assertThat(optimizer.shouldExecute(descriptor)).isTrue();
   }
 
   @Test
   void should_optimize_on_language() {
-    DefaultSensorDescriptor descriptor = new DefaultSensorDescriptor()
+    var descriptor = new DefaultSensorDescriptor()
       .onlyOnLanguages("java", "php");
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();
 
@@ -75,7 +75,7 @@ class SensorOptimizerTests {
 
   @Test
   void should_optimize_on_type() {
-    DefaultSensorDescriptor descriptor = new DefaultSensorDescriptor()
+    var descriptor = new DefaultSensorDescriptor()
       .onlyOnFileType(InputFile.Type.MAIN);
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();
 
@@ -88,7 +88,7 @@ class SensorOptimizerTests {
 
   @Test
   void should_optimize_on_both_type_and_language() {
-    DefaultSensorDescriptor descriptor = new DefaultSensorDescriptor()
+    var descriptor = new DefaultSensorDescriptor()
       .onlyOnLanguages("java", "php")
       .onlyOnFileType(InputFile.Type.MAIN);
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();
@@ -103,18 +103,18 @@ class SensorOptimizerTests {
 
   @Test
   void should_optimize_on_repository() {
-    DefaultSensorDescriptor descriptor = new DefaultSensorDescriptor()
+    var descriptor = new DefaultSensorDescriptor()
       .createIssuesForRuleRepositories("squid");
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();
 
-    ActiveRuleAdapter ruleAnotherRepo = mock(ActiveRuleAdapter.class);
+    var ruleAnotherRepo = mock(ActiveRuleAdapter.class);
     when(ruleAnotherRepo.ruleKey()).thenReturn(RuleKey.of("repo1", "foo"));
     ActiveRules activeRules = new ActiveRulesAdapter(List.of(ruleAnotherRepo));
     optimizer = new SensorOptimizer(fs, activeRules, settings.asConfig());
 
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();
 
-    ActiveRuleAdapter ruleSquid = mock(ActiveRuleAdapter.class);
+    var ruleSquid = mock(ActiveRuleAdapter.class);
     when(ruleSquid.ruleKey()).thenReturn(RuleKey.of("squid", "rule"));
 
     activeRules = new ActiveRulesAdapter(asList(ruleSquid, ruleAnotherRepo));
@@ -126,7 +126,7 @@ class SensorOptimizerTests {
 
   @Test
   void should_optimize_on_settings() {
-    DefaultSensorDescriptor descriptor = new DefaultSensorDescriptor().onlyWhenConfiguration(c -> c.hasKey("sonar.foo.reportPath"));
+    var descriptor = new DefaultSensorDescriptor().onlyWhenConfiguration(c -> c.hasKey("sonar.foo.reportPath"));
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();
 
     settings = new MapSettings(Map.of("sonar.foo.reportPath", "foo"));

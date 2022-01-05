@@ -60,7 +60,7 @@ public class GlobalStorageUpdateExecutor {
       var storageStatusStore = new StorageStatusStore(storageFolder);
 
       progress.setProgressAndCheckCancel("Checking server version and status", 0.1f);
-      ServerInfo serverStatus = new ServerVersionAndStatusChecker(serverApiHelper).checkVersionAndStatus();
+      var serverStatus = new ServerVersionAndStatusChecker(serverApiHelper).checkVersionAndStatus();
       serverInfoStore.store(serverStatus);
 
       progress.setProgressAndCheckCancel("Fetching list of projects", 0.8f);

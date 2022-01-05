@@ -37,7 +37,7 @@ import java.util.function.Supplier;
 public class Tracker<R extends Trackable, B extends Trackable> {
 
   public Tracking<R, B> track(Supplier<Collection<R>> rawTrackableSupplier, Supplier<Collection<B>> baseTrackableSupplier) {
-    Tracking<R, B> tracking = new Tracking<>(rawTrackableSupplier, baseTrackableSupplier);
+    var tracking = new Tracking<R, B>(rawTrackableSupplier, baseTrackableSupplier);
 
     // 1. match issues with same server issue key
     match(tracking, ServerIssueSearchKeyFactory.INSTANCE);
@@ -71,7 +71,7 @@ public class Tracker<R extends Trackable, B extends Trackable> {
 
     Map<SearchKey, List<B>> baseSearch = new HashMap<>();
     for (B base : tracking.getUnmatchedBases()) {
-      SearchKey searchKey = factory.apply(base);
+      var searchKey = factory.apply(base);
       if (!baseSearch.containsKey(searchKey)) {
         baseSearch.put(searchKey, new ArrayList<>());
       }
@@ -79,12 +79,12 @@ public class Tracker<R extends Trackable, B extends Trackable> {
     }
 
     for (R raw : tracking.getUnmatchedRaws()) {
-      SearchKey rawKey = factory.apply(raw);
+      var rawKey = factory.apply(raw);
       Collection<B> bases = baseSearch.get(rawKey);
       if (bases != null && !bases.isEmpty()) {
         // TODO taking the first one. Could be improved if there are more than 2 issues on the same line.
         // Message could be checked to take the best one.
-        B match = bases.iterator().next();
+        var match = bases.iterator().next();
         tracking.match(raw, match);
         baseSearch.get(rawKey).remove(match);
       }
@@ -114,7 +114,7 @@ public class Tracker<R extends Trackable, B extends Trackable> {
     // note: the design of the enclosing caller ensures that 'o' is of the correct class and not null
     @Override
     public boolean equals(Object o) {
-      LineAndTextRangeHashKey that = (LineAndTextRangeHashKey) o;
+      var that = (LineAndTextRangeHashKey) o;
       // start with most discriminant field
       return Objects.equals(line, that.line)
         && Objects.equals(textRangeHash, that.textRangeHash)
@@ -123,7 +123,7 @@ public class Tracker<R extends Trackable, B extends Trackable> {
 
     @Override
     public int hashCode() {
-      int result = ruleKey.hashCode();
+      var result = ruleKey.hashCode();
       result = 31 * result + (textRangeHash != null ? textRangeHash.hashCode() : 0);
       result = 31 * result + (line != null ? line.hashCode() : 0);
       return result;
@@ -153,7 +153,7 @@ public class Tracker<R extends Trackable, B extends Trackable> {
     // note: the design of the enclosing caller ensures that 'o' is of the correct class and not null
     @Override
     public boolean equals(Object o) {
-      LineAndLineHashKey that = (LineAndLineHashKey) o;
+      var that = (LineAndLineHashKey) o;
       // start with most discriminant field
       return Objects.equals(line, that.line)
         && Objects.equals(lineHash, that.lineHash)
@@ -162,7 +162,7 @@ public class Tracker<R extends Trackable, B extends Trackable> {
 
     @Override
     public int hashCode() {
-      int result = ruleKey.hashCode();
+      var result = ruleKey.hashCode();
       result = 31 * result + (lineHash != null ? lineHash.hashCode() : 0);
       result = 31 * result + (line != null ? line.hashCode() : 0);
       return result;
@@ -190,7 +190,7 @@ public class Tracker<R extends Trackable, B extends Trackable> {
     // note: the design of the enclosing caller ensures that 'o' is of the correct class and not null
     @Override
     public boolean equals(Object o) {
-      LineHashKey that = (LineHashKey) o;
+      var that = (LineHashKey) o;
       // start with most discriminant field
       return Objects.equals(lineHash, that.lineHash)
         && ruleKey.equals(that.ruleKey);
@@ -198,7 +198,7 @@ public class Tracker<R extends Trackable, B extends Trackable> {
 
     @Override
     public int hashCode() {
-      int result = ruleKey.hashCode();
+      var result = ruleKey.hashCode();
       result = 31 * result + (lineHash != null ? lineHash.hashCode() : 0);
       return result;
     }
@@ -227,7 +227,7 @@ public class Tracker<R extends Trackable, B extends Trackable> {
     // note: the design of the enclosing caller ensures that 'o' is of the correct class and not null
     @Override
     public boolean equals(Object o) {
-      TextRangeHashAndMessageKey that = (TextRangeHashAndMessageKey) o;
+      var that = (TextRangeHashAndMessageKey) o;
       // start with most discriminant field
       return Objects.equals(textRangeHash, that.textRangeHash)
         && message.equals(that.message)
@@ -236,7 +236,7 @@ public class Tracker<R extends Trackable, B extends Trackable> {
 
     @Override
     public int hashCode() {
-      int result = ruleKey.hashCode();
+      var result = ruleKey.hashCode();
       result = 31 * result + message.hashCode();
       result = 31 * result + (textRangeHash != null ? textRangeHash.hashCode() : 0);
       return result;
@@ -266,7 +266,7 @@ public class Tracker<R extends Trackable, B extends Trackable> {
     // note: the design of the enclosing caller ensures that 'o' is of the correct class and not null
     @Override
     public boolean equals(Object o) {
-      LineAndMessageKey that = (LineAndMessageKey) o;
+      var that = (LineAndMessageKey) o;
       // start with most discriminant field
       return Objects.equals(line, that.line)
         && message.equals(that.message)
@@ -275,7 +275,7 @@ public class Tracker<R extends Trackable, B extends Trackable> {
 
     @Override
     public int hashCode() {
-      int result = ruleKey.hashCode();
+      var result = ruleKey.hashCode();
       result = 31 * result + message.hashCode();
       result = 31 * result + (line != null ? line.hashCode() : 0);
       return result;
@@ -303,7 +303,7 @@ public class Tracker<R extends Trackable, B extends Trackable> {
     // note: the design of the enclosing caller ensures that 'o' is of the correct class and not null
     @Override
     public boolean equals(Object o) {
-      TextRangeHashKey that = (TextRangeHashKey) o;
+      var that = (TextRangeHashKey) o;
       // start with most discriminant field
       return Objects.equals(textRangeHash, that.textRangeHash)
         && ruleKey.equals(that.ruleKey);
@@ -311,7 +311,7 @@ public class Tracker<R extends Trackable, B extends Trackable> {
 
     @Override
     public int hashCode() {
-      int result = ruleKey.hashCode();
+      var result = ruleKey.hashCode();
       result = 31 * result + (textRangeHash != null ? textRangeHash.hashCode() : 0);
       return result;
     }
@@ -336,7 +336,7 @@ public class Tracker<R extends Trackable, B extends Trackable> {
     // note: the design of the enclosing caller ensures that 'o' is of the correct class and not null
     @Override
     public boolean equals(Object o) {
-      ServerIssueSearchKey that = (ServerIssueSearchKey) o;
+      var that = (ServerIssueSearchKey) o;
       return !isBlank(serverIssueKey) && !isBlank(that.serverIssueKey) && serverIssueKey.equals(that.serverIssueKey);
     }
 

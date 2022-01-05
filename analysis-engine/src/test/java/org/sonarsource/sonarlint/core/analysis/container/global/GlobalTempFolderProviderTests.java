@@ -55,10 +55,10 @@ class GlobalTempFolderProviderTests {
 
   @Test
   void cleanUpOld() throws IOException {
-    long creationTime = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(100);
+    var creationTime = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(100);
 
-    for (int i = 0; i < 3; i++) {
-      File tmp = new File(workingDir.toFile(), ".sonartmp_" + i);
+    for (var i = 0; i < 3; i++) {
+      var tmp = new File(workingDir.toFile(), ".sonartmp_" + i);
       tmp.mkdirs();
       setFileCreationDate(tmp, creationTime);
     }
@@ -77,8 +77,8 @@ class GlobalTempFolderProviderTests {
   }
 
   private void setFileCreationDate(File f, long time) throws IOException {
-    BasicFileAttributeView attributes = Files.getFileAttributeView(f.toPath(), BasicFileAttributeView.class);
-    FileTime creationTime = FileTime.fromMillis(time);
+    var attributes = Files.getFileAttributeView(f.toPath(), BasicFileAttributeView.class);
+    var creationTime = FileTime.fromMillis(time);
     attributes.setTimes(creationTime, creationTime, creationTime);
   }
 }

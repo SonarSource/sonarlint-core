@@ -74,7 +74,7 @@ public class TelemetryManager {
    * To be called periodically once a day.
    */
   public void uploadLazily() {
-    TelemetryLocalStorage readData = storage.tryRead();
+    var readData = storage.tryRead();
     if (!dayChanged(readData.lastUploadTime(), MIN_HOURS_BETWEEN_UPLOAD)) {
       return;
     }

@@ -104,7 +104,7 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
   }
 
   public void addResponseFromResource(String path, String responseResourcePath) {
-    try (Buffer b = new Buffer()) {
+    try (var b = new Buffer()) {
       responsesByPath.put(path, new MockResponse().setBody(b.readFrom(requireNonNull(MockWebServerExtension.class.getResourceAsStream(responseResourcePath)))));
     } catch (IOException e) {
       fail(e);
@@ -119,8 +119,8 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
 
       @Override
       public Response post(String url, String contentType, String bodyContent) {
-        RequestBody body = RequestBody.create(MediaType.get(contentType), bodyContent);
-        Request request = new Request.Builder()
+        var body = RequestBody.create(MediaType.get(contentType), bodyContent);
+        var request = new Request.Builder()
           .url(url)
           .post(body)
           .build();
@@ -129,7 +129,7 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
 
       @Override
       public Response get(String url) {
-        Request request = new Request.Builder()
+        var request = new Request.Builder()
           .url(url)
           .build();
         return executeRequest(request);
@@ -137,7 +137,7 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
 
       @Override
       public CompletableFuture<Response> getAsync(String url) {
-        Request request = new Request.Builder()
+        var request = new Request.Builder()
           .url(url)
           .build();
         return executeRequestAsync(request);
@@ -145,8 +145,8 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
 
       @Override
       public Response delete(String url, String contentType, String bodyContent) {
-        RequestBody body = RequestBody.create(MediaType.get(contentType), bodyContent);
-        Request request = new Request.Builder()
+        var body = RequestBody.create(MediaType.get(contentType), bodyContent);
+        var request = new Request.Builder()
           .url(url)
           .delete(body)
           .build();
@@ -162,8 +162,8 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
       }
 
       private CompletableFuture<Response> executeRequestAsync(Request request) {
-        Call call = okClient.newCall(request);
-        CompletableFuture<Response> futureResponse = new CompletableFuture<Response>()
+        var call = okClient.newCall(request);
+        var futureResponse = new CompletableFuture<Response>()
           .whenComplete((response, error) -> {
             if (error instanceof CancellationException) {
               call.cancel();
@@ -203,7 +203,7 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
 
           @Override
           public String bodyAsString() {
-            try (ResponseBody body = wrapped.body()) {
+            try (var body = wrapped.body()) {
               return body.string();
             } catch (IOException e) {
               throw new IllegalStateException("Unable to read response body: " + e.getMessage(), e);

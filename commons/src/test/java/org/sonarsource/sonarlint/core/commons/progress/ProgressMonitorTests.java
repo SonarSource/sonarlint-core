@@ -52,7 +52,7 @@ class ProgressMonitorTests {
 
   @Test
   void testCancelSection() {
-    Runnable r = mock(Runnable.class);
+    var r = mock(Runnable.class);
     progress.executeNonCancelableSection(r);
 
     verify(monitor).executeNonCancelableSection(r);
@@ -75,7 +75,7 @@ class ProgressMonitorTests {
   @Test
   void testProgressSubMonitor() {
     when(monitor.isCanceled()).thenReturn(false);
-    ProgressMonitor subProgress = progress.subProgress(0.2f, 0.4f, "prefix");
+    var subProgress = progress.subProgress(0.2f, 0.4f, "prefix");
     subProgress.setProgress("msg", 0.0f);
     verify(monitor).setMessage("prefix - msg");
     verify(monitor).setFraction(0.2f);
@@ -90,8 +90,8 @@ class ProgressMonitorTests {
   @Test
   void testProgressSubSubMonitor() {
     when(monitor.isCanceled()).thenReturn(false);
-    ProgressMonitor subProgress = progress.subProgress(0.2f, 0.4f, "prefix");
-    ProgressMonitor subSubProgress = subProgress.subProgress(0.5f, 1.0f, "subprefix");
+    var subProgress = progress.subProgress(0.2f, 0.4f, "prefix");
+    var subSubProgress = subProgress.subProgress(0.5f, 1.0f, "subprefix");
     subSubProgress.setProgress("msg", 0.0f);
     verify(monitor).setMessage("prefix - subprefix - msg");
     verify(monitor).setFraction(0.3f);

@@ -28,7 +28,7 @@ class SonarLintUserHomeTests {
 
   @Test
   void env_setting_should_override_default_home() {
-    String customHome = "/custom/home";
+    var customHome = "/custom/home";
     assertThat(SonarLintUserHome.home(customHome)).isEqualTo(Paths.get(customHome));
   }
 

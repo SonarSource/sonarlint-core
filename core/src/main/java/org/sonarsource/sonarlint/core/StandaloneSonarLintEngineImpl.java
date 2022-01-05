@@ -71,7 +71,7 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
 
     loadPluginMetadata(pluginInstancesRepository, globalConfig.getEnabledLanguages(), false);
 
-    AnalysisEngineConfiguration analysisGlobalConfig = AnalysisEngineConfiguration.builder()
+    var analysisGlobalConfig = AnalysisEngineConfiguration.builder()
       .addEnabledLanguages(globalConfig.getEnabledLanguages())
       .setClientPid(globalConfig.getClientPid())
       .setExtraProperties(globalConfig.extraProperties())
@@ -114,7 +114,7 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
     requireNonNull(issueListener);
     setLogging(logOutput);
 
-    AnalysisConfiguration analysisConfig = AnalysisConfiguration.builder()
+    var analysisConfig = AnalysisConfiguration.builder()
       .addInputFiles(configuration.inputFiles())
       .putAllExtraProperties(configuration.extraProperties())
       .addActiveRules(identifyActiveRules(configuration))

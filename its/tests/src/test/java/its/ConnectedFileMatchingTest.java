@@ -104,15 +104,15 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, false, null);
 
     // entire project imported in IDE
-    Path projectDir = Paths.get("projects/multi-modules-sample").toAbsolutePath();
+    var projectDir = Paths.get("projects/multi-modules-sample").toAbsolutePath();
     List<String> ideFiles = clientTools.collectAllFiles(projectDir).stream()
       .map(f -> projectDir.relativize(f).toString())
       .collect(Collectors.toList());
 
-    ProjectBinding projectBinding = engine.calculatePathPrefixes(PROJECT_KEY, ideFiles);
+    var projectBinding = engine.calculatePathPrefixes(PROJECT_KEY, ideFiles);
     assertThat(projectBinding.sqPathPrefix()).isEmpty();
     assertThat(projectBinding.idePathPrefix()).isEmpty();
-    List<ServerIssue> serverIssues = engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding,
+    var serverIssues = engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding,
       "module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java", false, null);
     assertThat(serverIssues).hasSize(2);
   }
@@ -123,22 +123,22 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, false, null);
 
     // only module B1 imported in IDE
-    Path projectDirB1 = Paths.get("projects/multi-modules-sample/module_b/module_b1").toAbsolutePath();
+    var projectDirB1 = Paths.get("projects/multi-modules-sample/module_b/module_b1").toAbsolutePath();
     List<String> ideFiles = clientTools.collectAllFiles(projectDirB1).stream()
       .map(f -> projectDirB1.relativize(f).toString())
       .collect(Collectors.toList());
 
-    ProjectBinding projectBinding = engine.calculatePathPrefixes(PROJECT_KEY, ideFiles);
+    var projectBinding = engine.calculatePathPrefixes(PROJECT_KEY, ideFiles);
     assertThat(projectBinding.sqPathPrefix()).isEqualTo("module_b/module_b1");
     assertThat(projectBinding.idePathPrefix()).isEmpty();
-    List<ServerIssue> serverIssues = engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding,
+    var serverIssues = engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding,
       "src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java", false, null);
     assertThat(serverIssues).hasSize(2);
   }
 
   @Override
   protected ConnectedAnalysisConfiguration createAnalysisConfiguration(String projectKey, String projectDirName, String filePath, String... properties) throws IOException {
-    Path projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
+    var projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
     List<ClientInputFile> filesToAnalyze = clientTools.collectAllFiles(projectDir)
       .stream()
       .map(f -> new TestClientInputFile(projectDir, f, false, StandardCharsets.UTF_8))
@@ -153,8 +153,8 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
   }
 
   private static void analyzeMavenProject(String projectDirName) {
-    Path projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
-    Path pom = projectDir.resolve("pom.xml");
+    var projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
+    var pom = projectDir.resolve("pom.xml");
     ORCHESTRATOR.executeBuild(MavenBuild.create(pom.toFile())
       .setCleanPackageSonarGoals()
       .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)

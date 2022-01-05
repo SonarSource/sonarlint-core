@@ -65,7 +65,7 @@ public class ServerProjectsStore {
 
   private static Map<String, ServerProject> adapt(Sonarlint.ProjectList projectList) {
     Map<String, ServerProject> converted = new HashMap<>();
-    Map<String, Sonarlint.ProjectList.Project> projectsByKey = projectList.getProjectsByKeyMap();
+    var projectsByKey = projectList.getProjectsByKeyMap();
     for (Map.Entry<String, Sonarlint.ProjectList.Project> entry : projectsByKey.entrySet()) {
       var project = entry.getValue();
       converted.put(entry.getKey(), new DefaultRemoteProject(project.getKey(), project.getName()));

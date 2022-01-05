@@ -45,7 +45,7 @@ class PluginsSynchronizerTests {
 
   @Test
   void should_synchronize_plugins(@TempDir Path tmp) throws Exception {
-    Path dest = tmp.resolve("destDir");
+    var dest = tmp.resolve("destDir");
     Files.createDirectory(dest);
     mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": [" +
       "{\"key\": \"java\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-java-plugin-5.13.1.18282.jar\", \"sonarLintSupported\": true}," +
@@ -69,7 +69,7 @@ class PluginsSynchronizerTests {
 
   @Test
   void should_not_synchronize_an_up_to_date_plugin(@TempDir Path tmp) throws Exception {
-    Path dest = tmp.resolve("destDir");
+    var dest = tmp.resolve("destDir");
     Files.createDirectory(dest);
     mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": [" +
       "{\"key\": \"java\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-java-plugin-5.13.1.18282.jar\", \"sonarLintSupported\": true}" +
@@ -86,7 +86,7 @@ class PluginsSynchronizerTests {
 
   @Test
   void should_synchronize_a_plugin_when_hash_is_different(@TempDir Path tmp) throws Exception {
-    Path dest = tmp.resolve("destDir");
+    var dest = tmp.resolve("destDir");
     Files.createDirectory(dest);
     mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": [" +
       "{\"key\": \"java\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-java-plugin-5.13.1.18282.jar\", \"sonarLintSupported\": true}" +
@@ -153,7 +153,7 @@ class PluginsSynchronizerTests {
 
   @Test
   void should_not_synchronize_plugins_for_not_enabled_languages(@TempDir Path tmp) {
-    Path dest = tmp.resolve("destDir");
+    var dest = tmp.resolve("destDir");
     mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": [" +
       "{\"key\": \"java\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-java-plugin-5.13.1.18282.jar\", \"sonarLintSupported\": true}" +
       "]}");
@@ -168,7 +168,7 @@ class PluginsSynchronizerTests {
 
   @Test
   void should_synchronize_unknown_plugins_for_custom_rules(@TempDir Path tmp) {
-    Path dest = tmp.resolve("destDir");
+    var dest = tmp.resolve("destDir");
     mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": [" +
       "{\"key\": \"java-custom\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"java-custom-plugin-4.3.0.1456.jar\", \"sonarLintSupported\": true}" +
       "]}");
@@ -187,7 +187,7 @@ class PluginsSynchronizerTests {
 
   @Test
   void should_synchronize_the_old_typescript_plugin_if_language_enabled(@TempDir Path tmp) throws Exception {
-    Path dest = tmp.resolve("destDir");
+    var dest = tmp.resolve("destDir");
     Files.createDirectory(dest);
     mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": [" +
       "{\"key\": \"typescript\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-typescript-plugin-1.9.0.3766.jar\", \"sonarLintSupported\": true}" +
@@ -207,7 +207,7 @@ class PluginsSynchronizerTests {
 
   @Test
   void should_not_synchronize_the_old_typescript_plugin_if_language_not_enabled(@TempDir Path tmp) throws Exception {
-    Path dest = tmp.resolve("destDir");
+    var dest = tmp.resolve("destDir");
     Files.createDirectory(dest);
     mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": [" +
       "{\"key\": \"typescript\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-typescript-plugin-1.9.0.3766.jar\", \"sonarLintSupported\": true}" +

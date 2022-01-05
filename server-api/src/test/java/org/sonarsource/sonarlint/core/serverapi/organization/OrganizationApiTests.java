@@ -29,6 +29,7 @@ import org.sonarqube.ws.Organizations;
 import org.sonarqube.ws.Organizations.Organization;
 import org.sonarqube.ws.Organizations.SearchWsResponse;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
@@ -45,15 +46,15 @@ class OrganizationApiTests {
 
   @Test
   void testListUserOrganizationWithMoreThan20Pages() {
-    OrganizationApi underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams("myOrg"), MockWebServerExtensionWithProtobuf.httpClient()));
+    var underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams("myOrg"), MockWebServerExtension.httpClient()));
 
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"UP\"}");
 
-    for (int i = 0; i < 21; i++) {
+    for (var i = 0; i < 21; i++) {
       mockOrganizationsPage(i + 1, 10500);
     }
 
-    List<ServerOrganization> orgs = underTest.listUserOrganizations(progressMonitor);
+    var orgs = underTest.listUserOrganizations(progressMonitor);
 
     assertThat(orgs).hasSize(10500);
   }
@@ -72,7 +73,7 @@ class OrganizationApiTests {
         .build())
       .build());
     mockServer.addProtobufResponse("/api/organizations/search.protobuf?organizations=org%3Akey&ps=500&p=2", SearchWsResponse.newBuilder().build());
-    OrganizationApi underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtensionWithProtobuf.httpClient()));
+    var underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtension.httpClient()));
 
     var organization = underTest.getOrganization("org:key", progressMonitor);
 
@@ -89,7 +90,7 @@ class OrganizationApiTests {
       "\"status\": \"DOWN\"," +
       "\"version\": \"20.0.0\"" +
       "}");
-    OrganizationApi underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtensionWithProtobuf.httpClient()));
+    var underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtension.httpClient()));
 
     var throwable = catchThrowable(() -> underTest.getOrganization("org:key", progressMonitor));
 
@@ -104,7 +105,7 @@ class OrganizationApiTests {
       "\"status\": \"UP\"," +
       "\"version\": \"7.8.0\"" +
       "}");
-    OrganizationApi underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtensionWithProtobuf.httpClient()));
+    var underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtension.httpClient()));
 
     var throwable = catchThrowable(() -> underTest.getOrganization("org:key", progressMonitor));
 
@@ -118,12 +119,12 @@ class OrganizationApiTests {
       .mapToObj(i -> Organization.newBuilder().setKey("org_page" + page + "number" + i).build())
       .collect(Collectors.toList());
 
-    Paging paging = Paging.newBuilder()
+    var paging = Paging.newBuilder()
       .setPageSize(500)
       .setTotal(total)
       .setPageIndex(page)
       .build();
-    SearchWsResponse response = Organizations.SearchWsResponse.newBuilder()
+    var response = Organizations.SearchWsResponse.newBuilder()
       .setPaging(paging)
       .addAllOrganizations(orgs)
       .build();

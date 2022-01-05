@@ -57,7 +57,7 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
 
   @BeforeClass
   public static void beforeClass() {
-    boolean isLowestSupportedVersion = SONAR_VERSION.contains("7.9");
+    var isLowestSupportedVersion = SONAR_VERSION.contains("7.9");
     assumeTrue(isLowestSupportedVersion);
   }
 
@@ -86,7 +86,7 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
   }
 
   private ConnectedSonarLintEngine createEngine(Consumer<ConnectedGlobalConfiguration.Builder> configurator) {
-    ConnectedGlobalConfiguration.Builder builder = ConnectedGlobalConfiguration.builder()
+    var builder = ConnectedGlobalConfiguration.builder()
       .setConnectionId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
       .setLogOutput((msg, level) -> logs.add(msg));
@@ -108,7 +108,7 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
     engine = createEngine(e -> e.addEnabledLanguages(Language.PYTHON));
     assertThat(engine.getGlobalStorageStatus()).isNull();
 
-    UpdateResult update = engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
+    var update = engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
     engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), emptySet(), null);
     assertThat(update.status().getLastUpdateDate()).isNotNull();
     assertThat(engine.getGlobalStorageStatus()).isNotNull();
@@ -119,7 +119,7 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
   @Test
   public void dontCheckMinimalPluginVersionWhenValidatingConnection() throws ExecutionException, InterruptedException {
     engine = createEngine(e -> e.addEnabledLanguages(Language.PYTHON));
-    ValidationResult result = new ConnectionValidator(new ServerApiHelper(endpointParams(ORCHESTRATOR), sqHttpClient())).validateConnection().get();
+    var result = new ConnectionValidator(new ServerApiHelper(endpointParams(ORCHESTRATOR), sqHttpClient())).validateConnection().get();
     assertThat(result.success()).isTrue();
   }
 

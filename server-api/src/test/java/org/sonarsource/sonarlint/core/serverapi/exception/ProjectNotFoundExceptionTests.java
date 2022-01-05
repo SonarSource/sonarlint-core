@@ -27,13 +27,13 @@ class ProjectNotFoundExceptionTests {
 
   @Test
   void show_organization_key() {
-    ProjectNotFoundException ex = new ProjectNotFoundException("module", "organization");
+    var ex = new ProjectNotFoundException("module", "organization");
     assertThat(ex.getMessage()).isEqualTo("Project with key 'module' in organization 'organization' not found on SonarQube server (was it deleted?)");
   }
 
   @Test
   void organization_key_missing() {
-    ProjectNotFoundException ex = new ProjectNotFoundException("module", null);
+    var ex = new ProjectNotFoundException("module", null);
     assertThat(ex.getMessage()).isEqualTo("Project with key 'module' not found on SonarQube server (was it deleted?)");
   }
 }

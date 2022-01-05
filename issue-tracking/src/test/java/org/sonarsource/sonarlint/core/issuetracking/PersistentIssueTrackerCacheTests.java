@@ -78,7 +78,7 @@ class PersistentIssueTrackerCacheTests {
 
   @Test
   void should_persist_issues_when_inmemory_limit_reached() {
-    int i = 0;
+    var i = 0;
     for (; i < PersistentIssueTrackerCache.MAX_ENTRIES; i++) {
       cache.put("file" + i, Collections.emptyList());
     }
@@ -93,8 +93,8 @@ class PersistentIssueTrackerCacheTests {
 
   @Test
   void should_persist_issues_on_shutdown() {
-    int count = PersistentIssueTrackerCache.MAX_ENTRIES / 2;
-    for (int i = 0; i < count; i++) {
+    var count = PersistentIssueTrackerCache.MAX_ENTRIES / 2;
+    for (var i = 0; i < count; i++) {
       cache.put("file" + i, Collections.emptyList());
     }
     assertThat(stubIssueStore.size()).isEqualTo(0);
@@ -105,14 +105,14 @@ class PersistentIssueTrackerCacheTests {
 
   @Test
   void should_return_empty_for_file_never_analyzed() {
-    String file = "nonexistent";
+    var file = "nonexistent";
     assertThat(cache.isFirstAnalysis(file)).isTrue();
     assertThat(cache.getCurrentTrackables(file)).isEmpty();
   }
 
   @Test
   void should_return_empty_for_file_with_no_issues_as_cached() {
-    String file = "dummy file";
+    var file = "dummy file";
     cache.put(file, Collections.emptyList());
     assertThat(cache.isFirstAnalysis(file)).isFalse();
     assertThat(cache.getCurrentTrackables(file)).isEmpty();
@@ -120,7 +120,7 @@ class PersistentIssueTrackerCacheTests {
 
   @Test
   void should_return_empty_for_file_with_no_issues_as_persisted() throws IOException {
-    String file = "dummy file";
+    var file = "dummy file";
     stubIssueStore.save(file, Collections.emptyList());
     assertThat(cache.isFirstAnalysis(file)).isFalse();
     assertThat(cache.getCurrentTrackables(file)).isEmpty();
@@ -128,7 +128,7 @@ class PersistentIssueTrackerCacheTests {
 
   @Test
   void should_clear_cache_and_storage_too() throws IOException {
-    String file = "dummy file";
+    var file = "dummy file";
     cache.put(file, Collections.singletonList(mock(Trackable.class)));
     cache.flushAll();
 
@@ -147,7 +147,7 @@ class PersistentIssueTrackerCacheTests {
 
   @Test
   void getLiveOrFail_should_return_live_issues_when_present() {
-    String file = "dummy file";
+    var file = "dummy file";
     List<Trackable> trackables = Collections.singletonList(mock(Trackable.class));
     cache.put(file, trackables);
     assertThat(cache.getLiveOrFail(file)).isEqualTo(trackables);
@@ -155,8 +155,8 @@ class PersistentIssueTrackerCacheTests {
 
   @Test
   void getCurrentTrackables_should_gracefully_return_empty_list_if_io_failures_during_store_read() throws IOException {
-    String file = "nonexistent";
-    TrackableIssueStore store = mock(TrackableIssueStore.class);
+    var file = "nonexistent";
+    var store = mock(TrackableIssueStore.class);
     when(store.read(file)).thenThrow(new IOException("failed to read from store"));
     IssueTrackerCache cache = new PersistentIssueTrackerCache(store);
     assertThat(cache.getCurrentTrackables(file)).isEmpty();
@@ -165,23 +165,23 @@ class PersistentIssueTrackerCacheTests {
 
   @Test
   void flushAll_should_crash_on_io_failures_during_store_write() throws IOException {
-    String file = "dummy file";
+    var file = "dummy file";
     Collection<Trackable> trackables = Collections.singletonList(mock(Trackable.class));
 
-    TrackableIssueStore store = mock(TrackableIssueStore.class);
+    var store = mock(TrackableIssueStore.class);
     doThrow(new IOException("failed to write to store")).when(store).save(file, trackables);
 
-    PersistentIssueTrackerCache cache = new PersistentIssueTrackerCache(store);
+    var cache = new PersistentIssueTrackerCache(store);
     cache.put(file, trackables);
     assertThrows(IllegalStateException.class, () -> cache.flushAll());
   }
 
   @Test
   void put_should_crash_on_io_failures_during_store_write() throws IOException {
-    TrackableIssueStore store = mock(TrackableIssueStore.class);
+    var store = mock(TrackableIssueStore.class);
     doThrow(new IOException("failed to write to store")).when(store).save(anyString(), any());
-    PersistentIssueTrackerCache cache = new PersistentIssueTrackerCache(store);
-    for (int i = 0; i < PersistentIssueTrackerCache.MAX_ENTRIES; i++) {
+    var cache = new PersistentIssueTrackerCache(store);
+    for (var i = 0; i < PersistentIssueTrackerCache.MAX_ENTRIES; i++) {
       cache.put("dummy" + i, Collections.emptyList());
     }
     assertThrows(IllegalStateException.class, () -> cache.put("too much", Collections.emptyList()));

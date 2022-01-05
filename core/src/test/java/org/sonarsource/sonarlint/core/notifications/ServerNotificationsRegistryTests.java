@@ -27,6 +27,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.client.api.common.NotificationConfiguration;
 import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotificationListener;
+import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyCollection;
@@ -54,9 +55,9 @@ class ServerNotificationsRegistryTests {
 
   @Test
   void testRegistration() {
-    ServerNotificationListener listener = mock(ServerNotificationListener.class);
+    var listener = mock(ServerNotificationListener.class);
     when(config.listener()).thenReturn(listener);
-    ServerNotificationsRegistry notifications = new ServerNotificationsRegistry(timer, timerTask);
+    var notifications = new ServerNotificationsRegistry(timer, timerTask);
 
     notifications.register(config);
     notifications.remove(listener);
@@ -69,7 +70,7 @@ class ServerNotificationsRegistryTests {
 
   @Test
   void testStop() {
-    ServerNotificationsRegistry notifications = new ServerNotificationsRegistry(timer, timerTask);
+    var notifications = new ServerNotificationsRegistry(timer, timerTask);
     notifications.stop();
     verify(timer).cancel();
   }
@@ -78,7 +79,7 @@ class ServerNotificationsRegistryTests {
   void testIsSupported() {
     mockServer.addResponse("/api/developers/search_events?projects=&from=", new MockResponse());
 
-    assertThat(ServerNotificationsRegistry.isSupported(mockServer.endpointParams(), MockWebServerExtensionWithProtobuf.httpClient())).isTrue();
+    assertThat(ServerNotificationsRegistry.isSupported(mockServer.endpointParams(), MockWebServerExtension.httpClient())).isTrue();
   }
 
 }

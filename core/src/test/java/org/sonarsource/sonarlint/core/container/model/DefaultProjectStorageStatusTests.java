@@ -29,7 +29,7 @@ class DefaultProjectStorageStatusTests {
 
   @Test
   void testGetters() {
-    Date date = new Date(1000_000);
+    var date = new Date(1000_000);
     status = new DefaultProjectStorageStatus(date, true);
     assertThat(status.getLastUpdateDate()).isEqualTo(date);
     assertThat(status.isStale()).isTrue();

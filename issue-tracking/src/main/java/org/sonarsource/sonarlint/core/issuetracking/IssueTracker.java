@@ -30,7 +30,7 @@ public class IssueTracker {
    */
   public Collection<Trackable> apply(Collection<Trackable> baseIssues, Collection<Trackable> nextIssues, boolean inheritSeverity) {
     Collection<Trackable> trackedIssues = new ArrayList<>();
-    Tracking<Trackable, Trackable> tracking = new Tracker<>().track(() -> nextIssues, () -> baseIssues);
+    var tracking = new Tracker<>().track(() -> nextIssues, () -> baseIssues);
 
     tracking.getMatchedRaws().entrySet().stream()
       .map(e -> new CombinedTrackable(e.getValue(), e.getKey(), inheritSeverity))

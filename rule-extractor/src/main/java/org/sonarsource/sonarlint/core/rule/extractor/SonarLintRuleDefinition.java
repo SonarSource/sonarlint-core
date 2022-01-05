@@ -60,7 +60,7 @@ public class SonarLintRuleDefinition {
     for (Param param : rule.params()) {
       var paramDefinition = new SonarLintRuleParamDefinition(param);
       builder.put(param.key(), paramDefinition);
-      String defaultValue = paramDefinition.defaultValue();
+      var defaultValue = paramDefinition.defaultValue();
       if (defaultValue != null) {
         defaultParams.put(param.key(), defaultValue);
       }

@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ProjectBindingTests {
   @Test
   void should_assign_all_parameters_in_constructor() {
-    ProjectBinding projectBinding = new ProjectBinding("key", "sqPrefix", "localPrefix");
+    var projectBinding = new ProjectBinding("key", "sqPrefix", "localPrefix");
     assertThat(projectBinding.projectKey()).isEqualTo("key");
     assertThat(projectBinding.sqPathPrefix()).isEqualTo("sqPrefix");
     assertThat(projectBinding.idePathPrefix()).isEqualTo("localPrefix");
@@ -34,11 +34,11 @@ class ProjectBindingTests {
 
   @Test
   void equals_and_hashCode_should_use_all_fields() {
-    ProjectBinding projectBinding1 = new ProjectBinding("key", "sqPrefix", "localPrefix");
-    ProjectBinding projectBinding2 = new ProjectBinding("key1", "sqPrefix", "localPrefix");
-    ProjectBinding projectBinding3 = new ProjectBinding("key", "sqPrefix1", "localPrefix");
-    ProjectBinding projectBinding4 = new ProjectBinding("key", "sqPrefix", "localPrefix1");
-    ProjectBinding projectBinding5 = new ProjectBinding("key", "sqPrefix", "localPrefix");
+    var projectBinding1 = new ProjectBinding("key", "sqPrefix", "localPrefix");
+    var projectBinding2 = new ProjectBinding("key1", "sqPrefix", "localPrefix");
+    var projectBinding3 = new ProjectBinding("key", "sqPrefix1", "localPrefix");
+    var projectBinding4 = new ProjectBinding("key", "sqPrefix", "localPrefix1");
+    var projectBinding5 = new ProjectBinding("key", "sqPrefix", "localPrefix");
 
     assertThat(projectBinding1.equals(projectBinding2)).isFalse();
     assertThat(projectBinding1.equals(projectBinding3)).isFalse();
@@ -53,25 +53,25 @@ class ProjectBindingTests {
 
   @Test
   void serverPathToIdePath_no_match_from_server_path() {
-    ProjectBinding projectBinding = new ProjectBinding("key", "sqPrefix", "localPrefix");
+    var projectBinding = new ProjectBinding("key", "sqPrefix", "localPrefix");
     assertThat(projectBinding.serverPathToIdePath("notSqPrefix/some/path")).isEmpty();
   }
 
   @Test
   void serverPathToIdePath_general_case() {
-    ProjectBinding projectBinding = new ProjectBinding("key", "sq/path/prefix", "local/prefix");
+    var projectBinding = new ProjectBinding("key", "sq/path/prefix", "local/prefix");
     assertThat(projectBinding.serverPathToIdePath("sq/path/prefix/some/path")).hasValue("local/prefix/some/path");
   }
 
   @Test
   void serverPathToIdePath_empty_local_path() {
-    ProjectBinding projectBinding = new ProjectBinding("key", "sq/path/prefix", "");
+    var projectBinding = new ProjectBinding("key", "sq/path/prefix", "");
     assertThat(projectBinding.serverPathToIdePath("sq/path/prefix/some/path")).hasValue("some/path");
   }
 
   @Test
   void serverPathToIdePath_empty_sq_path() {
-    ProjectBinding projectBinding = new ProjectBinding("key", "", "local/prefix");
+    var projectBinding = new ProjectBinding("key", "", "local/prefix");
     assertThat(projectBinding.serverPathToIdePath("some/path")).hasValue("local/prefix/some/path");
   }
 }

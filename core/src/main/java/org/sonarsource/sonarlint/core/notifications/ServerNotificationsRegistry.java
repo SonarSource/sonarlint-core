@@ -66,7 +66,7 @@ public class ServerNotificationsRegistry {
    * Checks if a server supports notifications
    */
   public static boolean isSupported(EndpointParams endpoint, HttpClient client) {
-    NotificationChecker checker = new NotificationChecker(new ServerApiHelper(endpoint, client));
+    var checker = new NotificationChecker(new ServerApiHelper(endpoint, client));
     return checker.isSupported();
   }
 

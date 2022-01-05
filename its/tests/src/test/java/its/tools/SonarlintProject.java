@@ -28,7 +28,7 @@ import java.util.List;
 public class SonarlintProject extends ExternalResource {
 
   public List<Path> collectAllFiles(Path path) throws IOException {
-    InputFileFinder fileFinder = new InputFileFinder(null);
+    var fileFinder = new InputFileFinder(null);
     return fileFinder.collect(path);
   }
 }

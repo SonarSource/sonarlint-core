@@ -55,7 +55,7 @@ public class ServerIssueTracker {
   private void update(Collection<String> fileKeys, Function<String, List<ServerIssue>> issueGetter) {
     try {
       for (String fileKey : fileKeys) {
-        List<ServerIssue> serverIssues = issueGetter.apply(fileKey);
+        var serverIssues = issueGetter.apply(fileKey);
         Collection<Trackable> serverIssuesTrackable = serverIssues.stream().map(ServerIssueTrackable::new).collect(Collectors.toList());
         issueTracker.matchAndTrackAsBase(fileKey, serverIssuesTrackable);
       }

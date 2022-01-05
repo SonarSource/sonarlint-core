@@ -57,17 +57,17 @@ class IndexedObjectStore<K, V> implements ObjectStore<K, V> {
 
   @Override
   public Optional<V> read(K key) throws IOException {
-    Path path = pathMapper.apply(key);
+    var path = pathMapper.apply(key);
     if (!path.toFile().exists()) {
       return Optional.empty();
     }
-    try (InputStream inputStream = Files.newInputStream(path)) {
+    try (var inputStream = Files.newInputStream(path)) {
       return Optional.of(reader.apply(inputStream));
     }
   }
 
   public boolean contains(K key) {
-    Path path = pathMapper.apply(key);
+    var path = pathMapper.apply(key);
     return path.toFile().exists();
   }
 
@@ -75,8 +75,8 @@ class IndexedObjectStore<K, V> implements ObjectStore<K, V> {
    * Deletes all entries in the index that are no longer valid.
    */
   public void deleteInvalid() {
-    int counter = 0;
-    Collection<K> keys = index.keys();
+    var counter = 0;
+    var keys = index.keys();
 
     for (K k : keys) {
       if (!validator.apply(k)) {
@@ -84,7 +84,7 @@ class IndexedObjectStore<K, V> implements ObjectStore<K, V> {
           counter++;
           delete(k);
         } catch (IOException e) {
-          Path path = pathMapper.apply(k);
+          var path = pathMapper.apply(k);
           LOGGER.error(String.format("failed to delete file '%s' for invalidated key '%s'", path, k), e);
         }
       }
@@ -94,20 +94,20 @@ class IndexedObjectStore<K, V> implements ObjectStore<K, V> {
 
   @Override
   public void delete(K key) throws IOException {
-    Path path = pathMapper.apply(key);
+    var path = pathMapper.apply(key);
     Files.deleteIfExists(path);
     index.delete(key);
   }
 
   @Override
   public void write(K key, V value) throws IOException {
-    Path path = pathMapper.apply(key);
+    var path = pathMapper.apply(key);
     index.save(key, path);
-    Path parent = path.getParent();
+    var parent = path.getParent();
     if (!parent.toFile().exists()) {
       Files.createDirectories(parent);
     }
-    try (OutputStream out = Files.newOutputStream(path)) {
+    try (var out = Files.newOutputStream(path)) {
       writer.accept(out, value);
     }
   }

@@ -35,7 +35,7 @@ public class GlobalUpdateStatusReader {
   public GlobalStorageStatus read() {
     if (storageStatusStore.exists()) {
       final var currentStorageStatus = storageStatusStore.getAll();
-      final boolean stale = !currentStorageStatus.getStorageVersion().equals(ProjectStoragePaths.STORAGE_VERSION);
+      final var stale = !currentStorageStatus.getStorageVersion().equals(ProjectStoragePaths.STORAGE_VERSION);
 
       String version = null;
       if (!stale) {

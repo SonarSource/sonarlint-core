@@ -51,9 +51,9 @@ public class EnforceIssuesFilter implements IssueFilter {
     for (IssuePattern pattern : multicriteriaPatterns) {
       if (pattern.matchRule(issue.ruleKey())) {
         atLeastOneRuleMatched = true;
-        InputComponent component = ((DefaultFilterableIssue) issue).getComponent();
+        var component = ((DefaultFilterableIssue) issue).getComponent();
         if (component.isFile()) {
-          SonarLintInputFile file = (SonarLintInputFile) component;
+          var file = (SonarLintInputFile) component;
           if (pattern.matchFile(file.relativePath())) {
             atLeastOnePatternFullyMatched = true;
             matchingPattern = pattern;

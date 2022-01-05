@@ -74,16 +74,16 @@ class IssueExclusionsLoaderTests {
 
   @Test
   void populateRuleExclusionPatterns() {
-    IssuePattern pattern1 = new IssuePattern("org/foo/Bar*.java", "*");
-    IssuePattern pattern2 = new IssuePattern("org/foo/Hell?.java", "checkstyle:MagicNumber");
+    var pattern1 = new IssuePattern("org/foo/Bar*.java", "*");
+    var pattern2 = new IssuePattern("org/foo/Hell?.java", "checkstyle:MagicNumber");
     when(exclusionPatternInitializer.getMulticriteriaPatterns()).thenReturn(Arrays.asList(pattern1, pattern2));
 
-    IssueExclusionsLoader loader = new IssueExclusionsLoader(exclusionPatternInitializer, ignoreIssuesFilter);
-    SonarLintInputFile file1 = createFile("org/foo/Bar.java");
+    var loader = new IssueExclusionsLoader(exclusionPatternInitializer, ignoreIssuesFilter);
+    var file1 = createFile("org/foo/Bar.java");
     loader.addMulticriteriaPatterns(file1);
-    SonarLintInputFile file2 = createFile("org/foo/Baz.java");
+    var file2 = createFile("org/foo/Baz.java");
     loader.addMulticriteriaPatterns(file2);
-    SonarLintInputFile file3 = createFile("org/foo/Hello.java");
+    var file3 = createFile("org/foo/Hello.java");
     loader.addMulticriteriaPatterns(file3);
 
     verify(ignoreIssuesFilter).addRuleExclusionPatternForComponent(file1, pattern1.getRulePattern());

@@ -46,8 +46,8 @@ public class ApiVersions {
   }
 
   static Version loadVersion(URL versionFileURL, String versionFilePath) {
-    try (Scanner scanner = new Scanner(versionFileURL.openStream(), StandardCharsets.UTF_8.name())) {
-      String versionInFile = scanner.nextLine();
+    try (var scanner = new Scanner(versionFileURL.openStream(), StandardCharsets.UTF_8.name())) {
+      var versionInFile = scanner.nextLine();
       return Version.parse(versionInFile);
     } catch (Exception e) {
       throw new IllegalStateException("Can not load " + versionFilePath + " from classpath", e);

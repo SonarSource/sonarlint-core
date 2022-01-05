@@ -51,7 +51,7 @@ public class TelemetryPathManager {
    * @param oldPath old path of telemetry storage
    */
   public static void migrate(String productKey, Path oldPath) {
-    Path newPath = getPath(productKey);
+    var newPath = getPath(productKey);
     migrate(oldPath, newPath);
   }
 

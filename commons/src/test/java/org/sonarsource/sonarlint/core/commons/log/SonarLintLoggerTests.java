@@ -37,16 +37,16 @@ class SonarLintLoggerTests {
     logger.error("msg");
     logger.error("msg", (Object) null);
     // Keep a separate variable to avoid Eclipse refactoring into a non varargs method
-    Object[] emptyArgs = new Object[0];
+    var emptyArgs = new Object[0];
     logger.error("msg", emptyArgs);
     logger.error("msg {}", "a");
     logger.error("msg {} {}", "a", "a");
     // Keep a separate variable to avoid Eclipse refactoring into a non varargs method
-    Object[] args = new Object[] {"b"};
+    var args = new Object[] {"b"};
     logger.error("msg {}", args);
     logger.error("msg with ex", THROWN);
 
-    InOrder inOrder = Mockito.inOrder(delegator);
+    var inOrder = Mockito.inOrder(delegator);
     inOrder.verify(delegator).log("msg", Level.ERROR);
     inOrder.verify(delegator, times(2)).log("msg", Level.ERROR, null);
     inOrder.verify(delegator).log("msg a", Level.ERROR, null);
@@ -60,16 +60,16 @@ class SonarLintLoggerTests {
     logger.warn("msg");
     logger.warn("msg", (Object) null);
     // Keep a separate variable to avoid Eclipse refactoring into a non varargs method
-    Object[] emptyArgs = new Object[0];
+    var emptyArgs = new Object[0];
     logger.warn("msg", emptyArgs);
     logger.warn("msg {}", "a");
     logger.warn("msg {} {}", "a", "a");
     // Keep a separate variable to avoid Eclipse refactoring into a non varargs method
-    Object[] args = new Object[] {"b"};
+    var args = new Object[] {"b"};
     logger.warn("msg {}", args);
     logger.warn("msg with ex", THROWN);
 
-    InOrder inOrder = Mockito.inOrder(delegator);
+    var inOrder = Mockito.inOrder(delegator);
     inOrder.verify(delegator).log("msg", Level.WARN);
     inOrder.verify(delegator, times(2)).log("msg", Level.WARN, null);
     inOrder.verify(delegator).log("msg a", Level.WARN, null);
@@ -83,15 +83,15 @@ class SonarLintLoggerTests {
     logger.info("msg");
     logger.info("msg", (Object) null);
     // Keep a separate variable to avoid Eclipse refactoring into a non varargs method
-    Object[] emptyArgs = new Object[0];
+    var emptyArgs = new Object[0];
     logger.info("msg", emptyArgs);
     logger.info("msg {}", "a");
     logger.info("msg {} {}", "a", "a");
     // Keep a separate variable to avoid Eclipse refactoring into a non varargs method
-    Object[] args = new Object[] {"b"};
+    var args = new Object[] {"b"};
     logger.info("msg {}", args);
 
-    InOrder inOrder = Mockito.inOrder(delegator);
+    var inOrder = Mockito.inOrder(delegator);
     inOrder.verify(delegator).log("msg", Level.INFO);
     inOrder.verify(delegator, times(2)).log("msg", Level.INFO, null);
     inOrder.verify(delegator).log("msg a", Level.INFO, null);
@@ -104,15 +104,15 @@ class SonarLintLoggerTests {
     logger.debug("msg");
     logger.debug("msg", (Object) null);
     // Keep a separate variable to avoid Eclipse refactoring into a non varargs method
-    Object[] emptyArgs = new Object[0];
+    var emptyArgs = new Object[0];
     logger.debug("msg", emptyArgs);
     logger.debug("msg {}", "a");
     logger.debug("msg {} {}", "a", "a");
     // Keep a separate variable to avoid Eclipse refactoring into a non varargs method
-    Object[] args = new Object[] {"b"};
+    var args = new Object[] {"b"};
     logger.debug("msg {}", args);
 
-    InOrder inOrder = Mockito.inOrder(delegator);
+    var inOrder = Mockito.inOrder(delegator);
     inOrder.verify(delegator).log("msg", Level.DEBUG);
     inOrder.verify(delegator, times(2)).log("msg", Level.DEBUG, null);
     inOrder.verify(delegator).log("msg a", Level.DEBUG, null);
@@ -123,12 +123,12 @@ class SonarLintLoggerTests {
   // SLCORE-292
   @Test
   void extract_throwable_from_format_params() {
-    Throwable throwable = new Throwable("thrown");
+    var throwable = new Throwable("thrown");
     logger.error("msg", (Object) throwable);
     logger.error("msg {}", "a", throwable);
     logger.error("msg {} {}", "a", "a", throwable);
 
-    InOrder inOrder = Mockito.inOrder(delegator);
+    var inOrder = Mockito.inOrder(delegator);
     inOrder.verify(delegator).log("msg", Level.ERROR, throwable);
     inOrder.verify(delegator).log("msg a", Level.ERROR, throwable);
     inOrder.verify(delegator).log("msg a a", Level.ERROR, throwable);

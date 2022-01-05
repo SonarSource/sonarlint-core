@@ -50,7 +50,7 @@ public class DefaultServer extends Server {
 
   @Override
   public Date getStartedAt() {
-    String dateString = settings.getString(CoreProperties.SERVER_STARTTIME);
+    var dateString = settings.getString(CoreProperties.SERVER_STARTTIME);
     if (dateString != null) {
       try {
         return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").parse(dateString);

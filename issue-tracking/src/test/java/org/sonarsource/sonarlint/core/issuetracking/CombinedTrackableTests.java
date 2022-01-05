@@ -28,10 +28,10 @@ import static org.mockito.Mockito.when;
 class CombinedTrackableTests {
   @Test
   void testMerge() {
-    Trackable base = createMock("base", 0);
-    Trackable next = createMock("next", 1);
+    var base = createMock("base", 0);
+    var next = createMock("next", 1);
 
-    CombinedTrackable combined = new CombinedTrackable(base, next, true);
+    var combined = new CombinedTrackable(base, next, true);
 
     assertThat(combined.getAssignee()).isEqualTo("baseAssignee");
     assertThat(combined.getServerIssueKey()).isEqualTo("baseServerIssueKey");
@@ -49,7 +49,7 @@ class CombinedTrackableTests {
   }
 
   private Trackable createMock(String name, int number) {
-    Trackable t = mock(Trackable.class);
+    var t = mock(Trackable.class);
     when(t.getAssignee()).thenReturn(name + "Assignee");
     when(t.getCreationDate()).thenReturn((long) number);
     when(t.getLine()).thenReturn(number);

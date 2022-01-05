@@ -88,7 +88,7 @@ public class IssueExclusionsRegexpScanner extends CharHandler {
     // now create the new line-based pattern for this file if there are exclusions
     fileLength = lineIndex;
     if (!lineExclusions.isEmpty()) {
-      Set<LineRange> lineRanges = convertLineExclusionsToLineRanges();
+      var lineRanges = convertLineExclusionsToLineRanges();
       LOG.debug("  - Line exclusions found: {}", lineRanges.stream().map(LineRange::toString).collect(Collectors.joining(",")));
       inputFile.addIgnoreIssuesOnLineRanges(lineRanges.stream().map(r -> new int[] {r.from(), r.to()}).collect(Collectors.toList()));
     }

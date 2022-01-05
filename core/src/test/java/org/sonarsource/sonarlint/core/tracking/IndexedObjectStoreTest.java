@@ -56,10 +56,10 @@ class IndexedObjectStoreTest {
     Reader<String> reader = inputStream -> "dummy";
     Writer<String> writer = (outputStream, values) -> {
     };
-    IndexedObjectStore<String, String> store = new IndexedObjectStore<>(index, mapper, reader, writer, validator);
+    var store = new IndexedObjectStore<String, String>(index, mapper, reader, writer, validator);
     store.deleteInvalid();
 
-    List<String> errors = logTester.logs(Level.ERROR);
+    var errors = logTester.logs(Level.ERROR);
     assertThat(errors).hasSize(2);
     assertThat(errors.get(0)).startsWith("failed to delete file");
     assertThat(logTester.logs(Level.DEBUG)).containsOnly("1 entries removed from the store");

@@ -82,9 +82,9 @@ public class SensorOptimizer {
 
   private boolean fsCondition(DefaultSensorDescriptor descriptor) {
     if (!descriptor.languages().isEmpty() || descriptor.type() != null) {
-      FilePredicate langPredicate = descriptor.languages().isEmpty() ? fs.predicates().all() : fs.predicates().hasLanguages(descriptor.languages());
+      var langPredicate = descriptor.languages().isEmpty() ? fs.predicates().all() : fs.predicates().hasLanguages(descriptor.languages());
 
-      FilePredicate typePredicate = descriptor.type() == null ? fs.predicates().all() : fs.predicates().hasType(descriptor.type());
+      var typePredicate = descriptor.type() == null ? fs.predicates().all() : fs.predicates().hasType(descriptor.type());
       return fs.hasFiles(fs.predicates().and(langPredicate, typePredicate));
     }
     return true;

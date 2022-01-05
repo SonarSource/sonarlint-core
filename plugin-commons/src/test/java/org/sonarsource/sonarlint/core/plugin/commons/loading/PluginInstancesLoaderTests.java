@@ -49,36 +49,36 @@ class PluginInstancesLoaderTests {
 
   @Test
   void instantiate_plugin_entry_point() {
-    PluginClassLoaderDef def = new PluginClassLoaderDef("fake");
+    var def = new PluginClassLoaderDef("fake");
     def.addMainClass("fake", FakePlugin.class.getName());
 
-    Map<String, Plugin> instances = loader.instantiatePluginClasses(Map.of(def, getClass().getClassLoader()));
+    var instances = loader.instantiatePluginClasses(Map.of(def, getClass().getClassLoader()));
     assertThat(instances).containsOnlyKeys("fake");
     assertThat(instances.get("fake")).isInstanceOf(FakePlugin.class);
   }
 
   @Test
   void plugin_entry_point_must_be_no_arg_public() {
-    PluginClassLoaderDef def = new PluginClassLoaderDef("fake");
+    var def = new PluginClassLoaderDef("fake");
     def.addMainClass("fake", IncorrectPlugin.class.getName());
 
-    IllegalStateException expected = assertThrows(IllegalStateException.class, () -> loader.instantiatePluginClasses(Map.of(def, getClass().getClassLoader())));
+    var expected = assertThrows(IllegalStateException.class, () -> loader.instantiatePluginClasses(Map.of(def, getClass().getClassLoader())));
     assertThat(expected)
       .hasMessage("Fail to instantiate class [org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInstancesLoaderTests$IncorrectPlugin] of plugin [fake]");
   }
 
   @Test
   void define_classloader(@TempDir Path tmp) throws Exception {
-    File jarFile = tmp.resolve("fakePlugin.jar").toFile();
-    PluginInfo info = new PluginInfo("foo")
+    var jarFile = tmp.resolve("fakePlugin.jar").toFile();
+    var info = new PluginInfo("foo")
       .setJarFile(jarFile)
       .setMainClass("org.foo.FooPlugin")
       .setMinimalSqVersion(Version.create("5.2"));
 
-    Collection<PluginClassLoaderDef> defs = loader.defineClassloaders(Map.of("foo", info));
+    var defs = loader.defineClassloaders(Map.of("foo", info));
 
     assertThat(defs).hasSize(1);
-    PluginClassLoaderDef def = defs.iterator().next();
+    var def = defs.iterator().next();
     assertThat(def.getBasePluginKey()).isEqualTo("foo");
     assertThat(def.getFiles()).containsExactly(jarFile);
     assertThat(def.getMainClassesByPluginKey()).containsOnly(MapEntry.entry("foo", "org.foo.FooPlugin"));
@@ -87,16 +87,16 @@ class PluginInstancesLoaderTests {
 
   @Test
   void extract_dependencies() throws Exception {
-    File jarFile = getFile("sonar-checkstyle-plugin-2.8.jar");
-    PluginInfo info = new PluginInfo("checkstyle")
+    var jarFile = getFile("sonar-checkstyle-plugin-2.8.jar");
+    var info = new PluginInfo("checkstyle")
       .setJarFile(jarFile)
       .setMainClass("org.foo.FooPlugin")
       .setDependencies(List.of("META-INF/lib/commons-cli-1.0.jar", "META-INF/lib/checkstyle-5.1.jar", "META-INF/lib/antlr-2.7.6.jar"));
 
-    Collection<PluginClassLoaderDef> defs = loader.defineClassloaders(Map.of("checkstyle", info));
+    var defs = loader.defineClassloaders(Map.of("checkstyle", info));
 
     assertThat(defs).hasSize(1);
-    PluginClassLoaderDef def = defs.iterator().next();
+    var def = defs.iterator().next();
     assertThat(def.getBasePluginKey()).isEqualTo("checkstyle");
     assertThat(def.getFiles()).hasSize(4);
     assertThat(def.getFiles()).extracting(f -> f.getName(), f -> {
@@ -117,28 +117,28 @@ class PluginInstancesLoaderTests {
    */
   @Test
   void test_plugins_sharing_the_same_classloader(@TempDir Path tmp) throws Exception {
-    File baseJarFile = tmp.resolve("fakeBasePlugin.jar").toFile();
-    File extensionJar1 = tmp.resolve("fakePlugin1.jar").toFile();
-    File extensionJar2 = tmp.resolve("fakePlugin2.jar").toFile();
-    PluginInfo base = new PluginInfo("foo")
+    var baseJarFile = tmp.resolve("fakeBasePlugin.jar").toFile();
+    var extensionJar1 = tmp.resolve("fakePlugin1.jar").toFile();
+    var extensionJar2 = tmp.resolve("fakePlugin2.jar").toFile();
+    var base = new PluginInfo("foo")
       .setJarFile(baseJarFile)
       .setMainClass("org.foo.FooPlugin");
 
-    PluginInfo extension1 = new PluginInfo("fooExtension1")
+    var extension1 = new PluginInfo("fooExtension1")
       .setJarFile(extensionJar1)
       .setMainClass("org.foo.Extension1Plugin")
       .setBasePlugin("foo");
 
-    PluginInfo extension2 = new PluginInfo("fooExtension2")
+    var extension2 = new PluginInfo("fooExtension2")
       .setJarFile(extensionJar2)
       .setMainClass("org.foo.Extension2Plugin")
       .setBasePlugin("foo");
 
-    Collection<PluginClassLoaderDef> defs = loader.defineClassloaders(Map.of(
+    var defs = loader.defineClassloaders(Map.of(
       base.getKey(), base, extension1.getKey(), extension1, extension2.getKey(), extension2));
 
     assertThat(defs).hasSize(1);
-    PluginClassLoaderDef def = defs.iterator().next();
+    var def = defs.iterator().next();
     assertThat(def.getBasePluginKey()).isEqualTo("foo");
     assertThat(def.getFiles()).containsOnly(baseJarFile, extensionJar1, extensionJar2);
     assertThat(def.getMainClassesByPluginKey()).containsOnly(
@@ -151,22 +151,22 @@ class PluginInstancesLoaderTests {
   // SLCORE-222
   @Test
   void skip_plugins_when_base_plugin_missing(@TempDir Path tmp) throws Exception {
-    File extensionJar1 = tmp.resolve("fakePlugin1.jar").toFile();
-    File extensionJar2 = tmp.resolve("fakePlugin2.jar").toFile();
+    var extensionJar1 = tmp.resolve("fakePlugin1.jar").toFile();
+    var extensionJar2 = tmp.resolve("fakePlugin2.jar").toFile();
 
-    PluginInfo extension1 = new PluginInfo("fooExtension1")
+    var extension1 = new PluginInfo("fooExtension1")
       .setJarFile(extensionJar1)
       .setMainClass("org.foo.Extension1Plugin");
-    PluginInfo extension2 = new PluginInfo("fooExtension2")
+    var extension2 = new PluginInfo("fooExtension2")
       .setJarFile(extensionJar2)
       .setMainClass("org.foo.Extension2Plugin")
       .setBasePlugin("foo");
 
-    Collection<PluginClassLoaderDef> defs = loader.defineClassloaders(Map.of(
+    var defs = loader.defineClassloaders(Map.of(
       extension1.getKey(), extension1, extension2.getKey(), extension2));
 
     assertThat(defs).hasSize(1);
-    PluginClassLoaderDef def = defs.iterator().next();
+    var def = defs.iterator().next();
     assertThat(def.getFiles()).containsOnly(extensionJar1);
     assertThat(def.getMainClassesByPluginKey()).containsOnly(
       entry("fooExtension1", "org.foo.Extension1Plugin"));

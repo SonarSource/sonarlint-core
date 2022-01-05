@@ -38,10 +38,10 @@ class InputFileCacheTests {
 
   @Test
   void testFiles() {
-    InputFile file1 = mock(InputFile.class);
+    var file1 = mock(InputFile.class);
     when(file1.filename()).thenReturn("file1.java");
     when(file1.language()).thenReturn("lang1");
-    InputFile file2 = mock(InputFile.class);
+    var file2 = mock(InputFile.class);
     when(file2.filename()).thenReturn("file2");
     when(file2.language()).thenReturn("lang2");
 

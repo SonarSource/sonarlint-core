@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class DefaultRemoteOrganizationTests {
   @Test
   void testRoundTrip() {
-    Organization org = Organization.newBuilder()
+    var org = Organization.newBuilder()
       .setName("name")
       .setKey("key")
       .setDescription("desc")

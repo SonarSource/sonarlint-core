@@ -36,7 +36,7 @@ import static java.util.Collections.reverseOrder;
 public class FileMatcher {
 
   public Result match(List<Path> serverRelativePaths, List<Path> ideRelativePaths) {
-    ReversePathTree reversePathTree = new ReversePathTree();
+    var reversePathTree = new ReversePathTree();
 
     Map<Result, Double> resultScores = new LinkedHashMap<>();
 
@@ -45,12 +45,12 @@ public class FileMatcher {
     serverRelativePaths.stream().filter(sqPath -> ideFilenames.contains(sqPath.getFileName())).forEach(reversePathTree::index);
 
     for (Path ide : ideRelativePaths) {
-      ReversePathTree.Match match = reversePathTree.findLongestSuffixMatches(ide);
+      var match = reversePathTree.findLongestSuffixMatches(ide);
       if (match.matchLen() > 0) {
-        Path idePrefix = getIdePrefix(ide, match);
+        var idePrefix = getIdePrefix(ide, match);
 
         for (Path sqPrefix : match.matchPrefixes()) {
-          Result r = new Result(idePrefix, sqPrefix);
+          var r = new Result(idePrefix, sqPrefix);
           resultScores.compute(r, (p, i) -> computeScore(i, match));
         }
       }
@@ -60,12 +60,12 @@ public class FileMatcher {
   }
 
   private static double computeScore(@Nullable Double currentScore, ReversePathTree.Match match) {
-    double matchScore = (double) match.matchLen() / match.matchPrefixes().size();
+    var matchScore = (double) match.matchLen() / match.matchPrefixes().size();
     return currentScore != null ? (currentScore.doubleValue() + matchScore) : matchScore;
   }
 
   private static Path getIdePrefix(Path idePath, ReversePathTree.Match match) {
-    int prefixLen = depth(idePath) - match.matchLen();
+    var prefixLen = depth(idePath) - match.matchLen();
     if (prefixLen > 0) {
       return idePath.subpath(0, depth(idePath) - match.matchLen());
     }
@@ -116,7 +116,7 @@ public class FileMatcher {
       if (o == null || getClass() != o.getClass()) {
         return false;
       }
-      Result result = (Result) o;
+      var result = (Result) o;
       return Objects.equals(idePrefix, result.idePrefix) && Objects.equals(sqPrefix, result.sqPrefix);
     }
 

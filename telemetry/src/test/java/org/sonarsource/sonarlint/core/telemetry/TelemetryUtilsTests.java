@@ -47,13 +47,13 @@ class TelemetryUtilsTests {
   @Test
   void should_create_telemetry_performance_payload() {
     Map<String, TelemetryAnalyzerPerformance> analyzers = new HashMap<>();
-    TelemetryAnalyzerPerformance perf = new TelemetryAnalyzerPerformance();
+    var perf = new TelemetryAnalyzerPerformance();
     perf.registerAnalysis(10);
     perf.registerAnalysis(500);
     perf.registerAnalysis(500);
 
     analyzers.put("java", perf);
-    TelemetryAnalyzerPerformancePayload[] payload = TelemetryUtils.toPayload(analyzers);
+    var payload = TelemetryUtils.toPayload(analyzers);
     assertThat(payload).hasSize(1);
     assertThat(payload[0].language()).isEqualTo("java");
     assertThat(payload[0].distribution()).containsOnly(
@@ -82,18 +82,18 @@ class TelemetryUtilsTests {
 
   @Test
   void create_analyzer_performance_payload() {
-    TelemetryAnalyzerPerformance perf = new TelemetryAnalyzerPerformance();
-    for (int i = 0; i < 10; i++) {
+    var perf = new TelemetryAnalyzerPerformance();
+    for (var i = 0; i < 10; i++) {
       perf.registerAnalysis(1000);
     }
-    for (int i = 0; i < 20; i++) {
+    for (var i = 0; i < 20; i++) {
       perf.registerAnalysis(2000);
     }
-    for (int i = 0; i < 20; i++) {
+    for (var i = 0; i < 20; i++) {
       perf.registerAnalysis(200);
     }
     assertThat(perf.analysisCount()).isEqualTo(50);
-    TelemetryAnalyzerPerformancePayload[] payload = TelemetryUtils.toPayload(Collections.singletonMap("java", perf));
+    var payload = TelemetryUtils.toPayload(Collections.singletonMap("java", perf));
     assertThat(payload).hasSize(1);
     assertThat(payload[0].language()).isEqualTo("java");
     assertThat(payload[0].distribution()).containsExactly(
@@ -108,15 +108,15 @@ class TelemetryUtilsTests {
 
   @Test
   void dayChanged_with_hours_should_return_false_if_different_day_but_within_hours() {
-    LocalDateTime date = LocalDateTime.now().minusDays(1);
-    long hours = date.until(LocalDateTime.now(), ChronoUnit.HOURS);
+    var date = LocalDateTime.now().minusDays(1);
+    var hours = date.until(LocalDateTime.now(), ChronoUnit.HOURS);
     assertThat(dayChanged(date, hours + 1)).isFalse();
   }
 
   @Test
   void dayChanged_with_hours_should_return_true_if_different_day_and_beyond_hours() {
-    LocalDateTime date = LocalDateTime.now().minusDays(1);
-    long hours = date.until(LocalDateTime.now(), ChronoUnit.HOURS);
+    var date = LocalDateTime.now().minusDays(1);
+    var hours = date.until(LocalDateTime.now(), ChronoUnit.HOURS);
     assertThat(dayChanged(date, hours)).isTrue();
   }
 }

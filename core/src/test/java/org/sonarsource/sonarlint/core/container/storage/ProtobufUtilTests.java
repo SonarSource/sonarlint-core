@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
@@ -54,8 +55,8 @@ class ProtobufUtilTests {
 
   @Test
   void test_readMessages_multiple() throws IOException {
-    ServerIssue issue1 = SOME_MESSAGE;
-    ServerIssue issue2 = SOME_MESSAGE;
+    var issue1 = SOME_MESSAGE;
+    var issue2 = SOME_MESSAGE;
 
     try (InputStream inputStream = new ByteArrayInputStream(toByteArray(issue1, issue2))) {
       assertThat(readMessages(inputStream, issue1.getParserForType())).containsOnly(issue1, issue2);
@@ -66,35 +67,35 @@ class ProtobufUtilTests {
   void test_readMessages_error() throws IOException {
     InputStream inputStream = new ByteArrayInputStream("trash".getBytes(StandardCharsets.UTF_8));
 
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> readMessages(inputStream, SOME_PARSER));
+    var thrown = assertThrows(IllegalStateException.class, () -> readMessages(inputStream, SOME_PARSER));
     assertThat(thrown).hasMessage("failed to parse protobuf message");
   }
 
   @Test
   void test_readFile_error() throws IOException {
-    Path p = Paths.get("invalid_non_existing_file");
-    StorageException thrown = assertThrows(StorageException.class, () -> ProtobufUtil.readFile(p, SOME_PARSER));
+    var p = Paths.get("invalid_non_existing_file");
+    var thrown = assertThrows(StorageException.class, () -> ProtobufUtil.readFile(p, SOME_PARSER));
     assertThat(thrown).hasMessageStartingWith("Failed to read file");
   }
 
   @Test
   void test_writeFile_error() throws IOException {
-    Path p = Paths.get("invalid", "non_existing", "file");
-    StorageException thrown = assertThrows(StorageException.class, () -> ProtobufUtil.writeToFile(SOME_MESSAGE, p));
+    var p = Paths.get("invalid", "non_existing", "file");
+    var thrown = assertThrows(StorageException.class, () -> ProtobufUtil.writeToFile(SOME_MESSAGE, p));
     assertThat(thrown).hasMessageStartingWith("Unable to write protocol buffer data to file");
   }
 
   @Test
   void test_writeMessage_error() throws IOException {
-    OutputStream out = mock(OutputStream.class);
-    doThrow(IOException.class).when(out).write(any(), Mockito.anyInt(), Mockito.anyInt());
+    var out = mock(OutputStream.class);
+    doThrow(IOException.class).when(out).write(any(), ArgumentMatchers.anyInt(), ArgumentMatchers.anyInt());
 
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> ProtobufUtil.writeMessage(out, SOME_MESSAGE));
+    var thrown = assertThrows(IllegalStateException.class, () -> ProtobufUtil.writeMessage(out, SOME_MESSAGE));
     assertThat(thrown).hasMessageStartingWith("failed to write message");
   }
 
   public static byte[] toByteArray(ServerIssue... issues) throws IOException {
-    try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream()) {
+    try (var byteStream = new ByteArrayOutputStream()) {
       for (ServerIssue issue : issues) {
         issue.writeDelimitedTo(byteStream);
       }

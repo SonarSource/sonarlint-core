@@ -75,16 +75,16 @@ public class TelemetryHttpClient {
   }
 
   private TelemetryPayload createPayload(TelemetryLocalStorage data, TelemetryClientAttributesProvider attributesProvider) {
-    OffsetDateTime systemTime = OffsetDateTime.now();
-    long daysSinceInstallation = data.installTime().until(systemTime, ChronoUnit.DAYS);
-    TelemetryAnalyzerPerformancePayload[] analyzers = TelemetryUtils.toPayload(data.analyzers());
-    TelemetryNotificationsPayload notifications = TelemetryUtils.toPayload(attributesProvider.devNotificationsDisabled(), data.notifications());
-    ShowHotspotPayload showHotspotPayload = new ShowHotspotPayload(data.showHotspotRequestsCount());
-    TaintVulnerabilitiesPayload taintVulnerabilitiesPayload = new TaintVulnerabilitiesPayload(data.taintVulnerabilitiesInvestigatedLocallyCount(),
+    var systemTime = OffsetDateTime.now();
+    var daysSinceInstallation = data.installTime().until(systemTime, ChronoUnit.DAYS);
+    var analyzers = TelemetryUtils.toPayload(data.analyzers());
+    var notifications = TelemetryUtils.toPayload(attributesProvider.devNotificationsDisabled(), data.notifications());
+    var showHotspotPayload = new ShowHotspotPayload(data.showHotspotRequestsCount());
+    var taintVulnerabilitiesPayload = new TaintVulnerabilitiesPayload(data.taintVulnerabilitiesInvestigatedLocallyCount(),
       data.taintVulnerabilitiesInvestigatedRemotelyCount());
-    String os = System.getProperty("os.name");
-    String jre = System.getProperty("java.version");
-    TelemetryRulesPayload telemetryRulesPayload = new TelemetryRulesPayload(attributesProvider.getNonDefaultEnabledRules(),
+    var os = System.getProperty("os.name");
+    var jre = System.getProperty("java.version");
+    var telemetryRulesPayload = new TelemetryRulesPayload(attributesProvider.getNonDefaultEnabledRules(),
       attributesProvider.getDefaultDisabledRules(), data.getRaisedIssuesRules(), data.getQuickFixesApplied());
     return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version, ideVersion,
       attributesProvider.usesConnectedMode(), attributesProvider.useSonarCloud(), systemTime, data.installTime(), os, jre, attributesProvider.nodeVersion().orElse(null),
@@ -92,7 +92,7 @@ public class TelemetryHttpClient {
   }
 
   private void sendDelete(TelemetryPayload payload) {
-    try (HttpClient.Response response = client.delete(endpoint, HttpClient.JSON_CONTENT_TYPE, payload.toJson())) {
+    try (var response = client.delete(endpoint, HttpClient.JSON_CONTENT_TYPE, payload.toJson())) {
       if (!response.isSuccessful() && InternalDebug.isEnabled()) {
         LOG.error("Failed to upload telemetry opt-out: {}", response.toString());
       }
@@ -100,7 +100,7 @@ public class TelemetryHttpClient {
   }
 
   private void sendPost(TelemetryPayload payload) {
-    try (HttpClient.Response response = client.post(endpoint, HttpClient.JSON_CONTENT_TYPE, payload.toJson())) {
+    try (var response = client.post(endpoint, HttpClient.JSON_CONTENT_TYPE, payload.toJson())) {
       if (!response.isSuccessful() && InternalDebug.isEnabled()) {
         LOG.error("Failed to upload telemetry data: {}", response.toString());
       }

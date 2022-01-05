@@ -54,12 +54,12 @@ class InputFileBuilderTests {
   void testCreate() throws IOException {
     when(langDetection.language(any(InputFile.class))).thenReturn(Language.JAVA);
 
-    Path path = tempDir.resolve("file");
+    var path = tempDir.resolve("file");
     Files.write(path, "test".getBytes(StandardCharsets.ISO_8859_1));
     ClientInputFile file = new OnDiskTestClientInputFile(path, "file", true, StandardCharsets.ISO_8859_1);
 
-    InputFileBuilder builder = new InputFileBuilder(langDetection, metadata, issueExclusionsLoader);
-    SonarLintInputFile inputFile = builder.create(file);
+    var builder = new InputFileBuilder(langDetection, metadata, issueExclusionsLoader);
+    var inputFile = builder.create(file);
 
     assertThat(inputFile.type()).isEqualTo(InputFile.Type.TEST);
     assertThat(inputFile.file()).isEqualTo(path.toFile());
@@ -75,12 +75,12 @@ class InputFileBuilderTests {
 
   @Test
   void testCreateWithLanguageSet() throws IOException {
-    Path path = tempDir.resolve("file");
+    var path = tempDir.resolve("file");
     Files.write(path, "test".getBytes(StandardCharsets.ISO_8859_1));
     ClientInputFile file = new OnDiskTestClientInputFile(path, "file", true, StandardCharsets.ISO_8859_1, Language.CPP);
 
-    InputFileBuilder builder = new InputFileBuilder(langDetection, metadata, issueExclusionsLoader);
-    SonarLintInputFile inputFile = builder.create(file);
+    var builder = new InputFileBuilder(langDetection, metadata, issueExclusionsLoader);
+    var inputFile = builder.create(file);
 
     assertThat(inputFile.language()).isEqualTo("cpp");
     verifyNoInteractions(langDetection);
@@ -91,11 +91,11 @@ class InputFileBuilderTests {
     when(langDetection.language(any(InputFile.class))).thenReturn(Language.JAVA);
     ClientInputFile file = new OnDiskTestClientInputFile(Paths.get("INVALID"), "INVALID", true, StandardCharsets.ISO_8859_1);
 
-    InputFileBuilder builder = new InputFileBuilder(langDetection, metadata, issueExclusionsLoader);
-    SonarLintInputFile slFile = builder.create(file);
+    var builder = new InputFileBuilder(langDetection, metadata, issueExclusionsLoader);
+    var slFile = builder.create(file);
 
     // Call any method that will trigger metadata initialization
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> slFile.selectLine(1));
+    var thrown = assertThrows(IllegalStateException.class, () -> slFile.selectLine(1));
     assertThat(thrown).hasMessageStartingWith("Failed to open a stream on file");
   }
 }

@@ -73,7 +73,7 @@ class ConnectedIssueExclusionsMediumTests {
       .create(slHome);
     projectStorage = storage.getProjectStorages().get(1);
 
-    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.builder()
       .setConnectionId(SERVER_ID)
       .setSonarLintUserHome(slHome)
       .setStorageRoot(storage.getPath())
@@ -98,8 +98,8 @@ class ConnectedIssueExclusionsMediumTests {
 
   @Test
   void issueExclusions() throws Exception {
-    ClientInputFile inputFile1 = prepareJavaInputFile1();
-    ClientInputFile inputFile2 = prepareJavaInputFile2();
+    var inputFile1 = prepareJavaInputFile1();
+    var inputFile2 = prepareJavaInputFile2();
 
     assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
       tuple("java:S106", 5, FILE1_PATH, "MAJOR"),
@@ -145,8 +145,8 @@ class ConnectedIssueExclusionsMediumTests {
 
   @Test
   void issueExclusionsByRegexp() throws Exception {
-    ClientInputFile inputFile1 = prepareJavaInputFile1();
-    ClientInputFile inputFile2 = prepareJavaInputFile2();
+    var inputFile1 = prepareJavaInputFile1();
+    var inputFile2 = prepareJavaInputFile2();
 
     assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
       tuple("java:S106", 5, FILE1_PATH, "MAJOR"),
@@ -170,8 +170,8 @@ class ConnectedIssueExclusionsMediumTests {
 
   @Test
   void issueExclusionsByBlock() throws Exception {
-    ClientInputFile inputFile1 = prepareJavaInputFile1();
-    ClientInputFile inputFile2 = prepareJavaInputFile2();
+    var inputFile1 = prepareJavaInputFile1();
+    var inputFile2 = prepareJavaInputFile2();
 
     assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
       tuple("java:S106", 5, FILE1_PATH, "MAJOR"),
@@ -194,8 +194,8 @@ class ConnectedIssueExclusionsMediumTests {
 
   @Test
   void issueInclusions() throws Exception {
-    ClientInputFile inputFile1 = prepareJavaInputFile1();
-    ClientInputFile inputFile2 = prepareJavaInputFile2();
+    var inputFile1 = prepareJavaInputFile1();
+    var inputFile2 = prepareJavaInputFile2();
 
     storeProjectSettings(Map.of("sonar.issue.enforce.multicriteria", "1",
       "sonar.issue.enforce.multicriteria.1.resourceKey", "Foo*.java",
@@ -279,7 +279,7 @@ class ConnectedIssueExclusionsMediumTests {
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
-    final File file = new File(baseDir, relativePath);
+    final var file = new File(baseDir, relativePath);
     FileUtils.write(file, content, StandardCharsets.UTF_8);
     return TestUtils.createInputFile(file.toPath(), relativePath, isTest);
   }

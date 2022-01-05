@@ -27,7 +27,7 @@ class LicensedPluginRegistrationTests {
 
   @Test
   void testBuilder() {
-    LicensedPluginRegistration underTest = LicensedPluginRegistration.forPlugin("xoo");
+    var underTest = LicensedPluginRegistration.forPlugin("xoo");
     assertThat(underTest.getPluginKey()).isEqualTo("xoo");
   }
 

@@ -63,7 +63,7 @@ class SonarLintFileSystemTests {
   void files() {
     assertThat(fs.inputFiles(fs.predicates().all())).isEmpty();
 
-    SonarLintInputFile inputFile = new TestInputFileBuilder("src/Foo.php").setBaseDir(basedir).setLanguage(Language.PHP).build();
+    var inputFile = new TestInputFileBuilder("src/Foo.php").setBaseDir(basedir).setLanguage(Language.PHP).build();
     inputFileCache.doAdd(inputFile);
     inputFileCache.doAdd(new TestInputFileBuilder("src/Bar.java").setBaseDir(basedir).setLanguage(Language.JAVA).build());
     inputFileCache.doAdd(new TestInputFileBuilder("src/Baz.java").setBaseDir(basedir).setLanguage(Language.JAVA).build());
@@ -104,7 +104,7 @@ class SonarLintFileSystemTests {
     inputFileCache.doAdd(new TestInputFileBuilder("src/Bar.java").setLanguage(Language.JAVA).build());
     inputFileCache.doAdd(new TestInputFileBuilder("src/Baz.java").setLanguage(Language.JAVA).build());
 
-    IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> fs.inputFile(fs.predicates().all()));
+    var thrown = assertThrows(IllegalArgumentException.class, () -> fs.inputFile(fs.predicates().all()));
     assertThat(thrown).hasMessageStartingWith("expected one element");
   }
 

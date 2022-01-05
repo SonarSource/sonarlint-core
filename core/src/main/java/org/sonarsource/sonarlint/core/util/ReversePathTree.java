@@ -39,7 +39,7 @@ public class ReversePathTree {
     var currentNode = root;
     Path currentNodePath = null;
 
-    for (int i = path.getNameCount() - 1; i >= 0; i--) {
+    for (var i = path.getNameCount() - 1; i >= 0; i--) {
       var childNodePath = path.getName(i);
       var result = currentNode.computeChildrenIfAbsent(parent, currentNodePath, childNodePath);
       parent = result[0];

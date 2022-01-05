@@ -30,7 +30,7 @@ public class Version implements Comparable<Version> {
 
   private Version(String version) {
     this.name = version.trim();
-    int qualifierPosition = name.indexOf("-");
+    var qualifierPosition = name.indexOf("-");
     if (qualifierPosition != -1) {
       this.qualifier = name.substring(qualifierPosition + 1);
       this.nameWithoutQualifier = name.substring(0, qualifierPosition);
@@ -84,7 +84,7 @@ public class Version implements Comparable<Version> {
     if (!(o instanceof Version)) {
       return false;
     }
-    Version other = (Version) o;
+    var other = (Version) o;
     return getMajor() == other.getMajor()
       && getMinor() == other.getMinor()
       && getPatch() == other.getPatch()
@@ -104,7 +104,7 @@ public class Version implements Comparable<Version> {
 
   @Override
   public int compareTo(Version other) {
-    int c = compareToIgnoreQualifier(other);
+    var c = compareToIgnoreQualifier(other);
     if (c == 0) {
       if ("".equals(qualifier)) {
         c = "".equals(other.qualifier) ? 0 : 1;
@@ -118,9 +118,9 @@ public class Version implements Comparable<Version> {
   }
 
   public int compareToIgnoreQualifier(Version other) {
-    int maxNumbers = Math.max(numbers.length, other.numbers.length);
-    int[] myNumbers = Arrays.copyOf(numbers, maxNumbers);
-    int[] otherNumbers = Arrays.copyOf(other.numbers, maxNumbers);
+    var maxNumbers = Math.max(numbers.length, other.numbers.length);
+    var myNumbers = Arrays.copyOf(numbers, maxNumbers);
+    var otherNumbers = Arrays.copyOf(other.numbers, maxNumbers);
     for (var i = 0; i < maxNumbers; i++) {
       var compare = Integer.compare(myNumbers[i], otherNumbers[i]);
       if (compare != 0) {

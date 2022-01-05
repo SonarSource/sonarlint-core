@@ -94,7 +94,7 @@ public class GlobalAnalysisContainer extends ComponentContainer {
   }
 
   private void declarePluginProperties() {
-    PluginInstancesRepository pluginRepository = getComponentByType(PluginInstancesRepository.class);
+    var pluginRepository = getComponentByType(PluginInstancesRepository.class);
     pluginRepository.getPluginInstancesByKeys().values().forEach(this::declareProperties);
   }
 

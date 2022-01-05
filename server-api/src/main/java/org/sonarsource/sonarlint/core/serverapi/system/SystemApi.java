@@ -39,7 +39,7 @@ public class SystemApi {
       response -> {
         var responseStr = response.bodyAsString();
         try {
-          SystemStatus status = new Gson().fromJson(responseStr, SystemStatus.class);
+          var status = new Gson().fromJson(responseStr, SystemStatus.class);
           return new ServerInfo(status.id, status.status, status.version);
         } catch (Exception e) {
           throw new IllegalStateException("Unable to parse server infos from: " + responseStr, e);
