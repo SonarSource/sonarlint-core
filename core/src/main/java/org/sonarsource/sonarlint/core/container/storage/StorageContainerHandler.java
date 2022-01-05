@@ -117,7 +117,7 @@ public class StorageContainerHandler {
     boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressWrapper progress) {
     var updater = partialUpdaterFactory.create(endpoint, client);
     Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectBinding.projectKey());
-    updater.updateFileIssues(projectBinding, configuration, ideFilePath, fetchTaintVulnerabilities, progress);
+    updater.updateFileIssues(projectBinding, configuration, ideFilePath, fetchTaintVulnerabilities, branchName, progress);
     return getServerIssues(projectBinding, ideFilePath);
   }
 
