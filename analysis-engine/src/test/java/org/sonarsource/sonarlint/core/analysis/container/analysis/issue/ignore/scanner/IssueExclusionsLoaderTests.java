@@ -46,7 +46,7 @@ class IssueExclusionsLoaderTests {
   private IssueExclusionsLoader scanner;
 
   @BeforeEach
-  public void before() throws Exception {
+  void before() throws Exception {
     exclusionPatternInitializer = mock(IssueExclusionPatternInitializer.class);
     ignoreIssuesFilter = mock(IgnoreIssuesFilter.class);
     scanner = new IssueExclusionsLoader(exclusionPatternInitializer, ignoreIssuesFilter);

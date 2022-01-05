@@ -36,7 +36,7 @@ class ServerVersionAndStatusCheckerTests {
   private ServerVersionAndStatusChecker underTest;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     underTest = new ServerVersionAndStatusChecker(mockServer.serverApiHelper());
   }
 

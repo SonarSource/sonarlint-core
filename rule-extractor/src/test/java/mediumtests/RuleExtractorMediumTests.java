@@ -54,10 +54,10 @@ class RuleExtractorMediumTests {
   private static Set<Path> allJars;
 
   @RegisterExtension
-  public SonarLintLogTester logTester = new SonarLintLogTester();
+  SonarLintLogTester logTester = new SonarLintLogTester();
 
   @BeforeAll
-  public static void prepare() throws IOException {
+  static void prepare() throws IOException {
     Path dir = Paths.get("target/plugins/");
     allJars = Files.list(dir)
       .filter(x -> x.getFileName().toString().endsWith(".jar"))

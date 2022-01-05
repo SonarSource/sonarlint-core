@@ -49,7 +49,7 @@ class ConnectedStorageProblemsMediumTests {
   private ConnectedSonarLintEngine sonarlint;
 
   @AfterEach
-  public void stop() {
+  void stop() {
     sonarlint.stop(true);
   }
 

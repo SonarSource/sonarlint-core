@@ -58,7 +58,7 @@ class NotificationCheckerTests {
   private NotificationChecker underTest;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     underTest = new NotificationChecker(mockServer.serverApiHelper());
   }
 

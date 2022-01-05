@@ -35,7 +35,7 @@ import static org.mockito.Mockito.when;
   private Trackable trackable;
 
   @BeforeEach
-  public void prepare() {
+  void prepare() {
     when(serverIssue.lineHash()).thenReturn("blah");
     when(serverIssue.resolution()).thenReturn("non-empty");
     TextRange serverTextRange = new TextRange(22);

@@ -45,7 +45,7 @@ class ModuleHierarchyDownloaderTests {
   private ModuleHierarchyDownloader underTest;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     underTest = new ModuleHierarchyDownloader();
   }
 

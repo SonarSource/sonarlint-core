@@ -42,7 +42,7 @@ class HotspotApiTests {
   private HotspotApi underTest;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     underTest = new ServerApi(mockServer.endpointParams(), MockWebServerExtensionWithProtobuf.httpClient()).hotspot();
   }
 

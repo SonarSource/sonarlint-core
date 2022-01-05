@@ -59,7 +59,7 @@ class IssueDownloaderTests {
   private IssueDownloader underTest;
 
   @BeforeEach
-  public void prepare() {
+  void prepare() {
     underTest = new IssueDownloader(issueStorePaths);
   }
 

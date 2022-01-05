@@ -42,7 +42,7 @@ class ConnectedEmbeddedPluginMediumTests {
   private static ConnectedSonarLintEngineImpl sonarlint;
 
   @BeforeAll
-  public static void prepare(@TempDir Path slHome) throws Exception {
+  static void prepare(@TempDir Path slHome) throws Exception {
     var storage = newStorage(SERVER_ID)
       .withJSPlugin()
       .withJavaPlugin()
@@ -67,7 +67,7 @@ class ConnectedEmbeddedPluginMediumTests {
   }
 
   @AfterAll
-  public static void stop() {
+  static void stop() {
     if (sonarlint != null) {
       sonarlint.stop(true);
       sonarlint = null;

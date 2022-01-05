@@ -66,7 +66,7 @@ class NodeJsHelperTests {
   private final Map<Predicate<Command>, BiFunction<StreamConsumer, StreamConsumer, Integer>> registeredCommandAnswers = new LinkedHashMap<>();
 
   @BeforeEach
-  public void prepare() {
+  void prepare() {
     commandExecutor = mock(CommandExecutor.class);
     when(commandExecutor.execute(any(), any(), any(), anyLong())).thenAnswer(new Answer<Integer>() {
 

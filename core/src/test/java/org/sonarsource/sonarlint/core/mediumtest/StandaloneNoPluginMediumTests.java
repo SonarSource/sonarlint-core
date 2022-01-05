@@ -54,7 +54,7 @@ class StandaloneNoPluginMediumTests {
   private final Multimap<ClientLogOutput.Level, String> logs = LinkedListMultimap.create();
 
   @BeforeEach
-  public void prepare() throws IOException {
+  void prepare() throws IOException {
     ClientLogOutput logOutput = (msg, level) -> logs.put(level, msg);
     sonarlint = new StandaloneSonarLintEngineImpl(StandaloneGlobalConfiguration.builder()
       .setLogOutput(logOutput)
@@ -63,7 +63,7 @@ class StandaloneNoPluginMediumTests {
   }
 
   @AfterEach
-  public void stop() {
+  void stop() {
     sonarlint.stop();
   }
 

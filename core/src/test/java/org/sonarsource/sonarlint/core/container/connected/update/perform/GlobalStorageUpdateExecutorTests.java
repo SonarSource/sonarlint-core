@@ -61,7 +61,7 @@ class GlobalStorageUpdateExecutorTests {
   private Path destDir;
 
   @BeforeEach
-  public void setUp(@TempDir Path temp) throws IOException {
+  void setUp(@TempDir Path temp) throws IOException {
 
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"UP\"}");
     mockServer.addProtobufResponse("/api/settings/values.protobuf", Settings.ValuesWsResponse.newBuilder().build());

@@ -28,7 +28,7 @@ class PluginsMinVersionsTests {
   private PluginsMinVersions underTest;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     underTest = new PluginsMinVersions();
   }
 

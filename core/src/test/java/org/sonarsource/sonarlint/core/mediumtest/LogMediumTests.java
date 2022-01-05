@@ -55,7 +55,7 @@ class LogMediumTests {
   private Multimap<ClientLogOutput.Level, String> logs;
 
   @BeforeEach
-  public void prepare() throws IOException {
+  void prepare() throws IOException {
     logs = Multimaps.synchronizedListMultimap(LinkedListMultimap.create());
     StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginPath())
@@ -66,7 +66,7 @@ class LogMediumTests {
   }
 
   @AfterEach
-  public void stop() {
+  void stop() {
     sonarlint.stop();
   }
 

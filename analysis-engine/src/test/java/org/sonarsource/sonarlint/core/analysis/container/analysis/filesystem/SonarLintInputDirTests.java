@@ -33,7 +33,7 @@ class SonarLintInputDirTests {
   private Path path;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     path = Paths.get("file1").toAbsolutePath();
     inputDir = new SonarLintInputDir(path);
   }

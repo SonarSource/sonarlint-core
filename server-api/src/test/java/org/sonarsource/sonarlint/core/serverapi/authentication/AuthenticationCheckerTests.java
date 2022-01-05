@@ -35,7 +35,7 @@ class AuthenticationCheckerTests {
   private AuthenticationChecker underTest;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     underTest = new AuthenticationChecker(mockServer.serverApiHelper());
   }
 

@@ -59,7 +59,7 @@ class IssueStoreReaderTests {
   private final ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "");
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     IssueStoreFactory issueStoreFactory = mock(IssueStoreFactory.class);
     Path storagePath = mock(Path.class);
     when(projectStoragePaths.getServerIssuesPath(PROJECT_KEY)).thenReturn(storagePath);

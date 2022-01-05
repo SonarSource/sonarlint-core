@@ -62,7 +62,7 @@ class ConnectedExtraPluginMediumTests {
   private static File baseDir;
 
   @BeforeAll
-  public static void prepare(@TempDir Path slHome) throws Exception {
+  static void prepare(@TempDir Path slHome) throws Exception {
     var storage = newStorage(SERVER_ID)
       .withJSPlugin()
       .withProject("test-project")
@@ -88,7 +88,7 @@ class ConnectedExtraPluginMediumTests {
   }
 
   @AfterAll
-  public static void stop() {
+  static void stop() {
     if (sonarlint != null) {
       sonarlint.stop(true);
       sonarlint = null;

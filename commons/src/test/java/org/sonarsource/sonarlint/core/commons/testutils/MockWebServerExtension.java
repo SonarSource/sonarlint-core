@@ -49,7 +49,7 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
 
   private static final OkHttpClient SHARED_CLIENT = new OkHttpClient();
 
-  private mockwebserver3.MockWebServer server;
+  private MockWebServer server;
   protected final Map<String, MockResponse> responsesByPath = new HashMap<>();
 
   @Override

@@ -46,7 +46,7 @@ class ServerNotificationsRegistryTests {
   private Timer timer;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     timerTask = mock(NotificationTimerTask.class);
     config = mock(NotificationConfiguration.class);
     timer = mock(Timer.class);

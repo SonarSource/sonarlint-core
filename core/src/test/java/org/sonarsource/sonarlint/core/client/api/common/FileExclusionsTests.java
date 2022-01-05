@@ -31,7 +31,7 @@ class FileExclusionsTests {
   FileExclusions fileExclusions;
 
   @BeforeEach
-  public void before() {
+  void before() {
     Set<String> glob = Collections.singleton("**/*.js");
     Set<String> files = Collections.singleton(new File("dir/file.java").getAbsolutePath());
     Set<String> dir = Collections.singleton("src");

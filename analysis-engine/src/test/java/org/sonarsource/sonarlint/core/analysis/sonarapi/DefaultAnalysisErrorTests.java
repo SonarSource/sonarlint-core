@@ -39,7 +39,7 @@ class DefaultAnalysisErrorTests {
   private TextPointer textPointer;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     inputFile = new TestInputFileBuilder("src/File.java").build();
     textPointer = new DefaultTextPointer(5, 2);
     storage = mock(SensorStorage.class);

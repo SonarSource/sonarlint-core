@@ -37,7 +37,7 @@ class ProjectBranchesApiTest {
   private ProjectBranchesApi underTest;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     underTest = new ProjectBranchesApi(mockServer.serverApiHelper());
   }
 

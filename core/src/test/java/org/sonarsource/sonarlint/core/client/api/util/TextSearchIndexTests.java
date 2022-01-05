@@ -29,7 +29,7 @@ class TextSearchIndexTests {
   private TextSearchIndex<String> index;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     index = new TextSearchIndex<>();
   }
 

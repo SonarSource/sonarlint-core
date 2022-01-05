@@ -57,7 +57,7 @@ class IssueExclusionsRegexpScannerTests {
   private final FileMetadata fileMetadata = new FileMetadata();
 
   @BeforeEach
-  public void init() {
+  void init() {
     MockitoAnnotations.initMocks(this);
 
     blockPatterns = Arrays.asList(new DoubleRegexpMatcher(Pattern.compile("// SONAR-OFF"), Pattern.compile("// SONAR-ON")),

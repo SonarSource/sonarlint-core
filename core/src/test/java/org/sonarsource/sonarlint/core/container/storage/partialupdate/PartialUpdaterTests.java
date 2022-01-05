@@ -60,7 +60,7 @@ class PartialUpdaterTests {
   private PartialUpdater updater;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     updater = new PartialUpdater(issueStoreFactory, downloader, projectStoragePaths, issueStorePaths);
     when(issueStoreFactory.apply(any(Path.class))).thenReturn(issueStore);
   }

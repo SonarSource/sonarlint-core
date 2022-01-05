@@ -66,7 +66,7 @@ class AnalysisExtensionInstallerTests {
   private ComponentContainer container;
 
   @BeforeEach
-  public void prepare() {
+  void prepare() {
     pluginRepository = mock(PluginInstancesRepository.class);
     container = mock(ComponentContainer.class);
     underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, EMPTY_CONFIG, AnalysisEngineConfiguration.builder().build());

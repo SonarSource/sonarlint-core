@@ -50,7 +50,7 @@ class TelemetryHttpClientTests {
   private final TelemetryClientAttributesProvider attributes = mock(TelemetryClientAttributesProvider.class);
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     when(attributes.nodeVersion()).thenReturn(Optional.empty());
     underTest = new TelemetryHttpClient("product", "version", "ideversion", MockWebServerExtension.httpClient(), mockServer.url("/"));
   }

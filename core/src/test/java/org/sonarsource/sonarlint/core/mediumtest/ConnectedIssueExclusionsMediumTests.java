@@ -61,7 +61,7 @@ class ConnectedIssueExclusionsMediumTests {
   private static ProjectStorageFixture.ProjectStorage projectStorage;
 
   @BeforeAll
-  public static void prepare(@TempDir Path slHome) throws Exception {
+  static void prepare(@TempDir Path slHome) throws Exception {
     var storage = newStorage(SERVER_ID)
       .withJavaPlugin()
       .withProject("test-project")
@@ -84,7 +84,7 @@ class ConnectedIssueExclusionsMediumTests {
   }
 
   @AfterAll
-  public static void stop() {
+  static void stop() {
     if (sonarlint != null) {
       sonarlint.stop(true);
       sonarlint = null;
@@ -92,7 +92,7 @@ class ConnectedIssueExclusionsMediumTests {
   }
 
   @BeforeEach
-  public void restoreConfig() {
+  void restoreConfig() {
     storeProjectSettings(Map.of());
   }
 

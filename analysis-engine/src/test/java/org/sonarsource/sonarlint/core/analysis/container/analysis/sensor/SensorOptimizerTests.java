@@ -50,7 +50,7 @@ class SensorOptimizerTests {
   private final InputFileIndex inputFileCache = new InputFileIndex();
 
   @BeforeEach
-  public void prepare() throws Exception {
+  void prepare() throws Exception {
     fs = new SonarLintFileSystem(mock(AnalysisConfiguration.class), inputFileCache);
     settings = new MapSettings(Map.of());
     optimizer = new SensorOptimizer(fs, mock(ActiveRules.class), settings.asConfig());

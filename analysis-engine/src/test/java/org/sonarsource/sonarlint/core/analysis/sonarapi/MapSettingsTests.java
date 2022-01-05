@@ -60,7 +60,7 @@ class MapSettingsTests {
   }
 
   @BeforeEach
-  public void init_definitions() {
+  void init_definitions() {
     definitions = new PropertyDefinitions(System2.INSTANCE);
     definitions.addComponent(Init.class);
   }

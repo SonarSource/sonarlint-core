@@ -59,7 +59,7 @@ class DefaultSonarLintIssueTests {
   private Path baseDir;
 
   @BeforeEach
-  public void prepare() throws IOException {
+  void prepare() throws IOException {
     project = new SonarLintInputProject();
   }
 

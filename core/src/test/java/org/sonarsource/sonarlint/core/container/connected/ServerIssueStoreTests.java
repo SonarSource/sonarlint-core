@@ -46,7 +46,7 @@ class ServerIssueStoreTests {
   private ServerIssueStore store;
 
   @BeforeEach
-  public void start() throws IOException {
+  void start() throws IOException {
     store = new ServerIssueStore(root);
   }
 

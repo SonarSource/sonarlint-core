@@ -42,7 +42,7 @@ import static org.mockito.Mockito.when;
   private final RuleKey ruleKey = RuleKey.of("foo", "bar");
 
   @BeforeEach
-  public void prepare() {
+  void prepare() {
     component = mock(SonarLintInputFile.class);
     when(issue.getComponent()).thenReturn(component);
     when(issue.ruleKey()).thenReturn(ruleKey);

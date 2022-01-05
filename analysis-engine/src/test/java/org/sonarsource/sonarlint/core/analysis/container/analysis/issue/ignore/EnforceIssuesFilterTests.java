@@ -50,7 +50,7 @@ class EnforceIssuesFilterTests {
   private IssueFilterChain chain;
 
   @BeforeEach
-  public void init() {
+  void init() {
     exclusionPatternInitializer = mock(IssueInclusionPatternInitializer.class);
     issue = mock(DefaultFilterableIssue.class);
     chain = mock(IssueFilterChain.class);
