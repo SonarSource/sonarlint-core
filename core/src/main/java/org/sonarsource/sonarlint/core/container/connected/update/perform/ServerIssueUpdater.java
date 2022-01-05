@@ -50,7 +50,6 @@ public class ServerIssueUpdater {
   }
 
   public void updateServerIssues(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, Path path, boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressWrapper progress) {
-
     List<Sonarlint.ServerIssue> issues = issueDownloader.download(projectKey, projectConfiguration, fetchTaintVulnerabilities, branchName, progress);
     issueStoreFactory.apply(path).save(issues);
   }
