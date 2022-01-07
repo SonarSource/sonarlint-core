@@ -138,6 +138,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     storageSynchronizer = new LocalStorageSynchronizer(globalConfig.getEnabledLanguages(), globalConfig.getEmbeddedPluginPathsByKey().keySet(), pluginsStorage, projectStorage);
     globalStorageUpdateExecutor = new GlobalStorageUpdateExecutor(globalStores.getGlobalStorage());
     projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(projectStoragePaths);
+    pluginsStorage.cleanUp();
     start();
   }
 

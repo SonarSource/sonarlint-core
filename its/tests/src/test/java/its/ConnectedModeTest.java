@@ -20,10 +20,8 @@
 package its;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Parser;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.MavenBuild;
-import com.sonar.orchestrator.http.HttpResponse;
 import com.sonar.orchestrator.locator.FileLocation;
 import java.io.File;
 import java.io.IOException;
@@ -35,7 +33,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
@@ -47,27 +44,22 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarqube.ws.Hotspots;
-import org.sonarqube.ws.Qualityprofiles.SearchWsResponse;
 import org.sonarqube.ws.Qualityprofiles.SearchWsResponse.QualityProfile;
 import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsRequest;
-import org.sonarqube.ws.client.WsResponse;
 import org.sonarqube.ws.client.qualityprofiles.SearchRequest;
 import org.sonarqube.ws.client.settings.ResetRequest;
 import org.sonarqube.ws.client.settings.SetRequest;
 import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
-import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.TextRange;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.GetSecurityHotspotRequestParams;
-import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 
 import static its.tools.ItUtils.SONAR_VERSION;
@@ -78,6 +70,7 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+import static org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths.encodeForFs;
 
 public class ConnectedModeTest extends AbstractConnectedTest {
 
@@ -132,6 +125,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   private static WsClient adminWsClient;
   private static Path sonarUserHome;
+  private ConnectedGlobalConfiguration globalConfig;
 
   private ConnectedSonarLintEngine engine;
   private List<String> logs;
@@ -189,7 +183,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     var nodeJsHelper = new NodeJsHelper();
     nodeJsHelper.detect(null);
 
-    engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
+    globalConfig = ConnectedGlobalConfiguration.builder()
       .setConnectionId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
       .addEnabledLanguage(Language.JAVA)
@@ -208,7 +202,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       })
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
       .setExtraProperties(globalProps)
-      .build());
+      .build();
+    engine = new ConnectedSonarLintEngineImpl(globalConfig);
     assertThat(engine.getGlobalStorageStatus()).isNull();
 
     // This profile is altered in a test
@@ -317,7 +312,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       assertThat(response.code()).isEqualTo(200);
     }
 
-    assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey("S106"), PROJECT_KEY_JAVA).get().getExtendedDescription()).isEqualTo(extendedDescription);
+    assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey("S106"), PROJECT_KEY_JAVA).get().getExtendedDescription())
+      .isEqualTo(extendedDescription);
   }
 
   @Test
@@ -546,7 +542,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
       assertThat(issueListener.getIssues()).hasSize(3);
 
-      assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey("myrule"), PROJECT_KEY_JAVA).get().getHtmlDescription()).contains("my_rule_description");
+      assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey("myrule"), PROJECT_KEY_JAVA).get().getHtmlDescription())
+        .contains("my_rule_description");
 
     } finally {
 
@@ -655,6 +652,20 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_XML, PROJECT_KEY_XML, "src/foo.xml"), issueListener, (m, l) -> System.out.println(m), null);
     assertThat(issueListener.getIssues()).hasSize(1);
+  }
+
+  @Test
+  public void cleanOldPlugins() throws IOException {
+    updateGlobal();
+    updateProject(PROJECT_KEY_JAVA);
+    var pluginsFolderPath = globalConfig.getStorageRoot().resolve(encodeForFs("orchestrator")).resolve("plugins");
+    var newFile = pluginsFolderPath.resolve("new_file");
+    Files.createFile(newFile);
+    engine.stop(false);
+
+    engine = new ConnectedSonarLintEngineImpl(globalConfig);
+
+    assertThat(newFile).doesNotExist();
   }
 
   private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {

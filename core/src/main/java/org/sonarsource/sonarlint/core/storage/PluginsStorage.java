@@ -19,15 +19,20 @@
  */
 package org.sonarsource.sonarlint.core.storage;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.RWLock;
@@ -35,6 +40,7 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 
 public class PluginsStorage {
+  private static final Logger LOG = Loggers.get(PluginsStorage.class);
   public static final String PLUGIN_REFERENCES_PB = "plugin_references.pb";
 
   private final Path rootPath;
@@ -97,5 +103,23 @@ public class PluginsStorage {
       plugin.getKey(),
       plugin.getHash(),
       rootPath.resolve(plugin.getFilename()));
+  }
+
+  public void cleanUp() {
+    getUnknownFiles()
+      .forEach(FileUtils::deleteQuietly);
+  }
+
+  private List<File> getUnknownFiles() {
+    var knownPluginsPaths = getStoredPlugins().stream().map(StoredPlugin::getJarPath).collect(Collectors.toSet());
+    try (Stream<Path> pathsInDir = Files.list(rootPath)) {
+      return pathsInDir.filter(p -> !p.equals(getPluginsFilePath()))
+        .filter(p -> !knownPluginsPaths.contains(p))
+        .map(Path::toFile)
+        .collect(Collectors.toList());
+    } catch (Exception e) {
+      LOG.error("Cannot list files in '{}'", rootPath, e);
+      return Collections.emptyList();
+    }
   }
 }
