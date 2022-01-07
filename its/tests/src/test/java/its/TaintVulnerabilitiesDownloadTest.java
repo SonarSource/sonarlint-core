@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - ITs - Tests
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,7 +23,7 @@
 Optimisations:
   - allow to fetch taint vulnerabilities separately: new parameter repoKeys=javasecurity,pythonsecurity,...
   - only fetch secondary locations for hotspots and taint vulnerabilities: new parameter  * SonarLint Core - ITs - Tests
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
