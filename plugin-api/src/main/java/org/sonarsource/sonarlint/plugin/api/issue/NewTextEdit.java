@@ -37,6 +37,9 @@ public interface NewTextEdit {
    * Prior to 6.4, line returns had to be represented with the '\n' character.
    * From 6.4 on, analyzers can use any EOL character they see fit, SonarLint takes care of adapting this to the one
    * expected by the IDE.
+   * To remove code, use the empty string ("").
+   * When removing some code from the source file, make sure that no lines consisting only of whitespaces remain.
+   * If after the code is removed a non-whitespace character remains, place it at the same indentation level as the removed code.
    * @param newText the replacement text.
    * @return the modified edit
    */
