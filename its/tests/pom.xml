@@ -8,6 +8,12 @@
   <artifactId>sonarlint-core-its-tests</artifactId>
   <name>SonarLint Core - ITs - Tests</name>
   <description>Integration tests</description>
+
+  <properties>
+    <junit.version>4.13.1</junit.version>
+  </properties>
+
+
   <dependencies>
     <dependency>
       <groupId>${project.groupId}</groupId>
@@ -33,8 +39,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-engine</artifactId>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
