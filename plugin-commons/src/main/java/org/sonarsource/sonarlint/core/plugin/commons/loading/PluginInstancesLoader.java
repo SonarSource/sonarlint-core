@@ -160,11 +160,9 @@ public class PluginInstancesLoader {
         try {
           instancesByPluginKey.put(pluginKey, (Plugin) classLoader.loadClass(mainClass).getDeclaredConstructor().newInstance());
         } catch (UnsupportedClassVersionError e) {
-          throw new IllegalStateException(String.format("The plugin [%s] does not support Java %s",
-            pluginKey, SystemUtils.JAVA_RUNTIME_VERSION), e);
+          LOG.error("The plugin [{}] does not support Java {}", pluginKey, SystemUtils.JAVA_RUNTIME_VERSION, e);
         } catch (Throwable e) {
-          throw new IllegalStateException(String.format(
-            "Fail to instantiate class [%s] of plugin [%s]", mainClass, pluginKey), e);
+          LOG.error("Fail to instantiate class [{}] of plugin [{}]", mainClass, pluginKey, e);
         }
       }
     }

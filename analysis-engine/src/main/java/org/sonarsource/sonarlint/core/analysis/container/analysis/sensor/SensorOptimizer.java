@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.analysis.sensor;
 
-import org.sonar.api.batch.fs.FilePredicate;
 import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.config.Configuration;

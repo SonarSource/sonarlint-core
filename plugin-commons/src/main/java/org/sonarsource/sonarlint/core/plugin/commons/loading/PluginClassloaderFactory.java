@@ -28,6 +28,7 @@ import java.util.Map;
 import org.sonar.classloader.ClassloaderBuilder;
 import org.sonar.classloader.Mask;
 import org.sonarsource.api.sonarlint.SonarLintSide;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 import static org.sonar.classloader.ClassloaderBuilder.LoadingOrder.PARENT_FIRST;
 
@@ -43,6 +44,7 @@ import static org.sonar.classloader.ClassloaderBuilder.LoadingOrder.PARENT_FIRST
  */
 @SonarLintSide
 public class PluginClassloaderFactory {
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   // underscores are used to not conflict with plugin keys (if someday a plugin key is "api")
   private static final String API_CLASSLOADER_KEY = "_api_";
@@ -90,9 +92,10 @@ public class PluginClassloaderFactory {
     for (PluginClassLoaderDef def : defs) {
       var classloader = classloadersByBasePluginKey.get(def.getBasePluginKey());
       if (classloader == null) {
-        throw new IllegalStateException(String.format("Fail to create classloader for plugin [%s]", def.getBasePluginKey()));
+        LOG.error("Fail to create classloader for plugin '{}'", def.getBasePluginKey());
+      } else {
+        result.put(def, classloader);
       }
-      result.put(def, classloader);
     }
     return result;
   }

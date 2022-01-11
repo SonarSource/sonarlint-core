@@ -20,12 +20,25 @@
 package org.sonarsource.sonarlint.core.analysis.container.analysis.sensor;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonar.api.batch.sensor.Sensor;
+import org.sonar.api.batch.sensor.SensorContext;
+import org.sonar.api.batch.sensor.SensorDescriptor;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class SensorsExecutorTests {
 
-  private class MyClass {
+  @RegisterExtension
+  SonarLintLogTester logTester = new SonarLintLogTester();
+
+  private static class MyClass {
     @Override
     public String toString() {
       return null;
@@ -46,6 +59,29 @@ class SensorsExecutorTests {
     assertThat(SensorsExecutor.describe(withToString)).isEqualTo(("desc"));
     assertThat(SensorsExecutor.describe(withoutToString)).isEqualTo("java.lang.Object");
     assertThat(SensorsExecutor.describe(new MyClass())).endsWith("MyClass");
+  }
+
+  @Test
+  void testThrowingSensorShouldBeLogged() {
+    var sensorOptimizer = mock(SensorOptimizer.class);
+    when(sensorOptimizer.shouldExecute(any())).thenReturn(true);
+    var executor = new SensorsExecutor(null, sensorOptimizer, new ProgressMonitor(null), new Sensor[] {new ThrowingSensor()});
+
+    executor.execute();
+
+    assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).contains("Error executing sensor: 'Throwing sensor'");
+  }
+
+  private static class ThrowingSensor implements Sensor {
+    @Override
+    public void describe(SensorDescriptor descriptor) {
+      descriptor.name("Throwing sensor");
+    }
+
+    @Override
+    public void execute(SensorContext context) {
+      throw new Error();
+    }
   }
 
 }

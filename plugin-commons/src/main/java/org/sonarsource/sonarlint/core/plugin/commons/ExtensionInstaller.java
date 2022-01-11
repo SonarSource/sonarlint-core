@@ -24,11 +24,13 @@ import java.util.Map.Entry;
 import java.util.function.BiPredicate;
 import org.sonar.api.Plugin;
 import org.sonar.api.config.Configuration;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.PluginContextImpl;
 import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
 
 public class ExtensionInstaller {
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final SonarLintRuntime sonarRuntime;
   private final Configuration bootConfiguration;
@@ -45,8 +47,13 @@ public class ExtensionInstaller {
         .setSonarRuntime(sonarRuntime)
         .setBootConfiguration(bootConfiguration)
         .build();
-      plugin.define(context);
-      loadExtensions(container, pluginInstanceEntry.getKey(), context, extensionFilter);
+      var pluginKey = pluginInstanceEntry.getKey();
+      try {
+        plugin.define(context);
+        loadExtensions(container, pluginKey, context, extensionFilter);
+      } catch (Throwable t) {
+        LOG.error("Error loading components for plugin '{}'", pluginKey, t);
+      }
     }
     return this;
   }
