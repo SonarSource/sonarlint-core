@@ -37,7 +37,7 @@ import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 
 public class AnalysisEngine {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final Runnable NO_OP_TERMINATION = () -> {};
+  private static final Runnable CANCELING_TERMINATION = () -> {};
 
   private final GlobalAnalysisContainer globalAnalysisContainer;
   private final BlockingQueue<AsyncCommand<?>> commandQueue = new LinkedBlockingQueue<>();
@@ -63,7 +63,7 @@ public class AnalysisEngine {
       SonarLintLogger.setTarget(logOutput);
       try {
         executingCommand.set(commandQueue.take());
-        if (termination.get() != null && termination.get() != NO_OP_TERMINATION) {
+        if (termination.get() == CANCELING_TERMINATION) {
           executingCommand.get().cancel();
           break;
         }
@@ -110,7 +110,7 @@ public class AnalysisEngine {
     if (!analysisThread.isAlive()) {
       return;
     }
-    if (!termination.compareAndSet(null, NO_OP_TERMINATION)) {
+    if (!termination.compareAndSet(null, CANCELING_TERMINATION)) {
       // already terminating
       return;
     }

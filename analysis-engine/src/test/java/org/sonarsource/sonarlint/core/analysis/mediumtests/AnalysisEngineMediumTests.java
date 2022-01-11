@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +33,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,23 +43,20 @@ import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
-import org.sonarsource.sonarlint.core.analysis.command.NotifyModuleEventCommand;
+import org.sonarsource.sonarlint.core.analysis.command.Command;
 import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
-import org.sonarsource.sonarlint.core.analysis.command.UnregisterModuleCommand;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
-import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
 import testutils.OnDiskTestClientInputFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.awaitility.Awaitility.await;
 
 class AnalysisEngineMediumTests {
   private AnalysisEngine analysisEngine;
@@ -129,82 +126,63 @@ class AnalysisEngineMediumTests {
       throw new RuntimeException("Kaboom");
     }, progressMonitor);
 
-    Awaitility.await().until(futureResult::isCompletedExceptionally);
+    await().until(futureResult::isCompletedExceptionally);
     futureResult.exceptionally(e -> assertThat(e)
       .isInstanceOf(RuntimeException.class)
       .hasMessage("Kaboom"));
   }
 
   @Test
-  void should_execute_pending_commands_when_gracefully_finishing(@TempDir Path baseDir) throws IOException {
-    var futureRegister = analysisEngine.post(new RegisterModuleCommand(new ClientModuleInfo("moduleKey", aModuleFileSystem())), progressMonitor);
-    var futureNotify = analysisEngine.post(new NotifyModuleEventCommand("moduleKey", ClientModuleFileEvent.of(preparePythonInputFile(baseDir, ""), ModuleFileEvent.Type.CREATED)),
-      progressMonitor);
-    var futureUnregister = analysisEngine.post(new UnregisterModuleCommand("moduleKey"), progressMonitor);
-    var futureLongCommand = analysisEngine.post((moduleRegistry, progressMonitor) -> {
-      try {
-        Thread.sleep(1000);
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      }
-      return "SUCCESS";
-    }, progressMonitor);
+  void should_execute_pending_commands_when_gracefully_finishing() {
+    var futureWaitCommand1 = analysisEngine.post(waitCommand(1000L), progressMonitor);
+    var futureWaitCommand2 = analysisEngine.post(waitCommand(1000L), progressMonitor);
+    var futureWaitCommand3 = analysisEngine.post(waitCommand(1000L), progressMonitor);
+
     analysisEngine.finishGracefully();
     engineStopped = true;
 
-    Awaitility.await().until(futureLongCommand::isDone);
-    assertThat(futureLongCommand).isCompletedWithValue("SUCCESS");
-    assertThat(futureRegister).isCompleted();
-    assertThat(futureNotify).isCompleted();
-    assertThat(futureUnregister).isCompleted();
+    await().until(futureWaitCommand3::isDone);
+    assertThat(futureWaitCommand3).isCompletedWithValue("SUCCESS");
+    assertThat(futureWaitCommand1).isCompleted();
+    assertThat(futureWaitCommand2).isCompleted();
   }
 
   @Test
-  void should_cancel_progress_monitor_of_executing_command_when_stopping() throws InterruptedException {
+  void should_cancel_progress_monitor_of_executing_command_when_stopping() {
     var futureLongCommand = analysisEngine.post((moduleRegistry, progressMonitor) -> {
-      int attempts = 0;
-      while (attempts < 10 && !progressMonitor.isCanceled()) {
-        try {
-          Thread.sleep(500);
-          attempts++;
-        } catch (InterruptedException e) {
-          // ignore
-        }
-      }
-      if (!progressMonitor.isCanceled()) {
-        fail("Progress monitor has not been canceled properly");
-      }
+      await().atMost(Duration.ofSeconds(5)).until(progressMonitor::isCanceled);
       return "CANCELED";
     }, progressMonitor);
     // let the engine run the command
-    Thread.sleep(500);
+    pause(500);
 
     analysisEngine.stop();
     engineStopped = true;
 
-    Awaitility.await().until(futureLongCommand::isDone);
+    await().until(futureLongCommand::isDone);
     assertThat(futureLongCommand).isCompletedWithValue("CANCELED");
   }
 
   @Test
-  void should_cancel_pending_commands_when_stopping() throws InterruptedException {
+  void should_cancel_pending_commands_when_stopping() {
     var futureLongCommand = analysisEngine.post((moduleRegistry, progressMonitor) -> {
-      while(!engineStopped);
+      while (!engineStopped)
+        ;
       return null;
     }, progressMonitor);
     var futureRegister = analysisEngine.post(new RegisterModuleCommand(new ClientModuleInfo("moduleKey", aModuleFileSystem())), progressMonitor);
     // let the engine run the first command
-    Thread.sleep(500);
+    pause(500);
 
     analysisEngine.stop();
     engineStopped = true;
 
-    Awaitility.await().until(futureLongCommand::isDone);
+    await().until(futureLongCommand::isDone);
     assertThat(futureRegister).isCancelled();
   }
 
   @Test
-  void should_interrupt_executing_thread_when_stopping() throws InterruptedException {
+  void should_interrupt_executing_thread_when_stopping() {
     var futureLongCommand = analysisEngine.post((moduleRegistry, progressMonitor) -> {
       try {
         Thread.sleep(3000);
@@ -214,12 +192,12 @@ class AnalysisEngineMediumTests {
       return "FINISHED";
     }, progressMonitor);
     // let the engine run the first command
-    Thread.sleep(500);
+    pause(500);
 
     analysisEngine.stop();
     engineStopped = true;
 
-    Awaitility.await().until(futureLongCommand::isDone);
+    await().until(futureLongCommand::isDone);
     assertThat(futureLongCommand).isCompletedWithValue("INTERRUPTED");
   }
 
@@ -255,5 +233,20 @@ class AnalysisEngineMediumTests {
         return Stream.of();
       }
     };
+  }
+
+  private static Command<String> waitCommand(long period) {
+    return (moduleRegistry, progressMonitor) -> {
+      pause(period);
+      return "SUCCESS";
+    };
+  }
+
+  private static void pause(long period) {
+    try {
+      Thread.sleep(period);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
   }
 }
