@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.container.storage.partialupdate;
 
 import java.nio.file.Path;
 import java.util.List;
+import javax.annotation.Nullable;
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
@@ -51,7 +52,7 @@ public class PartialUpdater {
   }
 
   public void updateFileIssues(ProjectBinding projectBinding, Sonarlint.ProjectConfiguration projectConfiguration, String ideFilePath, boolean fetchTaintVulnerabilities,
-    ProgressWrapper progress) {
+     @Nullable String branchName, ProgressWrapper progress) {
     Path serverIssuesPath = projectStoragePaths.getServerIssuesPath(projectBinding.projectKey());
     IssueStore issueStore = issueStoreFactory.apply(serverIssuesPath);
     String fileKey = issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, ideFilePath);
@@ -60,7 +61,7 @@ public class PartialUpdater {
     }
     List<ServerIssue> issues;
     try {
-      issues = downloader.download(fileKey, projectConfiguration, fetchTaintVulnerabilities, null, progress);
+      issues = downloader.download(fileKey, projectConfiguration, fetchTaintVulnerabilities, branchName, progress);
     } catch (Exception e) {
       // null as cause so that it doesn't get wrapped
       throw new DownloadException("Failed to update file issues: " + e.getMessage(), null);
@@ -68,7 +69,7 @@ public class PartialUpdater {
     issueStore.save(issues);
   }
 
-  public void updateFileIssues(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
-    new ServerIssueUpdater(projectStoragePaths, downloader, issueStoreFactory, tempFolder).update(projectKey, projectConfiguration, fetchTaintVulnerabilities, progress);
+  public void updateFileIssues(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressWrapper progress) {
+    new ServerIssueUpdater(projectStoragePaths, downloader, issueStoreFactory, tempFolder).update(projectKey, projectConfiguration, fetchTaintVulnerabilities, branchName, progress);
   }
 }

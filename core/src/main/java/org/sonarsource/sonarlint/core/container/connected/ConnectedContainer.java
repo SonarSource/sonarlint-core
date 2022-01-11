@@ -133,11 +133,11 @@ public class ConnectedContainer extends ComponentContainer {
     return getComponentByType(GlobalStorageUpdateExecutor.class).update(progress);
   }
 
-  public void updateProject(String projectKey, boolean fetchTaintVulnerabilities, @Nullable GlobalStorageStatus globalStorageStatus, ProgressWrapper progress) {
+  public void updateProject(String projectKey, boolean fetchTaintVulnerabilities, @Nullable String branchName, @Nullable GlobalStorageStatus globalStorageStatus, ProgressWrapper progress) {
     if (globalStorageStatus == null) {
       throw new GlobalStorageUpdateRequiredException(globalConfig.getConnectionId());
     }
-    getComponentByType(ProjectStorageUpdateExecutor.class).update(projectKey, fetchTaintVulnerabilities, progress);
+    getComponentByType(ProjectStorageUpdateExecutor.class).update(projectKey, fetchTaintVulnerabilities, branchName, progress);
   }
 
   public StorageUpdateCheckResult checkForUpdate(GlobalSettingsStore globalSettingsStore, QualityProfileStore qualityProfileStore, ProgressWrapper progress) {

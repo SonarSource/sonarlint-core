@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Server API
  * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,28 +17,27 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.container.connected.update;
+package org.sonarsource.sonarlint.core.serverapi.branches;
 
-import java.util.Collection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class ProjectBranchesDownloaderTest {
+class ProjectBranchesApiTest {
 
   @RegisterExtension
   static MockWebServerExtension mockServer = new MockWebServerExtension();
 
   private final static String PROJECT_KEY = "project1";
 
-  private ProjectBranchesDownloader underTest;
+  private ProjectBranchesApi underTest;
 
   @BeforeEach
   public void setUp() {
-    underTest = new ProjectBranchesDownloader(mockServer.serverApiHelper());
+    underTest = new ProjectBranchesApi(mockServer.serverApiHelper());
   }
 
   @Test
@@ -69,21 +68,56 @@ class ProjectBranchesDownloaderTest {
         "  ]\n" +
         "}");
 
-    Collection<String> branches = underTest.getBranches(PROJECT_KEY);
+    var branches = underTest.getAllBranches(PROJECT_KEY);
 
-    assertThat(branches).hasSize(2);
+    assertThat(branches).hasSize(2)
+      .contains(new ServerBranch("master", true))
+      .contains(new ServerBranch("feature/foo", false));
   }
 
   @Test
-  void returnEmptyListOnMalformedResponse() {
+  void returnEmptyListOnMalformedResponseNoBranchName() {
     mockServer.addStringResponse("/api/project_branches/list?project=project1",
       "{\n" +
         "  \"branches\": [\n" +
-        "    { }" +
+        " {\n" +
+        "      \"isMain\": false,\n" +
+        "    }\n" +
         "  ]\n" +
         "}");
 
-    Collection<String> branches = underTest.getBranches(PROJECT_KEY);
+    var branches = underTest.getAllBranches(PROJECT_KEY);
+
+    assertThat(branches).isEmpty();
+  }
+
+  @Test
+  void returnEmptyListOnMalformedResponseNoIsName() {
+    mockServer.addStringResponse("/api/project_branches/list?project=project1",
+      "{\n" +
+        "  \"branches\": [\n" +
+        " {\n" +
+        "      \"name\": \"master\",\n" +
+        "    }\n" +
+        "  ]\n" +
+        "}");
+
+    var branches = underTest.getAllBranches(PROJECT_KEY);
+
+    assertThat(branches).isEmpty();
+  }
+
+
+  @Test
+  void returnEmptyListOnMalformedResponseNoFields() {
+    mockServer.addStringResponse("/api/project_branches/list?project=project1",
+      "{\n" +
+        "  \"branches\": [\n" +
+        " { }\n" +
+        "  ]\n" +
+        "}");
+
+    var branches = underTest.getAllBranches(PROJECT_KEY);
 
     assertThat(branches).isEmpty();
   }

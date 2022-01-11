@@ -148,7 +148,7 @@ class ProjectStorageUpdateExecutorTests {
     qualityProfileStore.store(List.of(aQualityProfile("java-empty-74333")));
     when(projectStoragePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(storageDir);
 
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.update(MODULE_KEY_WITH_BRANCH, false, PROGRESS));
+    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.update(MODULE_KEY_WITH_BRANCH, false, null, PROGRESS));
     assertThat(thrown)
       .hasMessage("Unable to parse WS response: Protocol message tag had invalid wire type.")
       .hasCauseInstanceOf(InvalidProtocolBufferException.class);
@@ -171,7 +171,7 @@ class ProjectStorageUpdateExecutorTests {
       aQualityProfile("xoo2-basic-34035")));
     when(projectStoragePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(storageDir);
 
-    underTest.update(MODULE_KEY_WITH_BRANCH, false, PROGRESS);
+    underTest.update(MODULE_KEY_WITH_BRANCH, false, null, PROGRESS);
 
     ProjectConfiguration projectConfiguration = ProtobufUtil.readFile(storageDir.resolve(ProjectStoragePaths.PROJECT_CONFIGURATION_PB), ProjectConfiguration.parser());
     assertThat(projectConfiguration.getQprofilePerLanguageMap()).containsOnly(
@@ -200,7 +200,7 @@ class ProjectStorageUpdateExecutorTests {
       aQualityProfile("xoo2-basic-34035")));
     when(projectStoragePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(storageDir);
 
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.update(MODULE_KEY_WITH_BRANCH, false, PROGRESS));
+    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.update(MODULE_KEY_WITH_BRANCH, false, null, PROGRESS));
     assertThat(thrown).hasMessageContaining("is associated to quality profile 'js-sonar-way-60746' that is not in the storage");
   }
 
@@ -219,6 +219,7 @@ class ProjectStorageUpdateExecutorTests {
     qualityProfileStore.store(Collections.emptyList());
 
     when(projectStoragePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(storageDir);
+    //when(serverIssueUpdater.updateServerIssues(any(String.class), any(Sonarlint.ProjectConfiguration.class), any(Path.class), any(Boolean.class), any(String.class), any(ProgressWrapper.class)))
 
     ServerIssue fileIssue1 = ServerIssue.newBuilder()
       .setPrimaryLocation(Location.newBuilder().setPath("some/path"))
@@ -238,9 +239,9 @@ class ProjectStorageUpdateExecutorTests {
 
     underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, tempFolder, projectConfigurationDownloader,
       projectFileListDownloader, serverIssueUpdater, qualityProfileStore);
-    underTest.update(MODULE_KEY_WITH_BRANCH, false, PROGRESS);
+    underTest.update(MODULE_KEY_WITH_BRANCH, false, null, PROGRESS);
 
-    verify(serverIssueUpdater).updateServerIssues(eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), any(Path.class), eq(false), any(ProgressWrapper.class));
+    verify(serverIssueUpdater).updateServerIssues(eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), any(Path.class), eq(false), eq(null), any(ProgressWrapper.class));
   }
 
   @ParameterizedTest(name = "organizationKey=[{0}]")

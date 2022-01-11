@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -60,6 +61,8 @@ import org.sonarsource.sonarlint.core.container.storage.StorageContainerHandler;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.branches.ProjectBranchesApi;
+import org.sonarsource.sonarlint.core.serverapi.branches.ServerBranch;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
@@ -252,19 +255,24 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
 
   @Override
   public List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
-    boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor) {
+    boolean fetchTaintVulnerabilities, @Nullable String branchName, @Nullable ProgressMonitor monitor) {
     return withRwLock(() -> {
       checkUpdateStatus();
-      return getHandler().downloadServerIssues(endpoint, client, projectBinding, ideFilePath, fetchTaintVulnerabilities, new ProgressWrapper(monitor));
+      return getHandler().downloadServerIssues(endpoint, client, projectBinding, ideFilePath, fetchTaintVulnerabilities, branchName, new ProgressWrapper(monitor));
     });
   }
 
   @Override
-  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor) {
+  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable String branchName, @Nullable ProgressMonitor monitor) {
     withRwLock(() -> {
-      getHandler().downloadServerIssues(endpoint, client, projectKey, fetchTaintVulnerabilities, new ProgressWrapper(monitor));
+      getHandler().downloadServerIssues(endpoint, client, projectKey, fetchTaintVulnerabilities, branchName, new ProgressWrapper(monitor));
       return null;
     });
+  }
+
+  @Override
+  public Set<ServerBranch> getServerBranches(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding) {
+    return new ProjectBranchesApi(new ServerApiHelper(endpoint, client)).getAllBranches(projectBinding.projectKey());
   }
 
   @Override
@@ -273,7 +281,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
-  public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor) {
+  public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable String branchName, @Nullable ProgressMonitor monitor) {
     requireNonNull(endpoint);
     requireNonNull(projectKey);
     setLogging(null);
@@ -283,7 +291,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     try {
       changeState(State.UPDATING);
       connectedContainer.startComponents();
-      connectedContainer.updateProject(projectKey, fetchTaintVulnerabilities, globalStatusReader.read(), new ProgressWrapper(monitor));
+      connectedContainer.updateProject(projectKey, fetchTaintVulnerabilities, branchName, globalStatusReader.read(), new ProgressWrapper(monitor));
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     } finally {

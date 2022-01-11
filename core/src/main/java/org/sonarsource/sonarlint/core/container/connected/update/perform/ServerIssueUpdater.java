@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.container.connected.update.perform;
 
 import java.nio.file.Path;
 import java.util.List;
+import javax.annotation.Nullable;
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
@@ -42,14 +43,14 @@ public class ServerIssueUpdater {
     this.tempFolder = tempFolder;
   }
 
-  public void update(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
+  public void update(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressWrapper progress) {
     Path work = tempFolder.newDir().toPath();
     Path target = projectStoragePaths.getServerIssuesPath(projectKey);
-    FileUtils.replaceDir(path -> updateServerIssues(projectKey, projectConfiguration, path, fetchTaintVulnerabilities, progress), target, work);
+    FileUtils.replaceDir(path -> updateServerIssues(projectKey, projectConfiguration, path, fetchTaintVulnerabilities, branchName, progress), target, work);
   }
 
-  public void updateServerIssues(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, Path path, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
-    List<Sonarlint.ServerIssue> issues = issueDownloader.download(projectKey, projectConfiguration, fetchTaintVulnerabilities, null, progress);
+  public void updateServerIssues(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, Path path, boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressWrapper progress) {
+    List<Sonarlint.ServerIssue> issues = issueDownloader.download(projectKey, projectConfiguration, fetchTaintVulnerabilities, branchName, progress);
     issueStoreFactory.apply(path).save(issues);
   }
 

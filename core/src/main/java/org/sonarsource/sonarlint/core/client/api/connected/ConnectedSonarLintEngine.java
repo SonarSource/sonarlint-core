@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.CheckForNull;
@@ -35,10 +36,11 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.CanceledException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
-import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
+import org.sonarsource.sonarlint.core.serverapi.branches.ServerBranch;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
-import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
+import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
+import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 
 /**
  * Entry point for SonarLint.
@@ -80,7 +82,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
   /**
    * Gets locally stored server issues for a given file.
    *
-   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ProgressMonitor)})
+   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, boolean, String, ProgressMonitor)})
    * @param filePath       relative to the project.
    * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
    */
@@ -145,7 +147,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    *
    * @since 2.0
    */
-  void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor);
+  void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable String branchName, @Nullable ProgressMonitor monitor);
 
   /**
    * Check server to see if global storage need updates.
@@ -168,23 +170,33 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
   /**
    * Downloads, stores and returns server issues for a given file.
    *
-   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ProgressMonitor)})
+   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, boolean, String, ProgressMonitor)})
    * @param ideFilePath    relative to the project in the IDE.
    * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
    * @throws DownloadException if it fails to download
    * @since 2.5
    */
   List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
-    boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor);
+    boolean fetchTaintVulnerabilities, @Nullable String branchName, @Nullable ProgressMonitor monitor);
 
   /**
    * Downloads and stores server issues for a given project.
    *
    * @param endpoint from which to download issues
-   * @param projectKey   key of the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ProgressMonitor)})
+   * @param projectKey   key of the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, boolean, String, ProgressMonitor)})
    * @since 2.9
    */
-  void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor);
+  void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable String branchName, @Nullable ProgressMonitor monitor);
+
+
+  /**
+   * Downloads and returns server issues for a given project.
+   *
+   * @param endpoint from which to download issues
+   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, boolean, String, ProgressMonitor)})
+   * @return Set of branches analyzed for this project.
+   */
+  Set<ServerBranch> getServerBranches(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding);
 
   /**
    * Get a list of files that are excluded from analysis, out of the provided files.
