@@ -204,6 +204,17 @@ class AnalysisExtensionInstallerTests {
     assertThat(pluginInstance.clientPid).isEqualTo(FAKE_PID);
   }
 
+  @Test
+  void log_when_plugin_throws() {
+    when(pluginRepository.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new ThrowingPlugin()));
+
+    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, EMPTY_CONFIG, AnalysisEngineConfiguration.builder().build());
+
+    underTest.install(container, ContainerLifespan.ANALYSIS);
+
+    assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).contains("Error loading components for plugin 'foo'");
+  }
+
   private static class FakePlugin implements Plugin {
     private final Object component;
 
@@ -220,6 +231,14 @@ class AnalysisExtensionInstallerTests {
       context.addExtension(component);
       context.addExtension(FakeSensor.class);
       context.addExtension(TypeScriptSensor.class);
+    }
+
+  }
+
+  private static class ThrowingPlugin implements Plugin {
+    @Override
+    public void define(Context context) {
+      throw new Error();
     }
 
   }

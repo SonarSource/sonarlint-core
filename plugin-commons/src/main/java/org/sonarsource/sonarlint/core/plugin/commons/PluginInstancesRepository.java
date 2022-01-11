@@ -45,10 +45,7 @@ import static java.util.stream.Collectors.toList;
 public class PluginInstancesRepository implements AutoCloseable {
   private static final Logger LOG = Loggers.get(PluginInstancesRepository.class);
 
-  private final SonarPluginRequirementsChecker pluginRequirementChecker;
   private final PluginInstancesLoader pluginInstancesLoader;
-  private final Configuration configuration;
-  private final System2 system2;
 
   private Map<String, Plugin> pluginInstancesByKeys;
   private Map<String, PluginRequirementsCheckResult> pluginCheckResultByKeys;
@@ -70,14 +67,11 @@ public class PluginInstancesRepository implements AutoCloseable {
   }
 
   PluginInstancesRepository(Configuration configuration, SonarPluginRequirementsChecker pluginRequirementChecker, PluginInstancesLoader pluginInstancesLoader, System2 system2) {
-    this.configuration = configuration;
-    this.pluginRequirementChecker = pluginRequirementChecker;
     this.pluginInstancesLoader = pluginInstancesLoader;
-    this.system2 = system2;
-    init();
+    load(configuration, pluginRequirementChecker, system2);
   }
 
-  public void init() {
+  private void load(Configuration configuration, SonarPluginRequirementsChecker pluginRequirementChecker, System2 system2) {
     var javaSpecVersion = Objects.requireNonNull(system2.property("java.specification.version"), "Missing Java property 'java.specification.version'");
     pluginCheckResultByKeys = pluginRequirementChecker.checkRequirements(configuration.pluginJarLocations, configuration.enabledLanguages, Version.create(javaSpecVersion),
       configuration.nodeCurrentVersion);

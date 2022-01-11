@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem;
 
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;

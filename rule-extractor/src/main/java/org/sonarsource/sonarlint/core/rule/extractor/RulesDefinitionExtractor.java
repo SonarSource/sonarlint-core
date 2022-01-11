@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.rule.extractor;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import org.sonar.api.rules.RuleType;
 import org.sonar.api.server.rule.RulesDefinition;

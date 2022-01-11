@@ -75,8 +75,13 @@ public class SensorsExecutor {
   }
 
   private static void executeSensor(SensorContext context, Sensor sensor, DefaultSensorDescriptor descriptor) {
-    LOG.debug("Execute Sensor: {}", descriptor.name() != null ? descriptor.name() : describe(sensor));
-    sensor.execute(context);
+    var sensorName = descriptor.name() != null ? descriptor.name() : describe(sensor);
+    LOG.debug("Execute Sensor: {}", sensorName);
+    try {
+      sensor.execute(context);
+    } catch (Throwable t) {
+      LOG.error("Error executing sensor: '{}'", sensorName, t);
+    }
   }
 
   static String describe(Object o) {
