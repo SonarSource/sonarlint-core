@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
@@ -43,10 +44,10 @@ public class ServerIssueUpdater {
   }
 
   public void update(ServerApiHelper serverApiHelper, String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities,
-    ProgressMonitor progress) {
+    @Nullable String branchName, ProgressMonitor progress) {
     var target = projectStoragePaths.getServerIssuesPath(projectKey);
     var work = createTempDir(target);
-    FileUtils.replaceDir(path -> updateServerIssues(serverApiHelper, projectKey, projectConfiguration, path, fetchTaintVulnerabilities, progress), target, work);
+    FileUtils.replaceDir(path -> updateServerIssues(serverApiHelper, projectKey, projectConfiguration, path, fetchTaintVulnerabilities, branchName, progress), target, work);
   }
 
   private static Path createTempDir(Path target) {
@@ -58,8 +59,8 @@ public class ServerIssueUpdater {
   }
 
   public void updateServerIssues(ServerApiHelper serverApiHelper, String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, Path path,
-    boolean fetchTaintVulnerabilities, ProgressMonitor progress) {
-    var issues = issueDownloader.download(serverApiHelper, projectKey, projectConfiguration, fetchTaintVulnerabilities, null, progress);
+    boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressMonitor progress) {
+    var issues = issueDownloader.download(serverApiHelper, projectKey, projectConfiguration, fetchTaintVulnerabilities, branchName, progress);
     issueStoreFactory.apply(path).save(issues);
   }
 

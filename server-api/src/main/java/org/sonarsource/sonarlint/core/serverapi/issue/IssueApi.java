@@ -66,7 +66,7 @@ public class IssueApi {
   public DownloadIssuesResult downloadVulnerabilitiesForRules(String key, Set<String> ruleKeys, @Nullable String branchName, ProgressMonitor progress) {
     var searchUrl = new StringBuilder();
     searchUrl.append(getVulnerabilitiesUrl(key, ruleKeys));
-    searchUrl.append(getBranchParameter(branchName));
+    searchUrl.append(getUrlBranchParameter(branchName));
     serverApiHelper.getOrganizationKey()
       .ifPresent(org -> searchUrl.append("&organization=").append(UrlUtils.urlEncode(org)));
     List<Issue> result = new ArrayList<>();
@@ -110,7 +110,7 @@ public class IssueApi {
       + urlEncode(key) + "&rules=" + urlEncode(String.join(",", ruleKeys));
   }
 
-  private static String getBranchParameter(@Nullable String branchName) {
+  private static String getUrlBranchParameter(@Nullable String branchName) {
     if (branchName != null) {
       return "&branch=" + urlEncode(branchName);
     }
@@ -120,7 +120,7 @@ public class IssueApi {
   public List<ScannerInput.ServerIssue> downloadAllFromBatchIssues(String key, @Nullable String branchName) {
     var batchIssueUrl = new StringBuilder();
     batchIssueUrl.append(getBatchIssuesUrl(key));
-    batchIssueUrl.append(getBranchParameter(branchName));
+    batchIssueUrl.append(getUrlBranchParameter(branchName));
     return ServerApiHelper.processTimed(
       () -> serverApiHelper.rawGet(batchIssueUrl.toString()),
       response -> {

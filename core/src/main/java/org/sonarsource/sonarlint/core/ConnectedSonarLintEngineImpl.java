@@ -87,6 +87,8 @@ import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.branches.ProjectBranchesApi;
+import org.sonarsource.sonarlint.core.serverapi.branches.ServerBranch;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.storage.LocalStorageSynchronizer;
@@ -418,6 +420,11 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
+  public Set<ServerBranch> getServerBranches(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding) {
+    return new ProjectBranchesApi(new ServerApiHelper(endpoint, client)).getAllBranches(projectBinding.projectKey());
+  }
+
+  @Override
   public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String ideFilePath) {
     return issueStoreReader.getServerIssues(projectBinding, ideFilePath);
   }
@@ -429,13 +436,13 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
 
   @Override
   public List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
-    boolean fetchTaintVulnerabilities, @Nullable ClientProgressMonitor monitor) {
-    return downloadServerIssues(endpoint, client, projectBinding, ideFilePath, fetchTaintVulnerabilities, new ProgressMonitor(monitor));
+    boolean fetchTaintVulnerabilities, @Nullable String branchName, @Nullable ClientProgressMonitor monitor) {
+    return downloadServerIssues(endpoint, client, projectBinding, ideFilePath, fetchTaintVulnerabilities, branchName, new ProgressMonitor(monitor));
   }
 
   @Override
-  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable ClientProgressMonitor monitor) {
-    downloadServerIssues(endpoint, client, projectKey, fetchTaintVulnerabilities, new ProgressMonitor(monitor));
+  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable String branchName, @Nullable ClientProgressMonitor monitor) {
+    downloadServerIssues(endpoint, client, projectKey, fetchTaintVulnerabilities, branchName, new ProgressMonitor(monitor));
   }
 
   @Override
@@ -454,21 +461,22 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   private List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
-    boolean fetchTaintVulnerabilities, ProgressMonitor progress) {
+    boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressMonitor progress) {
     var updater = partialUpdaterFactory.create();
     var configuration = storageReader.readProjectConfig(projectBinding.projectKey());
-    updater.updateFileIssues(new ServerApiHelper(endpoint, client), projectBinding, configuration, ideFilePath, fetchTaintVulnerabilities, progress);
+    updater.updateFileIssues(new ServerApiHelper(endpoint, client), projectBinding, configuration, ideFilePath, fetchTaintVulnerabilities, branchName, progress);
     return getServerIssues(projectBinding, ideFilePath);
   }
 
-  private void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, ProgressMonitor progress) {
+  private void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey,
+    boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressMonitor progress) {
     var updater = partialUpdaterFactory.create();
     var configuration = storageReader.readProjectConfig(projectKey);
-    updater.updateFileIssues(new ServerApiHelper(endpoint, client), projectKey, configuration, fetchTaintVulnerabilities, progress);
+    updater.updateFileIssues(new ServerApiHelper(endpoint, client), projectKey, configuration, fetchTaintVulnerabilities, branchName, progress);
   }
 
   @Override
-  public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable ClientProgressMonitor monitor) {
+  public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable String branchName, @Nullable ClientProgressMonitor monitor) {
     requireNonNull(endpoint);
     requireNonNull(projectKey);
     setLogging(null);
@@ -477,7 +485,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     if (globalStorageStatus == null || globalStorageStatus.isStale()) {
       throw new StorageException("Missing or outdated storage for connection '" + globalConfig.getConnectionId() + "'");
     }
-    projectStorageUpdateExecutor.update(new ServerApiHelper(endpoint, client), projectKey, fetchTaintVulnerabilities, new ProgressMonitor(monitor));
+    projectStorageUpdateExecutor.update(new ServerApiHelper(endpoint, client), projectKey, fetchTaintVulnerabilities, branchName, new ProgressMonitor(monitor));
   }
 
   @Override

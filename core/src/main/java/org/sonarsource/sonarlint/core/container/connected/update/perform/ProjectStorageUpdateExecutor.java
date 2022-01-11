@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -61,7 +62,7 @@ public class ProjectStorageUpdateExecutor {
     this.serverIssueUpdater = serverIssueUpdater;
   }
 
-  public void update(ServerApiHelper serverApiHelper, String projectKey, boolean fetchTaintVulnerabilities, ProgressMonitor progress) {
+  public void update(ServerApiHelper serverApiHelper, String projectKey, boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressMonitor progress) {
     Path temp;
     try {
       temp = Files.createTempDirectory("sonarlint-global-storage");
@@ -71,7 +72,7 @@ public class ProjectStorageUpdateExecutor {
     try {
       FileUtils.replaceDir(dir -> {
         var projectConfiguration = updateConfiguration(serverApiHelper, projectKey, dir, progress);
-        updateServerIssues(serverApiHelper, projectKey, dir, projectConfiguration, fetchTaintVulnerabilities, progress);
+        updateServerIssues(serverApiHelper, projectKey, dir, projectConfiguration, fetchTaintVulnerabilities, branchName, progress);
         updateComponents(serverApiHelper, projectKey, dir, projectConfiguration, progress);
         updateStatus(dir);
       }, projectStoragePaths.getProjectStorageRoot(projectKey), temp);
@@ -105,9 +106,9 @@ public class ProjectStorageUpdateExecutor {
   }
 
   private void updateServerIssues(ServerApiHelper serverApiHelper, String projectKey, Path temp, ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities,
-    ProgressMonitor progress) {
+    @Nullable String branchName, ProgressMonitor progress) {
     var basedir = temp.resolve(ProjectStoragePaths.SERVER_ISSUES_DIR);
-    serverIssueUpdater.updateServerIssues(serverApiHelper, projectKey, projectConfiguration, basedir, fetchTaintVulnerabilities, progress);
+    serverIssueUpdater.updateServerIssues(serverApiHelper, projectKey, projectConfiguration, basedir, fetchTaintVulnerabilities, branchName, progress);
   }
 
   private static void updateStatus(Path temp) {

@@ -69,7 +69,7 @@ class ProjectBranchesApiTest {
         "  ]\n" +
         "}");
 
-    var branches = underTest.getAllBranchNames(PROJECT_KEY);
+    var branches = underTest.getAllBranches(PROJECT_KEY);
 
     assertThat(branches).hasSize(2);
   }
@@ -83,7 +83,7 @@ class ProjectBranchesApiTest {
         "  ]\n" +
         "}");
 
-    var branches = underTest.getAllBranchNames(PROJECT_KEY);
+    var branches = underTest.getAllBranches(PROJECT_KEY);
 
     assertThat(branches).isEmpty();
   }
