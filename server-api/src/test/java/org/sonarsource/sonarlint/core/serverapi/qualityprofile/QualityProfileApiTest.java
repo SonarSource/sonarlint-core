@@ -25,6 +25,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarqube.ws.Qualityprofiles;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.exception.ProjectNotFoundException;
+import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -42,6 +43,15 @@ class QualityProfileApiTest {
     mockServer.addResponse("/api/qualityprofiles/search.protobuf?project=projectKey", new MockResponse().setResponseCode(404));
 
     assertThrows(ProjectNotFoundException.class, () -> underTest.getQualityProfiles("projectKey"));
+  }
+
+  @Test
+  void should_throw_when_a_server_error_occurs() {
+    var underTest = new QualityProfileApi(mockServer.serverApiHelper());
+
+    mockServer.addResponse("/api/qualityprofiles/search.protobuf?project=projectKey", new MockResponse().setResponseCode(503));
+
+    assertThrows(ServerErrorException.class, () -> underTest.getQualityProfiles("projectKey"));
   }
 
   @Test

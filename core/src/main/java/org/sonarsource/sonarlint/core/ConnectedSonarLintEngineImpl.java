@@ -348,7 +348,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   @Override
   public CompletableFuture<ConnectedRuleDetails> getActiveRuleDetails(EndpointParams endpoint, HttpClient client, String ruleKey, @Nullable String projectKey) {
     var allRulesDefinitionsByKey = analysisContext.get().allRulesDefinitionsByKey;
-    var ruleDefFromPlugin = Optional.ofNullable(allRulesDefinitionsByKey.get(ruleKey)).orElse(null);
+    var ruleDefFromPlugin = allRulesDefinitionsByKey.get(ruleKey);
     if (ruleDefFromPlugin != null && (globalConfig.getExtraPluginsPathsByKey().containsKey(ruleDefFromPlugin.getLanguage().getPluginKey()) || projectKey == null)) {
       // if no project key, or for rules from extra plugins there will be no rules metadata in the storage
       return CompletableFuture.completedFuture(
