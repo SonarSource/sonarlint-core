@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,8 +34,7 @@ import org.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
+import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -283,7 +281,7 @@ class IssueDownloaderTests {
   void test_fail_other_codes() {
     mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, new MockResponse().setResponseCode(503));
 
-    var thrown = assertThrows(IllegalStateException.class,
+    var thrown = assertThrows(ServerErrorException.class,
       () -> underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, projectConfiguration, true, null, PROGRESS));
     assertThat(thrown).hasMessageContaining("Error 503");
   }

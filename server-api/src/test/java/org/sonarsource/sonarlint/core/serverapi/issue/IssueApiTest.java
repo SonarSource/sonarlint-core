@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.issue;
 
-import java.util.List;
 import java.util.Set;
 import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +28,7 @@ import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
+import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
@@ -91,7 +91,7 @@ class IssueApiTest {
 
     var throwable = catchThrowable(() -> underTest.downloadAllFromBatchIssues("keyyy", null));
 
-    assertThat(throwable).isInstanceOf(IllegalStateException.class);
+    assertThat(throwable).isInstanceOf(ServerErrorException.class);
   }
 
   @Test

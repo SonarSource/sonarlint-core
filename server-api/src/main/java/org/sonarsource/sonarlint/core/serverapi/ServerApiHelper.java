@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException;
+import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
 
 /**
  * Wrapper around HttpClient to avoid repetitive code, like support of pagination, and log timing of requests
@@ -125,6 +126,9 @@ public class ServerApiHelper {
       }
       if (failedResponse.code() == HttpURLConnection.HTTP_NOT_FOUND) {
         return new NotFoundException(formatHttpFailedResponse(failedResponse, null));
+      }
+      if (failedResponse.code() >= HttpURLConnection.HTTP_INTERNAL_ERROR) {
+        return new ServerErrorException(formatHttpFailedResponse(failedResponse, null));
       }
 
       var errorMsg = tryParseAsJsonError(failedResponse);

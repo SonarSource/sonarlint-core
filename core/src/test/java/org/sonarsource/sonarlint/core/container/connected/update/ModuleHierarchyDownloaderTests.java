@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
-import java.util.Map;
 import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +28,7 @@ import org.sonarqube.ws.Components.Component;
 import org.sonarqube.ws.Components.TreeWsResponse;
 import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -114,7 +114,7 @@ class ModuleHierarchyDownloaderTests {
   @Test
   void testIOException() {
     mockServer.addResponse("/api/components/tree.protobuf?qualifiers=BRC&component=testRoot&ps=500&p=1", new MockResponse().setResponseCode(503));
-    var thrown = assertThrows(IllegalStateException.class, () -> underTest.fetchModuleHierarchy(mockServer.serverApiHelper(), "testRoot", PROGRESS));
+    var thrown = assertThrows(ServerErrorException.class, () -> underTest.fetchModuleHierarchy(mockServer.serverApiHelper(), "testRoot", PROGRESS));
     assertThat(thrown).hasMessageContaining("Error 503");
   }
 
