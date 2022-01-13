@@ -74,7 +74,7 @@ public class SettingsApi {
         processPropertySet(s, consumer);
         break;
       default:
-        throw new IllegalStateException("Unknow property value for " + s.getKey());
+        throw new IllegalStateException("Unknown property value for " + s.getKey());
     }
   }
 

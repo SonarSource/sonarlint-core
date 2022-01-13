@@ -82,6 +82,8 @@ import org.sonarsource.sonarlint.core.container.storage.ProjectStorageStatusRead
 import org.sonarsource.sonarlint.core.container.storage.StorageFileExclusions;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdaterFactory;
+import org.sonarsource.sonarlint.core.events.EventDispatcher;
+import org.sonarsource.sonarlint.core.events.ServerEventsAutoSubscriber;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository.Configuration;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
@@ -89,10 +91,12 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
+import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.storage.LocalStorageSynchronizer;
 import org.sonarsource.sonarlint.core.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.storage.ProjectStorage;
+import org.sonarsource.sonarlint.core.storage.UpdateStorageOnRuleSetChanged;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.StringUtils.trimToNull;
@@ -113,6 +117,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   private final GlobalStorageUpdateExecutor globalStorageUpdateExecutor;
   private final ProjectStorageUpdateExecutor projectStorageUpdateExecutor;
   private final AtomicReference<AnalysisContext> analysisContext = new AtomicReference<>();
+  private final ServerEventsAutoSubscriber serverEventsAutoSubscriber;
 
   private final StorageReader storageReader;
 
@@ -140,6 +145,9 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     globalStorageUpdateExecutor = new GlobalStorageUpdateExecutor(globalStores.getGlobalStorage());
     projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(projectStoragePaths);
     pluginsStorage.cleanUp();
+    var eventRouter = new EventDispatcher()
+      .dispatch(RuleSetChangedEvent.class, new UpdateStorageOnRuleSetChanged(projectStorage));
+    serverEventsAutoSubscriber = new ServerEventsAutoSubscriber(eventRouter);
     start();
   }
 
@@ -440,6 +448,16 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
+  public void subscribeForEvents(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, @Nullable ClientLogOutput clientLogOutput) {
+    var logOutput = clientLogOutput == null ? this.logOutput : clientLogOutput;
+    if (logOutput == null) {
+      logOutput = (message, level) -> {
+      };
+    }
+    serverEventsAutoSubscriber.subscribePermanently(new ServerApi(new ServerApiHelper(endpoint, client)), projectKeys, globalConfig.getEnabledLanguages(), logOutput);
+  }
+
+  @Override
   public List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
     boolean fetchTaintVulnerabilities, @Nullable String branchName, @Nullable ClientProgressMonitor monitor) {
     return downloadServerIssues(endpoint, client, projectBinding, ideFilePath, fetchTaintVulnerabilities, branchName, new ProgressMonitor(monitor));
@@ -505,6 +523,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   public void stop(boolean deleteStorage) {
     setLogging(null);
     try {
+      serverEventsAutoSubscriber.stop();
       analysisContext.get().destroy();
       if (deleteStorage) {
         globalStores.deleteAll();

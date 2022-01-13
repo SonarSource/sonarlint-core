@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -40,6 +41,7 @@ import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okio.Buffer;
 import org.sonarqube.ws.client.HttpConnector;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsClientFactories;
@@ -47,6 +49,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
+import org.sonarsource.sonarlint.core.commons.http.HttpConnectionListener;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
 public abstract class AbstractConnectedTest {
@@ -92,6 +95,43 @@ public abstract class AbstractConnectedTest {
         .url(url)
         .build();
       return executeRequestAsync(request);
+    }
+
+    @Override
+    public AsyncRequest getEventStream(String url, HttpConnectionListener connectionListener, Consumer<String> messageConsumer) {
+      var request = new Request.Builder()
+        .url(url)
+        .header("Accept", "text/event-stream")
+        .build();
+      var call = okClient.newCall(request);
+      var asyncRequest = new OkHttpAsyncRequest(call);
+      call.enqueue(new Callback() {
+        @Override
+        public void onFailure(Call call, IOException e) {
+          connectionListener.onError(null);
+        }
+
+        @Override
+        public void onResponse(Call call, okhttp3.Response response) {
+          if (response.isSuccessful()) {
+            connectionListener.onConnected();
+            var source = response.body().source();
+            Buffer buffer = new Buffer();
+            try {
+              while (!source.exhausted()) {
+                long count = source.read(buffer, 8192);
+                messageConsumer.accept(buffer.readUtf8(count));
+              }
+            } catch (IOException e) {
+              connectionListener.onClosed();
+            }
+          } else {
+            connectionListener.onError(response.code());
+          }
+        }
+      });
+      return asyncRequest;
+
     }
 
     private CompletableFuture<Response> executeRequestAsync(Request request) {
@@ -174,6 +214,19 @@ public abstract class AbstractConnectedTest {
     }
   }
 
+  private static class OkHttpAsyncRequest implements HttpClient.AsyncRequest {
+    private final Call call;
+
+    private OkHttpAsyncRequest(Call call) {
+      this.call = call;
+    }
+
+    @Override
+    public void cancel() {
+      call.cancel();
+    }
+  }
+
   protected static class SaveIssueListener implements IssueListener {
     List<Issue> issues = new LinkedList<>();
 
@@ -189,6 +242,7 @@ public abstract class AbstractConnectedTest {
     public void clear() {
       issues.clear();
     }
+
   }
 
   protected static WsClient newAdminWsClient(Orchestrator orchestrator) {

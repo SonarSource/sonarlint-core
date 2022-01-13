@@ -17,37 +17,29 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverapi.rules;
+package org.sonarsource.sonarlint.core.serverapi.stream;
 
-import java.util.Map;
-import javax.annotation.Nullable;
+import java.util.List;
 
-public class ServerActiveRule {
-  private final String ruleKey;
-  private final String severity;
-  private final Map<String, String> params;
-  private final String templateKey;
+public class EventParser {
+  private static final String EVENT_TYPE_PREFIX = "event: ";
+  private static final String DATA_PREFIX = "data: ";
 
-  public ServerActiveRule(String ruleKey, String severity, Map<String, String> params, @Nullable String templateKey) {
-    this.ruleKey = ruleKey;
-    this.severity = severity;
-    this.params = params;
-    this.templateKey = templateKey;
+  static Event parse(String eventPayload) {
+    var fields = List.of(eventPayload.split("\\n"));
+    var type = "";
+    var data = new StringBuilder();
+    for (String field : fields) {
+      if (field.startsWith(EVENT_TYPE_PREFIX)) {
+        type = field.substring(EVENT_TYPE_PREFIX.length());
+      } else if (field.startsWith(DATA_PREFIX)) {
+        data.append(field.substring(DATA_PREFIX.length()));
+      }
+    }
+    return new Event(type, data.toString());
   }
 
-  public String getSeverity() {
-    return severity;
-  }
-
-  public Map<String, String> getParams() {
-    return params;
-  }
-
-  public String getRuleKey() {
-    return ruleKey;
-  }
-
-  public String getTemplateKey() {
-    return templateKey;
+  private EventParser() {
+    // static only
   }
 }

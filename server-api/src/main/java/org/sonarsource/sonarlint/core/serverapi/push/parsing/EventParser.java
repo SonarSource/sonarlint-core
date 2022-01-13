@@ -17,37 +17,11 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverapi.rules;
+package org.sonarsource.sonarlint.core.serverapi.push.parsing;
 
-import java.util.Map;
-import javax.annotation.Nullable;
+import java.util.Optional;
+import org.sonarsource.sonarlint.core.serverapi.push.ServerEvent;
 
-public class ServerActiveRule {
-  private final String ruleKey;
-  private final String severity;
-  private final Map<String, String> params;
-  private final String templateKey;
-
-  public ServerActiveRule(String ruleKey, String severity, Map<String, String> params, @Nullable String templateKey) {
-    this.ruleKey = ruleKey;
-    this.severity = severity;
-    this.params = params;
-    this.templateKey = templateKey;
-  }
-
-  public String getSeverity() {
-    return severity;
-  }
-
-  public Map<String, String> getParams() {
-    return params;
-  }
-
-  public String getRuleKey() {
-    return ruleKey;
-  }
-
-  public String getTemplateKey() {
-    return templateKey;
-  }
+public interface EventParser<T extends ServerEvent> {
+  Optional<T> parse(String jsonData);
 }

@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.sonar.api.utils.log.Logger;
@@ -35,6 +36,7 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 
 import static org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths.encodeForFs;
+import static org.sonarsource.sonarlint.core.container.storage.ProtobufUtil.writeToFile;
 
 public class ProjectStorage {
   private static final Logger LOG = Loggers.get(ProjectStorage.class);
@@ -51,13 +53,12 @@ public class ProjectStorage {
     FileUtils.mkdirs(pbFilePath.getParent());
     var data = adapt(analyzerConfiguration);
     LOG.debug("Storing project analyzer configuration in {}", pbFilePath);
-    rwLock.write(() -> ProtobufUtil.writeToFile(data, pbFilePath));
+    rwLock.write(() -> writeToFile(data, pbFilePath));
   }
 
   public AnalyzerConfiguration getAnalyzerConfiguration(String projectKey) {
-    var pbFilePath = getAnalyzerConfigFilePath(projectKey);
-    return adapt(rwLock.read(() -> !Files.exists(pbFilePath) ? Sonarlint.AnalyzerConfiguration.newBuilder().build()
-      : ProtobufUtil.readFile(pbFilePath, Sonarlint.AnalyzerConfiguration.parser())));
+    var projectFilePath = getAnalyzerConfigFilePath(projectKey);
+    return adapt(rwLock.read(() -> readConfiguration(projectFilePath)));
   }
 
   public void store(String projectKey, ProjectBranches projectBranches) {
@@ -65,7 +66,7 @@ public class ProjectStorage {
     FileUtils.mkdirs(pbFilePath.getParent());
     var data = adapt(projectBranches);
     LOG.debug("Storing project branches in {}", pbFilePath);
-    rwLock.write(() -> ProtobufUtil.writeToFile(data, pbFilePath));
+    rwLock.write(() -> writeToFile(data, pbFilePath));
   }
 
   public ProjectBranches getProjectBranches(String projectKey) {
@@ -83,6 +84,20 @@ public class ProjectStorage {
       .addAllBranchName(projectBranches.getBranchNames())
       .setMainBranchName(projectBranches.getMainBranchName().orElse(""))
       .build();
+  }
+
+  public void update(String projectKey, UnaryOperator<AnalyzerConfiguration> updater) {
+    var projectFilePath = getAnalyzerConfigFilePath(projectKey);
+    FileUtils.mkdirs(projectFilePath.getParent());
+    rwLock.write(() -> {
+      writeToFile(adapt(updater.apply(adapt(readConfiguration(projectFilePath)))), projectFilePath);
+      LOG.debug("Storing project data in {}", projectFilePath);
+    });
+  }
+
+  private static Sonarlint.AnalyzerConfiguration readConfiguration(Path projectFilePath) {
+    return !Files.exists(projectFilePath) ? Sonarlint.AnalyzerConfiguration.newBuilder().build()
+      : ProtobufUtil.readFile(projectFilePath, Sonarlint.AnalyzerConfiguration.parser());
   }
 
   private static AnalyzerConfiguration adapt(Sonarlint.AnalyzerConfiguration analyzerConfiguration) {
