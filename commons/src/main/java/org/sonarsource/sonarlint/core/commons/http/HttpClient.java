@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.commons.http;
 import java.io.Closeable;
 import java.io.InputStream;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 /**
  * The client(IDE) is responsible to provide an HttpClient, configured with authentication, timeouts, proxy support, ...
@@ -55,8 +56,14 @@ public interface HttpClient {
 
   CompletableFuture<Response> getAsync(String url);
 
+  AsyncRequest getEventStream(String url, HttpConnectionListener connectionListener, Consumer<String> messageConsumer);
+
   Response post(String url, String contentType, String body);
 
   Response delete(String url, String contentType, String body);
+
+  interface AsyncRequest {
+    void cancel();
+  }
 
 }

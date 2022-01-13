@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.serverapi.util;
 
 import java.util.Arrays;
+import java.util.List;
+import javax.annotation.Nullable;
 import org.sonarqube.ws.Common.TextRange;
 
 public class ServerApiUtils {
@@ -38,6 +40,14 @@ public class ServerApiUtils {
       linesOfTextRange[linesOfTextRange.length - 1] = linesOfTextRange[linesOfTextRange.length - 1].substring(0, textRange.getEndOffset());
       return String.join("\n", linesOfTextRange);
     }
+  }
+
+  public static boolean isBlank(@Nullable List<?> list) {
+    return list == null || list.isEmpty();
+  }
+
+  public static boolean areBlank(List<?>... lists) {
+    return Arrays.stream(lists).allMatch(ServerApiUtils::isBlank);
   }
 
   private ServerApiUtils() {

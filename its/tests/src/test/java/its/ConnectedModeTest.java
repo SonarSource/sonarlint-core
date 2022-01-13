@@ -37,6 +37,7 @@ import java.util.Set;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.assertj.core.internal.Failures;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -519,18 +520,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisTemplateRule() throws Exception {
-    var searchReq = new SearchRequest();
-    searchReq.setQualityProfile("SonarLint IT Java");
-    searchReq.setProject(PROJECT_KEY_JAVA);
-    searchReq.setDefaults("false");
-    var search = adminWsClient.qualityprofiles().search(searchReq);
-    QualityProfile qp = null;
-    for (QualityProfile q : search.getProfilesList()) {
-      if (q.getName().equals("SonarLint IT Java")) {
-        qp = q;
-      }
-    }
-    assertThat(qp).isNotNull();
+    QualityProfile qp = getQualityProfile("SonarLint IT Java");
 
     WsRequest request = new PostRequest("/api/rules/create")
       .setParam("custom_key", "myrule")
@@ -689,6 +679,24 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assertThat(newFile).doesNotExist();
   }
 
+  @Test
+  public void updatesStorageOnServerEvents() throws IOException, InterruptedException {
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 4));
+
+    updateGlobal();
+    updateProject(PROJECT_KEY_JAVA);
+    engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVA), null);
+    var qualityProfile = getQualityProfile("SonarLint IT Java");
+    deactivateRule(qualityProfile, "S106");
+    Thread.sleep(3000);
+
+    var issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA, "src/main/java/foo/Foo.java"), issueListener, null, null);
+    assertThat(issueListener.getIssues())
+      .extracting("ruleKey")
+      .containsOnly("java:S2325");
+  }
+
   private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {
     adminWsClient.settings().set(new SetRequest()
       .setKey(key)
@@ -713,6 +721,29 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       .setProperty("sonar.projectKey", projectDirName)
       .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
       .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
+  }
+
+  private QualityProfile getQualityProfile(String qualityProfileName) {
+    var searchReq = new SearchRequest();
+    searchReq.setQualityProfile(qualityProfileName);
+    searchReq.setProject(PROJECT_KEY_JAVA);
+    searchReq.setDefaults("false");
+    var search = adminWsClient.qualityprofiles().search(searchReq);
+    for (QualityProfile profile : search.getProfilesList()) {
+      if (profile.getName().equals(qualityProfileName)) {
+        return profile;
+      }
+    }
+    throw Failures.instance().failure("Unable to get quality profile " + qualityProfileName);
+  }
+
+  private void deactivateRule(QualityProfile qualityProfile, String ruleKey) {
+    var request = new PostRequest("/api/qualityprofiles/deactivate_rule")
+      .setParam("key", qualityProfile.getKey())
+      .setParam("rule", javaRuleKey(ruleKey));
+    try (var response = adminWsClient.wsConnector().call(request)) {
+      assertTrue("Unable to activate custom rule", response.isSuccessful());
+    }
   }
 
 }

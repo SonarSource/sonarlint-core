@@ -23,6 +23,7 @@ import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.branches.ProjectBranchesApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
 import org.sonarsource.sonarlint.core.serverapi.developers.DevelopersApi;
+import org.sonarsource.sonarlint.core.serverapi.push.PushApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.organization.OrganizationApi;
@@ -90,5 +91,9 @@ public class ServerApi {
 
   public ProjectBranchesApi branches() {
     return new ProjectBranchesApi(helper);
+  }
+
+  public PushApi push() {
+    return new PushApi(helper);
   }
 }

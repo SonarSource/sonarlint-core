@@ -172,4 +172,6 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    */
   <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> ideFilePathExtractor, Predicate<G> testFilePredicate);
 
+  void subscribeForEvents(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, @Nullable ClientLogOutput clientLogOutput);
+
 }

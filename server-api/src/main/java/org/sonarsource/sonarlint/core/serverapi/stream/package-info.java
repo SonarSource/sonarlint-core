@@ -17,37 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverapi.rules;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.serverapi.stream;
 
-import java.util.Map;
-import javax.annotation.Nullable;
-
-public class ServerActiveRule {
-  private final String ruleKey;
-  private final String severity;
-  private final Map<String, String> params;
-  private final String templateKey;
-
-  public ServerActiveRule(String ruleKey, String severity, Map<String, String> params, @Nullable String templateKey) {
-    this.ruleKey = ruleKey;
-    this.severity = severity;
-    this.params = params;
-    this.templateKey = templateKey;
-  }
-
-  public String getSeverity() {
-    return severity;
-  }
-
-  public Map<String, String> getParams() {
-    return params;
-  }
-
-  public String getRuleKey() {
-    return ruleKey;
-  }
-
-  public String getTemplateKey() {
-    return templateKey;
-  }
-}
+import javax.annotation.ParametersAreNonnullByDefault;

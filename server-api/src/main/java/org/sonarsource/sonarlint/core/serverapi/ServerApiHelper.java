@@ -41,6 +41,7 @@ import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.sonarqube.ws.Common.Paging;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
+import org.sonarsource.sonarlint.core.commons.http.HttpConnectionListener;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException;
@@ -205,6 +206,12 @@ public class ServerApiHelper {
     }
 
     progress.setProgressAndCheckCancel("Page " + page, loaded.get() / (float) paging.getTotal());
+  }
+
+  public HttpClient.AsyncRequest getEventStream(String path, HttpConnectionListener connectionListener, Consumer<String> messageConsumer) {
+    return client.getEventStream(buildEndpointUrl(path),
+      connectionListener,
+      messageConsumer);
   }
 
   @FunctionalInterface

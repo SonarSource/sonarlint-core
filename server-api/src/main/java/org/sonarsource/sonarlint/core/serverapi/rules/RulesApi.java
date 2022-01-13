@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.serverapi.rules;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;

@@ -17,37 +17,33 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverapi.rules;
+package org.sonarsource.sonarlint.core.serverapi.stream;
 
-import java.util.Map;
-import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 
-public class ServerActiveRule {
-  private final String ruleKey;
-  private final String severity;
-  private final Map<String, String> params;
-  private final String templateKey;
+public class EventBuffer {
+  private final StringBuilder buffer = new StringBuilder();
 
-  public ServerActiveRule(String ruleKey, String severity, Map<String, String> params, @Nullable String templateKey) {
-    this.ruleKey = ruleKey;
-    this.severity = severity;
-    this.params = params;
-    this.templateKey = templateKey;
+  EventBuffer append(String data) {
+    buffer.append(data);
+    return this;
   }
 
-  public String getSeverity() {
-    return severity;
-  }
-
-  public Map<String, String> getParams() {
-    return params;
-  }
-
-  public String getRuleKey() {
-    return ruleKey;
-  }
-
-  public String getTemplateKey() {
-    return templateKey;
+  List<String> drainCompleteEvents() {
+    List<String> completeEvents = new ArrayList<>();
+    int firstEventEndIndex;
+    do {
+      firstEventEndIndex = buffer.indexOf("\n\n");
+      if (firstEventEndIndex == -1) {
+        break;
+      }
+      var completeEvent = buffer.substring(0, firstEventEndIndex).trim();
+      buffer.delete(0, firstEventEndIndex + 2);
+      if (!completeEvent.isEmpty()) {
+        completeEvents.add(completeEvent);
+      }
+    } while (true);
+    return completeEvents;
   }
 }

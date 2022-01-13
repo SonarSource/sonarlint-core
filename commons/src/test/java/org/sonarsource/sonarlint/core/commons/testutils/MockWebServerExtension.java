@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import mockwebserver3.Dispatcher;
 import mockwebserver3.MockResponse;
 import mockwebserver3.MockWebServer;
@@ -35,12 +36,12 @@ import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
-import okhttp3.ResponseBody;
 import okio.Buffer;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
+import org.sonarsource.sonarlint.core.commons.http.HttpConnectionListener;
 
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -58,7 +59,7 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
     responsesByPath.clear();
     final Dispatcher dispatcher = new Dispatcher() {
       @Override
-      public MockResponse dispatch(RecordedRequest request) throws InterruptedException {
+      public MockResponse dispatch(RecordedRequest request) {
         if (responsesByPath.containsKey(request.getPath())) {
           return responsesByPath.get(request.getPath());
         }
@@ -109,7 +110,6 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
     } catch (IOException e) {
       fail(e);
     }
-
   }
 
   public static HttpClient httpClient() {
@@ -141,6 +141,29 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
           .url(url)
           .build();
         return executeRequestAsync(request);
+      }
+
+      @Override
+      public AsyncRequest getEventStream(String url, HttpConnectionListener connectionListener, Consumer<String> messageConsumer) {
+        var request = new Request.Builder()
+          .url(url)
+          .build();
+        var call = okClient.newCall(request);
+        var asyncRequest = new OkHttpAsyncRequest(call);
+        try {
+          // use a sync approach to ease testing
+          var response = call.execute();
+          if (response.isSuccessful()) {
+            connectionListener.onConnected();
+            // simplified reading, for tests we assume the event comes full, never chunked
+            messageConsumer.accept(wrap(response).bodyAsString());
+          } else {
+            connectionListener.onError(response.code());
+          }
+        } catch (IOException e) {
+          connectionListener.onError(null);
+        }
+        return asyncRequest;
       }
 
       @Override
@@ -223,6 +246,28 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
       }
 
     };
+  }
+
+  public interface TestAsyncRequest {
+    void await();
+  }
+
+  public static class OkHttpAsyncRequest implements HttpClient.AsyncRequest, TestAsyncRequest {
+    private final Call call;
+
+    private OkHttpAsyncRequest(Call call) {
+      this.call = call;
+    }
+
+    @Override
+    public void cancel() {
+      call.cancel();
+    }
+
+    public void await() {
+      var beginTime = System.currentTimeMillis();
+      while (!call.isExecuted() || beginTime > System.currentTimeMillis() - 5000L);
+    }
   }
 
 }
