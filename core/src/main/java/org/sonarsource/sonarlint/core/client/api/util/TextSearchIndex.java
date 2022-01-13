@@ -70,7 +70,7 @@ public class TextSearchIndex<T> {
     List<String> terms = tokenize(text);
     objToWordFrequency.put(obj, terms.size());
 
-    int i = 0;
+    var i = 0;
     for (String s : terms) {
       addToDictionary(s, i, obj);
       i++;

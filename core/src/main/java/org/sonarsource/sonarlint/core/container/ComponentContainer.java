@@ -106,7 +106,7 @@ public class ComponentContainer implements ContainerPopulator.Container {
   }
 
   public void execute() {
-    boolean threw = true;
+    var threw = true;
     try {
       startComponents();
       threw = false;
@@ -267,7 +267,7 @@ public class ComponentContainer implements ContainerPopulator.Container {
     ReflectionLifecycleStrategy lifecycleStrategy = new ReflectionLifecycleStrategy(new NullComponentMonitor(), "start", "stop", "close") {
       @Override
       public void start(Object component) {
-        Profiler profiler = Profiler.createIfTrace(Loggers.get(ComponentContainer.class));
+        var profiler = Profiler.createIfTrace(Loggers.get(ComponentContainer.class));
         profiler.start();
         super.start(component);
         profiler.stopTrace(component.getClass().getCanonicalName() + " started");

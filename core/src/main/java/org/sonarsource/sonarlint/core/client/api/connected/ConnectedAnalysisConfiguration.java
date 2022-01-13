@@ -51,7 +51,7 @@ public class ConnectedAnalysisConfiguration extends AbstractAnalysisConfiguratio
   }
 
   private String generateString() {
-    StringBuilder sb = new StringBuilder();
+    var sb = new StringBuilder();
     sb.append("[\n");
     if (projectKey != null) {
       sb.append("  projectKey: ").append(projectKey).append("\n");

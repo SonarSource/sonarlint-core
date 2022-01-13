@@ -48,7 +48,7 @@ public class FileExclusions implements Predicate<String> {
   }
 
   private List<PathMatcher> parseGlobPatterns(Set<String> globPatterns) {
-    FileSystem fs = FileSystems.getDefault();
+    var fs = FileSystems.getDefault();
 
     List<PathMatcher> parsedMatchers = new ArrayList<>(globPatterns.size());
     for (String pattern : globPatterns) {
@@ -74,7 +74,7 @@ public class FileExclusions implements Predicate<String> {
   }
 
   private boolean testDirectoryExclusions(Path path) {
-    Path p = path;
+    var p = path;
     while (p != null) {
       if (directoryExclusions.contains(p.toString())) {
         return true;

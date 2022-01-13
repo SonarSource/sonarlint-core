@@ -41,7 +41,7 @@ public class DefaultPluginJarExploder extends PluginJarExploder {
   @Override
   public ExplodedPlugin explode(PluginInfo info) {
     try {
-      File dir = unzipFile(info.getNonNullJarFile());
+      var dir = unzipFile(info.getNonNullJarFile());
       return explodeFromUnzippedDir(info.getKey(), info.getNonNullJarFile(), dir);
     } catch (Exception e) {
       throw new IllegalStateException(String.format("Fail to open plugin [%s]: %s", info.getKey(), info.getNonNullJarFile().getAbsolutePath()), e);
@@ -50,10 +50,10 @@ public class DefaultPluginJarExploder extends PluginJarExploder {
 
   private File unzipFile(File cachedFile) throws IOException {
     String filename = cachedFile.getName();
-    File destDir = new File(cachedFile.getParentFile(), filename + "_unzip");
+    var destDir = new File(cachedFile.getParentFile(), filename + "_unzip");
     if (!destDir.exists()) {
-      File lockFile = new File(cachedFile.getParentFile(), filename + "_unzip.lock");
-      FileOutputStream out = new FileOutputStream(lockFile);
+      var lockFile = new File(cachedFile.getParentFile(), filename + "_unzip.lock");
+      var out = new FileOutputStream(lockFile);
       try (FileLock lock = out.getChannel().lock()) {
         // Recheck in case of concurrent processes
         if (!destDir.exists()) {

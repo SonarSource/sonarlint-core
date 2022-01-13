@@ -159,7 +159,7 @@ public class MapSettings extends Settings {
    */
   @Override
   public boolean getBoolean(String key) {
-    String value = getString(key);
+    var value = getString(key);
     return StringUtils.isNotEmpty(value) && Boolean.parseBoolean(value);
   }
 
@@ -171,7 +171,7 @@ public class MapSettings extends Settings {
    */
   @Override
   public int getInt(String key) {
-    String value = getString(key);
+    var value = getString(key);
     if (StringUtils.isNotEmpty(value)) {
       return Integer.parseInt(value);
     }
@@ -186,7 +186,7 @@ public class MapSettings extends Settings {
    */
   @Override
   public long getLong(String key) {
-    String value = getString(key);
+    var value = getString(key);
     if (StringUtils.isNotEmpty(value)) {
       return Long.parseLong(value);
     }
@@ -202,7 +202,7 @@ public class MapSettings extends Settings {
   @CheckForNull
   @Override
   public Date getDate(String key) {
-    String value = getString(key);
+    var value = getString(key);
     if (StringUtils.isNotEmpty(value)) {
       return DateUtils.parseDate(value);
     }
@@ -218,7 +218,7 @@ public class MapSettings extends Settings {
   @CheckForNull
   @Override
   public Date getDateTime(String key) {
-    String value = getString(key);
+    var value = getString(key);
     if (StringUtils.isNotEmpty(value)) {
       return DateUtils.parseDateTime(value);
     }
@@ -234,7 +234,7 @@ public class MapSettings extends Settings {
   @CheckForNull
   @Override
   public Float getFloat(String key) {
-    String value = getString(key);
+    var value = getString(key);
     if (StringUtils.isNotEmpty(value)) {
       try {
         return Float.valueOf(value);
@@ -254,7 +254,7 @@ public class MapSettings extends Settings {
   @CheckForNull
   @Override
   public Double getDouble(String key) {
-    String value = getString(key);
+    var value = getString(key);
     if (StringUtils.isNotEmpty(value)) {
       try {
         return Double.valueOf(value);
@@ -280,7 +280,7 @@ public class MapSettings extends Settings {
     String effectiveKey = definitions.validKey(key);
     Optional<PropertyDefinition> def = getDefinition(effectiveKey);
     if ((def.isPresent()) && (def.get().multiValues())) {
-      String value = getString(key);
+      var value = getString(key);
       if (value == null) {
         return ArrayUtils.EMPTY_STRING_ARRAY;
       }
@@ -301,7 +301,7 @@ public class MapSettings extends Settings {
    */
   @Override
   public String[] getStringLines(String key) {
-    String value = getString(key);
+    var value = getString(key);
     if (StringUtils.isEmpty(value)) {
       return new String[0];
     }
@@ -313,11 +313,11 @@ public class MapSettings extends Settings {
    */
   @Override
   public String[] getStringArrayBySeparator(String key, String separator) {
-    String value = getString(key);
+    var value = getString(key);
     if (value != null) {
       String[] strings = StringUtils.splitByWholeSeparator(value, separator);
-      String[] result = new String[strings.length];
-      for (int index = 0; index < strings.length; index++) {
+      var result = new String[strings.length];
+      for (var index = 0; index < strings.length; index++) {
         result[index] = trim(strings[index]);
       }
       return result;

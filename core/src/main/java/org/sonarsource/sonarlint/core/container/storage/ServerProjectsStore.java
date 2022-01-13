@@ -38,21 +38,21 @@ public class ServerProjectsStore {
 
   public void store(List<ServerProject> serverProjects) {
     rwLock.write(() -> {
-      Sonarlint.ProjectList projectList = adapt(serverProjects);
+      var projectList = adapt(serverProjects);
       storageFolder.writeAction(dest -> ProtobufUtil.writeToFile(projectList, dest.resolve(PROJECT_LIST_PB)));
     });
   }
 
   public Map<String, ServerProject> getAll() {
-    Sonarlint.ProjectList projectList = rwLock.read(() -> storageFolder.readAction(source ->
+    var projectList = rwLock.read(() -> storageFolder.readAction(source ->
       ProtobufUtil.readFile(source.resolve(PROJECT_LIST_PB), Sonarlint.ProjectList.parser())
     ));
     return adapt(projectList);
   }
 
   private static Sonarlint.ProjectList adapt(List<ServerProject> serverProjects) {
-    Sonarlint.ProjectList.Builder projectListBuilder = Sonarlint.ProjectList.newBuilder();
-    Sonarlint.ProjectList.Project.Builder projectBuilder = Sonarlint.ProjectList.Project.newBuilder();
+    var projectListBuilder = Sonarlint.ProjectList.newBuilder();
+    var projectBuilder = Sonarlint.ProjectList.Project.newBuilder();
     serverProjects.forEach(project -> {
       projectBuilder.clear();
       projectListBuilder.putProjectsByKey(project.getKey(), projectBuilder

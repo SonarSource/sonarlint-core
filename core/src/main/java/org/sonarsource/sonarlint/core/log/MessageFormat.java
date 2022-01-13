@@ -73,7 +73,7 @@ public class MessageFormat {
    * @return the formatted message.
    */
   public static String format(final String messagePattern, @Nullable final Object[] arguments) {
-    final StringBuilder result = new StringBuilder();
+    final var result = new StringBuilder();
     final int argCount = arguments == null ? 0 : arguments.length;
     formatMessage(result, messagePattern, arguments, argCount);
     return result.toString();
@@ -92,12 +92,12 @@ public class MessageFormat {
       buffer.append(messagePattern);
       return;
     }
-    int escapeCounter = 0;
-    int currentArgument = 0;
-    int i = 0;
+    var escapeCounter = 0;
+    var currentArgument = 0;
+    var i = 0;
     final int len = messagePattern.length();
     for (; i < len - 1; i++) { // last char is excluded from the loop
-      final char curChar = messagePattern.charAt(i);
+      final var curChar = messagePattern.charAt(i);
       if (curChar == ESCAPE_CHAR) {
         escapeCounter++;
       } else {
@@ -143,7 +143,7 @@ public class MessageFormat {
   private static void handleRemainingCharIfAny(final String messagePattern, final int len,
     final StringBuilder buffer, final int escapeCounter, final int i) {
     if (i == len - 1) {
-      final char curChar = messagePattern.charAt(i);
+      final var curChar = messagePattern.charAt(i);
       handleLastChar(buffer, escapeCounter, curChar);
     }
   }
@@ -302,8 +302,8 @@ public class MessageFormat {
     if (!(o instanceof Date)) {
       return false;
     }
-    final Date date = (Date) o;
-    final SimpleDateFormat format = getSimpleDateFormat();
+    final var date = (Date) o;
+    final var format = getSimpleDateFormat();
     str.append(format.format(date));
     return true;
   }

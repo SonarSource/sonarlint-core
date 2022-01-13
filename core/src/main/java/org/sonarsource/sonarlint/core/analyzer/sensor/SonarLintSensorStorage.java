@@ -82,10 +82,10 @@ public class SonarLintSensorStorage implements SensorStorage {
       throw new IllegalArgumentException("Trying to store a non-SonarLint issue?");
     }
     DefaultSonarLintIssue sonarLintIssue = (DefaultSonarLintIssue) issue;
-    InputComponent inputComponent = sonarLintIssue.primaryLocation().inputComponent();
+    var inputComponent = sonarLintIssue.primaryLocation().inputComponent();
 
     SonarLintRule rule = validateRule(sonarLintIssue);
-    ActiveRule activeRule = activeRules.find(sonarLintIssue.ruleKey());
+    var activeRule = activeRules.find(sonarLintIssue.ruleKey());
     if (activeRule == null) {
       // rule does not exist or is not enabled -> ignore the issue
       return;
@@ -96,14 +96,14 @@ public class SonarLintSensorStorage implements SensorStorage {
     }
 
     String primaryMessage = defaultIfEmpty(sonarLintIssue.primaryLocation().message(), rule.name());
-    org.sonar.api.batch.rule.Severity overriddenSeverity = sonarLintIssue.overriddenSeverity();
+    var overriddenSeverity = sonarLintIssue.overriddenSeverity();
     String severity = overriddenSeverity != null ? overriddenSeverity.name() : activeRule.severity();
     String type = rule.type().name();
 
     List<org.sonarsource.sonarlint.core.client.api.common.analysis.Issue.Flow> flows = mapFlows(sonarLintIssue.flows());
     List<QuickFix> quickFixes = sonarLintIssue.quickFixes();
 
-    DefaultClientIssue newIssue = new DefaultClientIssue(severity, type, activeRule, rules.find(activeRule.ruleKey()), primaryMessage, issue.primaryLocation().textRange(),
+    var newIssue = new DefaultClientIssue(severity, type, activeRule, rules.find(activeRule.ruleKey()), primaryMessage, issue.primaryLocation().textRange(),
       inputComponent.isFile() ? ((SonarLintInputFile) inputComponent).getClientInputFile() : null, flows, quickFixes);
     if (filters.accept(inputComponent, newIssue)) {
       issueListener.handle(newIssue);
@@ -111,7 +111,7 @@ public class SonarLintSensorStorage implements SensorStorage {
   }
 
   private static boolean noSonar(InputComponent inputComponent, Issue issue) {
-    TextRange textRange = issue.primaryLocation().textRange();
+    var textRange = issue.primaryLocation().textRange();
     return inputComponent.isFile()
       && textRange != null
       && ((SonarLintInputFile) inputComponent).hasNoSonarAt(textRange.start().line())
@@ -128,8 +128,8 @@ public class SonarLintSensorStorage implements SensorStorage {
   }
 
   private SonarLintRule validateRule(Issue issue) {
-    RuleKey ruleKey = issue.ruleKey();
-    Rule rule = rules.find(ruleKey);
+    var ruleKey = issue.ruleKey();
+    var rule = rules.find(ruleKey);
     if (rule == null) {
       throw MessageException.of(String.format("The rule '%s' does not exist.", ruleKey));
     }
@@ -161,7 +161,7 @@ public class SonarLintSensorStorage implements SensorStorage {
 
   @Override
   public void store(AnalysisError analysisError) {
-    ClientInputFile clientInputFile = ((SonarLintInputFile) analysisError.inputFile()).getClientInputFile();
+    var clientInputFile = ((SonarLintInputFile) analysisError.inputFile()).getClientInputFile();
     analysisResult.addFailedAnalysisFile(clientInputFile);
   }
 

@@ -101,7 +101,7 @@ public class PluginRepository implements Startable {
   }
 
   public Plugin getPluginInstance(String key) {
-    Plugin instance = pluginInstancesByKeys.get(key);
+    var instance = pluginInstancesByKeys.get(key);
     requireNonNull(instance, () -> "Plugin [" + key + "] does not exist");
     return instance;
   }

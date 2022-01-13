@@ -45,8 +45,8 @@ public class EnforceIssuesFilter implements IssueFilter {
 
   @Override
   public boolean accept(FilterableIssue issue, IssueFilterChain chain) {
-    boolean atLeastOneRuleMatched = false;
-    boolean atLeastOnePatternFullyMatched = false;
+    var atLeastOneRuleMatched = false;
+    var atLeastOnePatternFullyMatched = false;
     IssuePattern matchingPattern = null;
 
     for (IssuePattern pattern : multicriteriaPatterns) {

@@ -59,7 +59,7 @@ public class ServerIssueTracker {
         issueTracker.matchAndTrackAsBase(fileKey, serverIssuesTrackable);
       }
     } catch (Exception e) {
-      String message = "error while fetching and matching server issues";
+      var message = "error while fetching and matching server issues";
       LOGGER.error(message, e);
     }
   }

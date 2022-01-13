@@ -46,7 +46,7 @@ public class MetadataLoader {
   }
 
   static Version loadVersion(URL versionFileURL, String versionFilePath) {
-    try (Scanner scanner = new Scanner(versionFileURL.openStream(), StandardCharsets.UTF_8.name())) {
+    try (var scanner = new Scanner(versionFileURL.openStream(), StandardCharsets.UTF_8.name())) {
       String versionInFile = scanner.nextLine();
       return Version.parse(versionInFile);
     } catch (Exception e) {

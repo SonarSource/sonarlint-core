@@ -64,7 +64,7 @@ class ActiveRulesWithExclusions implements ActiveRules {
   @CheckForNull
   @Override
   public ActiveRule findByInternalKey(String repository, String internalKey) {
-    ActiveRule rule = activeRules.findByInternalKey(repository, internalKey);
+    var rule = activeRules.findByInternalKey(repository, internalKey);
     if (rule != null && exclusions.contains(rule.ruleKey())) {
       return null;
     }

@@ -75,7 +75,7 @@ class NotificationTimerTask extends TimerTask {
       Map<String, ZonedDateTime> request = configs.stream()
         .collect(Collectors.toMap(NotificationConfiguration::projectKey, NotificationTimerTask::getLastNotificationTime, MERGE_TIMES));
 
-      NotificationChecker notificationChecker = notificationCheckerFactory.apply(serverApiHelper);
+      var notificationChecker = notificationCheckerFactory.apply(serverApiHelper);
       List<ServerNotification> notifications = notificationChecker.request(request);
 
       for (ServerNotification n : notifications) {

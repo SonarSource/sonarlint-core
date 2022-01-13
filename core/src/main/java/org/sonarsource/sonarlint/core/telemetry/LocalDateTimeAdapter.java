@@ -68,10 +68,10 @@ public class LocalDateTimeAdapter extends TypeAdapter<LocalDateTime> {
   }
 
   private static LocalTime readTime(JsonReader jsonReader) throws IOException {
-    int hour = 0;
-    int minute = 0;
-    int second = 0;
-    int nano = 0;
+    var hour = 0;
+    var minute = 0;
+    var second = 0;
+    var nano = 0;
     jsonReader.beginObject();
     while(jsonReader.hasNext()) {
       switch(jsonReader.nextName()) {

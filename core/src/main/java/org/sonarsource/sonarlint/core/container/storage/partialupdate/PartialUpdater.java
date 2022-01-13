@@ -53,8 +53,8 @@ public class PartialUpdater {
 
   public void updateFileIssues(ProjectBinding projectBinding, Sonarlint.ProjectConfiguration projectConfiguration, String ideFilePath, boolean fetchTaintVulnerabilities,
      @Nullable String branchName, ProgressWrapper progress) {
-    Path serverIssuesPath = projectStoragePaths.getServerIssuesPath(projectBinding.projectKey());
-    IssueStore issueStore = issueStoreFactory.apply(serverIssuesPath);
+    var serverIssuesPath = projectStoragePaths.getServerIssuesPath(projectBinding.projectKey());
+    var issueStore = issueStoreFactory.apply(serverIssuesPath);
     String fileKey = issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, ideFilePath);
     if (fileKey == null) {
       return;

@@ -68,7 +68,7 @@ public interface SkipReason {
 
     @Override
     public String toString() {
-      StringBuilder builder = new StringBuilder();
+      var builder = new StringBuilder();
       builder.append("LanguagesNotEnabled [languages=").append(languages).append("]");
       return builder.toString();
     }
@@ -105,7 +105,7 @@ public interface SkipReason {
 
     @Override
     public String toString() {
-      StringBuilder builder = new StringBuilder();
+      var builder = new StringBuilder();
       builder.append("UnsatisfiedDependency [dependencyKey=").append(dependencyKey).append("]");
       return builder.toString();
     }
@@ -142,7 +142,7 @@ public interface SkipReason {
 
     @Override
     public String toString() {
-      StringBuilder builder = new StringBuilder();
+      var builder = new StringBuilder();
       builder.append("IncompatiblePluginVersion [minVersion=").append(minVersion).append("]");
       return builder.toString();
     }
@@ -197,7 +197,7 @@ public interface SkipReason {
 
     @Override
     public String toString() {
-      StringBuilder builder = new StringBuilder();
+      var builder = new StringBuilder();
       builder.append("UnsatisfiedRuntimeRequirement [runtime=").append(runtime).append(", currentVersion=").append(currentVersion).append(", minVersion=").append(minVersion)
         .append("]");
       return builder.toString();

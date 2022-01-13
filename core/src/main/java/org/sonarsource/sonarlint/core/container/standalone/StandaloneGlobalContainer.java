@@ -78,8 +78,8 @@ public class StandaloneGlobalContainer extends ComponentContainer {
 
   @Override
   protected void doBeforeStart() {
-    Version sonarPluginApiVersion = MetadataLoader.loadSonarPluginApiVersion();
-    Version sonarlintPluginApiVersion = MetadataLoader.loadSonarLintPluginApiVersion();
+    var sonarPluginApiVersion = MetadataLoader.loadSonarPluginApiVersion();
+    var sonarlintPluginApiVersion = MetadataLoader.loadSonarLintPluginApiVersion();
 
     add(
       globalConfig,
@@ -131,22 +131,22 @@ public class StandaloneGlobalContainer extends ComponentContainer {
   }
 
   private void installPlugins() {
-    PluginRepository pluginRepository = getComponentByType(PluginRepository.class);
+    var pluginRepository = getComponentByType(PluginRepository.class);
     for (PluginInfo pluginInfo : pluginRepository.getActivePluginInfos()) {
-      Plugin instance = pluginRepository.getPluginInstance(pluginInfo.getKey());
+      var instance = pluginRepository.getPluginInstance(pluginInfo.getKey());
       addExtension(pluginInfo, instance);
     }
   }
 
   private void loadRulesAndActiveRulesFromPlugins() {
-    StandaloneRuleRepositoryContainer container = new StandaloneRuleRepositoryContainer(this);
+    var container = new StandaloneRuleRepositoryContainer(this);
     container.execute();
     rules = container.getRules();
     standaloneActiveRules = container.getStandaloneActiveRules();
   }
 
   public AnalysisResults analyze(ComponentContainer moduleContainer, StandaloneAnalysisConfiguration configuration, IssueListener issueListener, ProgressWrapper progress) {
-    AnalysisContainer analysisContainer = new AnalysisContainer(moduleContainer, progress);
+    var analysisContainer = new AnalysisContainer(moduleContainer, progress);
     analysisContainer.add(configuration);
     analysisContainer.add(issueListener);
     analysisContainer.add(rules);
@@ -159,14 +159,14 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     configuration.ruleParameters().forEach((k, v) -> ruleParameters.put(k.toString(), v));
     analysisContainer.add(standaloneActiveRules.filtered(excludedRules, includedRules, ruleParameters));
     analysisContainer.add(SensorsExecutor.class);
-    DefaultAnalysisResult defaultAnalysisResult = new DefaultAnalysisResult();
+    var defaultAnalysisResult = new DefaultAnalysisResult();
     analysisContainer.add(defaultAnalysisResult);
     analysisContainer.execute();
     return defaultAnalysisResult;
   }
 
   public Collection<PluginDetails> getPluginDetails() {
-    PluginRepository pluginRepository = getComponentByType(PluginRepository.class);
+    var pluginRepository = getComponentByType(PluginRepository.class);
     return pluginRepository.getPluginDetails();
   }
 

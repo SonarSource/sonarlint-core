@@ -148,7 +148,7 @@ public class SonarLintLogger extends BaseLogger {
   }
 
   private void doLogExtractingThrowable(Level level, String msg, Object[] argArray) {
-    Throwable extractedThrowable = EventArgUtil.extractThrowable(argArray);
+    var extractedThrowable = EventArgUtil.extractThrowable(argArray);
     if (EventArgUtil.successfulExtraction(extractedThrowable)) {
       Object[] trimmedArgArray = EventArgUtil.trimmedCopy(argArray);
       logOutput.log(MessageFormat.format(msg, trimmedArgArray), level, extractedThrowable);

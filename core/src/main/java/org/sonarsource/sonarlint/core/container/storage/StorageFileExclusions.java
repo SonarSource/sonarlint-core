@@ -43,10 +43,10 @@ public class StorageFileExclusions {
   public <G> List<G> getExcludedFiles(GlobalSettingsStore globalSettingsStore, ProjectBinding projectBinding, Collection<G> files, Function<G, String> fileIdePathExtractor,
     Predicate<G> testFilePredicate) {
     ProjectConfiguration projectConfig = storageReader.readProjectConfig(projectBinding.projectKey());
-    MapSettings settings = new MapSettings();
+    var settings = new MapSettings();
     settings.addProperties(globalSettingsStore.getAll());
     settings.addProperties(projectConfig.getProperties());
-    ExclusionFilters exclusionFilters = new ExclusionFilters(settings.asConfig());
+    var exclusionFilters = new ExclusionFilters(settings.asConfig());
     exclusionFilters.prepare();
 
     List<G> excluded = new ArrayList<>();

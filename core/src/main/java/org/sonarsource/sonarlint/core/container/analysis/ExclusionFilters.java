@@ -75,7 +75,7 @@ public class ExclusionFilters {
     }
 
     if (inclusionPatterns.length > 0) {
-      boolean matchInclusion = false;
+      var matchInclusion = false;
       for (SonarLintPathPattern pattern : inclusionPatterns) {
         matchInclusion |= pattern.match(relativePath);
       }

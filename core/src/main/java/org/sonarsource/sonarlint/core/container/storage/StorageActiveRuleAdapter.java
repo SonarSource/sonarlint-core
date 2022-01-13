@@ -70,7 +70,7 @@ public class StorageActiveRuleAdapter implements ActiveRule {
   @Override
   public String templateRuleKey() {
     if (!StringUtils.isEmpty(storageRule.getTemplateKey())) {
-      RuleKey templateRuleKey = RuleKey.parse(storageRule.getTemplateKey());
+      var templateRuleKey = RuleKey.parse(storageRule.getTemplateKey());
       return templateRuleKey.rule();
     }
     return null;

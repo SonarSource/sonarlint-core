@@ -144,7 +144,7 @@ public class ConnectedContainer extends ComponentContainer {
     try {
       return getComponentByType(GlobalStorageUpdateChecker.class).checkForUpdate(globalSettingsStore, qualityProfileStore, progress);
     } catch (Exception e) {
-      String msg = "Error when checking for global configuration update";
+      var msg = "Error when checking for global configuration update";
       LOG.debug(msg, e);
       // null as cause so that it doesn't get wrapped
       throw new DownloadException(msg + ": " + e.getMessage(), e);

@@ -38,7 +38,7 @@ public class IssueStorePaths {
 
     // find longest prefix match
     String subModuleKey = projectKey;
-    int prefixLen = 0;
+    var prefixLen = 0;
 
     for (Map.Entry<String, String> entry : modulePaths.entrySet()) {
       String entryModuleKey = entry.getKey();
@@ -49,7 +49,7 @@ public class IssueStorePaths {
       }
     }
 
-    String relativeFilePath = sqFilePath.substring(prefixLen);
+    var relativeFilePath = sqFilePath.substring(prefixLen);
     return subModuleKey + ":" + relativeFilePath;
   }
 
@@ -91,11 +91,11 @@ public class IssueStorePaths {
   }
 
   public static ServerIssue toApiIssue(Sonarlint.ServerIssue pbIssue, String idePath) {
-    DefaultServerIssue issue = new DefaultServerIssue();
+    var issue = new DefaultServerIssue();
     issue.setAssigneeLogin(pbIssue.getAssigneeLogin());
     issue.setLineHash(pbIssue.getLineHash());
     if (pbIssue.getPrimaryLocation().hasTextRange()) {
-      Sonarlint.ServerIssue.TextRange textRange = pbIssue.getPrimaryLocation().getTextRange();
+      var textRange = pbIssue.getPrimaryLocation().getTextRange();
       issue.setTextRange(new TextRange(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset()));
       issue.setCodeSnippet(trimToNull(pbIssue.getPrimaryLocation().getCodeSnippet()));
     }

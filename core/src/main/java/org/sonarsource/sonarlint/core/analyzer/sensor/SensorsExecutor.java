@@ -65,7 +65,7 @@ public class SensorsExecutor {
   public void execute() {
     for (Sensor sensor : sort(asList(sensors))) {
       progress.checkCancel();
-      DefaultSensorDescriptor descriptor = new DefaultSensorDescriptor();
+      var descriptor = new DefaultSensorDescriptor();
       sensor.describe(descriptor);
       if (sensorOptimizer.shouldExecute(descriptor)) {
         executeSensor(context, sensor, descriptor);
@@ -81,7 +81,7 @@ public class SensorsExecutor {
   }
 
   private static <T> Collection<T> sort(Collection<T> extensions) {
-    DirectAcyclicGraph dag = new DirectAcyclicGraph();
+    var dag = new DirectAcyclicGraph();
 
     for (T extension : extensions) {
       dag.add(extension);
@@ -127,7 +127,7 @@ public class SensorsExecutor {
   }
 
   private static Phase.Name evaluatePhase(Object extension) {
-    Phase phaseAnnotation = AnnotationUtils.getAnnotation(extension, Phase.class);
+    var phaseAnnotation = AnnotationUtils.getAnnotation(extension, Phase.class);
     if (phaseAnnotation != null) {
       return phaseAnnotation.name();
     }

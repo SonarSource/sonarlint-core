@@ -102,7 +102,7 @@ public final class DefaultClientIssue implements org.sonarsource.sonarlint.core.
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
+    var sb = new StringBuilder();
     sb.append("[");
     sb.append("rule=").append(activeRule.ruleKey());
     sb.append(", severity=").append(severity);

@@ -51,30 +51,30 @@ public class SimpleObjectStore<K, V> implements ObjectStore<K, V> {
 
   @Override
   public Optional<V> read(K key) throws IOException {
-    Path path = pathMapper.apply(key);
+    var path = pathMapper.apply(key);
     if (!path.toFile().exists()) {
       return Optional.empty();
     }
-    try (InputStream inputStream = Files.newInputStream(path)) {
+    try (var inputStream = Files.newInputStream(path)) {
       return Optional.of(reader.apply(inputStream));
     }
   }
 
   @Override
   public void delete(K key) throws IOException {
-    Path path = pathMapper.apply(key);
+    var path = pathMapper.apply(key);
     Files.deleteIfExists(path);
   }
 
   @Override
   public void write(K key, V value) throws IOException {
-    Path path = pathMapper.apply(key);
+    var path = pathMapper.apply(key);
 
-    Path parent = path.getParent();
+    var parent = path.getParent();
     if (!parent.toFile().exists()) {
       Files.createDirectories(parent);
     }
-    try (OutputStream out = Files.newOutputStream(path)) {
+    try (var out = Files.newOutputStream(path)) {
       writer.accept(out, value);
     }
   }

@@ -62,8 +62,8 @@ public class StorageAnalyzer {
     ProgressWrapper progress) {
     checkStatus(configuration.projectKey());
 
-    AnalysisContainer analysisContainer = new AnalysisContainer(parent, progress);
-    DefaultAnalysisResult defaultAnalysisResult = new DefaultAnalysisResult();
+    var analysisContainer = new AnalysisContainer(parent, progress);
+    var defaultAnalysisResult = new DefaultAnalysisResult();
 
     analysisContainer.add(
       globalSettingsStore,

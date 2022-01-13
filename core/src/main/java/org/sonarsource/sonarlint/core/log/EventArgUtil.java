@@ -47,7 +47,7 @@ public class EventArgUtil {
    */
   public static Object[] trimmedCopy(Object[] argArray) {
     final int trimemdLen = argArray.length - 1;
-    Object[] trimmed = new Object[trimemdLen];
+    var trimmed = new Object[trimemdLen];
     System.arraycopy(argArray, 0, trimmed, 0, trimemdLen);
     return trimmed;
   }

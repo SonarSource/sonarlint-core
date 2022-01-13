@@ -43,7 +43,7 @@ public class ModuleRegistry {
   }
 
   public ModuleContainer registerModule(ModuleInfo module) {
-    ModuleContainer moduleContainer = createContainer(module);
+    var moduleContainer = createContainer(module);
     modules.put(module.key(), moduleContainer);
     return moduleContainer;
   }
@@ -56,8 +56,8 @@ public class ModuleRegistry {
       return modules.get(moduleKey);
     }
     LOG.info("Creating container for module with key=" + moduleKey);
-    ModuleContainer moduleContainer = new ModuleContainer(parent);
-    ClientFileSystem clientFileSystem = module.fileSystem();
+    var moduleContainer = new ModuleContainer(parent);
+    var clientFileSystem = module.fileSystem();
     if (clientFileSystem != null) {
       moduleContainer.add(clientFileSystem);
     }
@@ -70,7 +70,7 @@ public class ModuleRegistry {
       // can this happen ?
       return;
     }
-    ModuleContainer moduleContainer = modules.remove(moduleKey);
+    var moduleContainer = modules.remove(moduleKey);
     moduleContainer.stopComponents();
   }
 

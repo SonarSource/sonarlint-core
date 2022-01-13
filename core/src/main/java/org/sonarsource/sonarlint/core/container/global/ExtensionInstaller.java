@@ -64,8 +64,8 @@ public class ExtensionInstaller {
 
   private ExtensionInstaller install(ComponentContainer container, ContainerLifespan lifespan, Collection<PluginInfo> pluginInfos) {
     for (PluginInfo pluginInfo : pluginInfos) {
-      Plugin plugin = pluginRepository.getPluginInstance(pluginInfo.getKey());
-      Plugin.Context context = new PluginContextImpl.Builder()
+      var plugin = pluginRepository.getPluginInstance(pluginInfo.getKey());
+      var context = new PluginContextImpl.Builder()
         .setSonarRuntime(sonarRuntime)
         .setBootConfiguration(bootConfiguration)
         .build();

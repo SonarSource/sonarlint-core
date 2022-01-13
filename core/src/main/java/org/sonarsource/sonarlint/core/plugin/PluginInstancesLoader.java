@@ -92,7 +92,7 @@ public class PluginInstancesLoader {
         def = new PluginClassLoaderDef(baseKey);
         classloadersByBasePlugin.put(baseKey, def);
       }
-      ExplodedPlugin explodedPlugin = jarExploder.explode(info);
+      var explodedPlugin = jarExploder.explode(info);
       def.addFiles(Collections.singletonList(slf4jAdapter));
       def.addFiles(Collections.singletonList(explodedPlugin.getMain()));
       def.addFiles(explodedPlugin.getLibs());
@@ -112,9 +112,9 @@ public class PluginInstancesLoader {
   }
 
   private File extractSlf4jAdapterJar() {
-    InputStream jarInputStream = PluginInstancesLoader.class.getResourceAsStream("/" + SLF4J_ADAPTER_JAR_NAME + ".jar");
+    var jarInputStream = PluginInstancesLoader.class.getResourceAsStream("/" + SLF4J_ADAPTER_JAR_NAME + ".jar");
     try {
-      File extractedJar = tempFolder.newFile(SLF4J_ADAPTER_JAR_NAME, ".jar");
+      var extractedJar = tempFolder.newFile(SLF4J_ADAPTER_JAR_NAME, ".jar");
       FileUtils.copyInputStreamToFile(jarInputStream, extractedJar);
       return extractedJar;
     } catch (Exception e) {
@@ -133,7 +133,7 @@ public class PluginInstancesLoader {
     Map<String, Plugin> instancesByPluginKey = new HashMap<>();
     for (Map.Entry<PluginClassLoaderDef, ClassLoader> entry : classloaders.entrySet()) {
       PluginClassLoaderDef def = entry.getKey();
-      ClassLoader classLoader = entry.getValue();
+      var classLoader = entry.getValue();
 
       // the same classloader can be used by multiple plugins
       for (Map.Entry<String, String> mainClassEntry : def.getMainClassesByPluginKey().entrySet()) {
@@ -155,7 +155,7 @@ public class PluginInstancesLoader {
 
   public void unload(Collection<Plugin> plugins) {
     for (Plugin plugin : plugins) {
-      ClassLoader classLoader = plugin.getClass().getClassLoader();
+      var classLoader = plugin.getClass().getClassLoader();
       if (classLoader instanceof Closeable && classLoader != classloaderFactory.baseClassLoader()) {
         try {
           ((Closeable) classLoader).close();

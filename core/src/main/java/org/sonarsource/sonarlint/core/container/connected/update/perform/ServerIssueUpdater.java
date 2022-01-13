@@ -44,8 +44,8 @@ public class ServerIssueUpdater {
   }
 
   public void update(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressWrapper progress) {
-    Path work = tempFolder.newDir().toPath();
-    Path target = projectStoragePaths.getServerIssuesPath(projectKey);
+    var work = tempFolder.newDir().toPath();
+    var target = projectStoragePaths.getServerIssuesPath(projectKey);
     FileUtils.replaceDir(path -> updateServerIssues(projectKey, projectConfiguration, path, fetchTaintVulnerabilities, branchName, progress), target, work);
   }
 

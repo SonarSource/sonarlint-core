@@ -51,7 +51,7 @@ public class SonarLintWrappedException extends SonarLintException {
       return (SonarLintException) cause;
     }
 
-    SonarLintWrappedException sonarLintException = new SonarLintWrappedException(t.toString(), t.getMessage(), cause);
+    var sonarLintException = new SonarLintWrappedException(t.toString(), t.getMessage(), cause);
     sonarLintException.setStackTrace(t.getStackTrace());
     for (Throwable suppressed : t.getSuppressed()) {
       sonarLintException.addSuppressed(wrap(suppressed));

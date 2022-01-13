@@ -45,8 +45,8 @@ public class PluginsUpdateChecker {
   }
 
   public void checkForUpdates(DefaultStorageUpdateCheckResult result, List<SonarAnalyzer> pluginList) {
-    PluginReferences serverPluginReferences = pluginReferenceDownloader.toReferences(pluginList);
-    PluginReferences storagePluginReferences = pluginReferenceStore.getAll();
+    var serverPluginReferences = pluginReferenceDownloader.toReferences(pluginList);
+    var storagePluginReferences = pluginReferenceStore.getAll();
     Map<String, String> serverPluginHashes = serverPluginReferences.getReferenceList().stream()
       .filter(ref -> !config.getEmbeddedPluginUrlsByKey().containsKey(ref.getKey()))
       .collect(Collectors.toMap(PluginReference::getKey, PluginReference::getHash));

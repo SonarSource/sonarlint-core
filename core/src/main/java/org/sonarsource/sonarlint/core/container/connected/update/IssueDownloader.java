@@ -72,10 +72,10 @@ public class IssueDownloader {
    */
   public List<Sonarlint.ServerIssue> download(String key, ProjectConfiguration projectConfiguration,
     boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressWrapper progress) {
-    Sonarlint.ServerIssue.Builder issueBuilder = Sonarlint.ServerIssue.newBuilder();
-    Location.Builder locationBuilder = Location.newBuilder();
-    Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder = Sonarlint.ServerIssue.TextRange.newBuilder();
-    Sonarlint.ServerIssue.Flow.Builder flowBuilder = Sonarlint.ServerIssue.Flow.newBuilder();
+    var issueBuilder = Sonarlint.ServerIssue.newBuilder();
+    var locationBuilder = Location.newBuilder();
+    var textRangeBuilder = Sonarlint.ServerIssue.TextRange.newBuilder();
+    var flowBuilder = Sonarlint.ServerIssue.Flow.newBuilder();
 
     List<Sonarlint.ServerIssue> result = new ArrayList<>();
 
@@ -113,10 +113,10 @@ public class IssueDownloader {
     Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder) {
     String sqPath = issueStorePaths.fileKeyToSqPath(projectConfiguration, batchIssueFromWs.getModuleKey(), batchIssueFromWs.getPath());
 
-    Location primary = buildPrimaryLocationForBatchIssue(locationBuilder, textRangeBuilder, batchIssueFromWs, sqPath);
+    var primary = buildPrimaryLocationForBatchIssue(locationBuilder, textRangeBuilder, batchIssueFromWs, sqPath);
 
     issueBuilder.clear();
-    Sonarlint.ServerIssue.Builder builder = issueBuilder
+    var builder = issueBuilder
       .setAssigneeLogin(batchIssueFromWs.getAssigneeLogin())
       .setLineHash(batchIssueFromWs.getChecksum())
       .setCreationDate(batchIssueFromWs.getCreationDate())
@@ -149,8 +149,8 @@ public class IssueDownloader {
     Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder, Sonarlint.ServerIssue.Flow.Builder flowBuilder, Issue issueFromWs,
     Map<String, String> componentsByKey, Map<String, String> sourceCodeByKey) {
     issueBuilder.clear();
-    RuleKey ruleKey = RuleKey.parse(issueFromWs.getRule());
-    Location primary = buildPrimaryLocation(projectConfiguration, locationBuilder, textRangeBuilder, issueFromWs, componentsByKey, sourceCodeByKey);
+    var ruleKey = RuleKey.parse(issueFromWs.getRule());
+    var primary = buildPrimaryLocation(projectConfiguration, locationBuilder, textRangeBuilder, issueFromWs, componentsByKey, sourceCodeByKey);
     issueBuilder
       .setAssigneeLogin(issueFromWs.getAssignee())
       .setLineHash(issueFromWs.getHash())

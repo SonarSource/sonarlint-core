@@ -72,7 +72,7 @@ public class FileIndexer {
     progressReport = new ProgressReport("Report about progress of file indexation", TimeUnit.SECONDS.toMillis(10));
     progressReport.start("Index files");
 
-    Progress progress = new Progress();
+    var progress = new Progress();
 
     try {
       indexFiles(inputFileCache, progress, analysisConfiguration.inputFiles());

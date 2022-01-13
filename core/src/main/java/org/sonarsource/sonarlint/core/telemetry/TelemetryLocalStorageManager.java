@@ -61,9 +61,9 @@ class TelemetryLocalStorageManager {
   }
 
   private void updateAtomically(Consumer<TelemetryLocalStorage> updater) throws IOException {
-    Gson gson = createGson();
+    var gson = createGson();
     Files.createDirectories(path.getParent());
-    try (FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.SYNC);
+    try (var fileChannel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.SYNC);
       FileLock lock = fileChannel.lock()) {
       TelemetryLocalStorage newData = readAtomically(gson, fileChannel);
 
@@ -78,10 +78,10 @@ class TelemetryLocalStorageManager {
       if (fileChannel.size() == 0) {
         return new TelemetryLocalStorage();
       }
-      final ByteBuffer buf = ByteBuffer.allocate((int) fileChannel.size());
+      final var buf = ByteBuffer.allocate((int) fileChannel.size());
       fileChannel.read(buf);
       byte[] decoded = Base64.getDecoder().decode(buf.array());
-      String oldJson = new String(decoded, StandardCharsets.UTF_8);
+      var oldJson = new String(decoded, StandardCharsets.UTF_8);
       TelemetryLocalStorage previousData = gson.fromJson(oldJson, TelemetryLocalStorage.class);
 
       return TelemetryLocalStorage.validateAndMigrate(previousData);
@@ -119,10 +119,10 @@ class TelemetryLocalStorageManager {
   }
 
   private TelemetryLocalStorage read() throws IOException {
-    Gson gson = createGson();
+    var gson = createGson();
     byte[] bytes = Files.readAllBytes(path);
     byte[] decoded = Base64.getDecoder().decode(bytes);
-    String json = new String(decoded, StandardCharsets.UTF_8);
+    var json = new String(decoded, StandardCharsets.UTF_8);
     TelemetryLocalStorage rawData = gson.fromJson(json, TelemetryLocalStorage.class);
     return TelemetryLocalStorage.validateAndMigrate(rawData);
   }

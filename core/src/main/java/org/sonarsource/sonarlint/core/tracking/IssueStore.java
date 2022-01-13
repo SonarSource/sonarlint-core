@@ -93,7 +93,7 @@ public class IssueStore {
   }
 
   private static Sonarlint.Issues transform(Collection<Trackable> localIssues) {
-    Sonarlint.Issues.Builder builder = Sonarlint.Issues.newBuilder();
+    var builder = Sonarlint.Issues.newBuilder();
     localIssues.stream()
       .map(IssueStore::transform)
       .filter(Objects::nonNull)
@@ -108,7 +108,7 @@ public class IssueStore {
 
   @CheckForNull
   private static Sonarlint.Issues.Issue transform(Trackable localIssue) {
-    Sonarlint.Issues.Issue.Builder builder = Sonarlint.Issues.Issue.newBuilder()
+    var builder = Sonarlint.Issues.Issue.newBuilder()
       .setRuleKey(localIssue.getRuleKey())
       .setMessage(localIssue.getMessage())
       .setResolved(localIssue.isResolved());

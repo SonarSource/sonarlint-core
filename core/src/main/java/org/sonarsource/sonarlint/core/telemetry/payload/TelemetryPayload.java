@@ -165,11 +165,11 @@ public class TelemetryPayload {
   }
 
   public String toJson() {
-    Gson gson = new GsonBuilder()
+    var gson = new GsonBuilder()
       .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter())
       .create();
-    JsonObject jsonPayload = gson.toJsonTree(this).getAsJsonObject();
-    JsonObject jsonAdditional = gson.toJsonTree(additionalAttributes, new TypeToken<Map<String, Object>>() {
+    var jsonPayload = gson.toJsonTree(this).getAsJsonObject();
+    var jsonAdditional = gson.toJsonTree(additionalAttributes, new TypeToken<Map<String, Object>>() {
     }.getType()).getAsJsonObject();
     return gson.toJson(mergeObjects(jsonAdditional, jsonPayload));
   }

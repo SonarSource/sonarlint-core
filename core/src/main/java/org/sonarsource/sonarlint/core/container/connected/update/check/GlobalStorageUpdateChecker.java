@@ -46,7 +46,7 @@ public class GlobalStorageUpdateChecker {
   }
 
   public StorageUpdateCheckResult checkForUpdate(GlobalSettingsStore globalSettingsStore, QualityProfileStore qualityProfileStore, ProgressWrapper progress) {
-    DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
+    var result = new DefaultStorageUpdateCheckResult();
 
     progress.setProgressAndCheckCancel("Checking server version and status", 0.1f);
     statusChecker.checkVersionAndStatus();

@@ -306,8 +306,8 @@ public class PluginInfo implements Comparable<PluginInfo> {
     }
 
     // Ignore patch and build numbers since this should not change API compatibility
-    Version requestedApi = Version.create(minimalSqVersion.getMajor() + "." + minimalSqVersion.getMinor());
-    Version implementedApiVersion = Version.create(implementedApi);
+    var requestedApi = Version.create(minimalSqVersion.getMajor() + "." + minimalSqVersion.getMinor());
+    var implementedApiVersion = Version.create(implementedApi);
     return implementedApiVersion.compareToIgnoreQualifier(requestedApi) >= 0;
   }
 
@@ -349,7 +349,7 @@ public class PluginInfo implements Comparable<PluginInfo> {
 
   public static PluginInfo create(Path jarFile, boolean isEmbedded) {
     try {
-      PluginManifest manifest = new PluginManifest(jarFile);
+      var manifest = new PluginManifest(jarFile);
       return create(jarFile, manifest, isEmbedded);
 
     } catch (IOException e) {
@@ -361,7 +361,7 @@ public class PluginInfo implements Comparable<PluginInfo> {
     if (StringUtils.isBlank(manifest.getKey())) {
       throw MessageException.of(String.format("File is not a plugin. Please delete it and restart: %s", jarPath.toAbsolutePath()));
     }
-    PluginInfo info = new PluginInfo(manifest.getKey());
+    var info = new PluginInfo(manifest.getKey());
 
     info.setJarFile(jarPath.toFile());
     info.setName(manifest.getName());

@@ -29,7 +29,6 @@ import org.sonarsource.sonarlint.core.container.storage.RulesStore;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
-import org.sonarsource.sonarlint.core.serverapi.rules.ServerRules;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class RulesDownloader {

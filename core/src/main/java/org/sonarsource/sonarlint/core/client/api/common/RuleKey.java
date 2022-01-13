@@ -49,8 +49,8 @@ public class RuleKey {
       throw new IllegalArgumentException("Invalid rule key: " + s);
     }
 
-    String key = s.substring(0, separatorIndex);
-    String repo = s.substring(separatorIndex + 1);
+    var key = s.substring(0, separatorIndex);
+    var repo = s.substring(separatorIndex + 1);
     return new RuleKey(key, repo);
   }
 
@@ -67,7 +67,7 @@ public class RuleKey {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    RuleKey ruleKey = (RuleKey) o;
+    var ruleKey = (RuleKey) o;
     return Objects.equals(repository, ruleKey.repository) &&
       Objects.equals(rule, ruleKey.rule);
   }

@@ -38,7 +38,7 @@ public class StandaloneSonarLintRulesProvider extends ProviderAdapter {
   }
 
   private static SonarLintRules createRules(StandaloneRuleDefinitionsLoader pluginRulesLoader, AbstractGlobalConfiguration config) {
-    SonarLintRules rules = new SonarLintRules();
+    var rules = new SonarLintRules();
 
     for (RulesDefinition.Repository repoDef : pluginRulesLoader.getContext().repositories()) {
       Optional<Language> repoLanguage = Language.forKey(repoDef.language());
