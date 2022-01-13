@@ -48,8 +48,8 @@ public class SonarLintPathPattern {
   }
 
   public static SonarLintPathPattern[] create(String[] s) {
-    SonarLintPathPattern[] result = new SonarLintPathPattern[s.length];
-    for (int i = 0; i < s.length; i++) {
+    var result = new SonarLintPathPattern[s.length];
+    for (var i = 0; i < s.length; i++) {
       result[i] = new SonarLintPathPattern(s[i]);
     }
     return result;

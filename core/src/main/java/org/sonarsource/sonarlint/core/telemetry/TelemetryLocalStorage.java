@@ -158,7 +158,7 @@ class TelemetryLocalStorage {
   }
 
   private void markSonarLintAsUsedToday() {
-    LocalDate now = LocalDate.now();
+    var now = LocalDate.now();
     if (lastUseDate == null || !lastUseDate.equals(now)) {
       numUseDays++;
     }
@@ -184,7 +184,7 @@ class TelemetryLocalStorage {
   }
 
   static TelemetryLocalStorage validateAndMigrate(TelemetryLocalStorage data) {
-    LocalDate today = LocalDate.now();
+    var today = LocalDate.now();
 
     // migrate deprecated installDate
     if (data.installDate() != null && (data.installTime() == null || data.installTime().toLocalDate().isAfter(data.installDate()))) {

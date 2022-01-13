@@ -46,7 +46,7 @@ public class PluginHashes {
    */
   public String of(InputStream input) {
     try (InputStream is = input) {
-      MessageDigest digest = MessageDigest.getInstance("MD5");
+      var digest = MessageDigest.getInstance("MD5");
       byte[] hash = digest(is, digest);
       return toHex(hash);
     } catch (Exception e) {
@@ -55,7 +55,7 @@ public class PluginHashes {
   }
 
   private static byte[] digest(InputStream input, MessageDigest digest) throws IOException {
-    final byte[] buffer = new byte[STREAM_BUFFER_LENGTH];
+    final var buffer = new byte[STREAM_BUFFER_LENGTH];
     int read = input.read(buffer, 0, STREAM_BUFFER_LENGTH);
     while (read > -1) {
       digest.update(buffer, 0, read);
@@ -65,7 +65,7 @@ public class PluginHashes {
   }
 
   static String toHex(byte[] bytes) {
-    BigInteger bi = new BigInteger(1, bytes);
+    var bi = new BigInteger(1, bytes);
     return String.format("%0" + (bytes.length << 1) + "x", bi);
   }
 }

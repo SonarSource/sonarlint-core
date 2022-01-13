@@ -88,7 +88,7 @@ public class GlobalSettingsUpdateChecker {
     if (right.length() <= MAX_VALUE_LENGTH) {
       return formatValue(key, right);
     }
-    String diff = StringUtils.difference(left, right);
+    var diff = StringUtils.difference(left, right);
     if (right.startsWith(diff)) {
       return formatValue(key, diff);
     } else {
@@ -100,7 +100,7 @@ public class GlobalSettingsUpdateChecker {
     if (left.length() <= MAX_VALUE_LENGTH) {
       return formatValue(key, left);
     }
-    String diff = StringUtils.difference(right, left);
+    var diff = StringUtils.difference(right, left);
     if (left.startsWith(diff)) {
       return formatValue(key, diff);
     } else {

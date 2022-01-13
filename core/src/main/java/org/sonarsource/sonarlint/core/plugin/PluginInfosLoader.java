@@ -71,11 +71,11 @@ public class PluginInfosLoader {
   private Map<String, PluginInfo> loadPlugins(List<PluginReference> pluginReferences) {
     Map<String, PluginInfo> infosByKey = new HashMap<>();
 
-    Profiler profiler = Profiler.create(LOG).startDebug("Load plugins");
+    var profiler = Profiler.create(LOG).startDebug("Load plugins");
 
     for (PluginReference ref : pluginReferences) {
-      Path jarFilePath = getFromCache(ref);
-      PluginInfo info = PluginInfo.create(jarFilePath, ref.isEmbedded());
+      var jarFilePath = getFromCache(ref);
+      var info = PluginInfo.create(jarFilePath, ref.isEmbedded());
       Boolean sonarLintSupported = info.isSonarLintSupported();
       if (sonarLintSupported == null || !sonarLintSupported.booleanValue()) {
         LOG.debug("Plugin '{}' is not compatible with SonarLint. Skip loading it.", info.getName());
@@ -119,19 +119,19 @@ public class PluginInfosLoader {
       info.setSkipReason(new SkipReason.IncompatiblePluginVersion(pluginMinVersion));
       return;
     }
-    Version jreMinVersion = info.getJreMinVersion();
+    var jreMinVersion = info.getJreMinVersion();
     String javaSpecVersion = Objects.requireNonNull(system2.property("java.specification.version"), "Missing Java property 'java.specification.version'");
     if (jreMinVersion != null) {
-      Version jreCurrentVersion = Version.create(javaSpecVersion);
+      var jreCurrentVersion = Version.create(javaSpecVersion);
       if (!jreCurrentVersion.satisfiesMinRequirement(jreMinVersion)) {
         LOG.debug("Plugin '{}' requires JRE {} while current is {}. Skip loading it.", info.getName(), jreMinVersion, jreCurrentVersion);
         info.setSkipReason(
           new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.JRE, jreCurrentVersion.toString(), jreMinVersion.toString()));
       }
     }
-    Version nodeMinVersion = info.getNodeJsMinVersion();
+    var nodeMinVersion = info.getNodeJsMinVersion();
     if (nodeMinVersion != null) {
-      Version nodeCurrentVersion = globalConfiguration.getNodeJsVersion();
+      var nodeCurrentVersion = globalConfiguration.getNodeJsVersion();
       if (nodeCurrentVersion == null) {
         LOG.debug("Plugin '{}' requires Node.js {}. Skip loading it.", info.getName(), nodeMinVersion);
         info.setSkipReason(new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.NODEJS, null, nodeMinVersion.toString()));

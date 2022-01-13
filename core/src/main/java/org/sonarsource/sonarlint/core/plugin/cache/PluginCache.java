@@ -161,7 +161,7 @@ public class PluginCache {
   public PluginReference getFromCacheOrCopy(final URL pluginUrl) {
     try (InputStream is = pluginUrl.openStream()) {
       String hash = org.sonarsource.sonarlint.core.util.StringUtils.md5(is);
-      String filename = StringUtils.substringAfterLast(pluginUrl.getFile(), "/");
+      var filename = StringUtils.substringAfterLast(pluginUrl.getFile(), "/");
       get(filename, hash, new FileCopier(pluginUrl));
       return new PluginReference(hash, filename, true);
     } catch (StorageException e) {

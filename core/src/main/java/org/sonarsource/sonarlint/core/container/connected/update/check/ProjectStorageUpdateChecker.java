@@ -44,11 +44,11 @@ public class ProjectStorageUpdateChecker {
   }
 
   public StorageUpdateCheckResult checkForUpdates(String projectKey, ProgressWrapper progress) {
-    DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
+    var result = new DefaultStorageUpdateCheckResult();
 
-    ProjectConfiguration serverProjectConfiguration = projectConfigurationDownloader
+    var serverProjectConfiguration = projectConfigurationDownloader
       .fetch(projectKey, progress);
-    ProjectConfiguration storageProjectConfiguration = storageReader.readProjectConfig(projectKey);
+    var storageProjectConfiguration = storageReader.readProjectConfig(projectKey);
 
     checkForSettingsUpdates(result, serverProjectConfiguration, storageProjectConfiguration);
 

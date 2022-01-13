@@ -74,7 +74,7 @@ public abstract class AbstractSonarLintEngine implements SonarLintEngine {
   }
 
   protected <T> T withModule(AbstractAnalysisConfiguration configuration, Function<ComponentContainer, T> consumer) {
-    boolean deleteModuleAfterAnalysis = false;
+    var deleteModuleAfterAnalysis = false;
     Object moduleKey = configuration.moduleKey();
     ComponentContainer moduleContainer = getModuleRegistry().getContainerFor(moduleKey);
     if (moduleContainer == null) {

@@ -61,7 +61,7 @@ public class ProjectStorageUpdateExecutor {
 
   public void update(String projectKey, boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressWrapper progress) {
     FileUtils.replaceDir(temp -> {
-      ProjectConfiguration projectConfiguration = updateConfiguration(projectKey, qualityProfileStore, temp, progress);
+      var projectConfiguration = updateConfiguration(projectKey, qualityProfileStore, temp, progress);
       updateServerIssues(projectKey, temp, projectConfiguration, fetchTaintVulnerabilities, branchName, progress);
       updateComponents(projectKey, temp, projectConfiguration, progress);
       updateStatus(temp);
@@ -69,7 +69,7 @@ public class ProjectStorageUpdateExecutor {
   }
 
   private ProjectConfiguration updateConfiguration(String projectKey, QualityProfileStore qualityProfileStore, Path temp, ProgressWrapper progress) {
-    ProjectConfiguration projectConfiguration = projectConfigurationDownloader.fetch(projectKey, progress);
+    var projectConfiguration = projectConfigurationDownloader.fetch(projectKey, progress);
     final Set<String> qProfileKeys = qualityProfileStore.getAll().stream().map(QualityProfile::getKey).collect(Collectors.toSet());
     for (String qpKey : projectConfiguration.getQprofilePerLanguageMap().values()) {
       if (!qProfileKeys.contains(qpKey)) {
@@ -84,13 +84,13 @@ public class ProjectStorageUpdateExecutor {
 
   void updateComponents(String projectKey, Path temp, ProjectConfiguration projectConfiguration, ProgressWrapper progress) {
     List<String> sqFiles = projectFileListDownloader.get(projectKey, progress);
-    Sonarlint.ProjectComponents.Builder componentsBuilder = Sonarlint.ProjectComponents.newBuilder();
+    var componentsBuilder = Sonarlint.ProjectComponents.newBuilder();
 
     Map<String, String> modulePathByKey = projectConfiguration.getModulePathByKeyMap();
     for (String fileKey : sqFiles) {
       int idx = StringUtils.lastIndexOf(fileKey, ":");
-      String moduleKey = fileKey.substring(0, idx);
-      String relativePath = fileKey.substring(idx + 1);
+      var moduleKey = fileKey.substring(0, idx);
+      var relativePath = fileKey.substring(idx + 1);
       String prefix = modulePathByKey.getOrDefault(moduleKey, "");
       if (!prefix.isEmpty()) {
         prefix = prefix + "/";
@@ -106,7 +106,7 @@ public class ProjectStorageUpdateExecutor {
   }
 
   private void updateStatus(Path temp) {
-    StorageStatus storageStatus = StorageStatus.newBuilder()
+    var storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(ProjectStoragePaths.STORAGE_VERSION)
       .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
       .setUpdateTimestamp(new Date().getTime())

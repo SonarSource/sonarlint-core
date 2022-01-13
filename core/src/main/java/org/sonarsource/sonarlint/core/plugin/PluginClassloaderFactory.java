@@ -52,9 +52,9 @@ public class PluginClassloaderFactory {
    * Creates as many classloaders as requested by the input parameter.
    */
   public Map<PluginClassLoaderDef, ClassLoader> create(Collection<PluginClassLoaderDef> defs) {
-    ClassLoader baseClassLoader = baseClassLoader();
+    var baseClassLoader = baseClassLoader();
 
-    ClassloaderBuilder builder = new ClassloaderBuilder();
+    var builder = new ClassloaderBuilder();
     builder.newClassloader(API_CLASSLOADER_KEY, baseClassLoader);
     builder.setMask(API_CLASSLOADER_KEY, apiMask());
 
@@ -91,7 +91,7 @@ public class PluginClassloaderFactory {
     Map<PluginClassLoaderDef, ClassLoader> result = new HashMap<>();
     Map<String, ClassLoader> classloadersByBasePluginKey = builder.build();
     for (PluginClassLoaderDef def : defs) {
-      ClassLoader classloader = classloadersByBasePluginKey.get(def.getBasePluginKey());
+      var classloader = classloadersByBasePluginKey.get(def.getBasePluginKey());
       if (classloader == null) {
         throw new IllegalStateException(String.format("Fail to create classloader for plugin [%s]", def.getBasePluginKey()));
       }

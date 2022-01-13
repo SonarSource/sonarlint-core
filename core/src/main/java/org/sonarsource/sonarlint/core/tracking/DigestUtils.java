@@ -52,7 +52,7 @@ public class DigestUtils {
 
   public static String encodeHexString(byte[] data) {
     int length = data.length;
-    char[] out = new char[length << 1];
+    var out = new char[length << 1];
 
     for (int i = 0, j = 0; i < length; ++i, j += 2) {
       out[j] = DIGITS[(240 & data[i]) >>> 4];

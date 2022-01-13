@@ -37,7 +37,7 @@ public abstract class PluginJarExploder {
   }
 
   protected ExplodedPlugin explodeFromUnzippedDir(String pluginKey, File jarFile, File unzippedDir) {
-    File libDir = new File(unzippedDir, PluginJarExploder.LIB_RELATIVE_PATH_IN_JAR);
+    var libDir = new File(unzippedDir, PluginJarExploder.LIB_RELATIVE_PATH_IN_JAR);
     Collection<File> libs;
     if (libDir.isDirectory() && libDir.exists()) {
       libs = listFiles(libDir, null, false);

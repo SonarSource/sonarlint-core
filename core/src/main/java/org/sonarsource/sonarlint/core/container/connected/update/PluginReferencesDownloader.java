@@ -55,7 +55,7 @@ public class PluginReferencesDownloader {
   }
 
   public PluginReferences toReferences(List<SonarAnalyzer> analyzers) {
-    Builder builder = PluginReferences.newBuilder();
+    var builder = PluginReferences.newBuilder();
 
     analyzers.stream()
       .filter(this::isCompatible)
@@ -66,7 +66,7 @@ public class PluginReferencesDownloader {
   }
 
   private PluginReference toPluginReference(SonarAnalyzer analyzer) {
-    org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference.Builder builder = PluginReference.newBuilder()
+    var builder = PluginReference.newBuilder()
       .setKey(analyzer.key());
     if (!configuration.getEmbeddedPluginUrlsByKey().containsKey(analyzer.key())) {
       // For embedded plugins, ignore hash and filename
@@ -93,7 +93,7 @@ public class PluginReferencesDownloader {
 
   public void fetchPlugins(List<SonarAnalyzer> analyzers, ProgressWrapper progress) {
     PluginReferences refs = toReferences(analyzers);
-    int i = 0;
+    var i = 0;
     float refCount = refs.getReferenceList().size();
     for (PluginReference ref : refs.getReferenceList()) {
       if (configuration.getEmbeddedPluginUrlsByKey().containsKey(ref.getKey())) {

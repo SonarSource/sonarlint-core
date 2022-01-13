@@ -41,9 +41,9 @@ public class ModuleInputFileBuilder {
   }
 
   public SonarLintInputFile create(ClientInputFile inputFile) {
-    SonarLintInputFile defaultInputFile = new SonarLintInputFile(inputFile, f -> {
+    var defaultInputFile = new SonarLintInputFile(inputFile, f -> {
       LOG.debug("Initializing metadata of file {}", f.uri());
-      Charset charset = f.charset();
+      var charset = f.charset();
       InputStream stream;
       try {
         stream = f.inputStream();

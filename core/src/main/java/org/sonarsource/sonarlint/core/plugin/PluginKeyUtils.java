@@ -51,9 +51,9 @@ public final class PluginKeyUtils {
   }
 
   private static String keepLettersAndDigits(String key) {
-    StringBuilder sb = new StringBuilder();
-    for (int index = 0; index < key.length(); index++) {
-      char character = key.charAt(index);
+    var sb = new StringBuilder();
+    for (var index = 0; index < key.length(); index++) {
+      var character = key.charAt(index);
       if (Character.isLetter(character) || Character.isDigit(character)) {
         sb.append(character);
       }

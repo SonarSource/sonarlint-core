@@ -62,10 +62,10 @@ public class NodeJsHelper {
     detectedNodePath = locateNode(configuredNodejsPath);
     if (detectedNodePath != null) {
       LOG.debug("Checking node version...");
-      Command command = Command.create(detectedNodePath.toString()).addArgument("-v");
+      var command = Command.create(detectedNodePath.toString()).addArgument("-v");
       String nodeVersionStr = runSimpleCommand(command);
       if (nodeVersionStr != null) {
-        Matcher matcher = NODEJS_VERSION_PATTERN.matcher(nodeVersionStr);
+        var matcher = NODEJS_VERSION_PATTERN.matcher(nodeVersionStr);
         if (matcher.matches()) {
           String version = matcher.group(1);
           nodeJsVersion = Version.create(version);
@@ -117,11 +117,11 @@ public class NodeJsHelper {
 
   private void computePathEnvForMacOs(Command which) {
     if (system2.isOsMac() && Files.exists(pathHelperLocationOnMac)) {
-      Command command = Command.create(pathHelperLocationOnMac.toString()).addArgument("-s");
+      var command = Command.create(pathHelperLocationOnMac.toString()).addArgument("-s");
       String pathHelperOutput = runSimpleCommand(command);
       if (pathHelperOutput != null) {
-        Pattern regex = Pattern.compile(".*PATH=\"(.*)\"; export PATH;.*");
-        Matcher matchResult = regex.matcher(pathHelperOutput);
+        var regex = Pattern.compile(".*PATH=\"(.*)\"; export PATH;.*");
+        var matchResult = regex.matcher(pathHelperOutput);
         if (matchResult.matches()) {
           which.setEnvironmentVariable("PATH", matchResult.group(1));
         }
@@ -146,7 +146,7 @@ public class NodeJsHelper {
       LOG.debug("Unable to execute the command", e);
       return null;
     }
-    StringBuilder msg = new StringBuilder(String.format("Command '%s' exited with %s", command.toString(), exitCode));
+    var msg = new StringBuilder(String.format("Command '%s' exited with %s", command.toString(), exitCode));
     if (!stdOut.isEmpty()) {
       msg.append("\nstdout: ").append(String.join("\n", stdOut));
     }

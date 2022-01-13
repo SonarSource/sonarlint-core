@@ -132,7 +132,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     storageContainer = new StorageContainer(globalConfig, this.globalStores, globalStatusReader);
     try {
       storageContainer.startComponents();
-      GlobalStorageStatus globalStorageStatus = globalStatusReader.read();
+      var globalStorageStatus = globalStatusReader.read();
       if (globalStorageStatus == null) {
         changeState(State.NEVER_UPDATED);
       } else if (globalStorageStatus.isStale()) {
@@ -287,7 +287,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     setLogging(null);
     rwl.writeLock().lock();
     checkUpdateStatus();
-    ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, globalStores, endpoint, client);
+    var connectedContainer = new ConnectedContainer(globalConfig, globalStores, endpoint, client);
     try {
       changeState(State.UPDATING);
       connectedContainer.startComponents();
@@ -333,7 +333,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   private <U> U runInConnectedContainer(EndpointParams endpoint, HttpClient client, Function<ConnectedContainer, U> func) {
-    ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, globalStores, endpoint, client);
+    var connectedContainer = new ConnectedContainer(globalConfig, globalStores, endpoint, client);
     try {
       connectedContainer.startComponents();
       return func.apply(connectedContainer);

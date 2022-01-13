@@ -145,8 +145,8 @@ public class FileMetadata {
    * Maximum performance is needed.
    */
   public Metadata readMetadata(InputStream stream, Charset encoding, URI fileUri, @Nullable CharHandler otherHandler) {
-    LineCounter lineCounter = new LineCounter(fileUri, encoding);
-    LineOffsetCounter lineOffsetCounter = new LineOffsetCounter();
+    var lineCounter = new LineCounter(fileUri, encoding);
+    var lineOffsetCounter = new LineOffsetCounter();
     try (Reader reader = new BufferedReader(new InputStreamReader(stream, encoding))) {
       CharHandler[] handlers;
       if (otherHandler != null) {
@@ -173,7 +173,7 @@ public class FileMetadata {
   private static void read(Reader reader, CharHandler... handlers) throws IOException {
     char c;
     int i = reader.read();
-    boolean afterCR = false;
+    var afterCR = false;
     while (i != -1) {
       c = (char) i;
       if (afterCR) {

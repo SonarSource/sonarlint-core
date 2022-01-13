@@ -31,8 +31,8 @@ public class DateUtils {
   }
 
   public static String toAge(long time) {
-    LocalDateTime creation = LocalDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneId.systemDefault());
-    LocalDateTime now = LocalDateTime.now();
+    var creation = LocalDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneId.systemDefault());
+    var now = LocalDateTime.now();
 
     long years = ChronoUnit.YEARS.between(creation, now);
     if (years > 0) {

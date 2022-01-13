@@ -56,10 +56,10 @@ public class ProjectStoragePaths {
    * See SLCORE-148 and SLCORE-228.
    */
   public static String encodeForFs(String name) {
-    String encoded = DigestUtils.encodeHexString(name.getBytes(StandardCharsets.UTF_8));
+    var encoded = DigestUtils.encodeHexString(name.getBytes(StandardCharsets.UTF_8));
     if (encoded.length() > MAX_FOLDER_NAME_SIZE) {
       // Most FS will not support a folder name greater than 255
-      String md5 = StringUtils.md5(name);
+      var md5 = StringUtils.md5(name);
       return encoded.substring(0, MAX_FOLDER_NAME_SIZE - md5.length()) + md5;
     }
     return encoded;

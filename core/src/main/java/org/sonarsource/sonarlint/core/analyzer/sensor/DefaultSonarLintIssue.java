@@ -140,7 +140,7 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
   }
 
   private DefaultSonarLintIssueLocation rewriteLocation(DefaultSonarLintIssueLocation location) {
-    InputComponent component = location.inputComponent();
+    var component = location.inputComponent();
     Optional<Path> dirOrModulePath = Optional.empty();
 
     if (component instanceof InputDir) {
@@ -150,9 +150,9 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
 
     if (dirOrModulePath.isPresent()) {
       String path = PathUtils.sanitize(dirOrModulePath.get().toString());
-      DefaultSonarLintIssueLocation fixedLocation = new DefaultSonarLintIssueLocation();
+      var fixedLocation = new DefaultSonarLintIssueLocation();
       fixedLocation.on(project);
-      StringBuilder fullMessage = new StringBuilder();
+      var fullMessage = new StringBuilder();
       if (!isNullOrEmpty(path)) {
         fullMessage.append("[").append(path).append("] ");
       }

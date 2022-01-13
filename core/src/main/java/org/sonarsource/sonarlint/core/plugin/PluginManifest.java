@@ -67,7 +67,7 @@ public final class PluginManifest {
    */
   public PluginManifest(Path jarPath) throws IOException {
     this();
-    try (JarFile jar = new JarFile(jarPath.toFile())) {
+    try (var jar = new JarFile(jarPath.toFile())) {
       if (jar.getManifest() != null) {
         loadManifest(jar.getManifest());
       }
@@ -91,7 +91,7 @@ public final class PluginManifest {
   }
 
   private void loadManifest(Manifest manifest) {
-    Attributes attributes = manifest.getMainAttributes();
+    var attributes = manifest.getMainAttributes();
     this.key = PluginKeyUtils.sanitize(attributes.getValue(KEY_ATTRIBUTE));
     this.mainClass = attributes.getValue(MAIN_CLASS_ATTRIBUTE);
     this.name = attributes.getValue(NAME_ATTRIBUTE);

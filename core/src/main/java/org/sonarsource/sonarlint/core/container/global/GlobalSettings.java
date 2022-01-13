@@ -30,7 +30,7 @@ public class GlobalSettings extends MapSettings {
   public GlobalSettings(AbstractGlobalConfiguration config, PropertyDefinitions propertyDefinitions) {
     super(propertyDefinitions);
     addProperties(config.extraProperties());
-    Path nodejsPath = config.getNodeJsPath();
+    var nodejsPath = config.getNodeJsPath();
     if (nodejsPath != null) {
       setProperty(NODE_EXECUTABLE_PROPERTY, nodejsPath.toString());
     }

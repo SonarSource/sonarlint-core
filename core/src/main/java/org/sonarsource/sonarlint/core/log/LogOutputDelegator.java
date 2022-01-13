@@ -38,8 +38,8 @@ public class LogOutputDelegator {
   public void log(String formattedMessage, Level level, Throwable t) {
     log(formattedMessage, level);
 
-    StringWriter sw = new StringWriter();
-    PrintWriter pw = new PrintWriter(sw);
+    var sw = new StringWriter();
+    var pw = new PrintWriter(sw);
     t.printStackTrace(pw);
     log(sw.toString(), level);
   }

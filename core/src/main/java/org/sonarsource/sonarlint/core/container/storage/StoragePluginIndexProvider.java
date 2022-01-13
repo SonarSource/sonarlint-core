@@ -49,7 +49,7 @@ public class StoragePluginIndexProvider implements PluginIndex {
     if (pluginReferenceStore.isEmpty()) {
       return Collections.emptyList();
     }
-    Sonarlint.PluginReferences protoReferences = pluginReferenceStore.getAll();
+    var protoReferences = pluginReferenceStore.getAll();
     Map<String, URL> extraPluginsUrlsByKey = configuration.getExtraPluginsUrlsByKey();
     List<PluginReference> pluginsRefs = protoReferences.getReferenceList().stream()
       .map(r -> {

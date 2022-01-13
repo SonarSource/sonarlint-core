@@ -42,9 +42,9 @@ public class PartialUpdaterFactory {
   }
 
   public PartialUpdater create(EndpointParams endpoint, HttpClient client) {
-    ServerApiHelper serverApiHelper = new ServerApiHelper(endpoint, client);
-    IssueStoreFactory issueStoreFactory = new IssueStoreFactory();
-    IssueDownloader downloader = new IssueDownloader(new IssueApi(serverApiHelper), new SourceApi(serverApiHelper), issueStorePaths);
+    var serverApiHelper = new ServerApiHelper(endpoint, client);
+    var issueStoreFactory = new IssueStoreFactory();
+    var downloader = new IssueDownloader(new IssueApi(serverApiHelper), new SourceApi(serverApiHelper), issueStorePaths);
     return new PartialUpdater(issueStoreFactory, downloader, projectStoragePaths, issueStorePaths, tempFolder);
   }
 }
