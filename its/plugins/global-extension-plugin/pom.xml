@@ -48,6 +48,7 @@
           <pluginClass>org.sonarsource.plugins.example.GlobalExtensionPlugin</pluginClass>
           <!-- Need to be one part of the sensor whitelist -->
           <pluginKey>cobol</pluginKey>
+          <skipDependenciesPackaging>true</skipDependenciesPackaging>
           <sonarLintSupported>true</sonarLintSupported>
           <sonarQubeMinVersion>7.9</sonarQubeMinVersion>
         </configuration>
