@@ -48,7 +48,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
   void stop(boolean deleteStorage);
 
   /**
-   * Return rule details in the context of a given project (severity may have been overriden in the quality profile).
+   * Return rule details in the context of a given project (severity may have been overridden in the quality profile).
    * @param projectKey if null, the default QP will be considered
    */
   CompletableFuture<ConnectedRuleDetails> getActiveRuleDetails(EndpointParams endpoint, HttpClient client, String ruleKey, @Nullable String projectKey);
