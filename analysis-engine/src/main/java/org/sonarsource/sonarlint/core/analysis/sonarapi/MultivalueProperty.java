@@ -55,7 +55,7 @@ public class MultivalueProperty {
   }
 
   /**
-   * In most cases we expect a single record. <br>Having multiple records means the input value was splitted over multiple lines (this is common in Maven).
+   * In most cases we expect a single record. <br>Having multiple records means the input value was split over multiple lines (this is common in Maven).
    * For example:
    * <pre>
    *   &lt;sonar.exclusions&gt;

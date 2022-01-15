@@ -182,7 +182,7 @@ class StandaloneIssueMediumTests {
   void sonarjs_should_honor_global_and_analysis_level_properties() throws Exception {
     var content = "function foo() {\n"
       + "  console.log(LOCAL1); // Noncompliant\n"
-      + "  console.log(GLOBAL1); // GLOBAL1 defined as global varibale in global settings\n"
+      + "  console.log(GLOBAL1); // GLOBAL1 defined as global variable in global settings\n"
       + "}";
     var inputFile = prepareInputFile("foo.js", content, false);
 
