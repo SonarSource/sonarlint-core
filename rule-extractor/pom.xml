@@ -30,6 +30,18 @@
       <artifactId>sonarlint-commons</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.sonarsource.sonarqube</groupId>
+      <artifactId>sonar-markdown</artifactId>
+      <version>${sonarqube.version}</version>
+      <exclusions>
+        <exclusion>
+          <!-- maybe this will be removed from markdown soon -->
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
 
     <!-- Tests -->
     <dependency>

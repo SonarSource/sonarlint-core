@@ -26,9 +26,9 @@ import java.util.Set;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.api.server.rule.RulesDefinition.Param;
+import org.sonar.markdown.Markdown;
 import org.sonarsource.sonarlint.core.commons.Language;
 
-import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
 public class SonarLintRuleDefinition {
@@ -50,7 +50,7 @@ public class SonarLintRuleDefinition {
     this.name = rule.name();
     this.severity = rule.severity();
     this.type = rule.type().toString();
-    this.description = requireNonNull(rule.htmlDescription(), "HTML description is mandatory in SonarLint");
+    this.description = rule.htmlDescription() != null ? rule.htmlDescription() : Markdown.convertToHtml(rule.markdownDescription());
     this.isActiveByDefault = rule.activatedByDefault();
     this.language = Language.forKey(rule.repository().language()).orElseThrow(() -> new IllegalStateException("Unknown language with key: " + rule.repository().language()));
     this.tags = rule.tags().toArray(new String[0]);
