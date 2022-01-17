@@ -80,6 +80,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_JAVA_PACKAGE = "sample-java-package";
   private static final String PROJECT_KEY_JAVA_HOTSPOT = "sample-java-hotspot";
   private static final String PROJECT_KEY_JAVA_EMPTY = "sample-java-empty";
+  private static final String PROJECT_KEY_JAVA_MARKDOWN = "sample-java-markdown";
   private static final String PROJECT_KEY_JAVA_CUSTOM = "sample-java-custom";
   private static final String PROJECT_KEY_PHP = "sample-php";
   private static final String PROJECT_KEY_JAVASCRIPT = "sample-javascript";
@@ -107,6 +108,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-package.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-with-hotspot.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-with-markdown.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-empty-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-custom.xml"))
@@ -141,6 +143,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_PACKAGE, "Sample Java Package");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_HOTSPOT, "Sample Java Hotspot");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_EMPTY, "Sample Java Empty");
+    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_MARKDOWN, "Sample Java Markdown");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_PHP, "Sample PHP");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVASCRIPT, "Sample Javascript");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_CUSTOM, "Sample Java Custom");
@@ -157,6 +160,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_PACKAGE, "java", "SonarLint IT Java Package");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_HOTSPOT, "java", "SonarLint IT Java Hotspot");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_EMPTY, "java", "SonarLint IT Java Empty");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_MARKDOWN, "java", "SonarLint IT Java Markdown");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_PHP, "php", "SonarLint IT PHP");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVASCRIPT, "js", "SonarLint IT Javascript");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_CUSTOM, "java", "SonarLint IT Java Custom");
@@ -224,10 +228,10 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @Test
   public void downloadProjects() {
     updateGlobal();
-    assertThat(engine.allProjectsByKey()).hasSize(15);
+    assertThat(engine.allProjectsByKey()).hasSize(16);
     ORCHESTRATOR.getServer().provisionProject("foo-bar", "Foo");
-    assertThat(engine.downloadAllProjects(endpointParams(ORCHESTRATOR), sqHttpClient(), null)).hasSize(16).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
-    assertThat(engine.allProjectsByKey()).hasSize(16).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+    assertThat(engine.downloadAllProjects(endpointParams(ORCHESTRATOR), sqHttpClient(), null)).hasSize(17).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+    assertThat(engine.allProjectsByKey()).hasSize(17).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
   }
 
   @Test
@@ -303,7 +307,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey("S106"), PROJECT_KEY_JAVA).get().getExtendedDescription()).isEmpty();
 
-    var extendedDescription = "my dummy extended description";
+    var extendedDescription = " = Title\n*my dummy extended description*";
 
     WsRequest request = new PostRequest("/api/rules/update")
       .setParam("key", javaRuleKey("S106"))
@@ -312,8 +316,25 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       assertThat(response.code()).isEqualTo(200);
     }
 
+    String expected;
+    if (ORCHESTRATOR.getServer().version().isGreaterThan(7, 9)) {
+      expected = "<h1>Title</h1><strong>my dummy extended description</strong>";
+    } else {
+      // For some reason, there is an extra line break in the generated HTML
+      expected = "<h1>Title\n</h1><strong>my dummy extended description</strong>";
+    }
     assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey("S106"), PROJECT_KEY_JAVA).get().getExtendedDescription())
-      .isEqualTo(extendedDescription);
+      .isEqualTo(expected);
+  }
+
+  @Test
+  public void verifyMarkdownDescription() throws Exception {
+    updateGlobal();
+    updateProject(PROJECT_KEY_JAVA_MARKDOWN);
+
+    assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), "mycompany-java:markdown", PROJECT_KEY_JAVA_MARKDOWN).get().getHtmlDescription())
+      .isEqualTo("<h1>Title</h1><ul><li>one</li>\n"
+        + "<li>two</li></ul>");
   }
 
   @Test

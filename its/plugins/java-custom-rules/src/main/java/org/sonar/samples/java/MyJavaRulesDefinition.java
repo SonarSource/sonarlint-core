@@ -50,6 +50,10 @@ public class MyJavaRulesDefinition implements RulesDefinition {
 
     setTemplates(repository);
 
+    repository.createRule("markdown")
+      .setName("A rule with Markdown description")
+      .setMarkdownDescription("  = Title\n  * one\n* two");
+
     repository.done();
   }
 
