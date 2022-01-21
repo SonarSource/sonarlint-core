@@ -441,7 +441,8 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
-  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable String branchName, @Nullable ClientProgressMonitor monitor) {
+  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities,
+    @Nullable String branchName, @Nullable ClientProgressMonitor monitor) {
     downloadServerIssues(endpoint, client, projectKey, fetchTaintVulnerabilities, branchName, new ProgressMonitor(monitor));
   }
 
@@ -476,7 +477,8 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
-  public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable String branchName, @Nullable ClientProgressMonitor monitor) {
+  public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities,
+    @Nullable String branchName, @Nullable ClientProgressMonitor monitor) {
     requireNonNull(endpoint);
     requireNonNull(projectKey);
     setLogging(null);

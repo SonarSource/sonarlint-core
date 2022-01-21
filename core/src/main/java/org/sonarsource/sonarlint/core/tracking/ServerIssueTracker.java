@@ -68,7 +68,7 @@ public class ServerIssueTracker {
     ProjectBinding projectBinding, String ideFilePath, String branchName, boolean fetchTaintVulnerabilities) {
     try {
       LOGGER.debug("fetchServerIssues projectKey=" + projectBinding.projectKey() + ", ideFilePath=" + ideFilePath + ", branchName=" + branchName);
-      return engine.downloadServerIssues(endpoint, client, projectBinding, ideFilePath, fetchTaintVulnerabilities, branchName,null);
+      return engine.downloadServerIssues(endpoint, client, projectBinding, ideFilePath, fetchTaintVulnerabilities, branchName, null);
     } catch (DownloadException e) {
       LOGGER.debug("Failed to download server issues", e);
       return engine.getServerIssues(projectBinding, ideFilePath);

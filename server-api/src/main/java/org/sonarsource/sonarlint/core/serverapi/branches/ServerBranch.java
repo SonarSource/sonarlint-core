@@ -41,8 +41,12 @@ public class ServerBranch {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
     ServerBranch that = (ServerBranch) o;
     return isMain == that.isMain && Objects.equals(name, that.name);
   }

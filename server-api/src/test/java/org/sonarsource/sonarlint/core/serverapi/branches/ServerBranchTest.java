@@ -26,7 +26,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 class ServerBranchTest {
 
   @Test
-  void  serverBranchTest() {
+  void serverBranchTest() {
     ServerBranch branch = new ServerBranch("foo", true);
 
     assertThat(branch.getName()).isEqualTo("foo");

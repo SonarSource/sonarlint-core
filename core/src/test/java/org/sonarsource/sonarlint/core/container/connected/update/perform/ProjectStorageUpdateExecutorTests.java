@@ -158,7 +158,6 @@ class ProjectStorageUpdateExecutorTests {
     mockServer.addStringResponse(getQualityProfileUrl(organizationKey), "");
 
     when(projectStoragePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(storageDir);
-    //when(serverIssueUpdater.updateServerIssues(any(String.class), any(Sonarlint.ProjectConfiguration.class), any(Path.class), any(Boolean.class), any(String.class), any(ProgressWrapper.class)))
 
     var fileIssue1 = ServerIssue.newBuilder()
       .setPrimaryLocation(Location.newBuilder().setPath("some/path"))

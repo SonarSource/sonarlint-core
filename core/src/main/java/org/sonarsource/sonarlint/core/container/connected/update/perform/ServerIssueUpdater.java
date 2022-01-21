@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.container.connected.update.perform;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;

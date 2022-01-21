@@ -36,12 +36,10 @@ import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.progress.CanceledException;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.serverapi.branches.ServerBranch;
-
 
 /**
  * Entry point for SonarLint.
@@ -131,7 +129,8 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    *
    * @since 2.0
    */
-  void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable String branchName, @Nullable ClientProgressMonitor monitor);
+  void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities,
+    @Nullable String branchName, @Nullable ClientProgressMonitor monitor);
 
   /**
    * Downloads, stores and returns server issues for a given file.
@@ -152,7 +151,8 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @param projectKey   key of the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, boolean, String, ClientProgressMonitor)})
    * @since 2.9
    */
-  void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable String branchName, @Nullable ClientProgressMonitor monitor);
+  void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities,
+    @Nullable String branchName, @Nullable ClientProgressMonitor monitor);
 
   /**
    * Downloads and returns server issues for a given project.
@@ -162,7 +162,6 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @return Set of branches analyzed for this project.
    */
   Set<ServerBranch> getServerBranches(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding);
-
 
   /**
    * Get a list of files that are excluded from analysis, out of the provided files.
