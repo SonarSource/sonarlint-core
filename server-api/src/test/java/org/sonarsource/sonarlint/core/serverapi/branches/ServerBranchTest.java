@@ -42,7 +42,7 @@ class ServerBranchTest {
     ServerBranch e = new ServerBranch("bar", false);
     String string = "string";
 
-    assertThat(a).isEqualTo(a);
+    assertThat(a.equals(a)).isTrue();
     assertThat(a.equals(null)).isFalse();
     assertThat(a).isEqualTo(b);
     assertThat(a).isNotEqualTo(string);
