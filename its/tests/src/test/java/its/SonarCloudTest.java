@@ -553,7 +553,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   private void updateProject(String projectKey) {
-    engine.updateProject(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), projectKey, false, null);
+    engine.updateProject(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), projectKey, false, null, null);
     engine.updateProject(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), projectKey, false, null, null);
   }
 
