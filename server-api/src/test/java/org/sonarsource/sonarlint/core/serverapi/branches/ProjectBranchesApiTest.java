@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.branches;
 
-import java.util.Collection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -75,11 +74,42 @@ class ProjectBranchesApiTest {
   }
 
   @Test
-  void returnEmptyListOnMalformedResponse() {
+  void shouldReturnEmptyListOnMalformedResponse() {
     mockServer.addStringResponse("/api/project_branches/list?project=project1",
       "{\n" +
         "  \"branches\": [\n" +
         "    { }" +
+        "  ]\n" +
+        "}");
+
+    var branches = underTest.getAllBranches(PROJECT_KEY);
+
+    assertThat(branches).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEmptyListOnMalformedResponseNoMain() {
+    mockServer.addStringResponse("/api/project_branches/list?project=project1",
+      "{\n" +
+        "  \"branches\": [\n" +
+        "    {\n" +
+        "      \"name\": \"feature/foo\",\n" +
+        "      \"type\": \"BRANCH\",\n" +
+        "      \"status\": {\n" +
+        "        \"qualityGateStatus\": \"OK\"\n" +
+        "      },\n" +
+        "      \"analysisDate\": \"2017-04-03T13:37:00+0100\",\n" +
+        "      \"excludedFromPurge\": false\n" +
+        "    },\n" +
+        "    {\n" +
+        "      \"name\": \"master\",\n" +
+        "      \"type\": \"BRANCH\",\n" +
+        "      \"status\": {\n" +
+        "        \"qualityGateStatus\": \"ERROR\"\n" +
+        "      },\n" +
+        "      \"analysisDate\": \"2017-04-01T01:15:42+0100\",\n" +
+        "      \"excludedFromPurge\": true\n" +
+        "    }\n" +
         "  ]\n" +
         "}");
 
