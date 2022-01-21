@@ -357,13 +357,11 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
         new DefaultRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(), ruleDefFromPlugin.getSeverity(), ruleDefFromPlugin.getType(),
           ruleDefFromPlugin.getLanguage(), ""));
     }
-    LOG.debug("ConnectedSonarLintEngineImpl.getActiveRuleDetails - Project key: " + projectKey);
     if (projectKey != null) {
       var analyzerConfiguration = projectStorage.getAnalyzerConfiguration(projectKey);
       var storageActiveRule = analyzerConfiguration.getRuleSetByLanguageKey().values().stream()
         .flatMap(s -> s.getRules().stream())
         .filter(r -> r.getRuleKey().equals(ruleKey)).findFirst();
-      LOG.debug("ConnectedSonarLintEngineImpl.getActiveRuleDetails - storageActiveRule is present: " + storageActiveRule.isPresent());
       if (storageActiveRule.isPresent()) {
         var activeRuleFromStorage = storageActiveRule.get();
         var serverSeverity = activeRuleFromStorage.getSeverity();
