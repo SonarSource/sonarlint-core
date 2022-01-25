@@ -36,7 +36,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import javax.annotation.Nullable;
@@ -50,7 +49,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.SonarLintModuleFileSystem;
@@ -59,7 +57,6 @@ import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
@@ -854,9 +851,9 @@ class StandaloneIssueMediumTests {
   }
 
   @Test
-  void declare_module_should_create_a_module_container_with_loaded_extensions() {
+  void declare_module_should_create_a_module_container_with_loaded_extensions() throws Exception {
     sonarlint
-      .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
+      .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null)))).get();
 
     ComponentContainer moduleContainer = sonarlint.getAnalysisEngine().getModuleRegistry().getContainerFor("key");
 
@@ -865,12 +862,12 @@ class StandaloneIssueMediumTests {
   }
 
   @Test
-  void stop_module_should_stop_the_module_container() {
+  void stop_module_should_stop_the_module_container() throws Exception {
     sonarlint
-      .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
+      .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null)))).get();
     ComponentContainer moduleContainer = sonarlint.getAnalysisEngine().getModuleRegistry().getContainerFor("key");
 
-    sonarlint.stopModule("key");
+    sonarlint.stopModule("key").get();
 
     assertThat(moduleContainer.getPicoContainer().getLifecycleState().isStarted()).isFalse();
   }
