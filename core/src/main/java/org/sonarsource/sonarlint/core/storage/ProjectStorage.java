@@ -95,7 +95,6 @@ public class ProjectStorage {
 
   private static RuleSet adapt(Sonarlint.RuleSet ruleSet) {
     return new RuleSet(
-      ruleSet.getProfileKey(),
       ruleSet.getRulesList().stream().map(ProjectStorage::adapt).collect(Collectors.toList()),
       ruleSet.getLastModified());
   }
@@ -119,7 +118,6 @@ public class ProjectStorage {
   private static Sonarlint.RuleSet adapt(RuleSet ruleSet) {
     return Sonarlint.RuleSet.newBuilder()
       .setLastModified(ruleSet.getLastModified())
-      .setProfileKey(ruleSet.getProfileKey())
       .addAllRules(ruleSet.getRules().stream().map(ProjectStorage::adapt).collect(Collectors.toList())).build();
   }
 
