@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.client.api.common;
 
 import java.util.Collection;
+import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 
@@ -34,9 +35,9 @@ public interface SonarLintEngine {
    */
   Collection<PluginDetails> getPluginDetails();
 
-  void declareModule(ClientModuleInfo module);
+  CompletableFuture<Void> declareModule(ClientModuleInfo module);
 
-  void stopModule(Object moduleKey);
+  CompletableFuture<Void> stopModule(Object moduleKey);
 
-  void fireModuleFileEvent(Object moduleKey, ClientModuleFileEvent event);
+  CompletableFuture<Void> fireModuleFileEvent(Object moduleKey, ClientModuleFileEvent event);
 }

@@ -210,9 +210,9 @@ class ConnectedIssueMediumTests {
   }
 
   @Test
-  void declare_module_should_create_a_module_container_with_loaded_extensions() {
+  void declare_module_should_create_a_module_container_with_loaded_extensions() throws Exception {
     sonarlint
-      .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
+      .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null)))).get();
 
     ComponentContainer moduleContainer = sonarlint.getAnalysisEngine().getModuleRegistry().getContainerFor("key");
 
@@ -221,25 +221,25 @@ class ConnectedIssueMediumTests {
   }
 
   @Test
-  void stop_module_should_stop_the_module_container() {
+  void stop_module_should_stop_the_module_container() throws Exception {
     sonarlint
-      .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
+      .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null)))).get();
     ComponentContainer moduleContainer = sonarlint.getAnalysisEngine().getModuleRegistry().getContainerFor("key");
 
-    sonarlint.stopModule("key");
+    sonarlint.stopModule("key").get();
 
     assertThat(moduleContainer.getPicoContainer().getLifecycleState().isStarted()).isFalse();
   }
 
   @Test
-  void should_forward_module_file_event_to_listener() {
+  void should_forward_module_file_event_to_listener() throws Exception {
     // should not be located in global container in real life but easier for testing
     var moduleFileListener = new FakeModuleFileListener();
     sonarlint.getAnalysisEngine().getGlobalAnalysisContainer().add(moduleFileListener);
     var clientInputFile = new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null);
-    sonarlint.declareModule(new ClientModuleInfo("moduleKey", anEmptyClientFileSystem()));
+    sonarlint.declareModule(new ClientModuleInfo("moduleKey", anEmptyClientFileSystem())).get();
 
-    sonarlint.fireModuleFileEvent("moduleKey", ClientModuleFileEvent.of(clientInputFile, ModuleFileEvent.Type.CREATED));
+    sonarlint.fireModuleFileEvent("moduleKey", ClientModuleFileEvent.of(clientInputFile, ModuleFileEvent.Type.CREATED)).get();
 
     assertThat(moduleFileListener.events).hasSize(1);
   }
