@@ -176,7 +176,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains("javascript");
     assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).doesNotContain(OLD_SONARTS_PLUGIN_KEY);
 
-    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVASCRIPT, false, null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVASCRIPT, false, null, null);
     engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVASCRIPT),null);
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, PROJECT_KEY_JAVASCRIPT, "src/Person.js"), issueListener, null, null);
@@ -210,7 +210,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     assertThat(logs).doesNotContain("Code analyzer 'SonarJS' is transitively excluded in this version of SonarLint. Skip loading it.");
     assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains(Language.JS.getPluginKey());
 
-    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_TYPESCRIPT, false, null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_TYPESCRIPT, false, null, null);
     engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_TYPESCRIPT), null);
     var issueListenerTs = new SaveIssueListener();
     engine.analyze(tsAnalysisConfig, issueListenerTs, null, null);

@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.container.storage.partialupdate;
 
 import java.util.List;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -47,7 +48,7 @@ public class PartialUpdater {
   }
 
   public void updateFileIssues(ServerApiHelper serverApiHelper, ProjectBinding projectBinding, Sonarlint.ProjectConfiguration projectConfiguration, String ideFilePath,
-    boolean fetchTaintVulnerabilities, ProgressMonitor progress) {
+    boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressMonitor progress) {
     var serverIssuesPath = projectStoragePaths.getServerIssuesPath(projectBinding.projectKey());
     var issueStore = issueStoreFactory.apply(serverIssuesPath);
     var fileKey = issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, ideFilePath);
@@ -56,7 +57,7 @@ public class PartialUpdater {
     }
     List<ServerIssue> issues;
     try {
-      issues = downloader.download(serverApiHelper, fileKey, projectConfiguration, fetchTaintVulnerabilities, null, progress);
+      issues = downloader.download(serverApiHelper, fileKey, projectConfiguration, fetchTaintVulnerabilities, branchName, progress);
     } catch (Exception e) {
       // null as cause so that it doesn't get wrapped
       throw new DownloadException("Failed to update file issues: " + e.getMessage(), null);
@@ -64,8 +65,9 @@ public class PartialUpdater {
     issueStore.save(issues);
   }
 
-  public void updateFileIssues(ServerApiHelper serverApiHelper, String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities,
-    ProgressMonitor progress) {
-    new ServerIssueUpdater(projectStoragePaths, downloader, issueStoreFactory).update(serverApiHelper, projectKey, projectConfiguration, fetchTaintVulnerabilities, progress);
+  public void updateFileIssues(ServerApiHelper serverApiHelper, String projectKey, Sonarlint.ProjectConfiguration projectConfiguration,
+    boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressMonitor progress) {
+    new ServerIssueUpdater(projectStoragePaths, downloader, issueStoreFactory).update(serverApiHelper, projectKey, projectConfiguration,
+      fetchTaintVulnerabilities, branchName, progress);
   }
 }

@@ -74,7 +74,7 @@ class PartialUpdaterTests {
     var serverApiHelper = mock(ServerApiHelper.class);
     when(downloader.download(serverApiHelper, "module:file", projectConfiguration, false, null, PROGRESS)).thenReturn(issues);
 
-    updater.updateFileIssues(serverApiHelper, projectBinding, projectConfiguration, "file", false, PROGRESS);
+    updater.updateFileIssues(serverApiHelper, projectBinding.projectKey(), projectConfiguration, false, null, PROGRESS);
 
     verify(issueStore).save(anyList());
   }
@@ -82,7 +82,7 @@ class PartialUpdaterTests {
   @Test
   void update_file_issues_for_unknown_file() {
     when(issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, "file")).thenReturn(null);
-    updater.updateFileIssues(mock(ServerApiHelper.class), projectBinding, projectConfiguration, "file", false, PROGRESS);
+    updater.updateFileIssues(mock(ServerApiHelper.class), projectBinding, projectConfiguration, "file", false, null, PROGRESS);
     verifyNoInteractions(downloader);
     verifyNoInteractions(issueStore);
   }
@@ -94,7 +94,7 @@ class PartialUpdaterTests {
     when(downloader.download(serverApiHelper, "module:file", projectConfiguration, false, null, PROGRESS)).thenThrow(IllegalArgumentException.class);
     when(issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, "file")).thenReturn("module:file");
 
-    assertThrows(DownloadException.class, () -> updater.updateFileIssues(serverApiHelper, projectBinding, projectConfiguration, "file", false, PROGRESS));
+    assertThrows(DownloadException.class, () -> updater.updateFileIssues(serverApiHelper, projectBinding, projectConfiguration, "file", false, null, PROGRESS));
   }
 
   @Test
@@ -106,7 +106,7 @@ class PartialUpdaterTests {
     var serverApiHelper = mock(ServerApiHelper.class);
     when(downloader.download(serverApiHelper, projectBinding.projectKey(), projectConfiguration, false, null, PROGRESS)).thenReturn(issues);
 
-    updater.updateFileIssues(serverApiHelper, projectBinding.projectKey(), projectConfiguration, false, PROGRESS);
+    updater.updateFileIssues(serverApiHelper, projectBinding.projectKey(), projectConfiguration, false, null, PROGRESS);
 
     verify(issueStore).save(anyList());
   }

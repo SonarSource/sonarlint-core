@@ -21,11 +21,9 @@ package org.sonarsource.sonarlint.core.tracking;
 
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
-import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.issuetracking.CachingIssueTracker;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
@@ -54,17 +52,17 @@ class ServerIssueTrackerTests {
   @Test
   void should_download_issues_from_engine() {
     var client = MockWebServerExtension.httpClient();
-    tracker.update(endpoint, client, engine, projectBinding, Collections.singleton(filePath), true);
-    verify(engine).downloadServerIssues(endpoint, client, projectBinding, filePath, true, null);
+    tracker.update(endpoint, client, engine, projectBinding, Collections.singleton(filePath),  true, null);
+    verify(engine).downloadServerIssues(endpoint, client, projectBinding, filePath, true, null,null);
     verifyNoMoreInteractions(engine);
   }
 
   @Test
   void should_get_issues_from_engine_if_download_failed() {
     var client = MockWebServerExtension.httpClient();
-    when(engine.downloadServerIssues(endpoint, client, projectBinding, filePath, false, null)).thenThrow(new DownloadException());
-    tracker.update(endpoint, client, engine, projectBinding, Collections.singleton(filePath), false);
-    verify(engine).downloadServerIssues(endpoint, client, projectBinding, filePath, false, null);
+    when(engine.downloadServerIssues(endpoint, client, projectBinding, filePath, false, null, null)).thenThrow(new DownloadException());
+    tracker.update(endpoint, client, engine, projectBinding, Collections.singleton(filePath), false, null);
+    verify(engine).downloadServerIssues(endpoint, client, projectBinding, filePath, false, null, null);
     verify(engine).getServerIssues(projectBinding, filePath);
     verifyNoMoreInteractions(engine);
   }

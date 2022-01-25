@@ -136,7 +136,7 @@ class ProjectStorageUpdateExecutorTests {
 
     when(projectStoragePaths.getProjectStorageRoot(MODULE_KEY_WITH_BRANCH)).thenReturn(storageDir);
 
-    underTest.update(serverApiHelper, MODULE_KEY_WITH_BRANCH, false, PROGRESS);
+    underTest.update(serverApiHelper, MODULE_KEY_WITH_BRANCH, false, null, PROGRESS);
 
     var projectConfiguration = ProtobufUtil.readFile(storageDir.resolve(ProjectStoragePaths.PROJECT_CONFIGURATION_PB), ProjectConfiguration.parser());
 
@@ -178,10 +178,10 @@ class ProjectStorageUpdateExecutorTests {
 
     underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, projectConfigurationDownloader,
       projectFileListDownloader, serverIssueUpdater);
-    underTest.update(serverApiHelper, MODULE_KEY_WITH_BRANCH, false, PROGRESS);
+    underTest.update(serverApiHelper, MODULE_KEY_WITH_BRANCH, false, null, PROGRESS);
 
     verify(serverIssueUpdater).updateServerIssues(eq(serverApiHelper), eq(MODULE_KEY_WITH_BRANCH), any(ProjectConfiguration.class), any(Path.class), eq(false),
-      any(ProgressMonitor.class));
+      eq(null), any(ProgressMonitor.class));
   }
 
   @ParameterizedTest(name = "organizationKey=[{0}]")
