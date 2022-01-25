@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.AnalysisEngine;
@@ -51,30 +52,18 @@ public abstract class AbstractSonarLintEngine implements SonarLintEngine {
   }
 
   @Override
-  public void declareModule(ClientModuleInfo module) {
-    try {
-      getAnalysisEngine().post(new RegisterModuleCommand(module), new ProgressMonitor(null)).get();
-    } catch (Exception e) {
-      LOG.error("Error declaring module '{}'", module.key() + "'", e);
-    }
+  public CompletableFuture<Void> declareModule(ClientModuleInfo module) {
+    return getAnalysisEngine().post(new RegisterModuleCommand(module), new ProgressMonitor(null));
   }
 
   @Override
-  public void stopModule(Object moduleKey) {
-    try {
-      getAnalysisEngine().post(new UnregisterModuleCommand(moduleKey), new ProgressMonitor(null)).get();
-    } catch (Exception e) {
-      LOG.error("Error stopping module '{}'", moduleKey + "'", e);
-    }
+  public CompletableFuture<Void> stopModule(Object moduleKey) {
+    return getAnalysisEngine().post(new UnregisterModuleCommand(moduleKey), new ProgressMonitor(null));
   }
 
   @Override
-  public void fireModuleFileEvent(Object moduleKey, ClientModuleFileEvent event) {
-    try {
-      getAnalysisEngine().post(new NotifyModuleEventCommand(moduleKey, event), new ProgressMonitor(null)).get();
-    } catch (Exception e) {
-      LOG.error("Error notifying module '{}' of event", moduleKey, e);
-    }
+  public CompletableFuture<Void> fireModuleFileEvent(Object moduleKey, ClientModuleFileEvent event) {
+    return getAnalysisEngine().post(new NotifyModuleEventCommand(moduleKey, event), new ProgressMonitor(null));
   }
 
   protected static Map<String, SonarLintRuleDefinition> loadPluginMetadata(PluginInstancesRepository pluginInstancesRepository, Set<Language> enabledLanguages,
