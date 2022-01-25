@@ -127,7 +127,6 @@ message AnalyzerConfiguration {
 
 message RuleSet {
     repeated ActiveRule rules = 1;
-    string profileKey = 2;
     string lastModified = 3;
 
     message ActiveRule {

@@ -75,9 +75,10 @@ public class LocalStorageSynchronizer {
   private static RuleSet toRuleSet(ServerApi serverApi, Map<String, RuleSet> currentRuleSets, QualityProfile profile, ProgressMonitor progressMonitor) {
     var language = profile.getLanguage();
     if (!currentRuleSets.containsKey(language) || !currentRuleSets.get(language).getLastModified().equals(profile.getRulesUpdatedAt())) {
-      LOG.info("[SYNC] Fetching rule set for '{}'", language);
-      var profileActiveRules = serverApi.rules().getAllActiveRules(profile.getKey(), progressMonitor);
-      return new RuleSet(profile.getKey(), profileActiveRules, profile.getRulesUpdatedAt());
+      var profileKey = profile.getKey();
+      LOG.info("[SYNC] Fetching rule set for language '{}' from profile '{}'", language, profileKey);
+      var profileActiveRules = serverApi.rules().getAllActiveRules(profileKey, progressMonitor);
+      return new RuleSet(profileActiveRules, profile.getRulesUpdatedAt());
     } else {
       LOG.info("[SYNC] Active rules for '{}' are up-to-date", language);
       return currentRuleSets.get(language);
