@@ -111,6 +111,9 @@ public class PluginsStorage {
   }
 
   private List<File> getUnknownFiles() {
+    if (!Files.exists(rootPath)) {
+      return Collections.emptyList();
+    }
     var knownPluginsPaths = getStoredPlugins().stream().map(StoredPlugin::getJarPath).collect(Collectors.toSet());
     try (Stream<Path> pathsInDir = Files.list(rootPath)) {
       return pathsInDir.filter(p -> !p.equals(getPluginsFilePath()))
