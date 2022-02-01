@@ -70,7 +70,9 @@ public class AnalysisEngine {
         executingCommand.get().execute(getModuleRegistry());
         executingCommand.set(null);
       } catch (InterruptedException e) {
-        LOG.error("Analysis engine interrupted", e);
+        if (termination.get() != CANCELING_TERMINATION) {
+          LOG.error("Analysis engine interrupted", e);
+        }
       }
     }
     termination.get().run();
