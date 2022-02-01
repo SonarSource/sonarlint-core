@@ -65,10 +65,16 @@ public class SonarLintLogTester implements BeforeTestExecutionCallback, AfterTes
 
   private final Queue<String> logs = new ConcurrentLinkedQueue<>();
   private final Map<Level, Queue<String>> logsByLevel = new ConcurrentHashMap<>();
-  private final boolean writeToStdOut;
+  private final ClientLogOutput logOutput;
 
   public SonarLintLogTester(boolean writeToStdOut) {
-    this.writeToStdOut = writeToStdOut;
+    logOutput = (formattedMessage, level) -> {
+      logs.add(formattedMessage);
+      logsByLevel.computeIfAbsent(level, l -> new ConcurrentLinkedQueue<>()).add(formattedMessage);
+      if (writeToStdOut) {
+        System.out.println(level + " " + formattedMessage);
+      }
+    };
   }
 
   public SonarLintLogTester() {
@@ -77,23 +83,17 @@ public class SonarLintLogTester implements BeforeTestExecutionCallback, AfterTes
 
   @Override
   public void beforeTestExecution(ExtensionContext context) throws Exception {
-    SonarLintLogger.setTarget(new ClientLogOutput() {
-
-      @Override
-      public void log(String formattedMessage, Level level) {
-        logs.add(formattedMessage);
-        logsByLevel.computeIfAbsent(level, l -> new ConcurrentLinkedQueue<>()).add(formattedMessage);
-        if (writeToStdOut) {
-          System.out.println(level + " " + formattedMessage);
-        }
-      }
-    });
+    SonarLintLogger.setTarget(logOutput);
   }
 
   @Override
-  public void afterTestExecution(ExtensionContext context) throws Exception {
+  public void afterTestExecution(ExtensionContext context) {
     logs.clear();
     logsByLevel.clear();
+  }
+
+  public ClientLogOutput getLogOutput() {
+    return logOutput;
   }
 
   /**

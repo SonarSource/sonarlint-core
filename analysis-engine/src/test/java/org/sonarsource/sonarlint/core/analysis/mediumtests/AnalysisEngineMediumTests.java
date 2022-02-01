@@ -36,6 +36,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonarsource.sonarlint.core.analysis.AnalysisEngine;
@@ -50,6 +51,8 @@ import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.analysis.command.Command;
 import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 import testutils.OnDiskTestClientInputFile;
@@ -59,6 +62,9 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 
 class AnalysisEngineMediumTests {
+  @RegisterExtension
+  SonarLintLogTester logTester = new SonarLintLogTester();
+
   private AnalysisEngine analysisEngine;
   private volatile boolean engineStopped;
   private final ProgressMonitor progressMonitor = new ProgressMonitor(null);
@@ -72,7 +78,7 @@ class AnalysisEngineMediumTests {
       .setWorkDir(workDir)
       .build();
     var pluginInstancesRepository = new PluginInstancesRepository(new PluginInstancesRepository.Configuration(Set.of(findPythonJarPath()), enabledLanguages, Optional.empty()));
-    this.analysisEngine = new AnalysisEngine(analysisGlobalConfig, pluginInstancesRepository, null);
+    this.analysisEngine = new AnalysisEngine(analysisGlobalConfig, pluginInstancesRepository, logTester.getLogOutput());
     engineStopped = false;
   }
 
@@ -199,6 +205,18 @@ class AnalysisEngineMediumTests {
 
     await().until(futureLongCommand::isDone);
     assertThat(futureLongCommand).isCompletedWithValue("INTERRUPTED");
+  }
+
+  @Test
+  void should_not_log_any_error_when_stopping() {
+    // let the engine block waiting for the first command
+    pause(500);
+
+    analysisEngine.stop();
+
+    // let the engine stop properly
+    pause(1000);
+    assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).isEmpty();
   }
 
   private ClientInputFile preparePythonInputFile(Path baseDir, String content) throws IOException {
