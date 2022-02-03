@@ -21,8 +21,8 @@ package org.sonarsource.sonarlint.core.vcs;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -71,36 +70,31 @@ public class GitUtils {
   }
 
   @CheckForNull
-  public static Git getGitForDir(URI projectDirUri) {
+  public static Git getGitForDir(Path projectDir) {
     try {
       var builder = new FileRepositoryBuilder();
-      var gitUri = new URI(projectDirUri + "/.git");
+      var gitUri = Paths.get(projectDir.toString(), ".git").toUri();
       var repository = builder.setGitDir(new File(gitUri)).setMustExist(true).build();
       return new Git(repository);
-    } catch (IOException | URISyntaxException e) {
-      LOG.error("Couldn't access repository for path " + projectDirUri.getPath());
+    } catch (IOException e) {
+      LOG.error("Couldn't access repository for path " + projectDir, e);
     }
     return null;
   }
 
 
-  public static Optional<String> electSQBranchForLocalBranch(String branchName, Git git, Set<ServerBranch> serverCandidates) {
-    Set<String> serverCandidateNames = serverCandidates.stream().map(ServerBranch::getName).collect(Collectors.toSet());
+  public static Optional<String> electSQBranchForLocalBranch(String branchName, Git git, Set<String> serverCandidateNames, String serverMainBranch) {
     Map<String, List<String>> commitsCache = buildCommitsCache(git);
     if (commitsCache.isEmpty()) {
       return Optional.empty();
     }
     List<String> commitNamesForBranch = getCommitNamesForRef(branchName, git);
-    Optional<String> mainBranchName = serverCandidates.stream().filter(ServerBranch::isMain).map(ServerBranch::getName).findFirst();
-    if (mainBranchName.isEmpty()) {
-      return Optional.empty();
-    }
     List<String> listOfLocalCandidates;
     for (String commitName : commitNamesForBranch) {
       if (commitsCache.containsKey(commitName)) {
         listOfLocalCandidates = commitsCache.get(commitName);
-        if (listOfLocalCandidates.contains(mainBranchName.get())) {
-          return mainBranchName;
+        if (listOfLocalCandidates.contains(serverMainBranch)) {
+          return Optional.of(serverMainBranch);
         }
         for (String localCandidateName : listOfLocalCandidates) {
           if (serverCandidateNames.contains(localCandidateName)) {
@@ -109,7 +103,7 @@ public class GitUtils {
         }
       }
     }
-    return mainBranchName;
+    return Optional.of(serverMainBranch);
   }
 
   public static Map<String, List<String>> buildCommitsCache(Git git) {
@@ -117,7 +111,7 @@ public class GitUtils {
     try {
       refs = git.getRepository().getRefDatabase().getRefs();
     } catch (IOException e) {
-      LOG.error("Unable to build commits " + e);
+      LOG.error("Unable to build commits ", e);
       return Collections.emptyMap();
     }
     Map<String, List<String>> commitToBranches = new HashMap<>();

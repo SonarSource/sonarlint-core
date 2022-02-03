@@ -36,7 +36,7 @@
     <module>analysis-engine</module>
     <module>osgi</module>
     <module>report-aggregate</module>
-    <module>sonarlint-vcs</module>
+    <module>vcs</module>
   </modules>
 
   <properties>

@@ -22,9 +22,10 @@ package org.sonarsource.sonarlint.core.vcs;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
@@ -46,27 +47,25 @@ import static org.mockito.Mockito.when;
 class GitUtilsTest {
 
   @Test
-  void noGitRepoShouldBeNull(@TempDir File projectDir) throws IOException, URISyntaxException {
+  void noGitRepoShouldBeNull(@TempDir File projectDir) throws IOException {
     javaUnzip("no-git-repo.zip", projectDir);
-    URI uri = new URI(projectDir.toURI() + "no-git-repo");
-    Git git = GitUtils.getGitForDir(uri);
+    Path path = Paths.get(projectDir.getPath(), "no-git-repo");
+    Git git = GitUtils.getGitForDir(path);
 
     assertThat(git).isNull();
   }
 
   @Test
-  void gitRepoShouldBeNotNull(@TempDir File projectDir) throws IOException, URISyntaxException {
+  void gitRepoShouldBeNotNull(@TempDir File projectDir) throws IOException {
     javaUnzip("dummy-git.zip", projectDir);
-    URI uri = new URI(projectDir.toURI() + "dummy-git");
-    Git git = GitUtils.getGitForDir(uri);
+    Path path = Paths.get(projectDir.getPath(), "dummy-git");
+    Git git = GitUtils.getGitForDir(path);
 
     assertThat(git).isNotNull();
 
     Map<String, List<String>> commitsCache = GitUtils.buildCommitsCache(git);
     Optional<String> branch = GitUtils.electSQBranchForLocalBranch("foo", git,
-      Set.of(new ServerBranch("foo", false),
-        new ServerBranch("bar", false),
-        new ServerBranch("master", true)));
+      Set.of("foo", "bar", "master"),"master");
 
     assertThat(commitsCache).hasSize(5);
     assertThat(branch).contains("master");
@@ -75,16 +74,14 @@ class GitUtilsTest {
   @Test
   void shouldElectAnalyzedBranch(@TempDir File projectDir) throws IOException, URISyntaxException {
     javaUnzip("analyzed-branch.zip", projectDir);
-    URI uri = new URI(projectDir.toURI() + "analyzed-branch");
-    Git git = GitUtils.getGitForDir(uri);
+    Path path = Paths.get(projectDir.getPath(), "analyzed-branch");
+    Git git = GitUtils.getGitForDir(path);
 
     assertThat(git).isNotNull();
 
     Map<String, List<String>> commitsCache = GitUtils.buildCommitsCache(git);
     Optional<String> branch = GitUtils.electSQBranchForLocalBranch("closest_branch", git,
-      Set.of(new ServerBranch("foo", false),
-        new ServerBranch("closest_branch", false),
-        new ServerBranch("master", true)));
+      Set.of("foo", "closest_branch", "master"), "master");
 
     assertThat(commitsCache).hasSize(3);
     assertThat(branch).contains("closest_branch");
@@ -93,16 +90,14 @@ class GitUtilsTest {
   @Test
   void shouldElectClosestBranch(@TempDir File projectDir) throws IOException, URISyntaxException {
     javaUnzip("closest-branch.zip", projectDir);
-    URI uri = new URI(projectDir.toURI() + "closest-branch");
-    Git git = GitUtils.getGitForDir(uri);
+    Path path = Paths.get(projectDir.getPath(), "closest-branch");
+    Git git = GitUtils.getGitForDir(path);
 
     assertThat(git).isNotNull();
 
     Map<String, List<String>> commitsCache = GitUtils.buildCommitsCache(git);
     Optional<String> branch = GitUtils.electSQBranchForLocalBranch("current_branch", git,
-      Set.of(new ServerBranch("foo", false),
-        new ServerBranch("closest_branch", false),
-        new ServerBranch("master", true)));
+      Set.of("foo", "closest_branch", "master"), "master");
 
     assertThat(commitsCache).hasSize(3);
     assertThat(branch).contains("closest_branch");
@@ -111,16 +106,14 @@ class GitUtilsTest {
   @Test
   void shouldElectMasterForNonAnalyzedChildBranch(@TempDir File projectDir) throws IOException, URISyntaxException {
     javaUnzip("child-from-non-analyzed.zip", projectDir);
-    URI uri = new URI(projectDir.toURI() + "child-from-non-analyzed");
-    Git git = GitUtils.getGitForDir(uri);
+    Path path = Paths.get(projectDir.getPath(), "child-from-non-analyzed");
+    Git git = GitUtils.getGitForDir(path);
 
     assertThat(git).isNotNull();
 
     Map<String, List<String>> commitsCache = GitUtils.buildCommitsCache(git);
     Optional<String> branch = GitUtils.electSQBranchForLocalBranch("not_analyzed_branch", git,
-      Set.of(new ServerBranch("foo", false),
-        new ServerBranch("branch_to_analyze", false),
-        new ServerBranch("master", true)));
+      Set.of("foo", "branch_to_analyze", "master"), "master");
 
     assertThat(commitsCache).hasSize(5);
     assertThat(branch).contains("master");
@@ -136,27 +129,10 @@ class GitUtilsTest {
     when(database.getRefs()).thenThrow(new IOException());
 
     Optional<String> branch = GitUtils.electSQBranchForLocalBranch("foo", git,
-      Set.of(new ServerBranch("foo", false),
-        new ServerBranch("bar", false),
-        new ServerBranch("master", true)));
+      Set.of("foo", "bar", "master"),"master");
 
     assertThat(branch).isEmpty();
   }
-
-  @Test
-  void shouldReturnEmptyOptionalIfNoMainBranch(@TempDir File projectDir) throws IOException, URISyntaxException {
-    javaUnzip("dummy-git.zip", projectDir);
-    URI uri = new URI(projectDir.toURI() + "dummy-git");
-    Git git = GitUtils.getGitForDir(uri);
-
-    Optional<String> branch = GitUtils.electSQBranchForLocalBranch("foo", git,
-      Set.of(new ServerBranch("foo", false),
-        new ServerBranch("bar", false),
-        new ServerBranch("master", false)));
-
-    assertThat(branch).isEmpty();
-  }
-
 
   @Test
   void shouldReturnEmptyCacheOnException() throws IOException {
