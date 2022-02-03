@@ -19,10 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.vcs;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,14 +33,14 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+
+import static org.eclipse.jgit.lib.Constants.R_HEADS;
 
 
 public class GitUtils {
-
-  private static final String BRANCH_REF_PREFIX = "refs/heads/";
 
   private GitUtils() {
     // util class
@@ -50,7 +48,7 @@ public class GitUtils {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  public static List<String> getCommitNamesForRef(String branchName, Git git) {
+  private static List<String> getCommitNamesForRef(String branchName, Git git) {
     var commitNames = new ArrayList<String>();
     try {
       var branchObjectId = git.getRepository().resolve(branchName);
@@ -72,10 +70,10 @@ public class GitUtils {
   @CheckForNull
   public static Git getGitForDir(Path projectDir) {
     try {
-      var builder = new FileRepositoryBuilder();
-      var gitUri = Paths.get(projectDir.toString(), ".git").toUri();
-      var repository = builder.setGitDir(new File(gitUri)).setMustExist(true).build();
-      return new Git(repository);
+      var builder = new RepositoryBuilder()
+        .findGitDir(projectDir.toFile())
+        .setMustExist(true);
+      return builder.getGitDir() != null ? new Git(builder.build()) : null;
     } catch (IOException e) {
       LOG.error("Couldn't access repository for path " + projectDir, e);
     }
@@ -119,8 +117,8 @@ public class GitUtils {
       List<String> commitNamesForBranch = GitUtils.getCommitNamesForRef(ref.getName(), git);
       for (String commitName : commitNamesForBranch) {
         commitToBranches.putIfAbsent(commitName, new ArrayList<>());
-        if (ref.getName().startsWith(BRANCH_REF_PREFIX)) {
-          commitToBranches.get(commitName).add(ref.getName().substring(BRANCH_REF_PREFIX.length()));
+        if (ref.getName().startsWith(R_HEADS)) {
+          commitToBranches.get(commitName).add(ref.getName().substring(R_HEADS.length()));
         }
       }
     }
