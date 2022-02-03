@@ -73,7 +73,11 @@ public class GitUtils {
       var builder = new RepositoryBuilder()
         .findGitDir(projectDir.toFile())
         .setMustExist(true);
-      return builder.getGitDir() != null ? new Git(builder.build()) : null;
+      if (builder.getGitDir() == null) {
+        LOG.error("Not inside a Git work tree: " + projectDir);
+        return null;
+      }
+      return new Git(builder.build());
     } catch (IOException e) {
       LOG.error("Couldn't access repository for path " + projectDir, e);
     }
