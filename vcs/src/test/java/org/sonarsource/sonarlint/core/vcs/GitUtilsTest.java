@@ -72,7 +72,7 @@ class GitUtilsTest {
   }
 
   @Test
-  void shouldElectAnalyzedBranch(@TempDir File projectDir) throws IOException, URISyntaxException {
+  void shouldElectAnalyzedBranch(@TempDir File projectDir) throws IOException {
     javaUnzip("analyzed-branch.zip", projectDir);
     Path path = Paths.get(projectDir.getPath(), "analyzed-branch");
     Git git = GitUtils.getGitForDir(path);
@@ -88,7 +88,7 @@ class GitUtilsTest {
   }
 
   @Test
-  void shouldElectClosestBranch(@TempDir File projectDir) throws IOException, URISyntaxException {
+  void shouldElectClosestBranch(@TempDir File projectDir) throws IOException {
     javaUnzip("closest-branch.zip", projectDir);
     Path path = Paths.get(projectDir.getPath(), "closest-branch");
     Git git = GitUtils.getGitForDir(path);
@@ -104,7 +104,7 @@ class GitUtilsTest {
   }
 
   @Test
-  void shouldElectMasterForNonAnalyzedChildBranch(@TempDir File projectDir) throws IOException, URISyntaxException {
+  void shouldElectMasterForNonAnalyzedChildBranch(@TempDir File projectDir) throws IOException {
     javaUnzip("child-from-non-analyzed.zip", projectDir);
     Path path = Paths.get(projectDir.getPath(), "child-from-non-analyzed");
     Git git = GitUtils.getGitForDir(path);
