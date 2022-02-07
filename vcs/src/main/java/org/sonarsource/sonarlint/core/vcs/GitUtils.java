@@ -21,24 +21,17 @@ package org.sonarsource.sonarlint.core.vcs;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import javax.annotation.CheckForNull;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.errors.IncorrectObjectTypeException;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.revwalk.RevWalkUtils;
+import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-
-import static org.eclipse.jgit.lib.Constants.R_HEADS;
-
 
 public class GitUtils {
 
@@ -48,27 +41,8 @@ public class GitUtils {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private static List<String> getCommitNamesForRef(String branchName, Git git) {
-    var commitNames = new ArrayList<String>();
-    try {
-      var branchObjectId = git.getRepository().resolve(branchName);
-      if (branchObjectId == null) {
-        return commitNames;
-      }
-      var commits = git.log().add(branchObjectId).call();
-      for (RevCommit commit : commits) {
-        commitNames.add(commit.getName());
-      }
-    } catch (IncorrectObjectTypeException e) {
-      // do nothing, jgit will throw it if branchName can not be resolved to any commit
-    } catch (GitAPIException | IOException e) {
-      LOG.error("Couldn't fetch commits for branch " + branchName, e);
-    }
-    return commitNames;
-  }
-
   @CheckForNull
-  public static Git getGitForDir(Path projectDir) {
+  public static Repository getRepositoryForDir(Path projectDir) {
     try {
       var builder = new RepositoryBuilder()
         .findGitDir(projectDir.toFile())
@@ -77,56 +51,66 @@ public class GitUtils {
         LOG.error("Not inside a Git work tree: " + projectDir);
         return null;
       }
-      return new Git(builder.build());
+      return builder.build();
     } catch (IOException e) {
       LOG.error("Couldn't access repository for path " + projectDir, e);
     }
     return null;
   }
 
-
-  public static Optional<String> electSQBranchForLocalBranch(String branchName, Git git, Set<String> serverCandidateNames, String serverMainBranch) {
-    Map<String, List<String>> commitsCache = buildCommitsCache(git);
-    if (commitsCache.isEmpty()) {
-      return Optional.empty();
-    }
-    List<String> commitNamesForBranch = getCommitNamesForRef(branchName, git);
-    List<String> listOfLocalCandidates;
-    for (String commitName : commitNamesForBranch) {
-      if (commitsCache.containsKey(commitName)) {
-        listOfLocalCandidates = commitsCache.get(commitName);
-        if (listOfLocalCandidates.contains(serverMainBranch)) {
-          return Optional.of(serverMainBranch);
-        }
-        for (String localCandidateName : listOfLocalCandidates) {
-          if (serverCandidateNames.contains(localCandidateName)) {
-            return Optional.of(localCandidateName);
-          }
-        }
+  public static String electBestMatchingServerBranchForCurrentHead(Repository repo, Set<String> serverCandidateNames, String serverMainBranch) {
+    try {
+      Ref head = repo.exactRef(Constants.HEAD);
+      if (head == null) {
+        return serverMainBranch;
       }
+
+      String bestBranch = serverMainBranch;
+      int bestDistance = Integer.MAX_VALUE;
+      for (String serverBranchName : serverCandidateNames) {
+        String shortBranchName = Repository.shortenRefName(serverBranchName);
+        String localFullBranchName = Constants.R_HEADS + shortBranchName;
+
+        Ref branchRef = repo.exactRef(localFullBranchName);
+        if (branchRef == null) {
+          continue;
+        }
+
+        int distance = distance(repo, head, branchRef);
+        if (distance < bestDistance) {
+          bestBranch = serverBranchName;
+          bestDistance = distance;
+        }
+
+      }
+
+      return bestBranch;
+    } catch (IOException e) {
+      LOG.error("Couldn't find best matching branch", e);
+      return serverMainBranch;
     }
-    return Optional.of(serverMainBranch);
   }
 
-  public static Map<String, List<String>> buildCommitsCache(Git git) {
-    List<Ref> refs;
-    try {
-      refs = git.getRepository().getRefDatabase().getRefs();
-    } catch (IOException e) {
-      LOG.error("Unable to build commits ", e);
-      return Collections.emptyMap();
+  private static int distance(Repository repository, Ref from, Ref to) throws IOException {
+
+    try (RevWalk walk = new RevWalk(repository)) {
+
+      RevCommit fromCommit = walk.parseCommit(from.getObjectId());
+      RevCommit toCommit = walk.parseCommit(to.getObjectId());
+
+      walk.setRevFilter(RevFilter.MERGE_BASE);
+      walk.markStart(fromCommit);
+      walk.markStart(toCommit);
+      RevCommit mergeBase = walk.next();
+
+      walk.reset();
+      walk.setRevFilter(RevFilter.ALL);
+      int aheadCount = RevWalkUtils.count(walk, fromCommit, mergeBase);
+      int behindCount = RevWalkUtils.count(walk, toCommit,
+        mergeBase);
+
+      return aheadCount + behindCount;
     }
-    Map<String, List<String>> commitToBranches = new HashMap<>();
-    for (Ref ref : refs) {
-      List<String> commitNamesForBranch = GitUtils.getCommitNamesForRef(ref.getName(), git);
-      for (String commitName : commitNamesForBranch) {
-        commitToBranches.putIfAbsent(commitName, new ArrayList<>());
-        if (ref.getName().startsWith(R_HEADS)) {
-          commitToBranches.get(commitName).add(ref.getName().substring(R_HEADS.length()));
-        }
-      }
-    }
-    return commitToBranches;
   }
 
 }
