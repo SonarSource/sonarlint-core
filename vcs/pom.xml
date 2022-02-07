@@ -30,6 +30,9 @@
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit</artifactId>
       <version>6.0.0.202111291000-r</version>
+      <!-- The core doesn't provide JGit, since some IDEs (like Eclipse) will provide it -->
+      <scope>provided</scope>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>

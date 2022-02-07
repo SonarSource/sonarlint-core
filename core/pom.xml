@@ -29,6 +29,7 @@
       <groupId>${project.groupId}</groupId>
       <artifactId>sonarlint-vcs</artifactId>
       <version>${project.version}</version>
+      <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
@@ -284,7 +285,6 @@
                     <include>com.google.gson.**</include>
                     <include>org.picocontainer.**</include>
                     <include>org.sonarqube.ws.**</include>
-                    <include>org.eclipse.jgit.**</include>
                   </includes>
                 </relocation>
               </relocations>
