@@ -21,6 +21,9 @@ package org.sonarsource.sonarlint.core.vcs;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import javax.annotation.CheckForNull;
 import org.eclipse.jgit.lib.Constants;
@@ -32,6 +35,8 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.RevWalkUtils;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+
+import static java.util.Comparator.naturalOrder;
 
 public class GitUtils {
 
@@ -62,11 +67,11 @@ public class GitUtils {
     try {
       Ref head = repo.exactRef(Constants.HEAD);
       if (head == null) {
+        // Not sure if this is possible to not have a HEAD, but just in case
         return serverMainBranch;
       }
 
-      String bestBranch = serverMainBranch;
-      int bestDistance = Integer.MAX_VALUE;
+      Map<Integer, Set<String>> branchesPerDistance = new HashMap<>();
       for (String serverBranchName : serverCandidateNames) {
         String shortBranchName = Repository.shortenRefName(serverBranchName);
         String localFullBranchName = Constants.R_HEADS + shortBranchName;
@@ -77,14 +82,19 @@ public class GitUtils {
         }
 
         int distance = distance(repo, head, branchRef);
-        if (distance < bestDistance) {
-          bestBranch = serverBranchName;
-          bestDistance = distance;
-        }
-
+        branchesPerDistance.computeIfAbsent(distance, d -> new HashSet<>()).add(serverBranchName);
+      }
+      if (branchesPerDistance.isEmpty()) {
+        return serverMainBranch;
       }
 
-      return bestBranch;
+      int minDistance = branchesPerDistance.keySet().stream().min(naturalOrder()).get();
+      Set<String> bestCandidates = branchesPerDistance.get(minDistance);
+      if (bestCandidates.contains(serverMainBranch)) {
+        // Favor the main branch when there are multiple candidates with the same distance
+        return serverMainBranch;
+      }
+      return bestCandidates.iterator().next();
     } catch (IOException e) {
       LOG.error("Couldn't find best matching branch", e);
       return serverMainBranch;

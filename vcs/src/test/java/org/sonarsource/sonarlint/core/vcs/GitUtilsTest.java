@@ -75,6 +75,18 @@ class GitUtilsTest {
   }
 
   @Test
+  void shouldElectMainBranchIfNonePresentInLocalGit(@TempDir File projectDir) throws IOException {
+    javaUnzip("analyzed-branch.zip", projectDir);
+    Path path = Paths.get(projectDir.getPath(), "analyzed-branch");
+    try (Repository repo = GitUtils.getRepositoryForDir(path)) {
+      Set<String> serverCandidateNames = Set.of("unknown1", "unknown2", "unknown3");
+
+      String branch = GitUtils.electBestMatchingServerBranchForCurrentHead(repo, serverCandidateNames, "master");
+      assertThat(branch).isEqualTo("master");
+    }
+  }
+
+  @Test
   void shouldElectClosestBranch(@TempDir File projectDir) throws IOException {
     javaUnzip("closest-branch.zip", projectDir);
     Path path = Paths.get(projectDir.getPath(), "closest-branch");
