@@ -37,9 +37,9 @@ import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.progress.CanceledException;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.branches.ServerBranch;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
-import org.sonarsource.sonarlint.core.serverapi.branches.ServerBranch;
 
 /**
  * Entry point for SonarLint.
@@ -158,10 +158,10 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * Downloads and returns server issues for a given project.
    *
    * @param endpoint from which to download issues
-   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, boolean, String, ClientProgressMonitor)})
+   * @param projectKey
    * @return Set of branches analyzed for this project.
    */
-  Set<ServerBranch> getServerBranches(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding);
+  Set<ServerBranch> getServerBranches(EndpointParams endpoint, HttpClient client, String projectKey);
 
   /**
    * Get a list of files that are excluded from analysis, out of the provided files.
