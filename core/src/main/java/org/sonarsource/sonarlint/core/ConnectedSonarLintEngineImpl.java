@@ -420,8 +420,8 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
-  public Set<ServerBranch> getServerBranches(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding) {
-    return new ProjectBranchesApi(new ServerApiHelper(endpoint, client)).getAllBranches(projectBinding.projectKey());
+  public Set<ServerBranch> getServerBranches(EndpointParams endpoint, HttpClient client, String projectKey) {
+    return new ProjectBranchesApi(new ServerApiHelper(endpoint, client)).getAllBranches(projectKey);
   }
 
   @Override
