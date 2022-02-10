@@ -37,7 +37,6 @@ import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.progress.CanceledException;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
-import org.sonarsource.sonarlint.core.serverapi.branches.ServerBranch;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
 
@@ -103,6 +102,14 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    */
   ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> ideFilePaths);
 
+  /**
+   * Returns analyzed branches for a given project. Requires a {@link #sync(EndpointParams, HttpClient, Set, ClientProgressMonitor)} to have been successfully done before for this project.
+   *
+   * @param projectKey
+   * @return branches analyzed on the server for this project.
+   */
+  ProjectBranches getServerBranches(String projectKey);
+
   // REQUIRES SERVER TO BE REACHABLE
 
   /**
@@ -153,15 +160,6 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    */
   void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities,
     @Nullable String branchName, @Nullable ClientProgressMonitor monitor);
-
-  /**
-   * Downloads and returns server issues for a given project.
-   *
-   * @param endpoint from which to download issues
-   * @param projectKey
-   * @return Set of branches analyzed for this project.
-   */
-  Set<ServerBranch> getServerBranches(EndpointParams endpoint, HttpClient client, String projectKey);
 
   /**
    * Get a list of files that are excluded from analysis, out of the provided files.

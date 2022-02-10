@@ -40,7 +40,6 @@ import org.sonarqube.ws.client.permissions.RemoveGroupRequest;
 import org.sonarqube.ws.client.settings.SetRequest;
 import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.commons.Language;
@@ -60,6 +59,7 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
     .defaultForceAuthentication()
     .setSonarVersion(SONAR_VERSION)
     .setEdition(Edition.ENTERPRISE)
+    .activateLicense()
     .keepBundledPlugins()
     .restoreProfileAtStartup(FileLocation.ofClasspath("/c-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/cobol-sonarlint.xml"))

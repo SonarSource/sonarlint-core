@@ -137,3 +137,8 @@ message RuleSet {
         map<string,string> params = 4;
     }
 }
+
+message ProjectBranches {
+    repeated string branchName = 1;
+    string mainBranchName = 2;
+}

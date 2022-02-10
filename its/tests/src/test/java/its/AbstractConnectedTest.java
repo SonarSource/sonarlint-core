@@ -26,7 +26,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
@@ -41,7 +40,6 @@ import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
-import okhttp3.ResponseBody;
 import org.sonarqube.ws.client.HttpConnector;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsClientFactories;
@@ -241,15 +239,15 @@ public abstract class AbstractConnectedTest {
     return new SonarLintHttpClientOkHttpImpl(CLIENT_NO_AUTH);
   }
 
-  protected EndpointParams endpointParams(Orchestrator orchestrator) {
+  protected static EndpointParams endpointParams(Orchestrator orchestrator) {
     return endpointParamsNoOrg(orchestrator.getServer().getUrl());
   }
 
-  protected EndpointParams endpointParamsNoOrg(String url) {
+  protected static EndpointParams endpointParamsNoOrg(String url) {
     return endpointParams(url, false, null);
   }
 
-  protected EndpointParams endpointParams(String url, boolean isSonarCloud, @Nullable String org) {
+  protected static EndpointParams endpointParams(String url, boolean isSonarCloud, @Nullable String org) {
     return new EndpointParams(url, isSonarCloud, org);
   }
 }

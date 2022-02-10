@@ -21,26 +21,23 @@ package its;
 
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.SonarScanner;
+import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
 import its.tools.SonarlintProject;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import org.junit.After;
-import org.junit.Before;
+import java.util.Set;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarqube.ws.Issues.Issue;
-import org.sonarqube.ws.Issues.SearchWsResponse;
-import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.issues.DoTransitionRequest;
 import org.sonarqube.ws.client.issues.SearchRequest;
 import org.sonarqube.ws.client.issues.SetSeverityRequest;
@@ -56,12 +53,17 @@ import static its.tools.ItUtils.SONAR_VERSION;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
+public class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
+  // Use the pattern of long living branches in SQ 7.9, else we only have issues on changed files
+  private static final String FEATURE_MY_BRANCH = "branch-1.x";
+
   private static final String PROJECT_KEY = "sample-xoo";
 
   @ClassRule
   public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
     .defaultForceAuthentication()
+    .setEdition(Edition.DEVELOPER)
+    .activateLicense()
     .setSonarVersion(SONAR_VERSION)
     .addPlugin(MavenLocation.of("org.sonarsource.sonarqube", "sonar-xoo-plugin", SONAR_VERSION))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/xoo-sonarlint.xml"))
@@ -70,13 +72,12 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
   @Rule
   public SonarlintProject clientTools = new SonarlintProject();
 
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
+  @ClassRule
+  public static TemporaryFolder temp = new TemporaryFolder();
 
   private static Path sonarUserHome;
 
-  private ConnectedSonarLintEngine engine;
-  private final List<String> logs = new ArrayList<>();
+  private static ConnectedSonarLintEngine engine;
 
   private static Issue wfIssue;
   private static Issue fpIssue;
@@ -84,20 +85,34 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
   private static Issue overridenTypeIssue;
 
   @BeforeClass
-  public static void prepare() {
+  public static void prepare() throws IOException {
     var adminWsClient = newAdminWsClient(ORCHESTRATOR);
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
+
+    sonarUserHome = temp.newFolder().toPath();
+    engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
+      .setConnectionId("orchestrator")
+      .setSonarLintUserHome(sonarUserHome)
+      .setExtraProperties(new HashMap<>())
+      .build());
+
+    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
 
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY, "Sample Xoo");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY, "xoo", "SonarLint IT Xoo");
 
-    analyzeProject("sample-xoo-v1");
-    // Second analysis with less issues to have closed issues
-    analyzeProject("sample-xoo-v2");
+    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, false, FEATURE_MY_BRANCH, null);
 
-    // Mark a few issues as closed WF and closed FP
+    // main branch
+    analyzeProject("sample-xoo-v1");
+
+    analyzeProject("sample-xoo-v1", "sonar.branch.name", FEATURE_MY_BRANCH);
+    // Second analysis with less issues to have closed issues on the branch
+    analyzeProject("sample-xoo-v2", "sonar.branch.name", FEATURE_MY_BRANCH);
+
+    // Mark a few issues as closed WF and closed FP on the branch
     var issueSearchResponse = adminWsClient.issues()
-      .search(new SearchRequest().setStatuses(asList("OPEN")).setTypes(asList("CODE_SMELL")).setComponentKeys(asList(PROJECT_KEY)));
+      .search(new SearchRequest().setStatuses(asList("OPEN")).setTypes(asList("CODE_SMELL")).setComponentKeys(asList(PROJECT_KEY)).setBranch(FEATURE_MY_BRANCH));
     wfIssue = issueSearchResponse.getIssues(0);
     fpIssue = issueSearchResponse.getIssues(1);
     // Change severity and type
@@ -112,7 +127,8 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
 
     // Ensure an hostpot has been reported on server side
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 2)) {
-      assertThat(adminWsClient.hotspots().search(new org.sonarqube.ws.client.hotspots.SearchRequest().setProjectKey(PROJECT_KEY)).getHotspotsList()).isNotEmpty();
+      assertThat(adminWsClient.hotspots().search(new org.sonarqube.ws.client.hotspots.SearchRequest().setProjectKey(PROJECT_KEY).setBranch(FEATURE_MY_BRANCH)).getHotspotsList())
+        .isNotEmpty();
     } else {
       assertThat(
         adminWsClient.issues().search(new SearchRequest().setTypes(asList("SECURITY_HOTSPOT")).setComponentKeys(asList(PROJECT_KEY))).getIssuesList())
@@ -120,28 +136,22 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
     }
   }
 
-  @Before
-  public void start() throws IOException {
-    sonarUserHome = temp.newFolder().toPath();
-    engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
-      .setConnectionId("orchestrator")
-      .setSonarLintUserHome(sonarUserHome)
-      .setLogOutput((msg, level) -> logs.add(msg))
-      .setExtraProperties(new HashMap<>())
-      .build());
-  }
-
-  @After
-  public void stop() {
+  @AfterClass
+  public static void stop() {
     engine.stop(true);
   }
 
   @Test
-  public void download_all_issues_not_limited_to_10k() throws IOException {
-    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
-    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, false, null, null);
+  public void sync_all_project_branches() throws IOException {
+    engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY), null);
 
-    engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, false, null, null);
+    assertThat(engine.getServerBranches(PROJECT_KEY).getBranchNames()).containsOnly("master", FEATURE_MY_BRANCH);
+    assertThat(engine.getServerBranches(PROJECT_KEY).getMainBranchName()).contains("master");
+  }
+
+  @Test
+  public void download_all_issues_for_branch() throws IOException {
+    engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, false, FEATURE_MY_BRANCH, null);
 
     var file1Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/500lines.xoo");
     var file2Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/10000lines.xoo");
@@ -164,11 +174,12 @@ public class ConnectedIssueDownloadTest extends AbstractConnectedTest {
     assertThat(allIssues.values()).allSatisfy(i -> assertThat(i.type()).isIn("CODE_SMELL", "BUG", "VULNERABILITY"));
   }
 
-  private static void analyzeProject(String projectDirName) {
+  private static void analyzeProject(String projectDirName, String... properties) {
     var projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
     ORCHESTRATOR.executeBuild(SonarScanner.create(projectDir.toFile())
       .setProjectKey(PROJECT_KEY)
       .setSourceDirs("src")
+      .setProperties(properties)
       .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
       .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
   }
