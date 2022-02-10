@@ -54,6 +54,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectBranches;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.connected.UpdateResult;
@@ -87,8 +88,6 @@ import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.branches.ProjectBranchesApi;
-import org.sonarsource.sonarlint.core.serverapi.branches.ServerBranch;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.storage.LocalStorageSynchronizer;
@@ -414,14 +413,20 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
         return new ProjectListDownloader(new ServerApiHelper(endpoint, client), globalStores.getServerProjectsStore()).fetch(new ProgressMonitor(monitor));
       } catch (Exception e) {
         // null as cause so that it doesn't get wrapped
-        throw new DownloadException("Failed to update module list: " + e.getMessage(), null);
+        throw new DownloadException("Failed to update project list: " + e.getMessage(), null);
       }
     });
   }
 
   @Override
-  public Set<ServerBranch> getServerBranches(EndpointParams endpoint, HttpClient client, String projectKey) {
-    return new ProjectBranchesApi(new ServerApiHelper(endpoint, client)).getAllBranches(projectKey);
+  public ProjectBranches getServerBranches(String projectKey) {
+    try {
+      var projectBranchesFromStorage = projectStorage.getProjectBranches(projectKey);
+      return new ProjectBranches(projectBranchesFromStorage.getBranchNames(), projectBranchesFromStorage.getMainBranchName());
+    } catch (StorageException e) {
+      LOG.error("Unable to read projects branches from the storage", e);
+      return new ProjectBranches(Set.of(), Optional.empty());
+    }
   }
 
   @Override

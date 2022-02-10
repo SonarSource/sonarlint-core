@@ -30,6 +30,8 @@ import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
 
+import static java.util.stream.Collectors.toSet;
+
 public class LocalStorageSynchronizer {
   private static final Logger LOG = Loggers.get(LocalStorageSynchronizer.class);
 
@@ -38,7 +40,7 @@ public class LocalStorageSynchronizer {
   private final ProjectStorage projectStorage;
 
   public LocalStorageSynchronizer(Set<Language> enabledLanguages, Set<String> embeddedPluginKeys, PluginsStorage pluginsStorage, ProjectStorage projectStorage) {
-    this.enabledLanguageKeys = enabledLanguages.stream().map(Language::getLanguageKey).collect(Collectors.toSet());
+    this.enabledLanguageKeys = enabledLanguages.stream().map(Language::getLanguageKey).collect(toSet());
     this.projectStorage = projectStorage;
     this.pluginsSynchronizer = new PluginsSynchronizer(enabledLanguages, pluginsStorage, embeddedPluginKeys);
   }
@@ -51,13 +53,16 @@ public class LocalStorageSynchronizer {
     }
     var anyPluginUpdated = pluginsSynchronizer.synchronize(serverApi, progressMonitor);
     projectKeys.stream()
-      .collect(Collectors.toMap(Function.identity(), projectKey -> synchronize(serverApi, projectKey, progressMonitor)))
+      .collect(Collectors.toMap(Function.identity(), projectKey -> synchronizeAnalyzerConfig(serverApi, projectKey, progressMonitor)))
+      .forEach(projectStorage::store);
+    projectKeys.stream()
+      .collect(Collectors.toMap(Function.identity(), projectKey -> synchronizeProjectBranches(serverApi, projectKey)))
       .forEach(projectStorage::store);
     return new SynchronizationResult(anyPluginUpdated);
   }
 
-  private AnalyzerConfiguration synchronize(ServerApi serverApi, String projectKey, ProgressMonitor progressMonitor) {
-    LOG.info("[SYNC] Synchronizing '{}'", projectKey);
+  private AnalyzerConfiguration synchronizeAnalyzerConfig(ServerApi serverApi, String projectKey, ProgressMonitor progressMonitor) {
+    LOG.info("[SYNC] Synchronizing analyzer configuration for project '{}'", projectKey);
     var currentRuleSets = projectStorage.getAnalyzerConfiguration(projectKey).getRuleSetByLanguageKey();
     var settings = new Settings(serverApi.settings().getProjectSettings(projectKey));
     var ruleSetsByLanguageKey = serverApi.qualityProfile().getQualityProfiles(projectKey).stream()
@@ -76,5 +81,12 @@ public class LocalStorageSynchronizer {
       LOG.info("[SYNC] Active rules for '{}' are up-to-date", language);
       return currentRuleSets.get(language);
     }
+  }
+
+  private ProjectBranches synchronizeProjectBranches(ServerApi serverApi, String projectKey) {
+    LOG.info("[SYNC] Synchronizing project branches for project '{}'", projectKey);
+    var allBranches = serverApi.branches().getAllBranches(projectKey);
+    var mainBranch = allBranches.stream().filter(b -> b.isMain()).findFirst().map(b -> b.getName());
+    return new ProjectBranches(allBranches.stream().map(b -> b.getName()).collect(toSet()), mainBranch);
   }
 }

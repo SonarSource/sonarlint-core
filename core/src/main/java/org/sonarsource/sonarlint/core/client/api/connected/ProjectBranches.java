@@ -1,5 +1,5 @@
 /*
- * SonarLint Server API
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,20 +17,26 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverapi.branches;
+package org.sonarsource.sonarlint.core.client.api.connected;
 
-import org.junit.jupiter.api.Test;
+import java.util.Optional;
+import java.util.Set;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+public class ProjectBranches {
+  private final Set<String> branchNames;
+  private final Optional<String> mainBranchName;
 
-class ServerBranchTests {
+  public ProjectBranches(Set<String> branchNames, Optional<String> mainBranchName) {
+    this.branchNames = branchNames;
+    this.mainBranchName = mainBranchName;
+  }
 
-  @Test
-  void serverBranchTest() {
-    ServerBranch branch = new ServerBranch("foo", true);
+  public Set<String> getBranchNames() {
+    return branchNames;
+  }
 
-    assertThat(branch.getName()).isEqualTo("foo");
-    assertThat(branch.isMain()).isTrue();
+  public Optional<String> getMainBranchName() {
+    return mainBranchName;
   }
 
 }

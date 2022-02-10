@@ -26,6 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarqube.ws.ProjectBranches;
 import org.sonarqube.ws.Qualityprofiles;
 import org.sonarqube.ws.Rules;
 import org.sonarqube.ws.Settings;
@@ -40,7 +41,7 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 
-class LocalStorageSynchronizerTest {
+class LocalStorageSynchronizerTests {
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
   private final ProgressMonitor progressMonitor = new ProgressMonitor(null);
@@ -80,13 +81,16 @@ class LocalStorageSynchronizerTest {
             .build())
           .build())
         .build());
+    mockServer.addProtobufResponse("/api/project_branches/list.protobuf?project=projectKey", ProjectBranches.ListWsResponse.newBuilder()
+      .addBranches(ProjectBranches.Branch.newBuilder().setName("feature/foo").setIsMain(false))
+      .addBranches(ProjectBranches.Branch.newBuilder().setName("master").setIsMain(true)).build());
     var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new PluginsStorage(tmpDir), new ProjectStorage(tmpDir));
 
     synchronizer.synchronize(new ServerApi(mockServer.serverApiHelper()), Set.of("projectKey"), progressMonitor);
 
-    var storageFile = tmpDir.resolve("70726f6a6563744b6579/analyzer_config.pb");
-    assertThat(storageFile).exists();
-    var analyzerConfiguration = ProtobufUtil.readFile(storageFile, Sonarlint.AnalyzerConfiguration.parser());
+    var analyzerConfigFile = tmpDir.resolve("70726f6a6563744b6579/analyzer_config.pb");
+    assertThat(analyzerConfigFile).exists();
+    var analyzerConfiguration = ProtobufUtil.readFile(analyzerConfigFile, Sonarlint.AnalyzerConfiguration.parser());
     assertThat(analyzerConfiguration.getSettingsMap()).containsEntry("settingKey", "settingValue");
     var ruleSetsByLanguageKeyMap = analyzerConfiguration.getRuleSetsByLanguageKeyMap();
     assertThat(ruleSetsByLanguageKeyMap).containsKey("js");
@@ -96,7 +100,13 @@ class LocalStorageSynchronizerTest {
     assertThat(activeRule.getRuleKey()).isEqualTo("ruleKey");
     assertThat(activeRule.getSeverity()).isEqualTo("MAJOR");
     assertThat(activeRule.getTemplateKey()).isEqualTo("templateKey");
-    assertThat(activeRule.getParams()).containsEntry("paramKey", "paramValue");
+    assertThat(activeRule.getParamsMap()).containsEntry("paramKey", "paramValue");
+
+    var projectBranchesFile = tmpDir.resolve("70726f6a6563744b6579/project_branches.pb");
+    assertThat(projectBranchesFile).exists();
+    var projectBranches = ProtobufUtil.readFile(projectBranchesFile, Sonarlint.ProjectBranches.parser());
+    assertThat(projectBranches.getBranchNameList()).containsOnly("feature/foo", "master");
+    assertThat(projectBranches.getMainBranchName()).isEqualTo("master");
   }
 
   @Test
