@@ -52,7 +52,7 @@
           <instructions>
             <Embed-Dependency>*;scope=compile|runtime;inline=true;classifier=</Embed-Dependency>
             <Import-Package>
-              !*
+              org.eclipse.jgit.*;resolution=optional,
             </Import-Package>
             <Export-Package>
               org.sonarsource.sonarlint.core.*;version="${project.version}",
