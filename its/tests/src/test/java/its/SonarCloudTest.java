@@ -25,12 +25,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -39,10 +36,8 @@ import okhttp3.Credentials;
 import okhttp3.OkHttpClient;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
-import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -54,13 +49,11 @@ import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsClientFactories;
 import org.sonarqube.ws.client.WsRequest;
-import org.sonarqube.ws.client.WsResponse;
 import org.sonarqube.ws.client.qualityprofiles.AddProjectRequest;
 import org.sonarqube.ws.client.settings.ResetRequest;
 import org.sonarqube.ws.client.settings.SetRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
-import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectionValidator;
@@ -69,15 +62,13 @@ import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
-import org.sonarsource.sonarlint.core.serverapi.organization.OrganizationApi;
-import org.sonarsource.sonarlint.core.serverapi.organization.ServerOrganization;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 @Category(SonarCloud.class)
 public class SonarCloudTest extends AbstractConnectedTest {
+  private static final String SONAR_JAVA_FILE_SUFFIXES = "sonar.java.file.suffixes";
   private static final String SONARCLOUD_STAGING_URL = "https://sc-staging.io";
   private static final String SONARCLOUD_ORGANIZATION = "sonarlint-it";
   private static final String SONARCLOUD_USER = "sonarlint-it";
@@ -107,8 +98,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
   private static WsClient adminWsClient;
   private static Path sonarUserHome;
 
-  private ConnectedSonarLintEngine engine;
-  private List<String> logs;
+  private static ConnectedSonarLintEngine engine;
 
   private static int randomPositiveInt;
 
@@ -165,6 +155,51 @@ public class SonarCloudTest extends AbstractConnectedTest {
     executor.setWorkingDirectory(new File("projects/sample-java"));
     var exitValue = executor.execute(cmdLine);
     assertThat(exitValue).isZero();
+
+    Map<String, String> globalProps = new HashMap<>();
+    globalProps.put("sonar.global.label", "It works");
+
+    var nodeJsHelper = new NodeJsHelper();
+    nodeJsHelper.detect(null);
+
+    engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
+      .setConnectionId("sonarcloud")
+      .setSonarLintUserHome(sonarUserHome)
+      .addEnabledLanguage(Language.JAVA)
+      .addEnabledLanguage(Language.PHP)
+      .addEnabledLanguage(Language.JS)
+      .addEnabledLanguage(Language.PYTHON)
+      .addEnabledLanguage(Language.HTML)
+      .addEnabledLanguage(Language.RUBY)
+      .addEnabledLanguage(Language.KOTLIN)
+      .addEnabledLanguage(Language.SCALA)
+      .addEnabledLanguage(Language.XML)
+      .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
+      .setExtraProperties(globalProps)
+      .build());
+    assertThat(engine.getGlobalStorageStatus()).isNull();
+
+    updateGlobal();
+
+    assertThat(engine.getGlobalStorageStatus()).isNotNull();
+    assertThat(engine.getGlobalStorageStatus().isStale()).isFalse();
+
+    Set<String> ALL_PROJECTS = Set.of(
+      projectKey(PROJECT_KEY_JAVA),
+      projectKey(PROJECT_KEY_JAVA_PACKAGE),
+      projectKey(PROJECT_KEY_JAVA_HOTSPOT),
+      projectKey(PROJECT_KEY_JAVA_EMPTY),
+      projectKey(PROJECT_KEY_PHP),
+      projectKey(PROJECT_KEY_JAVASCRIPT),
+      projectKey(PROJECT_KEY_PYTHON),
+      projectKey(PROJECT_KEY_WEB),
+      projectKey(PROJECT_KEY_KOTLIN),
+      projectKey(PROJECT_KEY_RUBY),
+      projectKey(PROJECT_KEY_SCALA),
+      projectKey(PROJECT_KEY_XML));
+
+    ALL_PROJECTS.forEach(p -> engine.updateProject(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), p, false, null, null));
+    engine.sync(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), ALL_PROJECTS, null);
   }
 
   @AfterClass
@@ -172,6 +207,12 @@ public class SonarCloudTest extends AbstractConnectedTest {
     adminWsClient.projects().bulkDelete(new org.sonarqube.ws.client.projects.BulkDeleteRequest()
       .setQ("-" + randomPositiveInt)
       .setOrganization(SONARCLOUD_ORGANIZATION));
+
+    try {
+      engine.stop(true);
+    } catch (Exception e) {
+      // Ignore
+    }
   }
 
   private static void associateProjectToQualityProfile(String projectKey, String language, String profileName) {
@@ -203,68 +244,20 @@ public class SonarCloudTest extends AbstractConnectedTest {
     return "sonarlint-its-" + key + "-" + randomPositiveInt;
   }
 
-  @Before
-  public void start() {
-    FileUtils.deleteQuietly(sonarUserHome.toFile());
-    Map<String, String> globalProps = new HashMap<>();
-    globalProps.put("sonar.global.label", "It works");
-    logs = new ArrayList<>();
-
-    var nodeJsHelper = new NodeJsHelper();
-    nodeJsHelper.detect(null);
-
-    engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
-      .setConnectionId("sonarcloud")
-      .setSonarLintUserHome(sonarUserHome)
-      .addEnabledLanguage(Language.JAVA)
-      .addEnabledLanguage(Language.PHP)
-      .addEnabledLanguage(Language.JS)
-      .addEnabledLanguage(Language.PYTHON)
-      .addEnabledLanguage(Language.HTML)
-      .addEnabledLanguage(Language.RUBY)
-      .addEnabledLanguage(Language.KOTLIN)
-      .addEnabledLanguage(Language.SCALA)
-      .addEnabledLanguage(Language.XML)
-      .setLogOutput((msg, level) -> {
-        logs.add(msg);
-      })
-      .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
-      .setExtraProperties(globalProps)
-      .build());
-    assertThat(engine.getGlobalStorageStatus()).isNull();
-    engine.sync(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), Set.of(
-      projectKey(PROJECT_KEY_JAVA),
-      projectKey(PROJECT_KEY_JAVA_PACKAGE),
-      projectKey(PROJECT_KEY_JAVA_HOTSPOT),
-      projectKey(PROJECT_KEY_JAVA_EMPTY),
-      projectKey(PROJECT_KEY_PHP),
-      projectKey(PROJECT_KEY_JAVASCRIPT),
-      projectKey(PROJECT_KEY_PYTHON),
-      projectKey(PROJECT_KEY_WEB),
-      projectKey(PROJECT_KEY_KOTLIN),
-      projectKey(PROJECT_KEY_RUBY),
-      projectKey(PROJECT_KEY_SCALA),
-      projectKey(PROJECT_KEY_XML)), null);
+  @After
+  public void cleanup_after_each() {
+    // This property is altered in analysisUseConfiguration test
+    adminWsClient.settings().reset(new ResetRequest()
+      .setKeys(Collections.singletonList(SONAR_JAVA_FILE_SUFFIXES))
+      .setComponent(projectKey(PROJECT_KEY_JAVA)));
+    engine.sync(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), Set.of(projectKey(PROJECT_KEY_JAVA)), null);
 
     // This profile is altered in a test
     restoreProfile("java-sonarlint.xml");
   }
 
-  @After
-  public void stop() {
-    adminWsClient.settings().reset(new ResetRequest()
-      .setKeys(Collections.singletonList("sonar.java.file.suffixes"))
-      .setComponent(projectKey(PROJECT_KEY_JAVA)));
-    try {
-      engine.stop(true);
-    } catch (Exception e) {
-      // Ignore
-    }
-  }
-
   @Test
   public void downloadProjects() {
-    updateGlobal();
     assertThat(engine.allProjectsByKey()).isNotEmpty();
     provisionProject("foo-bar", "Foo");
     assertThat(engine.downloadAllProjects(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), null)).containsKeys(projectKey("foo-bar"),
@@ -279,9 +272,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
     var testFile = temp.newFile("MyTestParseError.java").toPath();
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
 
-    updateGlobal();
-    updateProject(projectKey(PROJECT_KEY_JAVA));
-
     var issueListener = new SaveIssueListener();
     var results = engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA), testFile.toString()), issueListener, null, null);
 
@@ -294,9 +284,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
     var testFile = temp.newFile("MyTest.js").toPath();
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
 
-    updateGlobal();
-    updateProject(projectKey(PROJECT_KEY_JAVASCRIPT));
-
     var issueListener = new SaveIssueListener();
     var results = engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVASCRIPT), testFile.toString()), issueListener, null, null);
 
@@ -304,22 +291,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void globalUpdate() {
-    updateGlobal();
-
-    assertThat(engine.getGlobalStorageStatus()).isNotNull();
-    assertThat(engine.getGlobalStorageStatus().isStale()).isFalse();
-
-    assertThat(engine.getProjectStorageStatus(projectKey(PROJECT_KEY_JAVA))).isNull();
-  }
-
-  @Test
-  public void updateProject() throws Exception {
-    updateGlobal();
-
-    updateProject(projectKey(PROJECT_KEY_JAVA));
-
-    assertThat(engine.getProjectStorageStatus(projectKey(PROJECT_KEY_JAVA))).isNotNull();
+  public void testRuleDescription() throws Exception {
     assertThat(
       engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), "java:S106", projectKey(PROJECT_KEY_JAVA)).get().getHtmlDescription())
         .contains("When logging a message there are");
@@ -339,9 +311,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
       assertThat(response.code()).isEqualTo(200);
     }
 
-    updateGlobal();
-    updateProject(projectKey(PROJECT_KEY_JAVA));
-
     assertThat(
       engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), ruleKey, projectKey(PROJECT_KEY_JAVA)).get().getExtendedDescription())
         .isEqualTo(extendedDescription);
@@ -349,9 +318,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @Test
   public void analysisJavascript() throws Exception {
-    updateGlobal();
-    updateProject(projectKey(PROJECT_KEY_JAVASCRIPT));
-
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVASCRIPT), PROJECT_KEY_JAVASCRIPT, "src/Person.js"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
@@ -359,9 +325,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @Test
   public void analysisPHP() throws Exception {
-    updateGlobal();
-    updateProject(projectKey(PROJECT_KEY_PHP));
-
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_PHP), PROJECT_KEY_PHP, "src/Math.php"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
@@ -369,9 +332,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @Test
   public void analysisPython() throws Exception {
-    updateGlobal();
-    updateProject(projectKey(PROJECT_KEY_PYTHON));
-
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_PYTHON), PROJECT_KEY_PYTHON, "src/hello.py"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
@@ -379,9 +339,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @Test
   public void analysisWeb() throws IOException {
-    updateGlobal();
-    updateProject(projectKey(PROJECT_KEY_WEB));
-
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_WEB), PROJECT_KEY_WEB, "src/file.html"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
@@ -389,9 +346,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @Test
   public void analysisUseQualityProfile() throws Exception {
-    updateGlobal();
-    updateProject(projectKey(PROJECT_KEY_JAVA));
-
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA), PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
@@ -403,9 +357,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @Test
   public void dontReportHotspots() throws Exception {
-    updateGlobal();
-    updateProject(projectKey(PROJECT_KEY_JAVA_HOTSPOT));
-
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT,
       "src/main/java/foo/Foo.java",
@@ -417,9 +368,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @Test
   public void analysisIssueOnDirectory() throws Exception {
-    updateGlobal();
-    updateProject(projectKey(PROJECT_KEY_JAVA_PACKAGE));
-
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA_PACKAGE), PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
@@ -433,9 +381,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @Test
   public void analysisUseEmptyQualityProfile() throws Exception {
-    updateGlobal();
-    updateProject(projectKey(PROJECT_KEY_JAVA_EMPTY));
-
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA_EMPTY), PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
@@ -447,9 +392,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @Test
   public void analysisUseConfiguration() throws Exception {
-    updateGlobal();
-    updateProject(projectKey(PROJECT_KEY_JAVA));
-
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA), PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
@@ -458,9 +400,9 @@ public class SonarCloudTest extends AbstractConnectedTest {
     assertThat(issueListener.getIssues()).hasSize(2);
 
     // Override default file suffixes in project props so that input file is not considered as a Java file
-    setSettingsMultiValue(projectKey(PROJECT_KEY_JAVA), "sonar.java.file.suffixes", ".foo");
-    updateGlobal();
-    updateProject(projectKey(PROJECT_KEY_JAVA));
+    setSettingsMultiValue(projectKey(PROJECT_KEY_JAVA), SONAR_JAVA_FILE_SUFFIXES, ".foo");
+
+    engine.sync(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), Set.of(projectKey(PROJECT_KEY_JAVA)), null);
 
     issueListener.clear();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA), PROJECT_KEY_JAVA,
@@ -494,9 +436,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @Test
   public void analysisRuby() throws Exception {
-    updateGlobal();
-    updateProject(projectKey(PROJECT_KEY_RUBY));
-
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_RUBY), PROJECT_KEY_RUBY, "src/hello.rb"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
@@ -504,9 +443,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @Test
   public void analysisKotlin() throws Exception {
-    updateGlobal();
-    updateProject(projectKey(PROJECT_KEY_KOTLIN));
-
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_KOTLIN), PROJECT_KEY_KOTLIN, "src/hello.kt"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
@@ -514,9 +450,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @Test
   public void analysisScala() throws Exception {
-    updateGlobal();
-    updateProject(projectKey(PROJECT_KEY_SCALA));
-
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_SCALA), PROJECT_KEY_SCALA, "src/Hello.scala"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
@@ -524,9 +457,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @Test
   public void analysisXml() throws Exception {
-    updateGlobal();
-    updateProject(projectKey(PROJECT_KEY_XML));
-
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_XML), PROJECT_KEY_XML, "src/foo.xml"), issueListener, (m, l) -> System.out.println(m), null);
     assertThat(issueListener.getIssues()).hasSize(1);
@@ -552,16 +482,11 @@ public class SonarCloudTest extends AbstractConnectedTest {
       .setComponent(moduleKey));
   }
 
-  private void updateProject(String projectKey) {
-    engine.updateProject(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), projectKey, false, null, null);
-    engine.sync(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), Set.of(projectKey), null);
-  }
-
-  private void updateGlobal() {
+  private static void updateGlobal() {
     engine.update(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), null);
   }
 
-  private EndpointParams sonarcloudEndpointITOrg() {
+  private static EndpointParams sonarcloudEndpointITOrg() {
     return sonarcloudEndpoint(SONARCLOUD_ORGANIZATION);
   }
 
@@ -572,7 +497,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
       .build());
   }
 
-  private EndpointParams sonarcloudEndpoint(@Nullable String orgKey) {
+  private static EndpointParams sonarcloudEndpoint(@Nullable String orgKey) {
     return endpointParams(SONARCLOUD_STAGING_URL, true, orgKey);
   }
 }
