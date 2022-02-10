@@ -19,51 +19,33 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.branches;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import java.util.Collections;
+import java.util.List;
+import org.sonarqube.ws.ProjectBranches;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import java.util.HashSet;
-import java.util.Set;
+import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
+
+import static java.util.stream.Collectors.toList;
 
 public class ProjectBranchesApi {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private static final String LIST_ALL_PROJECT_BRANCHES_URL = "/api/project_branches/list";
+  private static final String LIST_ALL_PROJECT_BRANCHES_URL = "/api/project_branches/list.protobuf";
   private final ServerApiHelper helper;
 
   public ProjectBranchesApi(ServerApiHelper helper) {
     this.helper = helper;
   }
 
-  public Set<ServerBranch> getAllBranches(String projectKey) {
-    var response = helper.get(LIST_ALL_PROJECT_BRANCHES_URL + "?project=" + projectKey);
-    var bodyAsString = response.bodyAsString();
-    return getBranchNamesFromResponse(bodyAsString);
-  }
-
-  static Set<ServerBranch> getBranchNamesFromResponse(String bodyAsString) {
-    Set<ServerBranch> parsedBranchNames = new HashSet<>();
-    try {
-      var root = JsonParser.parseString(bodyAsString).getAsJsonObject();
-      var branches = root.get("branches").getAsJsonArray();
-
-      for (JsonElement el : branches) {
-        var branch = el.getAsJsonObject();
-        var name = branch.get("name");
-        var isMain = branch.get("isMain");
-        if (name == null || isMain == null) {
-          throw new IllegalStateException("Failed to parse response. Missing field 'name'.");
-        }
-        parsedBranchNames.add(new ServerBranch(name.getAsString(), isMain.getAsBoolean()));
-      }
-
+  public List<ServerBranch> getAllBranches(String projectKey) {
+    ProjectBranches.ListWsResponse response;
+    try (var wsResponse = helper.get(LIST_ALL_PROJECT_BRANCHES_URL + "?project=" + UrlUtils.urlEncode(projectKey)); var is = wsResponse.bodyAsStream()) {
+      response = ProjectBranches.ListWsResponse.parseFrom(is);
     } catch (Exception e) {
-      LOG.error("Failed to parse SonarQube branches list response", e);
-      return Collections.emptySet();
+      LOG.error("Error while fetching project branches", e);
+      return List.of();
     }
-    return parsedBranchNames;
+    return response.getBranchesList().stream().map(branchWs -> new ServerBranch(branchWs.getName(), branchWs.getIsMain())).collect(toList());
   }
 
 }

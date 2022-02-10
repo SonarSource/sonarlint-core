@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.branches;
 
-import java.util.Objects;
-
 public class ServerBranch {
 
   private final String name;
@@ -37,23 +35,6 @@ public class ServerBranch {
 
   public boolean isMain() {
     return isMain;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    ServerBranch that = (ServerBranch) o;
-    return isMain == that.isMain && Objects.equals(name, that.name);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(name, isMain);
   }
 
 }
