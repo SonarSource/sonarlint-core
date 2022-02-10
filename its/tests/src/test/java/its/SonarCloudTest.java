@@ -257,6 +257,12 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Test
+  public void sync_all_project_branches() throws IOException {
+    assertThat(engine.getServerBranches(projectKey(PROJECT_KEY_JAVA)).getBranchNames()).containsOnly("master");
+    assertThat(engine.getServerBranches(projectKey(PROJECT_KEY_JAVA)).getMainBranchName()).contains("master");
+  }
+
+  @Test
   public void downloadProjects() {
     assertThat(engine.allProjectsByKey()).isNotEmpty();
     provisionProject("foo-bar", "Foo");
