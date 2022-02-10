@@ -26,6 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarqube.ws.Common.BranchType;
 import org.sonarqube.ws.ProjectBranches;
 import org.sonarqube.ws.Qualityprofiles;
 import org.sonarqube.ws.Rules;
@@ -42,6 +43,7 @@ import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class LocalStorageSynchronizerTests {
+
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
   private final ProgressMonitor progressMonitor = new ProgressMonitor(null);
@@ -81,9 +83,11 @@ class LocalStorageSynchronizerTests {
             .build())
           .build())
         .build());
-    mockServer.addProtobufResponse("/api/project_branches/list.protobuf?project=projectKey", ProjectBranches.ListWsResponse.newBuilder()
-      .addBranches(ProjectBranches.Branch.newBuilder().setName("feature/foo").setIsMain(false))
-      .addBranches(ProjectBranches.Branch.newBuilder().setName("master").setIsMain(true)).build());
+    mockServer.addProtobufResponse("/api/project_branches/list.protobuf?project=projectKey",
+      ProjectBranches.ListWsResponse.newBuilder()
+        .addBranches(ProjectBranches.Branch.newBuilder().setName("master").setIsMain(true).setType(BranchType.BRANCH))
+        .addBranches(ProjectBranches.Branch.newBuilder().setName("feature/foo").setIsMain(false).setType(BranchType.BRANCH)).build());
+
     var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new PluginsStorage(tmpDir), new ProjectStorage(tmpDir));
 
     synchronizer.synchronize(new ServerApi(mockServer.serverApiHelper()), Set.of("projectKey"), progressMonitor);
@@ -105,7 +109,7 @@ class LocalStorageSynchronizerTests {
     var projectBranchesFile = tmpDir.resolve("70726f6a6563744b6579/project_branches.pb");
     assertThat(projectBranchesFile).exists();
     var projectBranches = ProtobufUtil.readFile(projectBranchesFile, Sonarlint.ProjectBranches.parser());
-    assertThat(projectBranches.getBranchNameList()).containsOnly("feature/foo", "master");
+    assertThat(projectBranches.getBranchNameList()).containsExactlyInAnyOrder("master", "feature/foo");
     assertThat(projectBranches.getMainBranchName()).isEqualTo("master");
   }
 

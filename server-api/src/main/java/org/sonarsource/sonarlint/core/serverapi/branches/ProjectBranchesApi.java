@@ -19,8 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.branches;
 
+import com.google.protobuf.Descriptors.EnumValueDescriptor;
 import java.util.List;
+import org.sonarqube.ws.Common.BranchType;
 import org.sonarqube.ws.ProjectBranches;
+import org.sonarqube.ws.ProjectBranches.Branch;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
@@ -28,6 +31,9 @@ import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import static java.util.stream.Collectors.toList;
 
 public class ProjectBranchesApi {
+  // https://github.com/SonarSource/sonarqube/blob/8.0/sonar-ws/src/main/protobuf/ws-commons.proto#L129
+  private static final long DEPRECATED_LONG_BRANCH_TYPE = 1;
+
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private static final String LIST_ALL_PROJECT_BRANCHES_URL = "/api/project_branches/list.protobuf";
@@ -45,7 +51,19 @@ public class ProjectBranchesApi {
       LOG.error("Error while fetching project branches", e);
       return List.of();
     }
-    return response.getBranchesList().stream().map(branchWs -> new ServerBranch(branchWs.getName(), branchWs.getIsMain())).collect(toList());
+    return response.getBranchesList().stream()
+      .filter(b -> b.getType() == BranchType.BRANCH || isLongLiving(b)
+        || ((EnumValueDescriptor) b.getField(ProjectBranches.Branch.getDescriptor().findFieldByNumber(ProjectBranches.Branch.TYPE_FIELD_NUMBER)))
+          .getNumber() == DEPRECATED_LONG_BRANCH_TYPE)
+      .map(branchWs -> new ServerBranch(branchWs.getName(), branchWs.getIsMain())).collect(toList());
+  }
+
+  private boolean isLongLiving(Branch b) {
+    if (b.getType() != BranchType.UNKNOWN_BRANCH_TYPE) {
+      return false;
+    }
+    List<Long> values = b.getUnknownFields().getField(ProjectBranches.Branch.TYPE_FIELD_NUMBER).getVarintList();
+    return values.size() == 1 && values.get(0).equals(DEPRECATED_LONG_BRANCH_TYPE);
   }
 
 }

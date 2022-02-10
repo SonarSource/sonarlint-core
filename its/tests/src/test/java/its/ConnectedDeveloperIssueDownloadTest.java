@@ -55,7 +55,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
   // Use the pattern of long living branches in SQ 7.9, else we only have issues on changed files
-  private static final String FEATURE_MY_BRANCH = "branch-1.x";
+  private static final String SHORT_BRANCH = "feature/short_living";
+  private static final String LONG_BRANCH = "branch-1.x";
 
   private static final String PROJECT_KEY = "sample-xoo";
 
@@ -101,18 +102,22 @@ public class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY, "Sample Xoo");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY, "xoo", "SonarLint IT Xoo");
 
-    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, false, FEATURE_MY_BRANCH, null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, false, LONG_BRANCH, null);
 
     // main branch
     analyzeProject("sample-xoo-v1");
 
-    analyzeProject("sample-xoo-v1", "sonar.branch.name", FEATURE_MY_BRANCH);
+    // short living branch
+    analyzeProject("sample-xoo-v1", "sonar.branch.name", SHORT_BRANCH);
+
+    // long living branch
+    analyzeProject("sample-xoo-v1", "sonar.branch.name", LONG_BRANCH);
     // Second analysis with less issues to have closed issues on the branch
-    analyzeProject("sample-xoo-v2", "sonar.branch.name", FEATURE_MY_BRANCH);
+    analyzeProject("sample-xoo-v2", "sonar.branch.name", LONG_BRANCH);
 
     // Mark a few issues as closed WF and closed FP on the branch
     var issueSearchResponse = adminWsClient.issues()
-      .search(new SearchRequest().setStatuses(asList("OPEN")).setTypes(asList("CODE_SMELL")).setComponentKeys(asList(PROJECT_KEY)).setBranch(FEATURE_MY_BRANCH));
+      .search(new SearchRequest().setStatuses(asList("OPEN")).setTypes(asList("CODE_SMELL")).setComponentKeys(asList(PROJECT_KEY)).setBranch(LONG_BRANCH));
     wfIssue = issueSearchResponse.getIssues(0);
     fpIssue = issueSearchResponse.getIssues(1);
     // Change severity and type
@@ -127,7 +132,7 @@ public class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
 
     // Ensure an hostpot has been reported on server side
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 2)) {
-      assertThat(adminWsClient.hotspots().search(new org.sonarqube.ws.client.hotspots.SearchRequest().setProjectKey(PROJECT_KEY).setBranch(FEATURE_MY_BRANCH)).getHotspotsList())
+      assertThat(adminWsClient.hotspots().search(new org.sonarqube.ws.client.hotspots.SearchRequest().setProjectKey(PROJECT_KEY).setBranch(LONG_BRANCH)).getHotspotsList())
         .isNotEmpty();
     } else {
       assertThat(
@@ -145,13 +150,18 @@ public class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
   public void sync_all_project_branches() throws IOException {
     engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY), null);
 
-    assertThat(engine.getServerBranches(PROJECT_KEY).getBranchNames()).containsOnly("master", FEATURE_MY_BRANCH);
+    // Starting from SQ 8.1, concept of short vs long living branch has been removed
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 1)) {
+      assertThat(engine.getServerBranches(PROJECT_KEY).getBranchNames()).containsOnly("master", LONG_BRANCH, SHORT_BRANCH);
+    } else {
+      assertThat(engine.getServerBranches(PROJECT_KEY).getBranchNames()).containsOnly("master", LONG_BRANCH);
+    }
     assertThat(engine.getServerBranches(PROJECT_KEY).getMainBranchName()).contains("master");
   }
 
   @Test
   public void download_all_issues_for_branch() throws IOException {
-    engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, false, FEATURE_MY_BRANCH, null);
+    engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, false, LONG_BRANCH, null);
 
     var file1Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/500lines.xoo");
     var file2Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/10000lines.xoo");
