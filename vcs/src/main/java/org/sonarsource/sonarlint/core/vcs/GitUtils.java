@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -63,12 +64,13 @@ public class GitUtils {
     return null;
   }
 
-  public static String electBestMatchingServerBranchForCurrentHead(Repository repo, Set<String> serverCandidateNames, String serverMainBranch) {
+  @CheckForNull
+  public static String electBestMatchingServerBranchForCurrentHead(Repository repo, Set<String> serverCandidateNames, @Nullable String serverMainBranch) {
     try {
       Ref head = repo.exactRef(Constants.HEAD);
       if (head == null) {
         // Not sure if this is possible to not have a HEAD, but just in case
-        return serverMainBranch;
+        return null;
       }
 
       Map<Integer, Set<String>> branchesPerDistance = new HashMap<>();
@@ -85,19 +87,19 @@ public class GitUtils {
         branchesPerDistance.computeIfAbsent(distance, d -> new HashSet<>()).add(serverBranchName);
       }
       if (branchesPerDistance.isEmpty()) {
-        return serverMainBranch;
+        return null;
       }
 
       int minDistance = branchesPerDistance.keySet().stream().min(naturalOrder()).get();
       Set<String> bestCandidates = branchesPerDistance.get(minDistance);
-      if (bestCandidates.contains(serverMainBranch)) {
+      if (serverMainBranch != null && bestCandidates.contains(serverMainBranch)) {
         // Favor the main branch when there are multiple candidates with the same distance
         return serverMainBranch;
       }
       return bestCandidates.iterator().next();
     } catch (IOException e) {
       LOG.error("Couldn't find best matching branch", e);
-      return serverMainBranch;
+      return null;
     }
   }
 

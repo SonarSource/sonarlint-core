@@ -75,14 +75,14 @@ class GitUtilsTest {
   }
 
   @Test
-  void shouldElectMainBranchIfNonePresentInLocalGit(@TempDir File projectDir) throws IOException {
+  void shouldReturnNullIfNonePresentInLocalGit(@TempDir File projectDir) throws IOException {
     javaUnzip("analyzed-branch.zip", projectDir);
     Path path = Paths.get(projectDir.getPath(), "analyzed-branch");
     try (Repository repo = GitUtils.getRepositoryForDir(path)) {
       Set<String> serverCandidateNames = Set.of("unknown1", "unknown2", "unknown3");
 
       String branch = GitUtils.electBestMatchingServerBranchForCurrentHead(repo, serverCandidateNames, "master");
-      assertThat(branch).isEqualTo("master");
+      assertThat(branch).isNull();
     }
   }
 
@@ -114,7 +114,7 @@ class GitUtilsTest {
   }
 
   @Test
-  void shouldReturnMainBranchOnException() throws IOException {
+  void shouldReturnNullOnException() throws IOException {
     Repository repo = mock(Repository.class);
     RefDatabase db = mock(RefDatabase.class);
     when(repo.getRefDatabase()).thenReturn(db);
@@ -122,7 +122,7 @@ class GitUtilsTest {
 
     String branch = GitUtils.electBestMatchingServerBranchForCurrentHead(repo, Set.of("foo", "bar", "master"), "master");
 
-    assertThat(branch).isEqualTo("master");
+    assertThat(branch).isNull();
   }
 
   public void javaUnzip(String zipFileName, File toDir) throws IOException {
