@@ -67,6 +67,12 @@ public class GitUtils {
   @CheckForNull
   public static String electBestMatchingServerBranchForCurrentHead(Repository repo, Set<String> serverCandidateNames, @Nullable String serverMainBranch) {
     try {
+
+      String currentBranch = repo.getBranch();
+      if (currentBranch != null && serverCandidateNames.contains(currentBranch)) {
+        return currentBranch;
+      }
+
       Ref head = repo.exactRef(Constants.HEAD);
       if (head == null) {
         // Not sure if this is possible to not have a HEAD, but just in case

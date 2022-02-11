@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.vcs;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -101,7 +100,21 @@ class GitUtilsTest {
   }
 
   @Test
-  void shouldElectMasterForNonAnalyzedChildBranch(@TempDir File projectDir) throws IOException {
+  void shouldElectClosestBranch_even_if_no_main_branch(@TempDir File projectDir) throws IOException {
+    javaUnzip("closest-branch.zip", projectDir);
+    Path path = Paths.get(projectDir.getPath(), "closest-branch");
+
+    try (Repository repo = GitUtils.getRepositoryForDir(path)) {
+
+      Set<String> serverCandidateNames = Set.of("foo", "closest_branch", "master");
+
+      String branch = GitUtils.electBestMatchingServerBranchForCurrentHead(repo, serverCandidateNames, null);
+      assertThat(branch).isEqualTo("closest_branch");
+    }
+  }
+
+  @Test
+  void shouldElectMainBranchForNonAnalyzedChildBranch(@TempDir File projectDir) throws IOException {
     javaUnzip("child-from-non-analyzed.zip", projectDir);
     Path path = Paths.get(projectDir.getPath(), "child-from-non-analyzed");
     try (Repository repo = GitUtils.getRepositoryForDir(path)) {
@@ -125,14 +138,24 @@ class GitUtilsTest {
     assertThat(branch).isNull();
   }
 
-  public void javaUnzip(String zipFileName, File toDir) throws IOException {
-    try {
-      File testRepos = new File(this.getClass().getResource("/test-repos").toURI());
-      File zipFile = new File(testRepos, zipFileName);
-      javaUnzip(zipFile, toDir);
-    } catch (URISyntaxException e) {
-      throw new IOException(e);
+  @Test
+  void shouldFavorCurrentBranchIfMultipleCandidates(@TempDir File projectDir) throws IOException {
+    // Both main and same-as-master branches are pointing to HEAD, but same-as-master is the currently checked out branch
+    javaUnzip("two-branches-for-head.zip", projectDir);
+    Path path = Paths.get(projectDir.getPath(), "two-branches-for-head");
+    try (Repository repo = GitUtils.getRepositoryForDir(path)) {
+
+      Set<String> serverCandidateNames = Set.of("main", "same-as-master", "another");
+
+      String branch = GitUtils.electBestMatchingServerBranchForCurrentHead(repo, serverCandidateNames, "main");
+      assertThat(branch).isEqualTo("same-as-master");
     }
+  }
+
+  public void javaUnzip(String zipFileName, File toDir) throws IOException {
+    File testRepos = new File("src/test/test-repos");
+    File zipFile = new File(testRepos, zipFileName);
+    javaUnzip(zipFile, toDir);
   }
 
   private static void javaUnzip(File zip, File toDir) {
