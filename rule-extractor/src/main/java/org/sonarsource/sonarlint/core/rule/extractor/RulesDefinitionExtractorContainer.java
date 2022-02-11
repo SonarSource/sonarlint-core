@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.rule.extractor;
 import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.server.rule.RulesDefinition.Context;
+import org.sonar.api.server.rule.RulesDefinitionXmlLoader;
 import org.sonar.api.utils.AnnotationUtils;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
@@ -67,6 +68,7 @@ public class RulesDefinitionExtractorContainer extends ComponentContainer {
       config,
       sonarLintRuntime,
       new SonarQubeVersion(sonarPluginApiVersion),
+      RulesDefinitionXmlLoader.class,
       RuleDefinitionsLoader.class,
       NoopTempFolder.class,
       EmptySettings.class);
