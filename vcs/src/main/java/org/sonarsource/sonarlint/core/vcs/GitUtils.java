@@ -31,7 +31,6 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
-import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.RevWalkUtils;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
@@ -73,7 +72,7 @@ public class GitUtils {
         return currentBranch;
       }
 
-      Ref head = repo.exactRef(Constants.HEAD);
+      var head = repo.exactRef(Constants.HEAD);
       if (head == null) {
         // Not sure if this is possible to not have a HEAD, but just in case
         return null;
@@ -81,10 +80,10 @@ public class GitUtils {
 
       Map<Integer, Set<String>> branchesPerDistance = new HashMap<>();
       for (String serverBranchName : serverCandidateNames) {
-        String shortBranchName = Repository.shortenRefName(serverBranchName);
-        String localFullBranchName = Constants.R_HEADS + shortBranchName;
+        var shortBranchName = Repository.shortenRefName(serverBranchName);
+        var localFullBranchName = Constants.R_HEADS + shortBranchName;
 
-        Ref branchRef = repo.exactRef(localFullBranchName);
+        var branchRef = repo.exactRef(localFullBranchName);
         if (branchRef == null) {
           continue;
         }
@@ -97,7 +96,7 @@ public class GitUtils {
       }
 
       int minDistance = branchesPerDistance.keySet().stream().min(naturalOrder()).get();
-      Set<String> bestCandidates = branchesPerDistance.get(minDistance);
+      var bestCandidates = branchesPerDistance.get(minDistance);
       if (serverMainBranch != null && bestCandidates.contains(serverMainBranch)) {
         // Favor the main branch when there are multiple candidates with the same distance
         return serverMainBranch;
@@ -111,15 +110,15 @@ public class GitUtils {
 
   private static int distance(Repository repository, Ref from, Ref to) throws IOException {
 
-    try (RevWalk walk = new RevWalk(repository)) {
+    try (var walk = new RevWalk(repository)) {
 
-      RevCommit fromCommit = walk.parseCommit(from.getObjectId());
-      RevCommit toCommit = walk.parseCommit(to.getObjectId());
+      var fromCommit = walk.parseCommit(from.getObjectId());
+      var toCommit = walk.parseCommit(to.getObjectId());
 
       walk.setRevFilter(RevFilter.MERGE_BASE);
       walk.markStart(fromCommit);
       walk.markStart(toCommit);
-      RevCommit mergeBase = walk.next();
+      var mergeBase = walk.next();
 
       walk.reset();
       walk.setRevFilter(RevFilter.ALL);
