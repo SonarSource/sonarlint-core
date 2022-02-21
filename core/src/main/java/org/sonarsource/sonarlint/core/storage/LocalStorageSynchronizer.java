@@ -28,6 +28,7 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.branches.ServerBranch;
 import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
 
 import static java.util.stream.Collectors.toSet;
@@ -83,10 +84,10 @@ public class LocalStorageSynchronizer {
     }
   }
 
-  private ProjectBranches synchronizeProjectBranches(ServerApi serverApi, String projectKey) {
+  private static ProjectBranches synchronizeProjectBranches(ServerApi serverApi, String projectKey) {
     LOG.info("[SYNC] Synchronizing project branches for project '{}'", projectKey);
     var allBranches = serverApi.branches().getAllBranches(projectKey);
-    var mainBranch = allBranches.stream().filter(b -> b.isMain()).findFirst().map(b -> b.getName());
-    return new ProjectBranches(allBranches.stream().map(b -> b.getName()).collect(toSet()), mainBranch);
+    var mainBranch = allBranches.stream().filter(ServerBranch::isMain).findFirst().map(ServerBranch::getName);
+    return new ProjectBranches(allBranches.stream().map(ServerBranch::getName).collect(toSet()), mainBranch);
   }
 }
