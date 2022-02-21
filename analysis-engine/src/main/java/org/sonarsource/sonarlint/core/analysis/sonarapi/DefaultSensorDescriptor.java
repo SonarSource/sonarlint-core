@@ -107,4 +107,10 @@ public class DefaultSensorDescriptor implements SensorDescriptor {
     return this;
   }
 
+  @Override
+  public SensorDescriptor processesFilesIndependently() {
+    // Not used by SonarLint
+    return this;
+  }
+
 }
