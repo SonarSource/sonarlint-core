@@ -20,13 +20,11 @@
 package org.sonarsource.sonarlint.core.plugin.commons.loading;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -119,7 +117,8 @@ class SonarPluginRequirementsCheckerTests {
     assertThat(loadedPlugins.values())
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, SkipReason.IncompatiblePluginApi.INSTANCE));
-    assertThat(logsWithoutStartStop()).contains("Plugin 'pluginkey' requires plugin API 99.9 while SonarLint supports only up to 8.9. Skip loading it.");
+    assertThat(logsWithoutStartStop())
+      .contains("Plugin 'pluginkey' requires plugin API 99.9 while SonarLint supports only up to " + SonarPluginRequirementsChecker.IMPLEMENTED_SQ_API + ". Skip loading it.");
   }
 
   @Test
