@@ -7,8 +7,8 @@
     <version>8.2-SNAPSHOT</version>
   </parent>
   <artifactId>sonarlint-report-aggregate</artifactId>
-  <name>SonarLint Telemetry</name>
-  <description>Aggregate Coverage Report</description>
+  <name>SonarLint Coverage Reports Aggregator</name>
+  <description>Aggregate Coverage Reports</description>
   <dependencies>
     <dependency>
       <groupId>${project.groupId}</groupId>
