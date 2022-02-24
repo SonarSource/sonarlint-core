@@ -36,6 +36,7 @@
       <artifactId>sonarlint-telemetry</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
+      <classifier>listenablefuture-9999.0-empty-to-avoid-conflict-with-guava-very-long</classifier>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
