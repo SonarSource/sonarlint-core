@@ -52,6 +52,7 @@
     <junit.vintage.version>5.8.2</junit.vintage.version>
     <artifactsToPublish>${project.groupId}:sonarlint-core:jar</artifactsToPublish>
     <jdk.min.version>11</jdk.min.version>
+    <version.artifactory.plugin>3.4.0</version.artifactory.plugin>
   </properties>
 
   <dependencyManagement>
