@@ -58,6 +58,8 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.progress.CanceledException;
+import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 import testutils.OnDiskTestClientInputFile;
@@ -67,12 +69,14 @@ import static java.util.Collections.singleton;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.sonarsource.sonarlint.core.client.api.common.ClientFileSystemFixtures.aClientFileSystemWith;
 
 class StandaloneIssueMediumTests {
 
+  private static final CanceledProgressMonitor CANCELED_PROGRESS_MONITOR = new CanceledProgressMonitor();
   private static Path sonarlintUserHome;
   private static Path fakeTypeScriptProjectPath;
 
@@ -870,6 +874,42 @@ class StandaloneIssueMediumTests {
     sonarlint.stopModule("key").get();
 
     assertThat(moduleContainer.getPicoContainer().getLifecycleState().isStarted()).isFalse();
+  }
+
+  @Test
+  void shouldThrowCancelExceptionWhenCanceled() throws Exception {
+    var inputFile = prepareInputFile("foo.php", "<?php\n"
+      + "function writeMsg($fname) {\n"
+      + "    $i = 0; // NOSONAR\n"
+      + "    echo \"Hello world!\";\n"
+      + "}\n"
+      + "?>", false);
+
+    final List<Issue> issues = new ArrayList<>();
+    StandaloneAnalysisConfiguration analysisConfiguration = StandaloneAnalysisConfiguration.builder()
+      .setBaseDir(baseDir.toPath())
+      .addInputFile(inputFile)
+      .build();
+    assertThrows(CanceledException.class, () -> sonarlint.analyze(analysisConfiguration, issues::add, null, CANCELED_PROGRESS_MONITOR));
+  }
+
+  private static final class CanceledProgressMonitor implements ClientProgressMonitor {
+    @Override
+    public boolean isCanceled() {
+      return true;
+    }
+
+    @Override
+    public void setMessage(String msg) {
+    }
+
+    @Override
+    public void setIndeterminate(boolean indeterminate) {
+    }
+
+    @Override
+    public void setFraction(float fraction) {
+    }
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding, @Nullable Language language) throws IOException {

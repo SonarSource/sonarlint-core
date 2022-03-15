@@ -45,7 +45,6 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetail
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRule;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository.Configuration;
@@ -117,15 +116,11 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
       .addActiveRules(identifyActiveRules(configuration))
       .setBaseDir(configuration.baseDir())
       .build();
-    try {
-      var analysisResults = analysisEngine
-        .post(new AnalyzeCommand(configuration.moduleKey(), analysisConfig, i -> issueListener.handle(new DefaultClientIssue(i, allRulesDefinitionsByKey.get(i.getRuleKey()))),
-          logOutput), new ProgressMonitor(monitor))
-        .get();
-      return analysisResults == null ? new AnalysisResults() : analysisResults;
-    } catch (Exception e) {
-      throw SonarLintWrappedException.wrap(e);
-    }
+
+    var analyzeCommand = new AnalyzeCommand(configuration.moduleKey(), analysisConfig,
+      i -> issueListener.handle(new DefaultClientIssue(i, allRulesDefinitionsByKey.get(i.getRuleKey()))),
+      logOutput);
+    return postAnalysisCommandAndGetResult(analyzeCommand, monitor);
   }
 
   private Collection<ActiveRule> identifyActiveRules(StandaloneAnalysisConfiguration configuration) {

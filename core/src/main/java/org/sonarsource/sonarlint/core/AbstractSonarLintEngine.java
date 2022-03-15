@@ -22,18 +22,23 @@ package org.sonarsource.sonarlint.core;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.AnalysisEngine;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
+import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.analysis.command.NotifyModuleEventCommand;
 import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
 import org.sonarsource.sonarlint.core.analysis.command.UnregisterModuleCommand;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintEngine;
+import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
@@ -78,6 +83,17 @@ public abstract class AbstractSonarLintEngine implements SonarLintEngine {
       SonarLintLogger.setTarget(logOutput);
     } else {
       SonarLintLogger.setTarget(this.logOutput);
+    }
+  }
+
+  protected AnalysisResults postAnalysisCommandAndGetResult(AnalyzeCommand analyzeCommand, @Nullable ClientProgressMonitor monitor) {
+    try {
+      var analysisResults = getAnalysisEngine().post(analyzeCommand, new ProgressMonitor(monitor)).get();
+      return analysisResults == null ? new AnalysisResults() : analysisResults;
+    } catch (ExecutionException e) {
+      throw SonarLintWrappedException.wrap(e.getCause());
+    } catch (Exception e) {
+      throw SonarLintWrappedException.wrap(e);
     }
   }
 

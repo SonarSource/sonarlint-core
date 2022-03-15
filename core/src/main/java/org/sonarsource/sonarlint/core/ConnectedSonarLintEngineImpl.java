@@ -252,13 +252,8 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
 
     var analysisConfiguration = analysisConfigBuilder.build();
 
-    try {
-      var analysisResults = getAnalysisEngine().post(new AnalyzeCommand(configuration.moduleKey(), analysisConfiguration,
-        issue -> streamIssue(issueListener, issue, activeRulesContext), logOutput), new ProgressMonitor(monitor)).get();
-      return analysisResults == null ? new AnalysisResults() : analysisResults;
-    } catch (Exception e) {
-      throw SonarLintWrappedException.wrap(e);
-    }
+    var analyzeCommand = new AnalyzeCommand(configuration.moduleKey(), analysisConfiguration, issue -> streamIssue(issueListener, issue, activeRulesContext), logOutput);
+    return postAnalysisCommandAndGetResult(analyzeCommand, monitor);
   }
 
   private static void streamIssue(IssueListener issueListener, Issue newIssue, ActiveRulesContext activeRulesContext) {
