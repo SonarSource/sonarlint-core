@@ -16,9 +16,7 @@ jobs:
       - name: SL release
         id: sl_release
         with:
-          distribute: true
           publish_to_binaries: false
-          attach_artifacts_to_github_release: false
           slack_channel: team-sonarlint-java
         env:
           ARTIFACTORY_API_KEY: ${{ secrets.ARTIFACTORY_API_KEY }}
@@ -30,7 +28,7 @@ jobs:
           RELEASE_SSH_KEY: ${{ secrets.RELEASE_SSH_KEY }}
           SLACK_API_TOKEN: ${{secrets.SLACK_API_TOKEN }}
         # Put your action repo here
-        uses: SonarSource/gh-action_release/main@v3
+        uses: SonarSource/gh-action_release/main@v4
 
       - name: Check outputs
         if: always()
