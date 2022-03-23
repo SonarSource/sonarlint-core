@@ -147,7 +147,7 @@ class ConnectedIssueMediumTests {
   @Test
   void simpleJavaBinded(@TempDir Path baseDir) throws Exception {
     var inputFile = prepareJavaInputFile(baseDir);
-    mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=java:S1481", Rules.Rule.newBuilder().build());
+    mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=java:S1481", Rules.ShowResponse.newBuilder().build());
 
     // Severity of java:S1481 changed to BLOCKER in the quality profile
     assertThat(sonarlint.getActiveRuleDetails(null, null, "java:S1481", null).get().getSeverity()).isEqualTo("MINOR");
@@ -268,7 +268,7 @@ class ConnectedIssueMediumTests {
 
   private ClientInputFile prepareInputFile(Path baseDir, String relativePath, String content, final boolean isTest) throws IOException {
     final var file = new File(baseDir.toFile(), relativePath);
-    FileUtils.write(file, content);
+    FileUtils.write(file, content, StandardCharsets.UTF_8);
     return TestUtils.createInputFile(file.toPath(), relativePath, isTest);
   }
 
