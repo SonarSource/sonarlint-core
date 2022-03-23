@@ -33,15 +33,15 @@ import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.ServerInfoStore;
 import org.sonarsource.sonarlint.core.container.storage.ServerProjectsStore;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.util.PluginLocator;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
+import testutils.PluginLocator;
 
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths.encodeForFs;
-import static org.sonarsource.sonarlint.core.util.PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR;
-import static org.sonarsource.sonarlint.core.util.PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR_HASH;
-import static org.sonarsource.sonarlint.core.util.PluginLocator.SONAR_JAVA_PLUGIN_JAR;
-import static org.sonarsource.sonarlint.core.util.PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH;
+import static testutils.PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR;
+import static testutils.PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR_HASH;
+import static testutils.PluginLocator.SONAR_JAVA_PLUGIN_JAR;
+import static testutils.PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH;
 
 public class StorageFixture {
   public static StorageBuilder newStorage(String connectionId) {

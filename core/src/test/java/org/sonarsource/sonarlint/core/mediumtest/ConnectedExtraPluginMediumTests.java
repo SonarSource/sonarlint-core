@@ -43,7 +43,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.mediumtest.fixtures.ProjectStorageFixture;
-import org.sonarsource.sonarlint.core.util.PluginLocator;
+import testutils.PluginLocator;
 import testutils.TestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
