@@ -61,8 +61,8 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.progress.CanceledException;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
-import org.sonarsource.sonarlint.core.util.PluginLocator;
 import testutils.OnDiskTestClientInputFile;
+import testutils.PluginLocator;
 import testutils.TestUtils;
 
 import static java.util.Collections.singleton;
