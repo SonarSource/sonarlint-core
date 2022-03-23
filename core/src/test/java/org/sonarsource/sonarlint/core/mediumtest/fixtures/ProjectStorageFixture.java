@@ -26,9 +26,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
+
+import static org.apache.commons.lang3.StringUtils.trimToEmpty;
 
 public class ProjectStorageFixture {
 
@@ -95,6 +98,8 @@ public class ProjectStorageFixture {
           ruleSetBuilder.addRules(Sonarlint.RuleSet.ActiveRule.newBuilder()
             .setRuleKey(activeRule.ruleKey)
             .setSeverity(activeRule.severity)
+            .setTemplateKey(trimToEmpty(activeRule.templateKey))
+            .putAllParams(activeRule.params)
             .build());
         });
         protoRuleSets.put(ruleSet.languageKey, ruleSetBuilder.build());
@@ -113,7 +118,12 @@ public class ProjectStorageFixture {
       }
 
       public RuleSetBuilder withActiveRule(String ruleKey, String severity) {
-        activeRules.add(new ActiveRule(ruleKey, severity));
+        activeRules.add(new ActiveRule(ruleKey, severity, null, Map.of()));
+        return this;
+      }
+
+      public RuleSetBuilder withCustomActiveRule(String ruleKey, String templateKey, String severity, Map<String, String> params) {
+        activeRules.add(new ActiveRule(ruleKey, severity, templateKey, params));
         return this;
       }
     }
@@ -121,10 +131,14 @@ public class ProjectStorageFixture {
     private static class ActiveRule {
       private final String ruleKey;
       private final String severity;
+      private final String templateKey;
+      private final Map<String, String> params;
 
-      private ActiveRule(String ruleKey, String severity) {
+      private ActiveRule(String ruleKey, String severity, @Nullable String templateKey, Map<String, String> params) {
         this.ruleKey = ruleKey;
         this.severity = severity;
+        this.templateKey = templateKey;
+        this.params = params;
       }
     }
   }

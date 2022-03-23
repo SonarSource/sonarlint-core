@@ -46,6 +46,7 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
+import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.DefaultClientIssue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
@@ -99,6 +100,7 @@ import org.sonarsource.sonarlint.core.storage.ProjectStorage;
 import org.sonarsource.sonarlint.core.storage.UpdateStorageOnRuleSetChanged;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.trimToNull;
 import static org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths.encodeForFs;
 
@@ -196,14 +198,14 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     private final List<ActiveRule> activeRules = new ArrayList<>();
     private final Map<String, ActiveRuleMetadata> activeRulesMetadata = new HashMap<>();
 
-    public void includeRule(SonarLintRuleDefinition ruleDefinition, ServerActiveRule activeRule) {
-      var activeRuleForAnalysis = new ActiveRule(activeRule.getRuleKey(), ruleDefinition.getLanguage().getLanguageKey());
+    public void includeRule(SonarLintRuleDefinition ruleOrTemplateDefinition, ServerActiveRule activeRule) {
+      var activeRuleForAnalysis = new ActiveRule(activeRule.getRuleKey(), ruleOrTemplateDefinition.getLanguage().getLanguageKey());
       activeRuleForAnalysis.setTemplateRuleKey(trimToNull(activeRule.getTemplateKey()));
-      Map<String, String> effectiveParams = new HashMap<>(ruleDefinition.getDefaultParams());
+      Map<String, String> effectiveParams = new HashMap<>(ruleOrTemplateDefinition.getDefaultParams());
       effectiveParams.putAll(activeRule.getParams());
       activeRuleForAnalysis.setParams(effectiveParams);
       activeRules.add(activeRuleForAnalysis);
-      activeRulesMetadata.put(activeRule.getRuleKey(), new ActiveRuleMetadata(activeRule.getSeverity(), ruleDefinition.getType()));
+      activeRulesMetadata.put(activeRule.getRuleKey(), new ActiveRuleMetadata(activeRule.getSeverity(), ruleOrTemplateDefinition.getType()));
     }
 
     public void includeRule(SonarLintRuleDefinition rule) {
@@ -271,7 +273,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
       return analysisRulesContext;
     }
 
-    var allRulesDefinitionsByKey = analysisContext.get().allRulesDefinitionsByKey;
     projectStorage.getAnalyzerConfiguration(projectKey).getRuleSetByLanguageKey().entrySet()
       .stream().filter(e -> Language.forKey(e.getKey()).filter(l -> globalConfig.getEnabledLanguages().contains(l)).isPresent())
       .forEach(e -> {
@@ -279,23 +280,57 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
         var ruleSet = e.getValue();
 
         LOG.debug("  * {}: {} active rules", languageKey, ruleSet.getRules().size());
-        for (ServerActiveRule activeRuleFromStorage : ruleSet.getRules()) {
-          var ruleDefinitionKey = StringUtils.isNotBlank(activeRuleFromStorage.getTemplateKey()) ? activeRuleFromStorage.getTemplateKey() : activeRuleFromStorage.getRuleKey();
-          var ruleDefinition = allRulesDefinitionsByKey.get(ruleDefinitionKey);
-          if (ruleDefinition == null) {
-            LOG.debug("Rule {} is enabled on the server, but not available in SonarLint", activeRuleFromStorage.getRuleKey());
-            continue;
+        for (ServerActiveRule possiblyDeprecatedActiveRuleFromStorage : ruleSet.getRules()) {
+          var activeRuleFromStorage = tryConvertDeprecatedKeys(possiblyDeprecatedActiveRuleFromStorage);
+          SonarLintRuleDefinition ruleOrTemplateDefinition;
+          if (StringUtils.isNotBlank(activeRuleFromStorage.getTemplateKey())) {
+            ruleOrTemplateDefinition = analysisContext.get().findRule(activeRuleFromStorage.getTemplateKey()).orElse(null);
+            if (ruleOrTemplateDefinition == null) {
+              LOG.debug("Rule {} is enabled on the server, but its template {} is not available in SonarLint", activeRuleFromStorage.getRuleKey(),
+                activeRuleFromStorage.getTemplateKey());
+              continue;
+            }
+          } else {
+            ruleOrTemplateDefinition = analysisContext.get().findRule(activeRuleFromStorage.getRuleKey()).orElse(null);
+            if (ruleOrTemplateDefinition == null) {
+              LOG.debug("Rule {} is enabled on the server, but not available in SonarLint", activeRuleFromStorage.getRuleKey());
+              continue;
+            }
           }
-          analysisRulesContext.includeRule(ruleDefinition, activeRuleFromStorage);
+          analysisRulesContext.includeRule(ruleOrTemplateDefinition, activeRuleFromStorage);
         }
       });
 
-    allRulesDefinitionsByKey.values().stream()
+    analysisContext.get().allRulesDefinitionsByKey.values().stream()
       .filter(ruleDefinition -> isRuleFromExtraPlugin(ruleDefinition.getLanguage(), globalConfig))
       .forEach(analysisRulesContext::includeRule);
 
     return analysisRulesContext;
 
+  }
+
+  private ServerActiveRule tryConvertDeprecatedKeys(ServerActiveRule possiblyDeprecatedActiveRuleFromStorage) {
+    SonarLintRuleDefinition ruleOrTemplateDefinition;
+    if (StringUtils.isNotBlank(possiblyDeprecatedActiveRuleFromStorage.getTemplateKey())) {
+      ruleOrTemplateDefinition = analysisContext.get().findRule(possiblyDeprecatedActiveRuleFromStorage.getTemplateKey()).orElse(null);
+      if (ruleOrTemplateDefinition == null) {
+        // The rule template is not known among our loaded analyzers, so return it untouched, to let calling code take appropriate decision
+        return possiblyDeprecatedActiveRuleFromStorage;
+      }
+      var ruleKeyPossiblyWithDeprecatedRepo = RuleKey.parse(possiblyDeprecatedActiveRuleFromStorage.getRuleKey());
+      var templateRuleKeyWithCorrectRepo = RuleKey.parse(ruleOrTemplateDefinition.getKey());
+      var ruleKey = new RuleKey(templateRuleKeyWithCorrectRepo.repository(), ruleKeyPossiblyWithDeprecatedRepo.rule()).toString();
+      return new ServerActiveRule(ruleKey, possiblyDeprecatedActiveRuleFromStorage.getSeverity(), possiblyDeprecatedActiveRuleFromStorage.getParams(),
+        ruleOrTemplateDefinition.getKey());
+    } else {
+      ruleOrTemplateDefinition = analysisContext.get().findRule(possiblyDeprecatedActiveRuleFromStorage.getRuleKey()).orElse(null);
+      if (ruleOrTemplateDefinition == null) {
+        // The rule is not known among our loaded analyzers, so return it untouched, to let calling code take appropriate decision
+        return possiblyDeprecatedActiveRuleFromStorage;
+      }
+      return new ServerActiveRule(ruleOrTemplateDefinition.getKey(), possiblyDeprecatedActiveRuleFromStorage.getSeverity(), possiblyDeprecatedActiveRuleFromStorage.getParams(),
+        null);
+    }
   }
 
   private static boolean isRuleFromExtraPlugin(Language ruleLanguage, ConnectedGlobalConfiguration config) {
@@ -351,26 +386,28 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
 
   @Override
   public CompletableFuture<ConnectedRuleDetails> getActiveRuleDetails(EndpointParams endpoint, HttpClient client, String ruleKey, @Nullable String projectKey) {
-    var allRulesDefinitionsByKey = analysisContext.get().allRulesDefinitionsByKey;
-    var ruleDefFromPlugin = allRulesDefinitionsByKey.get(ruleKey);
-    if (ruleDefFromPlugin != null && (globalConfig.getExtraPluginsPathsByKey().containsKey(ruleDefFromPlugin.getLanguage().getPluginKey()) || projectKey == null)) {
-      // if no project key, or for rules from extra plugins there will be no rules metadata in the storage
-      return CompletableFuture.completedFuture(
-        new DefaultRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(), ruleDefFromPlugin.getSeverity(), ruleDefFromPlugin.getType(),
-          ruleDefFromPlugin.getLanguage(), ""));
+    var ruleDefFromPluginOpt = analysisContext.get().findRule(ruleKey);
+    if (ruleDefFromPluginOpt.isPresent()) {
+      var ruleDefFromPlugin = ruleDefFromPluginOpt.get();
+      if (globalConfig.getExtraPluginsPathsByKey().containsKey(ruleDefFromPlugin.getLanguage().getPluginKey()) || projectKey == null) {
+        // if no project key, or for rules from extra plugins there will be no rules metadata in the storage
+        return CompletableFuture.completedFuture(
+          new DefaultRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(), ruleDefFromPlugin.getSeverity(), ruleDefFromPlugin.getType(),
+            ruleDefFromPlugin.getLanguage(), ""));
+      }
     }
     if (projectKey != null) {
       var analyzerConfiguration = projectStorage.getAnalyzerConfiguration(projectKey);
       var storageActiveRule = analyzerConfiguration.getRuleSetByLanguageKey().values().stream()
         .flatMap(s -> s.getRules().stream())
-        .filter(r -> r.getRuleKey().equals(ruleKey)).findFirst();
+        .filter(r -> tryConvertDeprecatedKeys(r).getRuleKey().equals(ruleKey)).findFirst();
       if (storageActiveRule.isPresent()) {
         var activeRuleFromStorage = storageActiveRule.get();
         var serverSeverity = activeRuleFromStorage.getSeverity();
         if (StringUtils.isNotBlank(activeRuleFromStorage.getTemplateKey())) {
-          var templateRuleDefFromPlugin = Optional.ofNullable(allRulesDefinitionsByKey.get(activeRuleFromStorage.getTemplateKey()))
+          var templateRuleDefFromPlugin = analysisContext.get().findRule(activeRuleFromStorage.getTemplateKey())
             .orElseThrow(() -> new IllegalStateException("Unable to find rule definition for rule template " + activeRuleFromStorage.getTemplateKey()));
-          return new ServerApi(new ServerApiHelper(endpoint, client)).rules().getRule(ruleKey)
+          return new ServerApi(new ServerApiHelper(endpoint, client)).rules().getRule(activeRuleFromStorage.getRuleKey())
             .thenApply(
               serverRule -> new DefaultRuleDetails(
                 ruleKey,
@@ -381,10 +418,8 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
                 templateRuleDefFromPlugin.getLanguage(),
                 serverRule.getHtmlNote()));
         } else {
-          if (ruleDefFromPlugin == null) {
-            throw new IllegalStateException("Unable to find rule definition for rule " + ruleKey);
-          }
-          return new ServerApi(new ServerApiHelper(endpoint, client)).rules().getRule(ruleKey)
+          var ruleDefFromPlugin = ruleDefFromPluginOpt.orElseThrow(() -> new IllegalStateException("Unable to find rule definition for rule '" + ruleKey + "'"));
+          return new ServerApi(new ServerApiHelper(endpoint, client)).rules().getRule(activeRuleFromStorage.getRuleKey())
             .thenApply(serverRule -> new DefaultRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(),
               serverSeverity != null ? serverSeverity : ruleDefFromPlugin.getSeverity(), ruleDefFromPlugin.getType(), ruleDefFromPlugin.getLanguage(),
               serverRule.getHtmlNote()));
@@ -540,12 +575,16 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   private static class AnalysisContext {
     private final Collection<PluginDetails> pluginDetails;
     private final Map<String, SonarLintRuleDefinition> allRulesDefinitionsByKey;
+    private final Map<String, String> deprecatedRuleKeysMapping;
     private final AnalysisEngine analysisEngine;
 
     public AnalysisContext(List<PluginDetails> pluginDetails, Map<String, SonarLintRuleDefinition> allRulesDefinitionsByKey, AnalysisEngine analysisEngine) {
       this.pluginDetails = pluginDetails;
       this.allRulesDefinitionsByKey = allRulesDefinitionsByKey;
       this.analysisEngine = analysisEngine;
+      this.deprecatedRuleKeysMapping = allRulesDefinitionsByKey.values().stream()
+        .flatMap(r -> r.getDeprecatedKeys().stream().map(dk -> Map.entry(dk, r.getKey())))
+        .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     public void destroy() {
@@ -555,6 +594,14 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     public void finishGracefully() {
       analysisEngine.finishGracefully();
     }
+
+    public Optional<SonarLintRuleDefinition> findRule(String ruleKey) {
+      if (deprecatedRuleKeysMapping.containsKey(ruleKey)) {
+        return Optional.of(allRulesDefinitionsByKey.get(deprecatedRuleKeysMapping.get(ruleKey)));
+      }
+      return Optional.ofNullable(allRulesDefinitionsByKey.get(ruleKey));
+    }
+
   }
 
 }

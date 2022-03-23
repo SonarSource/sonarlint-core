@@ -8,5 +8,19 @@
       <key>S3805</key>
       <priority>MAJOR</priority>
     </rule>
+    <!-- single point of exit -->
+    <rule>
+      <repositoryKey>c</repositoryKey>
+      <key>S1005</key>
+      <priority>MAJOR</priority>
+    </rule>
+    <!-- Keep for pre 6.32.0.44918 sonar-cfamily version -->
+    <!-- single point of exit -->
+    <rule>
+      <repositoryKey>c</repositoryKey>
+      <key>FunctionSinglePointOfExit</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
   </rules>
 </profile>
