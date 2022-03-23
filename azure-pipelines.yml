@@ -225,6 +225,10 @@ stages:
       displayName: Run ITs
       strategy:
         matrix:
+          SonarCloud:
+            SQ_VERSION: 'SonarCloud'
+            JDKVersion: '1.11'
+            Category: '-Dgroups=SonarCloud'
           Dogfood:
             SQ_VERSION: 'DOGFOOD'
             JDKVersion: '1.11'
