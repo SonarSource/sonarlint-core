@@ -75,6 +75,7 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
   private static Path sonarUserHome;
 
   private ConnectedSonarLintEngine engine;
+  private static String singlePointOfExitRuleKey;
 
   @BeforeClass
   public static void prepare() throws Exception {
@@ -94,6 +95,12 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_COBOL, "cobol", "SonarLint IT Cobol");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_TSQL, "tsql", "SonarLint IT TSQL");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_APEX, "apex", "SonarLint IT APEX");
+
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 4)) {
+      singlePointOfExitRuleKey = "c:S1005";
+    } else {
+      singlePointOfExitRuleKey = "c:FunctionSinglePointOfExit";
+    }
   }
 
   @Before
@@ -148,7 +155,8 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
       buildWrapperOutput.getAbsolutePath());
 
     engine.analyze(analysisConfiguration, issueListener, null, null);
-    assertThat(issueListener.getIssues()).hasSize(2).extracting(Issue::getRuleKey).containsOnly("c:S3805", "c:FunctionSinglePointOfExit");
+
+    assertThat(issueListener.getIssues()).hasSize(2).extracting(Issue::getRuleKey).containsOnly("c:S3805", singlePointOfExitRuleKey);
   }
 
   @Test
@@ -181,7 +189,8 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
       buildWrapperContent);
 
     engine.analyze(analysisConfiguration, issueListener, null, null);
-    assertThat(issueListener.getIssues()).hasSize(2).extracting(Issue::getRuleKey).containsOnly("c:S3805", "c:FunctionSinglePointOfExit");
+
+    assertThat(issueListener.getIssues()).hasSize(2).extracting(Issue::getRuleKey).containsOnly("c:S3805", singlePointOfExitRuleKey);
   }
 
   @Test
