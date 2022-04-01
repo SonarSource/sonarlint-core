@@ -144,7 +144,7 @@ stages:
           testResultsFiles: '**/surefire-reports/TEST-*.xml'
           testRunTitle: 'UTs on Windows'
           javaHomeOption: 'JDKVersion'
-          jdkVersionOption: '1.11'
+          jdkVersionOption: '1.17'
           mavenOptions: $(MAVEN_OPTS)
     - job: test_linux
       displayName: 'Run unit tests on Linux'
@@ -178,7 +178,7 @@ stages:
           testResultsFiles: '**/surefire-reports/TEST-*.xml'
           testRunTitle: 'UTs on Linux'
           javaHomeOption: 'JDKVersion'
-          jdkVersionOption: '1.11'
+          jdkVersionOption: '1.17'
           mavenOptions: $(MAVEN_OPTS)
     - job: sonarqube
       displayName: SonarQube analysis on Next
@@ -209,7 +209,7 @@ stages:
             -Dsonar.coverage.jacoco.xmlReportPaths=$(Build.Repository.LocalPath)/report-aggregate/target/site/jacoco-aggregate/jacoco.xml
           publishJUnitResults: false
           javaHomeOption: 'JDKVersion'
-          jdkVersionOption: '1.11'
+          jdkVersionOption: '1.17'
           mavenOptions: $(MAVEN_OPTS)
           sonarQubeRunAnalysis: true
           sqMavenPluginVersionChoice: 'latest'
@@ -227,15 +227,15 @@ stages:
         matrix:
           SonarCloud:
             SQ_VERSION: 'SonarCloud'
-            JDKVersion: '1.11'
+            JDKVersion: '1.17'
             Category: '-Dgroups=SonarCloud'
           Dogfood:
             SQ_VERSION: 'DOGFOOD'
-            JDKVersion: '1.11'
+            JDKVersion: '1.17'
             Category: '-DexcludedGroups=SonarCloud'
           Latest:
             SQ_VERSION: 'LATEST_RELEASE'
-            JDKVersion: '1.11'
+            JDKVersion: '1.17'
             Category: '-DexcludedGroups=SonarCloud'
           Lts89:
             SQ_VERSION: 'LATEST_RELEASE[8.9]'
