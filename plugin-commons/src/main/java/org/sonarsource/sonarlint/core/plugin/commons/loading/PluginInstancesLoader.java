@@ -134,7 +134,7 @@ public class PluginInstancesLoader {
   }
 
   private static void extractFile(Path zipFile, String fileName, Path outputFile) throws IOException {
-    try (var fileSystem = FileSystems.newFileSystem(zipFile, null)) {
+    try (var fileSystem = FileSystems.newFileSystem(zipFile, (ClassLoader) null)) {
       var fileToExtract = fileSystem.getPath(fileName);
       Files.copy(fileToExtract, outputFile);
     }
