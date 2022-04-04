@@ -19,6 +19,7 @@
  */
 package testutils;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -26,9 +27,9 @@ public class PluginLocator {
 
   public static final String SONAR_JAVA_PLUGIN_JAR = "sonar-java-plugin-6.0.0.20538.jar";
   public static final String SONAR_JAVA_PLUGIN_JAR_HASH = "eb27aea472a0d7d91ed529086ce8ee1c";
-  public static final String SONAR_JAVASCRIPT_PLUGIN_JAR = "sonar-javascript-plugin-6.5.0.13383.jar";
+  public static final String SONAR_JAVASCRIPT_PLUGIN_JAR = "sonar-javascript-plugin-9.1.0.17747.jar";
   public static final String SONAR_JAVASCRIPT_PLUGIN_JAR_HASH = "2fab92be44e07f1d367f891a55258736";
-  public static final String SONAR_PHP_PLUGIN_JAR = "sonar-php-plugin-3.2.0.4868.jar";
+  public static final String SONAR_PHP_PLUGIN_JAR = "sonar-php-plugin-3.23.1.8766.jar";
   public static final String SONAR_PYTHON_PLUGIN_JAR = "sonar-python-plugin-1.14.0.3086.jar";
 
   public static Path getJavaPluginPath() {
@@ -52,7 +53,11 @@ public class PluginLocator {
   }
 
   private static Path getPluginPath(String file) {
-    return Paths.get("target/plugins/").resolve(file);
+    var path = Paths.get("target/plugins/").resolve(file);
+    if (!Files.isRegularFile(path)) {
+      throw new IllegalStateException("Unable to find file " + path);
+    }
+    return path;
   }
 
 }

@@ -194,13 +194,13 @@
                 <artifactItem>
                   <groupId>org.sonarsource.javascript</groupId>
                   <artifactId>sonar-javascript-plugin</artifactId>
-                  <version>6.5.0.13383</version>
+                  <version>9.1.0.17747</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.sonarsource.php</groupId>
                   <artifactId>sonar-php-plugin</artifactId>
-                  <version>3.2.0.4868</version>
+                  <version>3.23.1.8766</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
