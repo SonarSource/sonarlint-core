@@ -194,7 +194,7 @@ class StandaloneIssueMediumTests {
         .addInputFile(inputFile)
         .addIncludedRule(RuleKey.parse("javascript:S3827"))
         .build(),
-      issues::add, null,
+      issues::add, (m, l) -> System.out.println(m),
       null);
     assertThat(issues.stream().filter(i -> i.getRuleKey().equals("javascript:S3827")))
       .extracting(Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(

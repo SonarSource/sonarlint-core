@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
@@ -42,11 +41,9 @@ import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
-import org.sonarsource.sonarlint.core.plugin.commons.SkipReason.UnsatisfiedRuntimeRequirement;
 import testutils.OnDiskTestClientInputFile;
 import testutils.PluginLocator;
 
@@ -97,7 +94,7 @@ class StandaloneNodeJsTests {
       .addPlugin(PluginLocator.getJavaScriptPluginPath())
       .addEnabledLanguages(Language.JS, Language.TS)
       .setSonarLintUserHome(sonarlintUserHome)
-      .setNodeJs(Paths.get("wrong"), Version.create("12.0"))
+      .setNodeJs(Paths.get("wrong"), Version.create("13.0"))
       .setModulesProvider(() -> singletonList(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class))))
       .setLogOutput((msg, level) -> logs.add(msg));
 
@@ -113,7 +110,7 @@ class StandaloneNodeJsTests {
     final var issues = analyze();
     assertThat(issues).isEmpty();
 
-    assertThat(logs).contains("Provided Node.js executable file does not exist. Property 'sonar.nodejs.executable' was to 'wrong'");
+    assertThat(logs).contains("Provided Node.js executable file does not exist. Property 'sonar.nodejs.executable' was set to 'wrong'");
   }
 
   @Test
@@ -129,14 +126,14 @@ class StandaloneNodeJsTests {
 
     sonarlint = new StandaloneSonarLintEngineImpl(configBuilder.build());
 
-    assertThat(logs).contains("Plugin 'JavaScript/TypeScript Code Quality and Security' requires Node.js 8.0.0 while current is 1.0. Skip loading it.");
+    assertThat(logs).contains("Plugin 'JavaScript/TypeScript/CSS Code Quality and Security' requires Node.js 12.22.0 while current is 1.0. Skip loading it.");
     var skipReason = sonarlint.getPluginDetails().stream().filter(p -> p.key().equals("javascript")).findFirst().get().skipReason();
     assertThat(skipReason).isNotEmpty();
     assertThat(skipReason.get()).isInstanceOf(SkipReason.UnsatisfiedRuntimeRequirement.class);
     var unsatisfiedNode = (SkipReason.UnsatisfiedRuntimeRequirement) skipReason.get();
     assertThat(unsatisfiedNode.getRuntime()).isEqualTo(SkipReason.UnsatisfiedRuntimeRequirement.RuntimeRequirement.NODEJS);
     assertThat(unsatisfiedNode.getCurrentVersion()).isEqualTo("1.0");
-    assertThat(unsatisfiedNode.getMinVersion()).isEqualTo("8.0.0");
+    assertThat(unsatisfiedNode.getMinVersion()).isEqualTo("12.22.0");
     assertThat(sonarlint.getRuleDetails(JAVASCRIPT_S1481)).isEmpty();
 
     final var issues = analyze();
