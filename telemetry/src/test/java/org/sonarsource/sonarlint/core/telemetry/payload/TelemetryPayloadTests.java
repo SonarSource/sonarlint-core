@@ -20,9 +20,7 @@
 package org.sonarsource.sonarlint.core.telemetry.payload;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
-import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -64,27 +62,32 @@ class TelemetryPayloadTests {
       true, true, systemTime, installTime, "Windows 10", "1.8.0", "10.5.2", perf, notifPayload, showHotspotPayload, taintVulnerabilitiesPayload, rulesPayload, additionalProps);
     var s = m.toJson();
 
-    assertThat(s).isEqualTo("{\"days_since_installation\":4,"
-      + "\"days_of_use\":15,"
-      + "\"sonarlint_version\":\"2.4\","
-      + "\"sonarlint_product\":\"SLI\","
-      + "\"ide_version\":\"Pycharm 3.2\","
-      + "\"connected_mode_used\":true,"
-      + "\"connected_mode_sonarcloud\":true,"
-      + "\"system_time\":\"2017-11-10T12:02:14.984+02:00\","
-      + "\"install_time\":\"2017-11-10T12:01:14.984+02:00\","
-      + "\"os\":\"Windows 10\","
-      + "\"jre\":\"1.8.0\","
-      + "\"nodejs\":\"10.5.2\","
-      + "\"analyses\":[{\"language\":\"java\",\"rate_per_duration\":{\"0-300\":9.9,\"1000-2000\":90.1}}],"
-      + "\"server_notifications\":{\"disabled\":true,\"count_by_type\":{\"NEW_ISSUES\":{\"received\":10,\"clicked\":1},\"QUALITY_GATE\":{\"received\":5,\"clicked\":3}}},"
-      + "\"show_hotspot\":{\"requests_count\":4},"
-      + "\"taint_vulnerabilities\":{\"investigated_locally_count\":6,\"investigated_remotely_count\":7},"
-      + "\"rules\":{\"non_default_enabled\":[\"enabledRuleKey1\",\"enabledRuleKey2\"],\"default_disabled\":[\"disabledRuleKey1\",\"disabledRuleKey2\"],\"raised_issues\":[\"reportedRuleKey1\",\"reportedRuleKey2\"],\"quick_fix_applied\":[\"quickFixedRuleKey1\",\"quickFixedRuleKey2\"]},"
-      + "\"aString\":\"stringValue\","
-      + "\"aBool\":false,"
-      + "\"aNumber\":1.5,"
-      + "\"sub\":{\"aSubNumber\":2}}");
+    assertThat(s).isEqualTo(
+      """
+        {\
+        "days_since_installation":4,\
+        "days_of_use":15,\
+        "sonarlint_version":"2.4",\
+        "sonarlint_product":"SLI",\
+        "ide_version":"Pycharm 3.2",\
+        "connected_mode_used":true,\
+        "connected_mode_sonarcloud":true,\
+        "system_time":"2017-11-10T12:02:14.984+02:00",\
+        "install_time":"2017-11-10T12:01:14.984+02:00",\
+        "os":"Windows 10",\
+        "jre":"1.8.0",\
+        "nodejs":"10.5.2",\
+        "analyses":[{"language":"java","rate_per_duration":{"0-300":9.9,"1000-2000":90.1}}],\
+        "server_notifications":{"disabled":true,"count_by_type":{"NEW_ISSUES":{"received":10,"clicked":1},"QUALITY_GATE":{"received":5,"clicked":3}}},\
+        "show_hotspot":{"requests_count":4},\
+        "taint_vulnerabilities":{"investigated_locally_count":6,"investigated_remotely_count":7},\
+        "rules":{"non_default_enabled":["enabledRuleKey1","enabledRuleKey2"],"default_disabled":["disabledRuleKey1","disabledRuleKey2"],"raised_issues":["reportedRuleKey1","reportedRuleKey2"],"quick_fix_applied":["quickFixedRuleKey1","quickFixedRuleKey2"]},\
+        "aString":"stringValue",\
+        "aBool":false,\
+        "aNumber":1.5,\
+        "sub":{"aSubNumber":2}\
+        }\
+        """);
 
     assertThat(m.daysOfUse()).isEqualTo(15);
     assertThat(m.daysSinceInstallation()).isEqualTo(4);
