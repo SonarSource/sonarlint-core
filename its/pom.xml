@@ -9,7 +9,7 @@
   <name>SonarLint Core - ITs</name>
   <description>Integration tests parent</description>
   <packaging>pom</packaging>
-  
+
   <modules>
     <module>plugins/custom-sensor-plugin</module>
     <module>plugins/java-custom-rules</module>
@@ -20,4 +20,29 @@
   <properties>
     <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>default-testCompile</id>
+              <phase>test-compile</phase>
+              <goals>
+                <goal>testCompile</goal>
+              </goals>
+              <configuration>
+                <source>${jdk.min.version}</source>
+                <target>${jdk.min.version}</target>
+                <release>${jdk.min.version}</release>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
 </project>
