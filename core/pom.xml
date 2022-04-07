@@ -281,7 +281,7 @@
                     <include>org.apache.**</include>
                     <include>org.checkerframework.**</include>
                     <include>com.google.gson.**</include>
-                    <include>org.picocontainer.**</include>
+                    <include>org.springframework.**</include>
                     <include>org.sonarqube.ws.**</include>
                   </includes>
                 </relocation>

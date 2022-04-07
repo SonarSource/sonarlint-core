@@ -28,15 +28,15 @@ import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModulesProvider;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
+import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentContainer;
 
 public class ModuleRegistry {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final ConcurrentHashMap<Object, ModuleContainer> moduleContainersByKey = new ConcurrentHashMap<>();
-  private final ComponentContainer parent;
+  private final SpringComponentContainer parent;
 
-  public ModuleRegistry(ComponentContainer parent, @Nullable ClientModulesProvider modulesProvider) {
+  public ModuleRegistry(SpringComponentContainer parent, @Nullable ClientModulesProvider modulesProvider) {
     this.parent = parent;
     if (modulesProvider != null) {
       modulesProvider.getModules().forEach(this::registerModule);
@@ -75,7 +75,7 @@ public class ModuleRegistry {
   }
 
   public void stopAll() {
-    moduleContainersByKey.values().forEach(ComponentContainer::stopComponents);
+    moduleContainersByKey.values().forEach(SpringComponentContainer::stopComponents);
     moduleContainersByKey.clear();
   }
 

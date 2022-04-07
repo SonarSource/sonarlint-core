@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin.commons.pico;
+package org.sonarsource.sonarlint.core.plugin.commons.container;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -25,7 +25,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
-class PicoComponentKeys {
+class ComponentKeys {
 
   private static final Pattern IDENTITY_HASH_PATTERN = Pattern.compile(".+@[a-f0-9]+");
   private final Set<Class<?>> objectsWithoutToString = new HashSet<>();
@@ -38,13 +38,25 @@ class PicoComponentKeys {
     if (component instanceof Class) {
       return component;
     }
-    var key = component.toString();
+    return ofInstance(component, log);
+  }
+
+  public String ofInstance(Object component) {
+    return ofInstance(component, SonarLintLogger.get());
+  }
+
+  public String ofClass(Class<?> clazz) {
+    return clazz.getClassLoader() + "-" + clazz.getCanonicalName();
+  }
+
+  String ofInstance(Object component, SonarLintLogger log) {
+    String key = component.toString();
     if (IDENTITY_HASH_PATTERN.matcher(key).matches()) {
       if (!objectsWithoutToString.add(component.getClass())) {
         log.warn(String.format("Bad component key: %s. Please implement toString() method on class %s", key, component.getClass().getName()));
       }
       key += UUID.randomUUID().toString();
     }
-    return component.getClass().getCanonicalName() + "-" + key;
+    return ofClass(component.getClass()) + "-" + key;
   }
 }

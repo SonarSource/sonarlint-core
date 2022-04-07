@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.sonar.api.batch.DependedUpon;
 import org.sonar.api.batch.DependsUpon;
@@ -37,8 +38,6 @@ import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultSensorDescriptor;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
-import static java.util.Arrays.asList;
-
 /**
  * Execute Sensors.
  */
@@ -48,23 +47,18 @@ public class SensorsExecutor {
 
   private final SensorOptimizer sensorOptimizer;
   private final ProgressMonitor progress;
-  private final Sensor[] sensors;
+  private final List<Sensor> sensors;
   private final DefaultSensorContext context;
 
-  // constructor used when no sensor is found
-  public SensorsExecutor(DefaultSensorContext context, SensorOptimizer sensorOptimizer, ProgressMonitor progress) {
-    this(context, sensorOptimizer, progress, new Sensor[0]);
-  }
-
-  public SensorsExecutor(DefaultSensorContext context, SensorOptimizer sensorOptimizer, ProgressMonitor progress, Sensor[] sensors) {
+  public SensorsExecutor(DefaultSensorContext context, SensorOptimizer sensorOptimizer, ProgressMonitor progress, Optional<List<Sensor>> sensors) {
     this.context = context;
-    this.sensors = sensors;
+    this.sensors = sensors.orElse(List.of());
     this.sensorOptimizer = sensorOptimizer;
     this.progress = progress;
   }
 
   public void execute() {
-    for (Sensor sensor : sort(asList(sensors))) {
+    for (Sensor sensor : sort(sensors)) {
       progress.checkCancel();
       var descriptor = new DefaultSensorDescriptor();
       sensor.describe(descriptor);

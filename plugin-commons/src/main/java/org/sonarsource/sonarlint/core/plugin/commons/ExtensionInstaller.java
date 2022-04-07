@@ -25,7 +25,7 @@ import java.util.function.BiPredicate;
 import org.sonar.api.Plugin;
 import org.sonar.api.config.Configuration;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
+import org.sonarsource.sonarlint.core.plugin.commons.container.ExtensionContainer;
 import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.PluginContextImpl;
 import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
 
@@ -40,7 +40,7 @@ public class ExtensionInstaller {
     this.bootConfiguration = bootConfiguration;
   }
 
-  public ExtensionInstaller install(ComponentContainer container, Map<String, Plugin> pluginInstancesByKey, BiPredicate<String, Object> extensionFilter) {
+  public ExtensionInstaller install(ExtensionContainer container, Map<String, Plugin> pluginInstancesByKey, BiPredicate<String, Object> extensionFilter) {
     for (Entry<String, Plugin> pluginInstanceEntry : pluginInstancesByKey.entrySet()) {
       var plugin = pluginInstanceEntry.getValue();
       var context = new PluginContextImpl.Builder()
@@ -58,7 +58,7 @@ public class ExtensionInstaller {
     return this;
   }
 
-  private void loadExtensions(ComponentContainer container, String pluginKey, Plugin.Context context, BiPredicate<String, Object> extensionFilter) {
+  private void loadExtensions(ExtensionContainer container, String pluginKey, Plugin.Context context, BiPredicate<String, Object> extensionFilter) {
     for (Object extension : context.getExtensions()) {
       if (extensionFilter.test(pluginKey, extension)) {
         container.addExtension(pluginKey, extension);

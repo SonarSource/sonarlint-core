@@ -19,8 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.module;
 
-import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
@@ -32,12 +32,8 @@ public class ModuleFileEventNotifier {
   private final List<ModuleFileListener> listeners;
   private final ModuleInputFileBuilder inputFileBuilder;
 
-  public ModuleFileEventNotifier(ModuleInputFileBuilder inputFileBuilder) {
-    this(new ModuleFileListener[0], inputFileBuilder);
-  }
-
-  public ModuleFileEventNotifier(ModuleFileListener[] listeners, ModuleInputFileBuilder inputFileBuilder) {
-    this.listeners = Arrays.asList(listeners);
+  public ModuleFileEventNotifier(Optional<List<ModuleFileListener>> listeners, ModuleInputFileBuilder inputFileBuilder) {
+    this.listeners = listeners.orElse(List.of());
     this.inputFileBuilder = inputFileBuilder;
   }
 

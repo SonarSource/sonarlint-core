@@ -27,9 +27,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
+import org.sonarsource.sonarlint.core.analysis.command.Command;
 import org.sonarsource.sonarlint.core.analysis.container.global.GlobalAnalysisContainer;
 import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
-import org.sonarsource.sonarlint.core.analysis.command.Command;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -37,7 +37,8 @@ import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 
 public class AnalysisEngine {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final Runnable CANCELING_TERMINATION = () -> {};
+  private static final Runnable CANCELING_TERMINATION = () -> {
+  };
 
   private final GlobalAnalysisContainer globalAnalysisContainer;
   private final BlockingQueue<AsyncCommand<?>> commandQueue = new LinkedBlockingQueue<>();
@@ -105,7 +106,7 @@ public class AnalysisEngine {
     List<AsyncCommand<?>> pendingCommands = new ArrayList<>();
     commandQueue.drainTo(pendingCommands);
     pendingCommands.forEach(c -> c.execute(getModuleRegistry()));
-    globalAnalysisContainer.stopComponents(false);
+    globalAnalysisContainer.stopComponents();
   }
 
   public void stop() {
@@ -124,7 +125,7 @@ public class AnalysisEngine {
     List<AsyncCommand<?>> pendingCommands = new ArrayList<>();
     commandQueue.drainTo(pendingCommands);
     pendingCommands.forEach(c -> c.future.cancel(false));
-    globalAnalysisContainer.stopComponents(false);
+    globalAnalysisContainer.stopComponents();
   }
 
   // Visible for medium tests

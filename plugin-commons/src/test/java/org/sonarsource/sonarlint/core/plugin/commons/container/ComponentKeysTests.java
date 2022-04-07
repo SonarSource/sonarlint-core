@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin.commons.pico;
+package org.sonarsource.sonarlint.core.plugin.commons.container;
 
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -28,23 +28,28 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-class PicoComponentKeysTests {
+class ComponentKeysTests {
 
-  PicoComponentKeys keys = new PicoComponentKeys();
+  ComponentKeys keys = new ComponentKeys();
 
   @Test
-  void generate_key_of_class() {
+  void generate_key_of_object() {
     assertThat(keys.of(FakeComponent.class)).isEqualTo(FakeComponent.class);
   }
 
   @Test
-  void generate_key_of_object() {
-    assertThat(keys.of(new FakeComponent())).isEqualTo("org.sonarsource.sonarlint.core.plugin.commons.pico.PicoComponentKeysTests.FakeComponent-fake");
+  void generate_key_of_instance() {
+    assertThat((String) keys.of(new FakeComponent())).endsWith("-org.sonarsource.sonarlint.core.plugin.commons.container.ComponentKeysTests.FakeComponent-fake");
+  }
+
+  @Test
+  void generate_key_of_class() {
+    assertThat(keys.ofClass(FakeComponent.class)).endsWith("-org.sonarsource.sonarlint.core.plugin.commons.container.ComponentKeysTests.FakeComponent");
   }
 
   @Test
   void should_log_warning_if_toString_is_not_overridden() {
-    var log = mock(SonarLintLogger.class);
+    SonarLintLogger log = mock(SonarLintLogger.class);
     keys.of(new Object(), log);
     verifyNoInteractions(log);
 
@@ -55,10 +60,10 @@ class PicoComponentKeysTests {
 
   @Test
   void should_generate_unique_key_when_toString_is_not_overridden() {
-    var key = keys.of(new WrongToStringImpl());
+    Object key = keys.of(new WrongToStringImpl());
     assertThat(key).isNotEqualTo(WrongToStringImpl.KEY);
 
-    var key2 = keys.of(new WrongToStringImpl());
+    Object key2 = keys.of(new WrongToStringImpl());
     assertThat(key2).isNotEqualTo(key);
   }
 

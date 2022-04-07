@@ -58,7 +58,7 @@ class GlobalTempFolderProviderTests {
     var creationTime = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(100);
 
     for (var i = 0; i < 3; i++) {
-      var tmp = new File(workingDir.toFile(), ".sonartmp_" + i);
+      var tmp = new File(workingDir.toFile(), ".sonarlinttmp_" + i);
       tmp.mkdirs();
       setFileCreationDate(tmp, creationTime);
     }

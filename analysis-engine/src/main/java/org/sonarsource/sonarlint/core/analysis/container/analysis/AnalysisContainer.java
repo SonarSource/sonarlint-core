@@ -45,14 +45,14 @@ import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultSensorContext;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpFileLinesContextFactory;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
+import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentContainer;
 
-public class AnalysisContainer extends ComponentContainer {
+public class AnalysisContainer extends SpringComponentContainer {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final ProgressMonitor progress;
 
-  public AnalysisContainer(ComponentContainer globalContainer, ProgressMonitor progress) {
+  public AnalysisContainer(SpringComponentContainer globalContainer, ProgressMonitor progress) {
     super(globalContainer);
     this.progress = progress;
   }
@@ -111,7 +111,7 @@ public class AnalysisContainer extends ComponentContainer {
   }
 
   private void addPluginExtensions() {
-    getComponentByType(AnalysisExtensionInstaller.class).install(this, ContainerLifespan.ANALYSIS);
+    getParent().getComponentByType(AnalysisExtensionInstaller.class).install(this, ContainerLifespan.ANALYSIS);
   }
 
   @Override

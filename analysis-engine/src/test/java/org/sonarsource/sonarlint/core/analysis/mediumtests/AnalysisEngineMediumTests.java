@@ -66,7 +66,7 @@ class AnalysisEngineMediumTests {
   SonarLintLogTester logTester = new SonarLintLogTester();
 
   private AnalysisEngine analysisEngine;
-  private volatile boolean engineStopped;
+  private volatile boolean engineStopped = true;
   private final ProgressMonitor progressMonitor = new ProgressMonitor(null);
 
   @BeforeEach
@@ -172,8 +172,9 @@ class AnalysisEngineMediumTests {
   @Test
   void should_cancel_pending_commands_when_stopping() {
     var futureLongCommand = analysisEngine.post((moduleRegistry, progressMonitor) -> {
-      while (!engineStopped)
+      while (!engineStopped) {
         ;
+      }
       return null;
     }, progressMonitor);
     var futureRegister = analysisEngine.post(new RegisterModuleCommand(new ClientModuleInfo("moduleKey", aModuleFileSystem())), progressMonitor);

@@ -19,14 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.analysis;
 
-import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.config.Configuration;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.ConfigurationBridge;
+import org.springframework.context.annotation.Bean;
 
-public class AnalysisConfigurationProvider extends ProviderAdapter {
+public class AnalysisConfigurationProvider {
 
   private Configuration analysisConfig;
 
+  @Bean("Configuration")
   public Configuration provide(AnalysisSettings settings) {
     if (analysisConfig == null) {
       this.analysisConfig = new ConfigurationBridge(settings);

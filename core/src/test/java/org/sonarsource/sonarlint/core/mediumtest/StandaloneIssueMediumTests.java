@@ -51,6 +51,7 @@ import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
+import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.SonarLintModuleFileSystem;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
@@ -60,7 +61,6 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConf
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.progress.CanceledException;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
-import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 import testutils.OnDiskTestClientInputFile;
 import testutils.PluginLocator;
 import testutils.TestUtils;
@@ -859,7 +859,7 @@ class StandaloneIssueMediumTests {
     sonarlint
       .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null)))).get();
 
-    ComponentContainer moduleContainer = sonarlint.getAnalysisEngine().getModuleRegistry().getContainerFor("key");
+    ModuleContainer moduleContainer = sonarlint.getAnalysisEngine().getModuleRegistry().getContainerFor("key");
 
     assertThat(moduleContainer).isNotNull();
     assertThat(moduleContainer.getComponentsByType(SonarLintModuleFileSystem.class)).isNotEmpty();
@@ -869,11 +869,11 @@ class StandaloneIssueMediumTests {
   void stop_module_should_stop_the_module_container() throws Exception {
     sonarlint
       .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null)))).get();
-    ComponentContainer moduleContainer = sonarlint.getAnalysisEngine().getModuleRegistry().getContainerFor("key");
+    ModuleContainer moduleContainer = sonarlint.getAnalysisEngine().getModuleRegistry().getContainerFor("key");
 
     sonarlint.stopModule("key").get();
 
-    assertThat(moduleContainer.getPicoContainer().getLifecycleState().isStarted()).isFalse();
+    assertThat(moduleContainer.getSpringContext().isActive()).isFalse();
   }
 
   @Test

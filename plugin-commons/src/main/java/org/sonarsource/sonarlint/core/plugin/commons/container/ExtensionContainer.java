@@ -17,7 +17,17 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-@ParametersAreNonnullByDefault
-package org.sonarsource.sonarlint.core.plugin.commons.pico;
+package org.sonarsource.sonarlint.core.plugin.commons.container;
 
-import javax.annotation.ParametersAreNonnullByDefault;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+
+public interface ExtensionContainer extends Container {
+  ExtensionContainer addExtension(@Nullable String pluginKey, Object extension);
+
+  ExtensionContainer declareProperties(Object extension);
+
+  @Override
+  @CheckForNull
+  ExtensionContainer getParent();
+}

@@ -20,13 +20,14 @@
 package org.sonarsource.sonarlint.core.analysis.container.analysis;
 
 import java.io.File;
-import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.utils.TempFolder;
+import org.springframework.context.annotation.Bean;
 
-public class AnalysisTempFolderProvider extends ProviderAdapter {
+public class AnalysisTempFolderProvider {
 
   private final NoTempFilesDuringAnalysis instance = new NoTempFilesDuringAnalysis();
 
+  @Bean("TempFolder")
   public TempFolder provide() {
     return instance;
   }
