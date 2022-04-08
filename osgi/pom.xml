@@ -56,6 +56,7 @@
             </Import-Package>
             <Export-Package>
               org.sonarsource.sonarlint.core.*;version="${project.version}",
+              org.sonarsource.sonarlint.shaded.com.google.gson.*;version="${gson.version},
               com.google.protobuf,
             </Export-Package>
             <_failok>true</_failok>
