@@ -28,11 +28,18 @@ public class InternalDebug {
 
   static final String INTERNAL_DEBUG_ENV = "SONARLINT_INTERNAL_DEBUG";
 
+  private static boolean isEnabled = "true".equals(System.getenv(INTERNAL_DEBUG_ENV));
+
   private InternalDebug() {
     // utility class, forbidden constructor
   }
 
   public static boolean isEnabled() {
-    return "true".equals(System.getenv(INTERNAL_DEBUG_ENV));
+    return isEnabled;
+  }
+
+  // For testing
+  public static void setEnabled(boolean isEnabled) {
+    InternalDebug.isEnabled = isEnabled;
   }
 }

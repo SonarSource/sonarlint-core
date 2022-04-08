@@ -99,7 +99,7 @@ class TelemetryPathManagerTests {
 
   @Test
   void log_error_if_migrate_fails_and_debug_enabled() throws IOException {
-    environment.set("SONARLINT_INTERNAL_DEBUG", "true");
+    InternalDebug.setEnabled(true);
     Files.createDirectories(newPath);
     doMigrate();
     assertThat(logTester.logs(Level.ERROR)).contains("Failed to migrate telemetry storage");

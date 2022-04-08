@@ -21,22 +21,17 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import java.util.Optional;
 import mockwebserver3.MockResponse;
-import mockwebserver3.RecordedRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
-import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
-import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(SystemStubsExtension.class)
 class TelemetryHttpClientTests {
 
   private TelemetryHttpClient underTest;
@@ -108,22 +103,22 @@ class TelemetryHttpClientTests {
   }
 
   @Test
-  void failed_upload_should_log_if_debug(EnvironmentVariables env) {
-    env.set("SONARLINT_INTERNAL_DEBUG", "true");
+  void failed_upload_should_log_if_debug() {
+    InternalDebug.setEnabled(true);
     underTest.upload(new TelemetryLocalStorage(), attributes);
     assertThat(logTester.logs(Level.ERROR)).anyMatch(l -> l.matches("Failed to upload telemetry data: .*code=404.*"));
   }
 
   @Test
-  void failed_optout_should_log_if_debug(EnvironmentVariables env) {
-    env.set("SONARLINT_INTERNAL_DEBUG", "true");
+  void failed_optout_should_log_if_debug() {
+    InternalDebug.setEnabled(true);
     underTest.optOut(new TelemetryLocalStorage(), attributes);
     assertThat(logTester.logs(Level.ERROR)).anyMatch(l -> l.matches("Failed to upload telemetry opt-out: .*code=404.*"));
   }
 
   @Test
-  void failed_upload_payload_should_log_if_debug(EnvironmentVariables env) {
-    env.set("SONARLINT_INTERNAL_DEBUG", "true");
+  void failed_upload_payload_should_log_if_debug() {
+    InternalDebug.setEnabled(true);
     when(attributes.nodeVersion()).thenThrow(new IllegalStateException("Unexpected error"));
 
     underTest.upload(new TelemetryLocalStorage(), attributes);
@@ -132,8 +127,8 @@ class TelemetryHttpClientTests {
   }
 
   @Test
-  void failed_optout_payload_should_log_if_debug(EnvironmentVariables env) {
-    env.set("SONARLINT_INTERNAL_DEBUG", "true");
+  void failed_optout_payload_should_log_if_debug() {
+    InternalDebug.setEnabled(true);
     when(attributes.nodeVersion()).thenThrow(new IllegalStateException("Unexpected error"));
 
     underTest.optOut(new TelemetryLocalStorage(), attributes);
