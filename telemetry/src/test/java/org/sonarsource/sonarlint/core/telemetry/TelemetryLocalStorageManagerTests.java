@@ -24,12 +24,20 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.stream.IntStream;
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class TelemetryLocalStorageManagerTests {
 
@@ -127,12 +135,53 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void should_not_crash_when_cannot_read_storage(@TempDir Path temp) throws IOException {
+    InternalDebug.setEnabled(false);
     new TelemetryLocalStorageManager(temp).tryRead();
   }
 
   @Test
   void should_not_crash_when_cannot_write_storage(@TempDir Path temp) throws IOException {
+    InternalDebug.setEnabled(false);
     new TelemetryLocalStorageManager(temp).tryUpdateAtomically(d -> {
     });
+  }
+
+  @Test
+  void supportConcurrentUpdates() {
+    var storage = new TelemetryLocalStorageManager(filePath);
+    // Put some data to avoid migration
+    storage.tryUpdateAtomically(data -> {
+      data.setInstallTime(OffsetDateTime.now().minus(50, ChronoUnit.DAYS));
+      data.setLastUseDate(today);
+      data.setNumUseDays(0);
+    });
+    int nThreads = 10;
+    var executorService = Executors.newFixedThreadPool(nThreads);
+    CountDownLatch latch = new CountDownLatch(1);
+    List<Future<?>> futures = new ArrayList<>();
+    // Each thread will attempt to increment the numUseDays by one
+    IntStream.range(0, nThreads).forEach(i -> {
+      futures.add(executorService.submit(() -> {
+        try {
+          latch.await();
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+        storage.tryUpdateAtomically(data -> {
+          data.setNumUseDays(data.numUseDays() + 1);
+        });
+      }));
+    });
+    latch.countDown();
+    futures.forEach(f -> {
+      try {
+        f.get();
+      } catch (ExecutionException e) {
+        fail(e.getCause());
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+    });
+    assertThat(storage.tryRead().numUseDays()).isEqualTo(nThreads);
   }
 }

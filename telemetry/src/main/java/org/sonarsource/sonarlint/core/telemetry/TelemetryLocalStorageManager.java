@@ -24,7 +24,6 @@ import com.google.gson.GsonBuilder;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,9 +41,15 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 class TelemetryLocalStorageManager {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final Path path;
+  private final Gson gson;
 
   TelemetryLocalStorageManager(Path path) {
     this.path = path;
+    this.gson = new GsonBuilder()
+      .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter().nullSafe())
+      .registerTypeAdapter(LocalDate.class, new LocalDateAdapter().nullSafe())
+      .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter().nullSafe())
+      .create();
   }
 
   void tryUpdateAtomically(Consumer<TelemetryLocalStorage> updater) {
@@ -58,20 +63,19 @@ class TelemetryLocalStorageManager {
     }
   }
 
-  private void updateAtomically(Consumer<TelemetryLocalStorage> updater) throws IOException {
-    var gson = createGson();
+  private synchronized void updateAtomically(Consumer<TelemetryLocalStorage> updater) throws IOException {
     Files.createDirectories(path.getParent());
     try (var fileChannel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.SYNC);
       var lock = fileChannel.lock()) {
-      var newData = readAtomically(gson, fileChannel);
+      var newData = readAtomically(fileChannel);
 
       updater.accept(newData);
 
-      writeAtomically(gson, fileChannel, newData);
+      writeAtomically(fileChannel, newData);
     }
   }
 
-  private static TelemetryLocalStorage readAtomically(Gson gson, FileChannel fileChannel) throws IOException {
+  private TelemetryLocalStorage readAtomically(FileChannel fileChannel) throws IOException {
     try {
       if (fileChannel.size() == 0) {
         return new TelemetryLocalStorage();
@@ -92,7 +96,7 @@ class TelemetryLocalStorageManager {
     }
   }
 
-  private static void writeAtomically(Gson gson, FileChannel fileChannel, TelemetryLocalStorage newData) throws IOException {
+  private void writeAtomically(FileChannel fileChannel, TelemetryLocalStorage newData) throws IOException {
     fileChannel.truncate(0);
 
     var newJson = gson.toJson(newData);
@@ -117,20 +121,11 @@ class TelemetryLocalStorageManager {
   }
 
   private TelemetryLocalStorage read() throws IOException {
-    var gson = createGson();
     var bytes = Files.readAllBytes(path);
     var decoded = Base64.getDecoder().decode(bytes);
     var json = new String(decoded, StandardCharsets.UTF_8);
     var rawData = gson.fromJson(json, TelemetryLocalStorage.class);
     return TelemetryLocalStorage.validateAndMigrate(rawData);
-  }
-
-  private static Gson createGson() {
-    return new GsonBuilder()
-      .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter().nullSafe())
-      .registerTypeAdapter(LocalDate.class, new LocalDateAdapter().nullSafe())
-      .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter().nullSafe())
-      .create();
   }
 
 }
