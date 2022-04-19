@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class ServerHotspotTest {
+class ServerHotspotTests {
   @Test
   void it_should_populate_fields_with_constructor_parameters() {
     var hotspot = new ServerHotspot("message",
