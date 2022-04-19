@@ -27,7 +27,7 @@ import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtob
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-class SettingsApiTest {
+class SettingsApiTests {
 
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();

@@ -45,7 +45,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-class EventStreamTest {
+class EventStreamTests {
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester();
 
