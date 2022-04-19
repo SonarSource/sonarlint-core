@@ -19,9 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.update;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.Map;
 import javax.annotation.CheckForNull;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.analysis.api.TextRange;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
@@ -33,61 +36,35 @@ import static org.apache.commons.lang3.StringUtils.trimToNull;
 
 public class IssueStorePaths {
 
-  public String sqPathToFileKey(Sonarlint.ProjectConfiguration projectConfiguration, String projectKey, String sqFilePath) {
-    var modulePaths = projectConfiguration.getModulePathByKeyMap();
-
-    // find longest prefix match
-    var subModuleKey = projectKey;
-    var prefixLen = 0;
-
-    for (Map.Entry<String, String> entry : modulePaths.entrySet()) {
-      var entryModuleKey = entry.getKey();
-      var entryPath = entry.getValue();
-      if (!entryPath.isEmpty() && sqFilePath.startsWith(entryPath) && prefixLen <= entryPath.length()) {
-        subModuleKey = entryModuleKey;
-        prefixLen = entryPath.length() + 1;
-      }
-    }
-
-    var relativeFilePath = sqFilePath.substring(prefixLen);
-    return subModuleKey + ":" + relativeFilePath;
-  }
-
   @CheckForNull
-  public String idePathToFileKey(Sonarlint.ProjectConfiguration projectConfiguration, ProjectBinding projectBinding, String ideFilePath) {
+  public String idePathToFileKey(ProjectBinding projectBinding, String ideFilePath) {
     var sqFilePath = idePathToSqPath(projectBinding, ideFilePath);
 
     if (sqFilePath == null) {
       return null;
     }
-    return sqPathToFileKey(projectConfiguration, projectBinding.projectKey(), sqFilePath);
+    return projectBinding.projectKey() + ":" + sqFilePath;
   }
 
   @CheckForNull
-  public String idePathToSqPath(ProjectBinding projectBinding, String ideFilePath) {
-    if (!ideFilePath.startsWith(projectBinding.idePathPrefix())) {
-      return null;
+  public String idePathToSqPath(ProjectBinding projectBinding, String ideFilePathStr) {
+    var ideFilePath = Paths.get(ideFilePathStr);
+    Path commonPart;
+    if (StringUtils.isNotEmpty(projectBinding.idePathPrefix())) {
+      var idePathPrefix = Paths.get(projectBinding.idePathPrefix());
+      if (!ideFilePath.startsWith(idePathPrefix)) {
+        return null;
+      }
+      commonPart = idePathPrefix.relativize(ideFilePath);
+    } else {
+      commonPart = ideFilePath;
     }
-    var localPrefixLen = projectBinding.idePathPrefix().length();
-    if (localPrefixLen > 0) {
-      localPrefixLen++;
+    if (StringUtils.isNotEmpty(projectBinding.sqPathPrefix())) {
+      var sqPathPrefix = Paths.get(projectBinding.sqPathPrefix());
+      return FilenameUtils.separatorsToUnix(sqPathPrefix.resolve(commonPart).toString());
+    } else {
+      return FilenameUtils.separatorsToUnix(commonPart.toString());
     }
-    var sqPathPrefix = projectBinding.sqPathPrefix();
-    if (!sqPathPrefix.isEmpty()) {
-      sqPathPrefix = sqPathPrefix + "/";
-    }
-    return sqPathPrefix + ideFilePath.substring(localPrefixLen);
-  }
-
-  public String fileKeyToSqPath(Sonarlint.ProjectConfiguration projectConfiguration, String fileModuleKey, String filePath) {
-    var modulePaths = projectConfiguration.getModulePathByKeyMap();
-
-    // normally this should not be null, but the ModuleConfiguration could be out dated
-    var modulePath = modulePaths.getOrDefault(fileModuleKey, "");
-    if (!modulePath.isEmpty()) {
-      modulePath = modulePath + "/";
-    }
-    return modulePath + filePath;
   }
 
   public static ServerIssue toApiIssue(Sonarlint.ServerIssue pbIssue, String idePath) {

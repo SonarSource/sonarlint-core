@@ -20,12 +20,8 @@
 package org.sonarsource.sonarlint.core.container.storage;
 
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,14 +33,11 @@ import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
 import org.sonarsource.sonarlint.core.container.model.DefaultServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration.Builder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Flow;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.TextRange;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -54,7 +47,6 @@ class IssueStoreReaderTests {
   private IssueStoreReader issueStoreReader;
   private final IssueStore issueStore = new InMemoryIssueStore();
   private final ProjectStoragePaths projectStoragePaths = mock(ProjectStoragePaths.class);
-  private final StorageReader storageReader = mock(StorageReader.class);
   private final IssueStorePaths issueStorePaths = new IssueStorePaths();
   private final ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "");
 
@@ -65,80 +57,11 @@ class IssueStoreReaderTests {
     when(projectStoragePaths.getServerIssuesPath(PROJECT_KEY)).thenReturn(storagePath);
     when(issueStoreFactory.apply(storagePath)).thenReturn(issueStore);
 
-    issueStoreReader = new IssueStoreReader(issueStoreFactory, issueStorePaths, projectStoragePaths, storageReader);
-  }
-
-  private void setModulePaths(Map<String, String> modulePaths) {
-    var moduleConfigBuilder = ProjectConfiguration.newBuilder();
-    moduleConfigBuilder.putAllModulePathByKey(modulePaths);
-
-    when(storageReader.readProjectConfig(PROJECT_KEY)).thenReturn(moduleConfigBuilder.build());
-  }
-
-  @Test
-  void testMultiModule() {
-    // setup module hierarchy
-    Map<String, String> modulePaths = new HashMap<>();
-    modulePaths.put(PROJECT_KEY, "");
-    modulePaths.put("root:module1", "module1/src");
-    modulePaths.put("root:module2", "module2");
-    setModulePaths(modulePaths);
-
-    // setup issues
-    issueStore.save(Arrays.asList(
-      createServerIssue("module1/src/path1"),
-      createServerIssue("module1/src/path2"),
-      createServerIssue("module2/path1"),
-      createServerIssue("module2/path2")));
-
-    // test
-
-    // matches module1 path
-    assertThat(issueStoreReader.getServerIssues(projectBinding, "module1/src/path1"))
-      .usingElementComparator(simpleComparator)
-      .containsOnly(createApiIssue("module1/src/path1"));
-
-    // matches module2
-    assertThat(issueStoreReader.getServerIssues(projectBinding, "module2/path2"))
-      .usingElementComparator(simpleComparator)
-      .containsOnly(createApiIssue("module2/path2"));
-
-    // no file found
-    assertThat(issueStoreReader.getServerIssues(projectBinding, "module1/src/path3"))
-      .isEmpty();
-
-    // module not in storage
-    var nonExistent = new ProjectBinding("root:module1", "", "");
-    var thrown = assertThrows(IllegalStateException.class, () -> issueStoreReader.getServerIssues(nonExistent, "path2"));
-    assertThat(thrown).hasMessage("project not in storage: root:module1");
-  }
-
-  @Test
-  void testMultiModule2() {
-    // setup module hierarchy
-    Map<String, String> modulePaths = new HashMap<>();
-    modulePaths.put(PROJECT_KEY, "");
-    modulePaths.put("root:module1", "module1");
-    modulePaths.put("root:module12", "module12");
-    setModulePaths(modulePaths);
-
-    // setup issues
-    issueStore.save(Arrays.asList(
-      createServerIssue("module12/path1"),
-      createServerIssue("module12/path12")));
-
-    // test
-
-    // matches module12 path
-    assertThat(issueStoreReader.getServerIssues(projectBinding, "module12/path12"))
-      .usingElementComparator(simpleComparator)
-      .containsOnly(createApiIssue("module12/path12"));
+    issueStoreReader = new IssueStoreReader(issueStoreFactory, issueStorePaths, projectStoragePaths);
   }
 
   @Test
   void testSingleModule() {
-    setModulePaths(Collections.singletonMap(PROJECT_KEY, ""));
-
     // setup issues
     issueStore.save(Collections.singletonList(createServerIssue("src/path1")));
 
@@ -150,18 +73,15 @@ class IssueStoreReaderTests {
       .containsOnly(createApiIssue("src/path1"));
 
     // no file found
-    assertThat(issueStoreReader.getServerIssues(projectBinding, "src/path3"))
-      .isEmpty();
+    assertThat(issueStoreReader.getServerIssues(projectBinding, "src/path3")).isEmpty();
 
-    // module not in storage
-    var nonExistent = new ProjectBinding("unknown", "", "");
-    var thrown = assertThrows(IllegalStateException.class, () -> issueStoreReader.getServerIssues(nonExistent, "path2"));
-    assertThat(thrown).hasMessage("project not in storage: unknown");
+    // invalid prefixes
+    var bindingWithPrefix = new ProjectBinding(PROJECT_KEY, "", "src");
+    assertThat(issueStoreReader.getServerIssues(bindingWithPrefix, "src2/path2")).isEmpty();
   }
 
   @Test
   void return_empty_list_if_local_path_is_invalid() {
-    setModulePaths(Collections.singletonMap(PROJECT_KEY, ""));
     var projectBinding = new ProjectBinding(PROJECT_KEY, "", "local");
     issueStore.save(Collections.singletonList(createServerIssue("src/path1")));
     assertThat(issueStoreReader.getServerIssues(projectBinding, "src/path1"))
@@ -170,7 +90,6 @@ class IssueStoreReaderTests {
 
   @Test
   void testSingleModuleWithBothPrefixes() {
-    setModulePaths(Collections.singletonMap(PROJECT_KEY, ""));
     var projectBinding = new ProjectBinding(PROJECT_KEY, "sq", "local");
 
     // setup issues
@@ -186,7 +105,6 @@ class IssueStoreReaderTests {
 
   @Test
   void testSingleModuleWithLocalPrefix() {
-    setModulePaths(Collections.singletonMap(PROJECT_KEY, ""));
     var projectBinding = new ProjectBinding(PROJECT_KEY, "", "local");
 
     // setup issues
@@ -202,7 +120,6 @@ class IssueStoreReaderTests {
 
   @Test
   void testSingleModuleWithSQPrefix() {
-    setModulePaths(Collections.singletonMap(PROJECT_KEY, ""));
     var projectBinding = new ProjectBinding(PROJECT_KEY, "sq", "");
 
     // setup issues
@@ -218,8 +135,6 @@ class IssueStoreReaderTests {
 
   @Test
   void canReadFlowsFromStorage() {
-    setModulePaths(Collections.singletonMap(PROJECT_KEY, ""));
-
     // setup issues
     issueStore.save(Collections.singletonList(Sonarlint.ServerIssue.newBuilder()
       .setPrimaryLocation(

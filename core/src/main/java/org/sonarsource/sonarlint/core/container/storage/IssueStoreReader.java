@@ -19,37 +19,26 @@
  */
 package org.sonarsource.sonarlint.core.container.storage;
 
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
-import org.sonarsource.sonarlint.core.container.connected.IssueStore;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
-import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 public class IssueStoreReader {
   private final IssueStoreFactory issueStoreFactory;
   private final ProjectStoragePaths projectStoragePaths;
   private final IssueStorePaths issueStorePaths;
-  private final StorageReader storageReader;
 
-  public IssueStoreReader(IssueStoreFactory issueStoreFactory, IssueStorePaths issueStorePaths, ProjectStoragePaths projectStoragePaths, StorageReader storageReader) {
+  public IssueStoreReader(IssueStoreFactory issueStoreFactory, IssueStorePaths issueStorePaths, ProjectStoragePaths projectStoragePaths) {
     this.issueStoreFactory = issueStoreFactory;
     this.issueStorePaths = issueStorePaths;
-    this.storageReader = storageReader;
     this.projectStoragePaths = projectStoragePaths;
   }
 
   public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String ideFilePath) {
-    var projectConfiguration = storageReader.readProjectConfig(projectBinding.projectKey());
-
-    if (projectConfiguration == null) {
-      throw new IllegalStateException("project not in storage: " + projectBinding.projectKey());
-    }
-
     var sqPath = issueStorePaths.idePathToSqPath(projectBinding, ideFilePath);
     if (sqPath == null) {
       return Collections.emptyList();

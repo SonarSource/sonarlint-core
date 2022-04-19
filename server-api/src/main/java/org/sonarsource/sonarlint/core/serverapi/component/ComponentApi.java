@@ -38,19 +38,6 @@ public class ComponentApi {
     this.helper = helper;
   }
 
-  public List<ComponentPath> getSubProjects(String componentKey, ProgressMonitor progress) {
-    List<ComponentPath> modules = new ArrayList<>();
-
-    helper.getPaginated("api/components/tree.protobuf?qualifiers=BRC&component=" + UrlUtils.urlEncode(componentKey),
-      Components.TreeWsResponse::parseFrom,
-      Components.TreeWsResponse::getPaging,
-      Components.TreeWsResponse::getComponentsList,
-      m -> modules.add(new ComponentPath(m.getKey(), m.getPath())),
-      true,
-      progress);
-    return modules;
-  }
-
   public List<String> getAllFileKeys(String projectKey, ProgressMonitor progress) {
     var path = buildAllFileKeysPath(projectKey);
     List<String> files = new ArrayList<>();

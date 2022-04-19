@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
-import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,44 +35,23 @@ class IssueStorePathsTests {
   }
 
   @Test
-  void sq_path_to_fileKey_uses_most_specific_module() {
-    var projectConfiguration = Sonarlint.ProjectConfiguration.newBuilder()
-      .putModulePathByKey("root", "project")
-      .putModulePathByKey("moduleA", "project/A")
-      .putModulePathByKey("moduleB", "project/B")
-      .build();
-    var fileKey = issueStorePaths.sqPathToFileKey(projectConfiguration, "projectKey", "project/A/path1");
-
-    assertThat(fileKey).isEqualTo("moduleA:path1");
-  }
-
-  @Test
-  void sq_path_to_fileKey_uses_projectKey_if_no_module_found() {
-    var projectConfiguration = Sonarlint.ProjectConfiguration.newBuilder()
-      .putModulePathByKey("root", "project")
-      .putModulePathByKey("moduleA", "project/A")
-      .putModulePathByKey("moduleB", "project/B")
-      .build();
-    var fileKey = issueStorePaths.sqPathToFileKey(projectConfiguration, "projectKey", "unknown/path1");
-    assertThat(fileKey).isEqualTo("projectKey:unknown/path1");
-  }
-
-  @Test
-  void local_path_to_fileKey_uses_modules_and_prefixes() {
-    var projectBinding = new ProjectBinding("project", "project", "ide");
-    var projectConfiguration = Sonarlint.ProjectConfiguration.newBuilder()
-      .putModulePathByKey("root", "project")
-      .putModulePathByKey("moduleA", "project/A")
-      .putModulePathByKey("moduleB", "project/B")
-      .build();
-    var fileKey = issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, "ide/B/path1");
-    assertThat(fileKey).isEqualTo("moduleB:path1");
+  void local_path_to_fileKey() {
+    var projectBinding = new ProjectBinding("projectKey", "project", "ide");
+    var fileKey = issueStorePaths.idePathToFileKey(projectBinding, "ide/B/path1");
+    assertThat(fileKey).isEqualTo("projectKey:project/B/path1");
   }
 
   @Test
   void local_path_to_sq_path_returns_null_if_path_doesnt_match_prefix() {
     var projectBinding = new ProjectBinding("project", "sq", "ide");
     var sqPath = issueStorePaths.idePathToSqPath(projectBinding, "unknown/project1/path1");
+    assertThat(sqPath).isNull();
+  }
+
+  @Test
+  void local_path_to_sq_path_returns_null_if_path_match_prefix_partially() {
+    var projectBinding = new ProjectBinding("project", "sq", "src");
+    var sqPath = issueStorePaths.idePathToSqPath(projectBinding, "src2/project1/path1");
     assertThat(sqPath).isNull();
   }
 
@@ -94,12 +72,7 @@ class IssueStorePathsTests {
   @Test
   void local_path_to_fileKey_returns_null_if_path_doesnt_match_prefix() {
     var projectBinding = new ProjectBinding("project", "project", "ide");
-    var projectConfiguration = Sonarlint.ProjectConfiguration.newBuilder()
-      .putModulePathByKey("root", "project")
-      .putModulePathByKey("moduleA", "project/A")
-      .putModulePathByKey("moduleB", "project/B")
-      .build();
-    var fileKey = issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, "unknown/B/path1");
+    var fileKey = issueStorePaths.idePathToFileKey(projectBinding, "unknown/B/path1");
     assertThat(fileKey).isNull();
   }
 

@@ -29,10 +29,6 @@ public class StorageReader {
     this.projectStoragePaths = projectStoragePaths;
   }
 
-  public Sonarlint.ProjectConfiguration readProjectConfig(String projectKey) {
-    return ProtobufUtil.readFile(projectStoragePaths.getProjectConfigurationPath(projectKey), Sonarlint.ProjectConfiguration.parser());
-  }
-
   public Sonarlint.ProjectComponents readProjectComponents(String projectKey) {
     return ProtobufUtil.readFile(projectStoragePaths.getComponentListPath(projectKey), Sonarlint.ProjectComponents.parser());
   }

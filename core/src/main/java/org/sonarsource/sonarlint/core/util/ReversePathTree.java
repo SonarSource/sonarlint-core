@@ -145,7 +145,7 @@ public class ReversePathTree {
       if (singleChildKey == null) {
         return Collections.emptySet();
       } else {
-        return Collections.singleton(new AbstractMap.SimpleEntry<Path, Node>(singleChildKey, singleChildValue));
+        return Collections.singleton(new AbstractMap.SimpleEntry<>(singleChildKey, singleChildValue));
       }
     }
 

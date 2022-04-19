@@ -28,7 +28,6 @@ import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
-import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 public class ServerIssueUpdater {
@@ -42,11 +41,11 @@ public class ServerIssueUpdater {
     this.issueStoreFactory = issueStoreFactory;
   }
 
-  public void update(ServerApiHelper serverApiHelper, String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities,
+  public void update(ServerApiHelper serverApiHelper, String projectKey, boolean fetchTaintVulnerabilities,
     @Nullable String branchName, ProgressMonitor progress) {
     var target = projectStoragePaths.getServerIssuesPath(projectKey);
     var work = createTempDir(target);
-    FileUtils.replaceDir(path -> updateServerIssues(serverApiHelper, projectKey, projectConfiguration, path, fetchTaintVulnerabilities, branchName, progress), target, work);
+    FileUtils.replaceDir(path -> updateServerIssues(serverApiHelper, projectKey, path, fetchTaintVulnerabilities, branchName, progress), target, work);
   }
 
   private static Path createTempDir(Path target) {
@@ -57,9 +56,9 @@ public class ServerIssueUpdater {
     }
   }
 
-  public void updateServerIssues(ServerApiHelper serverApiHelper, String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, Path path,
-    boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressMonitor progress) {
-    var issues = issueDownloader.download(serverApiHelper, projectKey, projectConfiguration, fetchTaintVulnerabilities, branchName, progress);
+  public void updateServerIssues(ServerApiHelper serverApiHelper, String projectKey, Path path, boolean fetchTaintVulnerabilities, @Nullable String branchName,
+    ProgressMonitor progress) {
+    var issues = issueDownloader.download(serverApiHelper, projectKey, fetchTaintVulnerabilities, branchName, progress);
     issueStoreFactory.apply(path).save(issues);
   }
 
