@@ -89,7 +89,6 @@ public class ProjectStorageFixture {
         .build();
       org.sonarsource.sonarlint.core.client.api.util.FileUtils.mkdirs(projectFolder);
       ProtobufUtil.writeToFile(storageStatus, projectFolder.resolve(ProjectStoragePaths.STORAGE_STATUS_PB));
-      ProtobufUtil.writeToFile(Sonarlint.ProjectConfiguration.newBuilder().build(), projectFolder.resolve(ProjectStoragePaths.PROJECT_CONFIGURATION_PB));
 
       Map<String, Sonarlint.RuleSet> protoRuleSets = new HashMap<>();
       ruleSets.forEach(ruleSet -> {

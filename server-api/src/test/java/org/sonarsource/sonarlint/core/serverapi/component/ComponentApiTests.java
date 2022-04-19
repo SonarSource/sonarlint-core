@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.component;
 
-import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -74,20 +72,7 @@ class ComponentApiTests {
 
     var files = underTest.getAllFileKeys(PROJECT_KEY, progress);
 
-    assertThat(files.size()).isZero();
-  }
-
-  @Test
-  void should_get_sub_projects() {
-    mockServer.addProtobufResponse("/api/components/tree.protobuf?qualifiers=BRC&component=component%3Akey&ps=500&p=1", Components.TreeWsResponse.newBuilder()
-      .addComponents(Components.Component.newBuilder().setKey("componentKey").setPath("componentPath").build()).build());
-    mockServer.addProtobufResponse("/api/components/tree.protobuf?qualifiers=BRC&component=component%3Akey&ps=500&p=2", Components.TreeWsResponse.newBuilder().build());
-
-    var componentPaths = underTest.getSubProjects("component:key", progress);
-
-    assertThat(componentPaths)
-      .extracting("key", "path")
-      .containsOnly(tuple("componentKey", "componentPath"));
+    assertThat(files).isEmpty();
   }
 
   @Test

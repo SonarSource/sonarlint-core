@@ -33,7 +33,6 @@ public class ProjectStoragePaths {
    */
   public static final String STORAGE_VERSION = "3";
 
-  public static final String PROJECT_CONFIGURATION_PB = "configuration.pb";
   public static final String STORAGE_STATUS_PB = "storage_status.pb";
   public static final String SERVER_ISSUES_DIR = "server_issues";
   public static final String COMPONENT_LIST_PB = "component_list.pb";
@@ -62,10 +61,6 @@ public class ProjectStoragePaths {
       return encoded.substring(0, MAX_FOLDER_NAME_SIZE - md5.length()) + md5;
     }
     return encoded;
-  }
-
-  public Path getProjectConfigurationPath(String projectKey) {
-    return getProjectStorageRoot(projectKey).resolve(PROJECT_CONFIGURATION_PB);
   }
 
   public Path getProjectUpdateStatusPath(String projectKey) {

@@ -30,32 +30,25 @@ import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
-import org.sonarsource.sonarlint.core.container.connected.update.ModuleHierarchyDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectFileListDownloader;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 public class ProjectStorageUpdateExecutor {
-  private final ProjectConfigurationDownloader projectConfigurationDownloader;
   private final ProjectFileListDownloader projectFileListDownloader;
   private final ServerIssueUpdater serverIssueUpdater;
   private final ProjectStoragePaths projectStoragePaths;
 
   public ProjectStorageUpdateExecutor(ProjectStoragePaths projectStoragePaths) {
-    this(projectStoragePaths, new ProjectConfigurationDownloader(new ModuleHierarchyDownloader()), new ProjectFileListDownloader(),
-      new ServerIssueUpdater(projectStoragePaths, new IssueDownloader(new IssueStorePaths()), new IssueStoreFactory()));
+    this(projectStoragePaths, new ProjectFileListDownloader(), new ServerIssueUpdater(projectStoragePaths, new IssueDownloader(new IssueStorePaths()), new IssueStoreFactory()));
   }
 
-  ProjectStorageUpdateExecutor(ProjectStoragePaths projectStoragePaths, ProjectConfigurationDownloader projectConfigurationDownloader,
-    ProjectFileListDownloader projectFileListDownloader, ServerIssueUpdater serverIssueUpdater) {
+  ProjectStorageUpdateExecutor(ProjectStoragePaths projectStoragePaths, ProjectFileListDownloader projectFileListDownloader, ServerIssueUpdater serverIssueUpdater) {
     this.projectStoragePaths = projectStoragePaths;
-    this.projectConfigurationDownloader = projectConfigurationDownloader;
     this.projectFileListDownloader = projectFileListDownloader;
     this.serverIssueUpdater = serverIssueUpdater;
   }
@@ -69,9 +62,8 @@ public class ProjectStorageUpdateExecutor {
     }
     try {
       FileUtils.replaceDir(dir -> {
-        var projectConfiguration = updateConfiguration(serverApiHelper, projectKey, dir, progress);
-        updateServerIssues(serverApiHelper, projectKey, dir, projectConfiguration, fetchTaintVulnerabilities, branchName, progress);
-        updateComponents(serverApiHelper, projectKey, dir, projectConfiguration, progress);
+        updateServerIssues(serverApiHelper, projectKey, dir, fetchTaintVulnerabilities, branchName, progress);
+        updateComponents(serverApiHelper, projectKey, dir, progress);
         updateStatus(dir);
       }, projectStoragePaths.getProjectStorageRoot(projectKey), temp);
     } finally {
@@ -79,34 +71,22 @@ public class ProjectStorageUpdateExecutor {
     }
   }
 
-  private ProjectConfiguration updateConfiguration(ServerApiHelper serverApiHelper, String projectKey, Path temp, ProgressMonitor progress) {
-    var projectConfiguration = projectConfigurationDownloader.fetch(serverApiHelper, projectKey, progress);
-    ProtobufUtil.writeToFile(projectConfiguration, temp.resolve(ProjectStoragePaths.PROJECT_CONFIGURATION_PB));
-    return projectConfiguration;
-  }
-
-  void updateComponents(ServerApiHelper serverApiHelper, String projectKey, Path temp, ProjectConfiguration projectConfiguration, ProgressMonitor progress) {
+  void updateComponents(ServerApiHelper serverApiHelper, String projectKey, Path temp, ProgressMonitor progress) {
     var sqFiles = projectFileListDownloader.get(serverApiHelper, projectKey, progress);
     var componentsBuilder = Sonarlint.ProjectComponents.newBuilder();
 
-    var modulePathByKey = projectConfiguration.getModulePathByKeyMap();
     for (String fileKey : sqFiles) {
-      var idx = StringUtils.lastIndexOf(fileKey, ":");
-      var moduleKey = fileKey.substring(0, idx);
-      var relativePath = fileKey.substring(idx + 1);
-      var prefix = modulePathByKey.getOrDefault(moduleKey, "");
-      if (!prefix.isEmpty()) {
-        prefix = prefix + "/";
-      }
-      componentsBuilder.addComponent(prefix + relativePath);
+      var separatorIdx = StringUtils.lastIndexOf(fileKey, ":");
+      var relativePath = fileKey.substring(separatorIdx + 1);
+      componentsBuilder.addComponent(relativePath);
     }
     ProtobufUtil.writeToFile(componentsBuilder.build(), temp.resolve(ProjectStoragePaths.COMPONENT_LIST_PB));
   }
 
-  private void updateServerIssues(ServerApiHelper serverApiHelper, String projectKey, Path temp, ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities,
+  private void updateServerIssues(ServerApiHelper serverApiHelper, String projectKey, Path temp, boolean fetchTaintVulnerabilities,
     @Nullable String branchName, ProgressMonitor progress) {
     var basedir = temp.resolve(ProjectStoragePaths.SERVER_ISSUES_DIR);
-    serverIssueUpdater.updateServerIssues(serverApiHelper, projectKey, projectConfiguration, basedir, fetchTaintVulnerabilities, branchName, progress);
+    serverIssueUpdater.updateServerIssues(serverApiHelper, projectKey, basedir, fetchTaintVulnerabilities, branchName, progress);
   }
 
   private static void updateStatus(Path temp) {

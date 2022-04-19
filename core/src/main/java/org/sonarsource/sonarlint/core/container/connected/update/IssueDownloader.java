@@ -36,13 +36,11 @@ import org.sonarqube.ws.Issues.Issue;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
-import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi.DownloadIssuesResult;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 import org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils;
 
@@ -66,8 +64,8 @@ public class IssueDownloader {
    * @param branchName name of the branch. If null - issues will be downloaded only for the main branch.
    * @return Iterator of issues. It can be empty but never null.
    */
-  public List<Sonarlint.ServerIssue> download(ServerApiHelper serverApiHelper, String key, ProjectConfiguration projectConfiguration,
-    boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressMonitor progress) {
+  public List<Sonarlint.ServerIssue> download(ServerApiHelper serverApiHelper, String key, boolean fetchTaintVulnerabilities, @Nullable String branchName,
+    ProgressMonitor progress) {
     var issueApi = new ServerApi(serverApiHelper).issue();
     var issueBuilder = Sonarlint.ServerIssue.newBuilder();
     var locationBuilder = Location.newBuilder();
@@ -85,7 +83,7 @@ public class IssueDownloader {
           taintRuleKeys.add(new org.sonarsource.sonarlint.core.client.api.common.RuleKey(batchIssue.getRuleRepository(), batchIssue.getRuleKey()).toString());
         }
       } else {
-        result.add(toStorageIssue(batchIssue, projectConfiguration, issueBuilder, locationBuilder, textRangeBuilder));
+        result.add(toStorageIssue(batchIssue, issueBuilder, locationBuilder, textRangeBuilder));
       }
     }
 
@@ -95,7 +93,7 @@ public class IssueDownloader {
         var downloadVulnerabilitiesForRules = issueApi.downloadVulnerabilitiesForRules(key, taintRuleKeys, branchName, progress);
         downloadVulnerabilitiesForRules.getIssues()
           .forEach(i -> result.add(
-            convertTaintIssue(new ServerApi(serverApiHelper).source(), projectConfiguration, issueBuilder, locationBuilder, textRangeBuilder, flowBuilder, i,
+            convertTaintIssue(new ServerApi(serverApiHelper).source(), issueBuilder, locationBuilder, textRangeBuilder, flowBuilder, i,
               downloadVulnerabilitiesForRules.getComponentPathsByKey(), sourceCodeByKey)));
       } catch (Exception e) {
         LOG.warn("Unable to fetch taint vulnerabilities", e);
@@ -105,10 +103,9 @@ public class IssueDownloader {
     return result;
   }
 
-  public Sonarlint.ServerIssue toStorageIssue(ScannerInput.ServerIssue batchIssueFromWs, Sonarlint.ProjectConfiguration projectConfiguration,
-    Sonarlint.ServerIssue.Builder issueBuilder, Location.Builder locationBuilder,
+  public Sonarlint.ServerIssue toStorageIssue(ScannerInput.ServerIssue batchIssueFromWs, Sonarlint.ServerIssue.Builder issueBuilder, Location.Builder locationBuilder,
     Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder) {
-    var sqPath = issueStorePaths.fileKeyToSqPath(projectConfiguration, batchIssueFromWs.getModuleKey(), batchIssueFromWs.getPath());
+    var sqPath = batchIssueFromWs.getPath();
 
     var primary = buildPrimaryLocationForBatchIssue(locationBuilder, textRangeBuilder, batchIssueFromWs, sqPath);
 
@@ -129,7 +126,7 @@ public class IssueDownloader {
     return builder.build();
   }
 
-  private Location buildPrimaryLocationForBatchIssue(Location.Builder locationBuilder, Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder,
+  private static Location buildPrimaryLocationForBatchIssue(Location.Builder locationBuilder, Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder,
     ScannerInput.ServerIssue issueFromWs, String sqPath) {
     locationBuilder.clear();
     locationBuilder.setPath(sqPath);
@@ -142,13 +139,13 @@ public class IssueDownloader {
     return locationBuilder.build();
   }
 
-  private ServerIssue convertTaintIssue(SourceApi sourceApi, ProjectConfiguration projectConfiguration, Sonarlint.ServerIssue.Builder issueBuilder,
+  private static ServerIssue convertTaintIssue(SourceApi sourceApi, Sonarlint.ServerIssue.Builder issueBuilder,
     Location.Builder locationBuilder,
     Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder, Sonarlint.ServerIssue.Flow.Builder flowBuilder, Issue issueFromWs,
     Map<String, String> componentsByKey, Map<String, String> sourceCodeByKey) {
     issueBuilder.clear();
     var ruleKey = RuleKey.parse(issueFromWs.getRule());
-    var primary = buildPrimaryLocation(sourceApi, projectConfiguration, locationBuilder, textRangeBuilder, issueFromWs, componentsByKey, sourceCodeByKey);
+    var primary = buildPrimaryLocation(sourceApi, locationBuilder, textRangeBuilder, issueFromWs, componentsByKey, sourceCodeByKey);
     issueBuilder
       .setAssigneeLogin(issueFromWs.getAssignee())
       .setLineHash(issueFromWs.getHash())
@@ -162,12 +159,12 @@ public class IssueDownloader {
       .setStatus(issueFromWs.getStatus())
       .setType(issueFromWs.getType().name());
 
-    buildFlows(sourceApi, projectConfiguration, issueBuilder, locationBuilder, textRangeBuilder, flowBuilder, issueFromWs, componentsByKey, sourceCodeByKey);
+    buildFlows(sourceApi, issueBuilder, locationBuilder, textRangeBuilder, flowBuilder, issueFromWs, componentsByKey, sourceCodeByKey);
 
     return issueBuilder.build();
   }
 
-  private void buildFlows(SourceApi sourceApi, ProjectConfiguration projectConfiguration, Sonarlint.ServerIssue.Builder issueBuilder, Location.Builder locationBuilder,
+  private static void buildFlows(SourceApi sourceApi, Sonarlint.ServerIssue.Builder issueBuilder, Location.Builder locationBuilder,
     Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder, Sonarlint.ServerIssue.Flow.Builder flowBuilder, Issue issueFromWs, Map<String, String> componentPathsByKey,
     Map<String, String> sourceCodeByKey) {
     for (Flow flowFromWs : issueFromWs.getFlowsList()) {
@@ -177,8 +174,7 @@ public class IssueDownloader {
         locationBuilder.clear();
         locationBuilder.setMsg(locationFromWs.getMsg());
         var componentPath = componentPathsByKey.get(locationFromWs.getComponent());
-        var sqPath = issueStorePaths.fileKeyToSqPath(projectConfiguration, issueFromWs.getSubProject(), componentPath);
-        locationBuilder.setPath(sqPath);
+        locationBuilder.setPath(componentPath);
         if (locationFromWs.hasTextRange()) {
           copyTextRangeFromWs(locationBuilder, textRangeBuilder, locationFromWs.getTextRange());
           setCodeSnippet(sourceApi, locationBuilder, locationFromWs.getComponent(), locationFromWs.getTextRange(), sourceCodeByKey);
@@ -190,14 +186,13 @@ public class IssueDownloader {
     }
   }
 
-  private Location buildPrimaryLocation(SourceApi sourceApi, ProjectConfiguration projectConfiguration, Location.Builder locationBuilder,
+  private static Location buildPrimaryLocation(SourceApi sourceApi, Location.Builder locationBuilder,
     Sonarlint.ServerIssue.TextRange.Builder textRangeBuilder,
     Issue issueFromWs, Map<String, String> componentPathsByKey, Map<String, String> sourceCodeByKey) {
     locationBuilder.clear();
     locationBuilder.setMsg(issueFromWs.getMessage());
     var componentPath = componentPathsByKey.get(issueFromWs.getComponent());
-    var sqPath = issueStorePaths.fileKeyToSqPath(projectConfiguration, issueFromWs.getSubProject(), componentPath);
-    locationBuilder.setPath(sqPath);
+    locationBuilder.setPath(componentPath);
     if (issueFromWs.hasTextRange()) {
       copyTextRangeFromWs(locationBuilder, textRangeBuilder, issueFromWs.getTextRange());
       setCodeSnippet(sourceApi, locationBuilder, issueFromWs.getComponent(), issueFromWs.getTextRange(), sourceCodeByKey);

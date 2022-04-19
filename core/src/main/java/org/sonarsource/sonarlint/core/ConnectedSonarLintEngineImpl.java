@@ -137,7 +137,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     projectStorage = new ProjectStorage(projectsStorageRoot);
     var issueStorePaths = new IssueStorePaths();
     this.storageReader = new StorageReader(projectStoragePaths);
-    this.issueStoreReader = new IssueStoreReader(new IssueStoreFactory(), issueStorePaths, projectStoragePaths, storageReader);
+    this.issueStoreReader = new IssueStoreReader(new IssueStoreFactory(), issueStorePaths, projectStoragePaths);
     this.storageFileExclusions = new StorageFileExclusions(issueStorePaths);
 
     this.partialUpdaterFactory = new PartialUpdaterFactory(projectStoragePaths, issueStorePaths);
@@ -517,16 +517,14 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   private List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
     boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressMonitor progress) {
     var updater = partialUpdaterFactory.create();
-    var configuration = storageReader.readProjectConfig(projectBinding.projectKey());
-    updater.updateFileIssues(new ServerApiHelper(endpoint, client), projectBinding, configuration, ideFilePath, fetchTaintVulnerabilities, branchName, progress);
+    updater.updateFileIssues(new ServerApiHelper(endpoint, client), projectBinding, ideFilePath, fetchTaintVulnerabilities, branchName, progress);
     return getServerIssues(projectBinding, ideFilePath);
   }
 
   private void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey,
     boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressMonitor progress) {
     var updater = partialUpdaterFactory.create();
-    var configuration = storageReader.readProjectConfig(projectKey);
-    updater.updateFileIssues(new ServerApiHelper(endpoint, client), projectKey, configuration, fetchTaintVulnerabilities, branchName, progress);
+    updater.updateFileIssues(new ServerApiHelper(endpoint, client), projectKey, fetchTaintVulnerabilities, branchName, progress);
   }
 
   @Override
