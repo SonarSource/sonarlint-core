@@ -35,4 +35,10 @@ public class Event {
   public String getData() {
     return data;
   }
+
+  @Override
+  public String toString() {
+    return "type: " + type + "\\n" +
+      "data: " + data + "";
+  }
 }
