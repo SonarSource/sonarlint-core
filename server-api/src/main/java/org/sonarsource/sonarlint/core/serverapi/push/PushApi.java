@@ -49,7 +49,7 @@ public class PushApi {
 
   public EventStream subscribe(Set<String> projectKeys, Set<Language> enabledLanguages, Consumer<ServerEvent> serverEventConsumer, ClientLogOutput clientLogOutput) {
     return new EventStream(helper)
-      .onEvent(rawEvent -> parse(rawEvent).ifPresent(serverEventConsumer))
+      .onEvent(rawEvent -> handleRawEvent(rawEvent, serverEventConsumer, clientLogOutput))
       .connect(getWsPath(projectKeys, enabledLanguages), clientLogOutput);
   }
 
@@ -58,6 +58,13 @@ public class PushApi {
       projectKeys.stream().map(UrlUtils::urlEncode).collect(Collectors.joining(",")) +
       "&languages=" +
       enabledLanguages.stream().map(Language::getLanguageKey).map(UrlUtils::urlEncode).collect(Collectors.joining(","));
+  }
+
+  private static void handleRawEvent(Event rawEvent, Consumer<ServerEvent> serverEventConsumer, ClientLogOutput clientLogOutput) {
+    parse(rawEvent).ifPresent(serverEvent -> {
+      clientLogOutput.log("Server event received: " + rawEvent, ClientLogOutput.Level.DEBUG);
+      serverEventConsumer.accept(serverEvent);
+    });
   }
 
   private static Optional<? extends ServerEvent> parse(Event event) {
