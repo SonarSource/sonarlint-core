@@ -19,15 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common;
 
+import java.nio.file.Path;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 
 public class ClientModuleInfo {
   private final Object key;
   private final ClientModuleFileSystem clientFileSystem;
+  private final Path issueCacheDir;
 
-  public ClientModuleInfo(Object key, ClientModuleFileSystem clientFileSystem) {
+  public ClientModuleInfo(Object key, ClientModuleFileSystem clientFileSystem, Path issueCacheDir) {
     this.key = key;
     this.clientFileSystem = clientFileSystem;
+    this.issueCacheDir = issueCacheDir;
   }
 
   public Object key() {
@@ -37,4 +40,9 @@ public class ClientModuleInfo {
   public ClientModuleFileSystem fileSystem() {
     return clientFileSystem;
   }
+
+  public Path getIssueCacheDir() {
+    return issueCacheDir;
+  }
+
 }

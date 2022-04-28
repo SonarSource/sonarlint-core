@@ -80,6 +80,9 @@ class StandaloneIssueMediumTests {
   private static Path sonarlintUserHome;
   private static Path fakeTypeScriptProjectPath;
 
+  @TempDir
+  public static Path issueCache;
+
   private static final String A_JAVA_FILE_PATH = "Foo.java";
   private static StandaloneSonarLintEngineImpl sonarlint;
   private File baseDir;
@@ -857,7 +860,9 @@ class StandaloneIssueMediumTests {
   @Test
   void declare_module_should_create_a_module_container_with_loaded_extensions() throws Exception {
     sonarlint
-      .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null)))).get();
+      .declareModule(
+        new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null)), issueCache))
+      .get();
 
     ComponentContainer moduleContainer = sonarlint.getAnalysisEngine().getModuleRegistry().getContainerFor("key");
 
@@ -868,7 +873,9 @@ class StandaloneIssueMediumTests {
   @Test
   void stop_module_should_stop_the_module_container() throws Exception {
     sonarlint
-      .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null)))).get();
+      .declareModule(
+        new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null)), issueCache))
+      .get();
     ComponentContainer moduleContainer = sonarlint.getAnalysisEngine().getModuleRegistry().getContainerFor("key");
 
     sonarlint.stopModule("key").get();

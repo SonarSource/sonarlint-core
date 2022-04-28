@@ -76,6 +76,9 @@ class ConnectedIssueMediumTests {
   private static final String JAVA_MODULE_KEY = "test-project-2";
   private static ConnectedSonarLintEngineImpl sonarlint;
 
+  @TempDir
+  public static Path issueCache;
+
   @BeforeAll
   static void prepare(@TempDir Path slHome) throws Exception {
     var storage = newStorage(SERVER_ID)
@@ -100,7 +103,7 @@ class ConnectedIssueMediumTests {
       .setLogOutput(createNoOpLogOutput())
       .addEnabledLanguages(Language.JAVA, Language.JS)
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
-      .setModulesProvider(() -> List.of(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class))))
+      .setModulesProvider(() -> List.of(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class), issueCache)))
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
   }
@@ -212,7 +215,9 @@ class ConnectedIssueMediumTests {
   @Test
   void declare_module_should_create_a_module_container_with_loaded_extensions() throws Exception {
     sonarlint
-      .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null)))).get();
+      .declareModule(
+        new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null)), issueCache))
+      .get();
 
     ComponentContainer moduleContainer = sonarlint.getAnalysisEngine().getModuleRegistry().getContainerFor("key");
 
@@ -223,7 +228,9 @@ class ConnectedIssueMediumTests {
   @Test
   void stop_module_should_stop_the_module_container() throws Exception {
     sonarlint
-      .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null)))).get();
+      .declareModule(
+        new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null)), issueCache))
+      .get();
     ComponentContainer moduleContainer = sonarlint.getAnalysisEngine().getModuleRegistry().getContainerFor("key");
 
     sonarlint.stopModule("key").get();
@@ -237,7 +244,7 @@ class ConnectedIssueMediumTests {
     var moduleFileListener = new FakeModuleFileListener();
     sonarlint.getAnalysisEngine().getGlobalAnalysisContainer().add(moduleFileListener);
     var clientInputFile = new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null);
-    sonarlint.declareModule(new ClientModuleInfo("moduleKey", anEmptyClientFileSystem())).get();
+    sonarlint.declareModule(new ClientModuleInfo("moduleKey", anEmptyClientFileSystem(), issueCache)).get();
 
     sonarlint.fireModuleFileEvent("moduleKey", ClientModuleFileEvent.of(clientInputFile, ModuleFileEvent.Type.CREATED)).get();
 

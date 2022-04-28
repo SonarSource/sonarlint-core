@@ -60,7 +60,7 @@ class LogMediumTests {
     var config = StandaloneGlobalConfiguration.builder()
       .addPlugin(PluginLocator.getJavaScriptPluginPath())
       .setLogOutput(createLogOutput(logs))
-      .setModulesProvider(() -> List.of(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class))))
+      .setModulesProvider(() -> List.of(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class), null)))
       .build();
     sonarlint = new StandaloneSonarLintEngineImpl(config);
   }

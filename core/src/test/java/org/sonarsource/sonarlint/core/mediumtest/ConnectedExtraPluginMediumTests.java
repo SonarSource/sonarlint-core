@@ -61,7 +61,7 @@ class ConnectedExtraPluginMediumTests {
   private static File baseDir;
 
   @BeforeAll
-  static void prepare(@TempDir Path slHome) throws Exception {
+  static void prepare(@TempDir Path slHome, @TempDir Path issueCache) throws Exception {
     var storage = newStorage(SERVER_ID)
       .withJSPlugin()
       .withProject("test-project")
@@ -81,7 +81,7 @@ class ConnectedExtraPluginMediumTests {
       .addExtraPlugin(Language.JAVA.getPluginKey(), PluginLocator.getJavaPluginPath())
       .addExtraPlugin(Language.PHP.getPluginKey(), PluginLocator.getPhpPluginPath())
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
-      .setModulesProvider(() -> List.of(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class))))
+      .setModulesProvider(() -> List.of(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class), issueCache)))
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
   }

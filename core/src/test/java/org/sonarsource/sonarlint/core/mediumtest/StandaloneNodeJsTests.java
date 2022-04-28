@@ -95,7 +95,7 @@ class StandaloneNodeJsTests {
       .addEnabledLanguages(Language.JS, Language.TS)
       .setSonarLintUserHome(sonarlintUserHome)
       .setNodeJs(Paths.get("wrong"), Version.create("13.0"))
-      .setModulesProvider(() -> singletonList(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class))))
+      .setModulesProvider(() -> singletonList(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class), null)))
       .setLogOutput((msg, level) -> logs.add(msg));
 
     sonarlint = new StandaloneSonarLintEngineImpl(configBuilder.build());
@@ -121,7 +121,7 @@ class StandaloneNodeJsTests {
       .addEnabledLanguages(Language.JS, Language.TS)
       .setSonarLintUserHome(sonarlintUserHome)
       .setNodeJs(Paths.get("node"), Version.create("1.0"))
-      .setModulesProvider(() -> singletonList(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class))))
+      .setModulesProvider(() -> singletonList(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class), null)))
       .setLogOutput((msg, level) -> logs.add(msg));
 
     sonarlint = new StandaloneSonarLintEngineImpl(configBuilder.build());
