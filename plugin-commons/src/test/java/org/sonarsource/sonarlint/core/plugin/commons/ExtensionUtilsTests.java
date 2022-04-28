@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.plugin.commons;
 
 import org.junit.jupiter.api.Test;
-import org.sonar.api.BatchComponent;
 import org.sonar.api.batch.InstantiationStrategy;
 import org.sonar.api.batch.ScannerSide;
 import org.sonar.api.ce.ComputeEngineSide;
@@ -48,7 +47,6 @@ class ExtensionUtilsTests {
   @Test
   void testIsSonarLintSide() {
     assertThat(ExtensionUtils.isSonarLintSide(ScannerService.class)).isFalse();
-    assertThat(ExtensionUtils.isSonarLintSide(DeprecatedBatchService.class)).isFalse();
 
     assertThat(ExtensionUtils.isSonarLintSide(ServerService.class)).isFalse();
     assertThat(ExtensionUtils.isSonarLintSide(new ServerService())).isFalse();
@@ -60,10 +58,6 @@ class ExtensionUtilsTests {
   @ScannerSide
   @InstantiationStrategy(InstantiationStrategy.PER_BATCH)
   public static class ScannerService {
-
-  }
-
-  public static class DeprecatedBatchService implements BatchComponent {
 
   }
 

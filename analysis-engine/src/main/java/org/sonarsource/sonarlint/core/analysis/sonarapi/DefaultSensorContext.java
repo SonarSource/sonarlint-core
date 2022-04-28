@@ -26,6 +26,8 @@ import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.InputModule;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.sensor.SensorContext;
+import org.sonar.api.batch.sensor.cache.ReadCache;
+import org.sonar.api.batch.sensor.cache.WriteCache;
 import org.sonar.api.batch.sensor.code.NewSignificantCode;
 import org.sonar.api.batch.sensor.coverage.NewCoverage;
 import org.sonar.api.batch.sensor.cpd.NewCpdTokens;
@@ -186,6 +188,26 @@ public class DefaultSensorContext implements SensorContext {
 
   private static UnsupportedOperationException unsupported() {
     return new UnsupportedOperationException("Not supported in SonarLint");
+  }
+
+  @Override
+  public boolean canSkipUnchangedFiles() {
+    return false;
+  }
+
+  @Override
+  public boolean isCacheEnabled() {
+    return false;
+  }
+
+  @Override
+  public ReadCache previousCache() {
+    throw unsupported();
+  }
+
+  @Override
+  public WriteCache nextCache() {
+    throw unsupported();
   }
 
 }

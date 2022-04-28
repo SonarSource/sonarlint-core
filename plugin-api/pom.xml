@@ -18,9 +18,9 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.sonarsource.sonarqube</groupId>
+      <groupId>org.sonarsource.api.plugin</groupId>
       <artifactId>sonar-plugin-api</artifactId>
-      <version>${sonarqube.version}</version>
+      <version>${sonar-plugin-api.version}</version>
     </dependency>
   </dependencies>
 
