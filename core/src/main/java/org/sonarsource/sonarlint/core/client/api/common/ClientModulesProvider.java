@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Analysis Engine
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,25 +17,10 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analysis.api;
+package org.sonarsource.sonarlint.core.client.api.common;
 
-import javax.annotation.CheckForNull;
+import java.util.List;
 
-public class ClientModuleInfo {
-  private final Object key;
-  private final ClientModuleFileSystem clientFileSystem;
-
-  public ClientModuleInfo(Object key, ClientModuleFileSystem clientFileSystem) {
-    this.key = key;
-    this.clientFileSystem = clientFileSystem;
-  }
-
-  @CheckForNull
-  public Object key() {
-    return key;
-  }
-
-  public ClientModuleFileSystem fileSystem() {
-    return clientFileSystem;
-  }
+public interface ClientModulesProvider {
+  List<ClientModuleInfo> getModules();
 }

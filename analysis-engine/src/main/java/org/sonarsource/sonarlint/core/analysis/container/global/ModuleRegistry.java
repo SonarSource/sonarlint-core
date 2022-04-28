@@ -24,8 +24,7 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
-import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
-import org.sonarsource.sonarlint.core.analysis.api.ClientModulesProvider;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModulesFileSystemsProvider;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
@@ -36,15 +35,15 @@ public class ModuleRegistry {
   private final ConcurrentHashMap<Object, ModuleContainer> moduleContainersByKey = new ConcurrentHashMap<>();
   private final ComponentContainer parent;
 
-  public ModuleRegistry(ComponentContainer parent, @Nullable ClientModulesProvider modulesProvider) {
+  public ModuleRegistry(ComponentContainer parent, @Nullable ClientModulesFileSystemsProvider modulesFSProvider) {
     this.parent = parent;
-    if (modulesProvider != null) {
-      modulesProvider.getModules().forEach(this::registerModule);
+    if (modulesFSProvider != null) {
+      modulesFSProvider.getModuleFileSystemsByModuleKey().entrySet().forEach(e -> registerModule(e.getKey(), e.getValue()));
     }
   }
 
-  public ModuleContainer registerModule(ClientModuleInfo moduleInfo) {
-    return moduleContainersByKey.computeIfAbsent(moduleInfo.key(), id -> createContainer(id, moduleInfo.fileSystem()));
+  public ModuleContainer registerModule(Object key, ClientModuleFileSystem fs) {
+    return moduleContainersByKey.computeIfAbsent(key, id -> createContainer(id, fs));
   }
 
   private ModuleContainer createContainer(Object moduleKey, @Nullable ClientModuleFileSystem clientFileSystem) {

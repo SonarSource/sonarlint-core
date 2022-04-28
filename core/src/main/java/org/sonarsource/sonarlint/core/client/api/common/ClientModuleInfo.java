@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Analysis Engine
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,25 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analysis.command;
+package org.sonarsource.sonarlint.core.client.api.common;
 
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
-import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
-public class RegisterModuleCommand implements Command<Void> {
+public class ClientModuleInfo {
+  private final Object key;
+  private final ClientModuleFileSystem clientFileSystem;
 
-  private final Object moduleKey;
-  private final ClientModuleFileSystem fs;
-
-  public RegisterModuleCommand(Object moduleKey, ClientModuleFileSystem fs) {
-    this.moduleKey = moduleKey;
-    this.fs = fs;
+  public ClientModuleInfo(Object key, ClientModuleFileSystem clientFileSystem) {
+    this.key = key;
+    this.clientFileSystem = clientFileSystem;
   }
 
-  @Override
-  public Void execute(ModuleRegistry moduleRegistry, ProgressMonitor progressMonitor) {
-    moduleRegistry.registerModule(moduleKey, fs);
-    return null;
+  public Object key() {
+    return key;
+  }
+
+  public ClientModuleFileSystem fileSystem() {
+    return clientFileSystem;
   }
 }

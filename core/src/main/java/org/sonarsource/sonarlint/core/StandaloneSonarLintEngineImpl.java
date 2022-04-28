@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
+import org.sonarsource.sonarlint.core.client.api.common.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.DefaultClientIssue;
@@ -72,15 +73,18 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
 
     allRulesDefinitionsByKey = loadPluginMetadata(pluginInstancesRepository, globalConfig.getEnabledLanguages(), false);
 
-    var analysisGlobalConfig = AnalysisEngineConfiguration.builder()
+    var analysisGlobalConfigBuilder = AnalysisEngineConfiguration.builder()
       .addEnabledLanguages(globalConfig.getEnabledLanguages())
       .setClientPid(globalConfig.getClientPid())
       .setExtraProperties(globalConfig.extraProperties())
       .setNodeJs(globalConfig.getNodeJsPath())
-      .setWorkDir(globalConfig.getWorkDir())
-      .setModulesProvider(globalConfig.getModulesProvider())
-      .build();
-    this.analysisEngine = new AnalysisEngine(analysisGlobalConfig, pluginInstancesRepository, logOutput);
+      .setWorkDir(globalConfig.getWorkDir());
+    var modulesProvider = globalConfig.getModulesProvider();
+    if (modulesProvider != null) {
+      analysisGlobalConfigBuilder
+        .setModulesFileSystemsProvider(() -> modulesProvider.getModules().stream().collect(Collectors.toMap(ClientModuleInfo::key, ClientModuleInfo::fileSystem)));
+    }
+    this.analysisEngine = new AnalysisEngine(analysisGlobalConfigBuilder.build(), pluginInstancesRepository, logOutput);
   }
 
   @Override

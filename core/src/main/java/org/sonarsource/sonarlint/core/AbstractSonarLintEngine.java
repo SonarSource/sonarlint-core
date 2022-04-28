@@ -28,11 +28,11 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.AnalysisEngine;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
-import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.analysis.command.NotifyModuleEventCommand;
 import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
 import org.sonarsource.sonarlint.core.analysis.command.UnregisterModuleCommand;
+import org.sonarsource.sonarlint.core.client.api.common.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.commons.Language;
@@ -58,7 +58,7 @@ public abstract class AbstractSonarLintEngine implements SonarLintEngine {
 
   @Override
   public CompletableFuture<Void> declareModule(ClientModuleInfo module) {
-    return getAnalysisEngine().post(new RegisterModuleCommand(module), new ProgressMonitor(null));
+    return getAnalysisEngine().post(new RegisterModuleCommand(module.key(), module.fileSystem()), new ProgressMonitor(null));
   }
 
   @Override

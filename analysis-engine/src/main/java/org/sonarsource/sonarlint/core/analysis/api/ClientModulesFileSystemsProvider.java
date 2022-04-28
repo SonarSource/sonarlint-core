@@ -19,8 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.analysis.api;
 
-import java.util.List;
+import java.util.Map;
 
-public interface ClientModulesProvider {
-  List<ClientModuleInfo> getModules();
+public interface ClientModulesFileSystemsProvider {
+  Map<Object, ClientModuleFileSystem> getModuleFileSystemsByModuleKey();
 }

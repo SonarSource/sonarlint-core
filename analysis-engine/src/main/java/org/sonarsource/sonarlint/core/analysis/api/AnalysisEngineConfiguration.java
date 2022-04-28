@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.commons.Language;
@@ -42,7 +43,7 @@ public class AnalysisEngineConfiguration {
   private final Map<String, String> extraProperties;
   private final Path nodeJsPath;
   private final long clientPid;
-  private final ClientModulesProvider modulesProvider;
+  private final ClientModulesFileSystemsProvider modulesFSProvider;
 
   private AnalysisEngineConfiguration(Builder builder) {
     this.workDir = builder.workDir;
@@ -50,7 +51,7 @@ public class AnalysisEngineConfiguration {
     this.extraProperties = new LinkedHashMap<>(builder.extraProperties);
     this.nodeJsPath = builder.nodeJsPath;
     this.clientPid = builder.clientPid;
-    this.modulesProvider = builder.modulesProvider;
+    this.modulesFSProvider = builder.modulesFSProvider;
   }
 
   public static Builder builder() {
@@ -69,8 +70,9 @@ public class AnalysisEngineConfiguration {
     return clientPid;
   }
 
-  public ClientModulesProvider getModulesProvider() {
-    return modulesProvider;
+  @CheckForNull
+  public ClientModulesFileSystemsProvider getModulesFileSystemsProvider() {
+    return modulesFSProvider;
   }
 
   public Map<String, String> getEffectiveSettings() {
@@ -87,7 +89,8 @@ public class AnalysisEngineConfiguration {
     private Map<String, String> extraProperties = Collections.emptyMap();
     private Path nodeJsPath;
     private long clientPid;
-    private ClientModulesProvider modulesProvider;
+    @Nullable
+    private ClientModulesFileSystemsProvider modulesFSProvider;
 
     private Builder() {
 
@@ -146,8 +149,8 @@ public class AnalysisEngineConfiguration {
       return this;
     }
 
-    public Builder setModulesProvider(ClientModulesProvider modulesProvider) {
-      this.modulesProvider = modulesProvider;
+    public Builder setModulesFileSystemsProvider(ClientModulesFileSystemsProvider modulesFSProvider) {
+      this.modulesFSProvider = modulesFSProvider;
       return this;
     }
 
