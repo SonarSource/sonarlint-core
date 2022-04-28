@@ -21,8 +21,9 @@ package org.sonarsource.sonarlint.core.analysis.sonarapi;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.sonar.api.SonarRuntime;
 import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.rule.ActiveRules;
@@ -45,6 +46,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class DefaultSensorContextTests {
   @Mock
   private SonarLintInputProject module;
@@ -62,11 +64,12 @@ class DefaultSensorContextTests {
   private SonarRuntime sqRuntime;
 
   private DefaultSensorContext ctx;
+  private ProgressMonitor progress;
 
   @BeforeEach
   void setUp() {
-    MockitoAnnotations.initMocks(this);
-    ctx = new DefaultSensorContext(module, settings, config, fs, activeRules, sensorStorage, sqRuntime, new ProgressMonitor(null));
+    progress = new ProgressMonitor(null);
+    ctx = new DefaultSensorContext(module, settings, config, fs, activeRules, sensorStorage, sqRuntime, progress);
   }
 
   @Test
