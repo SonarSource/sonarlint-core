@@ -38,7 +38,7 @@ public class SonarPluginRequirementsChecker {
 
   private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
 
-  static final String IMPLEMENTED_SQ_API = "9.3";
+  static final String IMPLEMENTED_SQ_API = "9.5";
 
   private static final Logger LOG = Loggers.get(SonarPluginRequirementsChecker.class);
 

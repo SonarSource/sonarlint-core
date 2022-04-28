@@ -33,7 +33,7 @@
     <dependency>
       <groupId>org.sonarsource.sonarqube</groupId>
       <artifactId>sonar-markdown</artifactId>
-      <version>${sonarqube.version}</version>
+      <version>${sonar-markdown.version}</version>
       <exclusions>
         <exclusion>
           <!-- maybe this will be removed from markdown soon -->

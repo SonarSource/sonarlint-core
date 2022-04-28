@@ -41,6 +41,7 @@ import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewSymbolTable;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -84,6 +85,7 @@ class DefaultSensorContextTests {
     assertThat(ctx.runtime()).isEqualTo(sqRuntime);
 
     assertThat(ctx.getSonarQubeVersion()).isEqualTo(Version.create(6, 1));
+    assertThat(ctx.isCancelled()).isFalse();
 
     // no ops
     assertThat(ctx.newCpdTokens()).isInstanceOf(NoOpNewCpdTokens.class);
@@ -92,9 +94,13 @@ class DefaultSensorContextTests {
     assertThat(ctx.newMeasure()).isInstanceOf(NoOpNewMeasure.class);
     assertThat(ctx.newCoverage()).isInstanceOf(NoOpNewCoverage.class);
     assertThat(ctx.newSignificantCode()).isInstanceOf(NoOpNewSignificantCode.class);
-    assertThat(ctx.isCancelled()).isFalse();
     ctx.addContextProperty(null, null);
     ctx.markForPublishing(null);
+    assertThat(ctx.canSkipUnchangedFiles()).isFalse();
+    assertThat(ctx.isCacheEnabled()).isFalse();
+    assertThrows(UnsupportedOperationException.class, () -> ctx.newExternalIssue());
+    assertThrows(UnsupportedOperationException.class, () -> ctx.previousCache());
+    assertThrows(UnsupportedOperationException.class, () -> ctx.nextCache());
 
     verify(sqRuntime).getApiVersion();
 
@@ -104,5 +110,12 @@ class DefaultSensorContextTests {
     verifyNoInteractions(fs);
     verifyNoInteractions(activeRules);
     verifyNoInteractions(sensorStorage);
+  }
+
+  @Test
+  void testCancellation() {
+    assertThat(ctx.isCancelled()).isFalse();
+    progress.cancel();
+    assertThat(ctx.isCancelled()).isTrue();
   }
 }

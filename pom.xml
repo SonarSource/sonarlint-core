@@ -1,5 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.sonarsource.parent</groupId>
@@ -41,8 +40,9 @@
 
   <properties>
     <!-- Don't forget to also update SonarPluginRequirementsChecker::IMPLEMENTED_SQ_API -->
-    <sonarqube.version>9.3.0.51899</sonarqube.version>
+    <sonar-plugin-api.version>9.5.0.71</sonar-plugin-api.version>
     <sonar-ws.version>8.5.1.38104</sonar-ws.version>
+    <sonar-markdown.version>9.4.0.54424</sonar-markdown.version>
     <sonar-scanner-protocol.version>7.9</sonar-scanner-protocol.version>
     <protobuf.version>3.20.0</protobuf.version>
     <protobuf.compiler>${settings.localRepository}/com/google/protobuf/protoc/${protobuf.version}/protoc-${protobuf.version}-${os.detected.classifier}.exe</protobuf.compiler>
