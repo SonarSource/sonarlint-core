@@ -421,10 +421,11 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
           return new ServerApi(new ServerApiHelper(endpoint, client)).rules().getRule(activeRuleFromStorage.getRuleKey())
             .thenApply(serverRule -> ruleDefFromPluginOpt
               .map(ruleDefFromPlugin -> new DefaultRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(),
-                serverSeverity != null ? serverSeverity : ruleDefFromPlugin.getSeverity(), ruleDefFromPlugin.getType(), ruleDefFromPlugin.getLanguage(),
+                Optional.ofNullable(serverSeverity).orElse(ruleDefFromPlugin.getSeverity()), ruleDefFromPlugin.getType(), ruleDefFromPlugin.getLanguage(),
                 serverRule.getHtmlNote()))
               .orElse(new DefaultRuleDetails(ruleKey, serverRule.getName(), serverRule.getHtmlDesc(),
-                serverRule.getSeverity(), serverRule.getType(), serverRule.getLanguage(), serverRule.getHtmlNote())));
+                Optional.ofNullable(serverSeverity).orElse(serverRule.getSeverity()),
+                serverRule.getType(), serverRule.getLanguage(), serverRule.getHtmlNote())));
         }
       }
     }
