@@ -156,17 +156,19 @@ class ConnectedEmbeddedPluginMediumTests {
 
     // Requests to the server should be made using deprecated rule keys
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=squid:S106",
-      Rules.ShowResponse.newBuilder().setRule(Rule.newBuilder().setHtmlNote("S106 Extended rule description")).build());
+      Rules.ShowResponse.newBuilder().setRule(Rule.newBuilder().setLang(Language.JAVA.getLanguageKey()).setHtmlNote("S106 Extended rule description")).build());
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=squid:myCustomRule",
-      Rules.ShowResponse.newBuilder().setRule(Rule.newBuilder().setHtmlDesc("My custom rule template desc").setHtmlNote("My custom rule extended description")).build());
+      Rules.ShowResponse.newBuilder().setRule(Rule.newBuilder().setLang(Language.JAVA.getLanguageKey()).setHtmlDesc("My custom rule template desc").setHtmlNote("My custom rule extended description")).build());
 
     ConnectedRuleDetails s106RuleDetails = sonarlint.getActiveRuleDetails(mockWebServerExtension.endpointParams(), httpClient(), "java:S106", JAVA_MODULE_KEY).get();
     assertThat(s106RuleDetails.getSeverity()).isEqualTo("BLOCKER");
+    assertThat(s106RuleDetails.getLanguage()).isEqualTo(Language.JAVA);
     assertThat(s106RuleDetails.getHtmlDescription()).contains("<p>When logging a message there are several important requirements");
     assertThat(s106RuleDetails.getExtendedDescription()).isEqualTo("S106 Extended rule description");
 
     ConnectedRuleDetails myCustomRuleDetails = sonarlint.getActiveRuleDetails(mockWebServerExtension.endpointParams(), httpClient(), "java:myCustomRule", JAVA_MODULE_KEY).get();
     assertThat(myCustomRuleDetails.getSeverity()).isEqualTo("MAJOR");
+    assertThat(s106RuleDetails.getLanguage()).isEqualTo(Language.JAVA);
     assertThat(myCustomRuleDetails.getHtmlDescription()).isEqualTo("My custom rule template desc");
     assertThat(myCustomRuleDetails.getExtendedDescription()).isEqualTo("My custom rule extended description");
   }

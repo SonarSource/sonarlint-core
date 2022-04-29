@@ -418,11 +418,13 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
                 templateRuleDefFromPlugin.getLanguage(),
                 serverRule.getHtmlNote()));
         } else {
-          var ruleDefFromPlugin = ruleDefFromPluginOpt.orElseThrow(() -> new IllegalStateException("Unable to find rule definition for rule '" + ruleKey + "'"));
           return new ServerApi(new ServerApiHelper(endpoint, client)).rules().getRule(activeRuleFromStorage.getRuleKey())
-            .thenApply(serverRule -> new DefaultRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(),
-              serverSeverity != null ? serverSeverity : ruleDefFromPlugin.getSeverity(), ruleDefFromPlugin.getType(), ruleDefFromPlugin.getLanguage(),
-              serverRule.getHtmlNote()));
+            .thenApply(serverRule -> ruleDefFromPluginOpt
+              .map(ruleDefFromPlugin -> new DefaultRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(),
+                serverSeverity != null ? serverSeverity : ruleDefFromPlugin.getSeverity(), ruleDefFromPlugin.getType(), ruleDefFromPlugin.getLanguage(),
+                serverRule.getHtmlNote()))
+              .orElse(new DefaultRuleDetails(ruleKey, serverRule.getName(), serverRule.getHtmlDesc(),
+                serverRule.getSeverity(), serverRule.getType(), serverRule.getLanguage(), serverRule.getHtmlNote())));
         }
       }
     }

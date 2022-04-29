@@ -51,7 +51,7 @@ public class RulesApi {
       .thenApply(response -> {
         try (response) {
           var rule = Rules.ShowResponse.parseFrom(response.bodyAsStream()).getRule();
-          return new ServerRule(rule.getName(), rule.getHtmlDesc(), rule.getHtmlNote());
+          return new ServerRule(rule.getName(), rule.getSeverity(), rule.getType().toString(), rule.getLang(), rule.getHtmlDesc(), rule.getHtmlNote());
         } catch (Exception e) {
           LOG.error("Error when fetching rule + '" + ruleKey + "'", e);
           throw new UnexpectedBodyException(e);
