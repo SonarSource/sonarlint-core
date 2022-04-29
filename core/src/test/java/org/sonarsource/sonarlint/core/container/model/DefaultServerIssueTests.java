@@ -34,7 +34,6 @@ class DefaultServerIssueTests {
     var i1 = Instant.ofEpochMilli(100_000_000);
     assertThat(issue.setLineHash("checksum1").lineHash()).isEqualTo("checksum1");
     assertThat(issue.setCreationDate(i1).creationDate()).isEqualTo(i1);
-    assertThat(issue.setAssigneeLogin("login1").assigneeLogin()).isEqualTo("login1");
     assertThat(issue.setFilePath("path1").getFilePath()).isEqualTo("path1");
     assertThat(issue.setKey("key1").key()).isEqualTo("key1");
     issue.setTextRange(new org.sonarsource.sonarlint.core.analysis.api.TextRange(1,

@@ -32,7 +32,6 @@ public class AbstractTrackable<G> implements Trackable<G> {
   protected Long creationDate;
   protected String serverIssueKey;
   protected boolean resolved;
-  protected String assignee;
 
   protected AbstractTrackable(Trackable<G> trackable) {
     this.clientObject = trackable.getClientObject();
@@ -48,7 +47,6 @@ public class AbstractTrackable<G> implements Trackable<G> {
     this.creationDate = trackable.getCreationDate();
     this.serverIssueKey = trackable.getServerIssueKey();
     this.resolved = trackable.isResolved();
-    this.assignee = trackable.getAssignee();
   }
 
   @Override
@@ -109,10 +107,5 @@ public class AbstractTrackable<G> implements Trackable<G> {
   @Override
   public boolean isResolved() {
     return resolved;
-  }
-
-  @Override
-  public String getAssignee() {
-    return assignee;
   }
 }

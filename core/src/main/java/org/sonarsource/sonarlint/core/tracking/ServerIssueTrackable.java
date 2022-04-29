@@ -92,8 +92,4 @@ public class ServerIssueTrackable implements Trackable {
     return !serverIssue.resolution().isEmpty();
   }
 
-  @Override
-  public String getAssignee() {
-    return serverIssue.assigneeLogin();
-  }
 }

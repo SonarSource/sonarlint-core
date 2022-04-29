@@ -32,7 +32,6 @@ public class DefaultServerIssue implements ServerIssue {
   private String ruleKey;
   private String message;
   private String lineHash;
-  private String assigneeLogin;
   private String filePath;
   private Instant creationDate;
   private String severity;
@@ -64,11 +63,6 @@ public class DefaultServerIssue implements ServerIssue {
   @Override
   public String lineHash() {
     return lineHash;
-  }
-
-  @Override
-  public String assigneeLogin() {
-    return assigneeLogin;
   }
 
   @Override
@@ -128,11 +122,6 @@ public class DefaultServerIssue implements ServerIssue {
 
   public DefaultServerIssue setLineHash(String lineHash) {
     this.lineHash = lineHash;
-    return this;
-  }
-
-  public DefaultServerIssue setAssigneeLogin(String assigneeLogin) {
-    this.assigneeLogin = assigneeLogin;
     return this;
   }
 

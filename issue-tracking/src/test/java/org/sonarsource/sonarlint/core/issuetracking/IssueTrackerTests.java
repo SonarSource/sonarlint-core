@@ -52,7 +52,6 @@ class IssueTrackerTests {
     Long creationDate = null;
     String serverIssueKey = null;
     boolean resolved = false;
-    String assignee = "";
 
     static int counter = Integer.MIN_VALUE;
 
@@ -96,11 +95,6 @@ class IssueTrackerTests {
       return this;
     }
 
-    MockTrackableBuilder assignee(String assignee) {
-      this.assignee = assignee;
-      return this;
-    }
-
     MockTrackableBuilder copy() {
       return builder()
         .line(line)
@@ -110,8 +104,7 @@ class IssueTrackerTests {
         .ruleKey(ruleKey)
         .creationDate(creationDate)
         .serverIssueKey(serverIssueKey)
-        .resolved(resolved)
-        .assignee(assignee);
+        .resolved(resolved);
     }
 
     Trackable build() {
@@ -124,7 +117,6 @@ class IssueTrackerTests {
       when(mock.getCreationDate()).thenReturn(creationDate);
       when(mock.getServerIssueKey()).thenReturn(serverIssueKey);
       when(mock.isResolved()).thenReturn(resolved);
-      when(mock.getAssignee()).thenReturn(assignee);
 
       // ensure default unique values for fields used by matchers (except server issue key)
       if (line == null) {
@@ -207,8 +199,7 @@ class IssueTrackerTests {
       .lineHash(13)
       .ruleKey(ruleKey)
       .serverIssueKey("dummy serverIssueKey")
-      .creationDate(17L)
-      .assignee("dummy assignee");
+      .creationDate(17L);
 
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.build()));
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.ruleKey(ruleKey + "x").build()));
@@ -233,9 +224,7 @@ class IssueTrackerTests {
     var base = builder().ruleKey("dummy ruleKey");
     var line = 7;
     var textRangeHash = 11;
-    // note: (ab)using the assignee field to uniquely identify the trackable
-    var id = "dummy id";
-    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().line(line).textRangeHash(textRangeHash).assignee(id).build()));
+    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().line(line).textRangeHash(textRangeHash).build()));
 
     var differentLine = base.line(line + 1).textRangeHash(textRangeHash).build();
     var differentTextRangeHash = base.line(line).textRangeHash(textRangeHash + 1).build();
@@ -246,11 +235,8 @@ class IssueTrackerTests {
     Collection<Trackable> current = cache.getCurrentTrackables(file1);
     assertThat(current).hasSize(4);
     assertThat(current)
-      .extracting("assignee")
-      .containsOnlyOnce(id);
-    assertThat(current)
-      .extracting("line", "textRangeHash", "assignee")
-      .containsOnlyOnce(tuple(line, textRangeHash, id));
+      .extracting("line", "textRangeHash")
+      .containsOnlyOnce(tuple(line, textRangeHash));
   }
 
   @Test
@@ -258,9 +244,7 @@ class IssueTrackerTests {
     var base = builder().ruleKey("dummy ruleKey");
     var line = 7;
     var lineHash = 11;
-    // note: (ab)using the assignee field to uniquely identify the trackable
-    var id = "dummy id";
-    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().line(line).lineHash(lineHash).assignee(id).build()));
+    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().line(line).lineHash(lineHash).build()));
 
     var differentLine = base.line(line + 1).lineHash(lineHash).build();
     var differentLineHash = base.line(line).lineHash(lineHash + 1).build();
@@ -271,11 +255,8 @@ class IssueTrackerTests {
     Collection<Trackable> current = cache.getCurrentTrackables(file1);
     assertThat(current).hasSize(4);
     assertThat(current)
-      .extracting("assignee")
-      .containsOnlyOnce(id);
-    assertThat(current)
-      .extracting("line", "lineHash", "assignee")
-      .containsOnlyOnce(tuple(line, lineHash, id));
+      .extracting("line", "lineHash")
+      .containsOnlyOnce(tuple(line, lineHash));
   }
 
   @Test
@@ -283,9 +264,7 @@ class IssueTrackerTests {
     var base = builder().ruleKey("dummy ruleKey");
     var line = 7;
     var message = "should make this condition not always false";
-    // note: (ab)using the assignee field to uniquely identify the trackable
-    var id = "dummy id";
-    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().line(line).message(message).assignee(id).build()));
+    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().line(line).message(message).build()));
 
     var differentLine = base.line(line + 1).message(message).build();
     var differentMessage = base.line(line).message(message + "x").build();
@@ -296,41 +275,34 @@ class IssueTrackerTests {
     Collection<Trackable> current = cache.getCurrentTrackables(file1);
     assertThat(current).hasSize(4);
     assertThat(current)
-      .extracting("assignee")
-      .containsOnlyOnce(id);
-    assertThat(current)
-      .extracting("line", "message", "assignee")
-      .containsOnlyOnce(tuple(line, message, id));
+      .extracting("line", "message")
+      .containsOnlyOnce(tuple(line, message));
   }
 
   @Test
   void should_match_by_text_range_hash() {
     var base = builder().ruleKey("dummy ruleKey").textRangeHash(11);
-    // note: (ab)using the assignee field to uniquely identify the trackable
-    var id = "dummy id";
     var newLine = 7;
 
-    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().line(newLine + 3).assignee(id).build()));
+    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().line(newLine + 3).build()));
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.line(newLine).build()));
 
     assertThat(cache.getCurrentTrackables(file1))
-      .extracting("line", "assignee")
-      .containsExactly(tuple(newLine, id));
+      .extracting("line")
+      .containsExactly(newLine);
   }
 
   @Test
   void should_match_by_line_hash() {
     var base = builder().ruleKey("dummy ruleKey").lineHash(11);
-    // note: (ab)using the assignee field to uniquely identify the trackable
-    var id = "dummy id";
     var newLine = 7;
 
-    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().assignee(id).line(newLine + 3).build()));
+    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().line(newLine + 3).build()));
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.line(newLine).build()));
 
     assertThat(cache.getCurrentTrackables(file1))
-      .extracting("line", "assignee")
-      .containsExactly(tuple(newLine, id));
+      .extracting("line")
+      .containsExactly(newLine);
   }
 
   @Test
@@ -386,31 +358,28 @@ class IssueTrackerTests {
   @Test
   void should_match_by_server_issue_key() {
     var base = builder().ruleKey("dummy ruleKey").serverIssueKey("dummy server issue key");
-    // note: (ab)using the assignee field to uniquely identify the trackable
-    var id = "dummy id";
     var newLine = 7;
 
-    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().line(newLine + 3).assignee(id).build()));
+    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().line(newLine + 3).build()));
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.line(newLine).build()));
 
     assertThat(cache.getCurrentTrackables(file1))
-      .extracting("line", "assignee")
-      .containsExactly(tuple(newLine, id));
+      .extracting("line")
+      .containsExactly(newLine);
   }
 
   @Test
   void should_preserve_creation_date() {
     var base = builder().ruleKey("dummy ruleKey").line(7).textRangeHash(11);
-    // note: (ab)using the assignee field to uniquely identify the trackable
-    var id = "dummy id";
     var creationDate = 123L;
 
-    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().creationDate(creationDate).assignee(id).build()));
+    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().creationDate(creationDate).build()));
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.build()));
 
-    assertThat(cache.getCurrentTrackables(file1))
-      .extracting("creationDate", "assignee")
-      .containsExactly(tuple(creationDate, id));
+    Collection<Trackable> trackables = cache.getCurrentTrackables(file1);
+    assertThat(trackables)
+      .extracting(Trackable::getCreationDate)
+      .containsExactly(creationDate);
   }
 
   @Test
@@ -430,55 +399,53 @@ class IssueTrackerTests {
   @Test
   void should_preserve_server_issue_details() {
     var base = builder().ruleKey("dummy ruleKey").line(7).textRangeHash(11);
-    // note: (ab)using the assignee field to uniquely identify the trackable
-    var id = "dummy id";
     var serverIssueKey = "dummy serverIssueKey";
     var resolved = true;
 
-    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().serverIssueKey(serverIssueKey).resolved(resolved).assignee(id).build()));
+    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().serverIssueKey(serverIssueKey).resolved(resolved).build()));
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.build()));
 
-    assertThat(cache.getCurrentTrackables(file1))
-      .extracting("serverIssueKey", "resolved", "assignee")
-      .containsExactly(tuple(serverIssueKey, resolved, id));
+    Collection<Trackable> trackables = cache.getCurrentTrackables(file1);
+    assertThat(trackables)
+      .extracting(Trackable::getServerIssueKey, Trackable::isResolved)
+      .containsExactly(tuple(serverIssueKey, resolved));
   }
 
   @Test
   void should_drop_server_issue_reference_if_gone() {
     var base = builder().ruleKey("dummy ruleKey").line(7).textRangeHash(11);
-    // note: (ab)using the assignee field to uniquely identify the trackable
-    var id = "dummy id";
     var serverIssueKey = "dummy serverIssueKey";
     var resolved = true;
 
-    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().serverIssueKey(serverIssueKey).resolved(resolved).assignee(id).build()));
+    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().serverIssueKey(serverIssueKey).resolved(resolved).build()));
     tracker.matchAndTrackAsBase(file1, Collections.singletonList(base.build()));
 
-    assertThat(cache.getCurrentTrackables(file1))
-      .extracting("serverIssueKey", "resolved", "assignee")
-      .containsExactly(tuple(null, false, ""));
+    Collection<Trackable> trackables = cache.getCurrentTrackables(file1);
+    assertThat(trackables)
+      .extracting(Trackable::getServerIssueKey, Trackable::isResolved)
+      .containsExactly(tuple(null, false));
   }
 
   @Test
   void should_update_server_issue_details() {
     var serverIssueKey = "dummy serverIssueKey";
     var resolved = true;
-    var assignee = "dummy assignee";
-    var base = builder().ruleKey("dummy ruleKey").serverIssueKey(serverIssueKey).resolved(resolved).assignee(assignee);
+    var base = builder().ruleKey("dummy ruleKey").serverIssueKey(serverIssueKey).resolved(resolved);
 
-    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().resolved(!resolved).assignee(assignee + "x").build()));
+    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().resolved(!resolved).build()));
     tracker.matchAndTrackAsBase(file1, Collections.singletonList(base.build()));
 
-    assertThat(cache.getCurrentTrackables(file1))
-      .extracting("serverIssueKey", "resolved", "assignee")
-      .containsExactly(tuple(serverIssueKey, resolved, assignee));
+    Collection<Trackable> trackables = cache.getCurrentTrackables(file1);
+    assertThat(trackables)
+      .extracting(Trackable::getServerIssueKey, Trackable::isResolved)
+      .containsExactly(tuple(serverIssueKey, resolved));
   }
 
   @Test
   void should_clear_server_issue_details_if_disappeared() {
     var resolved = true;
     var serverIssueTrackable = builder().ruleKey("dummy ruleKey")
-      .serverIssueKey("dummy serverIssueKey").resolved(resolved).assignee("dummy assignee").creationDate(1L).build();
+      .serverIssueKey("dummy serverIssueKey").resolved(resolved).creationDate(1L).build();
 
     var start = System.currentTimeMillis();
 
@@ -487,8 +454,8 @@ class IssueTrackerTests {
 
     Collection<Trackable> trackables = cache.getCurrentTrackables(file1);
     assertThat(trackables)
-      .extracting("serverIssueKey", "resolved", "assignee")
-      .containsExactly(tuple(null, !resolved, ""));
+      .extracting(Trackable::getServerIssueKey, Trackable::isResolved)
+      .containsExactly(tuple(null, !resolved));
     assertThat(trackables.iterator().next().getCreationDate()).isGreaterThanOrEqualTo(start);
   }
 
@@ -496,8 +463,7 @@ class IssueTrackerTests {
   void should_ignore_server_issues_when_there_are_no_local() {
     var serverIssueKey = "dummy serverIssueKey";
     var resolved = true;
-    var assignee = "dummy assignee";
-    var base = builder().ruleKey("dummy ruleKey").serverIssueKey(serverIssueKey).resolved(resolved).assignee(assignee);
+    var base = builder().ruleKey("dummy ruleKey").serverIssueKey(serverIssueKey).resolved(resolved);
 
     tracker.matchAndTrackAsNew(file1, Collections.emptyList());
     tracker.matchAndTrackAsBase(file1, Collections.singletonList(base.build()));

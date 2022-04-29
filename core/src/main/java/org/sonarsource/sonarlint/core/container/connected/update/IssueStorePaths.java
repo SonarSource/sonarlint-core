@@ -69,7 +69,6 @@ public class IssueStorePaths {
 
   public static ServerIssue toApiIssue(Sonarlint.ServerIssue pbIssue, String idePath) {
     var issue = new DefaultServerIssue();
-    issue.setAssigneeLogin(pbIssue.getAssigneeLogin());
     issue.setLineHash(pbIssue.getLineHash());
     if (pbIssue.getPrimaryLocation().hasTextRange()) {
       var textRange = pbIssue.getPrimaryLocation().getTextRange();

@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.HashingPathMapper;
@@ -31,8 +30,8 @@ import org.sonarsource.sonarlint.core.client.api.connected.objectstore.PathMappe
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.Reader;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.Writer;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
-import org.sonarsource.sonarlint.core.issuetracking.TrackableIssueStore;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
+import org.sonarsource.sonarlint.core.issuetracking.TrackableIssueStore;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 
 public class ProtobufIssueStore<T> implements TrackableIssueStore<T> {
@@ -119,9 +118,6 @@ public class ProtobufIssueStore<T> implements TrackableIssueStore<T> {
       .setMessage(localIssue.getMessage())
       .setResolved(localIssue.isResolved());
 
-    if (localIssue.getAssignee() != null) {
-      builder.setAssignee(localIssue.getAssignee());
-    }
     if (localIssue.getCreationDate() != null) {
       builder.setCreationDate(localIssue.getCreationDate());
     }

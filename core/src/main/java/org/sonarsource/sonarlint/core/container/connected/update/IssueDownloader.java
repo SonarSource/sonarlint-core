@@ -111,7 +111,6 @@ public class IssueDownloader {
 
     issueBuilder.clear();
     var builder = issueBuilder
-      .setAssigneeLogin(batchIssueFromWs.getAssigneeLogin())
       .setLineHash(batchIssueFromWs.getChecksum())
       .setCreationDate(batchIssueFromWs.getCreationDate())
       .setKey(batchIssueFromWs.getKey())
@@ -147,7 +146,6 @@ public class IssueDownloader {
     var ruleKey = RuleKey.parse(issueFromWs.getRule());
     var primary = buildPrimaryLocation(sourceApi, locationBuilder, textRangeBuilder, issueFromWs, componentsByKey, sourceCodeByKey);
     issueBuilder
-      .setAssigneeLogin(issueFromWs.getAssignee())
       .setLineHash(issueFromWs.getHash())
       .setCreationDate(org.sonar.api.utils.DateUtils.parseDateTime(issueFromWs.getCreationDate()).getTime())
       .setKey(issueFromWs.getKey())

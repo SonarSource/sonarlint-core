@@ -55,7 +55,6 @@ message ServerIssue {
   string resolution = 9;
   string status = 10;
   string line_hash = 11;
-  string assignee_login = 12;
   int64 creation_date = 13;
   string type = 14;
   string key = 15;
@@ -106,7 +105,6 @@ message Issues {
     int32 checksum = 5;
 
     // values carried forward
-    string assignee = 6;
     int64 creationDate = 7;
     bool resolved = 8;
   }

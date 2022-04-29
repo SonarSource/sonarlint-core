@@ -31,8 +31,6 @@ public interface ServerIssue extends ServerIssueLocation {
 
   String lineHash();
 
-  String assigneeLogin();
-
   String severity();
 
   String type();

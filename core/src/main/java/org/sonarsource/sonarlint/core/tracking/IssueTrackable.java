@@ -113,8 +113,4 @@ public class IssueTrackable implements Trackable<Issue> {
     return false;
   }
 
-  @Override
-  public String getAssignee() {
-    return "";
-  }
 }
