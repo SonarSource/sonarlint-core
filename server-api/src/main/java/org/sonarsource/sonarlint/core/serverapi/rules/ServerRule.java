@@ -19,13 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.rules;
 
+import org.sonarsource.sonarlint.core.commons.Language;
+
 public class ServerRule {
   private final String name;
   private final String htmlDesc;
   private final String htmlNote;
+  private final String severity;
+  private final String type;
+  private final Language language;
 
-  public ServerRule(String name, String htmlDesc, String htmlNote) {
+  public ServerRule(String name, String severity, String type, String language, String htmlDesc, String htmlNote) {
     this.name = name;
+    this.severity = severity;
+    this.type = type;
+    this.language = Language.forKey(language).orElseThrow(() -> new IllegalArgumentException("Unknown language with key: " + language));
     this.htmlDesc = htmlDesc;
     this.htmlNote = htmlNote;
   }
@@ -40,5 +48,17 @@ public class ServerRule {
 
   public String getHtmlNote() {
     return htmlNote;
+  }
+
+  public String getSeverity() {
+    return severity;
+  }
+
+  public String getType() {
+    return type;
+  }
+
+  public Language getLanguage() {
+    return language;
   }
 }

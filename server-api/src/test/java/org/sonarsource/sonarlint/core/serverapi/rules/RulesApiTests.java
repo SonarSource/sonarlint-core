@@ -23,7 +23,9 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarqube.ws.Common;
 import org.sonarqube.ws.Rules;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
@@ -56,6 +58,9 @@ class RulesApiTests {
       Rules.ShowResponse.newBuilder().setRule(
         Rules.Rule.newBuilder()
           .setName("name")
+          .setSeverity("severity")
+          .setType(Common.RuleType.VULNERABILITY)
+          .setLang(Language.PYTHON.getLanguageKey())
           .setHtmlDesc("htmlDesc")
           .setHtmlNote("htmlNote")
           .build())
@@ -65,8 +70,8 @@ class RulesApiTests {
 
     var rule = rulesApi.getRule("java:S1234").get();
 
-    assertThat(rule).extracting("name", "htmlDesc", "htmlNote")
-      .contains("name", "htmlDesc", "htmlNote");
+    assertThat(rule).extracting("name", "severity", "type", "language", "htmlDesc", "htmlNote")
+      .contains("name", "severity", "VULNERABILITY", Language.PYTHON, "htmlDesc", "htmlNote");
   }
 
   @Test
@@ -75,6 +80,9 @@ class RulesApiTests {
       Rules.ShowResponse.newBuilder().setRule(
           Rules.Rule.newBuilder()
             .setName("name")
+            .setSeverity("severity")
+            .setType(Common.RuleType.VULNERABILITY)
+            .setLang(Language.PYTHON.getLanguageKey())
             .setHtmlDesc("htmlDesc")
             .setHtmlNote("htmlNote")
             .build())
@@ -84,8 +92,8 @@ class RulesApiTests {
 
     var rule = rulesApi.getRule("java:S1234").get();
 
-    assertThat(rule).extracting("name", "htmlDesc", "htmlNote")
-      .contains("name", "htmlDesc", "htmlNote");
+    assertThat(rule).extracting("name", "severity", "type", "language", "htmlDesc", "htmlNote")
+      .contains("name", "severity", "VULNERABILITY", Language.PYTHON, "htmlDesc", "htmlNote");
   }
 
   @Test
