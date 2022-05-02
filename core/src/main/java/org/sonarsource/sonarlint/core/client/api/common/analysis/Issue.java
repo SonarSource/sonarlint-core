@@ -20,11 +20,14 @@
 package org.sonarsource.sonarlint.core.client.api.common.analysis;
 
 import java.util.List;
+import java.util.UUID;
 import org.sonarsource.sonarlint.core.analysis.api.Flow;
 import org.sonarsource.sonarlint.core.analysis.api.IssueLocation;
 import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
 
 public interface Issue extends IssueLocation {
+
+  UUID getUuid();
 
   String getSeverity();
 

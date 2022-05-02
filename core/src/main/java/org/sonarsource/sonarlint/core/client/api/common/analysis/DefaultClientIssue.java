@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.client.api.common.analysis;
 
 import java.util.List;
+import java.util.UUID;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.Flow;
@@ -27,6 +28,7 @@ import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 
 public final class DefaultClientIssue implements Issue {
+  private final UUID uuid;
   private final String severity;
   private final String type;
   private final String ruleKey;
@@ -37,17 +39,15 @@ public final class DefaultClientIssue implements Issue {
   private final org.sonarsource.sonarlint.core.analysis.api.TextRange textRange;
 
   public DefaultClientIssue(org.sonarsource.sonarlint.core.analysis.api.Issue i, SonarLintRuleDefinition sonarLintRuleDefinition) {
-    this.textRange = i.getTextRange() != null ? i.getTextRange() : null;
-    this.primaryMessage = i.getMessage();
-    this.clientInputFile = i.getInputFile();
-    this.flows = i.flows();
-    this.quickFixes = i.quickFixes();
-    this.severity = sonarLintRuleDefinition.getSeverity();
-    this.type = sonarLintRuleDefinition.getType();
-    this.ruleKey = sonarLintRuleDefinition.getKey();
+    this(i, sonarLintRuleDefinition.getSeverity(), sonarLintRuleDefinition.getType(), sonarLintRuleDefinition.getKey());
   }
 
   public DefaultClientIssue(org.sonarsource.sonarlint.core.analysis.api.Issue i, String severity, String type) {
+    this(i, severity, type, i.getRuleKey());
+  }
+
+  private DefaultClientIssue(org.sonarsource.sonarlint.core.analysis.api.Issue i, String severity, String type, String ruleKey) {
+    this.uuid = UUID.randomUUID();
     this.textRange = i.getTextRange() != null ? i.getTextRange() : null;
     this.primaryMessage = i.getMessage();
     this.clientInputFile = i.getInputFile();
@@ -55,7 +55,12 @@ public final class DefaultClientIssue implements Issue {
     this.quickFixes = i.quickFixes();
     this.severity = severity;
     this.type = type;
-    this.ruleKey = i.getRuleKey();
+    this.ruleKey = ruleKey;
+  }
+
+  @Override
+  public UUID getUuid() {
+    return uuid;
   }
 
   @Override
