@@ -32,7 +32,7 @@ import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
 public class ModuleRegistry {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final ConcurrentHashMap<Object, ModuleContainer> moduleContainersByKey = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, ModuleContainer> moduleContainersByKey = new ConcurrentHashMap<>();
   private final ComponentContainer parent;
 
   public ModuleRegistry(ComponentContainer parent, @Nullable ClientModulesFileSystemsProvider modulesFSProvider) {
@@ -42,11 +42,11 @@ public class ModuleRegistry {
     }
   }
 
-  public ModuleContainer registerModule(Object key, ClientModuleFileSystem fs) {
+  public ModuleContainer registerModule(String key, ClientModuleFileSystem fs) {
     return moduleContainersByKey.computeIfAbsent(key, id -> createContainer(id, fs));
   }
 
-  private ModuleContainer createContainer(Object moduleKey, @Nullable ClientModuleFileSystem clientFileSystem) {
+  private ModuleContainer createContainer(String moduleKey, @Nullable ClientModuleFileSystem clientFileSystem) {
     LOG.debug("Creating container for module '" + moduleKey + "'");
     var moduleContainer = new ModuleContainer(parent, false);
     if (clientFileSystem != null) {
@@ -64,7 +64,7 @@ public class ModuleRegistry {
     return moduleContainer;
   }
 
-  public void unregisterModule(Object moduleKey) {
+  public void unregisterModule(String moduleKey) {
     if (!moduleContainersByKey.containsKey(moduleKey)) {
       // can this happen ?
       return;
@@ -79,7 +79,7 @@ public class ModuleRegistry {
   }
 
   @CheckForNull
-  public ModuleContainer getContainerFor(Object moduleKey) {
+  public ModuleContainer getContainerFor(String moduleKey) {
     return moduleContainersByKey.get(moduleKey);
   }
 }

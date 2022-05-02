@@ -23,17 +23,17 @@ import java.nio.file.Path;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 
 public class ClientModuleInfo {
-  private final Object key;
+  private final String key;
   private final ClientModuleFileSystem clientFileSystem;
   private final Path issueCacheDir;
 
-  public ClientModuleInfo(Object key, ClientModuleFileSystem clientFileSystem, Path issueCacheDir) {
+  public ClientModuleInfo(String key, ClientModuleFileSystem clientFileSystem, Path issueCacheDir) {
     this.key = key;
     this.clientFileSystem = clientFileSystem;
     this.issueCacheDir = issueCacheDir;
   }
 
-  public Object key() {
+  public String key() {
     return key;
   }
 

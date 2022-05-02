@@ -22,5 +22,5 @@ package org.sonarsource.sonarlint.core.analysis.api;
 import java.util.Map;
 
 public interface ClientModulesFileSystemsProvider {
-  Map<Object, ClientModuleFileSystem> getModuleFileSystemsByModuleKey();
+  Map<String, ClientModuleFileSystem> getModuleFileSystemsByModuleKey();
 }

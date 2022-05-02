@@ -31,12 +31,12 @@ import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
 public class AnalyzeCommand implements Command<AnalysisResults> {
   @Nullable
-  private final Object moduleKey;
+  private final String moduleKey;
   private final AnalysisConfiguration configuration;
   private final Consumer<Issue> issueListener;
   private final ClientLogOutput logOutput;
 
-  public AnalyzeCommand(@Nullable Object moduleKey, AnalysisConfiguration configuration, Consumer<Issue> issueListener, @Nullable ClientLogOutput logOutput) {
+  public AnalyzeCommand(@Nullable String moduleKey, AnalysisConfiguration configuration, Consumer<Issue> issueListener, @Nullable ClientLogOutput logOutput) {
     this.moduleKey = moduleKey;
     this.configuration = configuration;
     this.issueListener = issueListener;

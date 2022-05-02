@@ -36,7 +36,7 @@ public interface SonarLintEngine {
 
   CompletableFuture<Void> declareModule(ClientModuleInfo module);
 
-  CompletableFuture<Void> stopModule(Object moduleKey);
+  CompletableFuture<Void> stopModule(String moduleKey);
 
-  CompletableFuture<Void> fireModuleFileEvent(Object moduleKey, ClientModuleFileEvent event);
+  CompletableFuture<Void> fireModuleFileEvent(String moduleKey, ClientModuleFileEvent event);
 }

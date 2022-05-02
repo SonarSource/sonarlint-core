@@ -62,12 +62,12 @@ public abstract class AbstractSonarLintEngine implements SonarLintEngine {
   }
 
   @Override
-  public CompletableFuture<Void> stopModule(Object moduleKey) {
+  public CompletableFuture<Void> stopModule(String moduleKey) {
     return getAnalysisEngine().post(new UnregisterModuleCommand(moduleKey), new ProgressMonitor(null));
   }
 
   @Override
-  public CompletableFuture<Void> fireModuleFileEvent(Object moduleKey, ClientModuleFileEvent event) {
+  public CompletableFuture<Void> fireModuleFileEvent(String moduleKey, ClientModuleFileEvent event) {
     return getAnalysisEngine().post(new NotifyModuleEventCommand(moduleKey, event), new ProgressMonitor(null));
   }
 

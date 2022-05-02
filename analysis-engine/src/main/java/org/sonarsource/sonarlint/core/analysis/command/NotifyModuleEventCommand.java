@@ -25,10 +25,10 @@ import org.sonarsource.sonarlint.core.analysis.container.module.ModuleFileEventN
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
 public class NotifyModuleEventCommand implements Command<Void> {
-  private final Object moduleKey;
+  private final String moduleKey;
   private final ClientModuleFileEvent event;
 
-  public NotifyModuleEventCommand(Object moduleKey, ClientModuleFileEvent event) {
+  public NotifyModuleEventCommand(String moduleKey, ClientModuleFileEvent event) {
     this.moduleKey = moduleKey;
     this.event = event;
   }

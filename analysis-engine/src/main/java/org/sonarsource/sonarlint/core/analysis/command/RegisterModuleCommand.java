@@ -25,10 +25,10 @@ import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
 public class RegisterModuleCommand implements Command<Void> {
 
-  private final Object moduleKey;
+  private final String moduleKey;
   private final ClientModuleFileSystem fs;
 
-  public RegisterModuleCommand(Object moduleKey, ClientModuleFileSystem fs) {
+  public RegisterModuleCommand(String moduleKey, ClientModuleFileSystem fs) {
     this.moduleKey = moduleKey;
     this.fs = fs;
   }

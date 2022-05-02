@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common;
 
-import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,7 +30,6 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.commons.Language;
 
 @Immutable
 public abstract class AbstractAnalysisConfiguration {
@@ -39,7 +37,7 @@ public abstract class AbstractAnalysisConfiguration {
   private final List<ClientInputFile> inputFiles;
   private final Map<String, String> extraProperties;
   private final Path baseDir;
-  private final Object moduleKey;
+  private final String moduleKey;
 
   protected AbstractAnalysisConfiguration(AbstractBuilder<?> builder) {
     this.baseDir = builder.baseDir;
@@ -57,7 +55,7 @@ public abstract class AbstractAnalysisConfiguration {
   }
 
   @CheckForNull
-  public Object moduleKey() {
+  public String moduleKey() {
     return moduleKey;
   }
 
@@ -97,7 +95,7 @@ public abstract class AbstractAnalysisConfiguration {
     private final List<ClientInputFile> inputFiles = new ArrayList<>();
     private final Map<String, String> extraProperties = new HashMap<>();
     private Path baseDir;
-    private Object moduleKey;
+    private String moduleKey;
 
     public G addInputFiles(ClientInputFile... inputFiles) {
       Collections.addAll(this.inputFiles, inputFiles);
@@ -129,7 +127,7 @@ public abstract class AbstractAnalysisConfiguration {
       return (G) this;
     }
 
-    public G setModuleKey(@Nullable Object moduleKey) {
+    public G setModuleKey(@Nullable String moduleKey) {
       this.moduleKey = moduleKey;
       return (G) this;
     }
