@@ -34,7 +34,9 @@ class ProtobufIssueTrackableTests {
     .setMessage("message")
     .setChecksum(7)
     .setRuleKey("rule key")
-    .setResolved(true)
+    .setSuppressed(true)
+    .setUserSeverity("MAJOR")
+    .setUserType("BUG")
     .build();
 
   private final Trackable completeTrackable = new ProtobufIssueTrackable(completeIssue);
@@ -60,11 +62,6 @@ class ProtobufIssueTrackableTests {
   }
 
   @Test
-  void should_not_have_severity() {
-    assertThrows(UnsupportedOperationException.class, () -> completeTrackable.getSeverity());
-  }
-
-  @Test
   void should_not_have_textRange() {
     assertThrows(UnsupportedOperationException.class, () -> completeTrackable.getTextRange());
   }
@@ -74,6 +71,8 @@ class ProtobufIssueTrackableTests {
     assertThat(completeTrackable.getMessage()).isEqualTo(completeIssue.getMessage());
     assertThat(completeTrackable.getLineHash()).isEqualTo(completeIssue.getChecksum());
     assertThat(completeTrackable.getRuleKey()).isEqualTo(completeIssue.getRuleKey());
-    assertThat(completeTrackable.isResolved()).isEqualTo(completeIssue.getResolved());
+    assertThat(completeTrackable.isSuppressed()).isEqualTo(completeIssue.getSuppressed());
+    assertThat(completeTrackable.getUserSeverity()).isEqualTo(completeIssue.getUserSeverity());
+    assertThat(completeTrackable.getUserType()).isEqualTo(completeIssue.getUserType());
   }
 }

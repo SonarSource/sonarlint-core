@@ -23,15 +23,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.PathMapper;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.Reader;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.Writer;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -56,8 +55,8 @@ class IndexedObjectStoreTest {
     Reader<String> reader = inputStream -> "dummy";
     Writer<String> writer = (outputStream, values) -> {
     };
-    var store = new IndexedObjectStore<String, String>(index, mapper, reader, writer, validator);
-    store.deleteInvalid();
+    var store = new IndexedObjectStore<>(index, mapper, reader, writer);
+    store.deleteInvalid(validator);
 
     var errors = logTester.logs(Level.ERROR);
     assertThat(errors).hasSize(2);

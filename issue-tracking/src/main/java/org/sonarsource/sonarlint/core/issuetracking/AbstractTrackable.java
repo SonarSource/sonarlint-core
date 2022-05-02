@@ -37,8 +37,8 @@ public class AbstractTrackable<G> implements Trackable<G> {
     this.clientObject = trackable.getClientObject();
     // copy fieds instead of using given trackable to avoid always increase level of proxying
     this.ruleKey = trackable.getRuleKey();
-    this.severity = trackable.getSeverity();
-    this.type = trackable.getType();
+    this.severity = trackable.getUserSeverity();
+    this.type = trackable.getUserType();
     this.message = trackable.getMessage();
     this.line = trackable.getLine();
     this.lineHash = trackable.getLineHash();
@@ -46,7 +46,7 @@ public class AbstractTrackable<G> implements Trackable<G> {
     this.textRangeHash = trackable.getTextRangeHash();
     this.creationDate = trackable.getCreationDate();
     this.serverIssueKey = trackable.getServerIssueKey();
-    this.resolved = trackable.isResolved();
+    this.resolved = trackable.isSuppressed();
   }
 
   @Override
@@ -60,12 +60,12 @@ public class AbstractTrackable<G> implements Trackable<G> {
   }
 
   @Override
-  public String getSeverity() {
+  public String getUserSeverity() {
     return severity;
   }
 
   @Override
-  public String getType() {
+  public String getUserType() {
     return type;
   }
 
@@ -105,7 +105,7 @@ public class AbstractTrackable<G> implements Trackable<G> {
   }
 
   @Override
-  public boolean isResolved() {
+  public boolean isSuppressed() {
     return resolved;
   }
 }

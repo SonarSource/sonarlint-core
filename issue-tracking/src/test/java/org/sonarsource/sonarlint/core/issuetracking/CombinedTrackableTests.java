@@ -34,10 +34,10 @@ class CombinedTrackableTests {
     var combined = new CombinedTrackable(base, next, true);
 
     assertThat(combined.getServerIssueKey()).isEqualTo("baseServerIssueKey");
-    assertThat(combined.getSeverity()).isEqualTo("baseSeverity");
-    assertThat(combined.getType()).isEqualTo("baseType");
+    assertThat(combined.getUserSeverity()).isEqualTo("baseSeverity");
+    assertThat(combined.getUserType()).isEqualTo("baseType");
     assertThat(combined.getCreationDate()).isEqualTo(0);
-    assertThat(combined.isResolved()).isEqualTo(false);
+    assertThat(combined.isSuppressed()).isEqualTo(false);
 
     assertThat(combined.getLine()).isEqualTo(1);
     assertThat(combined.getMessage()).isEqualTo("nextMessage");
@@ -55,11 +55,11 @@ class CombinedTrackableTests {
     when(t.getMessage()).thenReturn(name + "Message");
     when(t.getRuleKey()).thenReturn(name + "RuleKey");
     when(t.getServerIssueKey()).thenReturn(name + "ServerIssueKey");
-    when(t.getSeverity()).thenReturn(name + "Severity");
+    when(t.getUserSeverity()).thenReturn(name + "Severity");
     when(t.getTextRangeHash()).thenReturn(number);
-    when(t.getType()).thenReturn(name + "Type");
+    when(t.getUserType()).thenReturn(name + "Type");
     when(t.getTextRange()).thenReturn(new TextRange(number));
-    when(t.isResolved()).thenReturn(number == 1);
+    when(t.isSuppressed()).thenReturn(number == 1);
     return t;
   }
 }

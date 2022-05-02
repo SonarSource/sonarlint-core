@@ -73,18 +73,18 @@ public class ProtobufIssueTrackable implements Trackable {
   }
 
   @Override
-  public boolean isResolved() {
-    return issue.getResolved();
+  public boolean isSuppressed() {
+    return issue.getSuppressed();
   }
 
   @Override
-  public String getSeverity() {
-    throw new UnsupportedOperationException();
+  public String getUserSeverity() {
+    return issue.getUserSeverity();
   }
 
   @Override
-  public String getType() {
-    throw new UnsupportedOperationException();
+  public String getUserType() {
+    return issue.getUserType();
   }
 
   @Override

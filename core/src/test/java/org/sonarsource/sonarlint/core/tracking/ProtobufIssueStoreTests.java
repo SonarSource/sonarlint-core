@@ -109,7 +109,7 @@ class ProtobufIssueStoreTests {
   @Test
   void clean_should_remove_entries_without_valid_files(@TempDir Path base) throws IOException {
     var projectPath = base.resolve("project");
-    var issueStore = new ProtobufIssueStore(base.resolve("store"), projectPath);
+    var issueStore = new ProtobufIssueStore(base.resolve("store"));
 
     var nonexistentFileKey = "nonexistent";
     var validFileKey = "some/relative/path";
@@ -123,7 +123,7 @@ class ProtobufIssueStoreTests {
     issueStore.save(validFileKey, Collections.emptyList());
     assertThat(issueStore.contains(validFileKey)).isTrue();
 
-    issueStore.clean();
+    issueStore.clean(new PathStoreKeyValidator(projectPath));
     assertThat(issueStore.contains(nonexistentFileKey)).isFalse();
     assertThat(issueStore.contains(validFileKey)).isTrue();
   }
@@ -134,13 +134,13 @@ class ProtobufIssueStoreTests {
     // the presence of a file will effectively prevent writing to the store
     Files.createFile(storePath);
 
-    assertThrows(IllegalStateException.class, () -> new ProtobufIssueStore(storePath, base.resolve("project")));
+    assertThrows(IllegalStateException.class, () -> new ProtobufIssueStore(storePath));
   }
 
   @Test
   void should_fail_to_save_issues_if_cannot_write_to_filesystem(@TempDir Path base) throws IOException {
     var storePath = base.resolve("store");
-    var issueStore = new ProtobufIssueStore(storePath, base.resolve("project"));
+    var issueStore = new ProtobufIssueStore(storePath);
 
     Files.delete(storePath);
     // the presence of a file will effectively prevent writing to the store
@@ -162,8 +162,7 @@ class ProtobufIssueStoreTests {
 
   private ProtobufIssueStore newIssueStore() throws IOException {
     var storePath = base.resolve("store");
-    var projectPath = base.resolve("project");
-    return new ProtobufIssueStore(storePath, projectPath);
+    return new ProtobufIssueStore(storePath);
   }
 
 }

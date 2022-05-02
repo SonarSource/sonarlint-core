@@ -35,12 +35,12 @@ class CombinedTrackable extends AbstractTrackable {
     // Warning: do not store a reference to base, as it might never get garbage collected
     this.creationDate = base.getCreationDate();
     this.serverIssueKey = base.getServerIssueKey();
-    this.resolved = base.isResolved();
+    this.resolved = base.isSuppressed();
     if (inheritSeverity) {
-      this.severity = base.getSeverity();
-      if (base.getType() != null) {
+      this.severity = base.getUserSeverity();
+      if (base.getUserType() != null) {
         // this can be null for old SQ servers that didn't have issue types yet
-        this.type = base.getType();
+        this.type = base.getUserType();
       }
     }
   }

@@ -39,12 +39,11 @@ public class ProtobufIssueStore<T> implements TrackableIssueStore<T> {
   private Path basePath;
   private IndexedObjectStore<String, Sonarlint.Issues> store;
 
-  public ProtobufIssueStore(Path storeBasePath, Path projectBasePath) {
+  public ProtobufIssueStore(Path storeBasePath) {
     this.basePath = storeBasePath;
     FileUtils.mkdirs(storeBasePath);
     StoreIndex<String> index = new StringStoreIndex(storeBasePath);
     PathMapper<String> mapper = new HashingPathMapper(storeBasePath, 2);
-    StoreKeyValidator<String> validator = new PathStoreKeyValidator(projectBasePath);
     Reader<Sonarlint.Issues> reader = is -> {
       try {
         return Sonarlint.Issues.parseFrom(is);
@@ -59,8 +58,7 @@ public class ProtobufIssueStore<T> implements TrackableIssueStore<T> {
         throw new IllegalStateException("Failed to save issues", e);
       }
     };
-    store = new IndexedObjectStore<>(index, mapper, reader, writer, validator);
-    store.deleteInvalid();
+    store = new IndexedObjectStore<>(index, mapper, reader, writer);
   }
 
   @Override
@@ -80,8 +78,8 @@ public class ProtobufIssueStore<T> implements TrackableIssueStore<T> {
     return issues.map(this::transform).orElse(null);
   }
 
-  public void clean() {
-    store.deleteInvalid();
+  public void clean(StoreKeyValidator<String> validator) {
+    store.deleteInvalid(validator);
   }
 
   @Override
@@ -116,8 +114,14 @@ public class ProtobufIssueStore<T> implements TrackableIssueStore<T> {
     var builder = Sonarlint.Issues.Issue.newBuilder()
       .setRuleKey(localIssue.getRuleKey())
       .setMessage(localIssue.getMessage())
-      .setResolved(localIssue.isResolved());
+      .setSuppressed(localIssue.isSuppressed());
 
+    if (localIssue.getUserSeverity() != null) {
+      builder.setUserSeverity(localIssue.getUserSeverity());
+    }
+    if (localIssue.getUserType() != null) {
+      builder.setUserType(localIssue.getUserType());
+    }
     if (localIssue.getCreationDate() != null) {
       builder.setCreationDate(localIssue.getCreationDate());
     }

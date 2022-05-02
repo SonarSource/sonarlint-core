@@ -116,7 +116,7 @@ class IssueTrackerTests {
       when(mock.getMessage()).thenReturn(message);
       when(mock.getCreationDate()).thenReturn(creationDate);
       when(mock.getServerIssueKey()).thenReturn(serverIssueKey);
-      when(mock.isResolved()).thenReturn(resolved);
+      when(mock.isSuppressed()).thenReturn(resolved);
 
       // ensure default unique values for fields used by matchers (except server issue key)
       if (line == null) {
@@ -352,7 +352,7 @@ class IssueTrackerTests {
 
     assertThat(cache.getCurrentTrackables(file1))
       .extracting("line", "lineHash", "serverIssueKey", "resolved")
-      .containsOnly(tuple(newLine, movedTrackable.getLineHash(), movedTrackable.getServerIssueKey(), movedTrackable.isResolved()));
+      .containsOnly(tuple(newLine, movedTrackable.getLineHash(), movedTrackable.getServerIssueKey(), movedTrackable.isSuppressed()));
   }
 
   @Test
@@ -407,7 +407,7 @@ class IssueTrackerTests {
 
     Collection<Trackable> trackables = cache.getCurrentTrackables(file1);
     assertThat(trackables)
-      .extracting(Trackable::getServerIssueKey, Trackable::isResolved)
+      .extracting(Trackable::getServerIssueKey, Trackable::isSuppressed)
       .containsExactly(tuple(serverIssueKey, resolved));
   }
 
@@ -422,7 +422,7 @@ class IssueTrackerTests {
 
     Collection<Trackable> trackables = cache.getCurrentTrackables(file1);
     assertThat(trackables)
-      .extracting(Trackable::getServerIssueKey, Trackable::isResolved)
+      .extracting(Trackable::getServerIssueKey, Trackable::isSuppressed)
       .containsExactly(tuple(null, false));
   }
 
@@ -437,7 +437,7 @@ class IssueTrackerTests {
 
     Collection<Trackable> trackables = cache.getCurrentTrackables(file1);
     assertThat(trackables)
-      .extracting(Trackable::getServerIssueKey, Trackable::isResolved)
+      .extracting(Trackable::getServerIssueKey, Trackable::isSuppressed)
       .containsExactly(tuple(serverIssueKey, resolved));
   }
 
@@ -454,7 +454,7 @@ class IssueTrackerTests {
 
     Collection<Trackable> trackables = cache.getCurrentTrackables(file1);
     assertThat(trackables)
-      .extracting(Trackable::getServerIssueKey, Trackable::isResolved)
+      .extracting(Trackable::getServerIssueKey, Trackable::isSuppressed)
       .containsExactly(tuple(null, !resolved));
     assertThat(trackables.iterator().next().getCreationDate()).isGreaterThanOrEqualTo(start);
   }

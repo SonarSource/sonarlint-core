@@ -48,8 +48,8 @@ class ServerIssueTrackableTests {
     assertThat(trackable.getMessage()).isEqualTo(serverIssue.getMessage());
     assertThat(trackable.getLineHash()).isEqualTo(serverIssue.lineHash().hashCode());
     assertThat(trackable.getRuleKey()).isEqualTo(serverIssue.ruleKey());
-    assertThat(trackable.isResolved()).isEqualTo(!serverIssue.resolution().isEmpty());
-    assertThat(trackable.getSeverity()).isEqualTo(serverIssue.severity());
+    assertThat(trackable.isSuppressed()).isEqualTo(!serverIssue.resolution().isEmpty());
+    assertThat(trackable.getUserSeverity()).isEqualTo(serverIssue.severity());
     assertThat(trackable.getTextRange().getStartLine()).isEqualTo(serverIssue.getTextRange().getStartLine());
   }
 }

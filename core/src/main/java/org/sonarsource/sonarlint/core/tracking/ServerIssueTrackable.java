@@ -41,12 +41,12 @@ public class ServerIssueTrackable implements Trackable {
   }
 
   @Override
-  public String getSeverity() {
+  public String getUserSeverity() {
     return serverIssue.severity();
   }
 
   @Override
-  public String getType() {
+  public String getUserType() {
     return serverIssue.type();
   }
 
@@ -88,7 +88,7 @@ public class ServerIssueTrackable implements Trackable {
   }
 
   @Override
-  public boolean isResolved() {
+  public boolean isSuppressed() {
     return !serverIssue.resolution().isEmpty();
   }
 

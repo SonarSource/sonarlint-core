@@ -27,12 +27,13 @@ public interface Trackable<G> {
 
   String getRuleKey();
 
-  String getSeverity();
+  @CheckForNull
+  String getUserSeverity();
 
   String getMessage();
 
   @CheckForNull
-  String getType();
+  String getUserType();
 
   /**
    * The line index, starting with 1. Null means that
@@ -56,6 +57,6 @@ public interface Trackable<G> {
   @CheckForNull
   String getServerIssueKey();
 
-  boolean isResolved();
+  boolean isSuppressed();
 
 }

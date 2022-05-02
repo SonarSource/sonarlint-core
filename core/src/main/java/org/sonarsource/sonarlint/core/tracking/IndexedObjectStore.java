@@ -20,11 +20,7 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Collection;
 import java.util.Optional;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.ObjectStore;
 import org.sonarsource.sonarlint.core.client.api.connected.objectstore.PathMapper;
@@ -45,14 +41,12 @@ class IndexedObjectStore<K, V> implements ObjectStore<K, V> {
   private final PathMapper<K> pathMapper;
   private final Reader<V> reader;
   private final Writer<V> writer;
-  private final StoreKeyValidator<K> validator;
 
-  IndexedObjectStore(StoreIndex<K> index, PathMapper<K> pathMapper, Reader<V> reader, Writer<V> writer, StoreKeyValidator<K> validator) {
+  IndexedObjectStore(StoreIndex<K> index, PathMapper<K> pathMapper, Reader<V> reader, Writer<V> writer) {
     this.index = index;
     this.pathMapper = pathMapper;
     this.reader = reader;
     this.writer = writer;
-    this.validator = validator;
   }
 
   @Override
@@ -74,7 +68,7 @@ class IndexedObjectStore<K, V> implements ObjectStore<K, V> {
   /**
    * Deletes all entries in the index that are no longer valid.
    */
-  public void deleteInvalid() {
+  public void deleteInvalid(StoreKeyValidator<K> validator) {
     var counter = 0;
     var keys = index.keys();
 

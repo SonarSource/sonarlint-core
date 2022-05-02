@@ -64,12 +64,12 @@ public class IssueTrackable implements Trackable<Issue> {
   }
 
   @Override
-  public String getSeverity() {
+  public String getUserSeverity() {
     return issue.getSeverity();
   }
 
   @Override
-  public String getType() {
+  public String getUserType() {
     return issue.getType();
   }
 
@@ -109,7 +109,7 @@ public class IssueTrackable implements Trackable<Issue> {
   }
 
   @Override
-  public boolean isResolved() {
+  public boolean isSuppressed() {
     return false;
   }
 

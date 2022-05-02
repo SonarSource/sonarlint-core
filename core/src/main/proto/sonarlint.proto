@@ -106,7 +106,11 @@ message Issues {
 
     // values carried forward
     int64 creationDate = 7;
-    bool resolved = 8;
+    bool suppressed = 8;
+    // non default severity from server 
+    string userSeverity = 10;
+    // non default type from server
+    string userType = 11;
   }
 }
 

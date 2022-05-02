@@ -34,7 +34,7 @@ public class DisconnectedTrackable extends LeakedTrackable {
   }
 
   @Override
-  public boolean isResolved() {
+  public boolean isSuppressed() {
     return false;
   }
 }
