@@ -20,9 +20,7 @@
 package org.sonarsource.sonarlint.core.telemetry.payload;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
-import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -60,7 +58,7 @@ class TelemetryPayloadTests {
     Map<String, Object> additionalPropsSub = new LinkedHashMap<>();
     additionalPropsSub.put("aSubNumber", 2);
     additionalProps.put("sub", additionalPropsSub);
-    var m = new TelemetryPayload(4, 15, "SLI", "2.4", "Pycharm 3.2",
+    var m = new TelemetryPayload(4, 15, "SLI", "2.4", "Pycharm 3.2", "platform", "architecture",
       true, true, systemTime, installTime, "Windows 10", "1.8.0", "10.5.2", perf, notifPayload, showHotspotPayload, taintVulnerabilitiesPayload, rulesPayload, additionalProps);
     var s = m.toJson();
 
@@ -69,6 +67,8 @@ class TelemetryPayloadTests {
       + "\"sonarlint_version\":\"2.4\","
       + "\"sonarlint_product\":\"SLI\","
       + "\"ide_version\":\"Pycharm 3.2\","
+      + "\"platform\":\"platform\","
+      + "\"architecture\":\"architecture\","
       + "\"connected_mode_used\":true,"
       + "\"connected_mode_sonarcloud\":true,"
       + "\"system_time\":\"2017-11-10T12:02:14.984+02:00\","

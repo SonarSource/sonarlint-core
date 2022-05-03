@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.telemetry.payload;
 
-import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -49,6 +48,12 @@ public class TelemetryPayload {
 
   @SerializedName("ide_version")
   private final String ideVersion;
+
+  @SerializedName("platform")
+  private final String platform;
+
+  @SerializedName("architecture")
+  private final String architecture;
 
   @SerializedName("connected_mode_used")
   private final boolean connectedMode;
@@ -88,8 +93,8 @@ public class TelemetryPayload {
 
   private final transient Map<String, Object> additionalAttributes;
 
-  public TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, String ideVersion, boolean connectedMode, boolean connectedModeSonarcloud,
-    OffsetDateTime systemTime, OffsetDateTime installTime, String os, String jre, @Nullable String nodejs,
+  public TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, String ideVersion, @Nullable String platform, @Nullable String architecture,
+    boolean connectedMode, boolean connectedModeSonarcloud, OffsetDateTime systemTime, OffsetDateTime installTime, String os, String jre, @Nullable String nodejs,
     TelemetryAnalyzerPerformancePayload[] analyses, TelemetryNotificationsPayload notifications, ShowHotspotPayload showHotspotPayload,
     TaintVulnerabilitiesPayload taintVulnerabilitiesPayload, TelemetryRulesPayload telemetryRulesPayload, Map<String, Object> additionalAttributes) {
     this.daysSinceInstallation = daysSinceInstallation;
@@ -97,6 +102,8 @@ public class TelemetryPayload {
     this.product = product;
     this.version = version;
     this.ideVersion = ideVersion;
+    this.platform = platform;
+    this.architecture = architecture;
     this.connectedMode = connectedMode;
     this.connectedModeSonarcloud = connectedModeSonarcloud;
     this.systemTime = systemTime;
