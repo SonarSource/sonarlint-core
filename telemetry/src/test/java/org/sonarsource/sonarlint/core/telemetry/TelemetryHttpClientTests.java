@@ -47,45 +47,45 @@ class TelemetryHttpClientTests {
   @BeforeEach
   void setUp() {
     when(attributes.nodeVersion()).thenReturn(Optional.empty());
-    underTest = new TelemetryHttpClient("product", "version", "ideversion", MockWebServerExtension.httpClient(), mockServer.url("/"));
+    underTest = new TelemetryHttpClient("product", "version", "ideversion", "platform", "architecture", MockWebServerExtension.httpClient(), mockServer.url("/"));
   }
 
   @Test
-  void opt_out() throws Exception {
+  void opt_out() {
     mockServer.addResponse("/", new MockResponse());
     underTest.optOut(new TelemetryLocalStorage(), attributes);
     var takeRequest = mockServer.takeRequest();
     assertThat(takeRequest.getMethod()).isEqualTo("DELETE");
     assertThat(takeRequest.getBody().readUtf8())
-      .matches("\\{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",.*\\}");
+      .matches("\\{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"platform\",\"architecture\":\"architecture\",.*}");
   }
 
   @Test
-  void upload() throws Exception {
+  void upload() {
     mockServer.addResponse("/", new MockResponse());
     underTest.upload(new TelemetryLocalStorage(), attributes);
     var takeRequest = mockServer.takeRequest();
     assertThat(takeRequest.getMethod()).isEqualTo("POST");
     assertThat(takeRequest.getBody().readUtf8())
-      .matches("\\{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",.*\\}");
+      .matches("\\{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"platform\",\"architecture\":\"architecture\",.*}");
   }
 
   @Test
-  void should_not_crash_when_cannot_upload() throws Exception {
+  void should_not_crash_when_cannot_upload() {
     underTest.upload(new TelemetryLocalStorage(), attributes);
     var takeRequest = mockServer.takeRequest();
     assertThat(takeRequest.getMethod()).isEqualTo("POST");
   }
 
   @Test
-  void should_not_crash_when_cannot_opt_out() throws Exception {
+  void should_not_crash_when_cannot_opt_out() {
     underTest.optOut(new TelemetryLocalStorage(), attributes);
     var takeRequest = mockServer.takeRequest();
     assertThat(takeRequest.getMethod()).isEqualTo("DELETE");
   }
 
   @Test
-  void should_not_crash_when_cannot_build_payload_upload() throws Exception {
+  void should_not_crash_when_cannot_build_payload_upload() {
     when(attributes.nodeVersion()).thenThrow(new IllegalStateException("Unexpected error"));
 
     underTest.upload(new TelemetryLocalStorage(), attributes);
@@ -94,7 +94,7 @@ class TelemetryHttpClientTests {
   }
 
   @Test
-  void should_not_crash_when_cannot_build_payload_optout() throws Exception {
+  void should_not_crash_when_cannot_build_payload_optout() {
     when(attributes.nodeVersion()).thenThrow(new IllegalStateException("Unexpected error"));
 
     underTest.optOut(new TelemetryLocalStorage(), attributes);
