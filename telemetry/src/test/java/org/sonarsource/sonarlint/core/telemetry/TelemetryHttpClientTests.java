@@ -106,14 +106,14 @@ class TelemetryHttpClientTests {
   void failed_upload_should_log_if_debug() {
     InternalDebug.setEnabled(true);
     underTest.upload(new TelemetryLocalStorage(), attributes);
-    assertThat(logTester.logs(Level.ERROR)).anyMatch(l -> l.matches("Failed to upload telemetry data: .*code=404.*"));
+    assertThat(logTester.logs(Level.ERROR)).anyMatch(l -> l.matches("Failed to upload telemetry data: .*404.*"));
   }
 
   @Test
   void failed_optout_should_log_if_debug() {
     InternalDebug.setEnabled(true);
     underTest.optOut(new TelemetryLocalStorage(), attributes);
-    assertThat(logTester.logs(Level.ERROR)).anyMatch(l -> l.matches("Failed to upload telemetry opt-out: .*code=404.*"));
+    assertThat(logTester.logs(Level.ERROR)).anyMatch(l -> l.matches("Failed to upload telemetry opt-out: .*404.*"));
   }
 
   @Test

@@ -143,7 +143,7 @@ class EventStreamTests {
     assertThat(logTester.logs())
       .containsOnly(
         "Connecting to server event-stream at 'wsPath'...",
-        "Cannot connect to server event-stream, retrying in 60s");
+        "Cannot connect to server event-stream (500), retrying in 60s");
   }
 
   @Test

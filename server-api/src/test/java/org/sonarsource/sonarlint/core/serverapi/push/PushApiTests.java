@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import mockwebserver3.MockResponse;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +39,7 @@ import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtob
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.awaitility.Awaitility.await;
 
 class PushApiTests {
   @RegisterExtension
@@ -146,9 +148,9 @@ class PushApiTests {
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add,
       silentLogOutput);
 
-    assertThat(receivedEvents)
+    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(receivedEvents)
       .extracting("projectKeys", "deactivatedRules")
-      .containsOnly(tuple(List.of("projectKey1", "projectKey2"), List.of("java:S4321")));
+      .containsOnly(tuple(List.of("projectKey1", "projectKey2"), List.of("java:S4321"))));
     assertThat(receivedEvents)
       .flatExtracting("activatedRules")
       .extracting("key", "severity")
@@ -302,10 +304,10 @@ class PushApiTests {
     List<ServerEvent> receivedEvents = new ArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add, silentLogOutput);
 
-    assertThat(receivedEvents)
+    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(receivedEvents)
       .asInstanceOf(InstanceOfAssertFactories.list(IssueChangedEvent.class))
       .extracting(IssueChangedEvent::getImpactedIssueKeys, IssueChangedEvent::getResolved, IssueChangedEvent::getUserSeverity, IssueChangedEvent::getUserType)
-      .containsOnly(tuple(List.of("key1"), null, IssueSeverity.MAJOR, null));
+      .containsOnly(tuple(List.of("key1"), null, IssueSeverity.MAJOR, null)));
   }
 
   @Test
@@ -325,10 +327,10 @@ class PushApiTests {
     List<ServerEvent> receivedEvents = new ArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add, silentLogOutput);
 
-    assertThat(receivedEvents)
+    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(receivedEvents)
       .asInstanceOf(InstanceOfAssertFactories.list(IssueChangedEvent.class))
       .extracting(IssueChangedEvent::getImpactedIssueKeys, IssueChangedEvent::getResolved, IssueChangedEvent::getUserSeverity, IssueChangedEvent::getUserType)
-      .containsOnly(tuple(List.of("key1"), null, null, RuleType.BUG));
+      .containsOnly(tuple(List.of("key1"), null, null, RuleType.BUG)));
   }
 
   @Test
@@ -403,9 +405,9 @@ class PushApiTests {
     List<ServerEvent> receivedEvents = new ArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add, silentLogOutput);
 
-    assertThat(receivedEvents)
+    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(receivedEvents)
       .extracting("key", "projectKey", "branchName", "creationDate", "ruleKey", "severity", "type")
-      .containsOnly(tuple("taintKey", "projectKey1", "branch", Instant.parse("1970-01-02T10:17:36.789Z"), "javasecurity:S123", IssueSeverity.MAJOR, RuleType.VULNERABILITY));
+      .containsOnly(tuple("taintKey", "projectKey1", "branch", Instant.parse("1970-01-02T10:17:36.789Z"), "javasecurity:S123", IssueSeverity.MAJOR, RuleType.VULNERABILITY)));
     assertThat(receivedEvents)
       .extracting("mainLocation")
       .extracting("filePath", "message", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "textRange.hash")
@@ -432,8 +434,8 @@ class PushApiTests {
     List<ServerEvent> receivedEvents = new ArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add, silentLogOutput);
 
-    assertThat(receivedEvents)
+    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(receivedEvents)
       .extracting("taintIssueKey")
-      .containsOnly("taintKey");
+      .containsOnly("taintKey"));
   }
 }
