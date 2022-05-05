@@ -40,11 +40,10 @@ public class EventStream {
   private static final long HEART_BEAT_PERIOD = 60;
 
   private final ServerApiHelper helper;
-  private Consumer<Event> eventConsumer;
-
   private final ScheduledExecutorService executor;
   private final AtomicReference<HttpClient.AsyncRequest> currentRequest = new AtomicReference<>();
   private final AtomicReference<ScheduledFuture<?>> pendingFuture = new AtomicReference<>();
+  private Consumer<Event> eventConsumer;
 
   public EventStream(ServerApiHelper helper) {
     this(helper, Executors.newScheduledThreadPool(1));
@@ -101,7 +100,13 @@ public class EventStream {
     if (shouldRetry(responseCode, clientLogOutput)) {
       if (!currentAttempt.isMax()) {
         var retryDelay = currentAttempt.delay;
-        clientLogOutput.log("Cannot connect to server event-stream, retrying in " + retryDelay + "s", DEBUG);
+        var msgBuilder = new StringBuilder();
+        msgBuilder.append("Cannot connect to server event-stream");
+        if (responseCode != null) {
+          msgBuilder.append(" (" + responseCode + ")");
+        }
+        msgBuilder.append(", retrying in " + retryDelay + "s");
+        clientLogOutput.log(msgBuilder.toString(), DEBUG);
         schedule(() -> connect(wsPath, clientLogOutput, currentAttempt.next()), retryDelay);
       } else {
         clientLogOutput.log("Cannot connect to server event-stream, stop retrying", DEBUG);

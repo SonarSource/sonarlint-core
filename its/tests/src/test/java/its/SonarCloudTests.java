@@ -19,7 +19,6 @@
  */
 package its;
 
-import its.utils.PreemptiveAuthenticatorInterceptor;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -32,11 +31,8 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
-import okhttp3.Credentials;
-import okhttp3.OkHttpClient;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
-import org.apache.commons.exec.ExecuteException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -90,9 +86,7 @@ class SonarCloudTests extends AbstractConnectedTests {
   private static final String PROJECT_KEY_XML = "sample-xml";
   private static final String PROJECT_KEY_JAVA_TAINT = "sample-java-taint";
 
-  protected static final OkHttpClient SC_CLIENT = CLIENT_NO_AUTH.newBuilder()
-    .addNetworkInterceptor(new PreemptiveAuthenticatorInterceptor(Credentials.basic(SONARCLOUD_USER, SONARCLOUD_PASSWORD)))
-    .build();
+  private static final SonarLintHttpClientJavaNetImpl SC_CLIENT = new SonarLintHttpClientJavaNetImpl(SHARED_CLIENT, SONARCLOUD_USER, SONARCLOUD_PASSWORD);
 
   private final ProgressMonitor progress = new ProgressMonitor(null);
 
@@ -186,8 +180,8 @@ class SonarCloudTests extends AbstractConnectedTests {
       projectKey(PROJECT_KEY_XML),
       projectKey(PROJECT_KEY_JAVA_TAINT));
 
-    ALL_PROJECTS.forEach(p -> engine.updateProject(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), p, null));
-    engine.sync(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), ALL_PROJECTS, null);
+    ALL_PROJECTS.forEach(p -> engine.updateProject(sonarcloudEndpointITOrg(), SC_CLIENT, p, null));
+    engine.sync(sonarcloudEndpointITOrg(), SC_CLIENT, ALL_PROJECTS, null);
   }
 
   @AfterAll
@@ -248,7 +242,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     adminWsClient.settings().reset(new ResetRequest()
       .setKeys(Collections.singletonList(SONAR_JAVA_FILE_SUFFIXES))
       .setComponent(projectKey(PROJECT_KEY_JAVA)));
-    engine.sync(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), Set.of(projectKey(PROJECT_KEY_JAVA)), null);
+    engine.sync(sonarcloudEndpointITOrg(), SC_CLIENT, Set.of(projectKey(PROJECT_KEY_JAVA)), null);
 
     // This profile is altered in a test
     restoreProfile("java-sonarlint.xml");
@@ -264,7 +258,7 @@ class SonarCloudTests extends AbstractConnectedTests {
   void downloadProjects() {
     provisionProject("foo-bar", "Foo");
     waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
-      assertThat(engine.downloadAllProjects(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), null)).containsKeys(projectKey("foo-bar"),
+      assertThat(engine.downloadAllProjects(sonarcloudEndpointITOrg(), SC_CLIENT, null)).containsKeys(projectKey("foo-bar"),
         projectKey(PROJECT_KEY_JAVA),
         projectKey(PROJECT_KEY_PHP));
     });
@@ -273,7 +267,7 @@ class SonarCloudTests extends AbstractConnectedTests {
   @Test
   void testRuleDescription() throws Exception {
     assertThat(
-      engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), "java:S106", projectKey(PROJECT_KEY_JAVA)).get().getHtmlDescription())
+      engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), SC_CLIENT, "java:S106", projectKey(PROJECT_KEY_JAVA)).get().getHtmlDescription())
         .contains("When logging a message there are");
   }
 
@@ -292,7 +286,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     }
 
     assertThat(
-      engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), ruleKey, projectKey(PROJECT_KEY_JAVA)).get().getExtendedDescription())
+      engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), SC_CLIENT, ruleKey, projectKey(PROJECT_KEY_JAVA)).get().getExtendedDescription())
         .isEqualTo(extendedDescription);
   }
 
@@ -347,7 +341,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     // Override default file suffixes in project props so that input file is not considered as a Java file
     setSettingsMultiValue(projectKey(PROJECT_KEY_JAVA), SONAR_JAVA_FILE_SUFFIXES, ".foo");
 
-    engine.sync(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), Set.of(projectKey(PROJECT_KEY_JAVA)), null);
+    engine.sync(sonarcloudEndpointITOrg(), SC_CLIENT, Set.of(projectKey(PROJECT_KEY_JAVA)), null);
 
     issueListener.clear();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA), PROJECT_KEY_JAVA,
@@ -359,13 +353,13 @@ class SonarCloudTests extends AbstractConnectedTests {
 
   @Test
   void downloadUserOrganizations() {
-    var helper = new ServerApi(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT)).organization();
+    var helper = new ServerApi(sonarcloudEndpointITOrg(), SC_CLIENT).organization();
     assertThat(helper.listUserOrganizations(progress)).hasSize(1);
   }
 
   @Test
   void getOrganization() {
-    var helper = new ServerApi(sonarcloudEndpoint(null), new SonarLintHttpClientOkHttpImpl(SC_CLIENT)).organization();
+    var helper = new ServerApi(sonarcloudEndpoint(null), SC_CLIENT).organization();
     var org = helper.getOrganization(SONARCLOUD_ORGANIZATION, progress);
     assertThat(org).isPresent();
     assertThat(org.get().getKey()).isEqualTo(SONARCLOUD_ORGANIZATION);
@@ -374,7 +368,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
   @Test
   void getProject() {
-    var api = new ServerApi(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT)).component();
+    var api = new ServerApi(sonarcloudEndpointITOrg(), SC_CLIENT).component();
     assertThat(api.getProject(projectKey("foo"))).isNotPresent();
     assertThat(api.getProject(projectKey(PROJECT_KEY_RUBY))).isPresent();
   }
@@ -410,13 +404,13 @@ class SonarCloudTests extends AbstractConnectedTests {
   @Test
   void testConnection() throws ExecutionException, InterruptedException {
     assertThat(
-      new ConnectionValidator(new ServerApiHelper(sonarcloudEndpoint(SONARCLOUD_ORGANIZATION), new SonarLintHttpClientOkHttpImpl(SC_CLIENT))).validateConnection().get().success())
+      new ConnectionValidator(new ServerApiHelper(sonarcloudEndpoint(SONARCLOUD_ORGANIZATION), SC_CLIENT)).validateConnection().get().success())
         .isTrue();
     assertThat(
-      new ConnectionValidator(new ServerApiHelper(sonarcloudEndpoint(null), new SonarLintHttpClientOkHttpImpl(SC_CLIENT))).validateConnection().get().success())
+      new ConnectionValidator(new ServerApiHelper(sonarcloudEndpoint(null), SC_CLIENT)).validateConnection().get().success())
         .isTrue();
     assertThat(
-      new ConnectionValidator(new ServerApiHelper(sonarcloudEndpoint("not-exists"), new SonarLintHttpClientOkHttpImpl(SC_CLIENT))).validateConnection().get().success())
+      new ConnectionValidator(new ServerApiHelper(sonarcloudEndpoint("not-exists"), SC_CLIENT)).validateConnection().get().success())
         .isFalse();
   }
 
@@ -425,7 +419,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     ProjectBinding projectBinding = new ProjectBinding(projectKey(PROJECT_KEY_JAVA_TAINT), "", "");
 
-    engine.downloadAllServerTaintIssuesForFile(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), projectBinding, "src/main/java/foo/DbHelper.java", MAIN_BRANCH_NAME,
+    engine.downloadAllServerTaintIssuesForFile(sonarcloudEndpointITOrg(), SC_CLIENT, projectBinding, "src/main/java/foo/DbHelper.java", MAIN_BRANCH_NAME,
       null);
 
     var sinkIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java");
@@ -465,7 +459,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     return endpointParams(SONARCLOUD_STAGING_URL, true, orgKey);
   }
 
-  private static void analyzeMavenProject(String projectKey, String projectDirName) throws ExecuteException, IOException {
+  private static void analyzeMavenProject(String projectKey, String projectDirName) throws IOException {
     var projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
     runMaven(projectDir, "clean", "package", "sonar:sonar",
       "-Dsonar.projectKey=" + projectKey,
@@ -482,7 +476,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     });
   }
 
-  private static void runMaven(Path workDir, String... args) throws ExecuteException, IOException {
+  private static void runMaven(Path workDir, String... args) throws IOException {
     var cmdLine = CommandLine.parse("mvn");
     cmdLine.addArguments(args);
     var executor = new DefaultExecutor();

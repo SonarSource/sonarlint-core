@@ -21,24 +21,21 @@ package org.sonarsource.sonarlint.core.commons.testutils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.http.HttpConnectionListener;
 
 public class TestHttpClient implements HttpClient {
 
-  private static final OkHttpClient SHARED_CLIENT = new OkHttpClient();
-  private final OkHttpClient okClient = SHARED_CLIENT.newBuilder().build();
+  private static final java.net.http.HttpClient SHARED_CLIENT = java.net.http.HttpClient.newBuilder().build();
   private final Map<String, String> headers = new HashMap<>();
 
   public TestHttpClient withHeader(String name, String value) {
@@ -48,110 +45,87 @@ public class TestHttpClient implements HttpClient {
 
   @Override
   public Response post(String url, String contentType, String bodyContent) {
-    var body = RequestBody.create(MediaType.get(contentType), bodyContent);
     var request = requestBuilder(url)
-      .post(body)
-      .build();
+      .headers("Content-Type", contentType)
+      .POST(HttpRequest.BodyPublishers.ofString(bodyContent)).build();
     return executeRequest(request);
   }
 
   @Override
   public Response get(String url) {
-    var request = requestBuilder(url)
-      .build();
+    var request = requestBuilder(url).GET().build();
     return executeRequest(request);
   }
 
   @Override
   public CompletableFuture<Response> getAsync(String url) {
-    var request = requestBuilder(url)
-      .build();
+    var request = requestBuilder(url).GET().build();
     return executeRequestAsync(request);
   }
 
   @Override
   public AsyncRequest getEventStream(String url, HttpConnectionListener connectionListener, Consumer<String> messageConsumer) {
-    var request = requestBuilder(url)
-      .build();
-    var call = okClient.newCall(request);
-    var asyncRequest = new OkHttpAsyncRequest(call);
-    try {
-      // use a sync approach to ease testing
-      var response = call.execute();
-      if (response.isSuccessful()) {
-        connectionListener.onConnected();
-        // simplified reading, for tests we assume the event comes full, never chunked
-        messageConsumer.accept(wrap(response).bodyAsString());
+    var request = requestBuilder(url).GET().build();
+    var responseFuture = SHARED_CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream());
+    var wrappedFuture = responseFuture.whenComplete((response, ex) -> {
+      if (ex != null) {
+        connectionListener.onError(null);
       } else {
-        connectionListener.onError(response.code());
+        if (response.statusCode() == HttpURLConnection.HTTP_OK) {
+          connectionListener.onConnected();
+          // simplified reading, for tests we assume the event comes full, never chunked
+          messageConsumer.accept(wrap(response).bodyAsString());
+        } else {
+          connectionListener.onError(response.statusCode());
+        }
       }
-    } catch (IOException e) {
-      connectionListener.onError(null);
-    }
-    return asyncRequest;
+    });
+    return new HttpAsyncRequest(wrappedFuture);
   }
 
   @Override
   public Response delete(String url, String contentType, String bodyContent) {
-    var body = RequestBody.create(MediaType.get(contentType), bodyContent);
     var request = requestBuilder(url)
-      .delete(body)
-      .build();
+      .headers("Content-Type", contentType)
+      .method("DELETE", HttpRequest.BodyPublishers.ofString(bodyContent)).build();
     return executeRequest(request);
   }
 
-  private Response executeRequest(Request request) {
+  private Response executeRequest(HttpRequest request) {
     try {
-      return wrap(okClient.newCall(request).execute());
-    } catch (IOException e) {
+      return wrap(SHARED_CLIENT.send(request, HttpResponse.BodyHandlers.ofInputStream()));
+    } catch (Exception e) {
       throw new IllegalStateException("Unable to execute request: " + e.getMessage(), e);
     }
   }
 
-  private CompletableFuture<Response> executeRequestAsync(Request request) {
-    var call = okClient.newCall(request);
-    var futureResponse = new CompletableFuture<Response>()
-      .whenComplete((response, error) -> {
-        if (error instanceof CancellationException) {
-          call.cancel();
-        }
-      });
-    call.enqueue(new Callback() {
-      @Override
-      public void onFailure(Call call, IOException e) {
-        futureResponse.completeExceptionally(e);
-      }
-
-      @Override
-      public void onResponse(Call call, okhttp3.Response response) {
-        futureResponse.complete(wrap(response));
-      }
-    });
-    return futureResponse;
+  private CompletableFuture<Response> executeRequestAsync(HttpRequest request) {
+    var call = SHARED_CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream());
+    return call.thenApply(this::wrap);
   }
 
-  private Response wrap(okhttp3.Response wrapped) {
+  private Response wrap(HttpResponse<InputStream> wrapped) {
     return new Response() {
 
       @Override
       public String url() {
-        return wrapped.request().url().toString();
+        return wrapped.request().uri().toString();
       }
 
       @Override
       public int code() {
-        return wrapped.code();
+        return wrapped.statusCode();
       }
 
       @Override
       public void close() {
-        wrapped.close();
+        // Nothing
       }
 
       @Override
       public String bodyAsString() {
         try (var body = wrapped.body()) {
-          return body.string();
+          return new String(body.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {
           throw new IllegalStateException("Unable to read response body: " + e.getMessage(), e);
         }
@@ -159,7 +133,7 @@ public class TestHttpClient implements HttpClient {
 
       @Override
       public InputStream bodyAsStream() {
-        return wrapped.body().byteStream();
+        return wrapped.body();
       }
 
       @Override
@@ -169,30 +143,24 @@ public class TestHttpClient implements HttpClient {
     };
   }
 
-  private Request.Builder requestBuilder(String url) {
-    var builder = new Request.Builder()
-      .url(url);
-    headers.forEach(builder::addHeader);
+  private HttpRequest.Builder requestBuilder(String url) {
+    var builder = HttpRequest.newBuilder().uri(URI.create(url));
+    headers.forEach(builder::headers);
     return builder;
   }
 
-  public static class OkHttpAsyncRequest implements HttpClient.AsyncRequest {
-    private final Call call;
+  public static class HttpAsyncRequest implements HttpClient.AsyncRequest {
+    private final CompletableFuture<HttpResponse<InputStream>> response;
 
-    private OkHttpAsyncRequest(Call call) {
-      this.call = call;
+    private HttpAsyncRequest(CompletableFuture<HttpResponse<InputStream>> response) {
+      this.response = response;
     }
 
     @Override
     public void cancel() {
-      call.cancel();
+      response.cancel(true);
     }
 
-    public void await() {
-      var beginTime = System.currentTimeMillis();
-      while (!call.isExecuted() || beginTime > System.currentTimeMillis() - 5000L)
-        ;
-    }
   }
 
 }
