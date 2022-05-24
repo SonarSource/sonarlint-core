@@ -230,7 +230,7 @@ stages:
             JDKVersion: '1.11'
             Category: '-Dgroups=SonarCloud'
           Dogfood:
-            SQ_VERSION: 'DOGFOOD'
+            SQ_VERSION: 'DEV'
             JDKVersion: '1.11'
             Category: '-DexcludedGroups=SonarCloud'
           Latest:
