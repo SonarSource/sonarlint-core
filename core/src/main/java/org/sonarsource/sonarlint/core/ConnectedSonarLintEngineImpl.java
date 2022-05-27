@@ -66,6 +66,7 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
@@ -253,7 +254,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
       .build();
 
     var analysisConfiguration = analysisConfigBuilder.build();
-
+    SonarLintLogger.get().debug("Analysis configuration: " + analysisConfiguration);
     var analyzeCommand = new AnalyzeCommand(configuration.moduleKey(), analysisConfiguration, issue -> streamIssue(issueListener, issue, activeRulesContext), logOutput);
     return postAnalysisCommandAndGetResult(analyzeCommand, monitor);
   }
