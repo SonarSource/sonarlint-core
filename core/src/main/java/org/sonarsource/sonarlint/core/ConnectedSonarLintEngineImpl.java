@@ -280,7 +280,8 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
         var languageKey = e.getKey();
         var ruleSet = e.getValue();
 
-        LOG.debug("  * {}: {} active rules", languageKey, ruleSet.getRules().size());
+        LOG.debug("  * {}: {} active rules: {}", languageKey, ruleSet.getRules().size(),
+          ruleSet.getRules().stream().map(ServerActiveRule::toString).collect(Collectors.joining(", ")));
         for (ServerActiveRule possiblyDeprecatedActiveRuleFromStorage : ruleSet.getRules()) {
           var activeRuleFromStorage = tryConvertDeprecatedKeys(possiblyDeprecatedActiveRuleFromStorage);
           SonarLintRuleDefinition ruleOrTemplateDefinition;

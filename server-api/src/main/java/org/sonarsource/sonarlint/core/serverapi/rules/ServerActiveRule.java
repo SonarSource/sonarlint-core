@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.serverapi.rules;
 
 import java.util.Map;
 import javax.annotation.Nullable;
+import org.apache.commons.lang3.StringUtils;
 
 public class ServerActiveRule {
   private final String ruleKey;
@@ -49,5 +50,19 @@ public class ServerActiveRule {
 
   public String getTemplateKey() {
     return templateKey;
+  }
+
+  @Override
+  public String toString() {
+    var sb = new StringBuilder();
+    sb.append(ruleKey);
+    sb.append('[').append(severity).append(']');
+    if (StringUtils.isNotBlank(templateKey)) {
+      sb.append('[').append(templateKey).append(']');
+    }
+    if (!params.isEmpty()) {
+      sb.append(params);
+    }
+    return sb.toString();
   }
 }
