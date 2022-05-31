@@ -36,6 +36,7 @@
     <module>osgi</module>
     <module>report-aggregate</module>
     <module>vcs</module>
+    <module>server-connection</module>
   </modules>
 
   <properties>

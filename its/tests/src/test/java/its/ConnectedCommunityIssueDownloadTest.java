@@ -47,11 +47,10 @@ import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
+import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
 
 import static its.tools.ItUtils.SONAR_VERSION;
-import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ConnectedCommunityIssueDownloadTest extends AbstractConnectedTest {
@@ -70,8 +69,6 @@ public class ConnectedCommunityIssueDownloadTest extends AbstractConnectedTest {
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
-
-  private static Path sonarUserHome;
 
   private ConnectedSonarLintEngine engine;
   private final List<String> logs = new ArrayList<>();
@@ -95,7 +92,7 @@ public class ConnectedCommunityIssueDownloadTest extends AbstractConnectedTest {
 
     // Mark a few issues as closed WF and closed FP
     var issueSearchResponse = adminWsClient.issues()
-      .search(new SearchRequest().setStatuses(asList("OPEN")).setTypes(asList("CODE_SMELL")).setComponentKeys(asList(PROJECT_KEY)));
+      .search(new SearchRequest().setStatuses(List.of("OPEN")).setTypes(List.of("CODE_SMELL")).setComponentKeys(List.of(PROJECT_KEY)));
     wfIssue = issueSearchResponse.getIssues(0);
     fpIssue = issueSearchResponse.getIssues(1);
     // Change severity and type
@@ -113,14 +110,14 @@ public class ConnectedCommunityIssueDownloadTest extends AbstractConnectedTest {
       assertThat(adminWsClient.hotspots().search(new org.sonarqube.ws.client.hotspots.SearchRequest().setProjectKey(PROJECT_KEY)).getHotspotsList()).isNotEmpty();
     } else {
       assertThat(
-        adminWsClient.issues().search(new SearchRequest().setTypes(asList("SECURITY_HOTSPOT")).setComponentKeys(asList(PROJECT_KEY))).getIssuesList())
+        adminWsClient.issues().search(new SearchRequest().setTypes(List.of("SECURITY_HOTSPOT")).setComponentKeys(List.of(PROJECT_KEY))).getIssuesList())
           .isNotEmpty();
     }
   }
 
   @Before
   public void start() throws IOException {
-    sonarUserHome = temp.newFolder().toPath();
+    Path sonarUserHome = temp.newFolder().toPath();
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
       .setConnectionId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
@@ -135,7 +132,7 @@ public class ConnectedCommunityIssueDownloadTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void download_all_issues_not_limited_to_10k() throws IOException {
+  public void download_all_issues_not_limited_to_10k() {
     engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, false, null, null);
 
@@ -153,8 +150,8 @@ public class ConnectedCommunityIssueDownloadTest extends AbstractConnectedTest {
 
     assertThat(allIssues).hasSize(10_500);
 
-    assertThat(allIssues.get(wfIssue.getKey()).resolution()).isEqualTo("WONTFIX");
-    assertThat(allIssues.get(fpIssue.getKey()).resolution()).isEqualTo("FALSE-POSITIVE");
+    assertThat(allIssues.get(wfIssue.getKey()).resolved()).isTrue();
+    assertThat(allIssues.get(fpIssue.getKey()).resolved()).isTrue();
     assertThat(allIssues.get(overridenSeverityIssue.getKey()).severity()).isEqualTo("BLOCKER");
     assertThat(allIssues.get(overridenTypeIssue.getKey()).type()).isEqualTo("BUG");
 

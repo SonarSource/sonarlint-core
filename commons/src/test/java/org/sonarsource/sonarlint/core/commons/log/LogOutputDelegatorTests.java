@@ -1,5 +1,5 @@
 /*
- * SonarLint Commons
+ * SonarLint Core - Commons
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.commons.log;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
-import org.mockito.Mockito;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
 
 import static org.mockito.Mockito.mock;

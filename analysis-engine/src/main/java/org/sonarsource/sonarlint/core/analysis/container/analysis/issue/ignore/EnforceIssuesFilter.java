@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.analysis.container.analysis.issue.ignore;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.scan.issue.filter.FilterableIssue;
 import org.sonar.api.scan.issue.filter.IssueFilter;
 import org.sonar.api.scan.issue.filter.IssueFilterChain;

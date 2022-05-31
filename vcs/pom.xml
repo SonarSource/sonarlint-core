@@ -10,7 +10,7 @@
     <version>8.7-SNAPSHOT</version>
   </parent>
   <artifactId>sonarlint-vcs</artifactId>
-  <name>SonarLint Version Control System</name>
+  <name>SonarLint Core - Version Control System</name>
   <description>Manage VCS integration</description>
 
 

@@ -1,5 +1,5 @@
 /*
- * SonarLint Version Control System
+ * SonarLint Core - Version Control System
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *

@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.global;
 
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
