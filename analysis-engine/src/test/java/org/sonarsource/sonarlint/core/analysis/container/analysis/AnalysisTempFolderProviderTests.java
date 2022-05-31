@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.analysis.container.analysis;
 
 import org.junit.jupiter.api.Test;
-import org.sonar.api.utils.TempFolder;
+
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 class AnalysisTempFolderProviderTests {

@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
+import org.sonarsource.sonarlint.core.serverconnection.GlobalStorageStatus;
+
 public class UpdateResult {
   private final GlobalStorageStatus status;
 

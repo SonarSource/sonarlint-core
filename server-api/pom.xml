@@ -6,7 +6,7 @@
     <version>8.7-SNAPSHOT</version>
   </parent>
   <artifactId>sonarlint-server-api</artifactId>
-  <name>SonarLint Server API</name>
+  <name>SonarLint Core - Server API</name>
   <description>Interaction with the server through its web API</description>
 
   <properties>

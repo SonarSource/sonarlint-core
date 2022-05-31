@@ -19,8 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
-import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
+import java.util.Optional;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
+import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
 
 public class ServerIssueTrackable implements Trackable {
 
@@ -57,7 +58,7 @@ public class ServerIssueTrackable implements Trackable {
 
   @Override
   public Integer getLine() {
-    return serverIssue.getStartLine();
+    return Optional.ofNullable(serverIssue.getTextRange()).map(ServerIssue.TextRange::getStartLine).orElse(null);
   }
 
   @Override
@@ -89,11 +90,6 @@ public class ServerIssueTrackable implements Trackable {
 
   @Override
   public boolean isResolved() {
-    return !serverIssue.resolution().isEmpty();
-  }
-
-  @Override
-  public String getAssignee() {
-    return serverIssue.assigneeLogin();
+    return serverIssue.resolved();
   }
 }

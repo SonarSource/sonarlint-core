@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -36,8 +35,8 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.sonar.api.batch.fs.InputFile.Type;
 import org.sonarsource.sonarlint.core.analysis.AnalysisEngine;
 import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
@@ -45,46 +44,24 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
-import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.DefaultClientIssue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBranches;
-import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.connected.UpdateResult;
-import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
-import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
-import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
-import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.perform.GlobalStorageUpdateExecutor;
-import org.sonarsource.sonarlint.core.container.connected.update.perform.ProjectStorageUpdateExecutor;
-import org.sonarsource.sonarlint.core.container.storage.DefaultRuleDetails;
-import org.sonarsource.sonarlint.core.container.storage.FileMatcher;
-import org.sonarsource.sonarlint.core.container.storage.GlobalStores;
-import org.sonarsource.sonarlint.core.container.storage.GlobalUpdateStatusReader;
-import org.sonarsource.sonarlint.core.container.storage.IssueStoreReader;
-import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
-import org.sonarsource.sonarlint.core.container.storage.ProjectStorageStatusReader;
-import org.sonarsource.sonarlint.core.container.storage.StorageFileExclusions;
-import org.sonarsource.sonarlint.core.container.storage.StorageReader;
-import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdaterFactory;
-import org.sonarsource.sonarlint.core.events.EventDispatcher;
-import org.sonarsource.sonarlint.core.events.ServerEventsAutoSubscriber;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository.Configuration;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
@@ -92,64 +69,32 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
-import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
-import org.sonarsource.sonarlint.core.storage.LocalStorageSynchronizer;
-import org.sonarsource.sonarlint.core.storage.PluginsStorage;
-import org.sonarsource.sonarlint.core.storage.ProjectStorage;
-import org.sonarsource.sonarlint.core.storage.UpdateStorageOnRuleSetChanged;
+import org.sonarsource.sonarlint.core.serverconnection.GlobalStorageStatus;
+import org.sonarsource.sonarlint.core.serverconnection.IssueStorePaths;
+import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
+import org.sonarsource.sonarlint.core.serverconnection.ProjectStorageStatus;
+import org.sonarsource.sonarlint.core.serverconnection.ServerConnection;
+import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.trimToNull;
-import static org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths.encodeForFs;
 
 public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine implements ConnectedSonarLintEngine {
 
   private final ConnectedGlobalConfiguration globalConfig;
-  private final GlobalUpdateStatusReader globalStatusReader;
-  private final PluginsStorage pluginsStorage;
-  private final GlobalStores globalStores;
-  private final ProjectStorage projectStorage;
-  private final LocalStorageSynchronizer storageSynchronizer;
-  private final ProjectStorageStatusReader projectStorageStatusReader;
-  private final IssueStoreReader issueStoreReader;
-  private final StorageFileExclusions storageFileExclusions;
-  private final PartialUpdaterFactory partialUpdaterFactory;
-  private final GlobalStorageUpdateExecutor globalStorageUpdateExecutor;
-  private final ProjectStorageUpdateExecutor projectStorageUpdateExecutor;
+  private final ServerConnection serverConnection;
   private final AtomicReference<AnalysisContext> analysisContext = new AtomicReference<>();
-  private final ServerEventsAutoSubscriber serverEventsAutoSubscriber;
-
-  private final StorageReader storageReader;
 
   public ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration globalConfig) {
     super(globalConfig.getLogOutput());
     this.globalConfig = globalConfig;
-    this.globalStores = new GlobalStores(globalConfig);
-    this.globalStatusReader = new GlobalUpdateStatusReader(globalStores.getServerInfoStore(), globalStores.getStorageStatusStore());
 
-    var projectStoragePaths = new ProjectStoragePaths(globalConfig);
-    this.projectStorageStatusReader = new ProjectStorageStatusReader(projectStoragePaths);
+    serverConnection = new ServerConnection(globalConfig.getStorageRoot(), globalConfig.getConnectionId(), globalConfig.getEnabledLanguages(),
+      globalConfig.getEmbeddedPluginPathsByKey().keySet());
 
-    var storageRoot = globalConfig.getStorageRoot().resolve(encodeForFs(globalConfig.getConnectionId()));
-    var projectsStorageRoot = storageRoot.resolve("projects");
-    projectStorage = new ProjectStorage(projectsStorageRoot);
-    var issueStorePaths = new IssueStorePaths();
-    this.storageReader = new StorageReader(projectStoragePaths);
-    this.issueStoreReader = new IssueStoreReader(new IssueStoreFactory(), issueStorePaths, projectStoragePaths);
-    this.storageFileExclusions = new StorageFileExclusions(issueStorePaths);
-
-    this.partialUpdaterFactory = new PartialUpdaterFactory(projectStoragePaths, issueStorePaths);
-
-    pluginsStorage = new PluginsStorage(storageRoot.resolve("plugins"));
-    storageSynchronizer = new LocalStorageSynchronizer(globalConfig.getEnabledLanguages(), globalConfig.getEmbeddedPluginPathsByKey().keySet(), pluginsStorage, projectStorage);
-    globalStorageUpdateExecutor = new GlobalStorageUpdateExecutor(globalStores.getGlobalStorage());
-    projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(projectStoragePaths);
-    pluginsStorage.cleanUp();
-    var eventRouter = new EventDispatcher()
-      .dispatch(RuleSetChangedEvent.class, new UpdateStorageOnRuleSetChanged(projectStorage));
-    serverEventsAutoSubscriber = new ServerEventsAutoSubscriber(eventRouter);
     start();
   }
 
@@ -186,7 +131,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     Map<String, Path> pluginsToLoadByKey = new HashMap<>();
     // order is important as e.g. embedded takes precedence over stored
     pluginsToLoadByKey.putAll(globalConfig.getExtraPluginsPathsByKey());
-    pluginsToLoadByKey.putAll(pluginsStorage.getStoredPluginPathsByKey());
+    pluginsToLoadByKey.putAll(serverConnection.getStoredPluginPathsByKey());
     pluginsToLoadByKey.putAll(globalConfig.getEmbeddedPluginPathsByKey());
     Set<Path> plugins = new HashSet<>(pluginsToLoadByKey.values());
 
@@ -237,13 +182,13 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     requireNonNull(issueListener);
 
     setLogging(logOutput);
-    checkStatus(configuration.projectKey());
+    serverConnection.checkStatus(configuration.projectKey());
 
     var analysisConfigBuilder = AnalysisConfiguration.builder()
       .addInputFiles(configuration.inputFiles());
     var projectKey = configuration.projectKey();
     if (projectKey != null) {
-      analysisConfigBuilder.putAllExtraProperties(projectStorage.getAnalyzerConfiguration(projectKey).getSettings().getAll());
+      analysisConfigBuilder.putAllExtraProperties(serverConnection.getAnalyzerConfiguration(projectKey).getSettings().getAll());
       analysisConfigBuilder.putAllExtraProperties(globalConfig.extraProperties());
     }
     var activeRulesContext = buildActiveRulesContext(configuration);
@@ -273,7 +218,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
       return analysisRulesContext;
     }
 
-    projectStorage.getAnalyzerConfiguration(projectKey).getRuleSetByLanguageKey().entrySet()
+    serverConnection.getAnalyzerConfiguration(projectKey).getRuleSetByLanguageKey().entrySet()
       .stream().filter(e -> Language.forKey(e.getKey()).filter(l -> globalConfig.getEnabledLanguages().contains(l)).isPresent())
       .forEach(e -> {
         var languageKey = e.getKey();
@@ -338,34 +283,14 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
       .stream().anyMatch(extraPluginKey -> ruleLanguage.getLanguageKey().equals(extraPluginKey));
   }
 
-  private void checkStatus(@Nullable String projectKey) {
-    var updateStatus = globalStatusReader.read();
-    if (updateStatus == null) {
-      throw new StorageException("Missing storage for connection");
-    }
-    if (updateStatus.isStale()) {
-      throw new StorageException("Outdated storage for connection");
-    }
-    if (projectKey != null) {
-      var projectUpdateStatus = getProjectStorageStatus(projectKey);
-      if (projectUpdateStatus == null) {
-        throw new StorageException(String.format("No storage for project '%s'. Please update the binding.", projectKey));
-      } else if (projectUpdateStatus.isStale()) {
-        throw new StorageException(String.format("Stored data for project '%s' is stale because "
-          + "it was created with a different version of SonarLint. Please update the binding.", projectKey));
-      }
-    }
-  }
-
   @Override
   public GlobalStorageStatus getGlobalStorageStatus() {
-    return wrapErrors(globalStatusReader::read);
+    return wrapErrors(serverConnection::getGlobalStorageStatus);
   }
 
   @Override
   public void sync(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, @Nullable ClientProgressMonitor monitor) {
-    var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
-    var result = storageSynchronizer.synchronize(serverApi, projectKeys, new ProgressMonitor(monitor));
+    var result = serverConnection.sync(endpoint, client, projectKeys, new ProgressMonitor(monitor));
     if (result.hasAnalyzerBeenUpdated()) {
       restartAnalysisEngine();
     }
@@ -375,8 +300,8 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   public UpdateResult update(EndpointParams endpoint, HttpClient client, @Nullable ClientProgressMonitor monitor) {
     requireNonNull(endpoint);
     setLogging(null);
-    globalStorageUpdateExecutor.update(new ServerApiHelper(endpoint, client), new ProgressMonitor(monitor));
-    return new UpdateResult(globalStatusReader.read());
+    var status = serverConnection.update(endpoint, client, new ProgressMonitor(monitor));
+    return new UpdateResult(status);
   }
 
   private void restartAnalysisEngine() {
@@ -392,12 +317,12 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
       if (globalConfig.getExtraPluginsPathsByKey().containsKey(ruleDefFromPlugin.getLanguage().getPluginKey()) || projectKey == null) {
         // if no project key, or for rules from extra plugins there will be no rules metadata in the storage
         return CompletableFuture.completedFuture(
-          new DefaultRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(), ruleDefFromPlugin.getSeverity(), ruleDefFromPlugin.getType(),
+          new ConnectedRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(), ruleDefFromPlugin.getSeverity(), ruleDefFromPlugin.getType(),
             ruleDefFromPlugin.getLanguage(), ""));
       }
     }
     if (projectKey != null) {
-      var analyzerConfiguration = projectStorage.getAnalyzerConfiguration(projectKey);
+      var analyzerConfiguration = serverConnection.getAnalyzerConfiguration(projectKey);
       var storageActiveRule = analyzerConfiguration.getRuleSetByLanguageKey().values().stream()
         .flatMap(s -> s.getRules().stream())
         .filter(r -> tryConvertDeprecatedKeys(r).getRuleKey().equals(ruleKey)).findFirst();
@@ -409,7 +334,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
             .orElseThrow(() -> new IllegalStateException("Unable to find rule definition for rule template " + activeRuleFromStorage.getTemplateKey()));
           return new ServerApi(new ServerApiHelper(endpoint, client)).rules().getRule(activeRuleFromStorage.getRuleKey())
             .thenApply(
-              serverRule -> new DefaultRuleDetails(
+              serverRule -> new ConnectedRuleDetails(
                 ruleKey,
                 serverRule.getName(),
                 serverRule.getHtmlDesc(),
@@ -420,10 +345,10 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
         } else {
           return new ServerApi(new ServerApiHelper(endpoint, client)).rules().getRule(activeRuleFromStorage.getRuleKey())
             .thenApply(serverRule -> ruleDefFromPluginOpt
-              .map(ruleDefFromPlugin -> new DefaultRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(),
+              .map(ruleDefFromPlugin -> new ConnectedRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(),
                 Optional.ofNullable(serverSeverity).orElse(ruleDefFromPlugin.getSeverity()), ruleDefFromPlugin.getType(), ruleDefFromPlugin.getLanguage(),
                 serverRule.getHtmlNote()))
-              .orElse(new DefaultRuleDetails(ruleKey, serverRule.getName(), serverRule.getHtmlDesc(),
+              .orElse(new ConnectedRuleDetails(ruleKey, serverRule.getName(), serverRule.getHtmlDesc(),
                 Optional.ofNullable(serverSeverity).orElse(serverRule.getSeverity()),
                 serverRule.getType(), serverRule.getLanguage(), serverRule.getHtmlNote())));
         }
@@ -439,30 +364,18 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
 
   @Override
   public Map<String, ServerProject> allProjectsByKey() {
-    try {
-      return globalStores.getServerProjectsStore().getAll();
-    } catch (StorageException e) {
-      LOG.error("Unable to read projects keys from the storage", e);
-      return Map.of();
-    }
+    return serverConnection.allProjectsByKey();
   }
 
   @Override
   public Map<String, ServerProject> downloadAllProjects(EndpointParams endpoint, HttpClient client, @Nullable ClientProgressMonitor monitor) {
-    return wrapErrors(() -> {
-      try {
-        return new ProjectListDownloader(new ServerApiHelper(endpoint, client), globalStores.getServerProjectsStore()).fetch(new ProgressMonitor(monitor));
-      } catch (Exception e) {
-        // null as cause so that it doesn't get wrapped
-        throw new DownloadException("Failed to update project list: " + e.getMessage(), null);
-      }
-    });
+    return wrapErrors(() -> serverConnection.downloadAllProjects(endpoint, client, new ProgressMonitor(monitor)));
   }
 
   @Override
   public ProjectBranches getServerBranches(String projectKey) {
     try {
-      var projectBranchesFromStorage = projectStorage.getProjectBranches(projectKey);
+      var projectBranchesFromStorage = serverConnection.getProjectBranches(projectKey);
       return new ProjectBranches(projectBranchesFromStorage.getBranchNames(), projectBranchesFromStorage.getMainBranchName());
     } catch (StorageException e) {
       LOG.error("Unable to read projects branches from the storage", e);
@@ -472,12 +385,34 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
 
   @Override
   public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String ideFilePath) {
-    return issueStoreReader.getServerIssues(projectBinding, ideFilePath);
+    return serverConnection.getServerIssues(projectBinding, ideFilePath);
   }
 
   @Override
-  public <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> ideFilePathExtractor, Predicate<G> testFilePredicate) {
-    return storageFileExclusions.getExcludedFiles(projectStorage, projectBinding, files, ideFilePathExtractor, testFilePredicate);
+  public <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> fileIdePathExtractor, Predicate<G> testFilePredicate) {
+    var analyzerConfig = serverConnection.getAnalyzerConfiguration(projectBinding.projectKey());
+    var settings = new MapSettings(analyzerConfig.getSettings().getAll());
+    var exclusionFilters = new ServerFileExclusions(settings.asConfig());
+    exclusionFilters.prepare();
+
+    List<G> excluded = new ArrayList<>();
+
+    for (G file : files) {
+      var idePath = fileIdePathExtractor.apply(file);
+      if (idePath == null) {
+        continue;
+      }
+      var sqPath = IssueStorePaths.idePathToSqPath(projectBinding, idePath);
+      if (sqPath == null) {
+        // we can't map it to a SonarQube path, so just apply exclusions to the original ide path
+        sqPath = idePath;
+      }
+      var type = testFilePredicate.test(file) ? Type.TEST : Type.MAIN;
+      if (!exclusionFilters.accept(sqPath, type)) {
+        excluded.add(file);
+      }
+    }
+    return excluded;
   }
 
   @Override
@@ -487,47 +422,24 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
       logOutput = (message, level) -> {
       };
     }
-    serverEventsAutoSubscriber.subscribePermanently(new ServerApi(new ServerApiHelper(endpoint, client)), projectKeys, globalConfig.getEnabledLanguages(), logOutput);
+    serverConnection.subscribeForEvents(endpoint, client, projectKeys, logOutput);
   }
 
   @Override
   public List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
     boolean fetchTaintVulnerabilities, @Nullable String branchName, @Nullable ClientProgressMonitor monitor) {
-    return downloadServerIssues(endpoint, client, projectBinding, ideFilePath, fetchTaintVulnerabilities, branchName, new ProgressMonitor(monitor));
+    return serverConnection.downloadServerIssues(endpoint, client, projectBinding, ideFilePath, fetchTaintVulnerabilities, branchName, new ProgressMonitor(monitor));
   }
 
   @Override
   public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities,
     @Nullable String branchName, @Nullable ClientProgressMonitor monitor) {
-    downloadServerIssues(endpoint, client, projectKey, fetchTaintVulnerabilities, branchName, new ProgressMonitor(monitor));
+    serverConnection.downloadServerIssues(endpoint, client, projectKey, fetchTaintVulnerabilities, branchName, new ProgressMonitor(monitor));
   }
 
   @Override
   public ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> ideFilePaths) {
-    List<Path> idePathList = ideFilePaths.stream()
-      .map(Paths::get)
-      .collect(Collectors.toList());
-    List<Path> sqPathList = storageReader.readProjectComponents(projectKey)
-      .getComponentList().stream()
-      .map(Paths::get)
-      .collect(Collectors.toList());
-    var fileMatcher = new FileMatcher();
-    var match = fileMatcher.match(sqPathList, idePathList);
-    return new ProjectBinding(projectKey, FilenameUtils.separatorsToUnix(match.sqPrefix().toString()),
-      FilenameUtils.separatorsToUnix(match.idePrefix().toString()));
-  }
-
-  private List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
-    boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressMonitor progress) {
-    var updater = partialUpdaterFactory.create();
-    updater.updateFileIssues(new ServerApiHelper(endpoint, client), projectBinding, ideFilePath, fetchTaintVulnerabilities, branchName, progress);
-    return getServerIssues(projectBinding, ideFilePath);
-  }
-
-  private void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey,
-    boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressMonitor progress) {
-    var updater = partialUpdaterFactory.create();
-    updater.updateFileIssues(new ServerApiHelper(endpoint, client), projectKey, fetchTaintVulnerabilities, branchName, progress);
+    return serverConnection.calculatePathPrefixes(projectKey, ideFilePaths);
   }
 
   @Override
@@ -537,28 +449,21 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     requireNonNull(projectKey);
     setLogging(null);
 
-    var globalStorageStatus = globalStatusReader.read();
-    if (globalStorageStatus == null || globalStorageStatus.isStale()) {
-      throw new StorageException("Missing or outdated storage for connection '" + globalConfig.getConnectionId() + "'");
-    }
-    projectStorageUpdateExecutor.update(new ServerApiHelper(endpoint, client), projectKey, fetchTaintVulnerabilities, branchName, new ProgressMonitor(monitor));
+    serverConnection.updateProject(endpoint, client, projectKey, fetchTaintVulnerabilities, branchName, new ProgressMonitor(monitor));
   }
 
   @Override
   public ProjectStorageStatus getProjectStorageStatus(String projectKey) {
     requireNonNull(projectKey);
-    return projectStorageStatusReader.apply(projectKey);
+    return serverConnection.getProjectStorageStatus(projectKey);
   }
 
   @Override
   public void stop(boolean deleteStorage) {
     setLogging(null);
     try {
-      serverEventsAutoSubscriber.stop();
       analysisContext.get().destroy();
-      if (deleteStorage) {
-        globalStores.deleteAll();
-      }
+      serverConnection.stop(deleteStorage);
     } catch (Exception e) {
       throw SonarLintWrappedException.wrap(e);
     }

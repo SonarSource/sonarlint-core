@@ -1,5 +1,5 @@
 /*
- * SonarLint slf4j log adaptor
+ * SonarLint Core - Slf4j log adaptor
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *

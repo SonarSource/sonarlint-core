@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.analysis.container.analysis.issue.ignore.pattern;
 
 import org.junit.jupiter.api.Test;
-import org.sonar.api.rule.RuleKey;
 import org.sonar.api.rules.Rule;
 
 import static org.assertj.core.api.Assertions.assertThat;

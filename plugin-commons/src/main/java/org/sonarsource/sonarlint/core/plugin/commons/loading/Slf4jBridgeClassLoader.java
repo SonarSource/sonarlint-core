@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.plugin.commons.loading;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 

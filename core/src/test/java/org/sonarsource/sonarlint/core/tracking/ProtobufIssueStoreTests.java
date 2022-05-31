@@ -155,13 +155,12 @@ class ProtobufIssueStoreTests {
     when(trackable.getMessage()).thenReturn("message" + counter.incrementAndGet());
 
     // just to cover more lines
-    when(trackable.getAssignee()).thenReturn("assignee" + counter.incrementAndGet());
     when(trackable.getServerIssueKey()).thenReturn("serverIssueKey" + counter.incrementAndGet());
 
     return trackable;
   }
 
-  private ProtobufIssueStore newIssueStore() throws IOException {
+  private ProtobufIssueStore newIssueStore() {
     var storePath = base.resolve("store");
     var projectPath = base.resolve("project");
     return new ProtobufIssueStore(storePath, projectPath);

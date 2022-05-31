@@ -1,5 +1,5 @@
 /*
- * SonarLint Server API
+ * SonarLint Core - Server API
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -19,12 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.util;
 
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.TextRange;
 
 public class ServerApiUtils {
+
+  public static final String DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
+
+  private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern(DATETIME_FORMAT);
 
   public static String extractCodeSnippet(String sourceCode, TextRange textRange) {
     return extractCodeSnippet(sourceCode.split("\\r?\\n"), textRange);
@@ -48,6 +55,14 @@ public class ServerApiUtils {
 
   public static boolean areBlank(List<?>... lists) {
     return Arrays.stream(lists).allMatch(ServerApiUtils::isBlank);
+  }
+
+  public static OffsetDateTime parseOffsetDateTime(String s) {
+    try {
+      return OffsetDateTime.parse(s, DATETIME_FORMATTER);
+    } catch (DateTimeParseException e) {
+      throw new IllegalStateException("The date '" + s + "' does not respect format '" + DATETIME_FORMAT + "'", e);
+    }
   }
 
   private ServerApiUtils() {
