@@ -20,9 +20,9 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.analysis.api.TextRange;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
+import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
 
 import static org.sonarsource.sonarlint.core.tracking.DigestUtils.digest;
 
@@ -37,14 +37,15 @@ public class IssueTrackable implements Trackable<Issue> {
     this(issue, null, null, null);
   }
 
-  public IssueTrackable(Issue issue, @Nullable TextRange textRange, @Nullable String textRangeContent, @Nullable String lineContent) {
+  public IssueTrackable(Issue issue, @Nullable ServerIssue.TextRange textRange, @Nullable String textRangeContent,
+    @Nullable String lineContent) {
     this.issue = issue;
     this.textRange = textRange != null ? convertToTrackingTextRange(textRange) : null;
     this.textRangeHash = hashOrNull(textRangeContent);
     this.lineHash = hashOrNull(lineContent);
   }
 
-  static org.sonarsource.sonarlint.core.issuetracking.TextRange convertToTrackingTextRange(org.sonarsource.sonarlint.core.analysis.api.TextRange fromAnalysis) {
+  static org.sonarsource.sonarlint.core.issuetracking.TextRange convertToTrackingTextRange(ServerIssue.TextRange fromAnalysis) {
     return new org.sonarsource.sonarlint.core.issuetracking.TextRange(fromAnalysis.getStartLine(), fromAnalysis.getStartLineOffset(), fromAnalysis.getEndLine(),
       fromAnalysis.getEndLineOffset());
   }
@@ -111,10 +112,5 @@ public class IssueTrackable implements Trackable<Issue> {
   @Override
   public boolean isResolved() {
     return false;
-  }
-
-  @Override
-  public String getAssignee() {
-    return "";
   }
 }

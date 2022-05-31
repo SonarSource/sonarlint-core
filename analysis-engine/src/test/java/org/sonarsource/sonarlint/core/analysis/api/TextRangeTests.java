@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.analysis.api;
 
 import org.junit.jupiter.api.Test;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class TextRangeTests {

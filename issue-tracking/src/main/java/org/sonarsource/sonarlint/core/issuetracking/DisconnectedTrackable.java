@@ -37,9 +37,4 @@ public class DisconnectedTrackable extends LeakedTrackable {
   public boolean isResolved() {
     return false;
   }
-
-  @Override
-  public String getAssignee() {
-    return "";
-  }
 }

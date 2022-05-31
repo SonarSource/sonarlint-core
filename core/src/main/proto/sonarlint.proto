@@ -26,74 +26,6 @@ package sonarlint;
 option java_package = "org.sonarsource.sonarlint.core.proto";
 option optimize_for = SPEED;
 
-message StorageStatus {
-  string storage_version = 1;
-  string sonarlint_core_version = 2;
-  int64 update_timestamp = 4;
-}
-
-message ServerInfos {
-  string id = 1;
-  string version = 2;
-  string status = 3;
-}
-
-message PluginReferences {
-    map<string, PluginReference> plugins_by_key = 1;
-  
-  message PluginReference {
-    string key = 1;
-    string hash = 2;
-    string filename = 3;
-  }
-}
-
-message ServerIssue {
-  string rule_repository = 3;
-  string rule_key = 4;
-  string severity = 7;
-  string resolution = 9;
-  string status = 10;
-  string line_hash = 11;
-  string assignee_login = 12;
-  int64 creation_date = 13;
-  string type = 14;
-  string key = 15;
-  Location primary_location = 16;
-  repeated Flow flow = 17;
-
-  message Flow {
-    repeated Location location = 1;
-  }
-
-  message Location {
-    string path = 1;
-    string msg = 2;
-    TextRange text_range = 3;
-    string code_snippet = 4;
-  }
-
-	message TextRange {
-	  int32 start_line = 1;
-	  int32 start_line_offset = 2;
-	  int32 end_line = 3;
-	  int32 end_line_offset = 4;
-	}
-}
-
-message ProjectList {
-  map<string,Project> projects_by_key = 1;
-  
-  message Project {
-    string key = 1;
-    string name = 2;
-  }
-}
-
-message ProjectComponents {
-  repeated string component = 1;
-}
-
 message Issues {
   repeated Issue issue = 1;
 
@@ -106,7 +38,7 @@ message Issues {
     int32 checksum = 5;
 
     // values carried forward
-    string assignee = 6;
+    reserved 6; // removed assignee
     int64 creationDate = 7;
     bool resolved = 8;
   }
@@ -114,26 +46,4 @@ message Issues {
 
 message StorageIndex {
   map<string, string> mapped_path_by_key = 1;
-}
-
-message AnalyzerConfiguration {
-    map<string, string> settings = 1;
-    map<string, RuleSet> ruleSetsByLanguageKey = 2;
-}
-
-message RuleSet {
-    repeated ActiveRule rules = 1;
-    string lastModified = 3;
-
-    message ActiveRule {
-        string ruleKey = 1;
-        string severity = 2;
-        string templateKey = 3;
-        map<string,string> params = 4;
-    }
-}
-
-message ProjectBranches {
-    repeated string branchName = 1;
-    string mainBranchName = 2;
 }

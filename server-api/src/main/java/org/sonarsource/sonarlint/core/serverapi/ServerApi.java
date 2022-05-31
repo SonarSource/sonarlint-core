@@ -1,5 +1,5 @@
 /*
- * SonarLint Server API
+ * SonarLint Core - Server API
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -23,11 +23,11 @@ import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.branches.ProjectBranchesApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
 import org.sonarsource.sonarlint.core.serverapi.developers.DevelopersApi;
-import org.sonarsource.sonarlint.core.serverapi.push.PushApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.organization.OrganizationApi;
 import org.sonarsource.sonarlint.core.serverapi.plugins.PluginsApi;
+import org.sonarsource.sonarlint.core.serverapi.push.PushApi;
 import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfileApi;
 import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
 import org.sonarsource.sonarlint.core.serverapi.settings.SettingsApi;
