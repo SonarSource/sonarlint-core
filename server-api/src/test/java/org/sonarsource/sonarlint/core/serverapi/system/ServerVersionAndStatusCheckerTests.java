@@ -1,5 +1,5 @@
 /*
- * SonarLint Server API
+ * SonarLint Core - Server API
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.system;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

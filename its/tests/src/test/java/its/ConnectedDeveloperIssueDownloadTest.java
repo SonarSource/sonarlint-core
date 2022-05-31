@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.AfterClass;
@@ -46,11 +47,10 @@ import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
+import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
 
 import static its.tools.ItUtils.SONAR_VERSION;
-import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
@@ -76,8 +76,6 @@ public class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
 
-  private static Path sonarUserHome;
-
   private static ConnectedSonarLintEngine engine;
 
   private static Issue wfIssue;
@@ -90,7 +88,7 @@ public class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
     var adminWsClient = newAdminWsClient(ORCHESTRATOR);
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
-    sonarUserHome = temp.newFolder().toPath();
+    Path sonarUserHome = temp.newFolder().toPath();
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
       .setConnectionId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
@@ -117,7 +115,7 @@ public class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
 
     // Mark a few issues as closed WF and closed FP on the branch
     var issueSearchResponse = adminWsClient.issues()
-      .search(new SearchRequest().setStatuses(asList("OPEN")).setTypes(asList("CODE_SMELL")).setComponentKeys(asList(PROJECT_KEY)).setBranch(LONG_BRANCH));
+      .search(new SearchRequest().setStatuses(List.of("OPEN")).setTypes(List.of("CODE_SMELL")).setComponentKeys(List.of(PROJECT_KEY)).setBranch(LONG_BRANCH));
     wfIssue = issueSearchResponse.getIssues(0);
     fpIssue = issueSearchResponse.getIssues(1);
     // Change severity and type
@@ -136,7 +134,7 @@ public class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
         .isNotEmpty();
     } else {
       assertThat(
-        adminWsClient.issues().search(new SearchRequest().setTypes(asList("SECURITY_HOTSPOT")).setComponentKeys(asList(PROJECT_KEY))).getIssuesList())
+        adminWsClient.issues().search(new SearchRequest().setTypes(List.of("SECURITY_HOTSPOT")).setComponentKeys(List.of(PROJECT_KEY))).getIssuesList())
           .isNotEmpty();
     }
   }
@@ -147,7 +145,7 @@ public class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void sync_all_project_branches() throws IOException {
+  public void sync_all_project_branches() {
     engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY), null);
 
     // Starting from SQ 8.1, concept of short vs long living branch has been removed
@@ -160,7 +158,7 @@ public class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void download_all_issues_for_branch() throws IOException {
+  public void download_all_issues_for_branch() {
     engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, false, LONG_BRANCH, null);
 
     var file1Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/500lines.xoo");
@@ -175,8 +173,8 @@ public class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
 
     assertThat(allIssues).hasSize(10_500);
 
-    assertThat(allIssues.get(wfIssue.getKey()).resolution()).isEqualTo("WONTFIX");
-    assertThat(allIssues.get(fpIssue.getKey()).resolution()).isEqualTo("FALSE-POSITIVE");
+    assertThat(allIssues.get(wfIssue.getKey()).resolved()).isTrue();
+    assertThat(allIssues.get(fpIssue.getKey()).resolved()).isTrue();
     assertThat(allIssues.get(overridenSeverityIssue.getKey()).severity()).isEqualTo("BLOCKER");
     assertThat(allIssues.get(overridenTypeIssue.getKey()).type()).isEqualTo("BUG");
 

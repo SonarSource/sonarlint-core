@@ -24,14 +24,14 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
-import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.issuetracking.CachingIssueTracker;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverconnection.DownloadException;
+import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
+import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
 
 public class ServerIssueTracker {
 

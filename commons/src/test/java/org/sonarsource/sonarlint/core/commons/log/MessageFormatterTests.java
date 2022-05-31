@@ -1,5 +1,5 @@
 /*
- * SonarLint Commons
+ * SonarLint Core - Commons
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *

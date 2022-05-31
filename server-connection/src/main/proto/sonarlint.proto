@@ -1,0 +1,118 @@
+// SonarLint, open source software quality management tool.
+// Copyright (C) 2015-2017 SonarSource
+// mailto:contact AT sonarsource DOT com
+//
+// SonarLint is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 3 of the License, or (at your option) any later version.
+//
+// SonarLint is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software Foundation,
+// Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+
+syntax = "proto3";
+
+package sonarlint;
+
+// The java package can be changed without breaking compatibility.
+// it impacts only the generated Java code.
+option java_package = "org.sonarsource.sonarlint.core.serverconnection.proto";
+option optimize_for = SPEED;
+
+message StorageStatus {
+  string storage_version = 1;
+  string sonarlint_core_version = 2;
+  int64 update_timestamp = 4;
+}
+
+message ServerInfos {
+  string id = 1;
+  string version = 2;
+  string status = 3;
+}
+
+message PluginReferences {
+    map<string, PluginReference> plugins_by_key = 1;
+  
+  message PluginReference {
+    string key = 1;
+    string hash = 2;
+    string filename = 3;
+  }
+}
+
+message ServerIssue {
+  string rule_repository = 3;
+  string rule_key = 4;
+  string severity = 7;
+  string resolution = 9;
+  reserved 10; // removed status
+  string line_hash = 11;
+  reserved 12; // removed assignee_login
+  int64 creation_date = 13;
+  string type = 14;
+  string key = 15;
+  Location primary_location = 16;
+  repeated Flow flow = 17;
+
+  message Flow {
+    repeated Location location = 1;
+  }
+
+  message Location {
+    string path = 1;
+    string msg = 2;
+    TextRange text_range = 3;
+    string code_snippet = 4;
+  }
+
+	message TextRange {
+	  int32 start_line = 1;
+	  int32 start_line_offset = 2;
+	  int32 end_line = 3;
+	  int32 end_line_offset = 4;
+	}
+}
+
+message ProjectList {
+  map<string,Project> projects_by_key = 1;
+  
+  message Project {
+    string key = 1;
+    string name = 2;
+  }
+}
+
+message ProjectComponents {
+  repeated string component = 1;
+}
+
+
+message AnalyzerConfiguration {
+    map<string, string> settings = 1;
+    map<string, RuleSet> ruleSetsByLanguageKey = 2;
+}
+
+message RuleSet {
+    repeated ActiveRule rules = 1;
+    string lastModified = 3;
+
+    message ActiveRule {
+        string ruleKey = 1;
+        string severity = 2;
+        string templateKey = 3;
+        map<string,string> params = 4;
+    }
+}
+
+message ProjectBranches {
+    repeated string branchName = 1;
+    string mainBranchName = 2;
+}

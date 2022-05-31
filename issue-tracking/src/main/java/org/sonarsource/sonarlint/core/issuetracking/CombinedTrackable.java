@@ -36,7 +36,6 @@ class CombinedTrackable extends AbstractTrackable {
     this.creationDate = base.getCreationDate();
     this.serverIssueKey = base.getServerIssueKey();
     this.resolved = base.isResolved();
-    this.assignee = base.getAssignee();
     if (inheritSeverity) {
       this.severity = base.getSeverity();
       if (base.getType() != null) {

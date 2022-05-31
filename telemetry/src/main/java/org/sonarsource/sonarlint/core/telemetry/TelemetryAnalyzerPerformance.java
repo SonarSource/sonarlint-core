@@ -1,5 +1,5 @@
 /*
- * SonarLint Telemetry
+ * SonarLint Core - Telemetry
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.TreeMap;
 
 public class TelemetryAnalyzerPerformance {

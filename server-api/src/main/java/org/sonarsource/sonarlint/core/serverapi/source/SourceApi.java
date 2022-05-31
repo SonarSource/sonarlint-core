@@ -1,5 +1,5 @@
 /*
- * SonarLint Server API
+ * SonarLint Core - Server API
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.serverapi.source;
 
 import java.util.Optional;
-import org.sonarsource.sonarlint.core.commons.http.HttpClient.Response;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;

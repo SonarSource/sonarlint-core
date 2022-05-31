@@ -1,5 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
@@ -7,7 +6,7 @@
     <version>8.7-SNAPSHOT</version>
   </parent>
   <artifactId>sonarlint-commons</artifactId>
-  <name>SonarLint Commons</name>
+  <name>SonarLint Core - Commons</name>
   <description>Common code for all SonarLint modules</description>
   <properties>
     <!-- The library is shaded into sonarlint-core -->
@@ -44,6 +43,22 @@
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>sl_core_version.txt</include>
+        </includes>
+        <filtering>true</filtering>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+        <excludes>
+          <exclude>sl_core_version.txt</exclude>
+        </excludes>
+        <filtering>false</filtering>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;

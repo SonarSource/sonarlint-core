@@ -35,7 +35,6 @@ class ProtobufIssueTrackableTests {
     .setChecksum(7)
     .setRuleKey("rule key")
     .setResolved(true)
-    .setAssignee("user")
     .build();
 
   private final Trackable completeTrackable = new ProtobufIssueTrackable(completeIssue);
@@ -76,6 +75,5 @@ class ProtobufIssueTrackableTests {
     assertThat(completeTrackable.getLineHash()).isEqualTo(completeIssue.getChecksum());
     assertThat(completeTrackable.getRuleKey()).isEqualTo(completeIssue.getRuleKey());
     assertThat(completeTrackable.isResolved()).isEqualTo(completeIssue.getResolved());
-    assertThat(completeTrackable.getAssignee()).isEqualTo(completeIssue.getAssignee());
   }
 }
