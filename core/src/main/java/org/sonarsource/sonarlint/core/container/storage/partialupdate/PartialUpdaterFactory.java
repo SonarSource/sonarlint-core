@@ -34,6 +34,6 @@ public class PartialUpdaterFactory {
   }
 
   public PartialUpdater create() {
-    return new PartialUpdater(new IssueStoreFactory(), new IssueDownloader(issueStorePaths), projectStoragePaths, issueStorePaths);
+    return new PartialUpdater(new IssueStoreFactory(), new IssueDownloader(), projectStoragePaths, issueStorePaths);
   }
 }
