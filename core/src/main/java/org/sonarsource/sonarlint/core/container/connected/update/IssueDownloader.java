@@ -51,12 +51,6 @@ public class IssueDownloader {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final IssueStorePaths issueStorePaths;
-
-  public IssueDownloader(IssueStorePaths issueStorePaths) {
-    this.issueStorePaths = issueStorePaths;
-  }
-
   /**
    * Fetch all issues of the component with specified key.
    * If the component doesn't exist or it exists but has no issues, an empty iterator is returned.
