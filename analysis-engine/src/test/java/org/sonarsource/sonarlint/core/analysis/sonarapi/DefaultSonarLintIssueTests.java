@@ -21,24 +21,17 @@ package org.sonarsource.sonarlint.core.analysis.sonarapi;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.rule.Severity;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.rule.RuleKey;
-import org.sonarsource.sonarlint.core.analysis.api.ClientInputFileEdit;
-import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
 import org.sonarsource.sonarlint.core.analysis.api.QuickFixable;
-import org.sonarsource.sonarlint.core.analysis.api.TextEdit;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputDir;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputFile;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputProject;
-import org.sonarsource.sonarlint.plugin.api.issue.NewInputFileEdit;
-import org.sonarsource.sonarlint.plugin.api.issue.NewQuickFix;
 import testutils.TestInputFileBuilder;
 
 import static org.apache.commons.lang3.StringUtils.repeat;

@@ -21,8 +21,6 @@ package org.sonarsource.sonarlint.core.plugin.commons.loading;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.Version;

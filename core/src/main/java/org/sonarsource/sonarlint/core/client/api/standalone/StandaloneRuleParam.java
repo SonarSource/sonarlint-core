@@ -21,21 +21,68 @@ package org.sonarsource.sonarlint.core.client.api.standalone;
 
 import java.util.List;
 import javax.annotation.CheckForNull;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamDefinition;
+import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamType;
 
-public interface StandaloneRuleParam {
+public class StandaloneRuleParam {
 
-  String key();
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  String name();
+  private final String key;
+  private final String name;
+  private final String description;
+  private final String defaultValue;
+  private final StandaloneRuleParamType type;
+  private final boolean multiple;
+  private final List<String> possibleValues;
 
-  String description();
+  public StandaloneRuleParam(SonarLintRuleParamDefinition param) {
+    this.key = param.key();
+    this.name = param.name();
+    this.description = param.description();
+    this.defaultValue = param.defaultValue();
+    var apiType = param.type();
+    this.type = from(apiType);
+    this.multiple = param.multiple();
+    this.possibleValues = List.copyOf(param.possibleValues());
+  }
+
+  private static StandaloneRuleParamType from(SonarLintRuleParamType apiType) {
+    try {
+      return StandaloneRuleParamType.valueOf(apiType.name());
+    } catch (IllegalArgumentException unknownType) {
+      LOG.warn("Unknown parameter type: " + apiType.name());
+      return StandaloneRuleParamType.STRING;
+    }
+  }
+
+  public String key() {
+    return key;
+  }
+
+  public String name() {
+    return name;
+  }
+
+  public String description() {
+    return description;
+  }
 
   @CheckForNull
-  String defaultValue();
+  public String defaultValue() {
+    return defaultValue;
+  }
 
-  StandaloneRuleParamType type();
+  public StandaloneRuleParamType type() {
+    return type;
+  }
 
-  boolean multiple();
+  public boolean multiple() {
+    return multiple;
+  }
 
-  List<String> possibleValues();
+  public List<String> possibleValues() {
+    return possibleValues;
+  }
 }

@@ -6,8 +6,8 @@
     <version>8.7-SNAPSHOT</version>
   </parent>
   <artifactId>sonarlint-slf4j-sonar-log</artifactId>
-  <name>SonarLint slf4j log adaptor</name>
-  <description>Adapts slf4j logs to sonar logging framework</description>
+  <name>SonarLint Core - Slf4j log adaptor</name>
+  <description>Redirect slf4j logs to sonarlint logging facade</description>
 
   <properties>
     <!-- The library is bundled into sonarlint-plugin-commons -->

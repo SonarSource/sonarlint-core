@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 import org.picocontainer.Characteristics;
-import org.picocontainer.MutablePicoContainer;
 import org.picocontainer.PicoLifecycleException;
 import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.Property;

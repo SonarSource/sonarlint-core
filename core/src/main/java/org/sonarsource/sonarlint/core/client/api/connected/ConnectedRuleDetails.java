@@ -19,10 +19,62 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
+import org.sonarsource.sonarlint.core.commons.Language;
 
-public interface ConnectedRuleDetails extends RuleDetails {
+public class ConnectedRuleDetails implements RuleDetails {
 
-  String getExtendedDescription();
+  private final String key;
+  private final Language language;
+  private final String name;
+  private final String htmlDescription;
+  private final String severity;
+  private final String type;
+  private final String extendedDescription;
+
+  public ConnectedRuleDetails(String key, String name, @Nullable String htmlDescription, String severity, @Nullable String type, Language language, String extendedDescription) {
+    this.key = key;
+    this.name = name;
+    this.htmlDescription = htmlDescription;
+    this.severity = severity;
+    this.type = type;
+    this.language = language;
+    this.extendedDescription = extendedDescription;
+  }
+
+  @Override
+  public String getKey() {
+    return key;
+  }
+
+  @Override
+  public String getName() {
+    return name;
+  }
+
+  @Override
+  public String getHtmlDescription() {
+    return htmlDescription;
+  }
+
+  @Override
+  public Language getLanguage() {
+    return language;
+  }
+
+  @Override
+  public String getSeverity() {
+    return severity;
+  }
+
+  @Override
+  public String getType() {
+    return type;
+  }
+
+  public String getExtendedDescription() {
+    return extendedDescription;
+  }
 
 }

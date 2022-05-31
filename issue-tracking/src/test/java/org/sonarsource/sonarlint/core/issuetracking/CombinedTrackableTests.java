@@ -33,7 +33,6 @@ class CombinedTrackableTests {
 
     var combined = new CombinedTrackable(base, next, true);
 
-    assertThat(combined.getAssignee()).isEqualTo("baseAssignee");
     assertThat(combined.getServerIssueKey()).isEqualTo("baseServerIssueKey");
     assertThat(combined.getSeverity()).isEqualTo("baseSeverity");
     assertThat(combined.getType()).isEqualTo("baseType");
@@ -50,7 +49,6 @@ class CombinedTrackableTests {
 
   private Trackable createMock(String name, int number) {
     var t = mock(Trackable.class);
-    when(t.getAssignee()).thenReturn(name + "Assignee");
     when(t.getCreationDate()).thenReturn((long) number);
     when(t.getLine()).thenReturn(number);
     when(t.getLineHash()).thenReturn(number);
