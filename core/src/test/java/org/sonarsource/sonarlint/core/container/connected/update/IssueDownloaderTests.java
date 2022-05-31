@@ -51,12 +51,11 @@ class IssueDownloaderTests {
 
   private static final ProgressMonitor PROGRESS = new ProgressMonitor(null);
 
-  private final IssueStorePaths issueStorePaths = new IssueStorePaths();
   private IssueDownloader underTest;
 
   @BeforeEach
   void prepare() {
-    underTest = new IssueDownloader(issueStorePaths);
+    underTest = new IssueDownloader();
   }
 
   @Test
