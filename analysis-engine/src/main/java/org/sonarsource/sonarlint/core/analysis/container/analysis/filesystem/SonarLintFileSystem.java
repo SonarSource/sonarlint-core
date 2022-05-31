@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
-import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.stream.StreamSupport;
 import org.sonar.api.batch.fs.FilePredicate;

@@ -78,11 +78,6 @@ public class ProtobufIssueTrackable implements Trackable {
   }
 
   @Override
-  public String getAssignee() {
-    return issue.getAssignee();
-  }
-
-  @Override
   public String getSeverity() {
     throw new UnsupportedOperationException();
   }

@@ -21,8 +21,8 @@ package org.sonarsource.sonarlint.core.client.api.common;
 
 import java.util.stream.Stream;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 
 public class ClientFileSystemFixtures {
   public static ClientModuleFileSystem aClientFileSystemWith(ClientInputFile... clientInputFile) {

@@ -7,7 +7,7 @@
     <version>8.7-SNAPSHOT</version>
   </parent>
   <artifactId>sonarlint-telemetry</artifactId>
-  <name>SonarLint Telemetry</name>
+  <name>SonarLint Core - Telemetry</name>
   <description>Manage telemetry</description>
 
   <properties>

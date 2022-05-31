@@ -1,5 +1,5 @@
 /*
- * SonarLint Server API
+ * SonarLint Core - Server API
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.serverapi.developers;
 
 import java.time.ZonedDateTime;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

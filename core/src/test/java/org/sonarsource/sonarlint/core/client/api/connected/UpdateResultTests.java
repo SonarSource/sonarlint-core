@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.client.api.connected;
 
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.serverconnection.GlobalStorageStatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

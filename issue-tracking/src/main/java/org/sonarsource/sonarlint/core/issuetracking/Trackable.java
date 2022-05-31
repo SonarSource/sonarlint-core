@@ -58,7 +58,4 @@ public interface Trackable<G> {
 
   boolean isResolved();
 
-  // empty if none
-  String getAssignee();
-
 }

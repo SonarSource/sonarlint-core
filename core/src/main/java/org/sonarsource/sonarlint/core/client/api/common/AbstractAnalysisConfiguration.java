@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common;
 
-import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,7 +30,6 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.commons.Language;
 
 @Immutable
 public abstract class AbstractAnalysisConfiguration {

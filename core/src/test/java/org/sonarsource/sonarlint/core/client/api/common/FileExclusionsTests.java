@@ -28,14 +28,14 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class FileExclusionsTests {
-  FileExclusions fileExclusions;
+  ClientFileExclusions fileExclusions;
 
   @BeforeEach
   void before() {
     Set<String> glob = Collections.singleton("**/*.js");
     Set<String> files = Collections.singleton(new File("dir/file.java").getAbsolutePath());
     Set<String> dir = Collections.singleton("src");
-    fileExclusions = new FileExclusions(files, dir, glob);
+    fileExclusions = new ClientFileExclusions(files, dir, glob);
   }
 
   @Test
