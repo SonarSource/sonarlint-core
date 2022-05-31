@@ -29,7 +29,6 @@ import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectFileListDownloader;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
@@ -44,7 +43,7 @@ public class ProjectStorageUpdateExecutor {
   private final ProjectStoragePaths projectStoragePaths;
 
   public ProjectStorageUpdateExecutor(ProjectStoragePaths projectStoragePaths) {
-    this(projectStoragePaths, new ProjectFileListDownloader(), new ServerIssueUpdater(projectStoragePaths, new IssueDownloader(new IssueStorePaths()), new IssueStoreFactory()));
+    this(projectStoragePaths, new ProjectFileListDownloader(), new ServerIssueUpdater(projectStoragePaths, new IssueDownloader(), new IssueStoreFactory()));
   }
 
   ProjectStorageUpdateExecutor(ProjectStoragePaths projectStoragePaths, ProjectFileListDownloader projectFileListDownloader, ServerIssueUpdater serverIssueUpdater) {
