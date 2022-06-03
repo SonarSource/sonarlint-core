@@ -23,12 +23,12 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarqube.ws.Common;
-import org.sonarqube.ws.Rules;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
@@ -78,14 +78,14 @@ class RulesApiTests {
   void should_get_rule_from_organization() throws ExecutionException, InterruptedException {
     mockServer.addProtobufResponse("/api/rules/show.protobuf?key=java:S1234&organization=orgKey",
       Rules.ShowResponse.newBuilder().setRule(
-          Rules.Rule.newBuilder()
-            .setName("name")
-            .setSeverity("severity")
-            .setType(Common.RuleType.VULNERABILITY)
-            .setLang(Language.PYTHON.getLanguageKey())
-            .setHtmlDesc("htmlDesc")
-            .setHtmlNote("htmlNote")
-            .build())
+        Rules.Rule.newBuilder()
+          .setName("name")
+          .setSeverity("severity")
+          .setType(Common.RuleType.VULNERABILITY)
+          .setLang(Language.PYTHON.getLanguageKey())
+          .setHtmlDesc("htmlDesc")
+          .setHtmlNote("htmlNote")
+          .build())
         .build());
 
     var rulesApi = new RulesApi(mockServer.serverApiHelper("orgKey"));

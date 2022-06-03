@@ -30,9 +30,6 @@ import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.scanner.protocol.input.ScannerInput;
-import org.sonarqube.ws.Common.Flow;
-import org.sonarqube.ws.Common.TextRange;
-import org.sonarqube.ws.Issues.Issue;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
@@ -41,6 +38,10 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.Flow;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.TextRange;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Issue;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 import org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils;
 
@@ -170,7 +171,7 @@ public class IssueDownloader {
     for (Flow flowFromWs : issueFromWs.getFlowsList()) {
       flowBuilder.clear();
 
-      for (org.sonarqube.ws.Common.Location locationFromWs : flowFromWs.getLocationsList()) {
+      for (Common.Location locationFromWs : flowFromWs.getLocationsList()) {
         locationBuilder.clear();
         locationBuilder.setMsg(locationFromWs.getMsg());
         var componentPath = componentPathsByKey.get(locationFromWs.getComponent());
