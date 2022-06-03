@@ -49,7 +49,6 @@ import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsClientFactories;
 import org.sonarqube.ws.client.WsRequest;
-import org.sonarqube.ws.client.qualityprofiles.AddProjectRequest;
 import org.sonarqube.ws.client.settings.ResetRequest;
 import org.sonarqube.ws.client.settings.SetRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
@@ -204,9 +203,11 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @AfterClass
   public static void cleanup() {
-    adminWsClient.projects().bulkDelete(new org.sonarqube.ws.client.projects.BulkDeleteRequest()
-      .setQ("-" + randomPositiveInt)
-      .setOrganization(SONARCLOUD_ORGANIZATION));
+    var request = new PostRequest("api/projects/bulk_delete");
+    request.setParam("q", "-" + randomPositiveInt);
+    request.setParam("organization", SONARCLOUD_ORGANIZATION);
+    try (var response = adminWsClient.wsConnector().call(request)) {
+    }
 
     try {
       engine.stop(true);
@@ -216,11 +217,13 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   private static void associateProjectToQualityProfile(String projectKey, String language, String profileName) {
-    adminWsClient.qualityprofiles().addProject(new AddProjectRequest()
-      .setProject(projectKey(projectKey))
-      .setLanguage(language)
-      .setQualityProfile(profileName)
-      .setOrganization(SONARCLOUD_ORGANIZATION));
+    var request = new PostRequest("api/qualityprofiles/add_project");
+    request.setParam("language", language);
+    request.setParam("project", projectKey(projectKey));
+    request.setParam("qualityProfile", profileName);
+    request.setParam("organization", SONARCLOUD_ORGANIZATION);
+    try (var response = adminWsClient.wsConnector().call(request)) {
+    }
   }
 
   private static void restoreProfile(String profile) {
@@ -234,10 +237,12 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   private static void provisionProject(String key, String name) {
-    adminWsClient.projects().create(new org.sonarqube.ws.client.projects.CreateRequest()
-      .setProject(projectKey(key))
-      .setName(name)
-      .setOrganization(SONARCLOUD_ORGANIZATION));
+    var request = new PostRequest("api/projects/create");
+    request.setParam("name", name);
+    request.setParam("project", projectKey(key));
+    request.setParam("organization", SONARCLOUD_ORGANIZATION);
+    try (var response = adminWsClient.wsConnector().call(request)) {
+    }
   }
 
   private static String projectKey(String key) {

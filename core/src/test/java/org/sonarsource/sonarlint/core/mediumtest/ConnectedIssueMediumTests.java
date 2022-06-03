@@ -33,7 +33,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarqube.ws.Rules;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
@@ -51,6 +50,7 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.mediumtest.fixtures.ProjectStorageFixture;
 import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
 import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileListener;
 import testutils.OnDiskTestClientInputFile;
@@ -147,7 +147,8 @@ class ConnectedIssueMediumTests {
   @Test
   void simpleJavaBound(@TempDir Path baseDir) throws Exception {
     var inputFile = prepareJavaInputFile(baseDir);
-    mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=java:S1481", Rules.ShowResponse.newBuilder().setRule(Rules.Rule.newBuilder().setLang(Language.JAVA.getLanguageKey())).build());
+    mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=java:S1481",
+      Rules.ShowResponse.newBuilder().setRule(Rules.Rule.newBuilder().setLang(Language.JAVA.getLanguageKey())).build());
 
     // Severity of java:S1481 changed to BLOCKER in the quality profile
     assertThat(sonarlint.getActiveRuleDetails(null, null, "java:S1481", null).get().getSeverity()).isEqualTo("MINOR");

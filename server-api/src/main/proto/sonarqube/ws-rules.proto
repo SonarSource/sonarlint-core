@@ -1,0 +1,74 @@
+// SonarLint, open source software quality management tool.
+// Copyright (C) 2015-2022 SonarSource
+// mailto:contact AT sonarsource DOT com
+//
+// SonarLint is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 3 of the License, or (at your option) any later version.
+//
+// SonarLint is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software Foundation,
+// Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+syntax = "proto2";
+
+package sonarqube.ws.rules;
+
+import "sonarqube/ws-commons.proto";
+
+option java_package = "org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws";
+option java_outer_classname = "Rules";
+option optimize_for = SPEED;
+
+// WS api/rules/search
+message SearchResponse {
+  optional int64 total = 1;
+  optional int32 p = 2;
+  optional int64 ps = 3;
+  repeated Rule rules = 4;
+  optional Actives actives = 5; 
+}
+
+//WS api/rules/show
+message ShowResponse {
+  optional Rule rule = 1;
+}
+
+message Rule {
+  optional string key = 1;
+  optional string repo = 2;
+  optional string name = 3;
+  optional string htmlDesc = 5 [deprecated=true];
+  optional string htmlNote = 6;
+  optional string severity = 10;
+  optional string templateKey = 14;
+  optional string lang = 19;
+
+  optional sonarqube.ws.commons.RuleType type = 37;
+
+}
+
+message Actives {
+  map<string, ActiveList> actives = 1;
+}
+
+message ActiveList {
+  repeated Active activeList = 1;
+}
+
+message Active {
+  optional string qProfile = 1;
+  optional string severity = 3;
+  repeated Param params = 5;
+
+  message Param {
+    optional string key = 1;
+    optional string value = 2;
+  }
+}

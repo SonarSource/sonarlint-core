@@ -41,7 +41,6 @@
   <properties>
     <!-- Don't forget to also update SonarPluginRequirementsChecker::IMPLEMENTED_PLUGIN_API -->
     <sonar-plugin-api.version>9.6.1.114</sonar-plugin-api.version>
-    <sonar-ws.version>8.5.1.38104</sonar-ws.version>
     <sonar-markdown.version>9.4.0.54424</sonar-markdown.version>
     <sonar-scanner-protocol.version>7.9</sonar-scanner-protocol.version>
     <protobuf.version>3.20.0</protobuf.version>
@@ -168,6 +167,16 @@
           <configuration>
             <trimStackTrace>false</trimStackTrace>
           </configuration>
+        </plugin>
+        <plugin>
+          <groupId>kr.motd.maven</groupId>
+          <artifactId>os-maven-plugin</artifactId>
+          <version>1.7.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.xolstice.maven.plugins</groupId>
+          <artifactId>protobuf-maven-plugin</artifactId>
+          <version>0.6.1</version>
         </plugin>
       </plugins>
     </pluginManagement>

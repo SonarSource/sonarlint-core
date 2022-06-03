@@ -39,7 +39,7 @@ import java.util.function.Supplier;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
-import org.sonarqube.ws.Common.Paging;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.Paging;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.http.HttpConnectionListener;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;

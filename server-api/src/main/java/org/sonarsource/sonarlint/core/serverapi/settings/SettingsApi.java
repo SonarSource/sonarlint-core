@@ -20,16 +20,15 @@
 package org.sonarsource.sonarlint.core.serverapi.settings;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import org.sonarqube.ws.Settings;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Settings;
 
 public class SettingsApi {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
