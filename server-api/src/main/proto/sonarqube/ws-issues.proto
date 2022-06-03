@@ -1,0 +1,89 @@
+// SonarLint, open source software quality management tool.
+// Copyright (C) 2015-2022 SonarSource
+// mailto:contact AT sonarsource DOT com
+//
+// SonarLint is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 3 of the License, or (at your option) any later version.
+//
+// SonarLint is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software Foundation,
+// Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+syntax = "proto2";
+
+package sonarqube.ws.issues;
+
+import "sonarqube/ws-commons.proto";
+
+option java_package = "org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws";
+option java_outer_classname = "Issues";
+option optimize_for = SPEED;
+
+// Response of GET api/issues/search
+message SearchWsResponse {
+  optional int64 total = 1;
+  optional int64 p = 2;
+  optional int32 ps = 3;
+  optional sonarqube.ws.commons.Paging paging = 4;
+
+  repeated Issue issues = 6;
+  repeated Component components = 7;
+  optional sonarqube.ws.commons.Rules rules = 8;
+}
+
+message Issue {
+  optional string key = 1;
+  optional string rule = 2;
+  optional sonarqube.ws.commons.Severity severity = 3;
+  optional string component = 4;
+  optional int32 line = 8;
+  optional string hash = 31;
+  optional sonarqube.ws.commons.TextRange textRange = 9;
+  repeated sonarqube.ws.commons.Flow flows = 10;
+  optional string resolution = 11;
+  optional string status = 12;
+  optional string message = 13;
+  optional string assignee = 15;
+  optional string creationDate = 23;
+  optional sonarqube.ws.commons.RuleType type = 27;
+}
+
+message Component {
+  optional string key = 2;
+  optional string path = 8;
+}
+
+message TextRange {
+  optional int32 startLine = 1;
+  optional int32 startLineOffset = 2;
+  optional int32 endLine = 3;
+  optional int32 endLineOffset = 4;
+  optional string hash = 5;
+}
+
+message Location {
+  optional string filePath = 1;
+  optional string message = 2;
+  optional TextRange textRange = 3;
+}
+
+message IssueLite {
+  required string key = 1;
+  optional int64 creationDate = 2;
+  optional bool resolved = 3;
+  optional string ruleKey = 4;
+  optional string userSeverity = 5;
+  optional string type = 6;
+  optional Location mainLocation = 7;
+  optional bool closed = 8;
+}
+
+
+

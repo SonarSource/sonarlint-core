@@ -33,8 +33,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarqube.ws.Rules;
-import org.sonarqube.ws.Rules.Rule;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
@@ -46,6 +44,8 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.mediumtest.ConnectedIssueMediumTests.StoreIssueListener;
 import org.sonarsource.sonarlint.core.mediumtest.fixtures.ProjectStorageFixture;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules.Rule;
 import testutils.PluginLocator;
 import testutils.TestUtils;
 
@@ -158,7 +158,8 @@ class ConnectedEmbeddedPluginMediumTests {
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=squid:S106",
       Rules.ShowResponse.newBuilder().setRule(Rule.newBuilder().setLang(Language.JAVA.getLanguageKey()).setHtmlNote("S106 Extended rule description")).build());
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=squid:myCustomRule",
-      Rules.ShowResponse.newBuilder().setRule(Rule.newBuilder().setLang(Language.JAVA.getLanguageKey()).setHtmlDesc("My custom rule template desc").setHtmlNote("My custom rule extended description")).build());
+      Rules.ShowResponse.newBuilder()
+        .setRule(Rule.newBuilder().setLang(Language.JAVA.getLanguageKey()).setHtmlDesc("My custom rule template desc").setHtmlNote("My custom rule extended description")).build());
 
     ConnectedRuleDetails s106RuleDetails = sonarlint.getActiveRuleDetails(mockWebServerExtension.endpointParams(), httpClient(), "java:S106", JAVA_MODULE_KEY).get();
     assertThat(s106RuleDetails.getSeverity()).isEqualTo("BLOCKER");
