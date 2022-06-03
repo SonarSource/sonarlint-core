@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.organization;
 
-import org.sonarqube.ws.Organizations.Organization;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations.Organization;
 
 public class DefaultRemoteOrganization implements ServerOrganization {
   private final String key;

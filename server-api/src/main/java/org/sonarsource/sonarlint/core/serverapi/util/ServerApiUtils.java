@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.serverapi.util;
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Nullable;
-import org.sonarqube.ws.Common.TextRange;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.TextRange;
 
 public class ServerApiUtils {
 

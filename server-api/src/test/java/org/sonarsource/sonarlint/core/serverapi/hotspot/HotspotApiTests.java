@@ -19,18 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
-import java.util.Optional;
-import mockwebserver3.RecordedRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarqube.ws.Common;
-import org.sonarqube.ws.Hotspots;
-import org.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -138,7 +136,7 @@ class HotspotApiTests {
 
   @Test
   void it_should_throw_when_parser_throws_an_exception() {
-    mockServer.addProtobufResponse("/api/hotspots/show.protobuf?projectKey=p&hotspot=h", Issues.BulkChangeWsResponse.newBuilder().build());
+    mockServer.addProtobufResponse("/api/hotspots/show.protobuf?projectKey=p&hotspot=h", Issues.SearchWsResponse.newBuilder().build());
 
     var params = new GetSecurityHotspotRequestParams("h", "p");
     assertThrows(IllegalArgumentException.class, () -> underTest.fetch(params));

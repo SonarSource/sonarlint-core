@@ -34,13 +34,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonar.scanner.protocol.input.ScannerInput;
-import org.sonarqube.ws.Issues;
-import org.sonarqube.ws.Issues.Component;
-import org.sonarqube.ws.Issues.Issue;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Component;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Issue;
 
 import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 
