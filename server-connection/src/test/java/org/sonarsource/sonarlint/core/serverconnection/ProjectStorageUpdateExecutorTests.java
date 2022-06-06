@@ -107,7 +107,7 @@ class ProjectStorageUpdateExecutorTests {
     underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, projectFileListDownloader, serverIssueUpdater);
     underTest.update(serverApiHelper, MODULE_KEY_WITH_BRANCH, false, null, PROGRESS);
 
-    verify(serverIssueUpdater).updateServerIssues(eq(serverApiHelper), eq(MODULE_KEY_WITH_BRANCH), any(Path.class), eq(false),
+    verify(serverIssueUpdater).update(eq(serverApiHelper), eq(MODULE_KEY_WITH_BRANCH), eq(false),
       eq(null), any(ProgressMonitor.class));
   }
 

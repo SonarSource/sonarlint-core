@@ -19,20 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStore;
 
 public class IssueStoreReader {
-  private final Function<Path, ServerIssueStore> issueStoreFactory;
-  private final ProjectStoragePaths projectStoragePaths;
+  private final ServerIssueStore serverIssueStore;
 
-  public IssueStoreReader(Function<Path, ServerIssueStore> issueStoreFactory, ProjectStoragePaths projectStoragePaths) {
-    this.issueStoreFactory = issueStoreFactory;
-    this.projectStoragePaths = projectStoragePaths;
+  public IssueStoreReader(ServerIssueStore serverIssueStore) {
+    this.serverIssueStore = serverIssueStore;
   }
 
   public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String ideFilePath) {
@@ -40,10 +35,7 @@ public class IssueStoreReader {
     if (sqPath == null) {
       return Collections.emptyList();
     }
-    var serverIssuesPath = projectStoragePaths.getServerIssuesPath(projectBinding.projectKey());
-    var issueStore = issueStoreFactory.apply(serverIssuesPath);
-
-    var loadedIssues = issueStore.load(sqPath);
+    var loadedIssues = serverIssueStore.load(projectBinding.projectKey(), sqPath);
     loadedIssues.forEach(issue -> issue.setFilePath(ideFilePath));
     return loadedIssues;
   }
