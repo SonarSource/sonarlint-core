@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -41,7 +40,7 @@ class ProjectStoragePathsTests {
   }
 
   @Test
-  void encodeProjectKeyForFs(@TempDir Path connectionStorageRoot) throws Exception {
+  void encodeProjectKeyForFs(@TempDir Path connectionStorageRoot) {
     var manager = new ProjectStoragePaths(connectionStorageRoot);
 
     var moduleStorageRoot = manager.getProjectStorageRoot("module.:key/with_branch%");
@@ -50,13 +49,8 @@ class ProjectStoragePathsTests {
   }
 
   @Test
-  void paths(@TempDir Path connectionStorageRoot) throws IOException {
+  void paths(@TempDir Path connectionStorageRoot) {
     var manager = new ProjectStoragePaths(connectionStorageRoot);
-
-    assertThat(manager.getServerIssuesPath("project")).isEqualTo(connectionStorageRoot
-      .resolve("projects")
-      .resolve("70726f6a656374")
-      .resolve("server_issues"));
 
     assertThat(manager.getComponentListPath("project")).isEqualTo(connectionStorageRoot
       .resolve("projects")

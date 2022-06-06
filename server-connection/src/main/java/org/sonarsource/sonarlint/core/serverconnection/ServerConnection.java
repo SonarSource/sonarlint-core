@@ -45,9 +45,9 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStorageStatusReader;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufServerIssueStore;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageReader;
+import org.sonarsource.sonarlint.core.serverconnection.storage.XodusServerIssueStore;
 
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 
@@ -63,11 +63,12 @@ public class ServerConnection {
   private final StorageReader storageReader;
   private final PluginsStorage pluginsStorage;
   private final IssueStoreReader issueStoreReader;
-  private final PartialUpdaterFactory partialUpdaterFactory;
   private final LocalStorageSynchronizer storageSynchronizer;
   private final GlobalStorageUpdateExecutor globalStorageUpdateExecutor;
   private final ProjectStorageUpdateExecutor projectStorageUpdateExecutor;
   private final ServerEventsAutoSubscriber serverEventsAutoSubscriber;
+  private final ServerIssueUpdater issuesUpdater;
+  private final XodusServerIssueStore serverIssueStore;
 
   public ServerConnection(Path globalStorageRoot, String connectionId, Set<Language> enabledLanguages, Set<String> embeddedPluginKeys) {
     this.connectionId = connectionId;
@@ -85,14 +86,13 @@ public class ServerConnection {
     projectStorage = new ProjectStorage(projectsStorageRoot);
 
     this.storageReader = new StorageReader(projectStoragePaths);
-    this.issueStoreReader = new IssueStoreReader(ProtobufServerIssueStore::new, projectStoragePaths);
-
-    this.partialUpdaterFactory = new PartialUpdaterFactory(projectStoragePaths);
-
+    serverIssueStore = new XodusServerIssueStore(projectsStorageRoot);
+    this.issueStoreReader = new IssueStoreReader(serverIssueStore);
+    this.issuesUpdater = new ServerIssueUpdater(serverIssueStore, new IssueDownloader());
     this.pluginsStorage = new PluginsStorage(connectionStorageRoot.resolve("plugins"));
     this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguages, embeddedPluginKeys, pluginsStorage, projectStorage);
     this.globalStorageUpdateExecutor = new GlobalStorageUpdateExecutor(globalStores.getGlobalStorage());
-    this.projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(projectStoragePaths);
+    this.projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(projectStoragePaths, issuesUpdater);
     pluginsStorage.cleanUp();
     var eventRouter = new EventDispatcher()
       .dispatch(RuleSetChangedEvent.class, new UpdateStorageOnRuleSetChanged(projectStorage));
@@ -190,15 +190,13 @@ public class ServerConnection {
 
   public List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, boolean fetchTaintVulnerabilities,
     @Nullable String branchName, ProgressMonitor progress) {
-    var updater = partialUpdaterFactory.create();
-    updater.updateFileIssues(new ServerApiHelper(endpoint, client), projectBinding, ideFilePath, fetchTaintVulnerabilities, branchName, progress);
+    issuesUpdater.updateFileIssues(new ServerApiHelper(endpoint, client), projectBinding, ideFilePath, fetchTaintVulnerabilities, branchName, progress);
     return getServerIssues(projectBinding, ideFilePath);
   }
 
   public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable String branchName,
     ProgressMonitor progress) {
-    var updater = partialUpdaterFactory.create();
-    updater.updateFileIssues(new ServerApiHelper(endpoint, client), projectKey, fetchTaintVulnerabilities, branchName, progress);
+    issuesUpdater.update(new ServerApiHelper(endpoint, client), projectKey, fetchTaintVulnerabilities, branchName, progress);
   }
 
   public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities,
@@ -212,6 +210,7 @@ public class ServerConnection {
 
   public void stop(boolean deleteStorage) {
     serverEventsAutoSubscriber.stop();
+    serverIssueStore.close();
     if (deleteStorage) {
       globalStores.deleteAll();
     }
