@@ -19,20 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStore;
 import testutils.InMemoryIssueStore;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerIssue;
 
 class IssueStoreReaderTests {
@@ -40,21 +36,17 @@ class IssueStoreReaderTests {
 
   private IssueStoreReader issueStoreReader;
   private final ServerIssueStore issueStore = new InMemoryIssueStore();
-  private final ProjectStoragePaths projectStoragePaths = mock(ProjectStoragePaths.class);
   private final ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "");
 
   @BeforeEach
   void setUp() {
-    var storagePath = mock(Path.class);
-    when(projectStoragePaths.getServerIssuesPath(PROJECT_KEY)).thenReturn(storagePath);
-
-    issueStoreReader = new IssueStoreReader(__ -> issueStore, projectStoragePaths);
+    issueStoreReader = new IssueStoreReader(issueStore);
   }
 
   @Test
   void testSingleModule() {
     // setup issues
-    issueStore.save(Collections.singletonList(createServerIssue("src/path1")));
+    issueStore.save(projectBinding.projectKey(), Collections.singletonList(createServerIssue("src/path1")));
 
     // test
 
@@ -74,7 +66,7 @@ class IssueStoreReaderTests {
   @Test
   void return_empty_list_if_local_path_is_invalid() {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "", "local");
-    issueStore.save(Collections.singletonList(createServerIssue("src/path1")));
+    issueStore.save(projectBinding.projectKey(), Collections.singletonList(createServerIssue("src/path1")));
     assertThat(issueStoreReader.getServerIssues(projectBinding, "src/path1"))
       .isEmpty();
   }
@@ -84,7 +76,7 @@ class IssueStoreReaderTests {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "sq", "local");
 
     // setup issues
-    issueStore.save(Collections.singletonList(createServerIssue("sq/src/path1")));
+    issueStore.save(projectBinding.projectKey(), Collections.singletonList(createServerIssue("sq/src/path1")));
 
     // test
 
@@ -99,7 +91,7 @@ class IssueStoreReaderTests {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "", "local");
 
     // setup issues
-    issueStore.save(Collections.singletonList(createServerIssue("src/path1")));
+    issueStore.save(projectBinding.projectKey(), Collections.singletonList(createServerIssue("src/path1")));
 
     // test
 
@@ -114,7 +106,7 @@ class IssueStoreReaderTests {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "sq", "");
 
     // setup issues
-    issueStore.save(Collections.singletonList(createServerIssue("sq/src/path1")));
+    issueStore.save(projectBinding.projectKey(), Collections.singletonList(createServerIssue("sq/src/path1")));
 
     // test
 
@@ -127,7 +119,7 @@ class IssueStoreReaderTests {
   @Test
   void canReadFlowsFromStorage() {
     // setup issues
-    issueStore.save(List.of(aServerIssue()
+    issueStore.save(projectBinding.projectKey(), List.of(aServerIssue()
       .setFilePath("src/path1")
       .setMessage("Primary")
       .setTextRange(new ServerIssue.TextRange(1, 2, 3, 4))

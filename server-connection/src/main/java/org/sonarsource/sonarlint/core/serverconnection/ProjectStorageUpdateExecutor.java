@@ -31,7 +31,6 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufServerIssueStore;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil;
 
 public class ProjectStorageUpdateExecutor {
@@ -39,8 +38,8 @@ public class ProjectStorageUpdateExecutor {
   private final ServerIssueUpdater serverIssueUpdater;
   private final ProjectStoragePaths projectStoragePaths;
 
-  public ProjectStorageUpdateExecutor(ProjectStoragePaths projectStoragePaths) {
-    this(projectStoragePaths, new ProjectFileListDownloader(), new ServerIssueUpdater(projectStoragePaths, new IssueDownloader(), ProtobufServerIssueStore::new));
+  public ProjectStorageUpdateExecutor(ProjectStoragePaths projectStoragePaths, ServerIssueUpdater serverIssueUpdater) {
+    this(projectStoragePaths, new ProjectFileListDownloader(), serverIssueUpdater);
   }
 
   ProjectStorageUpdateExecutor(ProjectStoragePaths projectStoragePaths, ProjectFileListDownloader projectFileListDownloader, ServerIssueUpdater serverIssueUpdater) {
@@ -58,7 +57,7 @@ public class ProjectStorageUpdateExecutor {
     }
     try {
       FileUtils.replaceDir(dir -> {
-        updateServerIssues(serverApiHelper, projectKey, dir, fetchTaintVulnerabilities, branchName, progress);
+        updateServerIssues(serverApiHelper, projectKey, fetchTaintVulnerabilities, branchName, progress);
         updateComponents(serverApiHelper, projectKey, dir, progress);
         updateStatus(dir);
       }, projectStoragePaths.getProjectStorageRoot(projectKey), temp);
@@ -79,10 +78,9 @@ public class ProjectStorageUpdateExecutor {
     ProtobufUtil.writeToFile(componentsBuilder.build(), temp.resolve(ProjectStoragePaths.COMPONENT_LIST_PB));
   }
 
-  private void updateServerIssues(ServerApiHelper serverApiHelper, String projectKey, Path temp, boolean fetchTaintVulnerabilities,
+  private void updateServerIssues(ServerApiHelper serverApiHelper, String projectKey, boolean fetchTaintVulnerabilities,
     @Nullable String branchName, ProgressMonitor progress) {
-    var basedir = temp.resolve(ProjectStoragePaths.SERVER_ISSUES_DIR);
-    serverIssueUpdater.updateServerIssues(serverApiHelper, projectKey, basedir, fetchTaintVulnerabilities, branchName, progress);
+    serverIssueUpdater.update(serverApiHelper, projectKey, fetchTaintVulnerabilities, branchName, progress);
   }
 
   private static void updateStatus(Path temp) {

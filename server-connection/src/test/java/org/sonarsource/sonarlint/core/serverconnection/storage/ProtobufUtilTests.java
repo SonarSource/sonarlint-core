@@ -29,7 +29,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
-import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint.ServerInfos;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -40,8 +41,8 @@ import static org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUt
 
 class ProtobufUtilTests {
 
-  private static final ServerIssue SOME_MESSAGE = ServerIssue.newBuilder().build();
-  private static final Parser<ServerIssue> SOME_PARSER = ServerIssue.parser();
+  private static final ServerInfos SOME_MESSAGE = Sonarlint.ServerInfos.newBuilder().build();
+  private static final Parser<ServerInfos> SOME_PARSER = Sonarlint.ServerInfos.parser();
 
   @Test
   void test_readMessages_empty() throws IOException {
@@ -91,10 +92,10 @@ class ProtobufUtilTests {
     assertThat(thrown).hasMessageStartingWith("failed to write message");
   }
 
-  public static byte[] toByteArray(ServerIssue... issues) throws IOException {
+  public static byte[] toByteArray(ServerInfos... infos) throws IOException {
     try (var byteStream = new ByteArrayOutputStream()) {
-      for (ServerIssue issue : issues) {
-        issue.writeDelimitedTo(byteStream);
+      for (ServerInfos info : infos) {
+        info.writeDelimitedTo(byteStream);
       }
       return byteStream.toByteArray();
     }
