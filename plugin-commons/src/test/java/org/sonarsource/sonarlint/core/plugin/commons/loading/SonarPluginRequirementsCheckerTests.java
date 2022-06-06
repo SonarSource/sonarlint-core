@@ -118,7 +118,7 @@ class SonarPluginRequirementsCheckerTests {
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, SkipReason.IncompatiblePluginApi.INSTANCE));
     assertThat(logsWithoutStartStop())
-      .contains("Plugin 'pluginkey' requires plugin API 99.9 while SonarLint supports only up to " + SonarPluginRequirementsChecker.IMPLEMENTED_SQ_API + ". Skip loading it.");
+      .contains("Plugin 'pluginkey' requires plugin API 99.9 while SonarLint supports only up to " + SonarPluginRequirementsChecker.IMPLEMENTED_PLUGIN_API + ". Skip loading it.");
   }
 
   @Test
