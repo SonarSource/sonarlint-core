@@ -38,7 +38,7 @@ public class SonarPluginRequirementsChecker {
 
   private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
 
-  static final String IMPLEMENTED_SQ_API = "9.5";
+  static final String IMPLEMENTED_PLUGIN_API = "9.6.1";
 
   private static final Logger LOG = Loggers.get(SonarPluginRequirementsChecker.class);
 
@@ -97,9 +97,9 @@ public class SonarPluginRequirementsChecker {
       }
       return new PluginRequirementsCheckResult(plugin, new SkipReason.LanguagesNotEnabled(languages));
     }
-    if (!isCompatibleWith(plugin, IMPLEMENTED_SQ_API)) {
+    if (!isCompatibleWith(plugin, IMPLEMENTED_PLUGIN_API)) {
       LOG.debug("Plugin '{}' requires plugin API {} while SonarLint supports only up to {}. Skip loading it.", plugin.getName(),
-        plugin.getMinimalSqVersion(), IMPLEMENTED_SQ_API);
+        plugin.getMinimalSqVersion(), IMPLEMENTED_PLUGIN_API);
       return new PluginRequirementsCheckResult(plugin, SkipReason.IncompatiblePluginApi.INSTANCE);
     }
     var pluginMinVersion = pluginMinVersions.getMinimumVersion(pluginKey);
