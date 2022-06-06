@@ -27,16 +27,21 @@ import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStore;
 
 public class InMemoryIssueStore implements ServerIssueStore {
-  private Map<String, List<ServerIssue>> issuesMap;
+  private Map<String, Map<String, List<ServerIssue>>> issuesByFileByProject;
 
   @Override
-  public void save(List<ServerIssue> issues) {
-    issuesMap = issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
+  public void save(String projectKey, List<ServerIssue> issues) {
+    issuesByFileByProject = Map.of(projectKey, issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath)));
   }
 
   @Override
-  public List<ServerIssue> load(String sqFilePath) {
-    var list = issuesMap.get(sqFilePath);
-    return list == null ? Collections.emptyList() : list;
+  public List<ServerIssue> load(String projectKey, String sqFilePath) {
+    return issuesByFileByProject.getOrDefault(projectKey, Map.of())
+      .getOrDefault(sqFilePath, Collections.emptyList());
+  }
+
+  @Override
+  public void close() {
+    // nothing to do
   }
 }

@@ -19,46 +19,40 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.function.Function;
+import java.util.List;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStore;
 
 public class ServerIssueUpdater {
-  private final ProjectStoragePaths projectStoragePaths;
+  private final ServerIssueStore serverIssueStore;
   private final IssueDownloader issueDownloader;
-  private final Function<Path, ServerIssueStore> issueStoreFactory;
 
-  public ServerIssueUpdater(ProjectStoragePaths projectStoragePaths, IssueDownloader issueDownloader, Function<Path, ServerIssueStore> issueStoreFactory) {
-    this.projectStoragePaths = projectStoragePaths;
+  public ServerIssueUpdater(ServerIssueStore serverIssueStore, IssueDownloader issueDownloader) {
+    this.serverIssueStore = serverIssueStore;
     this.issueDownloader = issueDownloader;
-    this.issueStoreFactory = issueStoreFactory;
   }
 
   public void update(ServerApiHelper serverApiHelper, String projectKey, boolean fetchTaintVulnerabilities,
     @Nullable String branchName, ProgressMonitor progress) {
-    var target = projectStoragePaths.getServerIssuesPath(projectKey);
-    var work = createTempDir(target);
-    FileUtils.replaceDir(path -> updateServerIssues(serverApiHelper, projectKey, path, fetchTaintVulnerabilities, branchName, progress), target, work);
-  }
-
-  private static Path createTempDir(Path target) {
-    try {
-      return Files.createTempDirectory(target.getParent(), "sonarlint-issue-updater");
-    } catch (IOException e) {
-      throw new IllegalStateException("Unable to create temp directory in " + target);
-    }
-  }
-
-  public void updateServerIssues(ServerApiHelper serverApiHelper, String projectKey, Path path, boolean fetchTaintVulnerabilities, @Nullable String branchName,
-    ProgressMonitor progress) {
     var issues = issueDownloader.download(serverApiHelper, projectKey, fetchTaintVulnerabilities, branchName, progress);
-    issueStoreFactory.apply(path).save(issues);
+    serverIssueStore.save(projectKey, issues);
   }
 
+  public void updateFileIssues(ServerApiHelper serverApiHelper, ProjectBinding projectBinding, String ideFilePath, boolean fetchTaintVulnerabilities, @Nullable String branchName,
+    ProgressMonitor progress) {
+    var fileKey = IssueStorePaths.idePathToFileKey(projectBinding, ideFilePath);
+    if (fileKey == null) {
+      return;
+    }
+    List<ServerIssue> issues;
+    try {
+      issues = issueDownloader.download(serverApiHelper, fileKey, fetchTaintVulnerabilities, branchName, progress);
+    } catch (Exception e) {
+      // null as cause so that it doesn't get wrapped
+      throw new DownloadException("Failed to update file issues: " + e.getMessage(), null);
+    }
+    serverIssueStore.save(projectBinding.projectKey(), issues);
+  }
 }

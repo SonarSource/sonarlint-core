@@ -31,13 +31,17 @@ public interface ServerIssueStore {
    * - Directories with too many files
    * - (Too deep paths?)
    */
-  void save(List<ServerIssue> issues);
+  void save(String projectKey, List<ServerIssue> issues);
 
   /**
    * Load issues stored for specified file.
    *
+   *
+   * @param projectKey
    * @param sqFilePath the relative path to the base of project, in SonarQube
    * @return issues, possibly empty
    */
-  List<ServerIssue> load(String sqFilePath);
+  List<ServerIssue> load(String projectKey, String sqFilePath);
+
+  void close();
 }

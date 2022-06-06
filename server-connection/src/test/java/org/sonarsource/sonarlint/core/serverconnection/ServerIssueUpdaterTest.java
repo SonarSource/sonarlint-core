@@ -19,57 +19,53 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStore;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerIssue;
 
-class PartialUpdaterTests {
+class ServerIssueUpdaterTest {
+
   private static final ProgressMonitor PROGRESS = new ProgressMonitor(null);
 
   private final IssueDownloader downloader = mock(IssueDownloader.class);
-  private final ProjectStoragePaths projectStoragePaths = mock(ProjectStoragePaths.class);
   private final ServerIssueStore issueStore = mock(ServerIssueStore.class);
   private ProjectBinding projectBinding = new ProjectBinding("module", "", "");
 
-  private PartialUpdater updater;
+  private ServerIssueUpdater updater;
 
   @BeforeEach
   void setUp() {
-    updater = new PartialUpdater(__ -> issueStore, downloader, projectStoragePaths);
+    updater = new ServerIssueUpdater(issueStore, downloader);
   }
 
   @Test
-  void update_file_issues(@TempDir Path tmp) {
+  void update_file_issues() {
     var issue = aServerIssue();
     List<ServerIssue> issues = Collections.singletonList(issue);
-    when(projectStoragePaths.getServerIssuesPath("module")).thenReturn(tmp);
     var serverApiHelper = mock(ServerApiHelper.class);
     when(downloader.download(serverApiHelper, "module:file", false, null, PROGRESS)).thenReturn(issues);
 
-    updater.updateFileIssues(serverApiHelper, projectBinding.projectKey(), false, null, PROGRESS);
+    updater.update(serverApiHelper, projectBinding.projectKey(), false, null, PROGRESS);
 
-    verify(issueStore).save(anyList());
+    verify(issueStore).save(eq(projectBinding.projectKey()), anyList());
   }
 
   @Test
-  void update_file_issues_for_unknown_file(@TempDir Path tmp) {
+  void update_file_issues_for_unknown_file() {
     projectBinding = new ProjectBinding("module", "", "ide_prefix");
-    when(projectStoragePaths.getServerIssuesPath("module")).thenReturn(tmp);
 
     updater.updateFileIssues(mock(ServerApiHelper.class), projectBinding, "not_ide_prefix", false, null, PROGRESS);
 
@@ -78,8 +74,7 @@ class PartialUpdaterTests {
   }
 
   @Test
-  void error_downloading_issues(@TempDir Path tmp) {
-    when(projectStoragePaths.getServerIssuesPath("module")).thenReturn(tmp);
+  void error_downloading_issues() {
     var serverApiHelper = mock(ServerApiHelper.class);
     when(downloader.download(serverApiHelper, "module:file", false, null, PROGRESS)).thenThrow(IllegalArgumentException.class);
     // when(issueStorePaths.idePathToFileKey(projectBinding, "file")).thenReturn("module:file");
@@ -88,16 +83,15 @@ class PartialUpdaterTests {
   }
 
   @Test
-  void update_file_issues_by_project(@TempDir Path tmp) {
+  void update_file_issues_by_project() {
     var issue = aServerIssue();
     List<ServerIssue> issues = Collections.singletonList(issue);
 
-    when(projectStoragePaths.getServerIssuesPath(projectBinding.projectKey())).thenReturn(tmp);
     var serverApiHelper = mock(ServerApiHelper.class);
     when(downloader.download(serverApiHelper, projectBinding.projectKey(), false, null, PROGRESS)).thenReturn(issues);
 
-    updater.updateFileIssues(serverApiHelper, projectBinding.projectKey(), false, null, PROGRESS);
+    updater.update(serverApiHelper, projectBinding.projectKey(), false, null, PROGRESS);
 
-    verify(issueStore).save(anyList());
+    verify(issueStore).save(eq(projectBinding.projectKey()), anyList());
   }
 }
