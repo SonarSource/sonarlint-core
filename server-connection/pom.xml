@@ -12,6 +12,7 @@
   <properties>
     <!-- The library is shaded into sonarlint-core -->
     <maven.deploy.skip>true</maven.deploy.skip>
+    <xodus.version>2.0.1</xodus.version>
   </properties>
 
   <dependencies>
@@ -46,6 +47,21 @@
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
       <version>${protobuf.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jetbrains.xodus</groupId>
+      <artifactId>xodus-entity-store</artifactId>
+      <version>${xodus.version}</version>
+    </dependency>
+    <dependency>
+     <groupId>org.jetbrains.xodus</groupId>
+     <artifactId>xodus-environment</artifactId>
+     <version>${xodus.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jetbrains.xodus</groupId>
+      <artifactId>xodus-vfs</artifactId>
+      <version>${xodus.version}</version>
     </dependency>
 
     <!-- unit tests -->
