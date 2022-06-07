@@ -21,9 +21,7 @@ package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,21 +30,20 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.sonar.scanner.protocol.input.ScannerInput;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.Flow;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.TextRange;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Issue;
+import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 import org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils;
 
 public class IssueDownloader {
-
-  private static final Set<String> NON_CLOSED_STATUSES = new HashSet<>(Arrays.asList("OPEN", "CONFIRMED", "REOPENED"));
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
@@ -61,24 +58,21 @@ public class IssueDownloader {
   public List<ServerIssue> download(ServerApiHelper serverApiHelper, String key, boolean fetchTaintVulnerabilities,
     @Nullable String branchName,
     ProgressMonitor progress) {
-    var issueApi = new ServerApi(serverApiHelper).issue();
+    var serverApi = new ServerApi(serverApiHelper);
+    var issueApi = serverApi.issue();
 
     List<ServerIssue> result = new ArrayList<>();
 
     var batchIssues = issueApi.downloadAllFromBatchIssues(key, branchName);
 
-    Set<String> taintRuleKeys = new HashSet<>();
     for (ScannerInput.ServerIssue batchIssue : batchIssues) {
-      if (IssueApi.TAINT_REPOS.contains(batchIssue.getRuleRepository())) {
-        if (NON_CLOSED_STATUSES.contains(batchIssue.getStatus())) {
-          taintRuleKeys.add(batchIssue.getRuleRepository() + ":" + batchIssue.getRuleKey());
-        }
-      } else {
+      if (!RulesApi.TAINT_REPOS.contains(batchIssue.getRuleRepository())) {
         result.add(convertClassicIssue(batchIssue));
       }
     }
 
-    if (fetchTaintVulnerabilities && !taintRuleKeys.isEmpty()) {
+    if (fetchTaintVulnerabilities) {
+      Set<String> taintRuleKeys = serverApi.rules().getAllTaintRules(List.of(Language.values()), progress);
       Map<String, String> sourceCodeByKey = new HashMap<>();
       try {
         var downloadVulnerabilitiesForRules = issueApi.downloadVulnerabilitiesForRules(key, taintRuleKeys, branchName, progress);
