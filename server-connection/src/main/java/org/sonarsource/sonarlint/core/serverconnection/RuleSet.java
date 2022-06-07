@@ -19,24 +19,24 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 
 public class RuleSet {
-  private final List<ServerActiveRule> rules;
+  private final Collection<ServerActiveRule> rules;
   private final Map<String, ServerActiveRule> rulesByKey;
   private final String lastModified;
 
-  public RuleSet(List<ServerActiveRule> rules, String lastModified) {
+  public RuleSet(Collection<ServerActiveRule> rules, String lastModified) {
     this.rules = rules;
     this.rulesByKey = rules.stream().collect(Collectors.toMap(ServerActiveRule::getRuleKey, Function.identity()));
     this.lastModified = lastModified;
   }
 
-  public List<ServerActiveRule> getRules() {
+  public Collection<ServerActiveRule> getRules() {
     return rules;
   }
 
