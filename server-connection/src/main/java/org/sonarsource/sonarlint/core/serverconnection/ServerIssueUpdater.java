@@ -53,12 +53,14 @@ public class ServerIssueUpdater {
       // null as cause so that it doesn't get wrapped
       throw new DownloadException("Failed to update file issues: " + e.getMessage(), null);
     }
+    serverIssueStore.save(projectBinding.projectKey(), issues);
+    List<ServerTaintIssue> taintIssues = new ArrayList<>();
     try {
-      issues.addAll(issueDownloader.downloadTaint(serverApiHelper, fileKey, branchName, progress));
+      taintIssues.addAll(issueDownloader.downloadTaint(serverApiHelper, fileKey, branchName, progress));
     } catch (Exception e) {
       // null as cause so that it doesn't get wrapped
       throw new DownloadException("Failed to update file taint vulnerabilities: " + e.getMessage(), null);
     }
-    serverIssueStore.save(projectBinding.projectKey(), issues);
+    serverIssueStore.saveTaint(projectBinding.projectKey(), taintIssues);
   }
 }

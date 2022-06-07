@@ -20,8 +20,6 @@
 package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
@@ -35,12 +33,10 @@ public class ServerIssue {
   private Instant creationDate;
   private String severity;
   private String type;
-  private List<Flow> flows = new ArrayList<>();
-  private TextRange textRange;
-  private String codeSnippet;
+  private Integer line;
 
   public ServerIssue(String key, boolean resolved, String ruleKey, String message, String lineHash, String filePath, Instant creationDate, String severity, String type,
-    @Nullable TextRange textRange) {
+    @Nullable Integer line) {
     this.key = key;
     this.resolved = resolved;
     this.ruleKey = ruleKey;
@@ -50,7 +46,7 @@ public class ServerIssue {
     this.creationDate = creationDate;
     this.severity = severity;
     this.type = type;
-    this.textRange = textRange;
+    this.line = line;
   }
 
   public String key() {
@@ -89,17 +85,9 @@ public class ServerIssue {
     return type;
   }
 
-  public TextRange getTextRange() {
-    return textRange;
-  }
-
-  public List<Flow> getFlows() {
-    return flows;
-  }
-
   @CheckForNull
-  public String getCodeSnippet() {
-    return codeSnippet;
+  public Integer getLine() {
+    return line;
   }
 
   public ServerIssue setKey(String key) {
@@ -142,102 +130,9 @@ public class ServerIssue {
     return this;
   }
 
-  public ServerIssue setTextRange(@Nullable TextRange textRange) {
-    this.textRange = textRange;
+  public ServerIssue setLine(@Nullable Integer line) {
+    this.line = line;
     return this;
   }
 
-  public ServerIssue setFlows(List<Flow> flows) {
-    this.flows = flows;
-    return this;
-  }
-
-  public ServerIssue setCodeSnippet(@Nullable String codeSnippet) {
-    this.codeSnippet = codeSnippet;
-    return this;
-  }
-
-  public static class TextRange {
-
-    private final Integer startLine;
-    private final Integer startLineOffset;
-    private final Integer endLine;
-    private final Integer endLineOffset;
-
-    public TextRange(Integer line) {
-      this(line, null, null, null);
-    }
-
-    public TextRange(Integer startLine, @Nullable Integer startLineOffset, @Nullable Integer endLine, @Nullable Integer endLineOffset) {
-      this.startLine = startLine;
-      this.startLineOffset = startLineOffset;
-      this.endLine = endLine;
-      this.endLineOffset = endLineOffset;
-    }
-
-    @CheckForNull
-    public Integer getStartLine() {
-      return startLine;
-    }
-
-    @CheckForNull
-    public Integer getStartLineOffset() {
-      return startLineOffset;
-    }
-
-    @CheckForNull
-    public Integer getEndLine() {
-      return endLine;
-    }
-
-    @CheckForNull
-    public Integer getEndLineOffset() {
-      return endLineOffset;
-    }
-
-  }
-
-  public static class Flow {
-    private final List<ServerIssueLocation> locations;
-
-    public Flow(List<ServerIssueLocation> locations) {
-      this.locations = locations;
-    }
-
-    public List<ServerIssueLocation> locations() {
-      return locations;
-    }
-  }
-
-  public static class ServerIssueLocation {
-    private final String message;
-    private final String filePath;
-    private final String codeSnippet;
-    private final TextRange textRange;
-
-    public ServerIssueLocation(@Nullable String filePath, @Nullable TextRange textRange, @Nullable String message, @Nullable String codeSnippet) {
-      this.textRange = textRange;
-      this.filePath = filePath;
-      this.message = message;
-      this.codeSnippet = codeSnippet;
-    }
-
-    public String getFilePath() {
-      return filePath;
-    }
-
-    public String getMessage() {
-      return message;
-    }
-
-    @CheckForNull
-    public String getCodeSnippet() {
-      return codeSnippet;
-    }
-
-    @CheckForNull
-    public TextRange getTextRange() {
-      return textRange;
-    }
-  }
 }

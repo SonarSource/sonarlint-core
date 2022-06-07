@@ -170,6 +170,10 @@ public class ServerConnection {
     return issueStoreReader.getServerIssues(projectBinding, ideFilePath);
   }
 
+  public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String ideFilePath) {
+    return issueStoreReader.getServerTaintIssues(projectBinding, ideFilePath);
+  }
+
   public void subscribeForEvents(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, ClientLogOutput clientLogOutput) {
     serverEventsAutoSubscriber.subscribePermanently(new ServerApi(new ServerApiHelper(endpoint, client)), projectKeys, enabledLanguages, clientLogOutput);
   }

@@ -19,25 +19,38 @@
  */
 package testutils;
 
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStore;
 
 public class InMemoryIssueStore implements ServerIssueStore {
-  private Map<String, Map<String, List<ServerIssue>>> issuesByFileByProject;
+  private final Map<String, Map<String, List<ServerIssue>>> issuesByFileByProject = new HashMap<>();
+  private final Map<String, Map<String, List<ServerTaintIssue>>> taintIssuesByFileByProject = new HashMap<>();
 
   @Override
   public void save(String projectKey, List<ServerIssue> issues) {
-    issuesByFileByProject = Map.of(projectKey, issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath)));
+    issuesByFileByProject.computeIfAbsent(projectKey, __ -> new HashMap<>()).putAll(issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath)));
   }
 
   @Override
   public List<ServerIssue> load(String projectKey, String sqFilePath) {
     return issuesByFileByProject.getOrDefault(projectKey, Map.of())
-      .getOrDefault(sqFilePath, Collections.emptyList());
+      .getOrDefault(sqFilePath, List.of());
+  }
+
+  @Override
+  public void saveTaint(String projectKey, List<ServerTaintIssue> issues) {
+    taintIssuesByFileByProject.computeIfAbsent(projectKey, __ -> new HashMap<>()).putAll(issues.stream().collect(Collectors.groupingBy(ServerTaintIssue::getFilePath)));
+  }
+
+  @Override
+  public List<ServerTaintIssue> loadTaint(String projectKey, String sqFilePath) {
+    return taintIssuesByFileByProject.getOrDefault(projectKey, Map.of())
+      .getOrDefault(sqFilePath, List.of());
   }
 
   @Override

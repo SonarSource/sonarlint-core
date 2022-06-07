@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.serverconnection.storage;
 
 import java.util.List;
 import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
 
 public interface ServerIssueStore {
 
@@ -42,6 +43,25 @@ public interface ServerIssueStore {
    * @return issues, possibly empty
    */
   List<ServerIssue> load(String projectKey, String sqFilePath);
+
+  /**
+   * Store taint issues per file.
+   * For filesystem-based implementations, watch out for:
+   * - Too long paths
+   * - Directories with too many files
+   * - (Too deep paths?)
+   */
+  void saveTaint(String projectKey, List<ServerTaintIssue> issues);
+
+  /**
+   * Load taint issues stored for specified file.
+   *
+   *
+   * @param projectKey
+   * @param sqFilePath the relative path to the base of project, in SonarQube
+   * @return issues, possibly empty
+   */
+  List<ServerTaintIssue> loadTaint(String projectKey, String sqFilePath);
 
   void close();
 }

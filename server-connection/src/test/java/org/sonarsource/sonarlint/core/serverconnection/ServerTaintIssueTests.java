@@ -20,26 +20,39 @@
 package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.time.Instant;
+import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerIssue;
+import static org.mockito.Mockito.mock;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerTaintIssue;
 
-class ServerIssueTests {
+class ServerTaintIssueTests {
   @Test
   void testRoundTrips() {
-    var issue = aServerIssue();
+    var issue = aServerTaintIssue();
     var i1 = Instant.ofEpochMilli(100_000_000);
     assertThat(issue.setLineHash("checksum1").lineHash()).isEqualTo("checksum1");
     assertThat(issue.setCreationDate(i1).creationDate()).isEqualTo(i1);
     assertThat(issue.setFilePath("path1").getFilePath()).isEqualTo("path1");
     assertThat(issue.setKey("key1").key()).isEqualTo("key1");
-    issue.setLine(2);
-    assertThat(issue.getLine()).isEqualTo(2);
+    issue.setTextRange(new ServerTaintIssue.TextRange(1,
+      2,
+      3,
+      4));
+    assertThat(issue.getTextRange().getStartLine()).isEqualTo(1);
+    assertThat(issue.getTextRange().getStartLineOffset()).isEqualTo(2);
+    assertThat(issue.getTextRange().getEndLine()).isEqualTo(3);
+    assertThat(issue.getTextRange().getEndLineOffset()).isEqualTo(4);
     assertThat(issue.setSeverity("MAJOR").severity()).isEqualTo("MAJOR");
     assertThat(issue.setRuleKey("rule1").ruleKey()).isEqualTo("rule1");
     assertThat(issue.resolved()).isTrue();
     assertThat(issue.setMessage("msg1").getMessage()).isEqualTo("msg1");
     assertThat(issue.setType("type").type()).isEqualTo("type");
+
+    assertThat(issue.getFlows()).isEmpty();
+
+    issue.setFlows(Arrays.asList(mock(ServerTaintIssue.Flow.class), mock(ServerTaintIssue.Flow.class)));
+    assertThat(issue.getFlows()).hasSize(2);
   }
 }

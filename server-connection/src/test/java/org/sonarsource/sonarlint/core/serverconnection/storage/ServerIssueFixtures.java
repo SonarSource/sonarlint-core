@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.serverconnection.storage;
 
 import java.time.Instant;
 import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
 
 public class ServerIssueFixtures {
   public static ServerIssue aServerIssue() {
@@ -34,6 +35,20 @@ public class ServerIssueFixtures {
       Instant.now(),
       "MINOR",
       "BUG",
-      new ServerIssue.TextRange(1, 2, 3, 4));
+      1);
+  }
+
+  public static ServerTaintIssue aServerTaintIssue() {
+    return new ServerTaintIssue(
+      "key",
+      true,
+      "repo:key",
+      "message",
+      "hash",
+      "file/path",
+      Instant.now(),
+      "MINOR",
+      "BUG",
+      new ServerTaintIssue.TextRange(1, 2, 3, 4));
   }
 }
