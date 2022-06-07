@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
@@ -64,7 +65,8 @@ public class IssueDownloader {
     var batchIssues = issueApi.downloadAllFromBatchIssues(key, branchName);
 
     for (ScannerInput.ServerIssue batchIssue : batchIssues) {
-      if (!RulesApi.TAINT_REPOS.contains(batchIssue.getRuleRepository())) {
+      // We ignore project level issues
+      if (!RulesApi.TAINT_REPOS.contains(batchIssue.getRuleRepository()) && batchIssue.hasPath()) {
         result.add(convertClassicIssue(batchIssue));
       }
     }
@@ -72,19 +74,21 @@ public class IssueDownloader {
     return result;
   }
 
-  public List<ServerIssue> downloadTaint(ServerApiHelper serverApiHelper, String key, @Nullable String branchName, ProgressMonitor progress) {
+  public List<ServerTaintIssue> downloadTaint(ServerApiHelper serverApiHelper, String key, @Nullable String branchName, ProgressMonitor progress) {
     var serverApi = new ServerApi(serverApiHelper);
     var issueApi = serverApi.issue();
 
-    List<ServerIssue> result = new ArrayList<>();
+    List<ServerTaintIssue> result = new ArrayList<>();
 
     Set<String> taintRuleKeys = serverApi.rules().getAllTaintRules(List.of(Language.values()), progress);
     Map<String, String> sourceCodeByKey = new HashMap<>();
     try {
       var downloadVulnerabilitiesForRules = issueApi.downloadVulnerabilitiesForRules(key, taintRuleKeys, branchName, progress);
       downloadVulnerabilitiesForRules.getIssues()
-        .forEach(i -> result.add(
-          convertTaintVulnerability(new ServerApi(serverApiHelper).source(), i, downloadVulnerabilitiesForRules.getComponentPathsByKey(), sourceCodeByKey)));
+        .stream()
+        .map(i -> convertTaintVulnerability(new ServerApi(serverApiHelper).source(), i, downloadVulnerabilitiesForRules.getComponentPathsByKey(), sourceCodeByKey))
+        .filter(Objects::nonNull)
+        .forEach(result::add);
     } catch (Exception e) {
       LOG.warn("Unable to fetch taint vulnerabilities", e);
     }
@@ -93,35 +97,36 @@ public class IssueDownloader {
   }
 
   public ServerIssue convertClassicIssue(ScannerInput.ServerIssue batchIssueFromWs) {
-    var primaryLocation = convertPrimaryLocationForBatchIssue(batchIssueFromWs, batchIssueFromWs.getPath());
     return new ServerIssue(
       batchIssueFromWs.getKey(),
-      !batchIssueFromWs.getResolution().isEmpty(),
+      batchIssueFromWs.hasResolution(),
       batchIssueFromWs.getRuleRepository() + ":" + batchIssueFromWs.getRuleKey(),
-      primaryLocation.getMessage(),
+      batchIssueFromWs.getMsg(),
       batchIssueFromWs.getChecksum(),
-      primaryLocation.getFilePath(),
+      batchIssueFromWs.getPath(),
       Instant.ofEpochMilli(batchIssueFromWs.getCreationDate()),
       batchIssueFromWs.getSeverity().name(),
       batchIssueFromWs.getType(),
-      primaryLocation.getTextRange());
+      batchIssueFromWs.hasLine() ? batchIssueFromWs.getLine() : null);
   }
 
-  private static ServerIssue.ServerIssueLocation convertPrimaryLocationForBatchIssue(ScannerInput.ServerIssue issueFromWs, String sqPath) {
-    return new ServerIssue.ServerIssueLocation(sqPath, new ServerIssue.TextRange(issueFromWs.getLine()), issueFromWs.getMsg(), null);
-  }
-
-  private static ServerIssue convertTaintVulnerability(SourceApi sourceApi, Issue taintVulnerabilityFromWs,
+  @CheckForNull
+  private static ServerTaintIssue convertTaintVulnerability(SourceApi sourceApi, Issue taintVulnerabilityFromWs,
     Map<String, String> componentsByKey, Map<String, String> sourceCodeByKey) {
     var ruleKey = RuleKey.parse(taintVulnerabilityFromWs.getRule());
     var primaryLocation = convertPrimaryLocation(sourceApi, taintVulnerabilityFromWs, componentsByKey, sourceCodeByKey);
-    return new ServerIssue(
+    String filePath = primaryLocation.getFilePath();
+    if (filePath == null) {
+      // Ignore project level issues
+      return null;
+    }
+    return new ServerTaintIssue(
       taintVulnerabilityFromWs.getKey(),
       !taintVulnerabilityFromWs.getResolution().isEmpty(),
       ruleKey.toString(),
       primaryLocation.getMessage(),
       taintVulnerabilityFromWs.getHash(),
-      primaryLocation.getFilePath(),
+      filePath,
       ServerApiUtils.parseOffsetDateTime(taintVulnerabilityFromWs.getCreationDate()).toInstant(),
       taintVulnerabilityFromWs.getSeverity().name(),
       taintVulnerabilityFromWs.getType().name(),
@@ -130,28 +135,28 @@ public class IssueDownloader {
         .setCodeSnippet(primaryLocation.getCodeSnippet());
   }
 
-  private static List<ServerIssue.Flow> convertFlows(SourceApi sourceApi, List<Flow> flowsList, Map<String, String> componentPathsByKey,
+  private static List<ServerTaintIssue.Flow> convertFlows(SourceApi sourceApi, List<Flow> flowsList, Map<String, String> componentPathsByKey,
     Map<String, String> sourceCodeByKey) {
     return flowsList.stream()
-      .map(flowFromWs -> new ServerIssue.Flow(flowFromWs.getLocationsList().stream().map(locationFromWs -> {
+      .map(flowFromWs -> new ServerTaintIssue.Flow(flowFromWs.getLocationsList().stream().map(locationFromWs -> {
         var componentPath = componentPathsByKey.get(locationFromWs.getComponent());
         var textRange = locationFromWs.hasTextRange() ? convertTextRangeFromWs(locationFromWs.getTextRange()) : null;
         var codeSnippet = locationFromWs.hasTextRange() ? getCodeSnippet(sourceApi, locationFromWs.getComponent(), locationFromWs.getTextRange(), sourceCodeByKey) : null;
-        return new ServerIssue.ServerIssueLocation(componentPath, textRange, locationFromWs.getMsg(), codeSnippet);
+        return new ServerTaintIssue.ServerIssueLocation(componentPath, textRange, locationFromWs.getMsg(), codeSnippet);
       }).collect(Collectors.toList())))
       .collect(Collectors.toList());
   }
 
-  private static ServerIssue.ServerIssueLocation convertPrimaryLocation(SourceApi sourceApi, Issue issueFromWs, Map<String, String> componentPathsByKey,
+  private static ServerTaintIssue.ServerIssueLocation convertPrimaryLocation(SourceApi sourceApi, Issue issueFromWs, Map<String, String> componentPathsByKey,
     Map<String, String> sourceCodeByKey) {
     var componentPath = componentPathsByKey.get(issueFromWs.getComponent());
     var textRange = issueFromWs.hasTextRange() ? convertTextRangeFromWs(issueFromWs.getTextRange()) : null;
     var codeSnippet = issueFromWs.hasTextRange() ? getCodeSnippet(sourceApi, issueFromWs.getComponent(), issueFromWs.getTextRange(), sourceCodeByKey) : null;
-    return new ServerIssue.ServerIssueLocation(componentPath, textRange, issueFromWs.getMessage(), codeSnippet);
+    return new ServerTaintIssue.ServerIssueLocation(componentPath, textRange, issueFromWs.getMessage(), codeSnippet);
   }
 
-  private static ServerIssue.TextRange convertTextRangeFromWs(TextRange textRange) {
-    return new ServerIssue.TextRange(textRange.getStartLine(), textRange.getStartOffset(), textRange.getEndLine(), textRange.getEndOffset());
+  private static ServerTaintIssue.TextRange convertTextRangeFromWs(TextRange textRange) {
+    return new ServerTaintIssue.TextRange(textRange.getStartLine(), textRange.getStartOffset(), textRange.getEndLine(), textRange.getEndOffset());
   }
 
   @CheckForNull

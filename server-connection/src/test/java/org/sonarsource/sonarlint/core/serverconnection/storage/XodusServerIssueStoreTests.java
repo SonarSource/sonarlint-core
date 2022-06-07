@@ -28,10 +28,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerIssue;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerTaintIssue;
 
 class XodusServerIssueStoreTests {
   @TempDir
@@ -67,11 +69,33 @@ class XodusServerIssueStoreTests {
     var creationDate = Instant.now();
 
     store
-      .save("projectKey", List.of(aServerIssue().setCreationDate(creationDate).setCodeSnippet("code")
-        .setFlows(List.of(new ServerIssue.Flow(List.of(new ServerIssue.ServerIssueLocation("file/path",
-          new ServerIssue.TextRange(5, 6, 7, 8), "flow message", "code")))))));
+      .save("projectKey", List.of(aServerIssue().setCreationDate(creationDate)));
 
     var savedIssueOpt = store.getByKey("key");
+    assertThat(savedIssueOpt).isNotEmpty();
+    var savedIssue = savedIssueOpt.get();
+    assertThat(savedIssue.key()).isEqualTo("key");
+    assertThat(savedIssue.resolved()).isTrue();
+    assertThat(savedIssue.ruleKey()).isEqualTo("repo:key");
+    assertThat(savedIssue.getMessage()).isEqualTo("message");
+    assertThat(savedIssue.lineHash()).isEqualTo("hash");
+    assertThat(savedIssue.getFilePath()).isEqualTo("file/path");
+    assertThat(savedIssue.creationDate()).isEqualTo(creationDate);
+    assertThat(savedIssue.severity()).isEqualTo("MINOR");
+    assertThat(savedIssue.type()).isEqualTo("BUG");
+    assertThat(savedIssue.getLine()).isEqualTo(1);
+  }
+
+  @Test
+  void should_save_a_taint_issue() {
+    var creationDate = Instant.now();
+
+    store
+      .saveTaint("projectKey", List.of(aServerTaintIssue().setCreationDate(creationDate).setCodeSnippet("code")
+        .setFlows(List.of(new ServerTaintIssue.Flow(List.of(new ServerTaintIssue.ServerIssueLocation("file/path",
+          new ServerTaintIssue.TextRange(5, 6, 7, 8), "flow message", "code")))))));
+
+    var savedIssueOpt = store.getTaintByKey("key");
     assertThat(savedIssueOpt).isNotEmpty();
     var savedIssue = savedIssueOpt.get();
     assertThat(savedIssue.key()).isEqualTo("key");
@@ -100,6 +124,8 @@ class XodusServerIssueStoreTests {
       aServerIssue().setFilePath("file/path1").setKey("key1"),
       aServerIssue().setFilePath("file/path2").setKey("key2"),
       aServerIssue().setFilePath("file/path1").setKey("key3")));
+    store.saveTaint("projectKey", List.of(
+      aServerTaintIssue().setFilePath("file/path1").setKey("key4")));
 
     var issues = store.load("projectKey", "file/path1");
     assertThat(issues)
@@ -108,7 +134,22 @@ class XodusServerIssueStoreTests {
   }
 
   @Test
-  void should_load_issues_of_the_right_file() {
+  void should_load_all_taint_issues_of_a_file() {
+    store.saveTaint("projectKey", List.of(
+      aServerTaintIssue().setFilePath("file/path1").setKey("key1"),
+      aServerTaintIssue().setFilePath("file/path2").setKey("key2"),
+      aServerTaintIssue().setFilePath("file/path1").setKey("key3")));
+    store.save("projectKey", List.of(
+      aServerIssue().setFilePath("file/path1").setKey("key4")));
+
+    var issues = store.loadTaint("projectKey", "file/path1");
+    assertThat(issues)
+      .extracting(ServerTaintIssue::key)
+      .containsOnly("key1", "key3");
+  }
+
+  @Test
+  void should_load_issues_of_the_right_project() {
     store.save("projectKey", List.of(aServerIssue().setFilePath("file/path1").setKey("key1")));
     store.save("projectKey2", List.of(aServerIssue().setFilePath("file/path1").setKey("key2")));
 
@@ -136,25 +177,25 @@ class XodusServerIssueStoreTests {
   }
 
   @Test
-  void should_save_issue_without_range() {
+  void should_save_issue_without_line() {
     store.save("projectKey", List.of(
-      aServerIssue().setKey("key1").setTextRange(null)));
+      aServerIssue().setKey("key1").setLine(null)));
 
     var issue = store.getByKey("key1");
 
     assertThat(issue).isNotEmpty();
-    assertThat(issue.get().getTextRange()).isNull();
+    assertThat(issue.get().getLine()).isNull();
   }
 
   @Test
-  void should_save_issue_with_line_only() {
-    store.save("projectKey", List.of(
-      aServerIssue().setKey("key1").setTextRange(new ServerIssue.TextRange(3))));
+  void should_save_taint_issue_without_range() {
+    store.saveTaint("projectKey", List.of(
+      aServerTaintIssue().setKey("key1").setTextRange(null)));
 
-    var issue = store.getByKey("key1");
+    var issue = store.getTaintByKey("key1");
 
     assertThat(issue).isNotEmpty();
-    assertThat(issue.get().getTextRange().getStartLine()).isEqualTo(3);
+    assertThat(issue.get().getTextRange()).isNull();
   }
 
   @Test

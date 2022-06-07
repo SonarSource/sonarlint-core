@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
-import java.util.Optional;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
 
@@ -58,7 +57,7 @@ public class ServerIssueTrackable implements Trackable {
 
   @Override
   public Integer getLine() {
-    return Optional.ofNullable(serverIssue.getTextRange()).map(ServerIssue.TextRange::getStartLine).orElse(null);
+    return serverIssue.getLine();
   }
 
   @Override
@@ -68,14 +67,12 @@ public class ServerIssueTrackable implements Trackable {
 
   @Override
   public org.sonarsource.sonarlint.core.issuetracking.TextRange getTextRange() {
-    var textRange = serverIssue.getTextRange();
-    return textRange != null ? IssueTrackable.convertToTrackingTextRange(textRange) : null;
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public Integer getTextRangeHash() {
-    // note: not available from server API
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   @Override

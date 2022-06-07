@@ -41,9 +41,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class IssueDownloaderTests {
 
-  private static final String FILE_1_KEY = "project:foo/bar/Hello.java";
-  private static final String FILE_2_KEY = "project:foo/bar/Hello2.java";
-  private static final String FILE_3_KEY = "project:foo/bar/Hello3.java";
+  private static final String PROJECT_KEY = "project";
+  private static final String FILE_1_KEY = PROJECT_KEY + ":foo/bar/Hello.java";
+  private static final String FILE_2_KEY = PROJECT_KEY + ":foo/bar/Hello2.java";
+  private static final String FILE_3_KEY = PROJECT_KEY + ":foo/bar/Hello3.java";
 
   private static final String DUMMY_KEY = "dummyKey";
 
@@ -60,7 +61,7 @@ class IssueDownloaderTests {
   }
 
   @Test
-  void test_download_one_issue_no_taint() {
+  void test_download_one_issue() {
     var response = ScannerInput.ServerIssue.newBuilder()
       .setRuleRepository("sonarjava")
       .setRuleKey("S123")
@@ -81,13 +82,26 @@ class IssueDownloaderTests {
     assertThat(serverIssue.lineHash()).isEqualTo("hash");
     assertThat(serverIssue.getMessage()).isEqualTo("Primary message");
     assertThat(serverIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
-    assertThat(serverIssue.getTextRange().getStartLine()).isEqualTo(1);
-    // Unset
-    assertThat(serverIssue.getTextRange().getStartLineOffset()).isNull();
-    assertThat(serverIssue.getTextRange().getEndLine()).isNull();
-    assertThat(serverIssue.getTextRange().getEndLineOffset()).isNull();
+    assertThat(serverIssue.getLine()).isEqualTo(1);
+  }
 
-    assertThat(serverIssue.getFlows()).isEmpty();
+  @Test
+  void test_download_issue_ignore_project_level() {
+    var response = ScannerInput.ServerIssue.newBuilder()
+      .setRuleRepository("sonarjava")
+      .setRuleKey("S123")
+      .setChecksum("hash")
+      .setMsg("Primary message")
+      .setLine(1)
+      .setCreationDate(123456789L)
+      // No path
+      .setModuleKey("project")
+      .build();
+
+    mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, response);
+
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, null, PROGRESS);
+    assertThat(issues).isEmpty();
   }
 
   @Test
@@ -100,6 +114,7 @@ class IssueDownloaderTests {
 
     var issueSearchResponse = Issues.SearchWsResponse.newBuilder()
       .addIssues(Issues.Issue.newBuilder()
+        .setKey("uuid1")
         .setRule("javasecurity:S789")
         .setHash("hash2")
         .setMessage("Primary message 2")
@@ -117,6 +132,25 @@ class IssueDownloaderTests {
         .addFlows(Flow.newBuilder()
           .addLocations(Common.Location.newBuilder().setMsg("Flow 2 - Location 1").setComponent(FILE_1_KEY)
             .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(5).setEndOffset(6)))))
+      .addIssues(Issues.Issue.newBuilder()
+        .setKey("uuid2")
+        .setRule("javasecurity:S789")
+        .setMessage("Project level issue")
+        .setCreationDate("2021-01-11T18:17:31+0000")
+        .setComponent(PROJECT_KEY)
+        .addFlows(Flow.newBuilder()
+          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Location 1").setComponent(FILE_1_KEY)
+            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(5).setEndOffset(6)))
+          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Invalid text range").setComponent(FILE_1_KEY)
+            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(7).setEndOffset(6)))
+          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Another file").setComponent(FILE_2_KEY)
+            .setTextRange(TextRange.newBuilder().setStartLine(9).setStartOffset(10).setEndLine(11).setEndOffset(12)))
+          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Location No Text Range").setComponent(FILE_3_KEY)))
+        .addFlows(Flow.newBuilder()
+          .addLocations(Common.Location.newBuilder().setMsg("Flow 2 - Location 1").setComponent(FILE_1_KEY)
+            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(5).setEndOffset(6)))))
+      .addComponents(Issues.Component.newBuilder()
+        .setKey(PROJECT_KEY))
       .addComponents(Issues.Component.newBuilder()
         .setKey(FILE_1_KEY)
         .setPath("foo/bar/Hello.java"))
@@ -251,6 +285,7 @@ class IssueDownloaderTests {
     var response = ScannerInput.ServerIssue.newBuilder()
       .setRuleRepository("sonarjava")
       .setRuleKey("S123")
+      .setPath("src/Foo.java")
       .build();
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY + "&branch=branchName", response);

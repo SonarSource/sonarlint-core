@@ -76,6 +76,7 @@ import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.serverconnection.ServerConnection;
 import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 
 import static java.util.Objects.requireNonNull;
@@ -386,6 +387,11 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   @Override
   public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String ideFilePath) {
     return serverConnection.getServerIssues(projectBinding, ideFilePath);
+  }
+
+  @Override
+  public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String ideFilePath) {
+    return serverConnection.getServerTaintIssues(projectBinding, ideFilePath);
   }
 
   @Override
