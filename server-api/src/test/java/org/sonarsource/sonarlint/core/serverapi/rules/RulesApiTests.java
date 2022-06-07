@@ -99,17 +99,23 @@ class RulesApiTests {
   @Test
   void should_get_active_rules_of_a_given_quality_profile() {
     mockServer.addProtobufResponse(
-      "/api/rules/search.protobuf?qprofile=QPKEY&organization=orgKey&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY&ps=500&p=1",
+      "/api/rules/search.protobuf?qprofile=QPKEY&organization=orgKey&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY&s=key&ps=500&p=1",
       Rules.SearchResponse.newBuilder()
-        .setTotal(1)
+        .setTotal(2)
         .setPs(1)
-        .addRules(Rules.Rule.newBuilder().setKey("repo:key").setTemplateKey("template").build())
+        .addRules(Rules.Rule.newBuilder().setKey("repo:key_with_template").setTemplateKey("template").build())
+        .addRules(Rules.Rule.newBuilder().setKey("repo:key").build())
         .setActives(
           Rules.Actives.newBuilder()
-            .putActives("repo:key", Rules.ActiveList.newBuilder().addActiveList(
+            .putActives("repo:key_with_template", Rules.ActiveList.newBuilder().addActiveList(
               Rules.Active.newBuilder()
                 .setSeverity("MAJOR")
                 .addParams(Rules.Active.Param.newBuilder().setKey("paramKey").setValue("paramValue").build())
+                .build())
+              .build())
+            .putActives("repo:key", Rules.ActiveList.newBuilder().addActiveList(
+              Rules.Active.newBuilder()
+                .setSeverity("MINOR")
                 .build())
               .build())
             .build())
@@ -121,7 +127,8 @@ class RulesApiTests {
 
     assertThat(activeRules)
       .extracting("ruleKey", "severity", "templateKey", "params")
-      .containsOnly(tuple("repo:key", "MAJOR", "template", Map.of("paramKey", "paramValue")));
+      .containsOnly(tuple("repo:key", "MINOR", "", Map.of()),
+        tuple("repo:key_with_template", "MAJOR", "template", Map.of("paramKey", "paramValue")));
   }
 
 }
