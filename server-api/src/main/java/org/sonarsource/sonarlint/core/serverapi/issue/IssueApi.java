@@ -73,7 +73,7 @@ public class IssueApi {
     Map<String, String> componentsByKey = new HashMap<>();
     serverApiHelper.getPaginated(searchUrl.toString(),
       Issues.SearchWsResponse::parseFrom,
-      Issues.SearchWsResponse::getPaging,
+      r -> r.getPaging().getTotal(),
       r -> {
         componentsByKey.clear();
         componentsByKey.putAll(r.getComponentsList().stream().collect(Collectors.toMap(Component::getKey, Component::getPath)));
