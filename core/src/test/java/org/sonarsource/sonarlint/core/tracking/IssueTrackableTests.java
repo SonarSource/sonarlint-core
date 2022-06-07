@@ -41,7 +41,7 @@ class IssueTrackableTests {
 
   @Test
   void should_have_null_content_hashes_when_constructed_without_null_content_info() {
-    var trackable = new IssueTrackable(issue, null, null, null);
+    var trackable = new IssueTrackable(issue, null, null);
     assertThat(trackable.getTextRange()).isNull();
     assertThat(trackable.getTextRangeHash()).isNull();
     assertThat(trackable.getLineHash()).isNull();
@@ -51,7 +51,7 @@ class IssueTrackableTests {
   void should_have_non_null_hashes_when_constructed_with_non_null_content_info() {
     var textRangeContent = "text range content";
     var lineContent = "line content";
-    var trackable = new IssueTrackable(issue, null, textRangeContent, lineContent);
+    var trackable = new IssueTrackable(issue, textRangeContent, lineContent);
     assertThat(trackable.getTextRangeHash()).isEqualTo(hash(textRangeContent));
     assertThat(trackable.getLineHash()).isEqualTo(hash(lineContent));
   }
@@ -65,7 +65,7 @@ class IssueTrackableTests {
     var severity = "dummy severity";
     when(issue.getSeverity()).thenReturn(severity);
 
-    var trackable = new IssueTrackable(issue, null, null, null);
+    var trackable = new IssueTrackable(issue, null, null);
     assertThat(trackable.getClientObject()).isEqualTo(issue);
     assertThat(trackable.getSeverity()).isEqualTo(severity);
   }

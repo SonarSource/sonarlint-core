@@ -124,16 +124,15 @@ public class TaintVulnerabilitiesDownloadTest extends AbstractConnectedTest {
 
   @Test
   public void download_all_issues_include_taint_vulnerabilities_and_code_snippets() throws IOException {
+    ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "");
+
     engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null, null);
 
-    var sinkIssues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/main/java/foo/DbHelper.java");
-    assertThat(sinkIssues).hasSize(1);
+    // Reload file issues to get taint
+    engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding, "src/main/java/foo/DbHelper.java", null, null);
 
-    // Reload
-    engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null, null);
-
-    sinkIssues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/main/java/foo/DbHelper.java");
+    var sinkIssues = engine.getServerTaintIssues(projectBinding, "src/main/java/foo/DbHelper.java");
     assertThat(sinkIssues).hasSize(1);
 
     var taintIssue = sinkIssues.get(0);

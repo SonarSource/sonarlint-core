@@ -30,6 +30,7 @@ import testutils.InMemoryIssueStore;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerIssue;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerTaintIssue;
 
 class IssueStoreReaderTests {
   private static final String PROJECT_KEY = "root";
@@ -119,18 +120,18 @@ class IssueStoreReaderTests {
   @Test
   void canReadFlowsFromStorage() {
     // setup issues
-    issueStore.save(projectBinding.projectKey(), List.of(aServerIssue()
+    issueStore.saveTaint(projectBinding.projectKey(), List.of(aServerTaintIssue()
       .setFilePath("src/path1")
       .setMessage("Primary")
-      .setTextRange(new ServerIssue.TextRange(1, 2, 3, 4))
+      .setTextRange(new ServerTaintIssue.TextRange(1, 2, 3, 4))
       .setCodeSnippet("Primary location code")
       .setFlows(List.of(
-        new ServerIssue.Flow(List.of(
-          new ServerIssue.ServerIssueLocation("src/path1", new ServerIssue.TextRange(5, 6, 7, 8), "Flow 1 - Location 1", "Some code snipper\n\t with newline"),
-          new ServerIssue.ServerIssueLocation("src/path1", null, "Flow 1 - Location 2 - Without text range", null),
-          new ServerIssue.ServerIssueLocation("src/path2", null, null, null)))))));
+        new ServerTaintIssue.Flow(List.of(
+          new ServerTaintIssue.ServerIssueLocation("src/path1", new ServerTaintIssue.TextRange(5, 6, 7, 8), "Flow 1 - Location 1", "Some code snipper\n\t with newline"),
+          new ServerTaintIssue.ServerIssueLocation("src/path1", null, "Flow 1 - Location 2 - Without text range", null),
+          new ServerTaintIssue.ServerIssueLocation("src/path2", null, null, null)))))));
 
-    var issuesReadFromStorage = issueStoreReader.getServerIssues(projectBinding, "src/path1");
+    var issuesReadFromStorage = issueStoreReader.getServerTaintIssues(projectBinding, "src/path1");
     assertThat(issuesReadFromStorage).hasSize(1);
     var loadedIssue = issuesReadFromStorage.get(0);
     assertThat(loadedIssue.getFilePath()).isEqualTo("src/path1");

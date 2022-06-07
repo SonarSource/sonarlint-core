@@ -20,9 +20,9 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.analysis.api.TextRange;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
-import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
 
 import static org.sonarsource.sonarlint.core.tracking.DigestUtils.digest;
 
@@ -34,18 +34,19 @@ public class IssueTrackable implements Trackable<Issue> {
   private final Integer lineHash;
 
   public IssueTrackable(Issue issue) {
-    this(issue, null, null, null);
+    this(issue, null, null);
   }
 
-  public IssueTrackable(Issue issue, @Nullable ServerIssue.TextRange textRange, @Nullable String textRangeContent,
+  public IssueTrackable(Issue issue, @Nullable String textRangeContent,
     @Nullable String lineContent) {
     this.issue = issue;
-    this.textRange = textRange != null ? convertToTrackingTextRange(textRange) : null;
+    var fromAnalysis = issue.getTextRange();
+    this.textRange = fromAnalysis != null ? convertToTrackingTextRange(fromAnalysis) : null;
     this.textRangeHash = hashOrNull(textRangeContent);
     this.lineHash = hashOrNull(lineContent);
   }
 
-  static org.sonarsource.sonarlint.core.issuetracking.TextRange convertToTrackingTextRange(ServerIssue.TextRange fromAnalysis) {
+  static org.sonarsource.sonarlint.core.issuetracking.TextRange convertToTrackingTextRange(TextRange fromAnalysis) {
     return new org.sonarsource.sonarlint.core.issuetracking.TextRange(fromAnalysis.getStartLine(), fromAnalysis.getStartLineOffset(), fromAnalysis.getEndLine(),
       fromAnalysis.getEndLineOffset());
   }

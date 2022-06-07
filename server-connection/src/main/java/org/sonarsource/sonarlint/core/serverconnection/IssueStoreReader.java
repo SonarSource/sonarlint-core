@@ -39,4 +39,14 @@ public class IssueStoreReader {
     loadedIssues.forEach(issue -> issue.setFilePath(ideFilePath));
     return loadedIssues;
   }
+
+  public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String ideFilePath) {
+    var sqPath = IssueStorePaths.idePathToSqPath(projectBinding, ideFilePath);
+    if (sqPath == null) {
+      return Collections.emptyList();
+    }
+    var loadedIssues = serverIssueStore.loadTaint(projectBinding.projectKey(), sqPath);
+    loadedIssues.forEach(issue -> issue.setFilePath(ideFilePath));
+    return loadedIssues;
+  }
 }
