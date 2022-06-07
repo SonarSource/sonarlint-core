@@ -21,10 +21,14 @@ package org.sonarsource.sonarlint.core.serverapi.rules;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -32,9 +36,22 @@ import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
+
 public class RulesApi {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+
+  public static final Map<Language, String> TAINT_REPOS_BY_LANGUAGE = Map.of(
+    Language.CS, "roslyn.sonaranalyzer.security.cs",
+    Language.JAVA, "javasecurity",
+    Language.JS, "jssecurity",
+    Language.TS, "tssecurity",
+    Language.PHP, "phpsecurity",
+    Language.PYTHON, "pythonsecurity");
+
+  public static final Set<String> TAINT_REPOS = Set.copyOf(TAINT_REPOS_BY_LANGUAGE.values());
 
   public static final String RULE_SHOW_URL = "/api/rules/show.protobuf?key=";
 
@@ -92,6 +109,28 @@ public class RulesApi {
     builder.append(qualityProfileKey);
     serverApiHelper.getOrganizationKey().ifPresent(org -> builder.append("&organization=").append(UrlUtils.urlEncode(org)));
     builder.append("&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY&s=key");
+    return builder.toString();
+  }
+
+  public Set<String> getAllTaintRules(List<Language> enabledLanguages, ProgressMonitor progress) {
+    Set<String> taintRules = new HashSet<>();
+    serverApiHelper.getPaginated(getSearchByRepoUrl(enabledLanguages.stream().map(TAINT_REPOS_BY_LANGUAGE::get).filter(Objects::nonNull).collect(toList())),
+      Rules.SearchResponse::parseFrom,
+      Rules.SearchResponse::getTotal,
+      Rules.SearchResponse::getRulesList,
+      rule -> taintRules.add(rule.getKey()),
+      false,
+      progress);
+    return taintRules;
+  }
+
+  private String getSearchByRepoUrl(List<String> repositories) {
+    var builder = new StringBuilder();
+    builder.append("/api/rules/search.protobuf?repositories=");
+    builder.append(repositories.stream().map(UrlUtils::urlEncode).collect(joining(",")));
+    serverApiHelper.getOrganizationKey().ifPresent(org -> builder.append("&organization=").append(UrlUtils.urlEncode(org)));
+    // Add only f=repo even if we don't need it, else too many fields are returned by default
+    builder.append("&f=repo&s=key");
     return builder.toString();
   }
 
