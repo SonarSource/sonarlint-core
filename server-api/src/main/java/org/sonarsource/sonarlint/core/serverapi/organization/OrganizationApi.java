@@ -74,7 +74,7 @@ public class OrganizationApi {
 
     helper.getPaginated(url,
       Organizations.SearchWsResponse::parseFrom,
-      Organizations.SearchWsResponse::getPaging,
+      r -> r.getPaging().getTotal(),
       Organizations.SearchWsResponse::getOrganizationsList,
       org -> result.add(new DefaultRemoteOrganization(org)),
       false,

@@ -19,12 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.rules;
 
-import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -38,16 +38,16 @@ public class RulesApi {
 
   public static final String RULE_SHOW_URL = "/api/rules/show.protobuf?key=";
 
-  private final ServerApiHelper helper;
+  private final ServerApiHelper serverApiHelper;
 
-  public RulesApi(ServerApiHelper helper) {
-    this.helper = helper;
+  public RulesApi(ServerApiHelper serverApiHelper) {
+    this.serverApiHelper = serverApiHelper;
   }
 
   public CompletableFuture<ServerRule> getRule(String ruleKey) {
     var builder = new StringBuilder(RULE_SHOW_URL + ruleKey);
-    helper.getOrganizationKey().ifPresent(org -> builder.append("&organization=").append(UrlUtils.urlEncode(org)));
-    return helper.getAsync(builder.toString())
+    serverApiHelper.getOrganizationKey().ifPresent(org -> builder.append("&organization=").append(UrlUtils.urlEncode(org)));
+    return serverApiHelper.getAsync(builder.toString())
       .thenApply(response -> {
         try (response) {
           var rule = Rules.ShowResponse.parseFrom(response.bodyAsStream()).getRule();
@@ -59,51 +59,40 @@ public class RulesApi {
       });
   }
 
-  public List<ServerActiveRule> getAllActiveRules(String qualityProfileKey, ProgressMonitor progress) {
-    List<ServerActiveRule> activeRules = new ArrayList<>();
-    var page = 0;
-    var loaded = 0;
+  public Collection<ServerActiveRule> getAllActiveRules(String qualityProfileKey, ProgressMonitor progress) {
+    // Use a map to avoid duplicates during pagination
+    Map<String, ServerActiveRule> activeRulesByKey = new HashMap<>();
+    Map<String, String> ruleTemplatesByRuleKey = new HashMap<>();
+    serverApiHelper.getPaginated(getSearchByQualityProfileUrl(qualityProfileKey),
+      Rules.SearchResponse::parseFrom,
+      Rules.SearchResponse::getTotal,
+      r -> {
+        ruleTemplatesByRuleKey.putAll(r.getRulesList().stream().collect(Collectors.toMap(Rules.Rule::getKey, Rules.Rule::getTemplateKey)));
+        return List.copyOf(r.getActives().getActivesMap().entrySet());
+      },
+      activeEntry -> {
+        var ruleKey = activeEntry.getKey();
+        // Since we are querying rules for a given profile, we know there will be only one active rule per rule
+        Rules.Active ar = activeEntry.getValue().getActiveListList().get(0);
+        activeRulesByKey.put(ruleKey, new ServerActiveRule(
+          ruleKey,
+          ar.getSeverity(),
+          ar.getParamsList().stream().collect(Collectors.toMap(Rules.Active.Param::getKey, Rules.Active.Param::getValue)),
+          ruleTemplatesByRuleKey.get(ruleKey)));
 
-    while (true) {
-      page++;
-      var response = loadFromStream(helper.get(getSearchByQualityProfileUrl(qualityProfileKey, page)));
-      var rules = response.getRulesList();
-      for (var entry : response.getActives().getActivesMap().entrySet()) {
-        var ruleKey = entry.getKey();
-        for (Rules.Active ar : entry.getValue().getActiveListList()) {
-          var rule = rules.stream().filter(r -> ruleKey.equals(r.getKey())).findFirst().orElseThrow();
-          activeRules.add(new ServerActiveRule(
-            entry.getKey(),
-            ar.getSeverity(),
-            ar.getParamsList().stream().collect(Collectors.toMap(Rules.Active.Param::getKey, Rules.Active.Param::getValue)),
-            rule.getTemplateKey()));
-        }
-      }
-      loaded += response.getPs();
-
-      if (response.getTotal() <= loaded) {
-        break;
-      }
-      progress.setProgressAndCheckCancel("Loading page " + page, loaded / (float) response.getTotal());
-    }
-    return activeRules;
+      },
+      false,
+      progress);
+    return activeRulesByKey.values();
   }
 
-  private String getSearchByQualityProfileUrl(String qualityProfileKey, int page) {
+  private String getSearchByQualityProfileUrl(String qualityProfileKey) {
     var builder = new StringBuilder();
     builder.append("/api/rules/search.protobuf?qprofile=");
     builder.append(qualityProfileKey);
-    helper.getOrganizationKey().ifPresent(org -> builder.append("&organization=").append(UrlUtils.urlEncode(org)));
-    builder.append("&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY&ps=500&p=");
-    builder.append(page);
+    serverApiHelper.getOrganizationKey().ifPresent(org -> builder.append("&organization=").append(UrlUtils.urlEncode(org)));
+    builder.append("&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY&s=key");
     return builder.toString();
   }
 
-  private static Rules.SearchResponse loadFromStream(HttpClient.Response response) {
-    try (var toBeClosed = response; var is = toBeClosed.bodyAsStream()) {
-      return Rules.SearchResponse.parseFrom(is);
-    } catch (IOException e) {
-      throw new IllegalStateException("Failed to load rules", e);
-    }
-  }
 }

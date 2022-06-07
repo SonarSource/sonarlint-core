@@ -72,8 +72,10 @@ class LocalStorageSynchronizerTests {
         .setUserUpdatedAt("2020-10-27T23:08:58+0000")
         .build())
       .build());
-    mockServer.addProtobufResponse("/api/rules/search.protobuf?qprofile=qpKey&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY&ps=500&p=1",
+    mockServer.addProtobufResponse("/api/rules/search.protobuf?qprofile=qpKey&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY&s=key&ps=500&p=1",
       Rules.SearchResponse.newBuilder()
+        .setTotal(1)
+        .setPs(1)
         .addRules(Rules.Rule.newBuilder().setKey("ruleKey").setTemplateKey("templateKey").build())
         .setActives(Rules.Actives.newBuilder()
           .putActives("ruleKey", Rules.ActiveList.newBuilder()
