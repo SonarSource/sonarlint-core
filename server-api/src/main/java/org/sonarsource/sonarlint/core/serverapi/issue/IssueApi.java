@@ -65,20 +65,21 @@ public class IssueApi {
     serverApiHelper.getOrganizationKey()
       .ifPresent(org -> searchUrl.append("&organization=").append(UrlUtils.urlEncode(org)));
     List<Issue> result = new ArrayList<>();
-    Map<String, String> componentsByKey = new HashMap<>();
+    Map<String, String> componentsPathByKey = new HashMap<>();
     serverApiHelper.getPaginated(searchUrl.toString(),
       Issues.SearchWsResponse::parseFrom,
       r -> r.getPaging().getTotal(),
       r -> {
-        componentsByKey.clear();
-        componentsByKey.putAll(r.getComponentsList().stream().collect(Collectors.toMap(Component::getKey, Component::getPath)));
+        componentsPathByKey.clear();
+        // Ignore project level issues
+        componentsPathByKey.putAll(r.getComponentsList().stream().filter(Component::hasPath).collect(Collectors.toMap(Component::getKey, Component::getPath)));
         return r.getIssuesList();
       },
       result::add,
       true,
       progress);
 
-    return new DownloadIssuesResult(result, componentsByKey);
+    return new DownloadIssuesResult(result, componentsPathByKey);
   }
 
   public static class DownloadIssuesResult {

@@ -43,6 +43,7 @@ import org.sonarsource.sonarlint.core.serverconnection.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
 
 /**
  * Entry point for SonarLint.
@@ -70,6 +71,15 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
    */
   List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String filePath);
+
+  /**
+   * Gets locally stored server taint issues for a given file.
+   *
+   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, boolean, String, ClientProgressMonitor)})
+   * @param filePath       relative to the project.
+   * @return All server taint issues in the local storage for the given file. If file has no issues, an empty list is returned.
+   */
+  List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String filePath);
 
   /**
    * Get information about current global storage state
