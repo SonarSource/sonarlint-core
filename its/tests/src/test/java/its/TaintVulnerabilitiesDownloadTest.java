@@ -58,15 +58,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.issues.SearchRequest;
 import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
-import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
-import org.sonarsource.sonarlint.core.serverconnection.ServerIssue.Flow;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static java.util.Arrays.asList;
@@ -131,13 +128,13 @@ public class TaintVulnerabilitiesDownloadTest extends AbstractConnectedTest {
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, true, null, null);
 
     var sinkIssues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/main/java/foo/DbHelper.java");
-    assertThat(sinkIssues.size()).isEqualTo(1);
+    assertThat(sinkIssues).hasSize(1);
 
     // Reload
     engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, true, null, null);
 
     sinkIssues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/main/java/foo/DbHelper.java");
-    assertThat(sinkIssues.size()).isEqualTo(1);
+    assertThat(sinkIssues).hasSize(1);
 
     var taintIssue = sinkIssues.get(0);
     assertThat(taintIssue.getCodeSnippet()).isEqualTo("statement.executeQuery(query)");
