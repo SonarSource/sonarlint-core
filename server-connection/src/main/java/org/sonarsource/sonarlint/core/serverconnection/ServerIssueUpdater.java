@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -34,24 +35,29 @@ public class ServerIssueUpdater {
     this.issueDownloader = issueDownloader;
   }
 
-  public void update(ServerApiHelper serverApiHelper, String projectKey, boolean fetchTaintVulnerabilities,
-    @Nullable String branchName, ProgressMonitor progress) {
-    var issues = issueDownloader.download(serverApiHelper, projectKey, fetchTaintVulnerabilities, branchName, progress);
+  public void update(ServerApiHelper serverApiHelper, String projectKey, @Nullable String branchName, ProgressMonitor progress) {
+    var issues = issueDownloader.download(serverApiHelper, projectKey, branchName, progress);
     serverIssueStore.save(projectKey, issues);
   }
 
-  public void updateFileIssues(ServerApiHelper serverApiHelper, ProjectBinding projectBinding, String ideFilePath, boolean fetchTaintVulnerabilities, @Nullable String branchName,
+  public void updateFileIssues(ServerApiHelper serverApiHelper, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName,
     ProgressMonitor progress) {
     var fileKey = IssueStorePaths.idePathToFileKey(projectBinding, ideFilePath);
     if (fileKey == null) {
       return;
     }
-    List<ServerIssue> issues;
+    List<ServerIssue> issues = new ArrayList<>();
     try {
-      issues = issueDownloader.download(serverApiHelper, fileKey, fetchTaintVulnerabilities, branchName, progress);
+      issues.addAll(issueDownloader.download(serverApiHelper, fileKey, branchName, progress));
     } catch (Exception e) {
       // null as cause so that it doesn't get wrapped
       throw new DownloadException("Failed to update file issues: " + e.getMessage(), null);
+    }
+    try {
+      issues.addAll(issueDownloader.downloadTaint(serverApiHelper, fileKey, branchName, progress));
+    } catch (Exception e) {
+      // null as cause so that it doesn't get wrapped
+      throw new DownloadException("Failed to update file taint vulnerabilities: " + e.getMessage(), null);
     }
     serverIssueStore.save(projectBinding.projectKey(), issues);
   }
