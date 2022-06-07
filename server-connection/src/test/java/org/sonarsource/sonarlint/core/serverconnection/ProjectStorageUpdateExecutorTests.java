@@ -101,14 +101,13 @@ class ProjectStorageUpdateExecutorTests {
 
     var issueDownloader = mock(IssueDownloader.class);
     var serverApiHelper = mock(ServerApiHelper.class);
-    when(issueDownloader.download(eq(serverApiHelper), eq(MODULE_KEY_WITH_BRANCH), eq(false), eq(null), any(ProgressMonitor.class)))
+    when(issueDownloader.download(eq(serverApiHelper), eq(MODULE_KEY_WITH_BRANCH), eq(null), any(ProgressMonitor.class)))
       .thenReturn(Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue));
 
     underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, projectFileListDownloader, serverIssueUpdater);
-    underTest.update(serverApiHelper, MODULE_KEY_WITH_BRANCH, false, null, PROGRESS);
+    underTest.update(serverApiHelper, MODULE_KEY_WITH_BRANCH, null, PROGRESS);
 
-    verify(serverIssueUpdater).update(eq(serverApiHelper), eq(MODULE_KEY_WITH_BRANCH), eq(false),
-      eq(null), any(ProgressMonitor.class));
+    verify(serverIssueUpdater).update(eq(serverApiHelper), eq(MODULE_KEY_WITH_BRANCH), eq(null), any(ProgressMonitor.class));
   }
 
   @Test

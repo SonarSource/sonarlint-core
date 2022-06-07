@@ -55,9 +55,7 @@ public class IssueDownloader {
    * @param branchName name of the branch. If null - issues will be downloaded only for the main branch.
    * @return Iterator of issues. It can be empty but never null.
    */
-  public List<ServerIssue> download(ServerApiHelper serverApiHelper, String key, boolean fetchTaintVulnerabilities,
-    @Nullable String branchName,
-    ProgressMonitor progress) {
+  public List<ServerIssue> download(ServerApiHelper serverApiHelper, String key, @Nullable String branchName, ProgressMonitor progress) {
     var serverApi = new ServerApi(serverApiHelper);
     var issueApi = serverApi.issue();
 
@@ -71,17 +69,24 @@ public class IssueDownloader {
       }
     }
 
-    if (fetchTaintVulnerabilities) {
-      Set<String> taintRuleKeys = serverApi.rules().getAllTaintRules(List.of(Language.values()), progress);
-      Map<String, String> sourceCodeByKey = new HashMap<>();
-      try {
-        var downloadVulnerabilitiesForRules = issueApi.downloadVulnerabilitiesForRules(key, taintRuleKeys, branchName, progress);
-        downloadVulnerabilitiesForRules.getIssues()
-          .forEach(i -> result.add(
-            convertTaintVulnerability(new ServerApi(serverApiHelper).source(), i, downloadVulnerabilitiesForRules.getComponentPathsByKey(), sourceCodeByKey)));
-      } catch (Exception e) {
-        LOG.warn("Unable to fetch taint vulnerabilities", e);
-      }
+    return result;
+  }
+
+  public List<ServerIssue> downloadTaint(ServerApiHelper serverApiHelper, String key, @Nullable String branchName, ProgressMonitor progress) {
+    var serverApi = new ServerApi(serverApiHelper);
+    var issueApi = serverApi.issue();
+
+    List<ServerIssue> result = new ArrayList<>();
+
+    Set<String> taintRuleKeys = serverApi.rules().getAllTaintRules(List.of(Language.values()), progress);
+    Map<String, String> sourceCodeByKey = new HashMap<>();
+    try {
+      var downloadVulnerabilitiesForRules = issueApi.downloadVulnerabilitiesForRules(key, taintRuleKeys, branchName, progress);
+      downloadVulnerabilitiesForRules.getIssues()
+        .forEach(i -> result.add(
+          convertTaintVulnerability(new ServerApi(serverApiHelper).source(), i, downloadVulnerabilitiesForRules.getComponentPathsByKey(), sourceCodeByKey)));
+    } catch (Exception e) {
+      LOG.warn("Unable to fetch taint vulnerabilities", e);
     }
 
     return result;
