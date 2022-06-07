@@ -56,9 +56,9 @@ class ServerIssueUpdaterTest {
     var issue = aServerIssue();
     List<ServerIssue> issues = Collections.singletonList(issue);
     var serverApiHelper = mock(ServerApiHelper.class);
-    when(downloader.download(serverApiHelper, "module:file", false, null, PROGRESS)).thenReturn(issues);
+    when(downloader.download(serverApiHelper, "module:file", null, PROGRESS)).thenReturn(issues);
 
-    updater.update(serverApiHelper, projectBinding.projectKey(), false, null, PROGRESS);
+    updater.update(serverApiHelper, projectBinding.projectKey(), null, PROGRESS);
 
     verify(issueStore).save(eq(projectBinding.projectKey()), anyList());
   }
@@ -67,7 +67,7 @@ class ServerIssueUpdaterTest {
   void update_file_issues_for_unknown_file() {
     projectBinding = new ProjectBinding("module", "", "ide_prefix");
 
-    updater.updateFileIssues(mock(ServerApiHelper.class), projectBinding, "not_ide_prefix", false, null, PROGRESS);
+    updater.updateFileIssues(mock(ServerApiHelper.class), projectBinding, "not_ide_prefix", null, PROGRESS);
 
     verifyNoInteractions(downloader);
     verifyNoInteractions(issueStore);
@@ -76,10 +76,10 @@ class ServerIssueUpdaterTest {
   @Test
   void error_downloading_issues() {
     var serverApiHelper = mock(ServerApiHelper.class);
-    when(downloader.download(serverApiHelper, "module:file", false, null, PROGRESS)).thenThrow(IllegalArgumentException.class);
+    when(downloader.download(serverApiHelper, "module:file", null, PROGRESS)).thenThrow(IllegalArgumentException.class);
     // when(issueStorePaths.idePathToFileKey(projectBinding, "file")).thenReturn("module:file");
 
-    assertThrows(DownloadException.class, () -> updater.updateFileIssues(serverApiHelper, projectBinding, "file", false, null, PROGRESS));
+    assertThrows(DownloadException.class, () -> updater.updateFileIssues(serverApiHelper, projectBinding, "file", null, PROGRESS));
   }
 
   @Test
@@ -88,9 +88,9 @@ class ServerIssueUpdaterTest {
     List<ServerIssue> issues = Collections.singletonList(issue);
 
     var serverApiHelper = mock(ServerApiHelper.class);
-    when(downloader.download(serverApiHelper, projectBinding.projectKey(), false, null, PROGRESS)).thenReturn(issues);
+    when(downloader.download(serverApiHelper, projectBinding.projectKey(), null, PROGRESS)).thenReturn(issues);
 
-    updater.update(serverApiHelper, projectBinding.projectKey(), false, null, PROGRESS);
+    updater.update(serverApiHelper, projectBinding.projectKey(), null, PROGRESS);
 
     verify(issueStore).save(eq(projectBinding.projectKey()), anyList());
   }

@@ -74,7 +74,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, response);
 
-    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, false, null, PROGRESS);
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, null, PROGRESS);
     assertThat(issues).hasSize(1);
 
     var serverIssue = issues.get(0);
@@ -92,29 +92,6 @@ class IssueDownloaderTests {
 
   @Test
   void test_download_issues_fetch_vulnerabilities() {
-    var issue1 = ScannerInput.ServerIssue.newBuilder()
-      .setRuleRepository("sonarjava")
-      .setRuleKey("S123")
-      .setChecksum("hash1")
-      .setMsg("Primary message 1")
-      .setLine(1)
-      .setCreationDate(123456789L)
-      .setPath("foo/bar/Hello.java")
-      .setModuleKey("project")
-      .build();
-
-    var taint1 = ScannerInput.ServerIssue.newBuilder()
-      .setRuleRepository("javasecurity")
-      .setRuleKey("S789")
-      .setChecksum("hash2")
-      .setMsg("Primary message 2")
-      .setLine(2)
-      .setStatus("OPEN")
-      .setCreationDate(123456789L)
-      .setPath("foo/bar/Hello2.java")
-      .setModuleKey("project")
-      .build();
-
     var ruleSearchResponse = Rules.SearchResponse.newBuilder()
       .setTotal(1)
       .addRules(Rules.Rule.newBuilder()
@@ -155,7 +132,6 @@ class IssueDownloaderTests {
         .setTotal(1))
       .build();
 
-    mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, issue1, taint1);
     mockServer.addProtobufResponse(
       "/api/rules/search.protobuf?repositories=roslyn.sonaranalyzer.security.cs,javasecurity,jssecurity,phpsecurity,pythonsecurity,tssecurity&f=repo&s=key&ps=500&p=1",
       ruleSearchResponse);
@@ -164,17 +140,11 @@ class IssueDownloaderTests {
       issueSearchResponse);
     mockServer.addStringResponse("/api/sources/raw?key=" + URLEncoder.encode(FILE_1_KEY, StandardCharsets.UTF_8), "Even\nBefore My\n\tCode\n  Snippet And\n After");
 
-    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, true, null, PROGRESS);
+    var issues = underTest.downloadTaint(mockServer.serverApiHelper(), DUMMY_KEY, null, PROGRESS);
 
-    assertThat(issues).hasSize(2);
+    assertThat(issues).hasSize(1);
 
-    var issue = issues.get(0);
-    assertThat(issue.lineHash()).isEqualTo("hash1");
-    assertThat(issue.getMessage()).isEqualTo("Primary message 1");
-    assertThat(issue.getFilePath()).isEqualTo("foo/bar/Hello.java");
-    assertThat(issue.getTextRange().getStartLine()).isEqualTo(1);
-
-    var taintIssue = issues.get(1);
+    var taintIssue = issues.get(0);
 
     assertThat(taintIssue.lineHash()).isEqualTo("hash2");
     assertThat(taintIssue.getMessage()).isEqualTo("Primary message 2");
@@ -246,7 +216,7 @@ class IssueDownloaderTests {
       "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys=" + DUMMY_KEY + "&rules=javasecurity%3AS789&ps=500&p=1",
       new MockResponse().setResponseCode(404));
 
-    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, true, null, PROGRESS);
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, null, PROGRESS);
 
     assertThat(issues).hasSize(1);
   }
@@ -255,7 +225,7 @@ class IssueDownloaderTests {
   void test_download_no_issues() {
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY);
 
-    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, false, null, PROGRESS);
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, null, PROGRESS);
     assertThat(issues).isEmpty();
   }
 
@@ -264,7 +234,7 @@ class IssueDownloaderTests {
     mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, new MockResponse().setResponseCode(503));
 
     var thrown = assertThrows(ServerErrorException.class,
-      () -> underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, true, null, PROGRESS));
+      () -> underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, null, PROGRESS));
     assertThat(thrown).hasMessageContaining("Error 503");
   }
 
@@ -272,7 +242,7 @@ class IssueDownloaderTests {
   void test_return_empty_if_404() {
     mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, new MockResponse().setResponseCode(404));
 
-    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, false, null, PROGRESS);
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, null, PROGRESS);
     assertThat(issues).isEmpty();
   }
 
@@ -285,7 +255,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY + "&branch=branchName", response);
 
-    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, false, "branchName", PROGRESS);
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, "branchName", PROGRESS);
     assertThat(issues).hasSize(1);
   }
 
@@ -304,24 +274,18 @@ class IssueDownloaderTests {
         .setPageSize(500)
         .setTotal(1))
       .build();
-    var taint1 = ScannerInput.ServerIssue.newBuilder()
-      .setRuleRepository("javasecurity")
-      .setRuleKey("S789")
-      .setStatus("OPEN")
-      .build();
     var ruleSearchResponse = Rules.SearchResponse.newBuilder()
       .setTotal(1)
       .addRules(Rules.Rule.newBuilder()
         .setKey("javasecurity:S789"))
       .build();
-    mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY + "&branch=branchName", taint1);
     mockServer.addProtobufResponse(
       "/api/rules/search.protobuf?repositories=roslyn.sonaranalyzer.security.cs,javasecurity,jssecurity,phpsecurity,pythonsecurity,tssecurity&f=repo&s=key&ps=500&p=1",
       ruleSearchResponse);
     mockServer.addProtobufResponse(
       "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys=dummyKey&rules=javasecurity%3AS789&branch=branchName&ps=500&p=1", response);
 
-    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, true, "branchName", PROGRESS);
+    var issues = underTest.downloadTaint(mockServer.serverApiHelper(), DUMMY_KEY, "branchName", PROGRESS);
 
     assertThat(issues).hasSize(1);
   }

@@ -427,14 +427,14 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
 
   @Override
   public List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
-    boolean fetchTaintVulnerabilities, @Nullable String branchName, @Nullable ClientProgressMonitor monitor) {
-    return serverConnection.downloadServerIssues(endpoint, client, projectBinding, ideFilePath, fetchTaintVulnerabilities, branchName, new ProgressMonitor(monitor));
+    @Nullable String branchName, @Nullable ClientProgressMonitor monitor) {
+    return serverConnection.downloadServerIssuesForFile(endpoint, client, projectBinding, ideFilePath, branchName, new ProgressMonitor(monitor));
   }
 
   @Override
-  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities,
+  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey,
     @Nullable String branchName, @Nullable ClientProgressMonitor monitor) {
-    serverConnection.downloadServerIssues(endpoint, client, projectKey, fetchTaintVulnerabilities, branchName, new ProgressMonitor(monitor));
+    serverConnection.downloadServerIssuesForProject(endpoint, client, projectKey, branchName, new ProgressMonitor(monitor));
   }
 
   @Override
@@ -443,13 +443,12 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
-  public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities,
-    @Nullable String branchName, @Nullable ClientProgressMonitor monitor) {
+  public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable String branchName, @Nullable ClientProgressMonitor monitor) {
     requireNonNull(endpoint);
     requireNonNull(projectKey);
     setLogging(null);
 
-    serverConnection.updateProject(endpoint, client, projectKey, fetchTaintVulnerabilities, branchName, new ProgressMonitor(monitor));
+    serverConnection.updateProject(endpoint, client, projectKey, branchName, new ProgressMonitor(monitor));
   }
 
   @Override
