@@ -73,7 +73,7 @@ class ConnectedIssueExclusionsMediumTests {
       .create(slHome);
     projectStorage = storage.getProjectStorages().get(1);
 
-    var config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId(SERVER_ID)
       .setSonarLintUserHome(slHome)
       .setStorageRoot(storage.getPath())

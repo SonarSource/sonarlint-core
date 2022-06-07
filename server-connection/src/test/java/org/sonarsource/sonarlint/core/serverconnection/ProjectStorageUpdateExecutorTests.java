@@ -34,6 +34,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.system.ServerInfo;
@@ -73,7 +74,7 @@ class ProjectStorageUpdateExecutorTests {
     var serverInfoStore = new ServerInfoStore(new StorageFolder.Default(tempDir));
     serverInfoStore.store(new ServerInfo("", "", ""));
 
-    underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, projectFileListDownloader, serverIssueUpdater);
+    underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, projectFileListDownloader, serverIssueUpdater, false);
   }
 
   @ParameterizedTest(name = "organizationKey=[{0}]")
@@ -101,13 +102,13 @@ class ProjectStorageUpdateExecutorTests {
 
     var issueDownloader = mock(IssueDownloader.class);
     var serverApiHelper = mock(ServerApiHelper.class);
-    when(issueDownloader.download(eq(serverApiHelper), eq(MODULE_KEY_WITH_BRANCH), eq(null), any(ProgressMonitor.class)))
+    when(issueDownloader.download(eq(serverApiHelper), eq(MODULE_KEY_WITH_BRANCH), eq(null), eq(false), eq(Version.create("8.9")), any(ProgressMonitor.class)))
       .thenReturn(Arrays.asList(fileIssue1, fileIssue2, anotherFileIssue));
 
-    underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, projectFileListDownloader, serverIssueUpdater);
-    underTest.update(serverApiHelper, MODULE_KEY_WITH_BRANCH, null, PROGRESS);
+    underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, projectFileListDownloader, serverIssueUpdater, false);
+    underTest.update(serverApiHelper, MODULE_KEY_WITH_BRANCH, null, Version.create("8.9"), PROGRESS);
 
-    verify(serverIssueUpdater).update(eq(serverApiHelper), eq(MODULE_KEY_WITH_BRANCH), eq(null), any(ProgressMonitor.class));
+    verify(serverIssueUpdater).update(eq(serverApiHelper), eq(MODULE_KEY_WITH_BRANCH), eq(null), eq(false), eq(Version.create("8.9")), any(ProgressMonitor.class));
   }
 
   @Test
@@ -116,7 +117,7 @@ class ProjectStorageUpdateExecutorTests {
 
     var temp = tempDir.resolve("tmp2");
     Files.createDirectories(temp);
-    underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, projectFileListDownloader, serverIssueUpdater);
+    underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, projectFileListDownloader, serverIssueUpdater, false);
 
     List<String> fileList = new ArrayList<>();
     fileList.add("rootModule:pom.xml");

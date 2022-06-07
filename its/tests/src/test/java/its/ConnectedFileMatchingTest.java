@@ -83,7 +83,7 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
   @Before
   public void start() throws IOException {
     sonarUserHome = temp.newFolder().toPath();
-    engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
+    engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
       .setLogOutput((msg, level) -> logs.add(msg))

@@ -28,18 +28,20 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.Flow;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.TextRange;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Issue;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.IssueLite;
 import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 import org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils;
@@ -53,28 +55,40 @@ public class IssueDownloader {
    * If the component doesn't exist or it exists but has no issues, an empty iterator is returned.
    *
    * @param key project key, or file key.
-   * @param branchName name of the branch. If null - issues will be downloaded only for the main branch.
+   * @param branchName name of the branch.
    * @return Iterator of issues. It can be empty but never null.
    */
-  public List<ServerIssue> download(ServerApiHelper serverApiHelper, String key, @Nullable String branchName, ProgressMonitor progress) {
+  public List<ServerIssue> download(ServerApiHelper serverApiHelper, String key, String branchName, boolean isSonarCloud,
+    Version serverVersion, ProgressMonitor progress) {
     var serverApi = new ServerApi(serverApiHelper);
     var issueApi = serverApi.issue();
 
     List<ServerIssue> result = new ArrayList<>();
 
-    var batchIssues = issueApi.downloadAllFromBatchIssues(key, branchName);
+    // Starting from 9.5 we will get issues during the sync
+    if (!isSonarCloud && serverVersion.compareToIgnoreQualifier(IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL) >= 0) {
+      issueApi.pullIssues(key, branchName).getIssues()
+        .stream()
+        // Ignore project level issues
+        .filter(i -> i.getMainLocation().hasFilePath())
+        .forEach(pulledIssue -> {
+          result.add(convertLiteIssue(pulledIssue));
+        });
+    } else {
+      var batchIssues = issueApi.downloadAllFromBatchIssues(key, branchName);
 
-    for (ScannerInput.ServerIssue batchIssue : batchIssues) {
-      // We ignore project level issues
-      if (!RulesApi.TAINT_REPOS.contains(batchIssue.getRuleRepository()) && batchIssue.hasPath()) {
-        result.add(convertClassicIssue(batchIssue));
+      for (ScannerInput.ServerIssue batchIssue : batchIssues) {
+        // We ignore project level issues
+        if (!RulesApi.TAINT_REPOS.contains(batchIssue.getRuleRepository()) && batchIssue.hasPath()) {
+          result.add(convertBatchIssue(batchIssue));
+        }
       }
     }
 
     return result;
   }
 
-  public List<ServerTaintIssue> downloadTaint(ServerApiHelper serverApiHelper, String key, @Nullable String branchName, ProgressMonitor progress) {
+  public List<ServerTaintIssue> downloadTaint(ServerApiHelper serverApiHelper, String key, String branchName, ProgressMonitor progress) {
     var serverApi = new ServerApi(serverApiHelper);
     var issueApi = serverApi.issue();
 
@@ -96,7 +110,7 @@ public class IssueDownloader {
     return result;
   }
 
-  public ServerIssue convertClassicIssue(ScannerInput.ServerIssue batchIssueFromWs) {
+  public ServerIssue convertBatchIssue(ScannerInput.ServerIssue batchIssueFromWs) {
     return new ServerIssue(
       batchIssueFromWs.getKey(),
       batchIssueFromWs.hasResolution(),
@@ -108,6 +122,22 @@ public class IssueDownloader {
       batchIssueFromWs.getSeverity().name(),
       batchIssueFromWs.getType(),
       batchIssueFromWs.hasLine() ? batchIssueFromWs.getLine() : null);
+  }
+
+  public ServerIssue convertLiteIssue(IssueLite liteIssueFromWs) {
+    return new ServerIssue(
+      liteIssueFromWs.getKey(),
+      liteIssueFromWs.getResolved(),
+      liteIssueFromWs.getRuleKey(),
+      liteIssueFromWs.getMainLocation().getMessage(),
+      // FIXME range hash should be in a different field
+      liteIssueFromWs.getMainLocation().hasTextRange() ? liteIssueFromWs.getMainLocation().getTextRange().getHash() : "",
+      liteIssueFromWs.getMainLocation().getFilePath(),
+      Instant.ofEpochMilli(liteIssueFromWs.getCreationDate()),
+      liteIssueFromWs.getUserSeverity(),
+      liteIssueFromWs.getType(),
+      // Fixme preserve text range in store
+      liteIssueFromWs.getMainLocation().hasTextRange() ? liteIssueFromWs.getMainLocation().getTextRange().getStartLine() : null);
   }
 
   @CheckForNull
