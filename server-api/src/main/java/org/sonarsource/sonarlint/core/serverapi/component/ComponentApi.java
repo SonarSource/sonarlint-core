@@ -44,7 +44,7 @@ public class ComponentApi {
 
     helper.getPaginated(path,
       Components.TreeWsResponse::parseFrom,
-      Components.TreeWsResponse::getPaging,
+      r -> r.getPaging().getTotal(),
       Components.TreeWsResponse::getComponentsList,
       component -> files.add(component.getKey()), false, progress);
     return files;
@@ -66,7 +66,7 @@ public class ComponentApi {
     List<ServerProject> serverProjects = new ArrayList<>();
     helper.getPaginated(getAllProjectsUrl(),
       Components.SearchWsResponse::parseFrom,
-      Components.SearchWsResponse::getPaging,
+      r -> r.getPaging().getTotal(),
       Components.SearchWsResponse::getComponentsList,
       project -> serverProjects.add(new DefaultRemoteProject(project.getKey(), project.getName())),
       true,
