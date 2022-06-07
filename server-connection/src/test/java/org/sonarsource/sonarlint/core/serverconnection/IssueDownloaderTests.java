@@ -33,8 +33,7 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.Flow;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.Paging;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.TextRange;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -116,7 +115,13 @@ class IssueDownloaderTests {
       .setModuleKey("project")
       .build();
 
-    var response = Issues.SearchWsResponse.newBuilder()
+    var ruleSearchResponse = Rules.SearchResponse.newBuilder()
+      .setTotal(1)
+      .addRules(Rules.Rule.newBuilder()
+        .setKey("javasecurity:S789"))
+      .build();
+
+    var issueSearchResponse = Issues.SearchWsResponse.newBuilder()
       .addIssues(Issues.Issue.newBuilder()
         .setRule("javasecurity:S789")
         .setHash("hash2")
@@ -152,8 +157,11 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, issue1, taint1);
     mockServer.addProtobufResponse(
+      "/api/rules/search.protobuf?repositories=roslyn.sonaranalyzer.security.cs,javasecurity,jssecurity,phpsecurity,pythonsecurity,tssecurity&f=repo&s=key&ps=500&p=1",
+      ruleSearchResponse);
+    mockServer.addProtobufResponse(
       "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys=" + DUMMY_KEY + "&rules=javasecurity%3AS789&ps=500&p=1",
-      response);
+      issueSearchResponse);
     mockServer.addStringResponse("/api/sources/raw?key=" + URLEncoder.encode(FILE_1_KEY, StandardCharsets.UTF_8), "Even\nBefore My\n\tCode\n  Snippet And\n After");
 
     var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, true, null, PROGRESS);
@@ -201,40 +209,6 @@ class IssueDownloaderTests {
   }
 
   @Test
-  void test_download_issues_dont_fetch_resolved_vulnerabilities() {
-    var issue1 = ScannerInput.ServerIssue.newBuilder()
-      .setRuleRepository("sonarjava")
-      .setRuleKey("S123")
-      .setChecksum("hash1")
-      .setMsg("Primary message 1")
-      .setLine(1)
-      .setCreationDate(123456789L)
-      .setPath("foo/bar/Hello.java")
-      .setModuleKey("project")
-      .build();
-
-    var taint1 = ScannerInput.ServerIssue.newBuilder()
-      .setRuleRepository("javasecurity")
-      .setRuleKey("S789")
-      .setChecksum("hash2")
-      .setMsg("Primary message 2")
-      .setLine(2)
-      .setStatus("RESOLVED")
-      .setCreationDate(123456789L)
-      .setPath("foo/bar/Hello2.java")
-      .setModuleKey("project")
-      .build();
-
-    mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, issue1, taint1);
-
-    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, true, null, PROGRESS);
-
-    assertThat(issues).hasSize(1);
-
-    assertThat(mockServer.getRequestCount()).isEqualTo(1);
-  }
-
-  @Test
   void test_ignore_failure_when_fetching_taint_vulnerabilities() {
     var issue1 = ScannerInput.ServerIssue.newBuilder()
       .setRuleRepository("sonarjava")
@@ -258,7 +232,16 @@ class IssueDownloaderTests {
       .setModuleKey("project")
       .build();
 
+    var ruleSearchResponse = Rules.SearchResponse.newBuilder()
+      .setTotal(1)
+      .addRules(Rules.Rule.newBuilder()
+        .setKey("javasecurity:S789"))
+      .build();
+
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, issue1, taint1);
+    mockServer.addProtobufResponse(
+      "/api/rules/search.protobuf?repositories=roslyn.sonaranalyzer.security.cs,javasecurity,jssecurity,phpsecurity,pythonsecurity,tssecurity&f=repo&s=key&ps=500&p=1",
+      ruleSearchResponse);
     mockServer.addResponse(
       "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys=" + DUMMY_KEY + "&rules=javasecurity%3AS789&ps=500&p=1",
       new MockResponse().setResponseCode(404));
@@ -272,7 +255,7 @@ class IssueDownloaderTests {
   void test_download_no_issues() {
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY);
 
-    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, true, null, PROGRESS);
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, false, null, PROGRESS);
     assertThat(issues).isEmpty();
   }
 
@@ -289,7 +272,7 @@ class IssueDownloaderTests {
   void test_return_empty_if_404() {
     mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, new MockResponse().setResponseCode(404));
 
-    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, true, null, PROGRESS);
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, false, null, PROGRESS);
     assertThat(issues).isEmpty();
   }
 
@@ -326,7 +309,15 @@ class IssueDownloaderTests {
       .setRuleKey("S789")
       .setStatus("OPEN")
       .build();
+    var ruleSearchResponse = Rules.SearchResponse.newBuilder()
+      .setTotal(1)
+      .addRules(Rules.Rule.newBuilder()
+        .setKey("javasecurity:S789"))
+      .build();
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY + "&branch=branchName", taint1);
+    mockServer.addProtobufResponse(
+      "/api/rules/search.protobuf?repositories=roslyn.sonaranalyzer.security.cs,javasecurity,jssecurity,phpsecurity,pythonsecurity,tssecurity&f=repo&s=key&ps=500&p=1",
+      ruleSearchResponse);
     mockServer.addProtobufResponse(
       "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys=dummyKey&rules=javasecurity%3AS789&branch=branchName&ps=500&p=1", response);
 
