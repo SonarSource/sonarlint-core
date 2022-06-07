@@ -103,7 +103,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     var nodeJsHelper = new NodeJsHelper();
     nodeJsHelper.detect(null);
 
-    var builder = ConnectedGlobalConfiguration.builder()
+    var builder = ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
       .setLogOutput((msg, level) -> {

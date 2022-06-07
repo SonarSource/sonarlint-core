@@ -60,7 +60,7 @@ class ConnectedFileExclusionsMediumTests {
       .create(slHome);
     projectStorage = storage.getProjectStorages().get(0);
 
-    var config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId(SERVER_ID)
       .setSonarLintUserHome(slHome)
       .setStorageRoot(storage.getPath())

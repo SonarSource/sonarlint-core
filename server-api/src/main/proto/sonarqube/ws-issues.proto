@@ -60,6 +60,11 @@ message Component {
   optional string path = 8;
 }
 
+// Response of GET api/issues/pull
+message IssuesPullQueryTimestamp {
+  required int64 queryTimestamp = 1;
+}
+
 message TextRange {
   optional int32 startLine = 1;
   optional int32 startLineOffset = 2;

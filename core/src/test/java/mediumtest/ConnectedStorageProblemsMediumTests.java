@@ -56,7 +56,7 @@ class ConnectedStorageProblemsMediumTests {
   @Test
   void test_no_storage(@TempDir Path slHome, @TempDir Path baseDir) {
 
-    var config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId("localhost")
       .setSonarLintUserHome(slHome)
       .setLogOutput((msg, level) -> {
@@ -91,7 +91,7 @@ class ConnectedStorageProblemsMediumTests {
       .stale()
       .create(slHome);
 
-    var config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId(storageId)
       .setSonarLintUserHome(slHome)
       .setLogOutput((msg, level) -> {
@@ -129,7 +129,7 @@ class ConnectedStorageProblemsMediumTests {
 
     List<String> logs = new CopyOnWriteArrayList<>();
 
-    var config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId(storageId)
       .setSonarLintUserHome(slHome)
       .setStorageRoot(storage.getPath())

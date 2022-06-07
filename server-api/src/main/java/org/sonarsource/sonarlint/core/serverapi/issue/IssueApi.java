@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonar.scanner.protocol.input.ScannerInput;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -43,6 +44,8 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Issue;
 import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 
 public class IssueApi {
+
+  public static final Version MIN_SQ_VERSION_SUPPORTING_PULL = Version.create("9.5");
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
@@ -151,6 +154,47 @@ public class IssueApi {
       list.add(message);
     }
     return list;
+  }
+
+  private static String getPullIssuesUrl(String projectKey, String branchName) {
+    return "/api/issues/pull?projectKey=" + UrlUtils.urlEncode(projectKey) + "&branchName=" + UrlUtils.urlEncode(branchName);
+  }
+
+  public IssuesPullResult pullIssues(String projectKey, String branchName) {
+    var pullIssuesUrl = new StringBuilder();
+    pullIssuesUrl.append(getPullIssuesUrl(projectKey, branchName));
+    pullIssuesUrl.append(getUrlBranchParameter(branchName));
+    return ServerApiHelper.processTimed(
+      () -> serverApiHelper.get(pullIssuesUrl.toString()),
+      response -> {
+        var input = response.bodyAsStream();
+        List<Issues.IssueLite> issues = new ArrayList<>();
+        var timestamp = Issues.IssuesPullQueryTimestamp.parseDelimitedFrom(input);
+
+        while (input.available() > 0) {
+          issues.add(Issues.IssueLite.parseDelimitedFrom(input));
+        }
+        return new IssuesPullResult(timestamp, issues);
+      },
+      duration -> LOG.debug("Pulled issues in {}ms", duration));
+  }
+
+  public static class IssuesPullResult {
+    private final Issues.IssuesPullQueryTimestamp timestamp;
+    private final List<Issues.IssueLite> issues;
+
+    public IssuesPullResult(Issues.IssuesPullQueryTimestamp timestamp, List<Issues.IssueLite> issues) {
+      this.timestamp = timestamp;
+      this.issues = issues;
+    }
+
+    public Issues.IssuesPullQueryTimestamp getTimestamp() {
+      return timestamp;
+    }
+
+    public List<Issues.IssueLite> getIssues() {
+      return issues;
+    }
   }
 
 }
