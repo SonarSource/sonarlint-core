@@ -24,10 +24,8 @@ import com.google.protobuf.Message;
 import com.google.protobuf.Parser;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -47,9 +45,6 @@ import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 public class IssueApi {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-
-  public static final Set<String> TAINT_REPOS = new HashSet<>(
-    Arrays.asList("roslyn.sonaranalyzer.security.cs", "javasecurity", "jssecurity", "tssecurity", "phpsecurity", "pythonsecurity"));
 
   private final ServerApiHelper serverApiHelper;
 
