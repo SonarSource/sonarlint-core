@@ -37,8 +37,7 @@ class ServerIssueTrackableTests {
   void prepare() {
     when(serverIssue.lineHash()).thenReturn("blah");
     when(serverIssue.resolved()).thenReturn(true);
-    var serverTextRange = new ServerIssue.TextRange(22);
-    when(serverIssue.getTextRange()).thenReturn(serverTextRange);
+    when(serverIssue.getLine()).thenReturn(22);
     trackable = new ServerIssueTrackable(serverIssue);
   }
 
@@ -49,6 +48,6 @@ class ServerIssueTrackableTests {
     assertThat(trackable.getRuleKey()).isEqualTo(serverIssue.ruleKey());
     assertThat(trackable.isResolved()).isTrue();
     assertThat(trackable.getSeverity()).isEqualTo(serverIssue.severity());
-    assertThat(trackable.getTextRange().getStartLine()).isEqualTo(serverIssue.getTextRange().getStartLine());
+    assertThat(trackable.getLine()).isEqualTo(serverIssue.getLine());
   }
 }
