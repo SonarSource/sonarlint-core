@@ -48,7 +48,7 @@ public class ProjectStorageUpdateExecutor {
     this.serverIssueUpdater = serverIssueUpdater;
   }
 
-  public void update(ServerApiHelper serverApiHelper, String projectKey, boolean fetchTaintVulnerabilities, @Nullable String branchName, ProgressMonitor progress) {
+  public void update(ServerApiHelper serverApiHelper, String projectKey, @Nullable String branchName, ProgressMonitor progress) {
     Path temp;
     try {
       temp = Files.createTempDirectory("sonarlint-global-storage");
@@ -57,7 +57,7 @@ public class ProjectStorageUpdateExecutor {
     }
     try {
       FileUtils.replaceDir(dir -> {
-        updateServerIssues(serverApiHelper, projectKey, fetchTaintVulnerabilities, branchName, progress);
+        updateServerIssues(serverApiHelper, projectKey, branchName, progress);
         updateComponents(serverApiHelper, projectKey, dir, progress);
         updateStatus(dir);
       }, projectStoragePaths.getProjectStorageRoot(projectKey), temp);
@@ -78,9 +78,8 @@ public class ProjectStorageUpdateExecutor {
     ProtobufUtil.writeToFile(componentsBuilder.build(), temp.resolve(ProjectStoragePaths.COMPONENT_LIST_PB));
   }
 
-  private void updateServerIssues(ServerApiHelper serverApiHelper, String projectKey, boolean fetchTaintVulnerabilities,
-    @Nullable String branchName, ProgressMonitor progress) {
-    serverIssueUpdater.update(serverApiHelper, projectKey, fetchTaintVulnerabilities, branchName, progress);
+  private void updateServerIssues(ServerApiHelper serverApiHelper, String projectKey, @Nullable String branchName, ProgressMonitor progress) {
+    serverIssueUpdater.update(serverApiHelper, projectKey, branchName, progress);
   }
 
   private static void updateStatus(Path temp) {

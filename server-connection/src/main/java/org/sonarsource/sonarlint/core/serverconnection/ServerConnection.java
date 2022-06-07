@@ -188,24 +188,23 @@ public class ServerConnection {
       FilenameUtils.separatorsToUnix(match.idePrefix().toString()));
   }
 
-  public List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, boolean fetchTaintVulnerabilities,
-    @Nullable String branchName, ProgressMonitor progress) {
-    issuesUpdater.updateFileIssues(new ServerApiHelper(endpoint, client), projectBinding, ideFilePath, fetchTaintVulnerabilities, branchName, progress);
+  public List<ServerIssue> downloadServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName,
+    ProgressMonitor progress) {
+    issuesUpdater.updateFileIssues(new ServerApiHelper(endpoint, client), projectBinding, ideFilePath, branchName, progress);
     return getServerIssues(projectBinding, ideFilePath);
   }
 
-  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable String branchName,
+  public void downloadServerIssuesForProject(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable String branchName,
     ProgressMonitor progress) {
-    issuesUpdater.update(new ServerApiHelper(endpoint, client), projectKey, fetchTaintVulnerabilities, branchName, progress);
+    issuesUpdater.update(new ServerApiHelper(endpoint, client), projectKey, branchName, progress);
   }
 
-  public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities,
-    @Nullable String branchName, ProgressMonitor monitor) {
+  public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable String branchName, ProgressMonitor monitor) {
     var globalStorageStatus = globalStatusReader.read();
     if (globalStorageStatus == null || globalStorageStatus.isStale()) {
       throw new StorageException("Missing or outdated storage for connection '" + connectionId + "'");
     }
-    projectStorageUpdateExecutor.update(new ServerApiHelper(endpoint, client), projectKey, fetchTaintVulnerabilities, branchName, monitor);
+    projectStorageUpdateExecutor.update(new ServerApiHelper(endpoint, client), projectKey, branchName, monitor);
   }
 
   public void stop(boolean deleteStorage) {

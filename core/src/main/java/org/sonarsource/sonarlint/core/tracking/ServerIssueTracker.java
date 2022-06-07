@@ -43,9 +43,8 @@ public class ServerIssueTracker {
     this.issueTracker = issueTracker;
   }
 
-  public void update(EndpointParams endpoint, HttpClient client, ConnectedSonarLintEngine engine, ProjectBinding projectBinding,
-    Collection<String> fileKeys, boolean fetchTaintVulnerabilities, String branchName) {
-    update(fileKeys, fileKey -> fetchServerIssues(endpoint, client, engine, projectBinding, fileKey, branchName, fetchTaintVulnerabilities));
+  public void update(EndpointParams endpoint, HttpClient client, ConnectedSonarLintEngine engine, ProjectBinding projectBinding, Collection<String> fileKeys, String branchName) {
+    update(fileKeys, fileKey -> fetchServerIssues(endpoint, client, engine, projectBinding, fileKey, branchName));
   }
 
   public void update(ConnectedSonarLintEngine engine, ProjectBinding projectBinding, Collection<String> fileKeys) {
@@ -65,10 +64,10 @@ public class ServerIssueTracker {
   }
 
   private static List<ServerIssue> fetchServerIssues(EndpointParams endpoint, HttpClient client, ConnectedSonarLintEngine engine,
-    ProjectBinding projectBinding, String ideFilePath, String branchName, boolean fetchTaintVulnerabilities) {
+    ProjectBinding projectBinding, String ideFilePath, String branchName) {
     try {
       LOGGER.debug("fetchServerIssues projectKey=" + projectBinding.projectKey() + ", ideFilePath=" + ideFilePath + ", branchName=" + branchName);
-      return engine.downloadServerIssues(endpoint, client, projectBinding, ideFilePath, fetchTaintVulnerabilities, branchName, null);
+      return engine.downloadServerIssues(endpoint, client, projectBinding, ideFilePath, branchName, null);
     } catch (DownloadException e) {
       LOGGER.debug("Failed to download server issues", e);
       return engine.getServerIssues(projectBinding, ideFilePath);
