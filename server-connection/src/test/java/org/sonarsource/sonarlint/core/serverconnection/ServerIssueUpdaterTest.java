@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStore;
@@ -56,9 +57,9 @@ class ServerIssueUpdaterTest {
     var issue = aServerIssue();
     List<ServerIssue> issues = Collections.singletonList(issue);
     var serverApiHelper = mock(ServerApiHelper.class);
-    when(downloader.download(serverApiHelper, "module:file", null, PROGRESS)).thenReturn(issues);
+    when(downloader.download(serverApiHelper, "module:file", null, false, Version.create("8.9"), PROGRESS)).thenReturn(issues);
 
-    updater.update(serverApiHelper, projectBinding.projectKey(), null, PROGRESS);
+    updater.update(serverApiHelper, projectBinding.projectKey(), null, false, Version.create("8.9"), PROGRESS);
 
     verify(issueStore).save(eq(projectBinding.projectKey()), anyList());
   }
@@ -67,7 +68,7 @@ class ServerIssueUpdaterTest {
   void update_file_issues_for_unknown_file() {
     projectBinding = new ProjectBinding("module", "", "ide_prefix");
 
-    updater.updateFileIssues(mock(ServerApiHelper.class), projectBinding, "not_ide_prefix", null, PROGRESS);
+    updater.updateFileIssues(mock(ServerApiHelper.class), projectBinding, "not_ide_prefix", null, false, Version.create("8.9"), PROGRESS);
 
     verifyNoInteractions(downloader);
     verifyNoInteractions(issueStore);
@@ -76,10 +77,10 @@ class ServerIssueUpdaterTest {
   @Test
   void error_downloading_issues() {
     var serverApiHelper = mock(ServerApiHelper.class);
-    when(downloader.download(serverApiHelper, "module:file", null, PROGRESS)).thenThrow(IllegalArgumentException.class);
+    when(downloader.download(serverApiHelper, "module:file", null, false, Version.create("8.9"), PROGRESS)).thenThrow(IllegalArgumentException.class);
     // when(issueStorePaths.idePathToFileKey(projectBinding, "file")).thenReturn("module:file");
 
-    assertThrows(DownloadException.class, () -> updater.updateFileIssues(serverApiHelper, projectBinding, "file", null, PROGRESS));
+    assertThrows(DownloadException.class, () -> updater.updateFileIssues(serverApiHelper, projectBinding, "file", null, false, Version.create("8.9"), PROGRESS));
   }
 
   @Test
@@ -88,9 +89,9 @@ class ServerIssueUpdaterTest {
     List<ServerIssue> issues = Collections.singletonList(issue);
 
     var serverApiHelper = mock(ServerApiHelper.class);
-    when(downloader.download(serverApiHelper, projectBinding.projectKey(), null, PROGRESS)).thenReturn(issues);
+    when(downloader.download(serverApiHelper, projectBinding.projectKey(), null, false, Version.create("8.9"), PROGRESS)).thenReturn(issues);
 
-    updater.update(serverApiHelper, projectBinding.projectKey(), null, PROGRESS);
+    updater.update(serverApiHelper, projectBinding.projectKey(), null, false, Version.create("8.9"), PROGRESS);
 
     verify(issueStore).save(eq(projectBinding.projectKey()), anyList());
   }

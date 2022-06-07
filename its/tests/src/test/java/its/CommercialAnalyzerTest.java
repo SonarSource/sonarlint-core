@@ -106,7 +106,7 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
   @Before
   public void start() {
     FileUtils.deleteQuietly(sonarUserHome.toFile());
-    engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
+    engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
       .addEnabledLanguage(Language.COBOL)
