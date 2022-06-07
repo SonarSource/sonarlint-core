@@ -161,7 +161,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
     var nodeJsHelper = new NodeJsHelper();
     nodeJsHelper.detect(null);
 
-    engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
+    engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarCloudBuilder()
       .setConnectionId("sonarcloud")
       .setSonarLintUserHome(sonarUserHome)
       .addEnabledLanguage(Language.JAVA)

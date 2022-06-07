@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStore;
@@ -35,20 +35,20 @@ public class ServerIssueUpdater {
     this.issueDownloader = issueDownloader;
   }
 
-  public void update(ServerApiHelper serverApiHelper, String projectKey, @Nullable String branchName, ProgressMonitor progress) {
-    var issues = issueDownloader.download(serverApiHelper, projectKey, branchName, progress);
+  public void update(ServerApiHelper serverApiHelper, String projectKey, String branchName, boolean isSonarCloud, Version serverVersion, ProgressMonitor progress) {
+    var issues = issueDownloader.download(serverApiHelper, projectKey, branchName, isSonarCloud, serverVersion, progress);
     serverIssueStore.save(projectKey, issues);
   }
 
-  public void updateFileIssues(ServerApiHelper serverApiHelper, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName,
-    ProgressMonitor progress) {
+  public void updateFileIssues(ServerApiHelper serverApiHelper, ProjectBinding projectBinding, String ideFilePath, String branchName, boolean isSonarCloud,
+    Version serverVersion, ProgressMonitor progress) {
     var fileKey = IssueStorePaths.idePathToFileKey(projectBinding, ideFilePath);
     if (fileKey == null) {
       return;
     }
     List<ServerIssue> issues = new ArrayList<>();
     try {
-      issues.addAll(issueDownloader.download(serverApiHelper, fileKey, branchName, progress));
+      issues.addAll(issueDownloader.download(serverApiHelper, fileKey, branchName, isSonarCloud, serverVersion, progress));
     } catch (Exception e) {
       // null as cause so that it doesn't get wrapped
       throw new DownloadException("Failed to update file issues: " + e.getMessage(), null);

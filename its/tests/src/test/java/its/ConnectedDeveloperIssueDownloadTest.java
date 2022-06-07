@@ -89,7 +89,7 @@ public class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
     Path sonarUserHome = temp.newFolder().toPath();
-    engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
+    engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
       .setExtraProperties(new HashMap<>())

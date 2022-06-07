@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -69,9 +70,11 @@ public class ServerConnection {
   private final ServerEventsAutoSubscriber serverEventsAutoSubscriber;
   private final ServerIssueUpdater issuesUpdater;
   private final XodusServerIssueStore serverIssueStore;
+  private final boolean isSonarCloud;
 
-  public ServerConnection(Path globalStorageRoot, String connectionId, Set<Language> enabledLanguages, Set<String> embeddedPluginKeys) {
+  public ServerConnection(Path globalStorageRoot, String connectionId, boolean isSonarCloud, Set<Language> enabledLanguages, Set<String> embeddedPluginKeys) {
     this.connectionId = connectionId;
+    this.isSonarCloud = isSonarCloud;
     this.enabledLanguages = enabledLanguages;
 
     var connectionStorageRoot = globalStorageRoot.resolve(encodeForFs(connectionId));
@@ -92,7 +95,7 @@ public class ServerConnection {
     this.pluginsStorage = new PluginsStorage(connectionStorageRoot.resolve("plugins"));
     this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguages, embeddedPluginKeys, pluginsStorage, projectStorage);
     this.globalStorageUpdateExecutor = new GlobalStorageUpdateExecutor(globalStores.getGlobalStorage());
-    this.projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(projectStoragePaths, issuesUpdater);
+    this.projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(projectStoragePaths, issuesUpdater, isSonarCloud);
     pluginsStorage.cleanUp();
     var eventRouter = new EventDispatcher()
       .dispatch(RuleSetChangedEvent.class, new UpdateStorageOnRuleSetChanged(projectStorage));
@@ -194,21 +197,29 @@ public class ServerConnection {
 
   public List<ServerIssue> downloadServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName,
     ProgressMonitor progress) {
-    issuesUpdater.updateFileIssues(new ServerApiHelper(endpoint, client), projectBinding, ideFilePath, branchName, progress);
+    var serverVersion = readServerVersionFromStorage();
+    issuesUpdater.updateFileIssues(new ServerApiHelper(endpoint, client), projectBinding, ideFilePath, branchName, isSonarCloud, serverVersion, progress);
     return getServerIssues(projectBinding, ideFilePath);
   }
 
-  public void downloadServerIssuesForProject(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable String branchName,
+  public void downloadServerIssuesForProject(EndpointParams endpoint, HttpClient client, String projectKey, String branchName,
     ProgressMonitor progress) {
-    issuesUpdater.update(new ServerApiHelper(endpoint, client), projectKey, branchName, progress);
+    var serverVersion = readServerVersionFromStorage();
+    issuesUpdater.update(new ServerApiHelper(endpoint, client), projectKey, branchName, isSonarCloud, serverVersion, progress);
   }
 
   public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable String branchName, ProgressMonitor monitor) {
+    var serverVersion = readServerVersionFromStorage();
+    projectStorageUpdateExecutor.update(new ServerApiHelper(endpoint, client), projectKey, branchName, serverVersion, monitor);
+  }
+
+  private Version readServerVersionFromStorage() {
     var globalStorageStatus = globalStatusReader.read();
     if (globalStorageStatus == null || globalStorageStatus.isStale()) {
       throw new StorageException("Missing or outdated storage for connection '" + connectionId + "'");
     }
-    projectStorageUpdateExecutor.update(new ServerApiHelper(endpoint, client), projectKey, branchName, monitor);
+    var serverVersion = Version.create(globalStorageStatus.getServerVersion());
+    return serverVersion;
   }
 
   public void stop(boolean deleteStorage) {

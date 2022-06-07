@@ -23,15 +23,11 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 
 /**
- * To use SonarLint in connected mode please provide a server id that will identify the storage.
- * To use in standalone mode please provide list of plugin URLs.
- *
+ * To use SonarLint in connected mode please provide a connection id that will identify the storage.
  */
-@Immutable
 public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
 
   public static final String DEFAULT_STORAGE_DIR = "storage";
@@ -40,6 +36,7 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
   private final Path storageRoot;
   private final Map<String, Path> overriddenPluginsPathsByKey;
   private final Map<String, Path> extraPluginsPathsByKey;
+  private final boolean isSonarCloud;
 
   private ConnectedGlobalConfiguration(Builder builder) {
     super(builder);
@@ -47,10 +44,19 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
     this.storageRoot = builder.storageRoot != null ? builder.storageRoot : getSonarLintUserHome().resolve(DEFAULT_STORAGE_DIR);
     this.overriddenPluginsPathsByKey = new HashMap<>(builder.overriddenPluginsPathsByKey);
     this.extraPluginsPathsByKey = new HashMap<>(builder.extraPluginsPathsByKey);
+    this.isSonarCloud = builder.isSonarCloud;
   }
 
-  public static Builder builder() {
-    return new Builder();
+  public static Builder sonarQubeBuilder() {
+    return new Builder(false);
+  }
+
+  public static Builder sonarCloudBuilder() {
+    return new Builder(true);
+  }
+
+  public boolean isSonarCloud() {
+    return isSonarCloud;
   }
 
   public Path getStorageRoot() {
@@ -74,8 +80,10 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
     private Path storageRoot;
     private final Map<String, Path> overriddenPluginsPathsByKey = new HashMap<>();
     private final Map<String, Path> extraPluginsPathsByKey = new HashMap<>();
+    private final boolean isSonarCloud;
 
-    private Builder() {
+    private Builder(boolean isSonarCloud) {
+      this.isSonarCloud = isSonarCloud;
     }
 
     /**

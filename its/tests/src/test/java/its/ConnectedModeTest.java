@@ -188,7 +188,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     var nodeJsHelper = new NodeJsHelper();
     nodeJsHelper.detect(null);
 
-    globalConfig = ConnectedGlobalConfiguration.builder()
+    globalConfig = ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
       .addEnabledLanguage(Language.JAVA)

@@ -23,13 +23,11 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 
 /**
- * To use in standalone mode please provide list of plugin URLs.  
+ * To use in standalone mode please provide list of plugin URLs.
  */
-@Immutable
 public class StandaloneGlobalConfiguration extends AbstractGlobalConfiguration {
 
   private final Set<Path> pluginPaths;

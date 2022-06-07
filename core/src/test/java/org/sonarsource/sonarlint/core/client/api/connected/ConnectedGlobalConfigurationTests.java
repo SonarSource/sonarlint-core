@@ -36,7 +36,7 @@ class ConnectedGlobalConfigurationTests {
 
   @Test
   void testDefaults() {
-    var config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
       .build();
     assertThat(config.getConnectionId()).isNull();
     assertThat(config.getSonarLintUserHome()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint"));
@@ -51,7 +51,7 @@ class ConnectedGlobalConfigurationTests {
   void extraProps() {
     Map<String, String> extraProperties = new HashMap<>();
     extraProperties.put("foo", "bar");
-    var config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setExtraProperties(extraProperties)
       .build();
     assertThat(config.extraProperties()).containsEntry("foo", "bar");
@@ -62,7 +62,7 @@ class ConnectedGlobalConfigurationTests {
     var sonarUserHome = createDirectory(temp.resolve("userHome"));
     var storage = createDirectory(temp.resolve("storage"));
     var work = createDirectory(temp.resolve("work"));
-    var config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setSonarLintUserHome(sonarUserHome)
       .setStorageRoot(storage)
       .setWorkDir(work)
@@ -74,7 +74,7 @@ class ConnectedGlobalConfigurationTests {
 
   @Test
   void enableLanguages() {
-    var config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
       .addEnabledLanguages(Language.JAVA, Language.ABAP)
       .addEnabledLanguage(Language.C)
       .build();
@@ -83,7 +83,7 @@ class ConnectedGlobalConfigurationTests {
 
   @Test
   void overridesPlugins() {
-    var config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
       .useEmbeddedPlugin(Language.JAVA.getLanguageKey(), Paths.get("java.jar"))
       .useEmbeddedPlugin(Language.ABAP.getLanguageKey(), Paths.get("abap.jar"))
       .build();
@@ -93,7 +93,7 @@ class ConnectedGlobalConfigurationTests {
 
   @Test
   void configureServerId() {
-    var config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId("myServer")
       .build();
     assertThat(config.getConnectionId()).isEqualTo("myServer");
@@ -101,7 +101,7 @@ class ConnectedGlobalConfigurationTests {
 
   @Test
   void validateServerId() {
-    var builder = ConnectedGlobalConfiguration.builder();
+    var builder = ConnectedGlobalConfiguration.sonarQubeBuilder();
     expectFailure(builder, "");
     expectFailure(builder, null);
   }
@@ -117,7 +117,7 @@ class ConnectedGlobalConfigurationTests {
 
   @Test
   void providePid() {
-    var config = ConnectedGlobalConfiguration.builder().setClientPid(123).build();
+    var config = ConnectedGlobalConfiguration.sonarQubeBuilder().setClientPid(123).build();
     assertThat(config.getClientPid()).isEqualTo(123);
   }
 }
