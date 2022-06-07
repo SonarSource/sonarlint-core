@@ -109,7 +109,7 @@ public class TaintVulnerabilitiesDownloadTest extends AbstractConnectedTest {
         .isNotEmpty();
 
     sonarUserHome = temp.newFolder().toPath();
-    engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
+    engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
       .setLogOutput((msg, level) -> logs.add(msg))

@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -53,6 +54,7 @@ public class LocalStorageSynchronizer {
       LOG.info("[SYNC] Cannot synchronize with server as it is not UP ({})", serverStatus.getStatus());
       return new SynchronizationResult(false);
     }
+    var serverVersion = Version.create(serverStatus.getVersion());
     var anyPluginUpdated = pluginsSynchronizer.synchronize(serverApi, progressMonitor);
     projectKeys.stream()
       .collect(Collectors.toMap(Function.identity(), projectKey -> synchronizeAnalyzerConfig(serverApi, projectKey, progressMonitor)))

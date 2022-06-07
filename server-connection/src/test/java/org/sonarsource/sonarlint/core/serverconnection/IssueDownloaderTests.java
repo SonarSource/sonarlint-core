@@ -26,6 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonar.scanner.protocol.input.ScannerInput;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
@@ -41,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class IssueDownloaderTests {
 
+  private static final Version SQ_VERSION_BEFORE_PULL = Version.create("9.3");
   private static final String PROJECT_KEY = "project";
   private static final String FILE_1_KEY = PROJECT_KEY + ":foo/bar/Hello.java";
   private static final String FILE_2_KEY = PROJECT_KEY + ":foo/bar/Hello2.java";
@@ -61,7 +63,7 @@ class IssueDownloaderTests {
   }
 
   @Test
-  void test_download_one_issue() {
+  void test_download_one_issue_old_batch_ws() {
     var response = ScannerInput.ServerIssue.newBuilder()
       .setRuleRepository("sonarjava")
       .setRuleKey("S123")
@@ -75,7 +77,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, response);
 
-    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, null, PROGRESS);
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, null, false, SQ_VERSION_BEFORE_PULL, PROGRESS);
     assertThat(issues).hasSize(1);
 
     var serverIssue = issues.get(0);
@@ -100,7 +102,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, response);
 
-    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, null, PROGRESS);
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, null, false, SQ_VERSION_BEFORE_PULL, PROGRESS);
     assertThat(issues).isEmpty();
   }
 
@@ -250,7 +252,7 @@ class IssueDownloaderTests {
       "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys=" + DUMMY_KEY + "&rules=javasecurity%3AS789&ps=500&p=1",
       new MockResponse().setResponseCode(404));
 
-    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, null, PROGRESS);
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, null, false, SQ_VERSION_BEFORE_PULL, PROGRESS);
 
     assertThat(issues).hasSize(1);
   }
@@ -259,7 +261,7 @@ class IssueDownloaderTests {
   void test_download_no_issues() {
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY);
 
-    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, null, PROGRESS);
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, null, false, SQ_VERSION_BEFORE_PULL, PROGRESS);
     assertThat(issues).isEmpty();
   }
 
@@ -268,7 +270,7 @@ class IssueDownloaderTests {
     mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, new MockResponse().setResponseCode(503));
 
     var thrown = assertThrows(ServerErrorException.class,
-      () -> underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, null, PROGRESS));
+      () -> underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, null, false, SQ_VERSION_BEFORE_PULL, PROGRESS));
     assertThat(thrown).hasMessageContaining("Error 503");
   }
 
@@ -276,7 +278,7 @@ class IssueDownloaderTests {
   void test_return_empty_if_404() {
     mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, new MockResponse().setResponseCode(404));
 
-    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, null, PROGRESS);
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, null, false, SQ_VERSION_BEFORE_PULL, PROGRESS);
     assertThat(issues).isEmpty();
   }
 
@@ -290,7 +292,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY + "&branch=branchName", response);
 
-    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, "branchName", PROGRESS);
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, "branchName", false, SQ_VERSION_BEFORE_PULL, PROGRESS);
     assertThat(issues).hasSize(1);
   }
 

@@ -118,7 +118,7 @@ public class ConnectedCommunityIssueDownloadTest extends AbstractConnectedTest {
   @Before
   public void start() throws IOException {
     Path sonarUserHome = temp.newFolder().toPath();
-    engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
+    engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
       .setLogOutput((msg, level) -> logs.add(msg))

@@ -72,7 +72,7 @@ class ConnectedExtraPluginMediumTests {
     var nodeJsHelper = new NodeJsHelper();
     nodeJsHelper.detect(null);
 
-    var config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId(SERVER_ID)
       .setSonarLintUserHome(slHome)
       .setStorageRoot(storage.getPath())
