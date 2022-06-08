@@ -163,7 +163,6 @@ public class IssueApi {
   public IssuesPullResult pullIssues(String projectKey, String branchName) {
     var pullIssuesUrl = new StringBuilder();
     pullIssuesUrl.append(getPullIssuesUrl(projectKey, branchName));
-    pullIssuesUrl.append(getUrlBranchParameter(branchName));
     return ServerApiHelper.processTimed(
       () -> serverApiHelper.get(pullIssuesUrl.toString()),
       response -> {
