@@ -47,7 +47,6 @@ import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
 import its.tools.SonarlintProject;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -66,7 +65,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEng
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 
 import static its.tools.ItUtils.SONAR_VERSION;
-import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TaintVulnerabilitiesDownloadTest extends AbstractConnectedTest {
@@ -105,7 +103,7 @@ public class TaintVulnerabilitiesDownloadTest extends AbstractConnectedTest {
 
     // Ensure a vulnerability has been reported on server side
     assertThat(
-      adminWsClient.issues().search(new SearchRequest().setTypes(asList("VULNERABILITY")).setComponentKeys(asList(PROJECT_KEY))).getIssuesList())
+      adminWsClient.issues().search(new SearchRequest().setTypes(List.of("VULNERABILITY")).setComponentKeys(List.of(PROJECT_KEY))).getIssuesList())
         .isNotEmpty();
 
     sonarUserHome = temp.newFolder().toPath();
@@ -123,16 +121,16 @@ public class TaintVulnerabilitiesDownloadTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void download_all_issues_include_taint_vulnerabilities_and_code_snippets() throws IOException {
+  public void download_all_issues_include_taint_vulnerabilities_and_code_snippets() {
     ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "");
 
     engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, "master", null);
 
     // Reload file issues to get taint
-    engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding, "src/main/java/foo/DbHelper.java", null, null);
+    engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding, "src/main/java/foo/DbHelper.java", "master", null);
 
-    var sinkIssues = engine.getServerTaintIssues(projectBinding, "src/main/java/foo/DbHelper.java");
+    var sinkIssues = engine.getServerTaintIssues(projectBinding, "master", "src/main/java/foo/DbHelper.java");
     assertThat(sinkIssues).hasSize(1);
 
     var taintIssue = sinkIssues.get(0);

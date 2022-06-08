@@ -47,8 +47,8 @@ public class ServerIssueTracker {
     update(fileKeys, fileKey -> fetchServerIssues(endpoint, client, engine, projectBinding, fileKey, branchName));
   }
 
-  public void update(ConnectedSonarLintEngine engine, ProjectBinding projectBinding, Collection<String> fileKeys) {
-    update(fileKeys, fileKey -> engine.getServerIssues(projectBinding, fileKey));
+  public void update(ConnectedSonarLintEngine engine, ProjectBinding projectBinding, String branchName, Collection<String> fileKeys) {
+    update(fileKeys, fileKey -> engine.getServerIssues(projectBinding, branchName, fileKey));
   }
 
   private void update(Collection<String> fileKeys, Function<String, List<ServerIssue>> issueGetter) {
@@ -70,7 +70,7 @@ public class ServerIssueTracker {
       return engine.downloadServerIssues(endpoint, client, projectBinding, ideFilePath, branchName, null);
     } catch (DownloadException e) {
       LOGGER.debug("Failed to download server issues", e);
-      return engine.getServerIssues(projectBinding, ideFilePath);
+      return engine.getServerIssues(projectBinding, branchName, ideFilePath);
     }
   }
 }
