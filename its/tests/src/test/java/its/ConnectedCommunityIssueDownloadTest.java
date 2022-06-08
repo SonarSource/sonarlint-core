@@ -134,7 +134,7 @@ public class ConnectedCommunityIssueDownloadTest extends AbstractConnectedTest {
   @Test
   public void download_all_issues_not_limited_to_10k() {
     engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
-    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null, null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, "master", null);
 
     engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null, null);
 
