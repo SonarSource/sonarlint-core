@@ -48,7 +48,7 @@ public class ServerIssueUpdater {
     } else {
       issues = issueDownloader.downloadFromBatch(serverApiHelper, projectKey, branchName);
     }
-    serverIssueStore.replaceAllIssuesOfProject(projectKey, issues);
+    serverIssueStore.replaceAllIssuesOfProject(projectKey, branchName, issues);
   }
 
   public void updateFileIssues(ServerApiHelper serverApiHelper, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName, boolean isSonarCloud,
@@ -66,7 +66,7 @@ public class ServerIssueUpdater {
         // null as cause so that it doesn't get wrapped
         throw new DownloadException("Failed to update file issues: " + e.getMessage(), null);
       }
-      serverIssueStore.replaceAllIssuesOfFile(projectBinding.projectKey(), serverFilePath, issues);
+      serverIssueStore.replaceAllIssuesOfFile(projectBinding.projectKey(), branchName, serverFilePath, issues);
     } else {
       LOG.debug("Skip downloading file issues on SonarQube 9.5+");
     }
@@ -77,6 +77,6 @@ public class ServerIssueUpdater {
       // null as cause so that it doesn't get wrapped
       throw new DownloadException("Failed to update file taint vulnerabilities: " + e.getMessage(), null);
     }
-    serverIssueStore.replaceAllTaintOfFile(projectBinding.projectKey(), serverFilePath, taintIssues);
+    serverIssueStore.replaceAllTaintOfFile(projectBinding.projectKey(), branchName, serverFilePath, taintIssues);
   }
 }

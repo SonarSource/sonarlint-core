@@ -70,7 +70,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @param filePath       relative to the project.
    * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
    */
-  List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String filePath);
+  List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String branchName, String filePath);
 
   /**
    * Gets locally stored server taint issues for a given file.
@@ -79,7 +79,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @param filePath       relative to the project.
    * @return All server taint issues in the local storage for the given file. If file has no issues, an empty list is returned.
    */
-  List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String filePath);
+  List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName, String filePath);
 
   /**
    * Get information about current global storage state

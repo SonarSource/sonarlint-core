@@ -169,12 +169,12 @@ public class ServerConnection {
     }
   }
 
-  public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String ideFilePath) {
-    return issueStoreReader.getServerIssues(projectBinding, ideFilePath);
+  public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String branchName, String ideFilePath) {
+    return issueStoreReader.getServerIssues(projectBinding, branchName, ideFilePath);
   }
 
-  public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String ideFilePath) {
-    return issueStoreReader.getServerTaintIssues(projectBinding, ideFilePath);
+  public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName, String ideFilePath) {
+    return issueStoreReader.getServerTaintIssues(projectBinding, branchName, ideFilePath);
   }
 
   public void subscribeForEvents(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, ClientLogOutput clientLogOutput) {
@@ -199,7 +199,7 @@ public class ServerConnection {
     ProgressMonitor progress) {
     var serverVersion = readServerVersionFromStorage();
     issuesUpdater.updateFileIssues(new ServerApiHelper(endpoint, client), projectBinding, ideFilePath, branchName, isSonarCloud, serverVersion, progress);
-    return getServerIssues(projectBinding, ideFilePath);
+    return getServerIssues(projectBinding, branchName, ideFilePath);
   }
 
   public void downloadServerIssuesForProject(EndpointParams endpoint, HttpClient client, String projectKey, String branchName) {

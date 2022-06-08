@@ -28,35 +28,39 @@ import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStore;
 
 public class InMemoryIssueStore implements ServerIssueStore {
-  private final Map<String, Map<String, List<ServerIssue>>> issuesByFileByProject = new HashMap<>();
-  private final Map<String, Map<String, List<ServerTaintIssue>>> taintIssuesByFileByProject = new HashMap<>();
+  private final Map<String, Map<String, Map<String, List<ServerIssue>>>> issuesByFileByBranchByProject = new HashMap<>();
+  private final Map<String, Map<String, Map<String, List<ServerTaintIssue>>>> taintIssuesByFileByBranchByProject = new HashMap<>();
 
   @Override
-  public void replaceAllIssuesOfFile(String projectKey, String serverFilePath, List<ServerIssue> issues) {
-    issuesByFileByProject.computeIfAbsent(projectKey, __ -> new HashMap<>()).put(serverFilePath, issues);
+  public void replaceAllIssuesOfFile(String projectKey, String branchName, String serverFilePath, List<ServerIssue> issues) {
+    issuesByFileByBranchByProject.computeIfAbsent(projectKey, __ -> new HashMap<>())
+      .computeIfAbsent(branchName, __ -> new HashMap<>())
+      .put(serverFilePath, issues);
   }
 
   @Override
-  public void replaceAllIssuesOfProject(String projectKey, List<ServerIssue> issues) {
-    issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath)).forEach((filePath, fileIssues) -> {
-      issuesByFileByProject.computeIfAbsent(projectKey, __ -> new HashMap<>()).put(filePath, fileIssues);
-    });
+  public void replaceAllIssuesOfProject(String projectKey, String branchName, List<ServerIssue> issues) {
+    issuesByFileByBranchByProject.put(projectKey, Map.of(branchName, issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath))));
   }
 
   @Override
-  public List<ServerIssue> load(String projectKey, String sqFilePath) {
-    return issuesByFileByProject.getOrDefault(projectKey, Map.of())
+  public List<ServerIssue> load(String projectKey, String branchName, String sqFilePath) {
+    return issuesByFileByBranchByProject.getOrDefault(projectKey, Map.of())
+      .getOrDefault(branchName, Map.of())
       .getOrDefault(sqFilePath, List.of());
   }
 
   @Override
-  public void replaceAllTaintOfFile(String projectKey, String filePath, List<ServerTaintIssue> issues) {
-    taintIssuesByFileByProject.computeIfAbsent(projectKey, __ -> new HashMap<>()).put(filePath, issues);
+  public void replaceAllTaintOfFile(String projectKey, String branchName, String filePath, List<ServerTaintIssue> issues) {
+    taintIssuesByFileByBranchByProject.computeIfAbsent(projectKey, __ -> new HashMap<>())
+      .computeIfAbsent(branchName, __ -> new HashMap<>())
+      .put(filePath, issues);
   }
 
   @Override
-  public List<ServerTaintIssue> loadTaint(String projectKey, String sqFilePath) {
-    return taintIssuesByFileByProject.getOrDefault(projectKey, Map.of())
+  public List<ServerTaintIssue> loadTaint(String projectKey, String branchName, String sqFilePath) {
+    return taintIssuesByFileByBranchByProject.getOrDefault(projectKey, Map.of())
+      .getOrDefault(branchName, Map.of())
       .getOrDefault(sqFilePath, List.of());
   }
 

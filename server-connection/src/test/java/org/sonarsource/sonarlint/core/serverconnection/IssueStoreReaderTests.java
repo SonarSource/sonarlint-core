@@ -47,28 +47,28 @@ class IssueStoreReaderTests {
   @Test
   void testSingleModule() {
     // setup issues
-    issueStore.replaceAllIssuesOfProject(projectBinding.projectKey(), Collections.singletonList(createServerIssue("src/path1")));
+    issueStore.replaceAllIssuesOfProject(projectBinding.projectKey(), "branch", Collections.singletonList(createServerIssue("src/path1")));
 
     // test
 
     // matches path
-    assertThat(issueStoreReader.getServerIssues(projectBinding, "src/path1"))
+    assertThat(issueStoreReader.getServerIssues(projectBinding, "branch", "src/path1"))
       .usingElementComparator(simpleComparator)
       .containsOnly(createServerIssue("src/path1"));
 
     // no file found
-    assertThat(issueStoreReader.getServerIssues(projectBinding, "src/path3")).isEmpty();
+    assertThat(issueStoreReader.getServerIssues(projectBinding, "branch", "src/path3")).isEmpty();
 
     // invalid prefixes
     var bindingWithPrefix = new ProjectBinding(PROJECT_KEY, "", "src");
-    assertThat(issueStoreReader.getServerIssues(bindingWithPrefix, "src2/path2")).isEmpty();
+    assertThat(issueStoreReader.getServerIssues(bindingWithPrefix, "branch", "src2/path2")).isEmpty();
   }
 
   @Test
   void return_empty_list_if_local_path_is_invalid() {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "", "local");
-    issueStore.replaceAllIssuesOfProject(projectBinding.projectKey(), Collections.singletonList(createServerIssue("src/path1")));
-    assertThat(issueStoreReader.getServerIssues(projectBinding, "src/path1"))
+    issueStore.replaceAllIssuesOfProject(projectBinding.projectKey(), "branch", Collections.singletonList(createServerIssue("src/path1")));
+    assertThat(issueStoreReader.getServerIssues(projectBinding, "branch", "src/path1"))
       .isEmpty();
   }
 
@@ -77,12 +77,12 @@ class IssueStoreReaderTests {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "sq", "local");
 
     // setup issues
-    issueStore.replaceAllIssuesOfProject(projectBinding.projectKey(), Collections.singletonList(createServerIssue("sq/src/path1")));
+    issueStore.replaceAllIssuesOfProject(projectBinding.projectKey(), "branch", Collections.singletonList(createServerIssue("sq/src/path1")));
 
     // test
 
     // matches path
-    assertThat(issueStoreReader.getServerIssues(projectBinding, "local/src/path1"))
+    assertThat(issueStoreReader.getServerIssues(projectBinding, "branch", "local/src/path1"))
       .usingElementComparator(simpleComparator)
       .containsOnly(createServerIssue("local/src/path1"));
   }
@@ -92,12 +92,12 @@ class IssueStoreReaderTests {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "", "local");
 
     // setup issues
-    issueStore.replaceAllIssuesOfProject(projectBinding.projectKey(), Collections.singletonList(createServerIssue("src/path1")));
+    issueStore.replaceAllIssuesOfProject(projectBinding.projectKey(), "branch", Collections.singletonList(createServerIssue("src/path1")));
 
     // test
 
     // matches path
-    assertThat(issueStoreReader.getServerIssues(projectBinding, "local/src/path1"))
+    assertThat(issueStoreReader.getServerIssues(projectBinding, "branch", "local/src/path1"))
       .usingElementComparator(simpleComparator)
       .containsOnly(createServerIssue("local/src/path1"));
   }
@@ -107,12 +107,12 @@ class IssueStoreReaderTests {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "sq", "");
 
     // setup issues
-    issueStore.replaceAllIssuesOfProject(projectBinding.projectKey(), Collections.singletonList(createServerIssue("sq/src/path1")));
+    issueStore.replaceAllIssuesOfProject(projectBinding.projectKey(), "branch", Collections.singletonList(createServerIssue("sq/src/path1")));
 
     // test
 
     // matches path
-    assertThat(issueStoreReader.getServerIssues(projectBinding, "src/path1"))
+    assertThat(issueStoreReader.getServerIssues(projectBinding, "branch", "src/path1"))
       .usingElementComparator(simpleComparator)
       .containsOnly(createServerIssue("src/path1"));
   }
@@ -120,7 +120,7 @@ class IssueStoreReaderTests {
   @Test
   void canReadFlowsFromStorage() {
     // setup issues
-    issueStore.replaceAllTaintOfFile(projectBinding.projectKey(), "src/path1", List.of(aServerTaintIssue()
+    issueStore.replaceAllTaintOfFile(projectBinding.projectKey(), "branch", "src/path1", List.of(aServerTaintIssue()
       .setFilePath("src/path1")
       .setMessage("Primary")
       .setTextRange(new ServerTaintIssue.TextRange(1, 2, 3, 4))
@@ -131,7 +131,7 @@ class IssueStoreReaderTests {
           new ServerTaintIssue.ServerIssueLocation("src/path1", null, "Flow 1 - Location 2 - Without text range", null),
           new ServerTaintIssue.ServerIssueLocation("src/path2", null, null, null)))))));
 
-    var issuesReadFromStorage = issueStoreReader.getServerTaintIssues(projectBinding, "src/path1");
+    var issuesReadFromStorage = issueStoreReader.getServerTaintIssues(projectBinding, "branch", "src/path1");
     assertThat(issuesReadFromStorage).hasSize(1);
     var loadedIssue = issuesReadFromStorage.get(0);
     assertThat(loadedIssue.getFilePath()).isEqualTo("src/path1");
