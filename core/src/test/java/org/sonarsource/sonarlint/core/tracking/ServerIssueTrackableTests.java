@@ -35,7 +35,7 @@ class ServerIssueTrackableTests {
 
   @BeforeEach
   void prepare() {
-    when(serverIssue.lineHash()).thenReturn("blah");
+    when(serverIssue.getLineHash()).thenReturn("blah");
     when(serverIssue.resolved()).thenReturn(true);
     when(serverIssue.getLine()).thenReturn(22);
     trackable = new ServerIssueTrackable(serverIssue);
@@ -44,7 +44,7 @@ class ServerIssueTrackableTests {
   @Test
   void should_delegate_fields_to_server_issue() {
     assertThat(trackable.getMessage()).isEqualTo(serverIssue.getMessage());
-    assertThat(trackable.getLineHash()).isEqualTo(serverIssue.lineHash().hashCode());
+    assertThat(trackable.getLineHash()).isEqualTo(serverIssue.getLineHash().hashCode());
     assertThat(trackable.getRuleKey()).isEqualTo(serverIssue.ruleKey());
     assertThat(trackable.isResolved()).isTrue();
     assertThat(trackable.getSeverity()).isEqualTo(serverIssue.severity());

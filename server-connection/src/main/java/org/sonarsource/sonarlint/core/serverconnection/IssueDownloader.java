@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.Flow;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.TextRange;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Issue;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.IssueLite;
 import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
@@ -116,7 +117,8 @@ public class IssueDownloader {
       batchIssueFromWs.hasResolution(),
       batchIssueFromWs.getRuleRepository() + ":" + batchIssueFromWs.getRuleKey(),
       batchIssueFromWs.getMsg(),
-      batchIssueFromWs.getChecksum(),
+      batchIssueFromWs.hasChecksum() ? batchIssueFromWs.getChecksum() : null,
+      // We have filtered out issues without file path earlier
       batchIssueFromWs.getPath(),
       Instant.ofEpochMilli(batchIssueFromWs.getCreationDate()),
       batchIssueFromWs.getSeverity().name(),
@@ -130,14 +132,17 @@ public class IssueDownloader {
       liteIssueFromWs.getResolved(),
       liteIssueFromWs.getRuleKey(),
       liteIssueFromWs.getMainLocation().getMessage(),
-      // FIXME range hash should be in a different field
-      liteIssueFromWs.getMainLocation().hasTextRange() ? liteIssueFromWs.getMainLocation().getTextRange().getHash() : "",
+      liteIssueFromWs.getMainLocation().hasTextRange() ? liteIssueFromWs.getMainLocation().getTextRange().getHash() : null,
+      // We have filtered out issues without file path earlier
       liteIssueFromWs.getMainLocation().getFilePath(),
       Instant.ofEpochMilli(liteIssueFromWs.getCreationDate()),
       liteIssueFromWs.getUserSeverity(),
       liteIssueFromWs.getType(),
-      // Fixme preserve text range in store
-      liteIssueFromWs.getMainLocation().hasTextRange() ? liteIssueFromWs.getMainLocation().getTextRange().getStartLine() : null);
+      liteIssueFromWs.getMainLocation().hasTextRange() ? toServerIssueTextRange(liteIssueFromWs.getMainLocation().getTextRange()) : null);
+  }
+
+  private static ServerIssue.TextRange toServerIssueTextRange(Issues.TextRange textRange) {
+    return new ServerIssue.TextRange(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset());
   }
 
   @CheckForNull
