@@ -49,14 +49,16 @@ public class XodusServerIssueStore implements ServerIssueStore {
 
   private static final String FILE_NAME = "sonarlint.db";
 
+  private static final String PROJECT_ENTITY_TYPE = "Project";
+  private static final String BRANCH_ENTITY_TYPE = "Branch";
+  private static final String FILE_ENTITY_TYPE = "File";
   private static final String ISSUE_ENTITY_TYPE = "Issue";
   private static final String TAINT_ISSUE_ENTITY_TYPE = "TaintIssue";
-  private static final String FILE_ENTITY_TYPE = "File";
-  private static final String PROJECT_ENTITY_TYPE = "Project";
   private static final String FLOW_ENTITY_TYPE = "Flow";
   private static final String LOCATION_ENTITY_TYPE = "Location";
 
-  private static final String PROJECT_TO_FILES_LINK_NAME = "files";
+  private static final String PROJECT_TO_BRANCHES_LINK_NAME = "branches";
+  private static final String BRANCH_TO_FILES_LINK_NAME = "files";
   private static final String FILE_TO_ISSUES_LINK_NAME = "issues";
   private static final String FILE_TO_TAINT_ISSUES_LINK_NAME = "taintIssues";
   private static final String ISSUE_TO_FILE_LINK_NAME = "file";
@@ -79,6 +81,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
   private static final String SEVERITY_PROPERTY_NAME = "severity";
   private static final String TYPE_PROPERTY_NAME = "type";
   private static final String PATH_PROPERTY_NAME = "path";
+  private static final String NAME_PROPERTY_NAME = "name";
 
   private final PersistentEntityStore entityStore;
 
@@ -184,18 +187,20 @@ public class XodusServerIssueStore implements ServerIssueStore {
   }
 
   @Override
-  public List<ServerIssue> load(String projectKey, String filePath) {
-    return loadIssue(projectKey, filePath, FILE_TO_ISSUES_LINK_NAME, XodusServerIssueStore::adapt);
+  public List<ServerIssue> load(String projectKey, String branchName, String filePath) {
+    return loadIssue(projectKey, branchName, filePath, FILE_TO_ISSUES_LINK_NAME, XodusServerIssueStore::adapt);
   }
 
   @Override
-  public List<ServerTaintIssue> loadTaint(String projectKey, String filePath) {
-    return loadIssue(projectKey, filePath, FILE_TO_TAINT_ISSUES_LINK_NAME, XodusServerIssueStore::adaptTaint);
+  public List<ServerTaintIssue> loadTaint(String projectKey, String branchName, String filePath) {
+    return loadIssue(projectKey, branchName, filePath, FILE_TO_TAINT_ISSUES_LINK_NAME, XodusServerIssueStore::adaptTaint);
   }
 
-  private <G> List<G> loadIssue(String projectKey, String filePath, String linkName, Function<Entity, G> adapter) {
+  private <G> List<G> loadIssue(String projectKey, String branchName, String filePath, String linkName, Function<Entity, G> adapter) {
     return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, PROJECT_ENTITY_TYPE, KEY_PROPERTY_NAME, projectKey)
-      .map(project -> project.getLinks(PROJECT_TO_FILES_LINK_NAME))
+      .map(project -> project.getLinks(PROJECT_TO_BRANCHES_LINK_NAME))
+      .flatMap(branches -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName))
+      .map(branch -> branch.getLinks(BRANCH_TO_FILES_LINK_NAME))
       .flatMap(files -> findUnique(txn, FILE_ENTITY_TYPE, PATH_PROPERTY_NAME, filePath))
       .map(fileToLoad -> fileToLoad.getLinks(linkName))
       .map(issueEntities -> StreamSupport.stream(issueEntities.spliterator(), false)
@@ -205,26 +210,28 @@ public class XodusServerIssueStore implements ServerIssueStore {
   }
 
   @Override
-  public void replaceAllIssuesOfFile(String projectKey, String serverFilePath, List<ServerIssue> issues) {
+  public void replaceAllIssuesOfFile(String projectKey, String branchName, String serverFilePath, List<ServerIssue> issues) {
     timed("Wrote " + issues.size() + " issues in store", () -> entityStore.executeInTransaction(txn -> {
       var project = getOrCreateProject(projectKey, txn);
-      var fileEntity = getOrCreateFile(project, serverFilePath, txn);
+      var branch = getOrCreateBranch(project, branchName, txn);
+      var fileEntity = getOrCreateFile(branch, serverFilePath, txn);
       replaceAllIssuesOfFile(issues, txn, fileEntity);
     }));
   }
 
   @Override
-  public void replaceAllIssuesOfProject(String projectKey, List<ServerIssue> issues) {
+  public void replaceAllIssuesOfProject(String projectKey, String branchName, List<ServerIssue> issues) {
     timed("Wrote " + issues.size() + " issues in store", () -> entityStore.executeInTransaction(txn -> {
       var project = getOrCreateProject(projectKey, txn);
+      var branch = getOrCreateBranch(project, branchName, txn);
       var issuesByFile = issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
-      project.getLinks(PROJECT_TO_FILES_LINK_NAME).forEach(fileEntity -> {
+      branch.getLinks(BRANCH_TO_FILES_LINK_NAME).forEach(fileEntity -> {
         var entityFilePath = fileEntity.getProperty(FILE_PATH_PROPERTY_NAME);
         replaceAllIssuesOfFile(issuesByFile.getOrDefault(entityFilePath, List.of()), txn, fileEntity);
         issuesByFile.remove(entityFilePath);
       });
       issuesByFile.forEach((filePath, fileIssues) -> {
-        var fileEntity = getOrCreateFile(project, filePath, txn);
+        var fileEntity = getOrCreateFile(branch, filePath, txn);
         replaceAllIssuesOfFile(fileIssues, txn, fileEntity);
       });
     }));
@@ -245,10 +252,11 @@ public class XodusServerIssueStore implements ServerIssueStore {
   }
 
   @Override
-  public void replaceAllTaintOfFile(String projectKey, String serverFilePath, List<ServerTaintIssue> issues) {
+  public void replaceAllTaintOfFile(String projectKey, String branchName, String serverFilePath, List<ServerTaintIssue> issues) {
     timed("Wrote " + issues.size() + " issues in store", () -> entityStore.executeInTransaction(txn -> {
       var project = getOrCreateProject(projectKey, txn);
-      var fileEntity = getOrCreateFile(project, serverFilePath, txn);
+      var branch = getOrCreateBranch(project, branchName, txn);
+      var fileEntity = getOrCreateFile(branch, serverFilePath, txn);
 
       fileEntity.getLinks(FILE_TO_TAINT_ISSUES_LINK_NAME).forEach(Entity::delete);
       fileEntity.deleteLinks(FILE_TO_TAINT_ISSUES_LINK_NAME);
@@ -266,13 +274,26 @@ public class XodusServerIssueStore implements ServerIssueStore {
       });
   }
 
-  private static Entity getOrCreateFile(Entity projectEntity, String filePath, StoreTransaction txn) {
-    var fileIterable = projectEntity.getLinks(PROJECT_TO_FILES_LINK_NAME).intersect(findAll(txn, FILE_ENTITY_TYPE, PATH_PROPERTY_NAME, filePath));
+  private static Entity getOrCreateBranch(Entity projectEntity, String branchName, StoreTransaction txn) {
+    var branchIterable = projectEntity.getLinks(PROJECT_TO_BRANCHES_LINK_NAME)
+      .intersect(findAll(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName));
+    return Optional.ofNullable(branchIterable.getFirst())
+      .orElseGet(() -> {
+        var branch = txn.newEntity(BRANCH_ENTITY_TYPE);
+        branch.setProperty(NAME_PROPERTY_NAME, branchName);
+        projectEntity.addLink(PROJECT_TO_BRANCHES_LINK_NAME, branch);
+        return branch;
+      });
+  }
+
+  private static Entity getOrCreateFile(Entity branchEntity, String filePath, StoreTransaction txn) {
+    var fileIterable = branchEntity.getLinks(BRANCH_TO_FILES_LINK_NAME)
+      .intersect(findAll(txn, FILE_ENTITY_TYPE, PATH_PROPERTY_NAME, filePath));
     return Optional.ofNullable(fileIterable.getFirst())
       .orElseGet(() -> {
         var file = txn.newEntity(FILE_ENTITY_TYPE);
         file.setProperty(PATH_PROPERTY_NAME, filePath);
-        projectEntity.addLink(PROJECT_TO_FILES_LINK_NAME, file);
+        branchEntity.addLink(BRANCH_TO_FILES_LINK_NAME, file);
         return file;
       });
   }

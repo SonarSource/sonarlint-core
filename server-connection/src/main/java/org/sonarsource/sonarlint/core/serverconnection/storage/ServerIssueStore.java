@@ -32,7 +32,7 @@ public interface ServerIssueStore {
    * - Directories with too many files
    * - (Too deep paths?)
    */
-  void replaceAllIssuesOfProject(String projectKey, List<ServerIssue> issues);
+  void replaceAllIssuesOfProject(String projectKey, String branchName, List<ServerIssue> issues);
 
   /**
    * Store issues for a single file.
@@ -41,7 +41,7 @@ public interface ServerIssueStore {
    * - Directories with too many files
    * - (Too deep paths?)
    */
-  void replaceAllIssuesOfFile(String projectKey, String serverFilePath, List<ServerIssue> issues);
+  void replaceAllIssuesOfFile(String projectKey, String branchName, String serverFilePath, List<ServerIssue> issues);
 
   /**
    * Load issues stored for specified file.
@@ -51,7 +51,7 @@ public interface ServerIssueStore {
    * @param sqFilePath the relative path to the base of project, in SonarQube
    * @return issues, possibly empty
    */
-  List<ServerIssue> load(String projectKey, String sqFilePath);
+  List<ServerIssue> load(String projectKey, String branchName, String sqFilePath);
 
   /**
    * Store taint issues for a single file.
@@ -60,17 +60,18 @@ public interface ServerIssueStore {
    * - Directories with too many files
    * - (Too deep paths?)
    */
-  void replaceAllTaintOfFile(String projectKey, String serverFilePath, List<ServerTaintIssue> taintIssues);
+  void replaceAllTaintOfFile(String projectKey, String branchName, String serverFilePath, List<ServerTaintIssue> taintIssues);
 
   /**
    * Load taint issues stored for specified file.
    *
    *
    * @param projectKey
+   * @param branchName
    * @param sqFilePath the relative path to the base of project, in SonarQube
    * @return issues, possibly empty
    */
-  List<ServerTaintIssue> loadTaint(String projectKey, String sqFilePath);
+  List<ServerTaintIssue> loadTaint(String projectKey, String branchName, String sqFilePath);
 
   void close();
 

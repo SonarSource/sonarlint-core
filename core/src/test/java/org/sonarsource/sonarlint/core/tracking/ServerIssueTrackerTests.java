@@ -44,8 +44,8 @@ class ServerIssueTrackerTests {
   @Test
   void should_get_issues_from_engine_without_downloading() {
     var tracker = new ServerIssueTracker(mock(CachingIssueTracker.class));
-    tracker.update(engine, projectBinding, Collections.singleton(filePath));
-    verify(engine).getServerIssues(projectBinding, filePath);
+    tracker.update(engine, projectBinding, "branch", Collections.singleton(filePath));
+    verify(engine).getServerIssues(projectBinding, "branch", filePath);
     verifyNoMoreInteractions(engine);
   }
 
@@ -63,7 +63,7 @@ class ServerIssueTrackerTests {
     when(engine.downloadServerIssues(endpoint, client, projectBinding, filePath, null, null)).thenThrow(new DownloadException());
     tracker.update(endpoint, client, engine, projectBinding, Collections.singleton(filePath), null);
     verify(engine).downloadServerIssues(endpoint, client, projectBinding, filePath, null, null);
-    verify(engine).getServerIssues(projectBinding, filePath);
+    verify(engine).getServerIssues(projectBinding, null, filePath);
     verifyNoMoreInteractions(engine);
   }
 }

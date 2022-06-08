@@ -138,8 +138,8 @@ public class ConnectedCommunityIssueDownloadTest extends AbstractConnectedTest {
 
     engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, "master", null);
 
-    var file1Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/500lines.xoo");
-    var file2Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/10000lines.xoo");
+    var file1Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "master", "src/500lines.xoo");
+    var file2Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "master", "src/10000lines.xoo");
 
     // Number of issues is not limited to 10k
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
@@ -150,8 +150,8 @@ public class ConnectedCommunityIssueDownloadTest extends AbstractConnectedTest {
     }
 
     Map<String, ServerIssue> allIssues = new HashMap<>();
-    engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/500lines.xoo").forEach(i -> allIssues.put(i.getKey(), i));
-    engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/10000lines.xoo").forEach(i -> allIssues.put(i.getKey(), i));
+    engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "master", "src/500lines.xoo").forEach(i -> allIssues.put(i.getKey(), i));
+    engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "master", "src/10000lines.xoo").forEach(i -> allIssues.put(i.getKey(), i));
 
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
       // FIXME bug on SQ side, some issues are lost for each pagination on DB side

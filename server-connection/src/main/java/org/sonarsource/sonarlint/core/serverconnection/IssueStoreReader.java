@@ -30,22 +30,22 @@ public class IssueStoreReader {
     this.serverIssueStore = serverIssueStore;
   }
 
-  public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String ideFilePath) {
+  public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String branchName, String ideFilePath) {
     var sqPath = IssueStorePaths.idePathToSqPath(projectBinding, ideFilePath);
     if (sqPath == null) {
       return Collections.emptyList();
     }
-    var loadedIssues = serverIssueStore.load(projectBinding.projectKey(), sqPath);
+    var loadedIssues = serverIssueStore.load(projectBinding.projectKey(), branchName, sqPath);
     loadedIssues.forEach(issue -> issue.setFilePath(ideFilePath));
     return loadedIssues;
   }
 
-  public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String ideFilePath) {
+  public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName, String ideFilePath) {
     var sqPath = IssueStorePaths.idePathToSqPath(projectBinding, ideFilePath);
     if (sqPath == null) {
       return Collections.emptyList();
     }
-    var loadedIssues = serverIssueStore.loadTaint(projectBinding.projectKey(), sqPath);
+    var loadedIssues = serverIssueStore.loadTaint(projectBinding.projectKey(), branchName, sqPath);
     loadedIssues.forEach(issue -> issue.setFilePath(ideFilePath));
     return loadedIssues;
   }
