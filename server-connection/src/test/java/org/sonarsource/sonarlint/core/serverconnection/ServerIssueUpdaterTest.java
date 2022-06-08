@@ -63,9 +63,9 @@ class ServerIssueUpdaterTest {
     var serverApiHelper = mock(ServerApiHelper.class);
     when(downloader.downloadFromBatch(serverApiHelper, "module:file", null)).thenReturn(issues);
 
-    updater.update(serverApiHelper, projectBinding.projectKey(), null, false, Version.create("8.9"));
+    updater.update(serverApiHelper, projectBinding.projectKey(), "branch", false, Version.create("8.9"));
 
-    verify(issueStore).replaceAllIssuesOfProject(eq(projectBinding.projectKey()), anyList());
+    verify(issueStore).replaceAllIssuesOfProject(eq(projectBinding.projectKey()), eq("branch"), anyList());
   }
 
   @Test
@@ -75,9 +75,9 @@ class ServerIssueUpdaterTest {
     var serverApiHelper = mock(ServerApiHelper.class);
     when(downloader.downloadFromBatch(serverApiHelper, "module:file", null)).thenReturn(issues);
 
-    updater.update(serverApiHelper, projectBinding.projectKey(), null, true, Version.create("99.9"));
+    updater.update(serverApiHelper, projectBinding.projectKey(), "branch", true, Version.create("99.9"));
 
-    verify(issueStore).replaceAllIssuesOfProject(eq(projectBinding.projectKey()), anyList());
+    verify(issueStore).replaceAllIssuesOfProject(eq(projectBinding.projectKey()), eq("branch"), anyList());
   }
 
   @Test
@@ -89,7 +89,7 @@ class ServerIssueUpdaterTest {
 
     updater.update(serverApiHelper, projectBinding.projectKey(), "master", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
 
-    verify(issueStore).replaceAllIssuesOfProject(eq(projectBinding.projectKey()), anyList());
+    verify(issueStore).replaceAllIssuesOfProject(eq(projectBinding.projectKey()), eq("master"), anyList());
   }
 
   @Test
@@ -119,9 +119,9 @@ class ServerIssueUpdaterTest {
     var serverApiHelper = mock(ServerApiHelper.class);
     when(downloader.downloadFromBatch(serverApiHelper, projectBinding.projectKey() + ":src/main/Foo.java", null)).thenReturn(issues);
 
-    updater.updateFileIssues(serverApiHelper, projectBinding, "src/main/Foo.java", null, false, Version.create("8.9"), PROGRESS);
+    updater.updateFileIssues(serverApiHelper, projectBinding, "src/main/Foo.java", "branch", false, Version.create("8.9"), PROGRESS);
 
-    verify(issueStore).replaceAllIssuesOfFile(eq(projectBinding.projectKey()), eq("src/main/Foo.java"), anyList());
+    verify(issueStore).replaceAllIssuesOfFile(eq(projectBinding.projectKey()), eq("branch"), eq("src/main/Foo.java"), anyList());
   }
 
   @Test
@@ -132,17 +132,17 @@ class ServerIssueUpdaterTest {
     var serverApiHelper = mock(ServerApiHelper.class);
     when(downloader.downloadFromBatch(serverApiHelper, projectBinding.projectKey() + ":src/main/Foo.java", null)).thenReturn(issues);
 
-    updater.updateFileIssues(serverApiHelper, projectBinding, "src/main/Foo.java", null, true, Version.create("99.9"), PROGRESS);
+    updater.updateFileIssues(serverApiHelper, projectBinding, "src/main/Foo.java", "branch", true, Version.create("99.9"), PROGRESS);
 
-    verify(issueStore).replaceAllIssuesOfFile(eq(projectBinding.projectKey()), eq("src/main/Foo.java"), anyList());
+    verify(issueStore).replaceAllIssuesOfFile(eq(projectBinding.projectKey()), eq("branch"), eq("src/main/Foo.java"), anyList());
   }
 
   @Test
   void dont_update_file_issues_sonarqube_9_5() {
     var serverApiHelper = mock(ServerApiHelper.class);
 
-    updater.updateFileIssues(serverApiHelper, projectBinding, "src/main/Foo.java", null, false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL, PROGRESS);
+    updater.updateFileIssues(serverApiHelper, projectBinding, "src/main/Foo.java", "branch", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL, PROGRESS);
 
-    verify(issueStore, never()).replaceAllIssuesOfFile(any(), anyString(), anyList());
+    verify(issueStore, never()).replaceAllIssuesOfFile(any(), eq("branch"), anyString(), anyList());
   }
 }
