@@ -168,8 +168,8 @@ public class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
     assertThat(file1Issues.size() + file2Issues.size()).isEqualTo(10_500);
 
     Map<String, ServerIssue> allIssues = new HashMap<>();
-    engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/500lines.xoo").forEach(i -> allIssues.put(i.key(), i));
-    engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/10000lines.xoo").forEach(i -> allIssues.put(i.key(), i));
+    engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/500lines.xoo").forEach(i -> allIssues.put(i.getKey(), i));
+    engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "src/10000lines.xoo").forEach(i -> allIssues.put(i.getKey(), i));
 
     assertThat(allIssues).hasSize(10_500);
 

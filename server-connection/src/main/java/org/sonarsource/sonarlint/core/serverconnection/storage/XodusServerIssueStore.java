@@ -69,6 +69,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
   private static final String RULE_KEY_PROPERTY_NAME = "ruleKey";
   private static final String MESSAGE_PROPERTY_NAME = "message";
   private static final String LINE_HASH_PROPERTY_NAME = "lineHash";
+  private static final String RANGE_HASH_PROPERTY_NAME = "rangeHash";
   private static final String FILE_PATH_PROPERTY_NAME = "filePath";
   private static final String CREATION_DATE_PROPERTY_NAME = "creationDate";
   private static final String SEVERITY_PROPERTY_NAME = "severity";
@@ -96,17 +97,37 @@ public class XodusServerIssueStore implements ServerIssueStore {
     if (storedIssue == null) {
       return null;
     }
-    return new ServerIssue(
-      (String) requireNonNull(storedIssue.getProperty(KEY_PROPERTY_NAME)),
-      Boolean.TRUE.equals(storedIssue.getProperty(RESOLVED_PROPERTY_NAME)),
-      (String) requireNonNull(storedIssue.getProperty(RULE_KEY_PROPERTY_NAME)),
-      (String) requireNonNull(storedIssue.getProperty(MESSAGE_PROPERTY_NAME)),
-      (String) requireNonNull(storedIssue.getProperty(LINE_HASH_PROPERTY_NAME)),
-      (String) requireNonNull(storedIssue.getProperty(FILE_PATH_PROPERTY_NAME)),
-      Instant.parse((String) requireNonNull(storedIssue.getProperty(CREATION_DATE_PROPERTY_NAME))),
-      (String) requireNonNull(storedIssue.getProperty(SEVERITY_PROPERTY_NAME)),
-      (String) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME)),
-      (Integer) storedIssue.getProperty(START_LINE_PROPERTY_NAME));
+    var rangeHash = (String) storedIssue.getProperty(RANGE_HASH_PROPERTY_NAME);
+    if (rangeHash != null) {
+      var startLine = storedIssue.getProperty(START_LINE_PROPERTY_NAME);
+      var startLineOffset = (Integer) storedIssue.getProperty(START_LINE_OFFSET_PROPERTY_NAME);
+      var endLine = (Integer) storedIssue.getProperty(END_LINE_PROPERTY_NAME);
+      var endLineOffset = (Integer) storedIssue.getProperty(END_LINE_OFFSET_PROPERTY_NAME);
+      ServerIssue.TextRange textRange = new ServerIssue.TextRange((int) startLine, startLineOffset, endLine, endLineOffset);
+      return new ServerIssue(
+        (String) requireNonNull(storedIssue.getProperty(KEY_PROPERTY_NAME)),
+        Boolean.TRUE.equals(storedIssue.getProperty(RESOLVED_PROPERTY_NAME)),
+        (String) requireNonNull(storedIssue.getProperty(RULE_KEY_PROPERTY_NAME)),
+        (String) requireNonNull(storedIssue.getProperty(MESSAGE_PROPERTY_NAME)),
+        rangeHash,
+        (String) requireNonNull(storedIssue.getProperty(FILE_PATH_PROPERTY_NAME)),
+        Instant.parse((String) requireNonNull(storedIssue.getProperty(CREATION_DATE_PROPERTY_NAME))),
+        (String) requireNonNull(storedIssue.getProperty(SEVERITY_PROPERTY_NAME)),
+        (String) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME)),
+        textRange);
+    } else {
+      return new ServerIssue(
+        (String) requireNonNull(storedIssue.getProperty(KEY_PROPERTY_NAME)),
+        Boolean.TRUE.equals(storedIssue.getProperty(RESOLVED_PROPERTY_NAME)),
+        (String) requireNonNull(storedIssue.getProperty(RULE_KEY_PROPERTY_NAME)),
+        (String) requireNonNull(storedIssue.getProperty(MESSAGE_PROPERTY_NAME)),
+        (String) storedIssue.getProperty(LINE_HASH_PROPERTY_NAME),
+        (String) requireNonNull(storedIssue.getProperty(FILE_PATH_PROPERTY_NAME)),
+        Instant.parse((String) requireNonNull(storedIssue.getProperty(CREATION_DATE_PROPERTY_NAME))),
+        (String) requireNonNull(storedIssue.getProperty(SEVERITY_PROPERTY_NAME)),
+        (String) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME)),
+        (Integer) storedIssue.getProperty(START_LINE_PROPERTY_NAME));
+    }
   }
 
   @CheckForNull
@@ -226,11 +247,18 @@ public class XodusServerIssueStore implements ServerIssueStore {
   }
 
   private static void updateOrCreateIssue(Entity fileEntity, ServerIssue issue, StoreTransaction transaction) {
-    var issueEntity = updateOrCreateIssueCommon(fileEntity, issue.key(), transaction, ISSUE_ENTITY_TYPE, FILE_TO_ISSUES_LINK_NAME);
+    var issueEntity = updateOrCreateIssueCommon(fileEntity, issue.getKey(), transaction, ISSUE_ENTITY_TYPE, FILE_TO_ISSUES_LINK_NAME);
     issueEntity.setProperty(RESOLVED_PROPERTY_NAME, issue.resolved());
     issueEntity.setProperty(RULE_KEY_PROPERTY_NAME, issue.ruleKey());
     issueEntity.setProperty(MESSAGE_PROPERTY_NAME, issue.getMessage());
-    issueEntity.setProperty(LINE_HASH_PROPERTY_NAME, issue.lineHash());
+    String lineHash = issue.getLineHash();
+    if (lineHash != null) {
+      issueEntity.setProperty(LINE_HASH_PROPERTY_NAME, lineHash);
+    }
+    String rangeHash = issue.getRangeHash();
+    if (rangeHash != null) {
+      issueEntity.setProperty(RANGE_HASH_PROPERTY_NAME, rangeHash);
+    }
     issueEntity.setProperty(FILE_PATH_PROPERTY_NAME, issue.getFilePath());
     issueEntity.setProperty(CREATION_DATE_PROPERTY_NAME, issue.creationDate().toString());
     issueEntity.setProperty(SEVERITY_PROPERTY_NAME, issue.severity());
@@ -238,6 +266,13 @@ public class XodusServerIssueStore implements ServerIssueStore {
     var line = issue.getLine();
     if (line != null) {
       issueEntity.setProperty(START_LINE_PROPERTY_NAME, line);
+    }
+    var textRange = issue.getTextRange();
+    if (textRange != null) {
+      issueEntity.setProperty(START_LINE_PROPERTY_NAME, textRange.getStartLine());
+      issueEntity.setProperty(START_LINE_OFFSET_PROPERTY_NAME, textRange.getStartLineOffset());
+      issueEntity.setProperty(END_LINE_PROPERTY_NAME, textRange.getEndLine());
+      issueEntity.setProperty(END_LINE_OFFSET_PROPERTY_NAME, textRange.getEndLineOffset());
     }
   }
 

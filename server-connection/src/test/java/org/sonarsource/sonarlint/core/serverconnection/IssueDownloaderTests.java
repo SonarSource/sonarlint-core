@@ -29,11 +29,14 @@ import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
+import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.Flow;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.Paging;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.TextRange;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.IssueLite;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Location;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import testutils.MockWebServerExtensionWithProtobuf;
 
@@ -65,6 +68,7 @@ class IssueDownloaderTests {
   @Test
   void test_download_one_issue_old_batch_ws() {
     var response = ScannerInput.ServerIssue.newBuilder()
+      .setKey("uuid")
       .setRuleRepository("sonarjava")
       .setRuleKey("S123")
       .setChecksum("hash")
@@ -72,7 +76,6 @@ class IssueDownloaderTests {
       .setLine(1)
       .setCreationDate(123456789L)
       .setPath("foo/bar/Hello.java")
-      .setModuleKey("project")
       .build();
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, response);
@@ -81,10 +84,94 @@ class IssueDownloaderTests {
     assertThat(issues).hasSize(1);
 
     var serverIssue = issues.get(0);
-    assertThat(serverIssue.lineHash()).isEqualTo("hash");
+    assertThat(serverIssue.getKey()).isEqualTo("uuid");
+    assertThat(serverIssue.getLineHash()).isEqualTo("hash");
     assertThat(serverIssue.getMessage()).isEqualTo("Primary message");
     assertThat(serverIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
     assertThat(serverIssue.getLine()).isEqualTo(1);
+    assertThat(serverIssue.getTextRange()).isNull();
+    assertThat(serverIssue.getRangeHash()).isNull();
+  }
+
+  @Test
+  void test_download_one_file_level_issue_old_batch_ws() {
+    var response = ScannerInput.ServerIssue.newBuilder()
+      .setKey("uuid")
+      .setRuleRepository("sonarjava")
+      .setRuleKey("S123")
+      .setMsg("Primary message")
+      .setCreationDate(123456789L)
+      .setPath("foo/bar/Hello.java")
+      .build();
+
+    mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, response);
+
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, null, false, SQ_VERSION_BEFORE_PULL, PROGRESS);
+    assertThat(issues).hasSize(1);
+
+    var serverIssue = issues.get(0);
+    assertThat(serverIssue.getKey()).isEqualTo("uuid");
+    assertThat(serverIssue.getLineHash()).isNull();
+    assertThat(serverIssue.getMessage()).isEqualTo("Primary message");
+    assertThat(serverIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(serverIssue.getLine()).isNull();
+    assertThat(serverIssue.getTextRange()).isNull();
+    assertThat(serverIssue.getRangeHash()).isNull();
+  }
+
+  @Test
+  void test_download_one_issue_pull_ws() {
+    var timestamp = Issues.IssuesPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
+    var issue = IssueLite.newBuilder()
+      .setKey("uuid")
+      .setRuleKey("sonarjava:S123")
+      .setMainLocation(Location.newBuilder().setFilePath("foo/bar/Hello.java").setMessage("Primary message")
+        .setTextRange(org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.TextRange.newBuilder().setStartLine(1).setStartLineOffset(2).setEndLine(3)
+          .setEndLineOffset(4).setHash("hash")))
+      .setCreationDate(123456789L)
+      .build();
+
+    mockServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch", timestamp, issue);
+
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, "myBranch", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL, PROGRESS);
+    assertThat(issues).hasSize(1);
+
+    var serverIssue = issues.get(0);
+    assertThat(serverIssue.getKey()).isEqualTo("uuid");
+    assertThat(serverIssue.getLineHash()).isNull();
+    assertThat(serverIssue.getMessage()).isEqualTo("Primary message");
+    assertThat(serverIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(serverIssue.getLine()).isNull();
+    assertThat(serverIssue.getTextRange().getStartLine()).isEqualTo(1);
+    assertThat(serverIssue.getTextRange().getStartLineOffset()).isEqualTo(2);
+    assertThat(serverIssue.getTextRange().getEndLine()).isEqualTo(3);
+    assertThat(serverIssue.getTextRange().getEndLineOffset()).isEqualTo(4);
+    assertThat(serverIssue.getRangeHash()).isEqualTo("hash");
+  }
+
+  @Test
+  void test_download_one_file_level_issue_pull_ws() {
+    var timestamp = Issues.IssuesPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
+    var issue = IssueLite.newBuilder()
+      .setKey("uuid")
+      .setRuleKey("sonarjava:S123")
+      .setMainLocation(Location.newBuilder().setFilePath("foo/bar/Hello.java").setMessage("Primary message"))
+      .setCreationDate(123456789L)
+      .build();
+
+    mockServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch", timestamp, issue);
+
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, "myBranch", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL, PROGRESS);
+    assertThat(issues).hasSize(1);
+
+    var serverIssue = issues.get(0);
+    assertThat(serverIssue.getKey()).isEqualTo("uuid");
+    assertThat(serverIssue.getLineHash()).isNull();
+    assertThat(serverIssue.getMessage()).isEqualTo("Primary message");
+    assertThat(serverIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(serverIssue.getLine()).isNull();
+    assertThat(serverIssue.getTextRange()).isNull();
+    assertThat(serverIssue.getRangeHash()).isNull();
   }
 
   @Test
@@ -102,7 +189,23 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, response);
 
-    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, null, false, SQ_VERSION_BEFORE_PULL, PROGRESS);
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, null, true, SQ_VERSION_BEFORE_PULL, PROGRESS);
+    assertThat(issues).isEmpty();
+  }
+
+  @Test
+  void test_pull_issue_ignore_project_level() {
+    var timestamp = Issues.IssuesPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
+    var issue = IssueLite.newBuilder()
+      .setKey("uuid")
+      .setRuleKey("sonarjava:S123")
+      .setMainLocation(Location.newBuilder().setMessage("Primary message"))
+      .setCreationDate(123456789L)
+      .build();
+
+    mockServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch", timestamp, issue);
+
+    var issues = underTest.download(mockServer.serverApiHelper(), DUMMY_KEY, "myBranch", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL, PROGRESS);
     assertThat(issues).isEmpty();
   }
 
