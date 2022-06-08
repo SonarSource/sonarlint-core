@@ -30,10 +30,10 @@ class ServerIssueTests {
   void testRoundTrips() {
     var issue = aServerIssue();
     var i1 = Instant.ofEpochMilli(100_000_000);
-    assertThat(issue.setLineHash("checksum1").lineHash()).isEqualTo("checksum1");
+    assertThat(issue.setLineHash("checksum1").getLineHash()).isEqualTo("checksum1");
     assertThat(issue.setCreationDate(i1).creationDate()).isEqualTo(i1);
     assertThat(issue.setFilePath("path1").getFilePath()).isEqualTo("path1");
-    assertThat(issue.setKey("key1").key()).isEqualTo("key1");
+    assertThat(issue.setKey("key1").getKey()).isEqualTo("key1");
     issue.setLine(2);
     assertThat(issue.getLine()).isEqualTo(2);
     assertThat(issue.setSeverity("MAJOR").severity()).isEqualTo("MAJOR");

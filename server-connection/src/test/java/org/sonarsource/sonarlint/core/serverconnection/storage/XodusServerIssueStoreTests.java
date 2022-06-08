@@ -32,6 +32,7 @@ import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aBatchServerIssue;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerIssue;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerTaintIssue;
 
@@ -65,7 +66,30 @@ class XodusServerIssueStoreTests {
   }
 
   @Test
-  void should_save_an_issue() {
+  void should_save_a_batch_issue() {
+    var creationDate = Instant.now();
+
+    store
+      .save("projectKey", List.of(aBatchServerIssue().setCreationDate(creationDate)));
+
+    var savedIssueOpt = store.getByKey("key");
+    assertThat(savedIssueOpt).isNotEmpty();
+    var savedIssue = savedIssueOpt.get();
+    assertThat(savedIssue.getKey()).isEqualTo("key");
+    assertThat(savedIssue.resolved()).isTrue();
+    assertThat(savedIssue.ruleKey()).isEqualTo("repo:key");
+    assertThat(savedIssue.getMessage()).isEqualTo("message");
+    assertThat(savedIssue.getLineHash()).isEqualTo("hash");
+    assertThat(savedIssue.getFilePath()).isEqualTo("file/path");
+    assertThat(savedIssue.creationDate()).isEqualTo(creationDate);
+    assertThat(savedIssue.severity()).isEqualTo("MINOR");
+    assertThat(savedIssue.type()).isEqualTo("BUG");
+    assertThat(savedIssue.getLine()).isEqualTo(1);
+    assertThat(savedIssue.getTextRange()).isNull();
+  }
+
+  @Test
+  void should_save_a_pull_issue() {
     var creationDate = Instant.now();
 
     store
@@ -74,16 +98,21 @@ class XodusServerIssueStoreTests {
     var savedIssueOpt = store.getByKey("key");
     assertThat(savedIssueOpt).isNotEmpty();
     var savedIssue = savedIssueOpt.get();
-    assertThat(savedIssue.key()).isEqualTo("key");
+    assertThat(savedIssue.getKey()).isEqualTo("key");
     assertThat(savedIssue.resolved()).isTrue();
     assertThat(savedIssue.ruleKey()).isEqualTo("repo:key");
     assertThat(savedIssue.getMessage()).isEqualTo("message");
-    assertThat(savedIssue.lineHash()).isEqualTo("hash");
+    assertThat(savedIssue.getLineHash()).isNull();
     assertThat(savedIssue.getFilePath()).isEqualTo("file/path");
     assertThat(savedIssue.creationDate()).isEqualTo(creationDate);
     assertThat(savedIssue.severity()).isEqualTo("MINOR");
     assertThat(savedIssue.type()).isEqualTo("BUG");
-    assertThat(savedIssue.getLine()).isEqualTo(1);
+    assertThat(savedIssue.getLine()).isNull();
+    assertThat(savedIssue.getRangeHash()).isEqualTo("hash");
+    assertThat(savedIssue.getTextRange().getStartLine()).isEqualTo(1);
+    assertThat(savedIssue.getTextRange().getStartLineOffset()).isEqualTo(2);
+    assertThat(savedIssue.getTextRange().getEndLine()).isEqualTo(3);
+    assertThat(savedIssue.getTextRange().getEndLineOffset()).isEqualTo(4);
   }
 
   @Test
@@ -129,7 +158,7 @@ class XodusServerIssueStoreTests {
 
     var issues = store.load("projectKey", "file/path1");
     assertThat(issues)
-      .extracting(ServerIssue::key)
+      .extracting(ServerIssue::getKey)
       .containsOnly("key1", "key3");
   }
 
@@ -155,7 +184,7 @@ class XodusServerIssueStoreTests {
 
     var issues = store.load("projectKey", "file/path1");
     assertThat(issues)
-      .extracting(ServerIssue::key)
+      .extracting(ServerIssue::getKey)
       .containsOnly("key1");
   }
 
@@ -172,19 +201,30 @@ class XodusServerIssueStoreTests {
     assertThat(store.getByKey("key3")).isEmpty();
     assertThat(store.getByKey("key2")).isNotEmpty();
     assertThat(store.load("projectKey", "file/path"))
-      .extracting(ServerIssue::key)
+      .extracting(ServerIssue::getKey)
       .containsOnly("key2");
   }
 
   @Test
-  void should_save_issue_without_line() {
+  void should_save_batch_issue_without_line() {
     store.save("projectKey", List.of(
-      aServerIssue().setKey("key1").setLine(null)));
+      aBatchServerIssue().setKey("key1").setLine(null).setLineHash(null)));
 
-    var issue = store.getByKey("key1");
+    var issue = store.getByKey("key1").get();
 
-    assertThat(issue).isNotEmpty();
-    assertThat(issue.get().getLine()).isNull();
+    assertThat(issue.getLine()).isNull();
+    assertThat(issue.getLineHash()).isNull();
+  }
+
+  @Test
+  void should_save_pull_issue_without_line() {
+    store.save("projectKey", List.of(
+      aServerIssue().setKey("key1").setTextRange(null).setRangeHash(null)));
+
+    var issue = store.getByKey("key1").get();
+
+    assertThat(issue.getTextRange()).isNull();
+    assertThat(issue.getRangeHash()).isNull();
   }
 
   @Test

@@ -62,7 +62,7 @@ public class ServerIssueTrackable implements Trackable {
 
   @Override
   public Integer getLineHash() {
-    return serverIssue.lineHash().hashCode();
+    return serverIssue.getLineHash().hashCode();
   }
 
   @Override
@@ -82,7 +82,7 @@ public class ServerIssueTrackable implements Trackable {
 
   @Override
   public String getServerIssueKey() {
-    return serverIssue.key();
+    return serverIssue.getKey();
   }
 
   @Override
