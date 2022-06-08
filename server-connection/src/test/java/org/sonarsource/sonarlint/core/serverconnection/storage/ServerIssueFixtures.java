@@ -24,7 +24,7 @@ import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
 
 public class ServerIssueFixtures {
-  public static ServerIssue aServerIssue() {
+  public static ServerIssue aBatchServerIssue() {
     return new ServerIssue(
       "key",
       true,
@@ -36,6 +36,20 @@ public class ServerIssueFixtures {
       "MINOR",
       "BUG",
       1);
+  }
+
+  public static ServerIssue aServerIssue() {
+    return new ServerIssue(
+      "key",
+      true,
+      "repo:key",
+      "message",
+      "hash",
+      "file/path",
+      Instant.now(),
+      "MINOR",
+      "BUG",
+      new ServerIssue.TextRange(1, 2, 3, 4));
   }
 
   public static ServerTaintIssue aServerTaintIssue() {
