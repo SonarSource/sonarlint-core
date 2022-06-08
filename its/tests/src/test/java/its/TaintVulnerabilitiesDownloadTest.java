@@ -127,7 +127,7 @@ public class TaintVulnerabilitiesDownloadTest extends AbstractConnectedTest {
     ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "");
 
     engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
-    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null, null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, "master", null);
 
     // Reload file issues to get taint
     engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding, "src/main/java/foo/DbHelper.java", null, null);
