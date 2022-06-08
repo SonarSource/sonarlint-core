@@ -167,13 +167,8 @@ public class IssueApi {
       () -> serverApiHelper.get(pullIssuesUrl.toString()),
       response -> {
         var input = response.bodyAsStream();
-        List<Issues.IssueLite> issues = new ArrayList<>();
         var timestamp = Issues.IssuesPullQueryTimestamp.parseDelimitedFrom(input);
-
-        while (input.available() > 0) {
-          issues.add(Issues.IssueLite.parseDelimitedFrom(input));
-        }
-        return new IssuesPullResult(timestamp, issues);
+        return new IssuesPullResult(timestamp, readMessages(input, Issues.IssueLite.parser()));
       },
       duration -> LOG.debug("Pulled issues in {}ms", duration));
   }
