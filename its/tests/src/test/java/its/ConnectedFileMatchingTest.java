@@ -99,7 +99,7 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
   @Test
   public void should_match_files_when_importing_entire_project() throws IOException {
     engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
-    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null, null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, "master", null);
 
     // entire project imported in IDE
     var projectDir = Paths.get("projects/multi-modules-sample").toAbsolutePath();
@@ -118,7 +118,7 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
   @Test
   public void should_match_files_when_importing_module() throws IOException {
     engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
-    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null, null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, "master", null);
 
     // only module B1 imported in IDE
     var projectDirB1 = Paths.get("projects/multi-modules-sample/module_b/module_b1").toAbsolutePath();
