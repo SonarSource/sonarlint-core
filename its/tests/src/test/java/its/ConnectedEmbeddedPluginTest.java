@@ -132,7 +132,7 @@ public class ConnectedEmbeddedPluginTest extends AbstractConnectedTest {
   }
 
   private void updateProject(String projectKey) {
-    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, null, null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, "master", null);
     engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(projectKey), null);
   }
 
