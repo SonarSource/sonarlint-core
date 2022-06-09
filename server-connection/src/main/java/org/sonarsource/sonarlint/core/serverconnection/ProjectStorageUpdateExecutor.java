@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
-import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.commons.SonarLintCoreVersion;
 import org.sonarsource.sonarlint.core.commons.Version;
@@ -52,7 +51,7 @@ public class ProjectStorageUpdateExecutor {
     this.isSonarCloud = isSonarCloud;
   }
 
-  public void update(ServerApiHelper serverApiHelper, String projectKey, @Nullable String branchName, Version serverVersion, ProgressMonitor progress) {
+  public void update(ServerApiHelper serverApiHelper, String projectKey, String branchName, Version serverVersion, ProgressMonitor progress) {
     Path temp;
     try {
       temp = Files.createTempDirectory("sonarlint-global-storage");
@@ -61,7 +60,7 @@ public class ProjectStorageUpdateExecutor {
     }
     try {
       FileUtils.replaceDir(dir -> {
-        updateServerIssues(serverApiHelper, projectKey, branchName, serverVersion, progress);
+        updateServerIssues(serverApiHelper, projectKey, branchName, serverVersion);
         updateComponents(serverApiHelper, projectKey, dir, progress);
         updateStatus(dir);
       }, projectStoragePaths.getProjectStorageRoot(projectKey), temp);
@@ -82,8 +81,8 @@ public class ProjectStorageUpdateExecutor {
     ProtobufUtil.writeToFile(componentsBuilder.build(), temp.resolve(ProjectStoragePaths.COMPONENT_LIST_PB));
   }
 
-  private void updateServerIssues(ServerApiHelper serverApiHelper, String projectKey, @Nullable String branchName, Version serverVersion, ProgressMonitor progress) {
-    serverIssueUpdater.update(serverApiHelper, projectKey, branchName, isSonarCloud, serverVersion, progress);
+  private void updateServerIssues(ServerApiHelper serverApiHelper, String projectKey, String branchName, Version serverVersion) {
+    serverIssueUpdater.update(serverApiHelper, projectKey, branchName, isSonarCloud, serverVersion);
   }
 
   private static void updateStatus(Path temp) {

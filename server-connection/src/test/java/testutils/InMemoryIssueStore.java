@@ -32,8 +32,15 @@ public class InMemoryIssueStore implements ServerIssueStore {
   private final Map<String, Map<String, List<ServerTaintIssue>>> taintIssuesByFileByProject = new HashMap<>();
 
   @Override
-  public void save(String projectKey, List<ServerIssue> issues) {
-    issuesByFileByProject.computeIfAbsent(projectKey, __ -> new HashMap<>()).putAll(issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath)));
+  public void replaceAllIssuesOfFile(String projectKey, String serverFilePath, List<ServerIssue> issues) {
+    issuesByFileByProject.computeIfAbsent(projectKey, __ -> new HashMap<>()).put(serverFilePath, issues);
+  }
+
+  @Override
+  public void replaceAllIssuesOfProject(String projectKey, List<ServerIssue> issues) {
+    issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath)).forEach((filePath, fileIssues) -> {
+      issuesByFileByProject.computeIfAbsent(projectKey, __ -> new HashMap<>()).put(filePath, fileIssues);
+    });
   }
 
   @Override
@@ -43,8 +50,8 @@ public class InMemoryIssueStore implements ServerIssueStore {
   }
 
   @Override
-  public void saveTaint(String projectKey, List<ServerTaintIssue> issues) {
-    taintIssuesByFileByProject.computeIfAbsent(projectKey, __ -> new HashMap<>()).putAll(issues.stream().collect(Collectors.groupingBy(ServerTaintIssue::getFilePath)));
+  public void replaceAllTaintOfFile(String projectKey, String filePath, List<ServerTaintIssue> issues) {
+    taintIssuesByFileByProject.computeIfAbsent(projectKey, __ -> new HashMap<>()).put(filePath, issues);
   }
 
   @Override

@@ -202,10 +202,9 @@ public class ServerConnection {
     return getServerIssues(projectBinding, ideFilePath);
   }
 
-  public void downloadServerIssuesForProject(EndpointParams endpoint, HttpClient client, String projectKey, String branchName,
-    ProgressMonitor progress) {
+  public void downloadServerIssuesForProject(EndpointParams endpoint, HttpClient client, String projectKey, String branchName) {
     var serverVersion = readServerVersionFromStorage();
-    issuesUpdater.update(new ServerApiHelper(endpoint, client), projectKey, branchName, isSonarCloud, serverVersion, progress);
+    issuesUpdater.update(new ServerApiHelper(endpoint, client), projectKey, branchName, isSonarCloud, serverVersion);
   }
 
   public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable String branchName, ProgressMonitor monitor) {
