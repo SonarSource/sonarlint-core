@@ -21,6 +21,7 @@
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,12 +38,15 @@ import jetbrains.exodus.entitystore.PersistentEntityStore;
 import jetbrains.exodus.entitystore.PersistentEntityStores;
 import jetbrains.exodus.entitystore.StoreTransaction;
 import org.jetbrains.annotations.NotNull;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
 
 import static java.util.Objects.requireNonNull;
 
 public class XodusServerIssueStore implements ServerIssueStore {
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
+
   private static final String FILE_NAME = "sonarlint.db";
 
   private static final String ISSUE_ENTITY_TYPE = "Issue";
@@ -83,12 +87,12 @@ public class XodusServerIssueStore implements ServerIssueStore {
   }
 
   public Optional<ServerIssue> getByKey(String issueKey) {
-    return entityStore.computeInTransaction(txn -> findUnique(txn, ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issueKey)
+    return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issueKey)
       .map(XodusServerIssueStore::adapt));
   }
 
   public Optional<ServerTaintIssue> getTaintByKey(String issueKey) {
-    return entityStore.computeInTransaction(txn -> findUnique(txn, TAINT_ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issueKey)
+    return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, TAINT_ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issueKey)
       .map(XodusServerIssueStore::adaptTaint));
   }
 
@@ -190,7 +194,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
   }
 
   private <G> List<G> loadIssue(String projectKey, String filePath, String linkName, Function<Entity, G> adapter) {
-    return entityStore.computeInTransaction(txn -> findUnique(txn, PROJECT_ENTITY_TYPE, KEY_PROPERTY_NAME, projectKey)
+    return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, PROJECT_ENTITY_TYPE, KEY_PROPERTY_NAME, projectKey)
       .map(project -> project.getLinks(PROJECT_TO_FILES_LINK_NAME))
       .flatMap(files -> findUnique(txn, FILE_ENTITY_TYPE, PATH_PROPERTY_NAME, filePath))
       .map(fileToLoad -> fileToLoad.getLinks(linkName))
@@ -202,16 +206,16 @@ public class XodusServerIssueStore implements ServerIssueStore {
 
   @Override
   public void replaceAllIssuesOfFile(String projectKey, String serverFilePath, List<ServerIssue> issues) {
-    entityStore.executeInTransaction(txn -> {
+    timed("Wrote " + issues.size() + " issues in store", () -> entityStore.executeInTransaction(txn -> {
       var project = getOrCreateProject(projectKey, txn);
       var fileEntity = getOrCreateFile(project, serverFilePath, txn);
       replaceAllIssuesOfFile(issues, txn, fileEntity);
-    });
+    }));
   }
 
   @Override
   public void replaceAllIssuesOfProject(String projectKey, List<ServerIssue> issues) {
-    entityStore.executeInTransaction(txn -> {
+    timed("Wrote " + issues.size() + " issues in store", () -> entityStore.executeInTransaction(txn -> {
       var project = getOrCreateProject(projectKey, txn);
       var issuesByFile = issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
       project.getLinks(PROJECT_TO_FILES_LINK_NAME).forEach(fileEntity -> {
@@ -223,7 +227,14 @@ public class XodusServerIssueStore implements ServerIssueStore {
         var fileEntity = getOrCreateFile(project, filePath, txn);
         replaceAllIssuesOfFile(fileIssues, txn, fileEntity);
       });
-    });
+    }));
+  }
+
+  private static void timed(String msg, Runnable transaction) {
+    var startTime = Instant.now();
+    transaction.run();
+    var duration = Duration.between(startTime, Instant.now());
+    LOG.debug("{} | took {}ms", msg, duration.toMillis());
   }
 
   private static void replaceAllIssuesOfFile(List<ServerIssue> issues, @NotNull StoreTransaction txn, Entity fileEntity) {
@@ -235,7 +246,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
 
   @Override
   public void replaceAllTaintOfFile(String projectKey, String serverFilePath, List<ServerTaintIssue> issues) {
-    entityStore.executeInTransaction(txn -> {
+    timed("Wrote " + issues.size() + " issues in store", () -> entityStore.executeInTransaction(txn -> {
       var project = getOrCreateProject(projectKey, txn);
       var fileEntity = getOrCreateFile(project, serverFilePath, txn);
 
@@ -243,7 +254,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
       fileEntity.deleteLinks(FILE_TO_TAINT_ISSUES_LINK_NAME);
 
       issues.forEach(issue -> updateOrCreateTaintIssue(fileEntity, issue, txn));
-    });
+    }));
   }
 
   private static Entity getOrCreateProject(String projectKey, StoreTransaction txn) {
