@@ -103,7 +103,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
       var startLineOffset = (Integer) storedIssue.getProperty(START_LINE_OFFSET_PROPERTY_NAME);
       var endLine = (Integer) storedIssue.getProperty(END_LINE_PROPERTY_NAME);
       var endLineOffset = (Integer) storedIssue.getProperty(END_LINE_OFFSET_PROPERTY_NAME);
-      ServerIssue.TextRange textRange = new ServerIssue.TextRange((int) startLine, startLineOffset, endLine, endLineOffset);
+      var textRange = new ServerIssue.TextRange((int) startLine, startLineOffset, endLine, endLineOffset);
       return new ServerIssue(
         (String) requireNonNull(storedIssue.getProperty(KEY_PROPERTY_NAME)),
         Boolean.TRUE.equals(storedIssue.getProperty(RESOLVED_PROPERTY_NAME)),
@@ -201,23 +201,48 @@ public class XodusServerIssueStore implements ServerIssueStore {
   }
 
   @Override
-  public void save(String projectKey, List<ServerIssue> issues) {
-    saveIssue(projectKey, issues, ServerIssue::getFilePath, XodusServerIssueStore::updateOrCreateIssue);
+  public void replaceAllIssuesOfFile(String projectKey, String serverFilePath, List<ServerIssue> issues) {
+    entityStore.executeInTransaction(txn -> {
+      var project = getOrCreateProject(projectKey, txn);
+      var fileEntity = getOrCreateFile(project, serverFilePath, txn);
+      replaceAllIssuesOfFile(issues, txn, fileEntity);
+    });
   }
 
   @Override
-  public void saveTaint(String projectKey, List<ServerTaintIssue> issues) {
-    saveIssue(projectKey, issues, ServerTaintIssue::getFilePath, XodusServerIssueStore::updateOrCreateTaintIssue);
+  public void replaceAllIssuesOfProject(String projectKey, List<ServerIssue> issues) {
+    entityStore.executeInTransaction(txn -> {
+      var project = getOrCreateProject(projectKey, txn);
+      var issuesByFile = issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
+      project.getLinks(PROJECT_TO_FILES_LINK_NAME).forEach(fileEntity -> {
+        var entityFilePath = fileEntity.getProperty(FILE_PATH_PROPERTY_NAME);
+        replaceAllIssuesOfFile(issuesByFile.getOrDefault(entityFilePath, List.of()), txn, fileEntity);
+        issuesByFile.remove(entityFilePath);
+      });
+      issuesByFile.forEach((filePath, fileIssues) -> {
+        var fileEntity = getOrCreateFile(project, filePath, txn);
+        replaceAllIssuesOfFile(fileIssues, txn, fileEntity);
+      });
+    });
   }
 
-  public <G> void saveIssue(String projectKey, List<G> issues, Function<G, String> filePathGetter, IssueWriter<G> writer) {
+  private static void replaceAllIssuesOfFile(List<ServerIssue> issues, @NotNull StoreTransaction txn, Entity fileEntity) {
+    fileEntity.getLinks(FILE_TO_ISSUES_LINK_NAME).forEach(Entity::delete);
+    fileEntity.deleteLinks(FILE_TO_ISSUES_LINK_NAME);
+
+    issues.forEach(issue -> updateOrCreateIssue(fileEntity, issue, txn));
+  }
+
+  @Override
+  public void replaceAllTaintOfFile(String projectKey, String serverFilePath, List<ServerTaintIssue> issues) {
     entityStore.executeInTransaction(txn -> {
-      var issuesByFile = issues.stream().collect(Collectors.groupingBy(filePathGetter));
-      issuesByFile.forEach((filePath, fileIssues) -> {
-        var project = getOrCreateProject(projectKey, txn);
-        var file = getOrCreateFile(project, filePath, txn);
-        fileIssues.forEach(issue -> writer.updateOrCreateIssue(file, issue, txn));
-      });
+      var project = getOrCreateProject(projectKey, txn);
+      var fileEntity = getOrCreateFile(project, serverFilePath, txn);
+
+      fileEntity.getLinks(FILE_TO_TAINT_ISSUES_LINK_NAME).forEach(Entity::delete);
+      fileEntity.deleteLinks(FILE_TO_TAINT_ISSUES_LINK_NAME);
+
+      issues.forEach(issue -> updateOrCreateTaintIssue(fileEntity, issue, txn));
     });
   }
 
@@ -239,11 +264,6 @@ public class XodusServerIssueStore implements ServerIssueStore {
         projectEntity.addLink(PROJECT_TO_FILES_LINK_NAME, file);
         return file;
       });
-  }
-
-  @FunctionalInterface
-  private interface IssueWriter<G> {
-    void updateOrCreateIssue(Entity fileEntity, G issue, StoreTransaction transaction);
   }
 
   private static void updateOrCreateIssue(Entity fileEntity, ServerIssue issue, StoreTransaction transaction) {
@@ -346,7 +366,10 @@ public class XodusServerIssueStore implements ServerIssueStore {
     var locationEntity = transaction.newEntity(LOCATION_ENTITY_TYPE);
     flowEntity.addLink(FLOW_TO_LOCATIONS_LINK_NAME, locationEntity);
     locationEntity.setProperty(MESSAGE_PROPERTY_NAME, location.getMessage());
-    locationEntity.setProperty(FILE_PATH_PROPERTY_NAME, location.getFilePath());
+    String filePath = location.getFilePath();
+    if (filePath != null) {
+      locationEntity.setProperty(FILE_PATH_PROPERTY_NAME, filePath);
+    }
     var locationCodeSnippet = location.getCodeSnippet();
     if (locationCodeSnippet != null) {
       locationEntity.setProperty(CODE_SNIPPET_PROPERTY_NAME, locationCodeSnippet);

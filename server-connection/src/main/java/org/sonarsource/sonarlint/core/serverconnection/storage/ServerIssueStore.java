@@ -32,7 +32,16 @@ public interface ServerIssueStore {
    * - Directories with too many files
    * - (Too deep paths?)
    */
-  void save(String projectKey, List<ServerIssue> issues);
+  void replaceAllIssuesOfProject(String projectKey, List<ServerIssue> issues);
+
+  /**
+   * Store issues for a single file.
+   * For filesystem-based implementations, watch out for:
+   * - Too long paths
+   * - Directories with too many files
+   * - (Too deep paths?)
+   */
+  void replaceAllIssuesOfFile(String projectKey, String serverFilePath, List<ServerIssue> issues);
 
   /**
    * Load issues stored for specified file.
@@ -45,13 +54,13 @@ public interface ServerIssueStore {
   List<ServerIssue> load(String projectKey, String sqFilePath);
 
   /**
-   * Store taint issues per file.
+   * Store taint issues for a single file.
    * For filesystem-based implementations, watch out for:
    * - Too long paths
    * - Directories with too many files
    * - (Too deep paths?)
    */
-  void saveTaint(String projectKey, List<ServerTaintIssue> issues);
+  void replaceAllTaintOfFile(String projectKey, String serverFilePath, List<ServerTaintIssue> taintIssues);
 
   /**
    * Load taint issues stored for specified file.
@@ -64,4 +73,5 @@ public interface ServerIssueStore {
   List<ServerTaintIssue> loadTaint(String projectKey, String sqFilePath);
 
   void close();
+
 }
