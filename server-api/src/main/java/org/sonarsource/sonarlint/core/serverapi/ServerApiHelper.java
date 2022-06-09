@@ -167,11 +167,11 @@ public class ServerApiHelper {
     var loaded = new AtomicInteger(0);
     do {
       page.incrementAndGet();
-      var fullUrl = new StringBuilder(buildEndpointUrl(relativeUrlWithoutPaginationParams));
+      var fullUrl = new StringBuilder(relativeUrlWithoutPaginationParams);
       fullUrl.append(relativeUrlWithoutPaginationParams.contains("?") ? "&" : "?");
       fullUrl.append("ps=" + PAGE_SIZE + "&p=").append(page);
       ServerApiHelper.consumeTimed(
-        () -> client.get(fullUrl.toString()),
+        () -> rawGet(fullUrl.toString()),
         response -> processPage(relativeUrlWithoutPaginationParams, responseParser, getPagingTotal, itemExtractor, itemConsumer, limitToTwentyPages, progress, page, stop, loaded,
           response),
         duration -> LOG.debug("Page downloaded in {}ms", duration));
