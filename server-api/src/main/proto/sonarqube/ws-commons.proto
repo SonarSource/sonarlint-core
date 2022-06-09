@@ -42,19 +42,11 @@ message Rule {
   optional string key = 1;
   optional string name = 2;
   optional string lang = 3;
-  optional RuleStatus status = 4;
   optional string langName = 5;
 }
 
 message Rules {
   repeated Rule rules = 1;
-}
-
-enum RuleStatus {
-  BETA = 0;
-  DEPRECATED = 1;
-  READY = 2;
-  REMOVED = 3;
 }
 
 // Lines start at 1 and line offsets start at 0
@@ -82,13 +74,6 @@ message Location {
   // Only when component is a file. Can be empty for a file if this is an issue global to the file.
   optional sonarqube.ws.commons.TextRange textRange = 2;
   optional string msg = 3;
-}
-
-message User {
-  optional string login = 1;
-  optional string name = 2;
-  optional string avatar = 3;
-  optional bool active = 4;
 }
 
 enum RuleType {

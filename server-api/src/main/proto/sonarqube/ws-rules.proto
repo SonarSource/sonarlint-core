@@ -44,47 +44,14 @@ message Rule {
   optional string key = 1;
   optional string repo = 2;
   optional string name = 3;
-  optional string createdAt = 4;
   optional string htmlDesc = 5 [deprecated=true];
   optional string htmlNote = 6;
-  optional string mdDesc = 7;
-  optional string mdNote = 8;
   optional string severity = 10;
-  optional sonarqube.ws.commons.RuleStatus status = 11;
-  optional string internalKey = 12;
-  optional bool isTemplate = 13;
   optional string templateKey = 14;
   optional string lang = 19;
-  optional string langName = 20;
-  optional Params params = 21;
 
   optional sonarqube.ws.commons.RuleType type = 37;
-  optional string defaultRemFnType = 38;
-  optional string defaultRemFnGapMultiplier = 39;
-  optional string defaultRemFnBaseEffort = 40;
-  optional string remFnType = 41;
-  optional string remFnGapMultiplier = 42;
-  optional string remFnBaseEffort = 43;
-  optional bool remFnOverloaded = 45;
-  optional string gapDescription = 44;
-  optional bool isExternal = 47;
-  repeated DescriptionSection descriptionSections = 49;
 
-  message DescriptionSection {
-    required string key = 1;
-    required string content = 2;
-  }
-
-  message Params {
-    repeated Param params = 1;
-  }
-
-  message Param {
-    optional string key = 1;
-    optional string htmlDesc = 2;
-    optional string defaultValue = 3;
-    optional string type = 4;
-  }
 }
 
 message Actives {
@@ -97,13 +64,8 @@ message ActiveList {
 
 message Active {
   optional string qProfile = 1;
-  optional string inherit = 2;
   optional string severity = 3;
-  // Unused since 5.6, it has been removed because it was never used and costly to compute
-  optional string unusedParent = 4;
   repeated Param params = 5;
-  optional string createdAt = 6;
-  optional string updatedAt = 7;
 
   message Param {
     optional string key = 1;
