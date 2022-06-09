@@ -47,7 +47,7 @@ class IssueStoreReaderTests {
   @Test
   void testSingleModule() {
     // setup issues
-    issueStore.save(projectBinding.projectKey(), Collections.singletonList(createServerIssue("src/path1")));
+    issueStore.replaceAllIssuesOfProject(projectBinding.projectKey(), Collections.singletonList(createServerIssue("src/path1")));
 
     // test
 
@@ -67,7 +67,7 @@ class IssueStoreReaderTests {
   @Test
   void return_empty_list_if_local_path_is_invalid() {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "", "local");
-    issueStore.save(projectBinding.projectKey(), Collections.singletonList(createServerIssue("src/path1")));
+    issueStore.replaceAllIssuesOfProject(projectBinding.projectKey(), Collections.singletonList(createServerIssue("src/path1")));
     assertThat(issueStoreReader.getServerIssues(projectBinding, "src/path1"))
       .isEmpty();
   }
@@ -77,7 +77,7 @@ class IssueStoreReaderTests {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "sq", "local");
 
     // setup issues
-    issueStore.save(projectBinding.projectKey(), Collections.singletonList(createServerIssue("sq/src/path1")));
+    issueStore.replaceAllIssuesOfProject(projectBinding.projectKey(), Collections.singletonList(createServerIssue("sq/src/path1")));
 
     // test
 
@@ -92,7 +92,7 @@ class IssueStoreReaderTests {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "", "local");
 
     // setup issues
-    issueStore.save(projectBinding.projectKey(), Collections.singletonList(createServerIssue("src/path1")));
+    issueStore.replaceAllIssuesOfProject(projectBinding.projectKey(), Collections.singletonList(createServerIssue("src/path1")));
 
     // test
 
@@ -107,7 +107,7 @@ class IssueStoreReaderTests {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "sq", "");
 
     // setup issues
-    issueStore.save(projectBinding.projectKey(), Collections.singletonList(createServerIssue("sq/src/path1")));
+    issueStore.replaceAllIssuesOfProject(projectBinding.projectKey(), Collections.singletonList(createServerIssue("sq/src/path1")));
 
     // test
 
@@ -120,7 +120,7 @@ class IssueStoreReaderTests {
   @Test
   void canReadFlowsFromStorage() {
     // setup issues
-    issueStore.saveTaint(projectBinding.projectKey(), List.of(aServerTaintIssue()
+    issueStore.replaceAllTaintOfFile(projectBinding.projectKey(), "src/path1", List.of(aServerTaintIssue()
       .setFilePath("src/path1")
       .setMessage("Primary")
       .setTextRange(new ServerTaintIssue.TextRange(1, 2, 3, 4))

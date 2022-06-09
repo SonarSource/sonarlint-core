@@ -437,9 +437,8 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
-  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey,
-    @Nullable String branchName, @Nullable ClientProgressMonitor monitor) {
-    serverConnection.downloadServerIssuesForProject(endpoint, client, projectKey, branchName, new ProgressMonitor(monitor));
+  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor) {
+    serverConnection.downloadServerIssuesForProject(endpoint, client, projectKey, branchName);
   }
 
   @Override

@@ -70,7 +70,7 @@ class XodusServerIssueStoreTests {
     var creationDate = Instant.now();
 
     store
-      .save("projectKey", List.of(aBatchServerIssue().setCreationDate(creationDate)));
+      .replaceAllIssuesOfProject("projectKey", List.of(aBatchServerIssue().setCreationDate(creationDate)));
 
     var savedIssueOpt = store.getByKey("key");
     assertThat(savedIssueOpt).isNotEmpty();
@@ -93,7 +93,7 @@ class XodusServerIssueStoreTests {
     var creationDate = Instant.now();
 
     store
-      .save("projectKey", List.of(aServerIssue().setCreationDate(creationDate)));
+      .replaceAllIssuesOfProject("projectKey", List.of(aServerIssue().setCreationDate(creationDate)));
 
     var savedIssueOpt = store.getByKey("key");
     assertThat(savedIssueOpt).isNotEmpty();
@@ -120,7 +120,7 @@ class XodusServerIssueStoreTests {
     var creationDate = Instant.now();
 
     store
-      .saveTaint("projectKey", List.of(aServerTaintIssue().setCreationDate(creationDate).setCodeSnippet("code")
+      .replaceAllTaintOfFile("projectKey", "file/path", List.of(aServerTaintIssue().setCreationDate(creationDate).setCodeSnippet("code")
         .setFlows(List.of(new ServerTaintIssue.Flow(List.of(new ServerTaintIssue.ServerIssueLocation("file/path",
           new ServerTaintIssue.TextRange(5, 6, 7, 8), "flow message", "code")))))));
 
@@ -149,11 +149,12 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_load_all_issues_of_a_file() {
-    store.save("projectKey", List.of(
+    store.replaceAllIssuesOfFile("projectKey", "file/path1", List.of(
       aServerIssue().setFilePath("file/path1").setKey("key1"),
-      aServerIssue().setFilePath("file/path2").setKey("key2"),
       aServerIssue().setFilePath("file/path1").setKey("key3")));
-    store.saveTaint("projectKey", List.of(
+    store.replaceAllIssuesOfFile("projectKey", "file/path2", List.of(
+      aServerIssue().setFilePath("file/path2").setKey("key2")));
+    store.replaceAllTaintOfFile("projectKey", "file/path1", List.of(
       aServerTaintIssue().setFilePath("file/path1").setKey("key4")));
 
     var issues = store.load("projectKey", "file/path1");
@@ -164,11 +165,12 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_load_all_taint_issues_of_a_file() {
-    store.saveTaint("projectKey", List.of(
+    store.replaceAllTaintOfFile("projectKey", "file/path1", List.of(
       aServerTaintIssue().setFilePath("file/path1").setKey("key1"),
-      aServerTaintIssue().setFilePath("file/path2").setKey("key2"),
       aServerTaintIssue().setFilePath("file/path1").setKey("key3")));
-    store.save("projectKey", List.of(
+    store.replaceAllTaintOfFile("projectKey", "file/path2", List.of(
+      aServerTaintIssue().setFilePath("file/path2").setKey("key2")));
+    store.replaceAllIssuesOfProject("projectKey", List.of(
       aServerIssue().setFilePath("file/path1").setKey("key4")));
 
     var issues = store.loadTaint("projectKey", "file/path1");
@@ -179,8 +181,8 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_load_issues_of_the_right_project() {
-    store.save("projectKey", List.of(aServerIssue().setFilePath("file/path1").setKey("key1")));
-    store.save("projectKey2", List.of(aServerIssue().setFilePath("file/path1").setKey("key2")));
+    store.replaceAllIssuesOfProject("projectKey", List.of(aServerIssue().setFilePath("file/path1").setKey("key1")));
+    store.replaceAllIssuesOfProject("projectKey2", List.of(aServerIssue().setFilePath("file/path1").setKey("key2")));
 
     var issues = store.load("projectKey", "file/path1");
     assertThat(issues)
@@ -190,7 +192,7 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_remove_issues_by_key() {
-    store.save("projectKey", List.of(
+    store.replaceAllIssuesOfProject("projectKey", List.of(
       aServerIssue().setKey("key1"),
       aServerIssue().setKey("key2"),
       aServerIssue().setKey("key3")));
@@ -207,7 +209,7 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_save_batch_issue_without_line() {
-    store.save("projectKey", List.of(
+    store.replaceAllIssuesOfProject("projectKey", List.of(
       aBatchServerIssue().setKey("key1").setLine(null).setLineHash(null)));
 
     var issue = store.getByKey("key1").get();
@@ -218,7 +220,7 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_save_pull_issue_without_line() {
-    store.save("projectKey", List.of(
+    store.replaceAllIssuesOfProject("projectKey", List.of(
       aServerIssue().setKey("key1").setTextRange(null).setRangeHash(null)));
 
     var issue = store.getByKey("key1").get();
@@ -229,7 +231,7 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_save_taint_issue_without_range() {
-    store.saveTaint("projectKey", List.of(
+    store.replaceAllTaintOfFile("projectKey", "file/path", List.of(
       aServerTaintIssue().setKey("key1").setTextRange(null)));
 
     var issue = store.getTaintByKey("key1");
@@ -239,9 +241,66 @@ class XodusServerIssueStoreTests {
   }
 
   @Test
+  void should_replace_existing_taint_issues_on_file() {
+    store.replaceAllTaintOfFile("projectKey", "file/path", List.of(aServerTaintIssue().setKey("key1").setTextRange(null)));
+    store.replaceAllTaintOfFile("projectKey", "file/path", List.of(aServerTaintIssue().setKey("key2").setTextRange(null)));
+
+    var issues = store.loadTaint("projectKey", "file/path");
+
+    assertThat(issues)
+      .extracting("key", "message")
+      .containsOnly(tuple("key2", "message"));
+
+    assertThat(store.getTaintByKey("key1")).isEmpty();
+  }
+
+  @Test
+  void should_replace_existing_issues_on_file() {
+    store.replaceAllIssuesOfFile("projectKey", "filePath", List.of(aServerIssue().setKey("key1").setFilePath("filePath").setMessage("old message")));
+    store.replaceAllIssuesOfFile("projectKey", "filePath", List.of(aServerIssue().setKey("key2").setFilePath("filePath").setMessage("new message")));
+
+    var issues = store.load("projectKey", "filePath");
+
+    assertThat(issues)
+      .extracting("key", "message")
+      .containsOnly(tuple("key2", "new message"));
+
+    assertThat(store.getByKey("key1")).isEmpty();
+  }
+
+  @Test
+  void should_replace_existing_issues_on_same_file() {
+    store.replaceAllIssuesOfProject("projectKey", List.of(aServerIssue().setKey("key1").setFilePath("filePath").setMessage("old message")));
+    store.replaceAllIssuesOfProject("projectKey", List.of(aServerIssue().setKey("key2").setFilePath("filePath").setMessage("new message")));
+
+    var issues = store.load("projectKey", "filePath");
+
+    assertThat(issues)
+      .extracting("key", "message")
+      .containsOnly(tuple("key2", "new message"));
+
+    assertThat(store.getByKey("key1")).isEmpty();
+  }
+
+  @Test
+  void should_replace_existing_issues_on_another_file() {
+    store.replaceAllIssuesOfProject("projectKey", List.of(aServerIssue().setKey("key1").setFilePath("filePath1").setMessage("old message")));
+    store.replaceAllIssuesOfProject("projectKey", List.of(aServerIssue().setKey("key2").setFilePath("filePath2").setMessage("new message")));
+
+    var issues = store.load("projectKey", "filePath2");
+
+    assertThat(issues)
+      .extracting("key", "message")
+      .containsOnly(tuple("key2", "new message"));
+
+    assertThat(store.getByKey("key1")).isEmpty();
+    assertThat(store.load("projectKey", "filePath1")).isEmpty();
+  }
+
+  @Test
   void should_replace_existing_issue_with_same_key() {
-    store.save("projectKey", List.of(aServerIssue().setKey("key1").setFilePath("filePath").setMessage("old message")));
-    store.save("projectKey", List.of(aServerIssue().setKey("key1").setFilePath("filePath").setMessage("new message")));
+    store.replaceAllIssuesOfProject("projectKey", List.of(aServerIssue().setKey("key1").setFilePath("filePath").setMessage("old message")));
+    store.replaceAllIssuesOfProject("projectKey", List.of(aServerIssue().setKey("key1").setFilePath("filePath").setMessage("new message")));
 
     var issues = store.load("projectKey", "filePath");
 
@@ -252,7 +311,7 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_save_from_different_files() {
-    store.save("projectKey", List.of(
+    store.replaceAllIssuesOfProject("projectKey", List.of(
       aServerIssue().setKey("key1").setFilePath("filePath1"),
       aServerIssue().setKey("key2").setFilePath("filePath2")));
 
@@ -265,7 +324,7 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_save_issues_with_different_case_keys() {
-    store.save("projectKey", List.of(
+    store.replaceAllIssuesOfProject("projectKey", List.of(
       aServerIssue().setKey("key"),
       aServerIssue().setKey("Key")));
 
@@ -278,9 +337,9 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_move_issue_to_other_file() {
-    store.save("projectKey", List.of(
+    store.replaceAllIssuesOfProject("projectKey", List.of(
       aServerIssue().setKey("key").setFilePath("filePath1")));
-    store.save("projectKey", List.of(
+    store.replaceAllIssuesOfProject("projectKey", List.of(
       aServerIssue().setKey("key").setFilePath("filePath2")));
 
     var issuesFile1 = store.load("projectKey", "filePath1");

@@ -26,12 +26,16 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStore;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -53,15 +57,39 @@ class ServerIssueUpdaterTest {
   }
 
   @Test
-  void update_file_issues() {
+  void update_project_issues_before_sq_9_5() {
     var issue = aServerIssue();
     List<ServerIssue> issues = Collections.singletonList(issue);
     var serverApiHelper = mock(ServerApiHelper.class);
-    when(downloader.download(serverApiHelper, "module:file", null, false, Version.create("8.9"), PROGRESS)).thenReturn(issues);
+    when(downloader.downloadFromBatch(serverApiHelper, "module:file", null)).thenReturn(issues);
 
-    updater.update(serverApiHelper, projectBinding.projectKey(), null, false, Version.create("8.9"), PROGRESS);
+    updater.update(serverApiHelper, projectBinding.projectKey(), null, false, Version.create("8.9"));
 
-    verify(issueStore).save(eq(projectBinding.projectKey()), anyList());
+    verify(issueStore).replaceAllIssuesOfProject(eq(projectBinding.projectKey()), anyList());
+  }
+
+  @Test
+  void update_project_issues_sonarcloud() {
+    var issue = aServerIssue();
+    List<ServerIssue> issues = Collections.singletonList(issue);
+    var serverApiHelper = mock(ServerApiHelper.class);
+    when(downloader.downloadFromBatch(serverApiHelper, "module:file", null)).thenReturn(issues);
+
+    updater.update(serverApiHelper, projectBinding.projectKey(), null, true, Version.create("99.9"));
+
+    verify(issueStore).replaceAllIssuesOfProject(eq(projectBinding.projectKey()), anyList());
+  }
+
+  @Test
+  void update_project_issues_sonarqube_9_5() {
+    var issue = aServerIssue();
+    List<ServerIssue> issues = Collections.singletonList(issue);
+    var serverApiHelper = mock(ServerApiHelper.class);
+    when(downloader.downloadFromPull(serverApiHelper, "module:file", "master")).thenReturn(issues);
+
+    updater.update(serverApiHelper, projectBinding.projectKey(), "master", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
+
+    verify(issueStore).replaceAllIssuesOfProject(eq(projectBinding.projectKey()), anyList());
   }
 
   @Test
@@ -75,24 +103,46 @@ class ServerIssueUpdaterTest {
   }
 
   @Test
-  void error_downloading_issues() {
+  void error_downloading_file_issues() {
     var serverApiHelper = mock(ServerApiHelper.class);
-    when(downloader.download(serverApiHelper, "module:file", null, false, Version.create("8.9"), PROGRESS)).thenThrow(IllegalArgumentException.class);
+    when(downloader.downloadFromBatch(serverApiHelper, "module:file", null)).thenThrow(IllegalArgumentException.class);
     // when(issueStorePaths.idePathToFileKey(projectBinding, "file")).thenReturn("module:file");
 
     assertThrows(DownloadException.class, () -> updater.updateFileIssues(serverApiHelper, projectBinding, "file", null, false, Version.create("8.9"), PROGRESS));
   }
 
   @Test
-  void update_file_issues_by_project() {
+  void update_file_issues_before_sonarqube_9_5() {
     var issue = aServerIssue();
     List<ServerIssue> issues = Collections.singletonList(issue);
 
     var serverApiHelper = mock(ServerApiHelper.class);
-    when(downloader.download(serverApiHelper, projectBinding.projectKey(), null, false, Version.create("8.9"), PROGRESS)).thenReturn(issues);
+    when(downloader.downloadFromBatch(serverApiHelper, projectBinding.projectKey() + ":src/main/Foo.java", null)).thenReturn(issues);
 
-    updater.update(serverApiHelper, projectBinding.projectKey(), null, false, Version.create("8.9"), PROGRESS);
+    updater.updateFileIssues(serverApiHelper, projectBinding, "src/main/Foo.java", null, false, Version.create("8.9"), PROGRESS);
 
-    verify(issueStore).save(eq(projectBinding.projectKey()), anyList());
+    verify(issueStore).replaceAllIssuesOfFile(eq(projectBinding.projectKey()), eq("src/main/Foo.java"), anyList());
+  }
+
+  @Test
+  void update_file_issues_sonarcloud() {
+    var issue = aServerIssue();
+    List<ServerIssue> issues = Collections.singletonList(issue);
+
+    var serverApiHelper = mock(ServerApiHelper.class);
+    when(downloader.downloadFromBatch(serverApiHelper, projectBinding.projectKey() + ":src/main/Foo.java", null)).thenReturn(issues);
+
+    updater.updateFileIssues(serverApiHelper, projectBinding, "src/main/Foo.java", null, true, Version.create("99.9"), PROGRESS);
+
+    verify(issueStore).replaceAllIssuesOfFile(eq(projectBinding.projectKey()), eq("src/main/Foo.java"), anyList());
+  }
+
+  @Test
+  void dont_update_file_issues_sonarqube_9_5() {
+    var serverApiHelper = mock(ServerApiHelper.class);
+
+    updater.updateFileIssues(serverApiHelper, projectBinding, "src/main/Foo.java", null, false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL, PROGRESS);
+
+    verify(issueStore, never()).replaceAllIssuesOfFile(any(), anyString(), anyList());
   }
 }
