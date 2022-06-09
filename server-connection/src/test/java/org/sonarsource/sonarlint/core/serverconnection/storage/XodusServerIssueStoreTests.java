@@ -19,14 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.IssueLite;
 import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
 
@@ -113,6 +120,59 @@ class XodusServerIssueStoreTests {
     assertThat(savedIssue.getTextRange().getStartLineOffset()).isEqualTo(2);
     assertThat(savedIssue.getTextRange().getEndLine()).isEqualTo(3);
     assertThat(savedIssue.getTextRange().getEndLineOffset()).isEqualTo(4);
+  }
+
+  @Test
+  void should_save_many_pull_issues() throws IOException {
+
+    List<ServerIssue> serverIssues;
+    try (var in = Files.newInputStream(Paths.get("src/test/resources/issues_pull_sq_9_5.pb"))) {
+      var issues = ProtobufUtil.readMessages(in, IssueLite.parser());
+      serverIssues = issues.stream().filter(i -> i.getMainLocation().hasFilePath()).map(i -> convertLiteIssue(i)).collect(Collectors.toList());
+    }
+    timed("clean insert", () -> {
+      store.replaceAllIssuesOfProject("projectKey", serverIssues);
+    });
+
+    assertThat(store.getAll()).hasSize(6408);
+
+    timed("second insert", () -> {
+      store.replaceAllIssuesOfProject("projectKey", serverIssues);
+    });
+
+    assertThat(store.getAll()).hasSize(6408);
+
+    timed("third insert", () -> {
+      store.replaceAllIssuesOfProject("projectKey", serverIssues);
+    });
+
+    assertThat(store.getAll()).hasSize(6408);
+  }
+
+  public static void timed(String msg, Runnable transaction) {
+    var startTime = Instant.now();
+    transaction.run();
+    var duration = Duration.between(startTime, Instant.now());
+    System.out.println(msg + " | took " + duration.toMillis() + "ms");
+  }
+
+  private static ServerIssue convertLiteIssue(IssueLite liteIssueFromWs) {
+    return new ServerIssue(
+      liteIssueFromWs.getKey(),
+      liteIssueFromWs.getResolved(),
+      liteIssueFromWs.getRuleKey(),
+      liteIssueFromWs.getMainLocation().getMessage(),
+      liteIssueFromWs.getMainLocation().hasTextRange() ? liteIssueFromWs.getMainLocation().getTextRange().getHash() : null,
+      // We have filtered out issues without file path earlier
+      liteIssueFromWs.getMainLocation().getFilePath(),
+      Instant.ofEpochMilli(liteIssueFromWs.getCreationDate()),
+      liteIssueFromWs.getUserSeverity(),
+      liteIssueFromWs.getType(),
+      liteIssueFromWs.getMainLocation().hasTextRange() ? toServerIssueTextRange(liteIssueFromWs.getMainLocation().getTextRange()) : null);
+  }
+
+  private static ServerIssue.TextRange toServerIssueTextRange(Issues.TextRange textRange) {
+    return new ServerIssue.TextRange(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset());
   }
 
   @Test

@@ -86,6 +86,11 @@ public class XodusServerIssueStore implements ServerIssueStore {
     entityStore = PersistentEntityStores.newInstance(baseDir.resolve(FILE_NAME).toAbsolutePath().toString());
   }
 
+  public List<ServerIssue> getAll() {
+    return entityStore
+      .computeInReadonlyTransaction(txn -> StreamSupport.stream(txn.getAll(ISSUE_ENTITY_TYPE).spliterator(), false).map(XodusServerIssueStore::adapt).collect(Collectors.toList()));
+  }
+
   public Optional<ServerIssue> getByKey(String issueKey) {
     return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issueKey)
       .map(XodusServerIssueStore::adapt));
