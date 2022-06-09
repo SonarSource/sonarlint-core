@@ -28,16 +28,15 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
-import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.Flow;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.TextRange;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
@@ -57,39 +56,51 @@ public class IssueDownloader {
    *
    * @param key project key, or file key.
    * @param branchName name of the branch.
-   * @return Iterator of issues. It can be empty but never null.
+   * @return List of issues. It can be empty but never null.
    */
-  public List<ServerIssue> download(ServerApiHelper serverApiHelper, String key, String branchName, boolean isSonarCloud,
-    Version serverVersion, ProgressMonitor progress) {
+  public List<ServerIssue> downloadFromBatch(ServerApiHelper serverApiHelper, String key, @Nullable String branchName) {
     var serverApi = new ServerApi(serverApiHelper);
     var issueApi = serverApi.issue();
 
     List<ServerIssue> result = new ArrayList<>();
 
-    // Starting from 9.5 we will get issues during the sync
-    if (!isSonarCloud && serverVersion.compareToIgnoreQualifier(IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL) >= 0) {
-      issueApi.pullIssues(key, branchName).getIssues()
-        .stream()
-        // Ignore project level issues
-        .filter(i -> i.getMainLocation().hasFilePath())
-        .forEach(pulledIssue -> {
-          result.add(convertLiteIssue(pulledIssue));
-        });
-    } else {
-      var batchIssues = issueApi.downloadAllFromBatchIssues(key, branchName);
+    var batchIssues = issueApi.downloadAllFromBatchIssues(key, branchName);
 
-      for (ScannerInput.ServerIssue batchIssue : batchIssues) {
-        // We ignore project level issues
-        if (!RulesApi.TAINT_REPOS.contains(batchIssue.getRuleRepository()) && batchIssue.hasPath()) {
-          result.add(convertBatchIssue(batchIssue));
-        }
+    for (ScannerInput.ServerIssue batchIssue : batchIssues) {
+      // We ignore project level issues
+      if (!RulesApi.TAINT_REPOS.contains(batchIssue.getRuleRepository()) && batchIssue.hasPath()) {
+        result.add(convertBatchIssue(batchIssue));
       }
     }
 
     return result;
   }
 
-  public List<ServerTaintIssue> downloadTaint(ServerApiHelper serverApiHelper, String key, String branchName, ProgressMonitor progress) {
+  /**
+   * Fetch all issues of the project with specified key, using new SQ 9.5 api/issues/pull
+   *
+   * @param key project key
+   * @param branchName name of the branch.
+   * @return List of issues. It can be empty but never null.
+   */
+  public List<ServerIssue> downloadFromPull(ServerApiHelper serverApiHelper, String projectKey, String branchName) {
+    var serverApi = new ServerApi(serverApiHelper);
+    var issueApi = serverApi.issue();
+
+    List<ServerIssue> result = new ArrayList<>();
+
+    issueApi.pullIssues(projectKey, branchName).getIssues()
+      .stream()
+      // Ignore project level issues
+      .filter(i -> i.getMainLocation().hasFilePath())
+      .forEach(pulledIssue -> {
+        result.add(convertLiteIssue(pulledIssue));
+      });
+
+    return result;
+  }
+
+  public List<ServerTaintIssue> downloadTaint(ServerApiHelper serverApiHelper, String key, @Nullable String branchName, ProgressMonitor progress) {
     var serverApi = new ServerApi(serverApiHelper);
     var issueApi = serverApi.issue();
 

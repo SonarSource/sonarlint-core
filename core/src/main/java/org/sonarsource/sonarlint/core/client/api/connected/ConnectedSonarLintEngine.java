@@ -160,7 +160,9 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
    * @throws DownloadException if it fails to download
    * @since 2.5
+   * @deprecated Starting from SQ 9.5 issues are pulled periodically + updated by SSE.
    */
+  @Deprecated
   List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName,
     @Nullable ClientProgressMonitor monitor);
 
@@ -171,7 +173,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @param projectKey   key of the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, boolean, String, ClientProgressMonitor)})
    * @since 2.9
    */
-  void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable String branchName, @Nullable ClientProgressMonitor monitor);
+  void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor);
 
   /**
    * Get a list of files that are excluded from analysis, out of the provided files.
