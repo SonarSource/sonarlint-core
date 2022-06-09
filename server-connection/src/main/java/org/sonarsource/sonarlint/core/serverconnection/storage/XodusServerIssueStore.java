@@ -46,7 +46,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
   private static final String FILE_NAME = "sonarlint.db";
 
   private static final String ISSUE_ENTITY_TYPE = "Issue";
-  private static final String TAINT_ISSUE_ENTITY_TYPE = "Issue";
+  private static final String TAINT_ISSUE_ENTITY_TYPE = "TaintIssue";
   private static final String FILE_ENTITY_TYPE = "File";
   private static final String PROJECT_ENTITY_TYPE = "Project";
   private static final String FLOW_ENTITY_TYPE = "Flow";
