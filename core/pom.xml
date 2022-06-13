@@ -331,6 +331,13 @@
                   </includes>
                 </filter>
                 <filter>
+                  <!-- Shade protobuf (avoids minimization) as it is used by IDEs -->
+                  <artifact>com.google.protobuf:protobuf-java</artifact>
+                  <includes>
+                    <include>**</include>
+                  </includes>
+                </filter>
+                <filter>
                   <!-- Shade the SonarLint Core modules (avoids minimization) as it contains classes used at Runtime (like telemetry or ProfileDefinition) -->
                   <artifact>org.sonarsource.sonarlint.core:*</artifact>
                   <includes>
