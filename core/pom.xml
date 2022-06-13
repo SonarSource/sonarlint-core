@@ -291,6 +291,11 @@
                   </includes>
                 </relocation>
               </relocations>
+              <artifactSet>
+                <excludes>
+                  <exclude>org.jetbrains.kotlin:*</exclude>
+                </excludes>
+              </artifactSet>
               <filters>
                 <filter>
                   <artifact>*:*</artifact>
