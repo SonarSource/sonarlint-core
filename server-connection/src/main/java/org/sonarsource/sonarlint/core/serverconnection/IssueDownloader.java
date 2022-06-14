@@ -49,6 +49,11 @@ import org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils;
 public class IssueDownloader {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private final Set<Language> enabledLanguages;
+
+  public IssueDownloader(Set<Language> enabledLanguages) {
+    this.enabledLanguages = enabledLanguages;
+  }
 
   /**
    * Fetch all issues of the component with specified key.
@@ -79,7 +84,7 @@ public class IssueDownloader {
   /**
    * Fetch all issues of the project with specified key, using new SQ 9.5 api/issues/pull
    *
-   * @param key project key
+   * @param projectKey project key
    * @param branchName name of the branch.
    * @return List of issues. It can be empty but never null.
    */
@@ -89,7 +94,7 @@ public class IssueDownloader {
 
     List<ServerIssue> result = new ArrayList<>();
 
-    issueApi.pullIssues(projectKey, branchName).getIssues()
+    issueApi.pullIssues(projectKey, branchName, enabledLanguages).getIssues()
       .stream()
       // Ignore project level issues
       .filter(i -> i.getMainLocation().hasFilePath())
