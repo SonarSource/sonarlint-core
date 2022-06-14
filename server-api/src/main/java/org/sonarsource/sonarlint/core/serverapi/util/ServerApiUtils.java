@@ -53,6 +53,10 @@ public class ServerApiUtils {
     return list == null || list.isEmpty();
   }
 
+  public static boolean isBlank(@Nullable String s) {
+    return s == null || s.isEmpty();
+  }
+
   public static boolean areBlank(List<?>... lists) {
     return Arrays.stream(lists).allMatch(ServerApiUtils::isBlank);
   }
