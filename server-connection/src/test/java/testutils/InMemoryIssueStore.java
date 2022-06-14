@@ -22,6 +22,7 @@ package testutils;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
@@ -29,6 +30,7 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStore;
 
 public class InMemoryIssueStore implements ServerIssueStore {
   private final Map<String, Map<String, Map<String, List<ServerIssue>>>> issuesByFileByBranchByProject = new HashMap<>();
+  private final Map<String, ServerIssue> issuesByKey = new HashMap<>();
   private final Map<String, Map<String, Map<String, List<ServerTaintIssue>>>> taintIssuesByFileByBranchByProject = new HashMap<>();
 
   @Override
@@ -36,11 +38,13 @@ public class InMemoryIssueStore implements ServerIssueStore {
     issuesByFileByBranchByProject.computeIfAbsent(projectKey, __ -> new HashMap<>())
       .computeIfAbsent(branchName, __ -> new HashMap<>())
       .put(serverFilePath, issues);
+    issues.forEach(issue -> issuesByKey.put(issue.getKey(), issue));
   }
 
   @Override
   public void replaceAllIssuesOfProject(String projectKey, String branchName, List<ServerIssue> issues) {
     issuesByFileByBranchByProject.put(projectKey, Map.of(branchName, issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath))));
+    issues.forEach(issue -> issuesByKey.put(issue.getKey(), issue));
   }
 
   @Override
@@ -62,6 +66,11 @@ public class InMemoryIssueStore implements ServerIssueStore {
     return taintIssuesByFileByBranchByProject.getOrDefault(projectKey, Map.of())
       .getOrDefault(branchName, Map.of())
       .getOrDefault(sqFilePath, List.of());
+  }
+
+  @Override
+  public void updateIssue(String issueKey, Consumer<ServerIssue> issueConsumer) {
+    issueConsumer.accept(issuesByKey.get(issueKey));
   }
 
   @Override

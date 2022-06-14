@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -45,6 +46,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonarqube.ws.Hotspots;
+import org.sonarqube.ws.Issues;
 import org.sonarqube.ws.Qualityprofiles.SearchWsResponse.QualityProfile;
 import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
@@ -62,6 +64,7 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.GetSecurityHotspotRequestParams;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
+import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static java.util.Collections.emptySet;
@@ -174,8 +177,12 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_XML, "xml", "SonarLint IT XML");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_GLOBAL_EXTENSION, "cobol", "SonarLint IT Global Extension");
 
-    // Build project to have bytecode
-    ORCHESTRATOR.executeBuild(MavenBuild.create(new File("projects/sample-java/pom.xml")).setGoals("clean compile"));
+    // Build project to have bytecode and analyze
+    ORCHESTRATOR.executeBuild(MavenBuild.create(new File("projects/sample-java/pom.xml"))
+      .setCleanPackageSonarGoals()
+      .setProperty("sonar.projectKey", PROJECT_KEY_JAVA)
+      .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
+      .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
   }
 
   @Before
@@ -697,6 +704,24 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       .containsOnly("java:S2325");
   }
 
+  @Test
+  public void updatesStorageWhenIssueResolvedOnServer() throws InterruptedException {
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5));
+
+    updateGlobal();
+    updateProject(PROJECT_KEY_JAVA);
+    engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVA), null);
+    var issueKey = getIssueKeys(javaRuleKey("S106")).get(0);
+    resolveIssueAsWontFix(issueKey);
+    Thread.sleep(3000);
+
+    var serverIssues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY_JAVA, "", ""), "master", "src/main/java/foo/Foo.java");
+
+    assertThat(serverIssues)
+      .extracting("ruleKey", "resolved")
+      .contains(tuple("S106", true));
+  }
+
   private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {
     adminWsClient.settings().set(new SetRequest()
       .setKey(key)
@@ -742,7 +767,23 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       .setParam("key", qualityProfile.getKey())
       .setParam("rule", javaRuleKey(ruleKey));
     try (var response = adminWsClient.wsConnector().call(request)) {
-      assertTrue("Unable to activate custom rule", response.isSuccessful());
+      assertTrue("Unable to deactivate rule", response.isSuccessful());
+    }
+  }
+
+  private static List<String> getIssueKeys(String ruleKey) {
+    var searchReq = new org.sonarqube.ws.client.issues.SearchRequest();
+    searchReq.setRules(List.of(ruleKey));
+    var response = adminWsClient.issues().search(searchReq);
+    return response.getIssuesList().stream().map(Issues.Issue::getKey).collect(Collectors.toList());
+  }
+
+  private static void resolveIssueAsWontFix(String issueKey) {
+    var request = new PostRequest("/api/issues/do_transition")
+      .setParam("issue", issueKey)
+      .setParam("transition", "wontfix");
+    try (var response = adminWsClient.wsConnector().call(request)) {
+      assertTrue("Unable to resolve issue", response.isSuccessful());
     }
   }
 
