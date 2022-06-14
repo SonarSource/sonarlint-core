@@ -246,4 +246,89 @@ class PushApiTests {
 
     assertThat(receivedEvents).isEmpty();
   }
+
+  @Test
+  void should_notify_issue_changed_event_when_resolved_status_changed() {
+    var mockResponse = new MockResponse();
+    mockResponse.setBody("event: IssueChangedEvent\n" +
+      "data: {" +
+      "\"projectKey\": \"projectKey1\"," +
+      "\"issues\": [{" +
+      "  \"issueKey\": \"key1\"," +
+      "  \"branchName\": \"master\"" +
+      "}]," +
+      "\"resolved\": \"true\"" +
+      "}\n\n");
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1&languages=java,py", mockResponse);
+
+    List<ServerEvent> receivedEvents = new ArrayList<>();
+    underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add, silentLogOutput);
+
+    assertThat(receivedEvents)
+      .extracting("impactedIssueKeys", "resolved", "userSeverity", "userType")
+      .containsOnly(tuple(List.of("key1"), true, null, null));
+  }
+
+  @Test
+  void should_notify_issue_changed_event_when_severity_changed() {
+    var mockResponse = new MockResponse();
+    mockResponse.setBody("event: IssueChangedEvent\n" +
+      "data: {" +
+      "\"projectKey\": \"projectKey1\"," +
+      "\"issues\": [{" +
+      "  \"issueKey\": \"key1\"," +
+      "  \"branchName\": \"master\"" +
+      "}]," +
+      "\"userSeverity\": \"MAJOR\"" +
+      "}\n\n");
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1&languages=java,py", mockResponse);
+
+    List<ServerEvent> receivedEvents = new ArrayList<>();
+    underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add, silentLogOutput);
+
+    assertThat(receivedEvents)
+      .extracting("impactedIssueKeys", "resolved", "userSeverity", "userType")
+      .containsOnly(tuple(List.of("key1"), null, "MAJOR", null));
+  }
+
+  @Test
+  void should_notify_issue_changed_event_when_type_changed() {
+    var mockResponse = new MockResponse();
+    mockResponse.setBody("event: IssueChangedEvent\n" +
+      "data: {" +
+      "\"projectKey\": \"projectKey1\"," +
+      "\"issues\": [{" +
+      "  \"issueKey\": \"key1\"," +
+      "  \"branchName\": \"master\"" +
+      "}]," +
+      "\"userType\": \"BUG\"" +
+      "}\n\n");
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1&languages=java,py", mockResponse);
+
+    List<ServerEvent> receivedEvents = new ArrayList<>();
+    underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add, silentLogOutput);
+
+    assertThat(receivedEvents)
+      .extracting("impactedIssueKeys", "resolved", "userSeverity", "userType")
+      .containsOnly(tuple(List.of("key1"), null, null, "BUG"));
+  }
+
+  @Test
+  void should_not_notify_issue_changed_event_when_no_change_is_present() {
+    var mockResponse = new MockResponse();
+    mockResponse.setBody("event: IssueChangedEvent\n" +
+      "data: {" +
+      "\"projectKey\": \"projectKey1\"," +
+      "\"issues\": [{" +
+      "  \"issueKey\": \"key1\"," +
+      "  \"branchName\": \"master\"" +
+      "}]" +
+      "}\n\n");
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1&languages=java,py", mockResponse);
+
+    List<ServerEvent> receivedEvents = new ArrayList<>();
+    underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add, silentLogOutput);
+
+    assertThat(receivedEvents).isEmpty();
+  }
 }

@@ -25,7 +25,7 @@ import javax.annotation.Nullable;
 
 public class ServerIssue {
   private String key;
-  private final boolean resolved;
+  private boolean resolved;
   private String ruleKey;
   private String message;
   private String filePath;
@@ -171,6 +171,11 @@ public class ServerIssue {
 
   public ServerIssue setTextRange(TextRange textRange) {
     this.textRange = textRange;
+    return this;
+  }
+
+  public ServerIssue setResolved(boolean resolved) {
+    this.resolved = resolved;
     return this;
   }
 

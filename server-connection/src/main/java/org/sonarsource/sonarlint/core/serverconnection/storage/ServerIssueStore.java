@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
 import java.util.List;
+import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
 
@@ -73,6 +74,7 @@ public interface ServerIssueStore {
    */
   List<ServerTaintIssue> loadTaint(String projectKey, String branchName, String sqFilePath);
 
-  void close();
+  void updateIssue(String issueKey, Consumer<ServerIssue> issueConsumer);
 
+  void close();
 }

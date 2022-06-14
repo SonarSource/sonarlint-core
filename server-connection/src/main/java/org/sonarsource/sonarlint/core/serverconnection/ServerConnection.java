@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
+import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.events.EventDispatcher;
 import org.sonarsource.sonarlint.core.serverconnection.events.ServerEventsAutoSubscriber;
@@ -98,7 +99,8 @@ public class ServerConnection {
     this.projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(projectStoragePaths, issuesUpdater, isSonarCloud);
     pluginsStorage.cleanUp();
     var eventRouter = new EventDispatcher()
-      .dispatch(RuleSetChangedEvent.class, new UpdateStorageOnRuleSetChanged(projectStorage));
+      .dispatch(RuleSetChangedEvent.class, new UpdateStorageOnRuleSetChanged(projectStorage))
+      .dispatch(IssueChangedEvent.class, new UpdateStorageOnIssueChanged(serverIssueStore));
     this.serverEventsAutoSubscriber = new ServerEventsAutoSubscriber(eventRouter);
   }
 
