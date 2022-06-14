@@ -92,7 +92,7 @@ public class ServerConnection {
     this.storageReader = new StorageReader(projectStoragePaths);
     serverIssueStore = new XodusServerIssueStore(projectsStorageRoot);
     this.issueStoreReader = new IssueStoreReader(serverIssueStore);
-    this.issuesUpdater = new ServerIssueUpdater(serverIssueStore, new IssueDownloader());
+    this.issuesUpdater = new ServerIssueUpdater(serverIssueStore, new IssueDownloader(enabledLanguages));
     this.pluginsStorage = new PluginsStorage(connectionStorageRoot.resolve("plugins"));
     this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguages, embeddedPluginKeys, pluginsStorage, projectStorage);
     this.globalStorageUpdateExecutor = new GlobalStorageUpdateExecutor(globalStores.getGlobalStorage());
