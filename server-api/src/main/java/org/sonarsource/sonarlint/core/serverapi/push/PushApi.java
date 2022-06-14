@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.EventParser;
+import org.sonarsource.sonarlint.core.serverapi.push.parsing.IssueChangedEventParser;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.RuleSetChangedEventParser;
 import org.sonarsource.sonarlint.core.serverapi.stream.Event;
 import org.sonarsource.sonarlint.core.serverapi.stream.EventStream;
@@ -39,7 +40,8 @@ public class PushApi {
 
   private static final String API_PATH = "api/push/sonarlint_events";
   private static final Map<String, EventParser<?>> parsersByType = Map.of(
-    "RuleSetChanged", new RuleSetChangedEventParser());
+    "RuleSetChanged", new RuleSetChangedEventParser(),
+    "IssueChangedEvent", new IssueChangedEventParser());
 
   private final ServerApiHelper helper;
 

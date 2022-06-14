@@ -52,13 +52,6 @@ class XodusServerIssueStoreTests {
   }
 
   @Test
-  void should_return_empty_when_issue_id_unknown() {
-    var issue = store.getByKey("unknownKey");
-
-    assertThat(issue).isEmpty();
-  }
-
-  @Test
   void should_return_empty_when_file_path_unknown() {
     var issues = store.load("projectKey", "branch", "path");
 
@@ -70,11 +63,11 @@ class XodusServerIssueStoreTests {
     var creationDate = Instant.now();
 
     store
-      .replaceAllIssuesOfProject("projectKey", "branch", List.of(aBatchServerIssue().setCreationDate(creationDate)));
+      .replaceAllIssuesOfProject("projectKey", "branch", List.of(aBatchServerIssue().setFilePath("file/path").setCreationDate(creationDate)));
 
-    var savedIssueOpt = store.getByKey("key");
-    assertThat(savedIssueOpt).isNotEmpty();
-    var savedIssue = savedIssueOpt.get();
+    var savedIssues = store.load("projectKey", "branch", "file/path");
+    assertThat(savedIssues).isNotEmpty();
+    var savedIssue = savedIssues.get(0);
     assertThat(savedIssue.getKey()).isEqualTo("key");
     assertThat(savedIssue.resolved()).isTrue();
     assertThat(savedIssue.ruleKey()).isEqualTo("repo:key");
@@ -93,11 +86,11 @@ class XodusServerIssueStoreTests {
     var creationDate = Instant.now();
 
     store
-      .replaceAllIssuesOfProject("projectKey", "branch", List.of(aServerIssue().setCreationDate(creationDate)));
+      .replaceAllIssuesOfProject("projectKey", "branch", List.of(aServerIssue().setFilePath("file/path").setCreationDate(creationDate)));
 
-    var savedIssueOpt = store.getByKey("key");
-    assertThat(savedIssueOpt).isNotEmpty();
-    var savedIssue = savedIssueOpt.get();
+    var savedIssues = store.load("projectKey", "branch", "file/path");
+    assertThat(savedIssues).isNotEmpty();
+    var savedIssue = savedIssues.get(0);
     assertThat(savedIssue.getKey()).isEqualTo("key");
     assertThat(savedIssue.resolved()).isTrue();
     assertThat(savedIssue.ruleKey()).isEqualTo("repo:key");
@@ -124,9 +117,9 @@ class XodusServerIssueStoreTests {
         .setFlows(List.of(new ServerTaintIssue.Flow(List.of(new ServerTaintIssue.ServerIssueLocation("file/path",
           new ServerTaintIssue.TextRange(5, 6, 7, 8), "flow message", "code")))))));
 
-    var savedIssueOpt = store.getTaintByKey("key");
-    assertThat(savedIssueOpt).isNotEmpty();
-    var savedIssue = savedIssueOpt.get();
+    var savedIssues = store.loadTaint("projectKey", "branch", "file/path");
+    assertThat(savedIssues).isNotEmpty();
+    var savedIssue = savedIssues.get(0);
     assertThat(savedIssue.key()).isEqualTo("key");
     assertThat(savedIssue.resolved()).isTrue();
     assertThat(savedIssue.ruleKey()).isEqualTo("repo:key");
@@ -199,9 +192,6 @@ class XodusServerIssueStoreTests {
 
     store.removeAll(Set.of("key1", "key3"));
 
-    assertThat(store.getByKey("key1")).isEmpty();
-    assertThat(store.getByKey("key3")).isEmpty();
-    assertThat(store.getByKey("key2")).isNotEmpty();
     assertThat(store.load("projectKey", "branch", "file/path"))
       .extracting(ServerIssue::getKey)
       .containsOnly("key2");
@@ -210,9 +200,9 @@ class XodusServerIssueStoreTests {
   @Test
   void should_save_batch_issue_without_line() {
     store.replaceAllIssuesOfProject("projectKey", "branch", List.of(
-      aBatchServerIssue().setKey("key1").setLine(null).setLineHash(null)));
+      aBatchServerIssue().setFilePath("file/path").setLine(null).setLineHash(null)));
 
-    var issue = store.getByKey("key1").get();
+    var issue = store.load("projectKey", "branch", "file/path").get(0);
 
     assertThat(issue.getLine()).isNull();
     assertThat(issue.getLineHash()).isNull();
@@ -221,9 +211,9 @@ class XodusServerIssueStoreTests {
   @Test
   void should_save_pull_issue_without_line() {
     store.replaceAllIssuesOfProject("projectKey", "branch", List.of(
-      aServerIssue().setKey("key1").setTextRange(null).setRangeHash(null)));
+      aServerIssue().setFilePath("file/path").setTextRange(null).setRangeHash(null)));
 
-    var issue = store.getByKey("key1").get();
+    var issue = store.load("projectKey", "branch", "file/path").get(0);
 
     assertThat(issue.getTextRange()).isNull();
     assertThat(issue.getRangeHash()).isNull();
@@ -234,10 +224,10 @@ class XodusServerIssueStoreTests {
     store.replaceAllTaintOfFile("projectKey", "branch", "file/path", List.of(
       aServerTaintIssue().setKey("key1").setTextRange(null)));
 
-    var issue = store.getTaintByKey("key1");
+    var issues = store.loadTaint("projectKey", "branch", "file/path");
 
-    assertThat(issue).isNotEmpty();
-    assertThat(issue.get().getTextRange()).isNull();
+    assertThat(issues).isNotEmpty();
+    assertThat(issues.get(0).getTextRange()).isNull();
   }
 
   @Test
@@ -250,8 +240,6 @@ class XodusServerIssueStoreTests {
     assertThat(issues)
       .extracting("key", "message")
       .containsOnly(tuple("key2", "message"));
-
-    assertThat(store.getTaintByKey("key1")).isEmpty();
   }
 
   @Test
@@ -264,8 +252,6 @@ class XodusServerIssueStoreTests {
     assertThat(issues)
       .extracting("key", "message")
       .containsOnly(tuple("key2", "new message"));
-
-    assertThat(store.getByKey("key1")).isEmpty();
   }
 
   @Test
@@ -278,8 +264,6 @@ class XodusServerIssueStoreTests {
     assertThat(issues)
       .extracting("key", "message")
       .containsOnly(tuple("key2", "new message"));
-
-    assertThat(store.getByKey("key1")).isEmpty();
   }
 
   @Test
@@ -293,7 +277,6 @@ class XodusServerIssueStoreTests {
       .extracting("key", "message")
       .containsOnly(tuple("key2", "new message"));
 
-    assertThat(store.getByKey("key1")).isEmpty();
     assertThat(store.load("projectKey", "branch", "filePath1")).isEmpty();
   }
 
@@ -347,5 +330,17 @@ class XodusServerIssueStoreTests {
 
     var issuesFile2 = store.load("projectKey", "branch", "filePath2");
     assertThat(issuesFile2).isNotEmpty();
+  }
+
+  @Test
+  void should_update_issue() {
+    store.replaceAllIssuesOfProject("projectKey", "branch", List.of(
+      aServerIssue().setKey("key").setFilePath("filePath").setResolved(false)));
+
+    store.updateIssue("key", issue -> issue.setResolved(true));
+
+    assertThat(store.load("projectKey", "branch", "filePath"))
+      .extracting("resolved")
+      .containsOnly(true);
   }
 }
