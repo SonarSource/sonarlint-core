@@ -21,12 +21,13 @@ package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
 import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonar.scanner.protocol.input.ScannerInput;
-import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
@@ -44,7 +45,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class IssueDownloaderTests {
 
-  private static final Version SQ_VERSION_BEFORE_PULL = Version.create("9.3");
   private static final String PROJECT_KEY = "project";
   private static final String FILE_1_KEY = PROJECT_KEY + ":foo/bar/Hello.java";
   private static final String FILE_2_KEY = PROJECT_KEY + ":foo/bar/Hello2.java";
@@ -61,7 +61,7 @@ class IssueDownloaderTests {
 
   @BeforeEach
   void prepare() {
-    underTest = new IssueDownloader();
+    underTest = new IssueDownloader(Set.of(Language.JAVA));
   }
 
   @Test
@@ -130,7 +130,7 @@ class IssueDownloaderTests {
       .setCreationDate(123456789L)
       .build();
 
-    mockServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch", timestamp, issue);
+    mockServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, issue);
 
     var issues = underTest.downloadFromPull(mockServer.serverApiHelper(), DUMMY_KEY, "myBranch");
     assertThat(issues).hasSize(1);
@@ -158,7 +158,7 @@ class IssueDownloaderTests {
       .setCreationDate(123456789L)
       .build();
 
-    mockServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch", timestamp, issue);
+    mockServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, issue);
 
     var issues = underTest.downloadFromPull(mockServer.serverApiHelper(), DUMMY_KEY, "myBranch");
     assertThat(issues).hasSize(1);
@@ -202,7 +202,7 @@ class IssueDownloaderTests {
       .setCreationDate(123456789L)
       .build();
 
-    mockServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch", timestamp, issue);
+    mockServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, issue);
 
     var issues = underTest.downloadFromPull(mockServer.serverApiHelper(), DUMMY_KEY, "myBranch");
     assertThat(issues).isEmpty();
