@@ -23,6 +23,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import testutils.InMemoryIssueStore;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,18 +47,18 @@ class UpdateStorageOnIssueChangedTests {
     handler.handle(new IssueChangedEvent(List.of("key1"), null, null, true));
 
     assertThat(serverIssueStore.load("projectKey", "branch", "file/path"))
-      .extracting("resolved")
+      .extracting(ServerIssue::isResolved)
       .containsOnly(true);
   }
 
   @Test
   void should_store_issue_with_updated_severity() {
-    serverIssueStore.replaceAllIssuesOfProject("projectKey", "branch", List.of(aServerIssue().setKey("key1").setSeverity("MAJOR")));
+    serverIssueStore.replaceAllIssuesOfProject("projectKey", "branch", List.of(aServerIssue().setKey("key1").setUserSeverity("MAJOR")));
 
     handler.handle(new IssueChangedEvent(List.of("key1"), "MINOR", null, null));
 
     assertThat(serverIssueStore.load("projectKey", "branch", "file/path"))
-      .extracting("severity")
+      .extracting(ServerIssue::getUserSeverity)
       .containsOnly("MINOR");
   }
 
@@ -68,7 +69,7 @@ class UpdateStorageOnIssueChangedTests {
     handler.handle(new IssueChangedEvent(List.of("key1"), null, "BUG", null));
 
     assertThat(serverIssueStore.load("projectKey", "branch", "file/path"))
-      .extracting("type")
+      .extracting(ServerIssue::getType)
       .containsOnly("BUG");
   }
 
