@@ -58,6 +58,7 @@ import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.analysis.api.TextRange;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.commons.Language;
@@ -65,6 +66,7 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.GetSecurityHotspotRequestParams;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static java.util.Collections.emptySet;
@@ -694,13 +696,13 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateProject(PROJECT_KEY_JAVA);
     engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVA), null);
     var qualityProfile = getQualityProfile("SonarLint IT Java");
-    deactivateRule(qualityProfile, "S106");
+    deactivateRule(qualityProfile, "java:S106");
     Thread.sleep(3000);
 
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA, "src/main/java/foo/Foo.java"), issueListener, null, null);
     assertThat(issueListener.getIssues())
-      .extracting("ruleKey")
+      .extracting(Issue::getRuleKey)
       .containsOnly("java:S2325");
   }
 
@@ -711,14 +713,15 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateGlobal();
     updateProject(PROJECT_KEY_JAVA);
     engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVA), null);
-    var issueKey = getIssueKeys(javaRuleKey("S106")).get(0);
+    var issueKey = getIssueKeys("java:S106").get(0);
     resolveIssueAsWontFix(issueKey);
     Thread.sleep(3000);
 
     var serverIssues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY_JAVA, "", ""), "master", "src/main/java/foo/Foo.java");
 
     assertThat(serverIssues)
-      .extracting("ruleKey", "resolved")
+      .extracting(ServerIssue::getRuleKey, ServerIssue::isResolved)
+      // FIXME should be .contains(tuple("java:S106", true))
       .contains(tuple("S106", true));
   }
 
@@ -730,8 +733,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   private void updateProject(String projectKey) {
-    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, "master", null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, null);
     engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(projectKey), null);
+    engine.syncServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, "master", null);
   }
 
   private void updateGlobal() {
@@ -765,7 +769,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   private void deactivateRule(QualityProfile qualityProfile, String ruleKey) {
     var request = new PostRequest("/api/qualityprofiles/deactivate_rule")
       .setParam("key", qualityProfile.getKey())
-      .setParam("rule", javaRuleKey(ruleKey));
+      .setParam("rule", ruleKey);
     try (var response = adminWsClient.wsConnector().call(request)) {
       assertTrue("Unable to deactivate rule", response.isSuccessful());
     }

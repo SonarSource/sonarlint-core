@@ -197,7 +197,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
       projectKey(PROJECT_KEY_SCALA),
       projectKey(PROJECT_KEY_XML));
 
-    ALL_PROJECTS.forEach(p -> engine.updateProject(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), p, "master", null));
+    ALL_PROJECTS.forEach(p -> engine.updateProject(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), p, null));
     engine.sync(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), ALL_PROJECTS, null);
   }
 

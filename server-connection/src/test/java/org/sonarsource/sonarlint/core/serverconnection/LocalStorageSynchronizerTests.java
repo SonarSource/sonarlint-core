@@ -48,10 +48,12 @@ class LocalStorageSynchronizerTests {
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
   private final ProgressMonitor progressMonitor = new ProgressMonitor(null);
+  private ServerApi serverApi;
 
   @BeforeEach
   void prepare() {
     mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": []}");
+    serverApi = new ServerApi(mockServer.serverApiHelper());
   }
 
   @Test
@@ -93,7 +95,7 @@ class LocalStorageSynchronizerTests {
 
     var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new PluginsStorage(tmpDir), new ProjectStorage(tmpDir));
 
-    synchronizer.synchronize(new ServerApi(mockServer.serverApiHelper()), Set.of("projectKey"), progressMonitor);
+    synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor);
 
     var analyzerConfigFile = tmpDir.resolve("70726f6a6563744b6579/analyzer_config.pb");
     assertThat(analyzerConfigFile).exists();
@@ -141,9 +143,13 @@ class LocalStorageSynchronizerTests {
         .setUserUpdatedAt("2020-10-27T23:08:58+0000")
         .build())
       .build());
+    mockServer.addProtobufResponse("/api/project_branches/list.protobuf?project=projectKey",
+      ProjectBranches.ListWsResponse.newBuilder()
+        .addBranches(ProjectBranches.Branch.newBuilder().setName("master").setIsMain(true).setType(BranchType.BRANCH))
+        .addBranches(ProjectBranches.Branch.newBuilder().setName("feature/foo").setIsMain(false).setType(BranchType.BRANCH)).build());
     var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new PluginsStorage(tmpDir), new ProjectStorage(tmpDir));
 
-    synchronizer.synchronize(new ServerApi(mockServer.serverApiHelper()), Set.of("projectKey"), progressMonitor);
+    synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor);
 
     assertThat(storageFile).exists();
     var analyzerConfiguration = ProtobufUtil.readFile(storageFile, Sonarlint.AnalyzerConfiguration.parser());
@@ -155,7 +161,7 @@ class LocalStorageSynchronizerTests {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"1\", \"status\": \"DOWN\", \"version\": \"1\"}");
     var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new PluginsStorage(tmpDir), new ProjectStorage(tmpDir));
 
-    synchronizer.synchronize(new ServerApi(mockServer.serverApiHelper()), Set.of("projectKey"), progressMonitor);
+    synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor);
 
     var storageFile = tmpDir.resolve("70726f6a6563744b6579/analyzer_config.pb");
     assertThat(storageFile).doesNotExist();

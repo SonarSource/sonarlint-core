@@ -53,16 +53,16 @@ class ServerIssueTrackerTests {
   void should_download_issues_from_engine() {
     var client = MockWebServerExtension.httpClient();
     tracker.update(endpoint, client, engine, projectBinding, Collections.singleton(filePath), null);
-    verify(engine).downloadServerIssues(endpoint, client, projectBinding, filePath, null, null);
+    verify(engine).downloadAllServerIssuesForFile(endpoint, client, projectBinding, filePath, null, null);
     verifyNoMoreInteractions(engine);
   }
 
   @Test
   void should_get_issues_from_engine_if_download_failed() {
     var client = MockWebServerExtension.httpClient();
-    when(engine.downloadServerIssues(endpoint, client, projectBinding, filePath, null, null)).thenThrow(new DownloadException());
+    when(engine.downloadAllServerIssuesForFile(endpoint, client, projectBinding, filePath, null, null)).thenThrow(new DownloadException());
     tracker.update(endpoint, client, engine, projectBinding, Collections.singleton(filePath), null);
-    verify(engine).downloadServerIssues(endpoint, client, projectBinding, filePath, null, null);
+    verify(engine).downloadAllServerIssuesForFile(endpoint, client, projectBinding, filePath, null, null);
     verify(engine).getServerIssues(projectBinding, null, filePath);
     verifyNoMoreInteractions(engine);
   }
