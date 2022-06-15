@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Server Connection
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,15 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.plugin.commons.container;
 
-import java.util.List;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-
-public class ProjectFileListDownloader {
-
-  public List<String> get(ServerApi serverApi, String projectKey, ProgressMonitor progress) {
-    return serverApi.component().getAllFileKeys(projectKey, progress);
-  }
-}
+import javax.annotation.ParametersAreNonnullByDefault;

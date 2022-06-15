@@ -19,7 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
@@ -27,22 +30,28 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 public interface ServerIssueStore {
 
   /**
-   * Store issues per file.
-   * For filesystem-based implementations, watch out for:
-   * - Too long paths
-   * - Directories with too many files
-   * - (Too deep paths?)
+   * Store issues for a project by replacing existing ones.
    */
   void replaceAllIssuesOfProject(String projectKey, String branchName, List<ServerIssue> issues);
 
   /**
-   * Store issues for a single file.
-   * For filesystem-based implementations, watch out for:
-   * - Too long paths
-   * - Directories with too many files
-   * - (Too deep paths?)
+   * Store issues for a single file by replacing existing ones and moving issues if necessary.
    */
   void replaceAllIssuesOfFile(String projectKey, String branchName, String serverFilePath, List<ServerIssue> issues);
+
+  /**
+   * Merge provided issues to stored ones for the given project:
+   *  - new issues are added
+   *  - existing issues are updated
+   *  - closed issues are removed from the store
+   */
+  void mergeIssues(String projectKey, String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp);
+
+  /**
+   * Return the timestamp of the last sync for a given branch.
+   * @return empty if the issues of the branch have never been pulled
+   */
+  Optional<Instant> getLastSyncTimestamp(String projectKey, String branchName);
 
   /**
    * Load issues stored for specified file.

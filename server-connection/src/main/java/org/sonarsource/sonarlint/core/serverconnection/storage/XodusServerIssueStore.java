@@ -23,10 +23,10 @@ package org.sonarsource.sonarlint.core.serverconnection.storage;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -84,6 +84,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
   private static final String TYPE_PROPERTY_NAME = "type";
   private static final String PATH_PROPERTY_NAME = "path";
   private static final String NAME_PROPERTY_NAME = "name";
+  private static final String LAST_SYNC_PROPERTY_NAME = "lastSync";
 
   private final PersistentEntityStore entityStore;
 
@@ -214,6 +215,36 @@ public class XodusServerIssueStore implements ServerIssueStore {
       var fileEntity = getOrCreateFile(branch, serverFilePath, txn);
       replaceAllIssuesOfFile(issues, txn, fileEntity);
     }));
+  }
+
+  @Override
+  public void mergeIssues(String projectKey, String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp) {
+    timed("Merged " + issuesToMerge.size() + " issues in store. Closed " + closedIssueKeysToDelete.size() + ".", () -> entityStore.executeInTransaction(txn -> {
+      var project = getOrCreateProject(projectKey, txn);
+      var branch = getOrCreateBranch(project, branchName, txn);
+      var issuesByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
+      issuesByFilePath.forEach((filePath, issues) -> {
+        var fileEntity = getOrCreateFile(branch, filePath, txn);
+        issues.forEach(issue -> updateOrCreateIssue(fileEntity, issue, txn));
+      });
+      closedIssueKeysToDelete.forEach(issueKey -> remove(issueKey, txn));
+      branch.setProperty(LAST_SYNC_PROPERTY_NAME, syncTimestamp.toEpochMilli());
+    }));
+  }
+
+  @Override
+  public Optional<Instant> getLastSyncTimestamp(String projectKey, String branchName) {
+    return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, PROJECT_ENTITY_TYPE, KEY_PROPERTY_NAME, projectKey)
+      .map(project -> project.getLinks(PROJECT_TO_BRANCHES_LINK_NAME))
+      .flatMap(branches -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName))
+      .map(branch -> {
+        var lastSyncMs = (Long) branch.getProperty(LAST_SYNC_PROPERTY_NAME);
+        if (lastSyncMs != null) {
+          return Optional.of(Instant.ofEpochMilli(lastSyncMs));
+        } else {
+          return Optional.<Instant>empty();
+        }
+      }).orElse(Optional.<Instant>empty()));
   }
 
   @Override
@@ -411,10 +442,6 @@ public class XodusServerIssueStore implements ServerIssueStore {
       locationEntity.setProperty(END_LINE_PROPERTY_NAME, locationTextRange.getEndLine());
       locationEntity.setProperty(END_LINE_OFFSET_PROPERTY_NAME, locationTextRange.getEndLineOffset());
     }
-  }
-
-  public void removeAll(Collection<String> issueKeys) {
-    entityStore.executeInTransaction(txn -> issueKeys.forEach(issueKey -> remove(issueKey, txn)));
   }
 
   private static void remove(String issueKey, @NotNull StoreTransaction txn) {

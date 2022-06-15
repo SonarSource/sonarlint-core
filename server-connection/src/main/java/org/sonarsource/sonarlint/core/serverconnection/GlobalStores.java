@@ -35,6 +35,7 @@ public class GlobalStores {
   public GlobalStores(Path connectionStorageRoot) {
     this.connectionStorageRoot = connectionStorageRoot;
     var globalStorageRoot = connectionStorageRoot.resolve("global");
+    FileUtils.mkdirs(globalStorageRoot);
     globalStorage = new ConnectionStorageFolder(globalStorageRoot);
     this.serverProjectsStore = new ServerProjectsStore(globalStorage);
     this.serverInfoStore = new ServerInfoStore(globalStorage);
