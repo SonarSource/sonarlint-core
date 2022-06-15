@@ -100,7 +100,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
     // FIXME We could save storage by not storing filePath on the issue entity, but instead relying on the relation with file entity
     var filePath = (String) requireNonNull(storedIssue.getProperty(FILE_PATH_PROPERTY_NAME));
     var creationDate = Instant.parse((String) requireNonNull(storedIssue.getProperty(CREATION_DATE_PROPERTY_NAME)));
-    var userSeverity = (String) requireNonNull(storedIssue.getProperty(USER_SEVERITY_PROPERTY_NAME));
+    var userSeverity = (String) storedIssue.getProperty(USER_SEVERITY_PROPERTY_NAME);
     var type = (String) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME));
     if (startLine == null) {
       return new FileLevelServerIssue(key, resolved, ruleKey, msg, filePath, creationDate, userSeverity, type);
@@ -306,7 +306,10 @@ public class XodusServerIssueStore implements ServerIssueStore {
     issueEntity.setProperty(MESSAGE_PROPERTY_NAME, issue.getMessage());
     issueEntity.setProperty(FILE_PATH_PROPERTY_NAME, issue.getFilePath());
     issueEntity.setProperty(CREATION_DATE_PROPERTY_NAME, issue.getCreationDate().toString());
-    issueEntity.setProperty(USER_SEVERITY_PROPERTY_NAME, issue.getUserSeverity());
+    var userSeverity = issue.getUserSeverity();
+    if (userSeverity != null) {
+      issueEntity.setProperty(USER_SEVERITY_PROPERTY_NAME, userSeverity);
+    }
     issueEntity.setProperty(TYPE_PROPERTY_NAME, issue.getType());
     if (issue instanceof LineLevelServerIssue) {
       var lineIssue = (LineLevelServerIssue) issue;
