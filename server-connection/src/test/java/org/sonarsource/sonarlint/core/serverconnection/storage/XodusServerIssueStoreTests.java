@@ -185,17 +185,45 @@ class XodusServerIssueStoreTests {
   }
 
   @Test
-  void should_remove_issues_by_key() {
+  void should_remove_closed_issues_by_key_when_merging() {
     store.replaceAllIssuesOfProject("projectKey", "branch", List.of(
       aServerIssue().setKey("key1"),
       aServerIssue().setKey("key2"),
       aServerIssue().setKey("key3")));
 
-    store.removeAll(Set.of("key1", "key3"));
+    store.mergeIssues("projectKey", "branch", List.of(), Set.of("key1", "key3"), Instant.now());
 
     assertThat(store.load("projectKey", "branch", "file/path"))
       .extracting(ServerIssue::getKey)
       .containsOnly("key2");
+  }
+
+  @Test
+  void should_add_new_issues_when_merging() {
+    store.mergeIssues("projectKey", "branch", List.of(
+      aServerIssue().setKey("key1"),
+      aServerIssue().setKey("key2"),
+      aServerIssue().setKey("key3")), Set.of(), Instant.now());
+
+    assertThat(store.load("projectKey", "branch", "file/path"))
+      .extracting(ServerIssue::getKey)
+      .containsOnly("key1", "key2", "key3");
+  }
+
+  @Test
+  void should_update_existing_issues_when_merging() {
+    store.replaceAllIssuesOfProject("projectKey", "branch", List.of(
+      aServerIssue().setType("VULNERABILITY").setKey("key1"),
+      aServerIssue().setType("VULNERABILITY").setKey("key2")));
+
+    store.mergeIssues("projectKey", "branch", List.of(
+      aServerIssue().setType("CODE_SMELL").setKey("key1"),
+      aServerIssue().setType("BUG").setKey("key2"),
+      aServerIssue().setType("VULNERABILITY").setKey("key3")), Set.of(), Instant.now());
+
+    assertThat(store.load("projectKey", "branch", "file/path"))
+      .extracting(ServerIssue::getKey, ServerIssue::getType)
+      .containsOnly(tuple("key1", "CODE_SMELL"), tuple("key2", "BUG"), tuple("key3", "VULNERABILITY"));
   }
 
   @Test
@@ -331,5 +359,31 @@ class XodusServerIssueStoreTests {
     assertThat(store.load("projectKey", "branch", "filePath"))
       .extracting("resolved")
       .containsOnly(true);
+  }
+
+  @Test
+  void should_get_empty_last_timestamp_if_no_project() {
+    assertThat(store.getLastSyncTimestamp("unknown", "unknown")).isEmpty();
+  }
+
+  @Test
+  void should_get_empty_last_timestamp_if_no_branch() {
+    store.replaceAllIssuesOfProject("projectKey", "branch", List.of(aServerIssue()));
+
+    assertThat(store.getLastSyncTimestamp("projectKey", "unknown")).isEmpty();
+  }
+
+  @Test
+  void should_get_empty_last_timestamp_if_no_timestamp_on_branch() {
+    store.replaceAllIssuesOfProject("projectKey", "branch", List.of(aServerIssue()));
+
+    assertThat(store.getLastSyncTimestamp("projectKey", "branch")).isEmpty();
+  }
+
+  @Test
+  void should_get_last_timestamp() {
+    store.mergeIssues("projectKey", "branch", List.of(aServerIssue()), Set.of(), Instant.ofEpochMilli(123456789));
+
+    assertThat(store.getLastSyncTimestamp("projectKey", "branch")).contains(Instant.ofEpochMilli(123456789));
   }
 }

@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
+import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.events.EventDispatcher;
@@ -97,7 +98,7 @@ public class ServerConnection {
     this.pluginsStorage = new PluginsStorage(connectionStorageRoot.resolve("plugins"));
     this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguages, embeddedPluginKeys, pluginsStorage, projectStorage);
     this.globalStorageUpdateExecutor = new GlobalStorageUpdateExecutor(globalStores.getGlobalStorage());
-    this.projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(projectStoragePaths, issuesUpdater, isSonarCloud);
+    this.projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(projectStoragePaths);
     pluginsStorage.cleanUp();
     var eventRouter = new EventDispatcher()
       .dispatch(RuleSetChangedEvent.class, new UpdateStorageOnRuleSetChanged(projectStorage))
@@ -142,11 +143,11 @@ public class ServerConnection {
 
   public Map<String, ServerProject> downloadAllProjects(EndpointParams endpoint, HttpClient client, ProgressMonitor monitor) {
     try {
-      return new ProjectListDownloader(new ServerApiHelper(endpoint, client), globalStores.getServerProjectsStore()).fetch(monitor);
+      new ProjectListDownloader(new ServerApiHelper(endpoint, client), globalStores.getServerProjectsStore()).fetch(monitor);
     } catch (Exception e) {
-      // null as cause so that it doesn't get wrapped
-      throw new DownloadException("Failed to update project list: " + e.getMessage(), null);
+      LOG.error("Failed to update project list", e);
     }
+    return allProjectsByKey();
   }
 
   public GlobalStorageStatus getGlobalStorageStatus() {
@@ -198,21 +199,29 @@ public class ServerConnection {
       FilenameUtils.separatorsToUnix(match.idePrefix().toString()));
   }
 
-  public List<ServerIssue> downloadServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
+  public void downloadServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName,
     ProgressMonitor progress) {
     var serverVersion = readServerVersionFromStorage();
-    issuesUpdater.updateFileIssues(new ServerApiHelper(endpoint, client), projectBinding, ideFilePath, branchName, isSonarCloud, serverVersion, progress);
-    return getServerIssues(projectBinding, branchName, ideFilePath);
+    issuesUpdater.updateFileIssuesAndTaints(new ServerApi(new ServerApiHelper(endpoint, client)), projectBinding, ideFilePath, branchName, isSonarCloud, serverVersion, progress);
   }
 
   public void downloadServerIssuesForProject(EndpointParams endpoint, HttpClient client, String projectKey, String branchName) {
     var serverVersion = readServerVersionFromStorage();
-    issuesUpdater.update(new ServerApiHelper(endpoint, client), projectKey, branchName, isSonarCloud, serverVersion);
+    issuesUpdater.update(new ServerApi(new ServerApiHelper(endpoint, client)), projectKey, branchName, isSonarCloud, serverVersion);
   }
 
-  public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable String branchName, ProgressMonitor monitor) {
+  public void syncServerIssuesForProject(EndpointParams endpoint, HttpClient client, String projectKey, String branchName) {
     var serverVersion = readServerVersionFromStorage();
-    projectStorageUpdateExecutor.update(new ServerApiHelper(endpoint, client), projectKey, branchName, serverVersion, monitor);
+    if (IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
+      LOG.info("[SYNC] Synchronizing issues for project '{}' on branch '{}'", projectKey, branchName);
+      issuesUpdater.sync(new ServerApi(new ServerApiHelper(endpoint, client)), projectKey, branchName);
+    } else {
+      LOG.debug("Incremental issue sync is not supported. Skipping.");
+    }
+  }
+
+  public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, ProgressMonitor monitor) {
+    projectStorageUpdateExecutor.update(new ServerApi(new ServerApiHelper(endpoint, client)), projectKey, monitor);
   }
 
   private Version readServerVersionFromStorage() {

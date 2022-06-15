@@ -67,7 +67,7 @@ public class ServerIssueTracker {
     ProjectBinding projectBinding, String ideFilePath, String branchName) {
     try {
       LOGGER.debug("fetchServerIssues projectKey=" + projectBinding.projectKey() + ", ideFilePath=" + ideFilePath + ", branchName=" + branchName);
-      return engine.downloadServerIssues(endpoint, client, projectBinding, ideFilePath, branchName, null);
+      return engine.downloadAllServerIssuesForFile(endpoint, client, projectBinding, ideFilePath, branchName, null);
     } catch (DownloadException e) {
       LOGGER.debug("Failed to download server issues", e);
       return engine.getServerIssues(projectBinding, branchName, ideFilePath);

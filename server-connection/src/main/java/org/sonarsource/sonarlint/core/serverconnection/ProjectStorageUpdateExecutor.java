@@ -25,9 +25,8 @@ import java.nio.file.Path;
 import java.util.Date;
 import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.commons.SonarLintCoreVersion;
-import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths;
@@ -35,23 +34,18 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil;
 
 public class ProjectStorageUpdateExecutor {
   private final ProjectFileListDownloader projectFileListDownloader;
-  private final ServerIssueUpdater serverIssueUpdater;
   private final ProjectStoragePaths projectStoragePaths;
-  private final boolean isSonarCloud;
 
-  public ProjectStorageUpdateExecutor(ProjectStoragePaths projectStoragePaths, ServerIssueUpdater serverIssueUpdater, boolean isSonarCloud) {
-    this(projectStoragePaths, new ProjectFileListDownloader(), serverIssueUpdater, isSonarCloud);
+  public ProjectStorageUpdateExecutor(ProjectStoragePaths projectStoragePaths) {
+    this(projectStoragePaths, new ProjectFileListDownloader());
   }
 
-  ProjectStorageUpdateExecutor(ProjectStoragePaths projectStoragePaths, ProjectFileListDownloader projectFileListDownloader, ServerIssueUpdater serverIssueUpdater,
-    boolean isSonarCloud) {
+  ProjectStorageUpdateExecutor(ProjectStoragePaths projectStoragePaths, ProjectFileListDownloader projectFileListDownloader) {
     this.projectStoragePaths = projectStoragePaths;
     this.projectFileListDownloader = projectFileListDownloader;
-    this.serverIssueUpdater = serverIssueUpdater;
-    this.isSonarCloud = isSonarCloud;
   }
 
-  public void update(ServerApiHelper serverApiHelper, String projectKey, String branchName, Version serverVersion, ProgressMonitor progress) {
+  public void update(ServerApi serverApi, String projectKey, ProgressMonitor progress) {
     Path temp;
     try {
       temp = Files.createTempDirectory("sonarlint-global-storage");
@@ -60,8 +54,7 @@ public class ProjectStorageUpdateExecutor {
     }
     try {
       FileUtils.replaceDir(dir -> {
-        updateServerIssues(serverApiHelper, projectKey, branchName, serverVersion);
-        updateComponents(serverApiHelper, projectKey, dir, progress);
+        updateComponents(serverApi, projectKey, dir, progress);
         updateStatus(dir);
       }, projectStoragePaths.getProjectStorageRoot(projectKey), temp);
     } finally {
@@ -69,8 +62,8 @@ public class ProjectStorageUpdateExecutor {
     }
   }
 
-  void updateComponents(ServerApiHelper serverApiHelper, String projectKey, Path temp, ProgressMonitor progress) {
-    var sqFiles = projectFileListDownloader.get(serverApiHelper, projectKey, progress);
+  void updateComponents(ServerApi serverApi, String projectKey, Path temp, ProgressMonitor progress) {
+    var sqFiles = projectFileListDownloader.get(serverApi, projectKey, progress);
     var componentsBuilder = Sonarlint.ProjectComponents.newBuilder();
 
     for (String fileKey : sqFiles) {
@@ -79,10 +72,6 @@ public class ProjectStorageUpdateExecutor {
       componentsBuilder.addComponent(relativePath);
     }
     ProtobufUtil.writeToFile(componentsBuilder.build(), temp.resolve(ProjectStoragePaths.COMPONENT_LIST_PB));
-  }
-
-  private void updateServerIssues(ServerApiHelper serverApiHelper, String projectKey, String branchName, Version serverVersion) {
-    serverIssueUpdater.update(serverApiHelper, projectKey, branchName, isSonarCloud, serverVersion);
   }
 
   private static void updateStatus(Path temp) {

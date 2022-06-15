@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
@@ -36,7 +37,6 @@ import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.Flow;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.TextRange;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
@@ -49,6 +49,8 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIss
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
+
+import static java.util.function.Predicate.not;
 
 public class IssueDownloader {
 
@@ -67,8 +69,7 @@ public class IssueDownloader {
    * @param branchName name of the branch.
    * @return List of issues. It can be empty but never null.
    */
-  public List<ServerIssue> downloadFromBatch(ServerApiHelper serverApiHelper, String key, @Nullable String branchName) {
-    var serverApi = new ServerApi(serverApiHelper);
+  public List<ServerIssue> downloadFromBatch(ServerApi serverApi, String key, @Nullable String branchName) {
     var issueApi = serverApi.issue();
 
     List<ServerIssue> result = new ArrayList<>();
@@ -92,25 +93,30 @@ public class IssueDownloader {
    * @param branchName name of the branch.
    * @return List of issues. It can be empty but never null.
    */
-  public List<ServerIssue> downloadFromPull(ServerApiHelper serverApiHelper, String projectKey, String branchName) {
-    var serverApi = new ServerApi(serverApiHelper);
+  public PullResult downloadFromPull(ServerApi serverApi, String projectKey, String branchName, Optional<Instant> lastSync) {
     var issueApi = serverApi.issue();
 
-    List<ServerIssue> result = new ArrayList<>();
-
-    issueApi.pullIssues(projectKey, branchName, enabledLanguages).getIssues()
+    var apiResult = issueApi.pullIssues(projectKey, branchName, enabledLanguages, lastSync.map(Instant::toEpochMilli).orElse(null));
+    // Ignore project level issues
+    var changedIssues = apiResult.getIssues()
       .stream()
       // Ignore project level issues
       .filter(i -> i.getMainLocation().hasFilePath())
-      .forEach(pulledIssue -> {
-        result.add(convertLiteIssue(pulledIssue));
-      });
+      .filter(not(IssueLite::getClosed))
+      .map(this::convertLiteIssue)
+      .collect(Collectors.toList());
+    var closedIssueKeys = apiResult.getIssues()
+      .stream()
+      // Ignore project level issues
+      .filter(i -> i.getMainLocation().hasFilePath())
+      .filter(IssueLite::getClosed)
+      .map(IssueLite::getKey)
+      .collect(Collectors.toSet());
 
-    return result;
+    return new PullResult(Instant.ofEpochMilli(apiResult.getTimestamp().getQueryTimestamp()), changedIssues, closedIssueKeys);
   }
 
-  public List<ServerTaintIssue> downloadTaint(ServerApiHelper serverApiHelper, String key, @Nullable String branchName, ProgressMonitor progress) {
-    var serverApi = new ServerApi(serverApiHelper);
+  public List<ServerTaintIssue> downloadTaint(ServerApi serverApi, String key, @Nullable String branchName, ProgressMonitor progress) {
     var issueApi = serverApi.issue();
 
     List<ServerTaintIssue> result = new ArrayList<>();
@@ -121,7 +127,7 @@ public class IssueDownloader {
       var downloadVulnerabilitiesForRules = issueApi.downloadVulnerabilitiesForRules(key, taintRuleKeys, branchName, progress);
       downloadVulnerabilitiesForRules.getIssues()
         .stream()
-        .map(i -> convertTaintVulnerability(new ServerApi(serverApiHelper).source(), i, downloadVulnerabilitiesForRules.getComponentPathsByKey(), sourceCodeByKey))
+        .map(i -> convertTaintVulnerability(serverApi.source(), i, downloadVulnerabilitiesForRules.getComponentPathsByKey(), sourceCodeByKey))
         .filter(Objects::nonNull)
         .forEach(result::add);
     } catch (Exception e) {
@@ -232,5 +238,29 @@ public class IssueDownloader {
     return sourceCodeByKey.computeIfAbsent(fileKey, k -> sourceApi
       .getRawSourceCode(fileKey)
       .orElse(""));
+  }
+
+  public static class PullResult {
+    private final Instant queryTimestamp;
+    private final List<ServerIssue> changedIssues;
+    private final Set<String> closedIssueKeys;
+
+    public PullResult(Instant queryTimestamp, List<ServerIssue> changedIssues, Set<String> closedIssueKeys) {
+      this.queryTimestamp = queryTimestamp;
+      this.changedIssues = changedIssues;
+      this.closedIssueKeys = closedIssueKeys;
+    }
+
+    public Instant getQueryTimestamp() {
+      return queryTimestamp;
+    }
+
+    public List<ServerIssue> getChangedIssues() {
+      return changedIssues;
+    }
+
+    public Set<String> getClosedIssueKeys() {
+      return closedIssueKeys;
+    }
   }
 }

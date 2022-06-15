@@ -99,7 +99,7 @@ public class ConnectedModeSynchronizationTest extends AbstractConnectedTest {
       ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5));
 
     // to replace with the sync call when implemented
-    engine.downloadServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_LANGUAGE_MIX, "master", null);
+    engine.downloadAllServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_LANGUAGE_MIX, "master", null);
 
     var javaIssues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY_LANGUAGE_MIX, "", ""), "master", "src/main/java/foo/Foo.java");
     var pythonIssues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY_LANGUAGE_MIX, "", ""), "master", "src/main/java/foo/main.py");

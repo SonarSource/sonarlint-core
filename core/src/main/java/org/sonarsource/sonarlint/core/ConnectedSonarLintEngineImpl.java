@@ -376,11 +376,15 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   public ProjectBranches getServerBranches(String projectKey) {
     try {
       var projectBranchesFromStorage = serverConnection.getProjectBranches(projectKey);
-      return new ProjectBranches(projectBranchesFromStorage.getBranchNames(), projectBranchesFromStorage.getMainBranchName());
+      return toApi(projectBranchesFromStorage);
     } catch (StorageException e) {
       LOG.error("Unable to read projects branches from the storage", e);
       return new ProjectBranches(Set.of(), Optional.empty());
     }
+  }
+
+  private static ProjectBranches toApi(org.sonarsource.sonarlint.core.serverconnection.ProjectBranches projectBranchesFromStorage) {
+    return new ProjectBranches(projectBranchesFromStorage.getBranchNames(), projectBranchesFromStorage.getMainBranchName());
   }
 
   @Override
@@ -431,14 +435,20 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
-  public List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
+  public List<ServerIssue> downloadAllServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
     @Nullable String branchName, @Nullable ClientProgressMonitor monitor) {
-    return serverConnection.downloadServerIssuesForFile(endpoint, client, projectBinding, ideFilePath, branchName, new ProgressMonitor(monitor));
+    serverConnection.downloadServerIssuesForFile(endpoint, client, projectBinding, ideFilePath, branchName, new ProgressMonitor(monitor));
+    return serverConnection.getServerIssues(projectBinding, branchName, ideFilePath);
   }
 
   @Override
-  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor) {
+  public void downloadAllServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor) {
     serverConnection.downloadServerIssuesForProject(endpoint, client, projectKey, branchName);
+  }
+
+  @Override
+  public void syncServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor) {
+    serverConnection.syncServerIssuesForProject(endpoint, client, projectKey, branchName);
   }
 
   @Override
@@ -447,12 +457,12 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
-  public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable String branchName, @Nullable ClientProgressMonitor monitor) {
+  public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable ClientProgressMonitor monitor) {
     requireNonNull(endpoint);
     requireNonNull(projectKey);
     setLogging(null);
 
-    serverConnection.updateProject(endpoint, client, projectKey, branchName, new ProgressMonitor(monitor));
+    serverConnection.updateProject(endpoint, client, projectKey, new ProgressMonitor(monitor));
   }
 
   @Override

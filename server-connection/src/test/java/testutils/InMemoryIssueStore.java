@@ -19,17 +19,23 @@
  */
 package testutils;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStore;
 
+import static java.util.Optional.ofNullable;
+
 public class InMemoryIssueStore implements ServerIssueStore {
   private final Map<String, Map<String, Map<String, List<ServerIssue>>>> issuesByFileByBranchByProject = new HashMap<>();
+  private final Map<String, Map<String, Instant>> lastSyncByBranchByProject = new HashMap<>();
   private final Map<String, ServerIssue> issuesByKey = new HashMap<>();
   private final Map<String, Map<String, Map<String, List<ServerTaintIssue>>>> taintIssuesByFileByBranchByProject = new HashMap<>();
 
@@ -39,6 +45,23 @@ public class InMemoryIssueStore implements ServerIssueStore {
       .computeIfAbsent(branchName, __ -> new HashMap<>())
       .put(serverFilePath, issues);
     issues.forEach(issue -> issuesByKey.put(issue.getKey(), issue));
+  }
+
+  @Override
+  public void mergeIssues(String projectKey, String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp) {
+    var issuesToMergeByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
+    // does not handle issue moving file (e.g. file renaming)
+    issuesByFileByBranchByProject.computeIfAbsent(projectKey, __ -> new HashMap<>())
+      .computeIfAbsent(branchName, __ -> new HashMap<>())
+      .putAll(issuesToMergeByFilePath);
+    issuesToMerge.forEach(issue -> issuesByKey.put(issue.getKey(), issue));
+    closedIssueKeysToDelete.forEach(issuesByKey::remove);
+    lastSyncByBranchByProject.computeIfAbsent(projectKey, __ -> new HashMap<>()).put(branchName, syncTimestamp);
+  }
+
+  @Override
+  public Optional<Instant> getLastSyncTimestamp(String projectKey, String branchName) {
+    return ofNullable(lastSyncByBranchByProject.getOrDefault(projectKey, Map.of()).get(branchName));
   }
 
   @Override

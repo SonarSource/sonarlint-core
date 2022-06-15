@@ -25,7 +25,7 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStore;
@@ -42,27 +42,32 @@ public class ServerIssueUpdater {
     this.issueDownloader = issueDownloader;
   }
 
-  public void update(ServerApiHelper serverApiHelper, String projectKey, String branchName, boolean isSonarCloud, Version serverVersion) {
-    List<ServerIssue> issues;
-    if (!isSonarCloud && serverVersion.compareToIgnoreQualifier(IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL) >= 0) {
-      issues = issueDownloader.downloadFromPull(serverApiHelper, projectKey, branchName);
+  public void update(ServerApi serverApi, String projectKey, String branchName, boolean isSonarCloud, Version serverVersion) {
+    if (IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
+      sync(serverApi, projectKey, branchName);
     } else {
-      issues = issueDownloader.downloadFromBatch(serverApiHelper, projectKey, branchName);
+      List<ServerIssue> issues = issueDownloader.downloadFromBatch(serverApi, projectKey, branchName);
+      serverIssueStore.replaceAllIssuesOfProject(projectKey, branchName, issues);
     }
-    serverIssueStore.replaceAllIssuesOfProject(projectKey, branchName, issues);
   }
 
-  public void updateFileIssues(ServerApiHelper serverApiHelper, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName, boolean isSonarCloud,
+  public void sync(ServerApi serverApi, String projectKey, String branchName) {
+    var lastSync = serverIssueStore.getLastSyncTimestamp(projectKey, branchName);
+    var result = issueDownloader.downloadFromPull(serverApi, projectKey, branchName, lastSync);
+    serverIssueStore.mergeIssues(projectKey, branchName, result.getChangedIssues(), result.getClosedIssueKeys(), result.getQueryTimestamp());
+  }
+
+  public void updateFileIssuesAndTaints(ServerApi serverApi, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName, boolean isSonarCloud,
     Version serverVersion, ProgressMonitor progress) {
     var fileKey = IssueStorePaths.idePathToFileKey(projectBinding, ideFilePath);
     if (fileKey == null) {
       return;
     }
     String serverFilePath = IssueStorePaths.idePathToSqPath(projectBinding, ideFilePath);
-    if (isSonarCloud || serverVersion.compareToIgnoreQualifier(IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL) < 0) {
+    if (!IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
       List<ServerIssue> issues = new ArrayList<>();
       try {
-        issues.addAll(issueDownloader.downloadFromBatch(serverApiHelper, fileKey, branchName));
+        issues.addAll(issueDownloader.downloadFromBatch(serverApi, fileKey, branchName));
       } catch (Exception e) {
         // null as cause so that it doesn't get wrapped
         throw new DownloadException("Failed to update file issues: " + e.getMessage(), null);
@@ -73,7 +78,7 @@ public class ServerIssueUpdater {
     }
     List<ServerTaintIssue> taintIssues = new ArrayList<>();
     try {
-      taintIssues.addAll(issueDownloader.downloadTaint(serverApiHelper, fileKey, branchName, progress));
+      taintIssues.addAll(issueDownloader.downloadTaint(serverApi, fileKey, branchName, progress));
     } catch (Exception e) {
       // null as cause so that it doesn't get wrapped
       throw new DownloadException("Failed to update file taint vulnerabilities: " + e.getMessage(), null);

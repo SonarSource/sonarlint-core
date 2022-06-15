@@ -56,6 +56,10 @@ public class IssueApi {
     this.serverApiHelper = serverApiHelper;
   }
 
+  public static boolean supportIssuePull(boolean isSonarCloud, Version serverVersion) {
+    return !isSonarCloud && serverVersion.compareToIgnoreQualifier(IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL) >= 0;
+  }
+
   /**
    * Fetch vulnerabilities of the component with specified key.
    * If the component doesn't exist or it exists but has no issues, an empty iterator is returned.
@@ -157,7 +161,7 @@ public class IssueApi {
     return list;
   }
 
-  private static String getPullIssuesUrl(String projectKey, String branchName, Set<Language> enabledLanguages) {
+  private static String getPullIssuesUrl(String projectKey, String branchName, Set<Language> enabledLanguages, @Nullable Long changedSince) {
     var enabledLanguageKeys = enabledLanguages.stream().map(Language::getLanguageKey).collect(Collectors.joining(","));
     var url = new StringBuilder()
       .append("/api/issues/pull?projectKey=")
@@ -165,12 +169,15 @@ public class IssueApi {
     if (!enabledLanguageKeys.isEmpty()) {
       url.append("&languages=").append(enabledLanguageKeys);
     }
+    if (changedSince != null) {
+      url.append("&changedSince=").append(changedSince);
+    }
     return url.toString();
   }
 
-  public IssuesPullResult pullIssues(String projectKey, String branchName, Set<Language> enabledLanguages) {
+  public IssuesPullResult pullIssues(String projectKey, String branchName, Set<Language> enabledLanguages, @Nullable Long changedSince) {
     return ServerApiHelper.processTimed(
-      () -> serverApiHelper.get(getPullIssuesUrl(projectKey, branchName, enabledLanguages)),
+      () -> serverApiHelper.get(getPullIssuesUrl(projectKey, branchName, enabledLanguages, changedSince)),
       response -> {
         var input = response.bodyAsStream();
         var timestamp = Issues.IssuesPullQueryTimestamp.parseDelimitedFrom(input);
