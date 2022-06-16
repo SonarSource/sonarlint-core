@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection;
+package org.sonarsource.sonarlint.core.serverconnection.issues;
 
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
@@ -30,16 +30,14 @@ class ServerIssueTests {
   void testRoundTrips() {
     var issue = aServerIssue();
     var i1 = Instant.ofEpochMilli(100_000_000);
-    assertThat(issue.setLineHash("checksum1").getLineHash()).isEqualTo("checksum1");
-    assertThat(issue.setCreationDate(i1).creationDate()).isEqualTo(i1);
+    assertThat(issue.setCreationDate(i1).getCreationDate()).isEqualTo(i1);
     assertThat(issue.setFilePath("path1").getFilePath()).isEqualTo("path1");
     assertThat(issue.setKey("key1").getKey()).isEqualTo("key1");
-    issue.setLine(2);
-    assertThat(issue.getLine()).isEqualTo(2);
-    assertThat(issue.setSeverity("MAJOR").severity()).isEqualTo("MAJOR");
-    assertThat(issue.setRuleKey("rule1").ruleKey()).isEqualTo("rule1");
-    assertThat(issue.resolved()).isTrue();
+    assertThat(issue.setUserSeverity("MAJOR").getUserSeverity()).isEqualTo("MAJOR");
+    assertThat(issue.setRuleKey("rule1").getRuleKey()).isEqualTo("rule1");
+    assertThat(issue.isResolved()).isTrue();
     assertThat(issue.setMessage("msg1").getMessage()).isEqualTo("msg1");
-    assertThat(issue.setType("type").type()).isEqualTo("type");
+    assertThat(issue.setType("type").getType()).isEqualTo("type");
   }
+
 }

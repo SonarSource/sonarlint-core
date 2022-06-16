@@ -42,6 +42,7 @@ import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.events.EventDispatcher;
 import org.sonarsource.sonarlint.core.serverconnection.events.ServerEventsAutoSubscriber;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.prefix.FileTreeMatcher;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStorage;
@@ -197,7 +198,7 @@ public class ServerConnection {
       FilenameUtils.separatorsToUnix(match.idePrefix().toString()));
   }
 
-  public List<ServerIssue> downloadServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName,
+  public List<ServerIssue> downloadServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
     ProgressMonitor progress) {
     var serverVersion = readServerVersionFromStorage();
     issuesUpdater.updateFileIssues(new ServerApiHelper(endpoint, client), projectBinding, ideFilePath, branchName, isSonarCloud, serverVersion, progress);

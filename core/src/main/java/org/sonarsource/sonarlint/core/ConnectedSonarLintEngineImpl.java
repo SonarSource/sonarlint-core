@@ -75,8 +75,8 @@ import org.sonarsource.sonarlint.core.serverconnection.IssueStorePaths;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.serverconnection.ServerConnection;
-import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 
 import static java.util.Objects.requireNonNull;
