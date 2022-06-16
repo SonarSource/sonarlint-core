@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.tracking;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
-import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -30,13 +30,13 @@ import static org.mockito.Mockito.when;
 
 class ServerIssueTrackableTests {
 
-  private final ServerIssue serverIssue = mock(ServerIssue.class);
+  private final LineLevelServerIssue serverIssue = mock(LineLevelServerIssue.class);
   private Trackable trackable;
 
   @BeforeEach
   void prepare() {
     when(serverIssue.getLineHash()).thenReturn("blah");
-    when(serverIssue.resolved()).thenReturn(true);
+    when(serverIssue.isResolved()).thenReturn(true);
     when(serverIssue.getLine()).thenReturn(22);
     trackable = new ServerIssueTrackable(serverIssue);
   }
@@ -45,9 +45,9 @@ class ServerIssueTrackableTests {
   void should_delegate_fields_to_server_issue() {
     assertThat(trackable.getMessage()).isEqualTo(serverIssue.getMessage());
     assertThat(trackable.getLineHash()).isEqualTo(serverIssue.getLineHash().hashCode());
-    assertThat(trackable.getRuleKey()).isEqualTo(serverIssue.ruleKey());
+    assertThat(trackable.getRuleKey()).isEqualTo(serverIssue.getRuleKey());
     assertThat(trackable.isResolved()).isTrue();
-    assertThat(trackable.getSeverity()).isEqualTo(serverIssue.severity());
+    assertThat(trackable.getSeverity()).isEqualTo(serverIssue.getUserSeverity());
     assertThat(trackable.getLine()).isEqualTo(serverIssue.getLine());
   }
 }

@@ -48,7 +48,7 @@ import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
-import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -158,14 +158,14 @@ public class ConnectedCommunityIssueDownloadTest extends AbstractConnectedTest {
       assertThat(allIssues).hasSizeGreaterThan(10_200);
     } else {
       assertThat(allIssues).hasSize(10_500);
-      assertThat(allIssues.get(wfIssue.getKey()).resolved()).isTrue();
-      assertThat(allIssues.get(fpIssue.getKey()).resolved()).isTrue();
-      assertThat(allIssues.get(overridenSeverityIssue.getKey()).severity()).isEqualTo("BLOCKER");
-      assertThat(allIssues.get(overridenTypeIssue.getKey()).type()).isEqualTo("BUG");
+      assertThat(allIssues.get(wfIssue.getKey()).isResolved()).isTrue();
+      assertThat(allIssues.get(fpIssue.getKey()).isResolved()).isTrue();
+      assertThat(allIssues.get(overridenSeverityIssue.getKey()).getUserSeverity()).isEqualTo("BLOCKER");
+      assertThat(allIssues.get(overridenTypeIssue.getKey()).getType()).isEqualTo("BUG");
     }
 
     // No hotspots
-    assertThat(allIssues.values()).allSatisfy(i -> assertThat(i.type()).isIn("CODE_SMELL", "BUG", "VULNERABILITY"));
+    assertThat(allIssues.values()).allSatisfy(i -> assertThat(i.getType()).isIn("CODE_SMELL", "BUG", "VULNERABILITY"));
   }
 
   private static void analyzeProject(String projectDirName) {

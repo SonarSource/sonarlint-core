@@ -37,7 +37,7 @@ public class UpdateStorageOnIssueChanged implements ServerEventHandler<IssueChan
     var resolved = event.getResolved();
     event.getImpactedIssueKeys().forEach(issueKey -> serverIssueStore.updateIssue(issueKey, issue -> {
       if (userSeverity != null) {
-        issue.setSeverity(userSeverity);
+        issue.setUserSeverity(userSeverity);
       }
       if (userType != null) {
         issue.setType(userType);
