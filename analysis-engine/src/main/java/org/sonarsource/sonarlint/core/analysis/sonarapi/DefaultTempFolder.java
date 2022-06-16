@@ -28,10 +28,11 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
+import org.sonar.api.Startable;
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
-public class DefaultTempFolder implements TempFolder {
+public class DefaultTempFolder implements TempFolder, Startable {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final File tempDir;
@@ -98,6 +99,12 @@ public class DefaultTempFolder implements TempFolder {
     }
   }
 
+  @Override
+  public void start() {
+    // Nothing
+  }
+
+  @Override
   public void stop() {
     if (deleteOnExit) {
       clean();

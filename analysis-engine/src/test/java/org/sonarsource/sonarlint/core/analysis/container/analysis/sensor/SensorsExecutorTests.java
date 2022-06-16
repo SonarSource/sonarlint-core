@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.analysis.sensor;
 
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonar.api.batch.sensor.Sensor;
@@ -65,7 +67,7 @@ class SensorsExecutorTests {
   void testThrowingSensorShouldBeLogged() {
     var sensorOptimizer = mock(SensorOptimizer.class);
     when(sensorOptimizer.shouldExecute(any())).thenReturn(true);
-    var executor = new SensorsExecutor(null, sensorOptimizer, new ProgressMonitor(null), new Sensor[] {new ThrowingSensor()});
+    var executor = new SensorsExecutor(null, sensorOptimizer, new ProgressMonitor(null), Optional.of(List.of(new ThrowingSensor())));
 
     executor.execute();
 

@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem;
 
 import java.net.URI;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.sonar.api.batch.fs.InputFile;
@@ -44,7 +46,7 @@ public class FileIndexer {
   private final InputFileBuilder inputFileBuilder;
   private final AnalysisConfiguration analysisConfiguration;
   private final AnalysisResults analysisResult;
-  private final InputFileFilter[] filters;
+  private final List<InputFileFilter> filters;
   private final IssueExclusionsLoader issueExclusionsLoader;
   private final InputFileIndex inputFileCache;
 
@@ -52,18 +54,13 @@ public class FileIndexer {
 
   public FileIndexer(InputFileIndex inputFileCache, InputFileBuilder inputFileBuilder, AnalysisConfiguration analysisConfiguration,
     AnalysisResults analysisResult, IssueExclusionsLoader issueExclusionsLoader,
-    InputFileFilter[] filters) {
+    Optional<List<InputFileFilter>> filters) {
     this.inputFileCache = inputFileCache;
     this.inputFileBuilder = inputFileBuilder;
     this.analysisConfiguration = analysisConfiguration;
     this.analysisResult = analysisResult;
     this.issueExclusionsLoader = issueExclusionsLoader;
-    this.filters = filters;
-  }
-
-  public FileIndexer(InputFileIndex inputFileCache, InputFileBuilder inputFileBuilder, AnalysisConfiguration analysisConfiguration,
-    AnalysisResults analysisResult, IssueExclusionsLoader issueExclusionsLoader) {
-    this(inputFileCache, inputFileBuilder, analysisConfiguration, analysisResult, issueExclusionsLoader, new InputFileFilter[0]);
+    this.filters = filters.orElse(List.of());
   }
 
   public void index() {

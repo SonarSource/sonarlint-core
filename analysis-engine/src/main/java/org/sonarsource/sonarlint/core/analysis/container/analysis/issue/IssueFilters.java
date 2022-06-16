@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.analysis.issue;
 
+import java.util.List;
+import java.util.Optional;
 import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.scan.issue.filter.FilterableIssue;
 import org.sonar.api.scan.issue.filter.IssueFilter;
@@ -29,14 +31,10 @@ import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultFilterableIssue;
 
 @SonarLintSide
 public class IssueFilters {
-  private final IssueFilter[] filters;
+  private final List<IssueFilter> filters;
 
-  public IssueFilters(IssueFilter[] exclusionFilters) {
-    this.filters = exclusionFilters;
-  }
-
-  public IssueFilters() {
-    this(new IssueFilter[0]);
+  public IssueFilters(Optional<List<IssueFilter>> exclusionFilters) {
+    this.filters = exclusionFilters.orElse(List.of());
   }
 
   public boolean accept(InputComponent inputComponent, Issue rawIssue) {

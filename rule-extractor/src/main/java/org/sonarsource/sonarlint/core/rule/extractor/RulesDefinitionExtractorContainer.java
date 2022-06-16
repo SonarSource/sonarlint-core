@@ -29,13 +29,13 @@ import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
 import org.sonarsource.sonarlint.core.plugin.commons.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.plugin.commons.ExtensionUtils;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
-import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
+import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentContainer;
 import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.SonarLintRuntimeImpl;
 
-public class RulesDefinitionExtractorContainer extends ComponentContainer {
+public class RulesDefinitionExtractorContainer extends SpringComponentContainer {
 
   private final PluginInstancesRepository pluginInstancesRepository;
-  private Context context;
+  private Context rulesDefinitionContext;
 
   public RulesDefinitionExtractorContainer(PluginInstancesRepository pluginInstancesRepository) {
     this.pluginInstancesRepository = pluginInstancesRepository;
@@ -76,11 +76,11 @@ public class RulesDefinitionExtractorContainer extends ComponentContainer {
 
   @Override
   protected void doAfterStart() {
-    this.context = getComponentByType(RuleDefinitionsLoader.class).getContext();
+    this.rulesDefinitionContext = getComponentByType(RuleDefinitionsLoader.class).getContext();
   }
 
-  public Context getContext() {
-    return context;
+  public Context getRulesDefinitionContext() {
+    return rulesDefinitionContext;
   }
 
 }

@@ -26,22 +26,19 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
-import org.picocontainer.ComponentLifecycle;
-import org.picocontainer.PicoContainer;
-import org.picocontainer.injectors.ProviderAdapter;
-import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.springframework.context.annotation.Bean;
 
-public class GlobalTempFolderProvider extends ProviderAdapter implements ComponentLifecycle<TempFolder> {
+public class GlobalTempFolderProvider {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final long CLEAN_MAX_AGE = TimeUnit.DAYS.toMillis(21);
-  static final String TMP_NAME_PREFIX = ".sonartmp_";
-  private boolean started = false;
+  private static final String TMP_NAME_PREFIX = ".sonarlinttmp_";
 
   private GlobalTempFolder tempFolder;
 
+  @Bean("GlobalTempFolder")
   public GlobalTempFolder provide(AnalysisEngineConfiguration globalConfiguration) {
     if (tempFolder == null) {
       tempFolder = cleanAndCreateTempFolder(globalConfiguration.getWorkDir());
@@ -107,30 +104,4 @@ public class GlobalTempFolderProvider extends ProviderAdapter implements Compone
     }
   }
 
-  @Override
-  public void start(PicoContainer container) {
-    started = true;
-  }
-
-  @Override
-  public void stop(PicoContainer container) {
-    if (tempFolder != null) {
-      tempFolder.stop();
-    }
-  }
-
-  @Override
-  public void dispose(PicoContainer container) {
-    // nothing to do
-  }
-
-  @Override
-  public boolean componentHasLifecycle() {
-    return true;
-  }
-
-  @Override
-  public boolean isStarted() {
-    return started;
-  }
 }

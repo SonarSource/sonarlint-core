@@ -27,10 +27,10 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
-import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
+import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentContainer;
 import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.SonarLintRuntimeImpl;
 
-public class GlobalAnalysisContainer extends ComponentContainer {
+public class GlobalAnalysisContainer extends SpringComponentContainer {
   protected static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private GlobalExtensionContainer globalExtensionContainer;
@@ -72,19 +72,19 @@ public class GlobalAnalysisContainer extends ComponentContainer {
   }
 
   @Override
-  public ComponentContainer stopComponents(boolean swallowException) {
+  public SpringComponentContainer stopComponents() {
     try {
       if (moduleRegistry != null) {
         moduleRegistry.stopAll();
       }
       if (globalExtensionContainer != null) {
-        globalExtensionContainer.stopComponents(swallowException);
+        globalExtensionContainer.stopComponents();
       }
       pluginInstancesRepository.close();
     } catch (Exception e) {
       LOG.error("Cannot close analysis engine", e);
     } finally {
-      super.stopComponents(swallowException);
+      super.stopComponents();
     }
     return this;
   }

@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.analysis.issue;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import org.sonar.api.scan.issue.filter.FilterableIssue;
 import org.sonar.api.scan.issue.filter.IssueFilter;
@@ -29,15 +27,7 @@ import org.sonar.api.scan.issue.filter.IssueFilterChain;
 public class DefaultIssueFilterChain implements IssueFilterChain {
   private final List<IssueFilter> filters;
 
-  public DefaultIssueFilterChain(IssueFilter... filters) {
-    this.filters = Arrays.asList(filters);
-  }
-
-  public DefaultIssueFilterChain() {
-    this.filters = Collections.emptyList();
-  }
-
-  private DefaultIssueFilterChain(List<IssueFilter> filters) {
+  public DefaultIssueFilterChain(List<IssueFilter> filters) {
     this.filters = filters;
   }
 

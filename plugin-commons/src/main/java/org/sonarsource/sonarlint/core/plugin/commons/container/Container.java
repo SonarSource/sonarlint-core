@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Analysis Engine
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,23 +17,19 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analysis.container.global;
+package org.sonarsource.sonarlint.core.plugin.commons.container;
 
-import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
-import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentContainer;
+import java.util.List;
+import java.util.Optional;
 
-/**
- * Used to load plugin global extensions
- */
-public class GlobalExtensionContainer extends SpringComponentContainer {
+public interface Container {
+  Container add(Object... objects);
 
-  public GlobalExtensionContainer(SpringComponentContainer parent) {
-    super(parent);
-  }
+  <T> T getComponentByType(Class<T> type);
 
-  @Override
-  protected void doBeforeStart() {
-    getParent().getComponentByType(AnalysisExtensionInstaller.class).install(this, ContainerLifespan.INSTANCE);
-  }
+  <T> Optional<T> getOptionalComponentByType(Class<T> type);
 
+  <T> List<T> getComponentsByType(Class<T> type);
+
+  Container getParent();
 }

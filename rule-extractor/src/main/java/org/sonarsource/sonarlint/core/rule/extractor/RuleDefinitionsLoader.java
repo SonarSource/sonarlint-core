@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.rule.extractor;
 
+import java.util.List;
+import java.util.Optional;
 import org.sonar.api.server.rule.RulesDefinition;
 
 /**
@@ -27,14 +29,9 @@ import org.sonar.api.server.rule.RulesDefinition;
 public class RuleDefinitionsLoader {
   private final RulesDefinition.Context context;
 
-  public RuleDefinitionsLoader() {
-    // No plugin installed
+  public RuleDefinitionsLoader(Optional<List<RulesDefinition>> pluginDefs) {
     context = new RulesDefinition.Context();
-  }
-
-  public RuleDefinitionsLoader(RulesDefinition[] pluginDefs) {
-    context = new RulesDefinition.Context();
-    for (var pluginDefinition : pluginDefs) {
+    for (var pluginDefinition : pluginDefs.orElse(List.of())) {
       pluginDefinition.define(context);
     }
   }

@@ -34,13 +34,13 @@ import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRulesAdapter;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.SonarLintModuleFileSystem;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.plugin.commons.pico.ComponentContainer;
+import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentContainer;
 
-public class ModuleContainer extends ComponentContainer {
+public class ModuleContainer extends SpringComponentContainer {
 
   private final boolean isTransient;
 
-  public ModuleContainer(ComponentContainer parent, boolean isTransient) {
+  public ModuleContainer(SpringComponentContainer parent, boolean isTransient) {
     super(parent);
     this.isTransient = isTransient;
   }
@@ -54,7 +54,7 @@ public class ModuleContainer extends ComponentContainer {
       LanguageDetection.class,
 
       ModuleFileEventNotifier.class);
-    getComponentByType(AnalysisExtensionInstaller.class).install(this, ContainerLifespan.MODULE);
+    getParent().getComponentByType(AnalysisExtensionInstaller.class).install(this, ContainerLifespan.MODULE);
   }
 
   public boolean isTransient() {

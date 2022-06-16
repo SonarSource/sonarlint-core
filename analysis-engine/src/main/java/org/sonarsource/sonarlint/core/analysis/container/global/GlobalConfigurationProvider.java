@@ -19,14 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.global;
 
-import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.config.Configuration;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.ConfigurationBridge;
+import org.springframework.context.annotation.Bean;
 
-public class GlobalConfigurationProvider extends ProviderAdapter {
+public class GlobalConfigurationProvider {
 
   private Configuration globalConfig;
 
+  @Bean("Configuration")
   public Configuration provide(GlobalSettings settings) {
     if (globalConfig == null) {
       this.globalConfig = new ConfigurationBridge(settings);

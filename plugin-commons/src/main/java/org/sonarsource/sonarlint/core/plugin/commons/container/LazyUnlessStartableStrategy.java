@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Analysis Engine
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,23 +17,15 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analysis.container.global;
+package org.sonarsource.sonarlint.core.plugin.commons.container;
 
-import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
-import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentContainer;
+import javax.annotation.Nullable;
+import org.sonar.api.Startable;
+import org.springframework.beans.factory.config.BeanDefinition;
 
-/**
- * Used to load plugin global extensions
- */
-public class GlobalExtensionContainer extends SpringComponentContainer {
-
-  public GlobalExtensionContainer(SpringComponentContainer parent) {
-    super(parent);
-  }
-
+public class LazyUnlessStartableStrategy extends SpringInitStrategy {
   @Override
-  protected void doBeforeStart() {
-    getParent().getComponentByType(AnalysisExtensionInstaller.class).install(this, ContainerLifespan.INSTANCE);
+  protected boolean isLazyInit(BeanDefinition beanDefinition, @Nullable Class<?> clazz) {
+    return clazz == null || !Startable.class.isAssignableFrom(clazz);
   }
-
 }
