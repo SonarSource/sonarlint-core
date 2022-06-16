@@ -38,6 +38,9 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.IssueLite;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Location;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
+import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -83,13 +86,12 @@ class IssueDownloaderTests {
     assertThat(issues).hasSize(1);
 
     var serverIssue = issues.get(0);
+    assertThat(serverIssue).isInstanceOf(LineLevelServerIssue.class);
     assertThat(serverIssue.getKey()).isEqualTo("uuid");
-    assertThat(serverIssue.getLineHash()).isEqualTo("hash");
+    assertThat(((LineLevelServerIssue) serverIssue).getLineHash()).isEqualTo("hash");
     assertThat(serverIssue.getMessage()).isEqualTo("Primary message");
     assertThat(serverIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
-    assertThat(serverIssue.getLine()).isEqualTo(1);
-    assertThat(serverIssue.getTextRange()).isNull();
-    assertThat(serverIssue.getRangeHash()).isNull();
+    assertThat(((LineLevelServerIssue) serverIssue).getLine()).isEqualTo(1);
   }
 
   @Test
@@ -109,13 +111,10 @@ class IssueDownloaderTests {
     assertThat(issues).hasSize(1);
 
     var serverIssue = issues.get(0);
+    assertThat(serverIssue).isInstanceOf(FileLevelServerIssue.class);
     assertThat(serverIssue.getKey()).isEqualTo("uuid");
-    assertThat(serverIssue.getLineHash()).isNull();
     assertThat(serverIssue.getMessage()).isEqualTo("Primary message");
     assertThat(serverIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
-    assertThat(serverIssue.getLine()).isNull();
-    assertThat(serverIssue.getTextRange()).isNull();
-    assertThat(serverIssue.getRangeHash()).isNull();
   }
 
   @Test
@@ -136,16 +135,15 @@ class IssueDownloaderTests {
     assertThat(issues).hasSize(1);
 
     var serverIssue = issues.get(0);
+    assertThat(serverIssue).isInstanceOf(RangeLevelServerIssue.class);
     assertThat(serverIssue.getKey()).isEqualTo("uuid");
-    assertThat(serverIssue.getLineHash()).isNull();
     assertThat(serverIssue.getMessage()).isEqualTo("Primary message");
     assertThat(serverIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
-    assertThat(serverIssue.getLine()).isNull();
-    assertThat(serverIssue.getTextRange().getStartLine()).isEqualTo(1);
-    assertThat(serverIssue.getTextRange().getStartLineOffset()).isEqualTo(2);
-    assertThat(serverIssue.getTextRange().getEndLine()).isEqualTo(3);
-    assertThat(serverIssue.getTextRange().getEndLineOffset()).isEqualTo(4);
-    assertThat(serverIssue.getRangeHash()).isEqualTo("hash");
+    assertThat(((RangeLevelServerIssue) serverIssue).getTextRange().getStartLine()).isEqualTo(1);
+    assertThat(((RangeLevelServerIssue) serverIssue).getTextRange().getStartLineOffset()).isEqualTo(2);
+    assertThat(((RangeLevelServerIssue) serverIssue).getTextRange().getEndLine()).isEqualTo(3);
+    assertThat(((RangeLevelServerIssue) serverIssue).getTextRange().getEndLineOffset()).isEqualTo(4);
+    assertThat(((RangeLevelServerIssue) serverIssue).getRangeHash()).isEqualTo("hash");
   }
 
   @Test
@@ -164,13 +162,10 @@ class IssueDownloaderTests {
     assertThat(issues).hasSize(1);
 
     var serverIssue = issues.get(0);
+    assertThat(serverIssue).isInstanceOf(FileLevelServerIssue.class);
     assertThat(serverIssue.getKey()).isEqualTo("uuid");
-    assertThat(serverIssue.getLineHash()).isNull();
     assertThat(serverIssue.getMessage()).isEqualTo("Primary message");
     assertThat(serverIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
-    assertThat(serverIssue.getLine()).isNull();
-    assertThat(serverIssue.getTextRange()).isNull();
-    assertThat(serverIssue.getRangeHash()).isNull();
   }
 
   @Test

@@ -45,6 +45,10 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.IssueL
 import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 import org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils;
+import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 
 public class IssueDownloader {
 
@@ -128,37 +132,37 @@ public class IssueDownloader {
   }
 
   public ServerIssue convertBatchIssue(ScannerInput.ServerIssue batchIssueFromWs) {
-    return new ServerIssue(
-      batchIssueFromWs.getKey(),
-      batchIssueFromWs.hasResolution(),
-      batchIssueFromWs.getRuleRepository() + ":" + batchIssueFromWs.getRuleKey(),
-      batchIssueFromWs.getMsg(),
-      batchIssueFromWs.hasChecksum() ? batchIssueFromWs.getChecksum() : null,
-      // We have filtered out issues without file path earlier
-      batchIssueFromWs.getPath(),
-      Instant.ofEpochMilli(batchIssueFromWs.getCreationDate()),
-      batchIssueFromWs.getSeverity().name(),
-      batchIssueFromWs.getType(),
-      batchIssueFromWs.hasLine() ? batchIssueFromWs.getLine() : null);
+    var ruleKey = batchIssueFromWs.getRuleRepository() + ":" + batchIssueFromWs.getRuleKey();
+    // We have filtered out issues without file path earlier
+    var filePath = batchIssueFromWs.getPath();
+    var creationDate = Instant.ofEpochMilli(batchIssueFromWs.getCreationDate());
+    var userSeverity = batchIssueFromWs.getManualSeverity() ? batchIssueFromWs.getSeverity().name() : null;
+    if (batchIssueFromWs.hasLine()) {
+      return new LineLevelServerIssue(batchIssueFromWs.getKey(), batchIssueFromWs.hasResolution(), ruleKey, batchIssueFromWs.getMsg(), batchIssueFromWs.getChecksum(), filePath,
+        creationDate, userSeverity, batchIssueFromWs.getType(), batchIssueFromWs.getLine());
+    } else {
+      return new FileLevelServerIssue(batchIssueFromWs.getKey(), batchIssueFromWs.hasResolution(), ruleKey, batchIssueFromWs.getMsg(), filePath, creationDate, userSeverity,
+        batchIssueFromWs.getType());
+    }
   }
 
   public ServerIssue convertLiteIssue(IssueLite liteIssueFromWs) {
-    return new ServerIssue(
-      liteIssueFromWs.getKey(),
-      liteIssueFromWs.getResolved(),
-      liteIssueFromWs.getRuleKey(),
-      liteIssueFromWs.getMainLocation().getMessage(),
-      liteIssueFromWs.getMainLocation().hasTextRange() ? liteIssueFromWs.getMainLocation().getTextRange().getHash() : null,
-      // We have filtered out issues without file path earlier
-      liteIssueFromWs.getMainLocation().getFilePath(),
-      Instant.ofEpochMilli(liteIssueFromWs.getCreationDate()),
-      liteIssueFromWs.getUserSeverity(),
-      liteIssueFromWs.getType(),
-      liteIssueFromWs.getMainLocation().hasTextRange() ? toServerIssueTextRange(liteIssueFromWs.getMainLocation().getTextRange()) : null);
+    var mainLocation = liteIssueFromWs.getMainLocation();
+    // We have filtered out issues without file path earlier
+    var filePath = mainLocation.getFilePath();
+    var creationDate = Instant.ofEpochMilli(liteIssueFromWs.getCreationDate());
+    if (mainLocation.hasTextRange()) {
+      return new RangeLevelServerIssue(liteIssueFromWs.getKey(), liteIssueFromWs.getResolved(), liteIssueFromWs.getRuleKey(), mainLocation.getMessage(),
+        mainLocation.getTextRange().getHash(), filePath, creationDate, liteIssueFromWs.getUserSeverity(),
+        liteIssueFromWs.getType(), toServerIssueTextRange(mainLocation.getTextRange()));
+    } else {
+      return new FileLevelServerIssue(liteIssueFromWs.getKey(), liteIssueFromWs.getResolved(), liteIssueFromWs.getRuleKey(), mainLocation.getMessage(),
+        filePath, creationDate, liteIssueFromWs.getUserSeverity(), liteIssueFromWs.getType());
+    }
   }
 
-  private static ServerIssue.TextRange toServerIssueTextRange(Issues.TextRange textRange) {
-    return new ServerIssue.TextRange(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset());
+  private static RangeLevelServerIssue.TextRange toServerIssueTextRange(Issues.TextRange textRange) {
+    return new RangeLevelServerIssue.TextRange(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset());
   }
 
   @CheckForNull

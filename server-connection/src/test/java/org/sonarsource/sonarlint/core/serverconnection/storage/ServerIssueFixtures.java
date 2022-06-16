@@ -20,12 +20,14 @@
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
 import java.time.Instant;
-import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
 
 public class ServerIssueFixtures {
-  public static ServerIssue aBatchServerIssue() {
-    return new ServerIssue(
+  public static LineLevelServerIssue aBatchServerIssue() {
+    return new LineLevelServerIssue(
       "key",
       true,
       "repo:key",
@@ -38,8 +40,20 @@ public class ServerIssueFixtures {
       1);
   }
 
-  public static ServerIssue aServerIssue() {
-    return new ServerIssue(
+  public static FileLevelServerIssue aFileLevelServerIssue() {
+    return new FileLevelServerIssue(
+      "key",
+      true,
+      "repo:key",
+      "message",
+      "file/path",
+      Instant.now(),
+      "MINOR",
+      "BUG");
+  }
+
+  public static RangeLevelServerIssue aServerIssue() {
+    return new RangeLevelServerIssue(
       "key",
       true,
       "repo:key",
@@ -49,7 +63,7 @@ public class ServerIssueFixtures {
       Instant.now(),
       "MINOR",
       "BUG",
-      new ServerIssue.TextRange(1, 2, 3, 4));
+      new RangeLevelServerIssue.TextRange(1, 2, 3, 4));
   }
 
   public static ServerTaintIssue aServerTaintIssue() {

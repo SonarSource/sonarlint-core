@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.util.Collections;
 import java.util.List;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStore;
 
 public class IssueStoreReader {

@@ -42,8 +42,8 @@ import org.sonarsource.sonarlint.core.serverconnection.DownloadException;
 import org.sonarsource.sonarlint.core.serverconnection.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectStorageStatus;
-import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 
 /**
  * Entry point for SonarLint.

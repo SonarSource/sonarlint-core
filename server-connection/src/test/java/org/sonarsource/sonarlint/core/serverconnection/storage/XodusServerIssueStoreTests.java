@@ -27,12 +27,16 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aBatchServerIssue;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aFileLevelServerIssue;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerIssue;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerTaintIssue;
 
@@ -69,16 +73,15 @@ class XodusServerIssueStoreTests {
     assertThat(savedIssues).isNotEmpty();
     var savedIssue = savedIssues.get(0);
     assertThat(savedIssue.getKey()).isEqualTo("key");
-    assertThat(savedIssue.resolved()).isTrue();
-    assertThat(savedIssue.ruleKey()).isEqualTo("repo:key");
+    assertThat(savedIssue.isResolved()).isTrue();
+    assertThat(savedIssue.getRuleKey()).isEqualTo("repo:key");
     assertThat(savedIssue.getMessage()).isEqualTo("message");
-    assertThat(savedIssue.getLineHash()).isEqualTo("hash");
+    assertThat(((LineLevelServerIssue) savedIssue).getLineHash()).isEqualTo("hash");
     assertThat(savedIssue.getFilePath()).isEqualTo("file/path");
-    assertThat(savedIssue.creationDate()).isEqualTo(creationDate);
-    assertThat(savedIssue.severity()).isEqualTo("MINOR");
-    assertThat(savedIssue.type()).isEqualTo("BUG");
-    assertThat(savedIssue.getLine()).isEqualTo(1);
-    assertThat(savedIssue.getTextRange()).isNull();
+    assertThat(savedIssue.getCreationDate()).isEqualTo(creationDate);
+    assertThat(savedIssue.getUserSeverity()).isEqualTo("MINOR");
+    assertThat(savedIssue.getType()).isEqualTo("BUG");
+    assertThat(((LineLevelServerIssue) savedIssue).getLine()).isEqualTo(1);
   }
 
   @Test
@@ -92,20 +95,18 @@ class XodusServerIssueStoreTests {
     assertThat(savedIssues).isNotEmpty();
     var savedIssue = savedIssues.get(0);
     assertThat(savedIssue.getKey()).isEqualTo("key");
-    assertThat(savedIssue.resolved()).isTrue();
-    assertThat(savedIssue.ruleKey()).isEqualTo("repo:key");
+    assertThat(savedIssue.isResolved()).isTrue();
+    assertThat(savedIssue.getRuleKey()).isEqualTo("repo:key");
     assertThat(savedIssue.getMessage()).isEqualTo("message");
-    assertThat(savedIssue.getLineHash()).isNull();
     assertThat(savedIssue.getFilePath()).isEqualTo("file/path");
-    assertThat(savedIssue.creationDate()).isEqualTo(creationDate);
-    assertThat(savedIssue.severity()).isEqualTo("MINOR");
-    assertThat(savedIssue.type()).isEqualTo("BUG");
-    assertThat(savedIssue.getLine()).isNull();
-    assertThat(savedIssue.getRangeHash()).isEqualTo("hash");
-    assertThat(savedIssue.getTextRange().getStartLine()).isEqualTo(1);
-    assertThat(savedIssue.getTextRange().getStartLineOffset()).isEqualTo(2);
-    assertThat(savedIssue.getTextRange().getEndLine()).isEqualTo(3);
-    assertThat(savedIssue.getTextRange().getEndLineOffset()).isEqualTo(4);
+    assertThat(savedIssue.getCreationDate()).isEqualTo(creationDate);
+    assertThat(savedIssue.getUserSeverity()).isEqualTo("MINOR");
+    assertThat(savedIssue.getType()).isEqualTo("BUG");
+    assertThat(((RangeLevelServerIssue) savedIssue).getRangeHash()).isEqualTo("hash");
+    assertThat(((RangeLevelServerIssue) savedIssue).getTextRange().getStartLine()).isEqualTo(1);
+    assertThat(((RangeLevelServerIssue) savedIssue).getTextRange().getStartLineOffset()).isEqualTo(2);
+    assertThat(((RangeLevelServerIssue) savedIssue).getTextRange().getEndLine()).isEqualTo(3);
+    assertThat(((RangeLevelServerIssue) savedIssue).getTextRange().getEndLineOffset()).isEqualTo(4);
   }
 
   @Test
@@ -198,25 +199,13 @@ class XodusServerIssueStoreTests {
   }
 
   @Test
-  void should_save_batch_issue_without_line() {
+  void should_save_issue_without_line() {
     store.replaceAllIssuesOfProject("projectKey", "branch", List.of(
-      aBatchServerIssue().setFilePath("file/path").setLine(null).setLineHash(null)));
+      aFileLevelServerIssue().setFilePath("file/path")));
 
     var issue = store.load("projectKey", "branch", "file/path").get(0);
 
-    assertThat(issue.getLine()).isNull();
-    assertThat(issue.getLineHash()).isNull();
-  }
-
-  @Test
-  void should_save_pull_issue_without_line() {
-    store.replaceAllIssuesOfProject("projectKey", "branch", List.of(
-      aServerIssue().setFilePath("file/path").setTextRange(null).setRangeHash(null)));
-
-    var issue = store.load("projectKey", "branch", "file/path").get(0);
-
-    assertThat(issue.getTextRange()).isNull();
-    assertThat(issue.getRangeHash()).isNull();
+    assertThat(issue).isInstanceOf(FileLevelServerIssue.class);
   }
 
   @Test

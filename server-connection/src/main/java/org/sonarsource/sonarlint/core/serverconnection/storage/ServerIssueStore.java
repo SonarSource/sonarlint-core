@@ -21,8 +21,8 @@ package org.sonarsource.sonarlint.core.serverconnection.storage;
 
 import java.util.List;
 import java.util.function.Consumer;
-import org.sonarsource.sonarlint.core.serverconnection.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 
 public interface ServerIssueStore {
 
