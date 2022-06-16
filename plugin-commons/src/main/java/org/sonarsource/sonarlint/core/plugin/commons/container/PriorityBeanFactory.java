@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.plugin.commons.container;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -62,12 +63,12 @@ public class PriorityBeanFactory extends DefaultListableBeanFactory {
     return null;
   }
 
-  private static List<Bean> highestPriority(List<Bean> candidates, PriorityFunction function) {
+  private static List<Bean> highestPriority(List<Bean> candidates, Function<PriorityBeanFactory.Bean, Integer> priorityFunction) {
     List<Bean> highestPriorityBeans = new ArrayList<>();
     Integer highestPriority = null;
 
     for (Bean candidate : candidates) {
-      Integer candidatePriority = function.classify(candidate);
+      Integer candidatePriority = priorityFunction.apply(candidate);
       if (candidatePriority == null) {
         candidatePriority = Integer.MAX_VALUE;
       }
@@ -88,7 +89,7 @@ public class PriorityBeanFactory extends DefaultListableBeanFactory {
   @CheckForNull
   private Integer getHierarchyPriority(String beanName) {
     DefaultListableBeanFactory factory = this;
-    int i = 1;
+    var i = 1;
     while (factory != null) {
       if (factory.containsBeanDefinition(beanName)) {
         return i;
@@ -130,9 +131,4 @@ public class PriorityBeanFactory extends DefaultListableBeanFactory {
     }
   }
 
-  @FunctionalInterface
-  private interface PriorityFunction {
-    @CheckForNull
-    Integer classify(Bean candidate);
-  }
 }

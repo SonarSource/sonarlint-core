@@ -58,7 +58,7 @@ public class ExtensionInstaller {
     return this;
   }
 
-  private void loadExtensions(ExtensionContainer container, String pluginKey, Plugin.Context context, BiPredicate<String, Object> extensionFilter) {
+  private static void loadExtensions(ExtensionContainer container, String pluginKey, Plugin.Context context, BiPredicate<String, Object> extensionFilter) {
     for (Object extension : context.getExtensions()) {
       if (extensionFilter.test(pluginKey, extension)) {
         container.addExtension(pluginKey, extension);

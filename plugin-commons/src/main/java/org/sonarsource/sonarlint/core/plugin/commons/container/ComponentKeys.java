@@ -50,7 +50,7 @@ class ComponentKeys {
   }
 
   String ofInstance(Object component, SonarLintLogger log) {
-    String key = component.toString();
+    var key = component.toString();
     if (IDENTITY_HASH_PATTERN.matcher(key).matches()) {
       if (!objectsWithoutToString.add(component.getClass())) {
         log.warn(String.format("Bad component key: %s. Please implement toString() method on class %s", key, component.getClass().getName()));
