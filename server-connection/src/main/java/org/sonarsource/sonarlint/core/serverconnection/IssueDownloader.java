@@ -157,13 +157,14 @@ public class IssueDownloader {
     // We have filtered out issues without file path earlier
     var filePath = mainLocation.getFilePath();
     var creationDate = Instant.ofEpochMilli(liteIssueFromWs.getCreationDate());
+    var userSeverity = liteIssueFromWs.hasUserSeverity() ? liteIssueFromWs.getUserSeverity() : null;
     if (mainLocation.hasTextRange()) {
       return new RangeLevelServerIssue(liteIssueFromWs.getKey(), liteIssueFromWs.getResolved(), liteIssueFromWs.getRuleKey(), mainLocation.getMessage(),
-        mainLocation.getTextRange().getHash(), filePath, creationDate, liteIssueFromWs.getUserSeverity(),
+        mainLocation.getTextRange().getHash(), filePath, creationDate, userSeverity,
         liteIssueFromWs.getType(), toServerIssueTextRange(mainLocation.getTextRange()));
     } else {
       return new FileLevelServerIssue(liteIssueFromWs.getKey(), liteIssueFromWs.getResolved(), liteIssueFromWs.getRuleKey(), mainLocation.getMessage(),
-        filePath, creationDate, liteIssueFromWs.getUserSeverity(), liteIssueFromWs.getType());
+        filePath, creationDate, userSeverity, liteIssueFromWs.getType());
     }
   }
 
