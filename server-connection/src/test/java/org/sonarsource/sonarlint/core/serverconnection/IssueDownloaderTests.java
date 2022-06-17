@@ -128,6 +128,7 @@ class IssueDownloaderTests {
     var issue = IssueLite.newBuilder()
       .setKey("uuid")
       .setRuleKey("sonarjava:S123")
+      .setType("BUG")
       .setMainLocation(Location.newBuilder().setFilePath("foo/bar/Hello.java").setMessage("Primary message")
         .setTextRange(org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.TextRange.newBuilder().setStartLine(1).setStartLineOffset(2).setEndLine(3)
           .setEndLineOffset(4).setHash("hash")))
@@ -145,11 +146,37 @@ class IssueDownloaderTests {
     assertThat(serverIssue.getKey()).isEqualTo("uuid");
     assertThat(serverIssue.getMessage()).isEqualTo("Primary message");
     assertThat(serverIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(serverIssue.getUserSeverity()).isNull();
+    assertThat(serverIssue.getType()).isEqualTo("BUG");
     assertThat(((RangeLevelServerIssue) serverIssue).getTextRange().getStartLine()).isEqualTo(1);
     assertThat(((RangeLevelServerIssue) serverIssue).getTextRange().getStartLineOffset()).isEqualTo(2);
     assertThat(((RangeLevelServerIssue) serverIssue).getTextRange().getEndLine()).isEqualTo(3);
     assertThat(((RangeLevelServerIssue) serverIssue).getTextRange().getEndLineOffset()).isEqualTo(4);
     assertThat(((RangeLevelServerIssue) serverIssue).getRangeHash()).isEqualTo("hash");
+  }
+
+  @Test
+  void test_download_one_issue_pull_ws_with_user_severity() {
+    var timestamp = Issues.IssuesPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
+    var issue = IssueLite.newBuilder()
+      .setKey("uuid")
+      .setRuleKey("sonarjava:S123")
+      .setType("BUG")
+      .setUserSeverity("MAJOR")
+      .setMainLocation(Location.newBuilder().setFilePath("foo/bar/Hello.java").setMessage("Primary message")
+        .setTextRange(org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.TextRange.newBuilder().setStartLine(1).setStartLineOffset(2).setEndLine(3)
+          .setEndLineOffset(4).setHash("hash")))
+      .setCreationDate(123456789L)
+      .build();
+
+    mockServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, issue);
+
+    var result = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty());
+    assertThat(result.getChangedIssues()).hasSize(1);
+    assertThat(result.getClosedIssueKeys()).isEmpty();
+
+    var serverIssue = result.getChangedIssues().get(0);
+    assertThat(serverIssue.getUserSeverity()).isEqualTo("MAJOR");
   }
 
   @Test
