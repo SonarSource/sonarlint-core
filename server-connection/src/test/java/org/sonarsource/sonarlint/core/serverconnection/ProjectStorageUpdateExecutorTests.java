@@ -53,21 +53,13 @@ class ProjectStorageUpdateExecutorTests {
   private final ProjectStoragePaths projectStoragePaths = mock(ProjectStoragePaths.class);
   private final ProjectFileListDownloader projectFileListDownloader = mock(ProjectFileListDownloader.class);
 
-  public void setUp(Path tempDir) throws IOException {
-    Files.createDirectory(tempDir);
+  @Test
+  void test_update_components(@TempDir Path tempDir) throws IOException {
+    Files.createDirectory(tempDir.resolve("tmp"));
 
     var serverInfoStore = new ServerInfoStore(new StorageFolder.Default(tempDir));
     serverInfoStore.store(new ServerInfo("", "", ""));
 
-    underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, projectFileListDownloader);
-  }
-
-  @Test
-  void test_update_components(@TempDir Path tempDir) throws IOException {
-    setUp(tempDir.resolve("tmp"));
-
-    var temp = tempDir.resolve("tmp2");
-    Files.createDirectories(temp);
     underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, projectFileListDownloader);
 
     List<String> fileList = new ArrayList<>();
@@ -77,9 +69,31 @@ class ProjectStorageUpdateExecutorTests {
 
     var serverApi = new ServerApi(mock(ServerApiHelper.class));
     when(projectFileListDownloader.get(eq(serverApi), eq("rootModule"), any(ProgressMonitor.class))).thenReturn(fileList);
-    underTest.updateComponents(serverApi, "rootModule", temp, mock(ProgressMonitor.class));
+    underTest.updateComponents(serverApi, "rootModule", tempDir, mock(ProgressMonitor.class));
 
-    var components = ProtobufUtil.readFile(temp.resolve(ProjectStoragePaths.COMPONENT_LIST_PB), Sonarlint.ProjectComponents.parser());
+    var components = ProtobufUtil.readFile(tempDir.resolve(ProjectStoragePaths.COMPONENT_LIST_PB), Sonarlint.ProjectComponents.parser());
+    assertThat(components.getComponentList()).containsOnly(
+      "pom.xml", "A/a.java", "B/b.java");
+  }
+
+  @Test
+  void test_update(@TempDir Path storagePath) throws IOException {
+    when(projectStoragePaths.getProjectStorageRoot("rootModule")).thenReturn(storagePath);
+    underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, projectFileListDownloader);
+
+    List<String> fileList = new ArrayList<>();
+    fileList.add("rootModule:pom.xml");
+    fileList.add("rootModule:A/a.java");
+    fileList.add("rootModule:B/b.java");
+
+    var serverApi = new ServerApi(mock(ServerApiHelper.class));
+    when(projectFileListDownloader.get(eq(serverApi), eq("rootModule"), any(ProgressMonitor.class))).thenReturn(fileList);
+    underTest.update(serverApi, "rootModule", mock(ProgressMonitor.class));
+
+    var status = ProtobufUtil.readFile(storagePath.resolve(ProjectStoragePaths.STORAGE_STATUS_PB), Sonarlint.StorageStatus.parser());
+    assertThat(status.getStorageVersion()).isEqualTo(ProjectStoragePaths.STORAGE_VERSION);
+
+    var components = ProtobufUtil.readFile(storagePath.resolve(ProjectStoragePaths.COMPONENT_LIST_PB), Sonarlint.ProjectComponents.parser());
     assertThat(components.getComponentList()).containsOnly(
       "pom.xml", "A/a.java", "B/b.java");
   }

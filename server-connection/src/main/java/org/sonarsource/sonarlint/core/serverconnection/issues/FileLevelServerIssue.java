@@ -20,14 +20,15 @@
 package org.sonarsource.sonarlint.core.serverconnection.issues;
 
 import java.time.Instant;
+import javax.annotation.Nullable;
 
 /**
  * Issues reported at file level.
  */
 public class FileLevelServerIssue extends ServerIssue<FileLevelServerIssue> {
 
-  public FileLevelServerIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant creationDate, String severity, String type) {
-    super(key, resolved, ruleKey, message, filePath, creationDate, severity, type);
+  public FileLevelServerIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant creationDate, @Nullable String userSeverity, String type) {
+    super(key, resolved, ruleKey, message, filePath, creationDate, userSeverity, type);
   }
 
 }
