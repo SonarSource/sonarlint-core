@@ -154,7 +154,7 @@ public class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
     } else {
       assertThat(engine.getServerBranches(PROJECT_KEY).getBranchNames()).containsOnly("master", LONG_BRANCH);
     }
-    assertThat(engine.getServerBranches(PROJECT_KEY).getMainBranchName()).contains("master");
+    assertThat(engine.getServerBranches(PROJECT_KEY).getMainBranchName()).isEqualTo("master");
   }
 
   @Test

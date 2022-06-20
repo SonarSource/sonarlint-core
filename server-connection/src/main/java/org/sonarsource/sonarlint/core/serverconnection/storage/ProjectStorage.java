@@ -22,11 +22,9 @@ package org.sonarsource.sonarlint.core.serverconnection.storage;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
@@ -76,14 +74,14 @@ public class ProjectStorage {
       : ProtobufUtil.readFile(pbFilePath, Sonarlint.ProjectBranches.parser())));
   }
 
-  private ProjectBranches adapt(Sonarlint.ProjectBranches projectBranches) {
-    return new ProjectBranches(Set.copyOf(projectBranches.getBranchNameList()), Optional.ofNullable(StringUtils.trimToNull(projectBranches.getMainBranchName())));
+  private static ProjectBranches adapt(Sonarlint.ProjectBranches projectBranches) {
+    return new ProjectBranches(Set.copyOf(projectBranches.getBranchNameList()), projectBranches.getMainBranchName());
   }
 
-  private Sonarlint.ProjectBranches adapt(ProjectBranches projectBranches) {
+  private static Sonarlint.ProjectBranches adapt(ProjectBranches projectBranches) {
     return Sonarlint.ProjectBranches.newBuilder()
       .addAllBranchName(projectBranches.getBranchNames())
-      .setMainBranchName(projectBranches.getMainBranchName().orElse(""))
+      .setMainBranchName(projectBranches.getMainBranchName())
       .build();
   }
 
