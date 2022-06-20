@@ -19,9 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
+import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
 
 @Immutable
@@ -40,8 +39,7 @@ public class ConnectedAnalysisConfiguration extends AbstractAnalysisConfiguratio
     return new Builder();
   }
 
-  @CheckForNull
-  public String projectKey() {
+  public String getProjectKey() {
     return projectKey;
   }
 
@@ -52,10 +50,7 @@ public class ConnectedAnalysisConfiguration extends AbstractAnalysisConfiguratio
 
   private String generateString() {
     var sb = new StringBuilder();
-    sb.append("[\n");
-    if (projectKey != null) {
-      sb.append("  projectKey: ").append(projectKey).append("\n");
-    }
+    sb.append("[\n").append("  projectKey: ").append(projectKey).append("\n");
     generateToStringCommon(sb);
     generateToStringInputFiles(sb);
     sb.append("]\n");
@@ -68,12 +63,15 @@ public class ConnectedAnalysisConfiguration extends AbstractAnalysisConfiguratio
     private Builder() {
     }
 
-    public Builder setProjectKey(@Nullable String projectKey) {
+    public Builder setProjectKey(String projectKey) {
       this.projectKey = projectKey;
       return this;
     }
 
     public ConnectedAnalysisConfiguration build() {
+      if (StringUtils.isBlank(projectKey)) {
+        throw new IllegalStateException("'projectKey' is mandatory");
+      }
       return new ConnectedAnalysisConfiguration(this);
     }
   }
