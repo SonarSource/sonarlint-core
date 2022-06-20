@@ -19,14 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
-import java.util.Optional;
 import java.util.Set;
 
 public class ProjectBranches {
   private final Set<String> branchNames;
-  private final Optional<String> mainBranchName;
+  private final String mainBranchName;
 
-  public ProjectBranches(Set<String> branchNames, Optional<String> mainBranchName) {
+  public ProjectBranches(Set<String> branchNames, String mainBranchName) {
     this.branchNames = branchNames;
     this.mainBranchName = mainBranchName;
   }
@@ -35,7 +34,7 @@ public class ProjectBranches {
     return branchNames;
   }
 
-  public Optional<String> getMainBranchName() {
+  public String getMainBranchName() {
     return mainBranchName;
   }
 
