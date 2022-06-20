@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Date;
+import java.time.Instant;
 import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.commons.SonarLintCoreVersion;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -78,7 +78,7 @@ public class ProjectStorageUpdateExecutor {
     var storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(ProjectStoragePaths.STORAGE_VERSION)
       .setSonarlintCoreVersion(SonarLintCoreVersion.get())
-      .setUpdateTimestamp(new Date().getTime())
+      .setUpdateTimestamp(Instant.now().toEpochMilli())
       .build();
     ProtobufUtil.writeToFile(storageStatus, temp.resolve(ProjectStoragePaths.STORAGE_STATUS_PB));
   }
