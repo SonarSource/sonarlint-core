@@ -183,15 +183,13 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     requireNonNull(issueListener);
 
     setLogging(logOutput);
-    serverConnection.checkStatus(configuration.projectKey());
+    serverConnection.checkStatus(configuration.getProjectKey());
 
     var analysisConfigBuilder = AnalysisConfiguration.builder()
       .addInputFiles(configuration.inputFiles());
-    var projectKey = configuration.projectKey();
-    if (projectKey != null) {
-      analysisConfigBuilder.putAllExtraProperties(serverConnection.getAnalyzerConfiguration(projectKey).getSettings().getAll());
-      analysisConfigBuilder.putAllExtraProperties(globalConfig.extraProperties());
-    }
+    var projectKey = configuration.getProjectKey();
+    analysisConfigBuilder.putAllExtraProperties(serverConnection.getAnalyzerConfiguration(projectKey).getSettings().getAll());
+    analysisConfigBuilder.putAllExtraProperties(globalConfig.extraProperties());
     var activeRulesContext = buildActiveRulesContext(configuration);
     analysisConfigBuilder.putAllExtraProperties(configuration.extraProperties())
       .addActiveRules(activeRulesContext.activeRules)
@@ -211,14 +209,8 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
 
   private ActiveRulesContext buildActiveRulesContext(ConnectedAnalysisConfiguration configuration) {
     var analysisRulesContext = new ActiveRulesContext();
+    var projectKey = configuration.getProjectKey();
     // could be empty before the first sync
-    var projectKey = configuration.projectKey();
-    if (projectKey == null) {
-      // this should be forbidden by client side
-      LOG.debug("No project key provided, no rules will be used for analysis");
-      return analysisRulesContext;
-    }
-
     serverConnection.getAnalyzerConfiguration(projectKey).getRuleSetByLanguageKey().entrySet()
       .stream().filter(e -> Language.forKey(e.getKey()).filter(l -> globalConfig.getEnabledLanguages().contains(l)).isPresent())
       .forEach(e -> {

@@ -40,9 +40,9 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 import testutils.TestUtils;
 
+import static mediumtest.fixtures.StorageFixture.newStorage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static mediumtest.fixtures.StorageFixture.newStorage;
 
 class ConnectedStorageProblemsMediumTests {
 
@@ -77,6 +77,7 @@ class ConnectedStorageProblemsMediumTests {
 
     var analysisConfig = ConnectedAnalysisConfiguration.builder()
       .setBaseDir(baseDir)
+      .setProjectKey("myProject")
       .build();
 
     var thrown2 = assertThrows(StorageException.class, () -> sonarlint.analyze(analysisConfig, i -> {
@@ -109,6 +110,7 @@ class ConnectedStorageProblemsMediumTests {
 
     var analysisConfig = ConnectedAnalysisConfiguration.builder()
       .setBaseDir(baseDir)
+      .setProjectKey("myProject")
       .build();
 
     var thrown2 = assertThrows(StorageException.class, () -> sonarlint.analyze(analysisConfig, i -> {
@@ -122,6 +124,7 @@ class ConnectedStorageProblemsMediumTests {
     var storage = newStorage(storageId)
       .withJSPlugin()
       .withJavaPlugin()
+      .withProject("myProject")
       .create(slHome);
 
     var cachedJSPlugin = storage.getPluginPaths().get(0);
@@ -145,7 +148,7 @@ class ConnectedStorageProblemsMediumTests {
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
-      .setProjectKey(null)
+      .setProjectKey("myProject")
       .setBaseDir(baseDir)
       .addInputFile(inputFile).build(),
       issues::add, null, null);

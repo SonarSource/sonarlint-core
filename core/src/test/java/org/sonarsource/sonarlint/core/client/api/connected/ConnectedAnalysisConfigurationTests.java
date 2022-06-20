@@ -26,11 +26,13 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration.Builder;
 import testutils.TestClientInputFile;
 
 import static java.nio.file.Files.createDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ConnectedAnalysisConfigurationTests {
 
@@ -52,7 +54,7 @@ class ConnectedAnalysisConfigurationTests {
       .addInputFiles(inputFile, testInputFile)
       .putAllExtraProperties(props)
       .build();
-    assertThat(config.toString()).isEqualTo("[\n" +
+    assertThat(config).hasToString("[\n" +
       "  projectKey: foo\n" +
       "  baseDir: " + baseDir.toString() + "\n" +
       "  extraProperties: {sonar.java.libraries=foo bar}\n" +
@@ -64,23 +66,14 @@ class ConnectedAnalysisConfigurationTests {
       "]\n");
     assertThat(config.baseDir()).isEqualTo(baseDir);
     assertThat(config.inputFiles()).containsExactly(inputFile, testInputFile);
-    assertThat(config.projectKey()).isEqualTo("foo");
+    assertThat(config.getProjectKey()).isEqualTo("foo");
     assertThat(config.extraProperties()).containsExactly(entry("sonar.java.libraries", "foo bar"));
+  }
 
-    config = ConnectedAnalysisConfiguration.builder()
-      .setBaseDir(baseDir)
-      .addInputFiles(inputFile, testInputFile)
-      .putAllExtraProperties(props)
-      .build();
-    assertThat(config.toString()).isEqualTo("[\n" +
-      "  baseDir: " + baseDir.toString() + "\n" +
-      "  extraProperties: {sonar.java.libraries=foo bar}\n" +
-      "  moduleKey: null\n" +
-      "  inputFiles: [\n" +
-      "    " + srcFile1.toUri().toString() + " (UTF-8)\n" +
-      "    " + srcFile2.toUri().toString() + " (UTF-8) [test]\n" +
-      "  ]\n" +
-      "]\n");
-
+  @Test
+  void test_projectKey_is_mandatory() {
+    Builder builder = ConnectedAnalysisConfiguration.builder();
+    var e = assertThrows(IllegalStateException.class, builder::build);
+    assertThat(e).hasMessage("'projectKey' is mandatory");
   }
 }
