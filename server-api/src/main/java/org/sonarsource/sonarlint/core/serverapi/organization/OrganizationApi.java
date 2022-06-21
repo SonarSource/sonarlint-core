@@ -26,7 +26,6 @@ import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations;
-import org.sonarsource.sonarlint.core.serverapi.system.ServerVersionAndStatusChecker;
 
 public class OrganizationApi {
   private final ServerApiHelper helper;
@@ -36,25 +35,11 @@ public class OrganizationApi {
   }
 
   public List<ServerOrganization> listUserOrganizations(ProgressMonitor progress) {
-    var serverChecker = new ServerVersionAndStatusChecker(helper);
-    return listUserOrganizations(serverChecker, progress);
+    return fetchUserOrganizations(progress);
   }
 
   public Optional<ServerOrganization> getOrganization(String organizationKey, ProgressMonitor progress) {
-    var serverChecker = new ServerVersionAndStatusChecker(helper);
-    checkServer(serverChecker, progress);
-    return fetchOrganization(organizationKey, progress.subProgress(0.2f, 1.0f, "Fetch organization"));
-  }
-
-  private List<ServerOrganization> listUserOrganizations(ServerVersionAndStatusChecker serverChecker, ProgressMonitor progress) {
-    checkServer(serverChecker, progress);
-    return fetchUserOrganizations(progress.subProgress(0.2f, 1.0f, "Fetch organizations"));
-  }
-
-  private static void checkServer(ServerVersionAndStatusChecker serverChecker, ProgressMonitor progress) {
-    progress.setProgressAndCheckCancel("Check server version", 0.1f);
-    serverChecker.checkVersionAndStatus();
-    progress.setProgressAndCheckCancel("Fetch organizations", 0.2f);
+    return fetchOrganization(organizationKey, progress);
   }
 
   public Optional<ServerOrganization> fetchOrganization(String organizationKey, ProgressMonitor progress) {

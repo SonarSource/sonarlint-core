@@ -26,7 +26,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import mediumtest.fixtures.ProjectStorageFixture;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterAll;
@@ -49,7 +48,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
-import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
 import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileListener;
 import testutils.MockWebServerExtensionWithProtobuf;
@@ -58,14 +56,12 @@ import testutils.TestUtils;
 
 import static mediumtest.fixtures.StorageFixture.newStorage;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.sonarsource.sonarlint.core.client.api.common.ClientFileSystemFixtures.aClientFileSystemWith;
 import static org.sonarsource.sonarlint.core.client.api.common.ClientFileSystemFixtures.anEmptyClientFileSystem;
 import static org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension.httpClient;
-import static testutils.TestUtils.createNoOpIssueListener;
 import static testutils.TestUtils.createNoOpLogOutput;
 
 class ConnectedIssueMediumTests {
@@ -87,7 +83,6 @@ class ConnectedIssueMediumTests {
           .withActiveRule("java:S106", "MAJOR")
           .withActiveRule("java:S1220", "MINOR")
           .withActiveRule("java:S1481", "BLOCKER")))
-      .withProject("stale_module", ProjectStorageFixture.ProjectStorageBuilder::stale)
       .create(slHome);
 
     var nodeJsHelper = new NodeJsHelper();
@@ -116,25 +111,6 @@ class ConnectedIssueMediumTests {
   @Test
   void testContainerInfo() {
     assertThat(sonarlint.getPluginDetails()).extracting("key").containsOnly("java", "javascript");
-    assertThat(sonarlint.allProjectsByKey()).containsKeys("test-project", "test-project-2");
-  }
-
-  @Test
-  void testStaleProject(@TempDir Path baseDir) {
-    assertThat(sonarlint.getProjectStorageStatus("stale_module").isStale()).isTrue();
-    var config = ConnectedAnalysisConfiguration.builder()
-      .setProjectKey("stale_module")
-      .setBaseDir(baseDir)
-      .setModuleKey("key")
-      .build();
-
-    try {
-      sonarlint.analyze(config, createNoOpIssueListener(), null, null);
-      fail("Expected exception");
-    } catch (Exception e) {
-      assertThat(e).isInstanceOf(StorageException.class)
-        .hasMessage("Stored data for project 'stale_module' is stale because it was created with a different version of SonarLint. Please update the binding.");
-    }
   }
 
   @Test

@@ -23,18 +23,13 @@ import java.util.Date;
 
 public class ProjectStorageStatus {
   private final Date lastUpdateDate;
-  private final boolean stale;
 
   public ProjectStorageStatus(Date lastUpdateDate, boolean stale) {
     this.lastUpdateDate = lastUpdateDate;
-    this.stale = stale;
   }
 
   public Date getLastUpdateDate() {
     return lastUpdateDate;
   }
 
-  public boolean isStale() {
-    return stale;
-  }
 }

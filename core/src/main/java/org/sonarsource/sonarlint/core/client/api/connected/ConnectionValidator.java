@@ -25,8 +25,8 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.authentication.AuthenticationChecker;
 import org.sonarsource.sonarlint.core.serverapi.system.DefaultValidationResult;
-import org.sonarsource.sonarlint.core.serverapi.system.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.serverapi.system.ValidationResult;
+import org.sonarsource.sonarlint.core.serverconnection.ServerVersionAndStatusChecker;
 
 public class ConnectionValidator {
   private final ServerApiHelper helper;
@@ -36,7 +36,7 @@ public class ConnectionValidator {
   }
 
   public CompletableFuture<ValidationResult> validateConnection() {
-    var serverChecker = new ServerVersionAndStatusChecker(helper);
+    var serverChecker = new ServerVersionAndStatusChecker(new ServerApi(helper));
     var authChecker = new AuthenticationChecker(helper);
     return serverChecker.checkVersionAndStatusAsync()
       .thenApply(check -> {

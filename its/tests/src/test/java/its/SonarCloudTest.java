@@ -176,12 +176,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
       .setExtraProperties(globalProps)
       .build());
-    assertThat(engine.getGlobalStorageStatus()).isNull();
-
-    updateGlobal();
-
-    assertThat(engine.getGlobalStorageStatus()).isNotNull();
-    assertThat(engine.getGlobalStorageStatus().isStale()).isFalse();
 
     Set<String> ALL_PROJECTS = Set.of(
       projectKey(PROJECT_KEY_JAVA),
@@ -269,12 +263,10 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @Test
   public void downloadProjects() {
-    assertThat(engine.allProjectsByKey()).isNotEmpty();
     provisionProject("foo-bar", "Foo");
     assertThat(engine.downloadAllProjects(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), null)).containsKeys(projectKey("foo-bar"),
       projectKey(PROJECT_KEY_JAVA),
       projectKey(PROJECT_KEY_PHP));
-    assertThat(engine.allProjectsByKey()).containsKeys(projectKey("foo-bar"), projectKey(PROJECT_KEY_JAVA), projectKey(PROJECT_KEY_PHP));
   }
 
   @Test
@@ -491,10 +483,6 @@ public class SonarCloudTest extends AbstractConnectedTest {
       .setKey(key)
       .setValues(Collections.singletonList(value))
       .setComponent(moduleKey));
-  }
-
-  private static void updateGlobal() {
-    engine.update(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), null);
   }
 
   private static EndpointParams sonarcloudEndpointITOrg() {

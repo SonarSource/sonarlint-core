@@ -42,17 +42,16 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.commons.Language;
-import mediumtest.fixtures.ProjectStorageFixture;
-import testutils.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules.Rule;
+import testutils.MockWebServerExtensionWithProtobuf;
 import testutils.PluginLocator;
 import testutils.TestUtils;
 
+import static mediumtest.fixtures.StorageFixture.newStorage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension.httpClient;
-import static mediumtest.fixtures.StorageFixture.newStorage;
 
 class ConnectedEmbeddedPluginMediumTests {
 
@@ -69,7 +68,6 @@ class ConnectedEmbeddedPluginMediumTests {
       .withJSPlugin()
       .withJavaPlugin()
       .withProject("test-project")
-      .withProject("stale_module", ProjectStorageFixture.ProjectStorageBuilder::stale)
       .withProject(JAVA_MODULE_KEY, project -> project
         .withRuleSet("java", ruleSet -> ruleSet
           // Emulate server returning a deprecated key for local analyzer

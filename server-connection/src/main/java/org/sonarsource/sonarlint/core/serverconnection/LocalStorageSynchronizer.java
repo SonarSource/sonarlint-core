@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.serverapi.branches.ServerBranch;
 import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStorage;
+import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -53,6 +54,9 @@ public class LocalStorageSynchronizer {
       LOG.info("[SYNC] Cannot synchronize with server as it is not UP ({})", serverStatus.getStatus());
       return new SynchronizationResult(false);
     }
+
+    new ServerVersionAndStatusChecker(serverApi).checkVersionAndStatus();
+
     var anyPluginUpdated = pluginsSynchronizer.synchronize(serverApi, progressMonitor);
     projectKeys.stream()
       .collect(Collectors.toMap(Function.identity(), projectKey -> synchronizeAnalyzerConfig(serverApi, projectKey, progressMonitor)))
@@ -66,11 +70,17 @@ public class LocalStorageSynchronizer {
 
   private AnalyzerConfiguration synchronizeAnalyzerConfig(ServerApi serverApi, String projectKey, ProgressMonitor progressMonitor) {
     LOG.info("[SYNC] Synchronizing analyzer configuration for project '{}'", projectKey);
-    var currentRuleSets = projectStorage.getAnalyzerConfiguration(projectKey).getRuleSetByLanguageKey();
+    Map<String, RuleSet> currentRuleSets;
+    try {
+      currentRuleSets = projectStorage.getAnalyzerConfiguration(projectKey).getRuleSetByLanguageKey();
+    } catch (StorageException e) {
+      currentRuleSets = Map.of();
+    }
+    var currentRuleSetsFinal = currentRuleSets;
     var settings = new Settings(serverApi.settings().getProjectSettings(projectKey));
     var ruleSetsByLanguageKey = serverApi.qualityProfile().getQualityProfiles(projectKey).stream()
       .filter(qualityProfile -> enabledLanguageKeys.contains(qualityProfile.getLanguage()))
-      .collect(Collectors.toMap(QualityProfile::getLanguage, profile -> toRuleSet(serverApi, currentRuleSets, profile, progressMonitor)));
+      .collect(Collectors.toMap(QualityProfile::getLanguage, profile -> toRuleSet(serverApi, currentRuleSetsFinal, profile, progressMonitor)));
     return new AnalyzerConfiguration(settings, ruleSetsByLanguageKey);
   }
 

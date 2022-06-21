@@ -89,14 +89,20 @@ public class ProjectStorage {
     var projectFilePath = getAnalyzerConfigFilePath(projectKey);
     FileUtils.mkdirs(projectFilePath.getParent());
     rwLock.write(() -> {
-      writeToFile(adapt(updater.apply(adapt(readConfiguration(projectFilePath)))), projectFilePath);
+      Sonarlint.AnalyzerConfiguration config;
+      try {
+        config = readConfiguration(projectFilePath);
+      } catch (StorageException e) {
+        LOG.warn("Unable to read storage. Creating a new one.", e);
+        config = Sonarlint.AnalyzerConfiguration.newBuilder().build();
+      }
+      writeToFile(adapt(updater.apply(adapt(config))), projectFilePath);
       LOG.debug("Storing project data in {}", projectFilePath);
     });
   }
 
   private static Sonarlint.AnalyzerConfiguration readConfiguration(Path projectFilePath) {
-    return !Files.exists(projectFilePath) ? Sonarlint.AnalyzerConfiguration.newBuilder().build()
-      : ProtobufUtil.readFile(projectFilePath, Sonarlint.AnalyzerConfiguration.parser());
+    return ProtobufUtil.readFile(projectFilePath, Sonarlint.AnalyzerConfiguration.parser());
   }
 
   private static AnalyzerConfiguration adapt(Sonarlint.AnalyzerConfiguration analyzerConfiguration) {

@@ -24,18 +24,16 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.Paging;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations.Organization;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations.SearchWsResponse;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.Paging;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
 
 class OrganizationApiTests {
 
@@ -82,36 +80,6 @@ class OrganizationApiTests {
       assertThat(org.getName()).isEqualTo("orgName");
       assertThat(org.getDescription()).isEqualTo("orgDesc");
     });
-  }
-
-  @Test
-  void should_throw_if_server_is_down() {
-    mockServer.addStringResponse("/api/system/status", "{" +
-      "\"status\": \"DOWN\"," +
-      "\"version\": \"20.0.0\"" +
-      "}");
-    var underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtension.httpClient()));
-
-    var throwable = catchThrowable(() -> underTest.getOrganization("org:key", progressMonitor));
-
-    assertThat(throwable)
-      .isInstanceOf(IllegalStateException.class)
-      .hasMessage("Server not ready (DOWN)");
-  }
-
-  @Test
-  void should_not_get_organization_if_server_is_too_old() {
-    mockServer.addStringResponse("/api/system/status", "{" +
-      "\"status\": \"UP\"," +
-      "\"version\": \"7.8.0\"" +
-      "}");
-    var underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtension.httpClient()));
-
-    var throwable = catchThrowable(() -> underTest.getOrganization("org:key", progressMonitor));
-
-    assertThat(throwable)
-      .isInstanceOf(UnsupportedServerException.class)
-      .hasMessageContaining("SonarQube server has version 7.8.0. Version should be greater or equal to");
   }
 
   private void mockOrganizationsPage(int page, int total) {

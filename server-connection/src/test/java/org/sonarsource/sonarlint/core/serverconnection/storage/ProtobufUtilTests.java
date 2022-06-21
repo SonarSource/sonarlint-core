@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
+import com.google.protobuf.Message;
 import com.google.protobuf.Parser;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -30,7 +31,6 @@ import java.nio.file.Paths;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint.ServerInfos;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -41,8 +41,8 @@ import static org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUt
 
 class ProtobufUtilTests {
 
-  private static final ServerInfos SOME_MESSAGE = Sonarlint.ServerInfos.newBuilder().build();
-  private static final Parser<ServerInfos> SOME_PARSER = Sonarlint.ServerInfos.parser();
+  private static final Sonarlint.PluginReferences SOME_MESSAGE = Sonarlint.PluginReferences.newBuilder().build();
+  private static final Parser<Sonarlint.PluginReferences> SOME_PARSER = Sonarlint.PluginReferences.parser();
 
   @Test
   void test_readMessages_empty() throws IOException {
@@ -92,10 +92,10 @@ class ProtobufUtilTests {
     assertThat(thrown).hasMessageStartingWith("failed to write message");
   }
 
-  public static byte[] toByteArray(ServerInfos... infos) throws IOException {
+  public static byte[] toByteArray(Message... messages) throws IOException {
     try (var byteStream = new ByteArrayOutputStream()) {
-      for (ServerInfos info : infos) {
-        info.writeDelimitedTo(byteStream);
+      for (Message msg : messages) {
+        msg.writeDelimitedTo(byteStream);
       }
       return byteStream.toByteArray();
     }
