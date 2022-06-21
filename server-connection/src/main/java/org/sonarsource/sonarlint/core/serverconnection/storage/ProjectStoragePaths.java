@@ -27,12 +27,6 @@ public class ProjectStoragePaths {
 
   private static final int MAX_FOLDER_NAME_SIZE = 255;
 
-  /**
-   * Version of the storage. This should be incremented each time an incompatible change is made to the storage.
-   */
-  public static final String STORAGE_VERSION = "3";
-
-  public static final String STORAGE_STATUS_PB = "storage_status.pb";
   public static final String COMPONENT_LIST_PB = "component_list.pb";
 
   private final Path projectStorageRoot;
@@ -58,10 +52,6 @@ public class ProjectStoragePaths {
       return encoded.substring(0, MAX_FOLDER_NAME_SIZE - md5.length()) + md5;
     }
     return encoded;
-  }
-
-  public Path getProjectUpdateStatusPath(String projectKey) {
-    return getProjectStorageRoot(projectKey).resolve(STORAGE_STATUS_PB);
   }
 
   public Path getComponentListPath(String projectKey) {

@@ -124,7 +124,6 @@ public class TaintVulnerabilitiesDownloadTest extends AbstractConnectedTest {
   public void download_all_issues_include_taint_vulnerabilities_and_code_snippets() {
     ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "");
 
-    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
 
     // Reload file issues to get taint

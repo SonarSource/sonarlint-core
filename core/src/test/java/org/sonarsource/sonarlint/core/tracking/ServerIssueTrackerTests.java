@@ -28,10 +28,10 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverconnection.DownloadException;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 
 class ServerIssueTrackerTests {
   private final String projectKey = "dummy project";
@@ -54,13 +54,14 @@ class ServerIssueTrackerTests {
     var client = MockWebServerExtension.httpClient();
     tracker.update(endpoint, client, engine, projectBinding, Collections.singleton(filePath), null);
     verify(engine).downloadAllServerIssuesForFile(endpoint, client, projectBinding, filePath, null, null);
+    verify(engine).getServerIssues(projectBinding, null, filePath);
     verifyNoMoreInteractions(engine);
   }
 
   @Test
   void should_get_issues_from_engine_if_download_failed() {
     var client = MockWebServerExtension.httpClient();
-    when(engine.downloadAllServerIssuesForFile(endpoint, client, projectBinding, filePath, null, null)).thenThrow(new DownloadException());
+    doThrow(DownloadException.class).when(engine).downloadAllServerIssuesForFile(endpoint, client, projectBinding, filePath, null, null);
     tracker.update(endpoint, client, engine, projectBinding, Collections.singleton(filePath), null);
     verify(engine).downloadAllServerIssuesForFile(endpoint, client, projectBinding, filePath, null, null);
     verify(engine).getServerIssues(projectBinding, null, filePath);

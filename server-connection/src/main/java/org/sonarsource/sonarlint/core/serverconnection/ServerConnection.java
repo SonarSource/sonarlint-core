@@ -48,8 +48,6 @@ import org.sonarsource.sonarlint.core.serverconnection.prefix.FileTreeMatcher;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStorageStatusReader;
-import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageReader;
 import org.sonarsource.sonarlint.core.serverconnection.storage.XodusServerIssueStore;
 
@@ -60,33 +58,27 @@ public class ServerConnection {
 
   private final String connectionId;
   private final Set<Language> enabledLanguages;
-  private final ProjectStorageStatusReader projectStorageStatusReader;
-  private final GlobalStores globalStores;
-  private final GlobalUpdateStatusReader globalStatusReader;
   private final ProjectStorage projectStorage;
   private final StorageReader storageReader;
   private final PluginsStorage pluginsStorage;
   private final IssueStoreReader issueStoreReader;
   private final LocalStorageSynchronizer storageSynchronizer;
-  private final GlobalStorageUpdateExecutor globalStorageUpdateExecutor;
   private final ProjectStorageUpdateExecutor projectStorageUpdateExecutor;
   private final ServerEventsAutoSubscriber serverEventsAutoSubscriber;
   private final ServerIssueUpdater issuesUpdater;
   private final XodusServerIssueStore serverIssueStore;
   private final boolean isSonarCloud;
 
+  private final Path connectionStorageRoot;
+
   public ServerConnection(Path globalStorageRoot, String connectionId, boolean isSonarCloud, Set<Language> enabledLanguages, Set<String> embeddedPluginKeys) {
     this.connectionId = connectionId;
     this.isSonarCloud = isSonarCloud;
     this.enabledLanguages = enabledLanguages;
 
-    var connectionStorageRoot = globalStorageRoot.resolve(encodeForFs(connectionId));
-
-    this.globalStores = new GlobalStores(connectionStorageRoot);
-    this.globalStatusReader = new GlobalUpdateStatusReader(globalStores.getServerInfoStore(), globalStores.getStorageStatusStore());
+    connectionStorageRoot = globalStorageRoot.resolve(encodeForFs(connectionId));
 
     var projectStoragePaths = new ProjectStoragePaths(connectionStorageRoot);
-    this.projectStorageStatusReader = new ProjectStorageStatusReader(projectStoragePaths);
 
     var projectsStorageRoot = connectionStorageRoot.resolve("projects");
     projectStorage = new ProjectStorage(projectsStorageRoot);
@@ -97,7 +89,6 @@ public class ServerConnection {
     this.issuesUpdater = new ServerIssueUpdater(serverIssueStore, new IssueDownloader(enabledLanguages));
     this.pluginsStorage = new PluginsStorage(connectionStorageRoot.resolve("plugins"));
     this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguages, embeddedPluginKeys, pluginsStorage, projectStorage);
-    this.globalStorageUpdateExecutor = new GlobalStorageUpdateExecutor(globalStores.getGlobalStorage());
     this.projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(projectStoragePaths);
     pluginsStorage.cleanUp();
     var eventRouter = new EventDispatcher()
@@ -118,59 +109,18 @@ public class ServerConnection {
     return projectStorage.getProjectBranches(projectKey);
   }
 
-  public void checkStatus(@Nullable String projectKey) {
-    var updateStatus = globalStatusReader.read();
-    if (updateStatus == null) {
-      throw new StorageException("Missing storage for connection");
-    }
-    if (updateStatus.isStale()) {
-      throw new StorageException("Outdated storage for connection");
-    }
-    if (projectKey != null) {
-      var projectUpdateStatus = getProjectStorageStatus(projectKey);
-      if (projectUpdateStatus == null) {
-        throw new StorageException(String.format("No storage for project '%s'. Please update the binding.", projectKey));
-      } else if (projectUpdateStatus.isStale()) {
-        throw new StorageException(String.format("Stored data for project '%s' is stale because "
-          + "it was created with a different version of SonarLint. Please update the binding.", projectKey));
-      }
-    }
-  }
-
-  public ProjectStorageStatus getProjectStorageStatus(String projectKey) {
-    return projectStorageStatusReader.apply(projectKey);
-  }
-
   public Map<String, ServerProject> downloadAllProjects(EndpointParams endpoint, HttpClient client, ProgressMonitor monitor) {
     try {
-      new ProjectListDownloader(new ServerApiHelper(endpoint, client), globalStores.getServerProjectsStore()).fetch(monitor);
+      return new ServerApi(endpoint, client).component().getAllProjects(monitor).stream().collect(Collectors.toMap(ServerProject::getKey, p -> p));
     } catch (Exception e) {
-      LOG.error("Failed to update project list", e);
+      LOG.error("Failed to get project list", e);
     }
-    return allProjectsByKey();
-  }
-
-  public GlobalStorageStatus getGlobalStorageStatus() {
-    return globalStatusReader.read();
+    return Map.of();
   }
 
   public SynchronizationResult sync(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, ProgressMonitor monitor) {
     var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
     return storageSynchronizer.synchronize(serverApi, projectKeys, monitor);
-  }
-
-  public GlobalStorageStatus update(EndpointParams endpoint, HttpClient client, ProgressMonitor monitor) {
-    globalStorageUpdateExecutor.update(new ServerApiHelper(endpoint, client), monitor);
-    return globalStatusReader.read();
-  }
-
-  public Map<String, ServerProject> allProjectsByKey() {
-    try {
-      return globalStores.getServerProjectsStore().getAll();
-    } catch (StorageException e) {
-      LOG.error("Unable to read projects keys from the storage", e);
-      return Map.of();
-    }
   }
 
   public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String branchName, String ideFilePath) {
@@ -201,20 +151,28 @@ public class ServerConnection {
 
   public void downloadServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName,
     ProgressMonitor progress) {
-    var serverVersion = readServerVersionFromStorage();
-    issuesUpdater.updateFileIssuesAndTaints(new ServerApi(new ServerApiHelper(endpoint, client)), projectBinding, ideFilePath, branchName, isSonarCloud, serverVersion, progress);
+    var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
+    var serverVersion = checkStatusAndGetServerVersion(serverApi);
+    issuesUpdater.updateFileIssuesAndTaints(serverApi, projectBinding, ideFilePath, branchName, isSonarCloud, serverVersion, progress);
+  }
+
+  private static Version checkStatusAndGetServerVersion(ServerApi serverApi) {
+    var status = new ServerVersionAndStatusChecker(serverApi).checkVersionAndStatus();
+    return Version.create(status.getVersion());
   }
 
   public void downloadServerIssuesForProject(EndpointParams endpoint, HttpClient client, String projectKey, String branchName) {
-    var serverVersion = readServerVersionFromStorage();
-    issuesUpdater.update(new ServerApi(new ServerApiHelper(endpoint, client)), projectKey, branchName, isSonarCloud, serverVersion);
+    var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
+    var serverVersion = checkStatusAndGetServerVersion(serverApi);
+    issuesUpdater.update(serverApi, projectKey, branchName, isSonarCloud, serverVersion);
   }
 
   public void syncServerIssuesForProject(EndpointParams endpoint, HttpClient client, String projectKey, String branchName) {
-    var serverVersion = readServerVersionFromStorage();
+    var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
+    var serverVersion = checkStatusAndGetServerVersion(serverApi);
     if (IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
       LOG.info("[SYNC] Synchronizing issues for project '{}' on branch '{}'", projectKey, branchName);
-      issuesUpdater.sync(new ServerApi(new ServerApiHelper(endpoint, client)), projectKey, branchName);
+      issuesUpdater.sync(serverApi, projectKey, branchName);
     } else {
       LOG.debug("Incremental issue sync is not supported. Skipping.");
     }
@@ -224,20 +182,11 @@ public class ServerConnection {
     projectStorageUpdateExecutor.update(new ServerApi(new ServerApiHelper(endpoint, client)), projectKey, monitor);
   }
 
-  private Version readServerVersionFromStorage() {
-    var globalStorageStatus = globalStatusReader.read();
-    if (globalStorageStatus == null || globalStorageStatus.isStale()) {
-      throw new StorageException("Missing or outdated storage for connection '" + connectionId + "'");
-    }
-    var serverVersion = Version.create(globalStorageStatus.getServerVersion());
-    return serverVersion;
-  }
-
   public void stop(boolean deleteStorage) {
     serverEventsAutoSubscriber.stop();
     serverIssueStore.close();
     if (deleteStorage) {
-      globalStores.deleteAll();
+      FileUtils.deleteRecursively(connectionStorageRoot);
     }
   }
 

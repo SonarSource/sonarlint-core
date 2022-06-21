@@ -26,18 +26,6 @@ package sonarlint;
 option java_package = "org.sonarsource.sonarlint.core.serverconnection.proto";
 option optimize_for = SPEED;
 
-message StorageStatus {
-  string storage_version = 1;
-  string sonarlint_core_version = 2;
-  int64 update_timestamp = 4;
-}
-
-message ServerInfos {
-  string id = 1;
-  string version = 2;
-  string status = 3;
-}
-
 message PluginReferences {
     map<string, PluginReference> plugins_by_key = 1;
   
@@ -48,19 +36,9 @@ message PluginReferences {
   }
 }
 
-message ProjectList {
-  map<string,Project> projects_by_key = 1;
-  
-  message Project {
-    string key = 1;
-    string name = 2;
-  }
-}
-
 message ProjectComponents {
   repeated string component = 1;
 }
-
 
 message AnalyzerConfiguration {
     map<string, string> settings = 1;

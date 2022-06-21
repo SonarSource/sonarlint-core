@@ -32,6 +32,5 @@ class ProjectStorageStatusTests {
     var date = new Date(1000_000);
     status = new ProjectStorageStatus(date, true);
     assertThat(status.getLastUpdateDate()).isEqualTo(date);
-    assertThat(status.isStale()).isTrue();
   }
 }

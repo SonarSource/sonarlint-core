@@ -22,7 +22,6 @@ package mediumtest.fixtures;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +58,6 @@ public class ProjectStorageFixture {
 
   public static class ProjectStorageBuilder {
     private final String projectKey;
-    private boolean isStale;
     private final List<RuleSetBuilder> ruleSets = new ArrayList<>();
 
     public ProjectStorageBuilder(String projectKey) {
@@ -68,11 +66,6 @@ public class ProjectStorageFixture {
 
     String getProjectKey() {
       return projectKey;
-    }
-
-    public ProjectStorageBuilder stale() {
-      isStale = true;
-      return this;
     }
 
     public ProjectStorageBuilder withRuleSet(String languageKey, Consumer<RuleSetBuilder> consumer) {
@@ -84,17 +77,11 @@ public class ProjectStorageFixture {
 
     public ProjectStorage create(Path projectsRootPath) {
       var projectFolder = projectsRootPath.resolve(ProjectStoragePaths.encodeForFs(projectKey));
-      var storageStatus = Sonarlint.StorageStatus.newBuilder()
-        .setStorageVersion(isStale ? "0" : ProjectStoragePaths.STORAGE_VERSION)
-        .setSonarlintCoreVersion("1.0")
-        .setUpdateTimestamp(new Date().getTime())
-        .build();
       try {
         FileUtils.forceMkdir(projectFolder.toFile());
       } catch (IOException e) {
         throw new IllegalStateException(e);
       }
-      ProtobufUtil.writeToFile(storageStatus, projectFolder.resolve(ProjectStoragePaths.STORAGE_STATUS_PB));
 
       Map<String, Sonarlint.RuleSet> protoRuleSets = new HashMap<>();
       ruleSets.forEach(ruleSet -> {

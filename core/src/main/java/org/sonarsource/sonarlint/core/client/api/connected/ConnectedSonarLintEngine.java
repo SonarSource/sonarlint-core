@@ -26,22 +26,17 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
-import org.sonarsource.sonarlint.core.commons.progress.CanceledException;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
-import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.serverconnection.DownloadException;
-import org.sonarsource.sonarlint.core.serverconnection.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
-import org.sonarsource.sonarlint.core.serverconnection.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 
@@ -82,31 +77,6 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
   List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName, String filePath);
 
   /**
-   * Get information about current global storage state
-   *
-   * @return null if storage was never updated
-   * @since 2.6
-   */
-  @CheckForNull
-  GlobalStorageStatus getGlobalStorageStatus();
-
-  /**
-   * Get information about project storage state
-   *
-   * @return null if module was never updated
-   * @since 2.6
-   */
-  @CheckForNull
-  ProjectStorageStatus getProjectStorageStatus(String projectKey);
-
-  /**
-   * Return all projects by key
-   *
-   * @since 2.0
-   */
-  Map<String, ServerProject> allProjectsByKey();
-
-  /**
    * Tries to find the best way to match files in a IDE project with files in the sonarqube project identified
    * with {@code projectKey}, by finding file path prefixes to be used later in other interactions with the project storage.
    * Requires the storage of the project to be up to date.
@@ -127,7 +97,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
   // REQUIRES SERVER TO BE REACHABLE
 
   /**
-   * Attempts to download and store the list of projects and to return all projects by key
+   * Attempts to download the list of projects and to return all projects by key
    *
    * @throws DownloadException if it fails to download
    * @since 2.5
@@ -135,15 +105,6 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
   Map<String, ServerProject> downloadAllProjects(EndpointParams endpoint, HttpClient client, @Nullable ClientProgressMonitor monitor);
 
   void sync(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, @Nullable ClientProgressMonitor monitor);
-
-  /**
-   * Update current server.
-   *
-   * @throws UnsupportedServerException if server version is too low
-   * @throws CanceledException          if the update task was cancelled
-   * @since 2.0
-   */
-  UpdateResult update(EndpointParams endpoint, HttpClient client, @Nullable ClientProgressMonitor monitor);
 
   /**
    * Update given project.
@@ -160,7 +121,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
    * @throws DownloadException if it fails to download
    */
-  List<ServerIssue> downloadAllServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName,
+  void downloadAllServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName,
     @Nullable ClientProgressMonitor monitor);
 
   /**

@@ -128,7 +128,6 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
 
   @Test
   public void analysisC_old_build_wrapper_prop() throws Exception {
-    updateGlobal();
     updateProject(PROJECT_KEY_C);
     var issueListener = new SaveIssueListener();
 
@@ -164,7 +163,6 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
     // New property was introduced in SonarCFamily 6.18 part of SQ 8.8
     assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 8));
 
-    updateGlobal();
     updateProject(PROJECT_KEY_C);
     var issueListener = new SaveIssueListener();
 
@@ -195,7 +193,6 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
 
   @Test
   public void analysisCobol() throws Exception {
-    updateGlobal();
     updateProject(PROJECT_KEY_COBOL);
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_COBOL, PROJECT_KEY_COBOL, "src/Custmnt2.cbl",
@@ -205,7 +202,6 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
 
   @Test
   public void analysisTsql() throws IOException {
-    updateGlobal();
     updateProject(PROJECT_KEY_TSQL);
 
     var issueListener = new SaveIssueListener();
@@ -215,7 +211,6 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
 
   @Test
   public void analysisApex() throws IOException {
-    updateGlobal();
     updateProject(PROJECT_KEY_APEX);
 
     var issueListener = new SaveIssueListener();
@@ -226,10 +221,6 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
   private void updateProject(String projectKey) {
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, null);
     engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(projectKey), null);
-  }
-
-  private void updateGlobal() {
-    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
   }
 
   private static void removeGroupPermission(String groupName, String permission) {

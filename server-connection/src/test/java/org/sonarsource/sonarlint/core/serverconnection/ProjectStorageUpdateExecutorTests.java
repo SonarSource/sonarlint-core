@@ -30,12 +30,9 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.system.ServerInfo;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ServerInfoStore;
-import org.sonarsource.sonarlint.core.serverconnection.storage.StorageFolder;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,9 +53,6 @@ class ProjectStorageUpdateExecutorTests {
   @Test
   void test_update_components(@TempDir Path tempDir) throws IOException {
     Files.createDirectory(tempDir.resolve("tmp"));
-
-    var serverInfoStore = new ServerInfoStore(new StorageFolder.Default(tempDir));
-    serverInfoStore.store(new ServerInfo("", "", ""));
 
     underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, projectFileListDownloader);
 
@@ -89,9 +83,6 @@ class ProjectStorageUpdateExecutorTests {
     var serverApi = new ServerApi(mock(ServerApiHelper.class));
     when(projectFileListDownloader.get(eq(serverApi), eq("rootModule"), any(ProgressMonitor.class))).thenReturn(fileList);
     underTest.update(serverApi, "rootModule", mock(ProgressMonitor.class));
-
-    var status = ProtobufUtil.readFile(storagePath.resolve(ProjectStoragePaths.STORAGE_STATUS_PB), Sonarlint.StorageStatus.parser());
-    assertThat(status.getStorageVersion()).isEqualTo(ProjectStoragePaths.STORAGE_VERSION);
 
     var components = ProtobufUtil.readFile(storagePath.resolve(ProjectStoragePaths.COMPONENT_LIST_PB), Sonarlint.ProjectComponents.parser());
     assertThat(components.getComponentList()).containsOnly(

@@ -101,7 +101,6 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
 
   @Test
   public void should_match_files_when_importing_entire_project() throws IOException {
-    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
 
     // entire project imported in IDE
@@ -113,8 +112,9 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
     var projectBinding = engine.calculatePathPrefixes(PROJECT_KEY, ideFiles);
     assertThat(projectBinding.sqPathPrefix()).isEmpty();
     assertThat(projectBinding.idePathPrefix()).isEmpty();
-    var serverIssues = engine.downloadAllServerIssuesForFile(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding,
+    engine.downloadAllServerIssuesForFile(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding,
       "module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java", "master", null);
+    var serverIssues = engine.getServerIssues(projectBinding, "master", "module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
       assertThat(serverIssues).isEmpty();
       assertThat(logs).contains("Skip downloading file issues on SonarQube 9.5+");
@@ -131,7 +131,6 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
 
   @Test
   public void should_match_files_when_importing_module() throws IOException {
-    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
 
     // only module B1 imported in IDE
@@ -143,8 +142,9 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
     var projectBinding = engine.calculatePathPrefixes(PROJECT_KEY, ideFiles);
     assertThat(projectBinding.sqPathPrefix()).isEqualTo("module_b/module_b1");
     assertThat(projectBinding.idePathPrefix()).isEmpty();
-    var serverIssues = engine.downloadAllServerIssuesForFile(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding,
+    engine.downloadAllServerIssuesForFile(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding,
       "src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java", "master", null);
+    var serverIssues = engine.getServerIssues(projectBinding, "master", "src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
       assertThat(serverIssues).isEmpty();
       assertThat(logs).contains("Skip downloading file issues on SonarQube 9.5+");
