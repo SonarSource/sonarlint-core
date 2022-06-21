@@ -64,10 +64,6 @@ class ConnectedStorageProblemsMediumTests {
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
 
-    assertThat(sonarlint.getGlobalStorageStatus()).isNull();
-    assertThat(sonarlint.getProjectStorageStatus("foo")).isNull();
-
-    assertThat(sonarlint.allProjectsByKey()).isEmpty();
     var serverBranches = sonarlint.getServerBranches("foo");
     assertThat(serverBranches.getBranchNames()).isEmpty();
     assertThat(serverBranches.getMainBranchName()).isEmpty();
@@ -82,40 +78,7 @@ class ConnectedStorageProblemsMediumTests {
 
     var thrown2 = assertThrows(StorageException.class, () -> sonarlint.analyze(analysisConfig, i -> {
     }, null, null));
-    assertThat(thrown2).hasMessage("Missing storage for connection");
-  }
-
-  @Test
-  void test_stale_storage(@TempDir Path slHome, @TempDir Path baseDir) {
-    var storageId = "localhost";
-    newStorage(storageId)
-      .stale()
-      .create(slHome);
-
-    var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
-      .setConnectionId(storageId)
-      .setSonarLintUserHome(slHome)
-      .setLogOutput((msg, level) -> {
-      })
-      .build();
-    sonarlint = new ConnectedSonarLintEngineImpl(config);
-
-    assertThat(sonarlint.getGlobalStorageStatus().isStale()).isTrue();
-    assertThat(sonarlint.getProjectStorageStatus("foo")).isNull();
-
-    assertThat(sonarlint.allProjectsByKey()).isEmpty();
-
-    var thrown = assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails(null, null, "rule", null));
-    assertThat(thrown).hasMessage("Unable to find rule details for 'rule'");
-
-    var analysisConfig = ConnectedAnalysisConfiguration.builder()
-      .setBaseDir(baseDir)
-      .setProjectKey("myProject")
-      .build();
-
-    var thrown2 = assertThrows(StorageException.class, () -> sonarlint.analyze(analysisConfig, i -> {
-    }, null, null));
-    assertThat(thrown2).hasMessage("Outdated storage for connection");
+    assertThat(thrown2).hasMessageContaining("Failed to read file");
   }
 
   @Test

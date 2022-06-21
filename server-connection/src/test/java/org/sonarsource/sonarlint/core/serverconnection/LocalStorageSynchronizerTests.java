@@ -58,7 +58,7 @@ class LocalStorageSynchronizerTests {
 
   @Test
   void should_synchronize_a_project_with_a_single_active_rule(@TempDir Path tmpDir) {
-    mockServer.addStringResponse("/api/system/status", "{\"id\": \"1\", \"status\": \"UP\", \"version\": \"1\"}");
+    mockServer.addStringResponse("/api/system/status", "{\"id\": \"1\", \"status\": \"UP\", \"version\": \"8.9\"}");
     mockServer.addProtobufResponse("/api/settings/values.protobuf?component=projectKey", Settings.ValuesWsResponse.newBuilder()
       .addSettings(Settings.Setting.newBuilder().setKey("settingKey").setValue("settingValue").build())
       .build());
@@ -127,7 +127,7 @@ class LocalStorageSynchronizerTests {
         .setLastModified("2020-10-27T23:08:58+0000")
         .build()))
       .build(), storageFile);
-    mockServer.addStringResponse("/api/system/status", "{\"id\": \"1\", \"status\": \"UP\", \"version\": \"1\"}");
+    mockServer.addStringResponse("/api/system/status", "{\"id\": \"1\", \"status\": \"UP\", \"version\": \"8.9\"}");
     mockServer.addProtobufResponse("/api/settings/values.protobuf?component=projectKey", Settings.ValuesWsResponse.newBuilder()
       .addSettings(Settings.Setting.newBuilder().setKey("settingKey").setValue("settingValue").build())
       .build());

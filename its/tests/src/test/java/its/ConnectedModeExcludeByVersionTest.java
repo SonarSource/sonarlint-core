@@ -104,12 +104,8 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
   @Test
   public void dontDownloadPluginWithUnsupportedVersion() {
     engine = createEngine(e -> e.addEnabledLanguages(Language.PYTHON));
-    assertThat(engine.getGlobalStorageStatus()).isNull();
 
-    var update = engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
     engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), emptySet(), null);
-    assertThat(update.status().getLastUpdateDate()).isNotNull();
-    assertThat(engine.getGlobalStorageStatus()).isNotNull();
     assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).doesNotContain(Language.PYTHON.getPluginKey());
     assertThat(logs).contains("[SYNC] Code analyzer 'python' version '1.13.0.2922' is not supported (minimal version is '1.14.0.3086'). Skip downloading it.");
   }

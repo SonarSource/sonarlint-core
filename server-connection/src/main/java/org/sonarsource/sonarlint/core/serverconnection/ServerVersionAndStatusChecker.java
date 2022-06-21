@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Server API
+ * SonarLint Core - Server Connection
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,22 +17,25 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverapi.system;
+package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
+import org.sonarsource.sonarlint.core.serverapi.system.DefaultValidationResult;
+import org.sonarsource.sonarlint.core.serverapi.system.ServerInfo;
+import org.sonarsource.sonarlint.core.serverapi.system.SystemApi;
+import org.sonarsource.sonarlint.core.serverapi.system.ValidationResult;
 
 public class ServerVersionAndStatusChecker {
 
   private static final String MIN_SQ_VERSION = "7.9";
   private final SystemApi systemApi;
 
-  public ServerVersionAndStatusChecker(ServerApiHelper serverApiHelper) {
-    this.systemApi = new ServerApi(serverApiHelper).system();
+  public ServerVersionAndStatusChecker(ServerApi serverApi) {
+    this.systemApi = serverApi.system();
   }
 
   public ServerInfo checkVersionAndStatus() {

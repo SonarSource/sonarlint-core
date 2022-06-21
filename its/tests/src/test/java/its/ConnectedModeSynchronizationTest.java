@@ -64,7 +64,6 @@ public class ConnectedModeSynchronizationTest extends AbstractConnectedTest {
     var adminWsClient = newAdminWsClient(ORCHESTRATOR);
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
-
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_LANGUAGE_MIX, "Sample Language Mix");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_LANGUAGE_MIX, "java", "SonarLint IT Java");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_LANGUAGE_MIX, "py", "SonarLint IT Python");
@@ -85,7 +84,6 @@ public class ConnectedModeSynchronizationTest extends AbstractConnectedTest {
       .addEnabledLanguage(Language.JAVA)
       .build());
 
-    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
   }
 
   @AfterClass

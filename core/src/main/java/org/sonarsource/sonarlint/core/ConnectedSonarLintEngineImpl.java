@@ -53,7 +53,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBranches;
-import org.sonarsource.sonarlint.core.client.api.connected.UpdateResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
@@ -70,10 +69,8 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
-import org.sonarsource.sonarlint.core.serverconnection.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.serverconnection.IssueStorePaths;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
-import org.sonarsource.sonarlint.core.serverconnection.ProjectStorageStatus;
 import org.sonarsource.sonarlint.core.serverconnection.ServerConnection;
 import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
@@ -183,7 +180,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     requireNonNull(issueListener);
 
     setLogging(logOutput);
-    serverConnection.checkStatus(configuration.getProjectKey());
 
     var analysisConfigBuilder = AnalysisConfiguration.builder()
       .addInputFiles(configuration.inputFiles());
@@ -277,24 +273,11 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
-  public GlobalStorageStatus getGlobalStorageStatus() {
-    return wrapErrors(serverConnection::getGlobalStorageStatus);
-  }
-
-  @Override
   public void sync(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, @Nullable ClientProgressMonitor monitor) {
     var result = serverConnection.sync(endpoint, client, projectKeys, new ProgressMonitor(monitor));
     if (result.hasAnalyzerBeenUpdated()) {
       restartAnalysisEngine();
     }
-  }
-
-  @Override
-  public UpdateResult update(EndpointParams endpoint, HttpClient client, @Nullable ClientProgressMonitor monitor) {
-    requireNonNull(endpoint);
-    setLogging(null);
-    var status = serverConnection.update(endpoint, client, new ProgressMonitor(monitor));
-    return new UpdateResult(status);
   }
 
   private void restartAnalysisEngine() {
@@ -353,11 +336,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   @Override
   public Collection<PluginDetails> getPluginDetails() {
     return analysisContext.get().pluginDetails;
-  }
-
-  @Override
-  public Map<String, ServerProject> allProjectsByKey() {
-    return serverConnection.allProjectsByKey();
   }
 
   @Override
@@ -428,10 +406,9 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
-  public List<ServerIssue> downloadAllServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
-    @Nullable String branchName, @Nullable ClientProgressMonitor monitor) {
+  public void downloadAllServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName,
+    @Nullable ClientProgressMonitor monitor) {
     serverConnection.downloadServerIssuesForFile(endpoint, client, projectBinding, ideFilePath, branchName, new ProgressMonitor(monitor));
-    return serverConnection.getServerIssues(projectBinding, branchName, ideFilePath);
   }
 
   @Override
@@ -456,12 +433,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     setLogging(null);
 
     serverConnection.updateProject(endpoint, client, projectKey, new ProgressMonitor(monitor));
-  }
-
-  @Override
-  public ProjectStorageStatus getProjectStorageStatus(String projectKey) {
-    requireNonNull(projectKey);
-    return serverConnection.getProjectStorageStatus(projectKey);
   }
 
   @Override

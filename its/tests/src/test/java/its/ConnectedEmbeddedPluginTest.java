@@ -103,7 +103,6 @@ public class ConnectedEmbeddedPluginTest extends AbstractConnectedTest {
    */
   @Test
   public void analysisWithDeprecatedRuleKey() throws Exception {
-    updateGlobal();
     updateProject(PROJECT_KEY_C);
     var issueListener = new SaveIssueListener();
 
@@ -134,10 +133,6 @@ public class ConnectedEmbeddedPluginTest extends AbstractConnectedTest {
   private void updateProject(String projectKey) {
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, null);
     engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(projectKey), null);
-  }
-
-  private void updateGlobal() {
-    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
   }
 
 }

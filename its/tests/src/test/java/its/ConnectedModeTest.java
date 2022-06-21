@@ -37,7 +37,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
 import org.assertj.core.internal.Failures;
 import org.junit.After;
 import org.junit.Before;
@@ -69,7 +68,6 @@ import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 
 import static its.tools.ItUtils.SONAR_VERSION;
-import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -218,7 +216,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       .setExtraProperties(globalProps)
       .build();
     engine = new ConnectedSonarLintEngineImpl(globalConfig);
-    assertThat(engine.getGlobalStorageStatus()).isNull();
 
     // This profile is altered in a test
     ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint.xml"));
@@ -237,18 +234,15 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void downloadProjects() {
-    updateGlobal();
-    assertThat(engine.allProjectsByKey()).hasSize(16);
     ORCHESTRATOR.getServer().provisionProject("foo-bar", "Foo");
     assertThat(engine.downloadAllProjects(endpointParams(ORCHESTRATOR), sqHttpClient(), null)).hasSize(17).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
-    assertThat(engine.allProjectsByKey()).hasSize(17).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
   }
 
   @Test
   public void updateNoAuth() {
     adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("true"));
     try {
-      engine.update(endpointParams(ORCHESTRATOR), sqHttpClientNoAuth(), null);
+      engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClientNoAuth(), PROJECT_KEY_JAVA, null);
       fail("Exception expected");
     } catch (Exception e) {
       assertThat(e).hasMessage("Not authorized. Please check server credentials.");
@@ -263,7 +257,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     var testFile = temp.newFile("MyTestParseError.java").toPath();
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
 
-    updateGlobal();
     updateProject(PROJECT_KEY_JAVA);
 
     var issueListener = new SaveIssueListener();
@@ -278,7 +271,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     var testFile = temp.newFile("MyTest.js").toPath();
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
 
-    updateGlobal();
     updateProject(PROJECT_KEY_JAVASCRIPT);
 
     var issueListener = new SaveIssueListener();
@@ -288,31 +280,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void globalUpdate() throws Exception {
-    updateGlobal();
-
-    assertThat(engine.getGlobalStorageStatus()).isNotNull();
-    assertThat(engine.getGlobalStorageStatus().isStale()).isFalse();
-    assertThat(engine.getGlobalStorageStatus().getServerVersion()).startsWith(StringUtils.substringBefore(ORCHESTRATOR.getServer().version().toString(), "-"));
-    engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), emptySet(), null);
-    assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey("S106"), null).get().getHtmlDescription())
-      .contains("When logging a message there are");
-
-    assertThat(engine.getProjectStorageStatus(PROJECT_KEY_JAVA)).isNull();
-  }
-
-  @Test
-  public void updateProject() {
-    updateGlobal();
-
-    updateProject(PROJECT_KEY_JAVA);
-
-    assertThat(engine.getProjectStorageStatus(PROJECT_KEY_JAVA)).isNotNull();
-  }
-
-  @Test
   public void verifyExtendedDescription() throws Exception {
-    updateGlobal();
     updateProject(PROJECT_KEY_JAVA);
 
     assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey("S106"), PROJECT_KEY_JAVA).get().getExtendedDescription()).isEmpty();
@@ -339,7 +307,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void verifyMarkdownDescription() throws Exception {
-    updateGlobal();
     updateProject(PROJECT_KEY_JAVA_MARKDOWN);
 
     assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), "mycompany-java:markdown", PROJECT_KEY_JAVA_MARKDOWN).get().getHtmlDescription())
@@ -349,7 +316,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisJavascript() throws Exception {
-    updateGlobal();
     updateProject(PROJECT_KEY_JAVASCRIPT);
 
     var issueListener = new SaveIssueListener();
@@ -359,7 +325,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisJavaWithCustomRules() throws Exception {
-    updateGlobal();
     updateProject(PROJECT_KEY_JAVA_CUSTOM);
 
     var issueListener = new SaveIssueListener();
@@ -373,7 +338,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisPHP() throws Exception {
-    updateGlobal();
     updateProject(PROJECT_KEY_PHP);
 
     var issueListener = new SaveIssueListener();
@@ -383,7 +347,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisPython() throws Exception {
-    updateGlobal();
     updateProject(PROJECT_KEY_PYTHON);
 
     var issueListener = new SaveIssueListener();
@@ -393,7 +356,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisWeb() throws IOException {
-    updateGlobal();
     updateProject(PROJECT_KEY_WEB);
 
     var issueListener = new SaveIssueListener();
@@ -403,7 +365,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisUseQualityProfile() throws Exception {
-    updateGlobal();
     updateProject(PROJECT_KEY_JAVA);
 
     var issueListener = new SaveIssueListener();
@@ -417,7 +378,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void dontReportHotspots() throws Exception {
-    updateGlobal();
     updateProject(PROJECT_KEY_JAVA_HOTSPOT);
 
     var issueListener = new SaveIssueListener();
@@ -450,7 +410,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     var actualHotspot = remoteHotspot.get();
     assertThat(actualHotspot.message).isEqualTo("Make sure using this hardcoded IP address is safe here.");
     assertThat(actualHotspot.filePath).isEqualTo("src/main/java/foo/Foo.java");
-    assertThat(actualHotspot.textRange).isEqualToComparingFieldByField(new TextRange(5, 14, 5, 29));
+    assertThat(actualHotspot.textRange).usingRecursiveComparison().isEqualTo(new TextRange(5, 14, 5, 29));
     assertThat(actualHotspot.author).isEmpty();
     assertThat(actualHotspot.status).isEqualTo(ServerHotspot.Status.TO_REVIEW);
     assertThat(actualHotspot.resolution).isNull();
@@ -470,7 +430,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisIssueOnDirectory() throws Exception {
-    updateGlobal();
     updateProject(PROJECT_KEY_JAVA_PACKAGE);
 
     var issueListener = new SaveIssueListener();
@@ -486,7 +445,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void customSensorsNotExecuted() throws Exception {
-    updateGlobal();
     updateProject(PROJECT_KEY_JAVA_CUSTOM_SENSOR);
 
     var issueListener = new SaveIssueListener();
@@ -500,7 +458,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void globalExtension() throws Exception {
-    updateGlobal();
     updateProject(PROJECT_KEY_GLOBAL_EXTENSION);
 
     assertThat(logs).contains("Start Global Extension It works");
@@ -550,8 +507,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     }
 
     try {
-
-      updateGlobal();
       updateProject(PROJECT_KEY_JAVA);
 
       var issueListener = new SaveIssueListener();
@@ -577,7 +532,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisUseEmptyQualityProfile() throws Exception {
-    updateGlobal();
     updateProject(PROJECT_KEY_JAVA_EMPTY);
 
     var issueListener = new SaveIssueListener();
@@ -591,7 +545,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisUseConfiguration() throws Exception {
-    updateGlobal();
     updateProject(PROJECT_KEY_JAVA);
 
     var issueListener = new SaveIssueListener();
@@ -603,7 +556,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     // Override default file suffixes in global props so that input file is not considered as a Java file
     setSettingsMultiValue(null, "sonar.java.file.suffixes", ".foo");
-    updateGlobal();
     updateProject(PROJECT_KEY_JAVA);
 
     issueListener.clear();
@@ -615,7 +567,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     // Override default file suffixes in project props so that input file is considered as a Java file again
     setSettingsMultiValue(PROJECT_KEY_JAVA, "sonar.java.file.suffixes", ".java");
-    updateGlobal();
     updateProject(PROJECT_KEY_JAVA);
 
     issueListener.clear();
@@ -636,7 +587,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisRuby() throws Exception {
-    updateGlobal();
     updateProject(PROJECT_KEY_RUBY);
 
     var issueListener = new SaveIssueListener();
@@ -646,7 +596,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisKotlin() throws Exception {
-    updateGlobal();
     updateProject(PROJECT_KEY_KOTLIN);
 
     var issueListener = new SaveIssueListener();
@@ -656,7 +605,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisScala() throws Exception {
-    updateGlobal();
     updateProject(PROJECT_KEY_SCALA);
 
     var issueListener = new SaveIssueListener();
@@ -666,7 +614,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisXml() throws Exception {
-    updateGlobal();
     updateProject(PROJECT_KEY_XML);
 
     var issueListener = new SaveIssueListener();
@@ -676,7 +623,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void cleanOldPlugins() throws IOException {
-    updateGlobal();
     updateProject(PROJECT_KEY_JAVA);
     var pluginsFolderPath = globalConfig.getStorageRoot().resolve(encodeForFs("orchestrator")).resolve("plugins");
     var newFile = pluginsFolderPath.resolve("new_file");
@@ -692,7 +638,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   public void updatesStorageOnServerEvents() throws IOException, InterruptedException {
     assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 4));
 
-    updateGlobal();
     updateProject(PROJECT_KEY_JAVA);
     engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVA), null);
     var qualityProfile = getQualityProfile("SonarLint IT Java");
@@ -710,7 +655,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   public void updatesStorageWhenIssueResolvedOnServer() throws InterruptedException {
     assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5));
 
-    updateGlobal();
     updateProject(PROJECT_KEY_JAVA);
     engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVA), null);
     var issueKey = getIssueKeys("java:S106").get(0);
@@ -736,10 +680,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, null);
     engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(projectKey), null);
     engine.syncServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, "master", null);
-  }
-
-  private void updateGlobal() {
-    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
   }
 
   private static void analyzeMavenProject(String projectDirName) {

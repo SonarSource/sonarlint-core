@@ -22,13 +22,10 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
 import org.apache.commons.lang3.StringUtils;
-import org.sonarsource.sonarlint.core.commons.SonarLintCoreVersion;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil;
 
@@ -55,7 +52,6 @@ public class ProjectStorageUpdateExecutor {
     try {
       FileUtils.replaceDir(dir -> {
         updateComponents(serverApi, projectKey, dir, progress);
-        updateStatus(dir);
       }, projectStoragePaths.getProjectStorageRoot(projectKey), temp);
     } finally {
       org.apache.commons.io.FileUtils.deleteQuietly(temp.toFile());
@@ -72,15 +68,6 @@ public class ProjectStorageUpdateExecutor {
       componentsBuilder.addComponent(relativePath);
     }
     ProtobufUtil.writeToFile(componentsBuilder.build(), temp.resolve(ProjectStoragePaths.COMPONENT_LIST_PB));
-  }
-
-  private static void updateStatus(Path temp) {
-    var storageStatus = StorageStatus.newBuilder()
-      .setStorageVersion(ProjectStoragePaths.STORAGE_VERSION)
-      .setSonarlintCoreVersion(SonarLintCoreVersion.get())
-      .setUpdateTimestamp(Instant.now().toEpochMilli())
-      .build();
-    ProtobufUtil.writeToFile(storageStatus, temp.resolve(ProjectStoragePaths.STORAGE_STATUS_PB));
   }
 
 }

@@ -95,8 +95,6 @@ public class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
       .setExtraProperties(new HashMap<>())
       .build());
 
-    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
-
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY, "Sample Xoo");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY, "xoo", "SonarLint IT Xoo");
 

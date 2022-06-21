@@ -41,14 +41,13 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.commons.Language;
-import mediumtest.fixtures.ProjectStorageFixture;
 import testutils.PluginLocator;
 import testutils.TestUtils;
 
+import static mediumtest.fixtures.StorageFixture.newStorage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.mockito.Mockito.mock;
-import static mediumtest.fixtures.StorageFixture.newStorage;
 import static testutils.TestUtils.createNoOpLogOutput;
 
 class ConnectedExtraPluginMediumTests {
@@ -66,7 +65,6 @@ class ConnectedExtraPluginMediumTests {
       .withJSPlugin()
       .withProject("test-project")
       .withProject(JAVA_MODULE_KEY)
-      .withProject("stale_module", ProjectStorageFixture.ProjectStorageBuilder::stale)
       .create(slHome);
 
     var nodeJsHelper = new NodeJsHelper();

@@ -23,18 +23,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
-import org.sonarsource.sonarlint.core.commons.SonarLintCoreVersion;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ServerInfoStore;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ServerProjectsStore;
 import testutils.PluginLocator;
 
 import static org.junit.jupiter.api.Assertions.fail;
@@ -75,17 +68,11 @@ public class StorageFixture {
 
   public static class StorageBuilder {
     private final String connectionId;
-    private boolean isStale;
     private final List<Plugin> plugins = new ArrayList<>();
     private final List<ProjectStorageFixture.ProjectStorageBuilder> projectBuilders = new ArrayList<>();
 
     private StorageBuilder(String connectionId) {
       this.connectionId = connectionId;
-    }
-
-    public StorageBuilder stale() {
-      isStale = true;
-      return this;
     }
 
     public StorageBuilder withJSPlugin() {
@@ -116,11 +103,9 @@ public class StorageFixture {
     public Storage create(Path rootPath) {
       var storagePath = rootPath.resolve("storage");
       var connectionStorage = storagePath.resolve(encodeForFs(connectionId));
-      var globalFolderPath = connectionStorage.resolve("global");
       var pluginsFolderPath = connectionStorage.resolve("plugins");
       var projectsFolderPath = connectionStorage.resolve("projects");
       try {
-        FileUtils.forceMkdir(globalFolderPath.toFile());
         FileUtils.forceMkdir(pluginsFolderPath.toFile());
       } catch (IOException e) {
         throw new IllegalStateException(e);
@@ -128,9 +113,6 @@ public class StorageFixture {
 
       var pluginPaths = createPlugins(pluginsFolderPath);
       createPluginReferences(pluginsFolderPath);
-      createUpdateStatus(globalFolderPath, isStale ? "0" : ProjectStoragePaths.STORAGE_VERSION);
-      createServerInfo(globalFolderPath);
-      createProjectList(globalFolderPath);
 
       List<ProjectStorageFixture.ProjectStorage> projectStorages = new ArrayList<>();
       projectBuilders.forEach(project -> projectStorages.add(project.create(projectsFolderPath)));
@@ -159,30 +141,6 @@ public class StorageFixture {
         .setKey(plugin.key)
         .build()));
       ProtobufUtil.writeToFile(builder.build(), pluginsFolderPath.resolve("plugin_references.pb"));
-    }
-
-    private static void createUpdateStatus(Path storage, String version) {
-      var storageStatus = Sonarlint.StorageStatus.newBuilder()
-        .setStorageVersion(version)
-        .setSonarlintCoreVersion(SonarLintCoreVersion.get())
-        .setUpdateTimestamp(new Date().getTime())
-        .build();
-      ProtobufUtil.writeToFile(storageStatus, storage.resolve(ProjectStoragePaths.STORAGE_STATUS_PB));
-    }
-
-    private static void createServerInfo(Path globalFolderPath) {
-      ProtobufUtil.writeToFile(Sonarlint.ServerInfos.newBuilder().setVersion("7.9").build(),
-        globalFolderPath.resolve(ServerInfoStore.SERVER_INFO_PB));
-    }
-
-    private void createProjectList(Path globalFolderPath) {
-      Map<String, Sonarlint.ProjectList.Project> projectsByKey = projectBuilders.stream().collect(Collectors.toMap(
-        ProjectStorageFixture.ProjectStorageBuilder::getProjectKey, p -> Sonarlint.ProjectList.Project.newBuilder()
-          .setKey(p.getProjectKey())
-          .setName(p.getProjectKey())
-          .build()));
-      ProtobufUtil.writeToFile(Sonarlint.ProjectList.newBuilder().putAllProjectsByKey(projectsByKey).build(),
-        globalFolderPath.resolve(ServerProjectsStore.PROJECT_LIST_PB));
     }
 
     private static class Plugin {
