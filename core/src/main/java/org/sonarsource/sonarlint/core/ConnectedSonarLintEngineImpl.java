@@ -69,6 +69,7 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
+import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
 import org.sonarsource.sonarlint.core.serverconnection.IssueStorePaths;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 import org.sonarsource.sonarlint.core.serverconnection.ServerConnection;
@@ -370,7 +371,13 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
 
   @Override
   public <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> fileIdePathExtractor, Predicate<G> testFilePredicate) {
-    var analyzerConfig = serverConnection.getAnalyzerConfiguration(projectBinding.projectKey());
+    AnalyzerConfiguration analyzerConfig;
+    try {
+      analyzerConfig = serverConnection.getAnalyzerConfiguration(projectBinding.projectKey());
+    } catch (StorageException e) {
+      LOG.debug("Unable to read settings in local storage", e);
+      return List.of();
+    }
     var settings = new MapSettings(analyzerConfig.getSettings().getAll());
     var exclusionFilters = new ServerFileExclusions(settings.asConfig());
     exclusionFilters.prepare();
