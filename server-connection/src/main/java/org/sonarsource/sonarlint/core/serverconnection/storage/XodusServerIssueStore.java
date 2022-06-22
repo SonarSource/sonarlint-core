@@ -281,7 +281,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
 
   @Override
   public void replaceAllTaintOfFile(String projectKey, String branchName, String serverFilePath, List<ServerTaintIssue> issues) {
-    timed("Wrote " + issues.size() + " issues in store", () -> entityStore.executeInTransaction(txn -> {
+    timed("Wrote " + issues.size() + " taint issues in store", () -> entityStore.executeInTransaction(txn -> {
       var project = getOrCreateProject(projectKey, txn);
       var branch = getOrCreateBranch(project, branchName, txn);
       var fileEntity = getOrCreateFile(branch, serverFilePath, txn);
