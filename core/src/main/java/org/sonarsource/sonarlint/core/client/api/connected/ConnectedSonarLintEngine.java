@@ -114,18 +114,17 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
   void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable ClientProgressMonitor monitor);
 
   /**
-   * Downloads, stores and returns server issues for a given file.
+   * Downloads and stores server issues for a given file. Starting from SQ 9.6, this is only fetching taint vulnerabilities as issues updates are coming by SSE.
    *
    * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, boolean, String, ClientProgressMonitor)})
    * @param ideFilePath    relative to the project in the IDE.
-   * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
    * @throws DownloadException if it fails to download
    */
   void downloadAllServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName,
     @Nullable ClientProgressMonitor monitor);
 
   /**
-   * Downloads and stores server issues for a given project.
+   * Downloads and stores all server issues for a given project.
    *
    * @param endpoint from which to download issues
    * @param projectKey   key of the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, boolean, String, ClientProgressMonitor)})
