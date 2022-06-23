@@ -74,7 +74,7 @@ public class ServerIssueUpdater {
       }
       serverIssueStore.replaceAllIssuesOfFile(projectBinding.projectKey(), branchName, serverFilePath, issues);
     } else {
-      LOG.debug("Skip downloading file issues on SonarQube 9.5+");
+      LOG.debug("Skip downloading file issues on SonarQube " + IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL + "+");
     }
     List<ServerTaintIssue> taintIssues = new ArrayList<>();
     try {

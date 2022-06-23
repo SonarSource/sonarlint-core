@@ -653,7 +653,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void updatesStorageWhenIssueResolvedOnServer() throws InterruptedException {
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5));
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6));
 
     updateProject(PROJECT_KEY_JAVA);
     engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVA), null);
@@ -665,8 +665,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     assertThat(serverIssues)
       .extracting(ServerIssue::getRuleKey, ServerIssue::isResolved)
-      // FIXME should be .contains(tuple("java:S106", true))
-      .contains(tuple("S106", true));
+      .contains(tuple("java:S106", true));
   }
 
   private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {
