@@ -43,7 +43,7 @@ public class ConnectionValidator {
         var validateCredentials = authChecker.validateCredentials();
         var organizationKey = helper.getOrganizationKey();
         if (validateCredentials.success() && organizationKey.isPresent()) {
-          var organization = new ServerApi(helper).organization().fetchOrganization(organizationKey.get(),
+          var organization = new ServerApi(helper).organization().getOrganization(organizationKey.get(),
             new ProgressMonitor(null));
           if (organization.isEmpty()) {
             return new DefaultValidationResult(false, "No organizations found for key: " + organizationKey.get());
