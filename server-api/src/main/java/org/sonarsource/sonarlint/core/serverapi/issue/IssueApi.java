@@ -46,7 +46,7 @@ import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 
 public class IssueApi {
 
-  public static final Version MIN_SQ_VERSION_SUPPORTING_PULL = Version.create("9.5");
+  public static final Version MIN_SQ_VERSION_SUPPORTING_PULL = Version.create("9.6");
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 

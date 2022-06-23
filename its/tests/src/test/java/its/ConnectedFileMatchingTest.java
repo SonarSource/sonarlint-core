@@ -36,7 +36,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
@@ -63,9 +62,6 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
 
   @Rule
   public SonarlintProject clientTools = new SonarlintProject();
-
-  @Rule
-  public ExpectedException exception = ExpectedException.none();
 
   private static Path sonarUserHome;
 
@@ -115,14 +111,14 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
     engine.downloadAllServerIssuesForFile(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding,
       "module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java", "master", null);
     var serverIssues = engine.getServerIssues(projectBinding, "master", "module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6)) {
       assertThat(serverIssues).isEmpty();
-      assertThat(logs).contains("Skip downloading file issues on SonarQube 9.5+");
+      assertThat(logs).contains("Skip downloading file issues on SonarQube 9.6+");
     } else {
       assertThat(serverIssues).hasSize(2);
     }
     engine.syncServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, "master", null);
-    if (!ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
+    if (!ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6)) {
       assertThat(logs).contains("Incremental issue sync is not supported. Skipping.");
     }
     serverIssues = engine.getServerIssues(projectBinding, "master", "module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
@@ -145,14 +141,14 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
     engine.downloadAllServerIssuesForFile(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding,
       "src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java", "master", null);
     var serverIssues = engine.getServerIssues(projectBinding, "master", "src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6)) {
       assertThat(serverIssues).isEmpty();
-      assertThat(logs).contains("Skip downloading file issues on SonarQube 9.5+");
+      assertThat(logs).contains("Skip downloading file issues on SonarQube 9.6+");
     } else {
       assertThat(serverIssues).hasSize(2);
     }
     engine.syncServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, "master", null);
-    if (!ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
+    if (!ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6)) {
       assertThat(logs).contains("Incremental issue sync is not supported. Skipping.");
     }
     serverIssues = engine.getServerIssues(projectBinding, "master", "src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
