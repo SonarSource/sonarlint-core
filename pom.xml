@@ -41,7 +41,7 @@
 
   <properties>
     <!-- Don't forget to also update SonarPluginRequirementsChecker::IMPLEMENTED_PLUGIN_API -->
-    <sonar-plugin-api.version>9.6.1.114</sonar-plugin-api.version>
+    <sonar-plugin-api.version>9.8.0.203</sonar-plugin-api.version>
     <sonar-markdown.version>9.4.0.54424</sonar-markdown.version>
     <sonar-scanner-protocol.version>7.9</sonar-scanner-protocol.version>
     <protobuf.version>3.20.0</protobuf.version>

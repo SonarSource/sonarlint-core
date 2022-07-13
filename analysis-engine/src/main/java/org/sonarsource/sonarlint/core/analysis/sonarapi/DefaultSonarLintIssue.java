@@ -55,6 +55,7 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
   private RuleKey ruleKey;
   private Severity overriddenSeverity;
   private final List<QuickFix> quickFixes;
+  private Optional<String> ruleDescriptionContextKey = Optional.empty();
 
   public DefaultSonarLintIssue(SonarLintInputProject project, Path baseDir, @Nullable SensorStorage storage) {
     super(storage);
@@ -66,6 +67,12 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
   @Override
   public NewIssueLocation newLocation() {
     return new DefaultSonarLintIssueLocation();
+  }
+
+  @Override
+  public NewIssue setRuleDescriptionContextKey(@Nullable String ruleDescriptionContextKey) {
+    this.ruleDescriptionContextKey = Optional.ofNullable(ruleDescriptionContextKey);
+    return this;
   }
 
   @Override
@@ -191,5 +198,10 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
   @Override
   public boolean isQuickFixAvailable() {
     return !quickFixes.isEmpty();
+  }
+
+  @Override
+  public Optional<String> ruleDescriptionContextKey() {
+    return ruleDescriptionContextKey;
   }
 }
