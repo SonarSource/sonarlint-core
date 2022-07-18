@@ -43,6 +43,8 @@ import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.events.EventDispatcher;
 import org.sonarsource.sonarlint.core.serverconnection.events.ServerEventsAutoSubscriber;
+import org.sonarsource.sonarlint.core.serverconnection.events.issue.UpdateStorageOnIssueChanged;
+import org.sonarsource.sonarlint.core.serverconnection.events.ruleset.UpdateStorageOnRuleSetChanged;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.prefix.FileTreeMatcher;
