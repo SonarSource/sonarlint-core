@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection;
+package org.sonarsource.sonarlint.core.serverconnection.events.issue;
 
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
+import org.sonarsource.sonarlint.core.serverconnection.events.issue.UpdateStorageOnIssueChanged;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import testutils.InMemoryIssueStore;
 
