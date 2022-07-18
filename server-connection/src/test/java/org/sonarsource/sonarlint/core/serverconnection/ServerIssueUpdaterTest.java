@@ -65,7 +65,7 @@ class ServerIssueUpdaterTest {
   }
 
   @Test
-  void update_project_issues_before_sq_9_5() {
+  void update_project_issues_no_pull() {
     var issue = aServerIssue();
     List<ServerIssue> issues = Collections.singletonList(issue);
     when(downloader.downloadFromBatch(serverApi, "module:file", null)).thenReturn(issues);
@@ -87,7 +87,7 @@ class ServerIssueUpdaterTest {
   }
 
   @Test
-  void update_project_issues_sonarqube_9_5_first_time() {
+  void update_project_issues_with_pull_first_time() {
     var issue = aServerIssue();
     List<ServerIssue> issues = Collections.singletonList(issue);
     var queryTimestamp = Instant.now();
@@ -101,7 +101,7 @@ class ServerIssueUpdaterTest {
   }
 
   @Test
-  void update_project_issues_sonarqube_9_5_using_last_sync() {
+  void update_project_issues_with_pull_using_last_sync() {
     var issue = aServerIssue();
     List<ServerIssue> issues = Collections.singletonList(issue);
     var queryTimestamp = Instant.now();
@@ -133,7 +133,7 @@ class ServerIssueUpdaterTest {
   }
 
   @Test
-  void update_file_issues_before_sonarqube_9_5() {
+  void update_file_issues_sq_no_pull() {
     var issue = aServerIssue();
     List<ServerIssue> issues = Collections.singletonList(issue);
 
@@ -157,7 +157,7 @@ class ServerIssueUpdaterTest {
   }
 
   @Test
-  void dont_update_file_issues_sonarqube_9_5() {
+  void dont_update_file_issues_with_pull() {
     updater.updateFileIssuesAndTaints(serverApi, projectBinding, "src/main/Foo.java", "branch", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL, PROGRESS);
 
     verify(issueStore, never()).replaceAllIssuesOfFile(any(), eq("branch"), anyString(), anyList());
