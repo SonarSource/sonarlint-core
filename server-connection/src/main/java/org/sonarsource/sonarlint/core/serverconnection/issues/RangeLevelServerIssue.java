@@ -23,7 +23,7 @@ import java.time.Instant;
 import javax.annotation.Nullable;
 
 /**
- * Issues with precise location (from api/issues/pull, SQ >= 9.5)
+ * Issues with precise location (from api/issues/pull, SQ >= 9.6)
  */
 public class RangeLevelServerIssue extends ServerIssue<RangeLevelServerIssue> {
   private TextRange textRange;

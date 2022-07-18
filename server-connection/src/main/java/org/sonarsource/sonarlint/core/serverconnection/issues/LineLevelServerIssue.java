@@ -23,7 +23,7 @@ import java.time.Instant;
 import javax.annotation.Nullable;
 
 /**
- * Issues with line level precision (from old /batch/issues WS, in SQ < 9.5 and SC)
+ * Issues with line level precision (from old /batch/issues WS, in SQ < 9.6 and SC)
  */
 public class LineLevelServerIssue extends ServerIssue<LineLevelServerIssue> {
   private int line;

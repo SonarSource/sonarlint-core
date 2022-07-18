@@ -52,6 +52,7 @@ class ServerIssueUpdaterTest {
   private static final ProgressMonitor PROGRESS = new ProgressMonitor(null);
 
   private final IssueDownloader downloader = mock(IssueDownloader.class);
+  private final TaintIssueDownloader taintDownloader = mock(TaintIssueDownloader.class);
   private final ServerIssueStore issueStore = mock(ServerIssueStore.class);
   private ProjectBinding projectBinding = new ProjectBinding("module", "", "");
 
@@ -61,7 +62,7 @@ class ServerIssueUpdaterTest {
   @BeforeEach
   void setUp() {
     serverApi = new ServerApi(mock(ServerApiHelper.class));
-    updater = new ServerIssueUpdater(issueStore, downloader);
+    updater = new ServerIssueUpdater(issueStore, downloader, taintDownloader);
   }
 
   @Test
@@ -92,7 +93,7 @@ class ServerIssueUpdaterTest {
     List<ServerIssue> issues = Collections.singletonList(issue);
     var queryTimestamp = Instant.now();
     var lastSync = Optional.<Instant>empty();
-    when(issueStore.getLastSyncTimestamp(projectBinding.projectKey(), "master")).thenReturn(lastSync);
+    when(issueStore.getLastIssueSyncTimestamp(projectBinding.projectKey(), "master")).thenReturn(lastSync);
     when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", lastSync)).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
 
     updater.update(serverApi, projectBinding.projectKey(), "master", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
@@ -106,7 +107,7 @@ class ServerIssueUpdaterTest {
     List<ServerIssue> issues = Collections.singletonList(issue);
     var queryTimestamp = Instant.now();
     var lastSync = Optional.of(Instant.ofEpochMilli(123456789));
-    when(issueStore.getLastSyncTimestamp(projectBinding.projectKey(), "master")).thenReturn(lastSync);
+    when(issueStore.getLastIssueSyncTimestamp(projectBinding.projectKey(), "master")).thenReturn(lastSync);
     when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", lastSync)).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
 
     updater.update(serverApi, projectBinding.projectKey(), "master", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
@@ -118,7 +119,7 @@ class ServerIssueUpdaterTest {
   void update_file_issues_for_unknown_file() {
     projectBinding = new ProjectBinding("module", "", "ide_prefix");
 
-    updater.updateFileIssuesAndTaints(serverApi, projectBinding, "not_ide_prefix", null, false, Version.create("8.9"), PROGRESS);
+    updater.updateFileIssues(serverApi, projectBinding, "not_ide_prefix", null, false, Version.create("8.9"));
 
     verifyNoInteractions(downloader);
     verifyNoInteractions(issueStore);
@@ -129,7 +130,7 @@ class ServerIssueUpdaterTest {
     when(downloader.downloadFromBatch(serverApi, "module:file", null)).thenThrow(IllegalArgumentException.class);
     // when(issueStorePaths.idePathToFileKey(projectBinding, "file")).thenReturn("module:file");
 
-    assertThrows(DownloadException.class, () -> updater.updateFileIssuesAndTaints(serverApi, projectBinding, "file", null, false, Version.create("8.9"), PROGRESS));
+    assertThrows(DownloadException.class, () -> updater.updateFileIssues(serverApi, projectBinding, "file", null, false, Version.create("8.9")));
   }
 
   @Test
@@ -139,7 +140,7 @@ class ServerIssueUpdaterTest {
 
     when(downloader.downloadFromBatch(serverApi, projectBinding.projectKey() + ":src/main/Foo.java", null)).thenReturn(issues);
 
-    updater.updateFileIssuesAndTaints(serverApi, projectBinding, "src/main/Foo.java", "branch", false, Version.create("8.9"), PROGRESS);
+    updater.updateFileIssues(serverApi, projectBinding, "src/main/Foo.java", "branch", false, Version.create("8.9"));
 
     verify(issueStore).replaceAllIssuesOfFile(eq(projectBinding.projectKey()), eq("branch"), eq("src/main/Foo.java"), anyList());
   }
@@ -151,14 +152,14 @@ class ServerIssueUpdaterTest {
 
     when(downloader.downloadFromBatch(serverApi, projectBinding.projectKey() + ":src/main/Foo.java", null)).thenReturn(issues);
 
-    updater.updateFileIssuesAndTaints(serverApi, projectBinding, "src/main/Foo.java", "branch", true, Version.create("99.9"), PROGRESS);
+    updater.updateFileIssues(serverApi, projectBinding, "src/main/Foo.java", "branch", true, Version.create("99.9"));
 
     verify(issueStore).replaceAllIssuesOfFile(eq(projectBinding.projectKey()), eq("branch"), eq("src/main/Foo.java"), anyList());
   }
 
   @Test
   void dont_update_file_issues_with_pull() {
-    updater.updateFileIssuesAndTaints(serverApi, projectBinding, "src/main/Foo.java", "branch", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL, PROGRESS);
+    updater.updateFileIssues(serverApi, projectBinding, "src/main/Foo.java", "branch", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
 
     verify(issueStore, never()).replaceAllIssuesOfFile(any(), eq("branch"), anyString(), anyList());
   }

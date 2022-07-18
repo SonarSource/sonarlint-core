@@ -17,11 +17,12 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection;
+package org.sonarsource.sonarlint.core.serverconnection.issues;
 
 import java.time.Instant;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -32,10 +33,10 @@ class ServerTaintIssueTests {
   void testRoundTrips() {
     var issue = aServerTaintIssue();
     var i1 = Instant.ofEpochMilli(100_000_000);
-    assertThat(issue.setLineHash("checksum1").lineHash()).isEqualTo("checksum1");
-    assertThat(issue.setCreationDate(i1).creationDate()).isEqualTo(i1);
+    assertThat(issue.setTextRangeHash("checksum1").getTextRangeHash()).isEqualTo("checksum1");
+    assertThat(issue.setCreationDate(i1).getCreationDate()).isEqualTo(i1);
     assertThat(issue.setFilePath("path1").getFilePath()).isEqualTo("path1");
-    assertThat(issue.setKey("key1").key()).isEqualTo("key1");
+    assertThat(issue.setKey("key1").getKey()).isEqualTo("key1");
     issue.setTextRange(new ServerTaintIssue.TextRange(1,
       2,
       3,
@@ -44,11 +45,11 @@ class ServerTaintIssueTests {
     assertThat(issue.getTextRange().getStartLineOffset()).isEqualTo(2);
     assertThat(issue.getTextRange().getEndLine()).isEqualTo(3);
     assertThat(issue.getTextRange().getEndLineOffset()).isEqualTo(4);
-    assertThat(issue.setSeverity("MAJOR").severity()).isEqualTo("MAJOR");
-    assertThat(issue.setRuleKey("rule1").ruleKey()).isEqualTo("rule1");
-    assertThat(issue.resolved()).isTrue();
+    assertThat(issue.setSeverity("MAJOR").getSeverity()).isEqualTo("MAJOR");
+    assertThat(issue.setRuleKey("rule1").getRuleKey()).isEqualTo("rule1");
+    assertThat(issue.isResolved()).isTrue();
     assertThat(issue.setMessage("msg1").getMessage()).isEqualTo("msg1");
-    assertThat(issue.setType("type").type()).isEqualTo("type");
+    assertThat(issue.setType("type").getType()).isEqualTo("type");
 
     assertThat(issue.getFlows()).isEmpty();
 

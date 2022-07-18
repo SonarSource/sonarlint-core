@@ -90,5 +90,27 @@ message IssueLite {
   optional bool closed = 8;
 }
 
+// Response of GET api/issues/pull_taint
+message TaintVulnerabilityPullQueryTimestamp {
+  required int64 queryTimestamp = 1;
+}
+
+
+message TaintVulnerabilityLite {
+  required string key = 1;
+  optional int64 creationDate = 2;
+  optional bool resolved = 3;
+  optional string ruleKey = 4;
+  optional string userSeverity = 5;
+  optional string type = 6;
+  optional Location mainLocation = 7;
+  optional bool closed = 8;
+  repeated Flow flows = 9;
+  optional bool assignedToSubscribedUser = 10;
+}
+
+message Flow {
+  repeated Location locations = 1;
+}
 
 

@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
-import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
 public interface ServerIssueStore {
 
@@ -48,10 +48,24 @@ public interface ServerIssueStore {
   void mergeIssues(String projectKey, String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp);
 
   /**
-   * Return the timestamp of the last sync for a given branch.
+   * Merge provided taint issues to stored ones for the given project:
+   *  - new issues are added
+   *  - existing issues are updated
+   *  - closed issues are removed from the store
+   */
+  void mergeTaintIssues(String projectKey, String branchName, List<ServerTaintIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp);
+
+  /**
+   * Return the timestamp of the last issue sync for a given branch.
    * @return empty if the issues of the branch have never been pulled
    */
-  Optional<Instant> getLastSyncTimestamp(String projectKey, String branchName);
+  Optional<Instant> getLastIssueSyncTimestamp(String projectKey, String branchName);
+
+  /**
+   * Return the timestamp of the last taint issue sync for a given branch.
+   * @return empty if the taint issues of the branch have never been pulled
+   */
+  Optional<Instant> getLastTaintSyncTimestamp(String projectKey, String branchName);
 
   /**
    * Load issues stored for specified file.

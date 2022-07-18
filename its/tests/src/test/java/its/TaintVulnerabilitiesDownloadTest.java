@@ -133,12 +133,12 @@ public class TaintVulnerabilitiesDownloadTest extends AbstractConnectedTest {
     assertThat(sinkIssues).hasSize(1);
 
     var taintIssue = sinkIssues.get(0);
-    assertThat(taintIssue.getCodeSnippet()).isEqualTo("statement.executeQuery(query)");
+    assertThat(taintIssue.getTextRangeHash()).isEqualTo("statement.executeQuery(query)");
     assertThat(taintIssue.getFlows()).isNotEmpty();
     var flow = taintIssue.getFlows().get(0);
     assertThat(flow.locations()).isNotEmpty();
-    assertThat(flow.locations().get(0).getCodeSnippet()).isEqualTo("statement.executeQuery(query)");
-    assertThat(flow.locations().get(flow.locations().size() - 1).getCodeSnippet()).isIn("request.getParameter(\"user\")", "request.getParameter(\"pass\")");
+    assertThat(flow.locations().get(0).getTextRangeHash()).isEqualTo("statement.executeQuery(query)");
+    assertThat(flow.locations().get(flow.locations().size() - 1).getTextRangeHash()).isIn("request.getParameter(\"user\")", "request.getParameter(\"pass\")");
   }
 
   private void analyzeMavenProject(String projectDirName) {

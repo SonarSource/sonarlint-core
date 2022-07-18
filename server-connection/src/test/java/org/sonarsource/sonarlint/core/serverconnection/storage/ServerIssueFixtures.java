@@ -20,10 +20,10 @@
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
 import java.time.Instant;
-import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
 public class ServerIssueFixtures {
   public static LineLevelServerIssue aBatchServerIssue() {
@@ -72,11 +72,10 @@ public class ServerIssueFixtures {
       true,
       "repo:key",
       "message",
-      "hash",
       "file/path",
       Instant.now(),
       "MINOR",
       "BUG",
-      new ServerTaintIssue.TextRange(1, 2, 3, 4));
+      new ServerTaintIssue.TextRange(1, 2, 3, 4), "rangeHash");
   }
 }

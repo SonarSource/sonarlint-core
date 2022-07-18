@@ -27,11 +27,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue.ServerIssueLocation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -114,31 +115,31 @@ class XodusServerIssueStoreTests {
     var creationDate = Instant.now();
 
     store
-      .replaceAllTaintOfFile("projectKey", "branch", "file/path", List.of(aServerTaintIssue().setCreationDate(creationDate).setCodeSnippet("code")
+      .replaceAllTaintOfFile("projectKey", "branch", "file/path", List.of(aServerTaintIssue().setCreationDate(creationDate).setTextRangeHash("myRangeHash")
         .setFlows(List.of(new ServerTaintIssue.Flow(List.of(new ServerTaintIssue.ServerIssueLocation("file/path",
-          new ServerTaintIssue.TextRange(5, 6, 7, 8), "flow message", "code")))))));
+          new ServerTaintIssue.TextRange(5, 6, 7, 8), "flow message", "myFlowRangeHash")))))));
 
     var savedIssues = store.loadTaint("projectKey", "branch", "file/path");
     assertThat(savedIssues).isNotEmpty();
     var savedIssue = savedIssues.get(0);
-    assertThat(savedIssue.key()).isEqualTo("key");
-    assertThat(savedIssue.resolved()).isTrue();
-    assertThat(savedIssue.ruleKey()).isEqualTo("repo:key");
+    assertThat(savedIssue.getKey()).isEqualTo("key");
+    assertThat(savedIssue.isResolved()).isTrue();
+    assertThat(savedIssue.getRuleKey()).isEqualTo("repo:key");
     assertThat(savedIssue.getMessage()).isEqualTo("message");
-    assertThat(savedIssue.lineHash()).isEqualTo("hash");
+    assertThat(savedIssue.getTextRangeHash()).isEqualTo("myRangeHash");
     assertThat(savedIssue.getFilePath()).isEqualTo("file/path");
-    assertThat(savedIssue.creationDate()).isEqualTo(creationDate);
-    assertThat(savedIssue.severity()).isEqualTo("MINOR");
-    assertThat(savedIssue.type()).isEqualTo("BUG");
+    assertThat(savedIssue.getCreationDate()).isEqualTo(creationDate);
+    assertThat(savedIssue.getSeverity()).isEqualTo("MINOR");
+    assertThat(savedIssue.getType()).isEqualTo("BUG");
     assertThat(savedIssue.getTextRange().getStartLine()).isEqualTo(1);
     assertThat(savedIssue.getTextRange().getStartLineOffset()).isEqualTo(2);
     assertThat(savedIssue.getTextRange().getEndLine()).isEqualTo(3);
     assertThat(savedIssue.getTextRange().getEndLineOffset()).isEqualTo(4);
-    assertThat(savedIssue.getCodeSnippet()).isEqualTo("code");
     assertThat(savedIssue.getFlows()).hasSize(1);
     assertThat(savedIssue.getFlows().get(0).locations())
-      .extracting("filePath", "message", "codeSnippet", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
-      .containsOnly(tuple("file/path", "flow message", "code", 5, 6, 7, 8));
+      .extracting(ServerIssueLocation::getFilePath, ServerIssueLocation::getMessage, ServerIssueLocation::getTextRangeHash, l -> l.getTextRange().getStartLine(),
+        l -> l.getTextRange().getStartLineOffset(), l -> l.getTextRange().getEndLine(), l -> l.getTextRange().getEndLineOffset())
+      .containsOnly(tuple("file/path", "flow message", "myFlowRangeHash", 5, 6, 7, 8));
   }
 
   @Test
@@ -169,7 +170,7 @@ class XodusServerIssueStoreTests {
 
     var issues = store.loadTaint("projectKey", "branch", "file/path1");
     assertThat(issues)
-      .extracting(ServerTaintIssue::key)
+      .extracting(ServerTaintIssue::getKey)
       .containsOnly("key1", "key3");
   }
 
@@ -363,27 +364,27 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_get_empty_last_timestamp_if_no_project() {
-    assertThat(store.getLastSyncTimestamp("unknown", "unknown")).isEmpty();
+    assertThat(store.getLastIssueSyncTimestamp("unknown", "unknown")).isEmpty();
   }
 
   @Test
   void should_get_empty_last_timestamp_if_no_branch() {
     store.replaceAllIssuesOfProject("projectKey", "branch", List.of(aServerIssue()));
 
-    assertThat(store.getLastSyncTimestamp("projectKey", "unknown")).isEmpty();
+    assertThat(store.getLastIssueSyncTimestamp("projectKey", "unknown")).isEmpty();
   }
 
   @Test
   void should_get_empty_last_timestamp_if_no_timestamp_on_branch() {
     store.replaceAllIssuesOfProject("projectKey", "branch", List.of(aServerIssue()));
 
-    assertThat(store.getLastSyncTimestamp("projectKey", "branch")).isEmpty();
+    assertThat(store.getLastIssueSyncTimestamp("projectKey", "branch")).isEmpty();
   }
 
   @Test
   void should_get_last_timestamp() {
     store.mergeIssues("projectKey", "branch", List.of(aServerIssue()), Set.of(), Instant.ofEpochMilli(123456789));
 
-    assertThat(store.getLastSyncTimestamp("projectKey", "branch")).contains(Instant.ofEpochMilli(123456789));
+    assertThat(store.getLastIssueSyncTimestamp("projectKey", "branch")).contains(Instant.ofEpochMilli(123456789));
   }
 }

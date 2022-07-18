@@ -204,4 +204,47 @@ public class IssueApi {
     }
   }
 
+  private static String getPullTaintIssuesUrl(String projectKey, String branchName, Set<Language> enabledLanguages, @Nullable Long changedSince) {
+    var enabledLanguageKeys = enabledLanguages.stream().map(Language::getLanguageKey).collect(Collectors.joining(","));
+    var url = new StringBuilder()
+      .append("/api/issues/pull_taint?projectKey=")
+      .append(UrlUtils.urlEncode(projectKey)).append("&branchName=").append(UrlUtils.urlEncode(branchName));
+    if (!enabledLanguageKeys.isEmpty()) {
+      url.append("&languages=").append(enabledLanguageKeys);
+    }
+    if (changedSince != null) {
+      url.append("&changedSince=").append(changedSince);
+    }
+    return url.toString();
+  }
+
+  public TaintIssuesPullResult pullTaintIssues(String projectKey, String branchName, Set<Language> enabledLanguages, @Nullable Long changedSince) {
+    return ServerApiHelper.processTimed(
+      () -> serverApiHelper.get(getPullTaintIssuesUrl(projectKey, branchName, enabledLanguages, changedSince)),
+      response -> {
+        var input = response.bodyAsStream();
+        var timestamp = Issues.TaintVulnerabilityPullQueryTimestamp.parseDelimitedFrom(input);
+        return new TaintIssuesPullResult(timestamp, readMessages(input, Issues.TaintVulnerabilityLite.parser()));
+      },
+      duration -> LOG.debug("Pulled taint issues in {}ms", duration));
+  }
+
+  public static class TaintIssuesPullResult {
+    private final Issues.TaintVulnerabilityPullQueryTimestamp timestamp;
+    private final List<Issues.TaintVulnerabilityLite> issues;
+
+    public TaintIssuesPullResult(Issues.TaintVulnerabilityPullQueryTimestamp timestamp, List<Issues.TaintVulnerabilityLite> issues) {
+      this.timestamp = timestamp;
+      this.issues = issues;
+    }
+
+    public Issues.TaintVulnerabilityPullQueryTimestamp getTimestamp() {
+      return timestamp;
+    }
+
+    public List<Issues.TaintVulnerabilityLite> getTaintIssues() {
+      return issues;
+    }
+  }
+
 }

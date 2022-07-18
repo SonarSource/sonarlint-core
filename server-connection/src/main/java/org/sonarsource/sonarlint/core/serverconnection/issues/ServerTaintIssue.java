@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection;
+package org.sonarsource.sonarlint.core.serverconnection.issues;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -30,38 +30,37 @@ public class ServerTaintIssue {
   private final boolean resolved;
   private String ruleKey;
   private String message;
-  private String lineHash;
   private String filePath;
   private Instant creationDate;
   private String severity;
   private String type;
   private List<Flow> flows = new ArrayList<>();
   private TextRange textRange;
-  private String codeSnippet;
+  private String textRangeHash;
 
-  public ServerTaintIssue(String key, boolean resolved, String ruleKey, String message, String lineHash, String filePath, Instant creationDate, String severity, String type,
-    @Nullable TextRange textRange) {
+  public ServerTaintIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant creationDate, String severity, String type,
+    @Nullable TextRange textRange, @Nullable String textRangeHash) {
     this.key = key;
     this.resolved = resolved;
     this.ruleKey = ruleKey;
     this.message = message;
-    this.lineHash = lineHash;
     this.filePath = filePath;
     this.creationDate = creationDate;
     this.severity = severity;
     this.type = type;
     this.textRange = textRange;
+    this.textRangeHash = textRangeHash;
   }
 
-  public String key() {
+  public String getKey() {
     return key;
   }
 
-  public boolean resolved() {
+  public boolean isResolved() {
     return resolved;
   }
 
-  public String ruleKey() {
+  public String getRuleKey() {
     return ruleKey;
   }
 
@@ -69,23 +68,19 @@ public class ServerTaintIssue {
     return message;
   }
 
-  public String lineHash() {
-    return lineHash;
-  }
-
   public String getFilePath() {
     return filePath;
   }
 
-  public Instant creationDate() {
+  public Instant getCreationDate() {
     return creationDate;
   }
 
-  public String severity() {
+  public String getSeverity() {
     return severity;
   }
 
-  public String type() {
+  public String getType() {
     return type;
   }
 
@@ -98,8 +93,8 @@ public class ServerTaintIssue {
   }
 
   @CheckForNull
-  public String getCodeSnippet() {
-    return codeSnippet;
+  public String getTextRangeHash() {
+    return textRangeHash;
   }
 
   public ServerTaintIssue setKey(String key) {
@@ -114,11 +109,6 @@ public class ServerTaintIssue {
 
   public ServerTaintIssue setMessage(String message) {
     this.message = message;
-    return this;
-  }
-
-  public ServerTaintIssue setLineHash(String lineHash) {
-    this.lineHash = lineHash;
     return this;
   }
 
@@ -152,8 +142,8 @@ public class ServerTaintIssue {
     return this;
   }
 
-  public ServerTaintIssue setCodeSnippet(@Nullable String codeSnippet) {
-    this.codeSnippet = codeSnippet;
+  public ServerTaintIssue setTextRangeHash(@Nullable String textRangeHash) {
+    this.textRangeHash = textRangeHash;
     return this;
   }
 
@@ -204,14 +194,14 @@ public class ServerTaintIssue {
   public static class ServerIssueLocation {
     private final String message;
     private final String filePath;
-    private final String codeSnippet;
+    private final String textRangeHash;
     private final TextRange textRange;
 
-    public ServerIssueLocation(@Nullable String filePath, @Nullable TextRange textRange, @Nullable String message, @Nullable String codeSnippet) {
+    public ServerIssueLocation(@Nullable String filePath, @Nullable TextRange textRange, @Nullable String message, @Nullable String textRangeHash) {
       this.textRange = textRange;
       this.filePath = filePath;
       this.message = message;
-      this.codeSnippet = codeSnippet;
+      this.textRangeHash = textRangeHash;
     }
 
     @CheckForNull
@@ -224,8 +214,8 @@ public class ServerTaintIssue {
     }
 
     @CheckForNull
-    public String getCodeSnippet() {
-      return codeSnippet;
+    public String getTextRangeHash() {
+      return textRangeHash;
     }
 
     @CheckForNull

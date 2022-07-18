@@ -27,17 +27,19 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStore;
 
 import static java.util.Optional.ofNullable;
 
 public class InMemoryIssueStore implements ServerIssueStore {
   private final Map<String, Map<String, Map<String, List<ServerIssue>>>> issuesByFileByBranchByProject = new HashMap<>();
-  private final Map<String, Map<String, Instant>> lastSyncByBranchByProject = new HashMap<>();
+  private final Map<String, Map<String, Instant>> lastIssueSyncByBranchByProject = new HashMap<>();
   private final Map<String, ServerIssue> issuesByKey = new HashMap<>();
   private final Map<String, Map<String, Map<String, List<ServerTaintIssue>>>> taintIssuesByFileByBranchByProject = new HashMap<>();
+  private final Map<String, Map<String, Instant>> lastTaintSyncByBranchByProject = new HashMap<>();
+  private final Map<String, ServerTaintIssue> taintIssuesByKey = new HashMap<>();
 
   @Override
   public void replaceAllIssuesOfFile(String projectKey, String branchName, String serverFilePath, List<ServerIssue> issues) {
@@ -56,12 +58,29 @@ public class InMemoryIssueStore implements ServerIssueStore {
       .putAll(issuesToMergeByFilePath);
     issuesToMerge.forEach(issue -> issuesByKey.put(issue.getKey(), issue));
     closedIssueKeysToDelete.forEach(issuesByKey::remove);
-    lastSyncByBranchByProject.computeIfAbsent(projectKey, __ -> new HashMap<>()).put(branchName, syncTimestamp);
+    lastIssueSyncByBranchByProject.computeIfAbsent(projectKey, __ -> new HashMap<>()).put(branchName, syncTimestamp);
   }
 
   @Override
-  public Optional<Instant> getLastSyncTimestamp(String projectKey, String branchName) {
-    return ofNullable(lastSyncByBranchByProject.getOrDefault(projectKey, Map.of()).get(branchName));
+  public void mergeTaintIssues(String projectKey, String branchName, List<ServerTaintIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp) {
+    var issuesToMergeByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerTaintIssue::getFilePath));
+    // does not handle issue moving file (e.g. file renaming)
+    taintIssuesByFileByBranchByProject.computeIfAbsent(projectKey, __ -> new HashMap<>())
+      .computeIfAbsent(branchName, __ -> new HashMap<>())
+      .putAll(issuesToMergeByFilePath);
+    issuesToMerge.forEach(issue -> taintIssuesByKey.put(issue.getKey(), issue));
+    closedIssueKeysToDelete.forEach(taintIssuesByKey::remove);
+    lastTaintSyncByBranchByProject.computeIfAbsent(projectKey, __ -> new HashMap<>()).put(branchName, syncTimestamp);
+  }
+
+  @Override
+  public Optional<Instant> getLastIssueSyncTimestamp(String projectKey, String branchName) {
+    return ofNullable(lastIssueSyncByBranchByProject.getOrDefault(projectKey, Map.of()).get(branchName));
+  }
+
+  @Override
+  public Optional<Instant> getLastTaintSyncTimestamp(String projectKey, String branchName) {
+    return ofNullable(lastTaintSyncByBranchByProject.getOrDefault(projectKey, Map.of()).get(branchName));
   }
 
   @Override

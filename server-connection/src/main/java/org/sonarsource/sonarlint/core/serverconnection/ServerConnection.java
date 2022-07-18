@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.events.EventDispatcher;
 import org.sonarsource.sonarlint.core.serverconnection.events.ServerEventsAutoSubscriber;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.prefix.FileTreeMatcher;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStorage;
@@ -86,7 +87,7 @@ public class ServerConnection {
     this.storageReader = new StorageReader(projectStoragePaths);
     serverIssueStore = new XodusServerIssueStore(projectsStorageRoot);
     this.issueStoreReader = new IssueStoreReader(serverIssueStore);
-    this.issuesUpdater = new ServerIssueUpdater(serverIssueStore, new IssueDownloader(enabledLanguages));
+    this.issuesUpdater = new ServerIssueUpdater(serverIssueStore, new IssueDownloader(enabledLanguages), new TaintIssueDownloader(enabledLanguages));
     this.pluginsStorage = new PluginsStorage(connectionStorageRoot.resolve("plugins"));
     this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguages, embeddedPluginKeys, pluginsStorage, projectStorage);
     this.projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(projectStoragePaths);
@@ -149,11 +150,17 @@ public class ServerConnection {
       FilenameUtils.separatorsToUnix(match.idePrefix().toString()));
   }
 
-  public void downloadServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName,
+  public void downloadServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName) {
+    var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
+    var serverVersion = checkStatusAndGetServerVersion(serverApi);
+    issuesUpdater.updateFileIssues(serverApi, projectBinding, ideFilePath, branchName, isSonarCloud, serverVersion);
+  }
+
+  public void downloadServerTaintIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName,
     ProgressMonitor progress) {
     var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
     var serverVersion = checkStatusAndGetServerVersion(serverApi);
-    issuesUpdater.updateFileIssuesAndTaints(serverApi, projectBinding, ideFilePath, branchName, isSonarCloud, serverVersion, progress);
+    issuesUpdater.updateFileTaints(serverApi, projectBinding, ideFilePath, branchName, isSonarCloud, serverVersion, progress);
   }
 
   private static Version checkStatusAndGetServerVersion(ServerApi serverApi) {
@@ -175,6 +182,17 @@ public class ServerConnection {
       issuesUpdater.sync(serverApi, projectKey, branchName);
     } else {
       LOG.debug("Incremental issue sync is not supported. Skipping.");
+    }
+  }
+
+  public void syncServerTaintIssuesForProject(EndpointParams endpoint, HttpClient client, String projectKey, String branchName) {
+    var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
+    var serverVersion = checkStatusAndGetServerVersion(serverApi);
+    if (IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
+      LOG.info("[SYNC] Synchronizing taint issues for project '{}' on branch '{}'", projectKey, branchName);
+      issuesUpdater.syncTaints(serverApi, projectKey, branchName);
+    } else {
+      LOG.debug("Incremental taint issue sync is not supported. Skipping.");
     }
   }
 
