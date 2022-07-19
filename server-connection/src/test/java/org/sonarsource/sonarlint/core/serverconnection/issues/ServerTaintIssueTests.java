@@ -27,6 +27,7 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.mock;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerTaintIssue;
 
@@ -53,7 +54,12 @@ class ServerTaintIssueTests {
     assertThat(issue.setMessage("msg1").getMessage()).isEqualTo("msg1");
     assertThat(issue.setType(RuleType.BUG).getType()).isEqualTo(RuleType.BUG);
 
-    assertThat(issue.getFlows()).isEmpty();
+    assertThat(issue.getFlows())
+      .flatExtracting("locations")
+      .extracting("message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "textRange.hash")
+      .containsOnly(
+        // flow 1
+        tuple("message", "file/path", 5, 6, 7, 8, "rangeHash"));
 
     issue.setFlows(Arrays.asList(mock(ServerTaintIssue.Flow.class), mock(ServerTaintIssue.Flow.class)));
     assertThat(issue.getFlows()).hasSize(2);

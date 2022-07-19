@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
 import java.time.Instant;
+import java.util.List;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
@@ -77,7 +78,19 @@ public class ServerIssueFixtures {
       "file/path",
       Instant.now(),
       IssueSeverity.MINOR,
-      RuleType.BUG,
-      new TextRangeWithHash(1, 2, 3, 4, "ab12"));
+      RuleType.VULNERABILITY,
+      new TextRangeWithHash(1, 2, 3, 4, "ab12"))
+        .setFlows(List.of(aServerTaintIssueFlow()));
+  }
+
+  private static ServerTaintIssue.Flow aServerTaintIssueFlow() {
+    return new ServerTaintIssue.Flow(List.of(aServerTaintIssueFlowLocation()));
+  }
+
+  private static ServerTaintIssue.ServerIssueLocation aServerTaintIssueFlowLocation() {
+    return new ServerTaintIssue.ServerIssueLocation(
+      "file/path",
+      new TextRangeWithHash(5, 6, 7, 8, "rangeHash"),
+      "message");
   }
 }
