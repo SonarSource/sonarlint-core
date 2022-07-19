@@ -231,7 +231,7 @@ stages:
             Category: '-Dgroups=SonarCloud'
           Dogfood:
             #FIXME SQ_VERSION: 'DEV'
-            SQ_VERSION: '9.6.0.58234'
+            SQ_VERSION: '9.6.0.58276'
             JDKVersion: '1.11'
             Category: '-DexcludedGroups=SonarCloud'
           Latest:
