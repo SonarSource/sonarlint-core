@@ -99,5 +99,7 @@ public interface ServerIssueStore {
 
   void updateIssue(String issueKey, Consumer<ServerIssue> issueConsumer);
 
+  void insert(String projectKey, String branchName, ServerTaintIssue taintIssue);
+
   void close();
 }
