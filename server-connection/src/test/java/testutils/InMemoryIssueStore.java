@@ -20,6 +20,7 @@
 package testutils;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -113,6 +114,14 @@ public class InMemoryIssueStore implements ServerIssueStore {
   @Override
   public void updateIssue(String issueKey, Consumer<ServerIssue> issueConsumer) {
     issueConsumer.accept(issuesByKey.get(issueKey));
+  }
+
+  @Override
+  public void insert(String projectKey, String branchName, ServerTaintIssue taintIssue) {
+    taintIssuesByFileByBranchByProject.computeIfAbsent(projectKey, __ -> new HashMap<>())
+      .computeIfAbsent(branchName, __ -> new HashMap<>())
+      .computeIfAbsent(taintIssue.getFilePath(), __ -> new ArrayList<>())
+      .add(taintIssue);
   }
 
   @Override

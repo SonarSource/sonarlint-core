@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.push;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -347,5 +348,74 @@ class PushApiTests {
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add, silentLogOutput);
 
     assertThat(receivedEvents).isEmpty();
+  }
+
+  @Test
+  void should_notify_taint_vulnerability_raised_event() {
+    var mockResponse = new MockResponse();
+    mockResponse.setBody("event: TaintVulnerabilityRaised\n" +
+      "data: {" +
+      "\"key\": \"taintKey\"," +
+      "\"projectKey\": \"projectKey1\"," +
+      "\"branch\": \"branch\"," +
+      "\"creationDate\": 123456789," +
+      "\"ruleKey\": \"javasecurity:S123\"," +
+      "\"severity\": \"MAJOR\"," +
+      "\"type\": \"VULNERABILITY\"," +
+      "\"mainLocation\": {" +
+      "  \"filePath\": \"functions/taint.js\"," +
+      "  \"message\": \"blah blah\"," +
+      "  \"textRange\": {" +
+      "    \"startLine\": 17," +
+      "    \"startLineOffset\": 10," +
+      "    \"endLine\": 3," +
+      "    \"endLineOffset\": 2," +
+      "    \"hash\": \"hash\"" +
+      "  }" +
+      "}," +
+      "\"flows\": [{" +
+      "  \"locations\": [{" +
+      "    \"filePath\": \"functions/taint.js\"," +
+      "    \"message\": \"sink: tainted value is used to perform a security-sensitive operation\"," +
+      "    \"textRange\": {" +
+      "      \"startLine\": 17," +
+      "      \"startLineOffset\": 10," +
+      "      \"endLine\": 3," +
+      "      \"endLineOffset\": 2," +
+      "      \"hash\": \"hash1\"" +
+      "    }" +
+      "  }," +
+      "  {" +
+      "    \"filePath\": \"functions/taint2.js\"," +
+      "    \"message\": \"sink: tainted value is used to perform a security-sensitive operation\"," +
+      "    \"textRange\": {" +
+      "      \"startLine\": 18," +
+      "      \"startLineOffset\": 11," +
+      "      \"endLine\": 4," +
+      "      \"endLineOffset\": 3," +
+      "      \"hash\": \"hash2\"" +
+      "    }" +
+      "  }]" +
+      "}]" +
+      "}\n\n");
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey&languages=java,py", mockResponse);
+
+    List<ServerEvent> receivedEvents = new ArrayList<>();
+    underTest.subscribe(new LinkedHashSet<>(List.of("projectKey")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add, silentLogOutput);
+
+    assertThat(receivedEvents)
+      .extracting("key", "projectKey", "branchName", "creationDate", "ruleKey", "severity", "type")
+      .containsOnly(tuple("taintKey", "projectKey1", "branch", Instant.parse("1970-01-02T10:17:36.789Z"), "javasecurity:S123", IssueSeverity.MAJOR, RuleType.VULNERABILITY));
+    assertThat(receivedEvents)
+      .extracting("mainLocation")
+      .extracting("filePath", "message", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "textRange.hash")
+      .containsOnly(tuple("functions/taint.js", "blah blah", 17, 10, 3, 2, "hash"));
+    assertThat(receivedEvents)
+      .flatExtracting("flows")
+      .flatExtracting("locations")
+      .extracting("filePath", "message", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "textRange.hash")
+      .containsOnly(
+        tuple("functions/taint.js", "sink: tainted value is used to perform a security-sensitive operation", 17, 10, 3, 2, "hash1"),
+        tuple("functions/taint2.js", "sink: tainted value is used to perform a security-sensitive operation", 18, 11, 4, 3, "hash2"));
   }
 }

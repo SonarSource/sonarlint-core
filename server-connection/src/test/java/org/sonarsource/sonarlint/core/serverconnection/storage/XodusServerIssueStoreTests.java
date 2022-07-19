@@ -132,7 +132,7 @@ class XodusServerIssueStoreTests {
     assertThat(savedIssue.getFilePath()).isEqualTo("file/path");
     assertThat(savedIssue.getCreationDate()).isEqualTo(creationDate);
     assertThat(savedIssue.getSeverity()).isEqualTo(IssueSeverity.MINOR);
-    assertThat(savedIssue.getType()).isEqualTo(RuleType.BUG);
+    assertThat(savedIssue.getType()).isEqualTo(RuleType.VULNERABILITY);
     assertThat(savedIssue.getTextRange().getStartLine()).isEqualTo(1);
     assertThat(savedIssue.getTextRange().getStartLineOffset()).isEqualTo(2);
     assertThat(savedIssue.getTextRange().getEndLine()).isEqualTo(3);
@@ -457,5 +457,26 @@ class XodusServerIssueStoreTests {
     store.mergeTaintIssues("projectKey", "branch", List.of(aServerTaintIssue()), Set.of(), Instant.ofEpochMilli(123456789));
 
     assertThat(store.getLastTaintSyncTimestamp("projectKey", "branch")).contains(Instant.ofEpochMilli(123456789));
+  }
+
+  @Test
+  void should_insert_taints() {
+    store.insert("projectKey", "branch", aServerTaintIssue());
+
+    var taintIssues = store.loadTaint("projectKey", "branch", "file/path");
+    assertThat(taintIssues)
+      .extracting("key", "resolved", "ruleKey", "message", "filePath", "severity", "type")
+      .containsOnly(tuple("key", true, "repo:key", "message", "file/path", IssueSeverity.MINOR, RuleType.VULNERABILITY));
+    assertThat(taintIssues)
+      .extracting("textRange")
+      .extracting("startLine", "startLineOffset", "endLine", "endLineOffset", "hash")
+      .containsOnly(tuple(1, 2, 3, 4, "ab12"));
+    assertThat(taintIssues)
+      .flatExtracting("flows")
+      .flatExtracting("locations")
+      .extracting("message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "textRange.hash")
+      .containsOnly(
+        // flow 1
+        tuple("message", "file/path", 5, 6, 7, 8, "rangeHash"));
   }
 }
