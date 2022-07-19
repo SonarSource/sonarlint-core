@@ -22,6 +22,7 @@ package its;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.MavenBuild;
+import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
 import java.io.File;
 import java.io.IOException;
@@ -59,7 +60,9 @@ import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.GetSecurityHotspotRequestParams;
@@ -79,6 +82,7 @@ import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectSto
 public class ConnectedModeTest extends AbstractConnectedTest {
 
   private static final String PROJECT_KEY_JAVA = "sample-java";
+  private static final String PROJECT_KEY_JAVA_TAINT = "sample-java-taint";
   private static final String PROJECT_KEY_JAVA_CUSTOM_SENSOR = "sample-java-custom-sensor";
   private static final String PROJECT_KEY_GLOBAL_EXTENSION = "sample-global-extension";
   private static final String PROJECT_KEY_JAVA_PACKAGE = "sample-java-package";
@@ -104,6 +108,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
     .defaultForceAuthentication()
     .setSonarVersion(SONAR_VERSION)
+    .setEdition(Edition.DEVELOPER)
+    .activateLicense()
     .keepBundledPlugins()
     .addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
     .addPlugin(FileLocation.of("../plugins/custom-sensor-plugin/target/custom-sensor-plugin.jar"))
@@ -113,6 +119,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-package.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-with-hotspot.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-with-markdown.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-with-taint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-empty-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-custom.xml"))
@@ -124,6 +131,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     .restoreProfileAtStartup(FileLocation.ofClasspath("/ruby-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/scala-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/xml-sonarlint.xml"))
+    .setServerProperty("sonar.pushevents.polling.initial.delay", "0")
+    .setServerProperty("sonar.pushevents.polling.period", "1")
     .build();
 
   @ClassRule
@@ -211,6 +220,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       .addEnabledLanguage(Language.COBOL)
       .setLogOutput((msg, level) -> {
         logs.add(msg);
+        System.out.println(msg);
       })
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
       .setExtraProperties(globalProps)
@@ -668,6 +678,80 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       .contains(tuple("java:S106", true));
   }
 
+  @Test
+  public void updatesStorageTaintVulnerabilityEvents() throws InterruptedException {
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6));
+
+    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_TAINT, "Java With Taint Vulnerabilities");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_TAINT, "java", "SonarLint Taint Java");
+    updateProject(PROJECT_KEY_JAVA_TAINT);
+    engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVA_TAINT), null);
+    var projectBinding = new ProjectBinding(PROJECT_KEY_JAVA_TAINT, "", "");
+    assertThat(engine.getServerTaintIssues(projectBinding, "master", "src/main/java/foo/DbHelper.java")).isEmpty();
+
+    // check TaintVulnerabilityRaised is received
+    analyzeMavenProject(PROJECT_KEY_JAVA_TAINT);
+    Thread.sleep(3000);
+    var issues = getIssueKeys("javasecurity:S3649");
+    assertThat(issues).isNotEmpty();
+    var issueKey = issues.get(0);
+    var taintIssues = engine.getServerTaintIssues(projectBinding, "master", "src/main/java/foo/DbHelper.java");
+    assertThat(taintIssues)
+      .extracting("key", "resolved", "ruleKey", "message", "filePath", "severity", "type")
+      .containsOnly(
+        tuple(issueKey, false, "javasecurity:S3649", "Change this code to not construct SQL queries directly from user-controlled data.", "src/main/java/foo/DbHelper.java",
+          IssueSeverity.MAJOR, RuleType.VULNERABILITY));
+    assertThat(taintIssues)
+      .extracting("textRange")
+      .extracting("startLine", "startLineOffset", "endLine", "endLineOffset", "hash")
+      .containsOnly(tuple(11, 35, 11, 64, "d123d615e9ea7cc7e78c784c768f2941"));
+    assertThat(taintIssues)
+      .flatExtracting("flows")
+      .flatExtracting("locations")
+      .extracting("message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "textRange.hash")
+      .containsOnly(
+        // flow 1
+        tuple("sink: tainted value is used to perform a security-sensitive operation", "src/main/java/foo/DbHelper.java", 11, 35, 11, 64, "d123d615e9ea7cc7e78c784c768f2941"),
+        tuple("tainted value is propagated", "src/main/java/foo/DbHelper.java", 8, 4, 8, 95, "4562fd67c1d6bb2a7316aa9937b9e571"),
+        tuple("tainted value is propagated", "src/main/java/foo/DbHelper.java", 8, 19, 8, 94, "83939dd74b004980ab22c04bc7b92374"),
+        tuple("tainted value is propagated", "src/main/java/foo/DbHelper.java", 7, 17, 7, 29, "66b4779468e4e855e187452d513b5fb6"),
+        tuple("tainted value is propagated", "src/main/java/foo/Endpoint.java", 11, 11, 11, 56, "902ee03726924c32da971ce91d64a16d"),
+        tuple("tainted value is propagated", "src/main/java/foo/Endpoint.java", 9, 4, 9, 47, "1ec8a3fab79983f35c841547397cecd3"),
+        tuple("tainted value is propagated", "src/main/java/foo/Endpoint.java", 8, 4, 8, 47, "1408257f72430dde2f97a32065230e2f"),
+        tuple("tainted value is propagated", "src/main/java/foo/Endpoint.java", 8, 18, 8, 46, "2ef54227b849e317e7104dc550be8146"),
+        tuple("source: this value can be controlled by the user", "src/main/java/foo/Endpoint.java", 9, 18, 9, 46, "a2b69949119440a24e900f15c0939c30"),
+        // flow 2
+        tuple("sink: tainted value is used to perform a security-sensitive operation", "src/main/java/foo/DbHelper.java", 11, 35, 11, 64, "d123d615e9ea7cc7e78c784c768f2941"),
+        tuple("tainted value is propagated", "src/main/java/foo/DbHelper.java", 8, 4, 8, 95, "4562fd67c1d6bb2a7316aa9937b9e571"),
+        tuple("tainted value is propagated", "src/main/java/foo/DbHelper.java", 8, 19, 8, 94, "83939dd74b004980ab22c04bc7b92374"),
+        tuple("tainted value is propagated", "src/main/java/foo/DbHelper.java", 7, 17, 7, 29, "66b4779468e4e855e187452d513b5fb6"),
+        tuple("tainted value is propagated", "src/main/java/foo/Endpoint.java", 11, 11, 11, 56, "902ee03726924c32da971ce91d64a16d"),
+        tuple("tainted value is propagated", "src/main/java/foo/Endpoint.java", 9, 4, 9, 47, "1ec8a3fab79983f35c841547397cecd3"),
+        tuple("tainted value is propagated", "src/main/java/foo/Endpoint.java", 9, 18, 9, 46, "a2b69949119440a24e900f15c0939c30"),
+        tuple("tainted value is propagated", "src/main/java/foo/Endpoint.java", 8, 18, 8, 46, "2ef54227b849e317e7104dc550be8146"),
+        tuple("source: this value can be controlled by the user", "src/main/java/foo/Endpoint.java", 8, 18, 8, 46, "2ef54227b849e317e7104dc550be8146"));
+
+    // check IssueChangedEvent is received
+    resolveIssueAsWontFix(issueKey);
+    Thread.sleep(3000);
+    taintIssues = engine.getServerTaintIssues(projectBinding, "master", "src/main/java/foo/DbHelper.java");
+    assertThat(taintIssues).isEmpty();
+
+    // check IssueChangedEvent is received
+    reopenIssue(issueKey);
+    Thread.sleep(3000);
+    taintIssues = engine.getServerTaintIssues(projectBinding, "master", "src/main/java/foo/DbHelper.java");
+    assertThat(taintIssues).isNotEmpty();
+
+    // analyze another project under the same project key to close the taint issue
+    analyzeMavenProject(PROJECT_KEY_JAVA_TAINT, "sample-java");
+    Thread.sleep(8000);
+
+    // check TaintVulnerabilityClosed is received
+    taintIssues = engine.getServerTaintIssues(projectBinding, "master", "src/main/java/foo/DbHelper.java");
+    assertThat(taintIssues).isEmpty();
+  }
+
   private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {
     adminWsClient.settings().set(new SetRequest()
       .setKey(key)
@@ -681,12 +765,16 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     engine.syncServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, "master", null);
   }
 
-  private static void analyzeMavenProject(String projectDirName) {
+  private static void analyzeMavenProject(String projectKey) {
+    analyzeMavenProject(projectKey, projectKey);
+  }
+
+  private static void analyzeMavenProject(String projectKey, String projectDirName) {
     var projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
     var pom = projectDir.resolve("pom.xml");
     ORCHESTRATOR.executeBuild(MavenBuild.create(pom.toFile())
       .setCleanPackageSonarGoals()
-      .setProperty("sonar.projectKey", projectDirName)
+      .setProperty("sonar.projectKey", projectKey)
       .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
       .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
   }
@@ -722,9 +810,17 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   private static void resolveIssueAsWontFix(String issueKey) {
+    changeIssueStatus(issueKey, "wontfix");
+  }
+
+  private static void reopenIssue(String issueKey) {
+    changeIssueStatus(issueKey, "reopen");
+  }
+
+  private static void changeIssueStatus(String issueKey, String status) {
     var request = new PostRequest("/api/issues/do_transition")
       .setParam("issue", issueKey)
-      .setParam("transition", "wontfix");
+      .setParam("transition", status);
     try (var response = adminWsClient.wsConnector().call(request)) {
       assertTrue("Unable to resolve issue", response.isSuccessful());
     }
