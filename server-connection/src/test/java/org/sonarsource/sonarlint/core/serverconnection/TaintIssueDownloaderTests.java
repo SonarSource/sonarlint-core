@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +35,8 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.Flow;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.Paging;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.TextRange;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Location;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.TaintVulnerabilityLite;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import testutils.MockWebServerExtensionWithProtobuf;
 
@@ -63,7 +67,7 @@ class TaintIssueDownloaderTests {
   }
 
   @Test
-  void test_download_issues_fetch_vulnerabilities() {
+  void test_download_vulnerabilities_from_issue_search() {
     var ruleSearchResponse = Rules.SearchResponse.newBuilder()
       .setTotal(1)
       .addRules(Rules.Rule.newBuilder()
@@ -198,6 +202,81 @@ class TaintIssueDownloaderTests {
     var issues = underTest.downloadTaintFromIssueSearch(serverApi, DUMMY_KEY, "branchName", PROGRESS);
 
     assertThat(issues).hasSize(1);
+  }
+
+  @Test
+  void test_download_taint_issues_from_pull_ws() {
+    var timestamp = Issues.IssuesPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
+    var taint1 = TaintVulnerabilityLite.newBuilder()
+      .setKey("uuid1")
+      .setRuleKey("sonarjava:S123")
+      .setType("VULNERABILITY")
+      .setUserSeverity("MAJOR")
+      .setMainLocation(Location.newBuilder().setFilePath("foo/bar/Hello.java").setMessage("Primary message")
+        .setTextRange(org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.TextRange.newBuilder().setStartLine(1).setStartLineOffset(2).setEndLine(3)
+          .setEndLineOffset(4).setHash("hash")))
+      .setCreationDate(123456789L)
+      .addFlows(Issues.Flow.newBuilder()
+        .addLocations(Issues.Location.newBuilder().setMessage("Flow 1 - Location 1").setFilePath("foo/bar/Hello.java")
+          .setTextRange(Issues.TextRange.newBuilder().setStartLine(5).setStartLineOffset(1).setEndLine(5).setEndLineOffset(6).setHash("hashLocation11")))
+        .addLocations(Issues.Location.newBuilder().setMessage("Flow 1 - Another file").setFilePath("foo/bar/Hello2.java")
+          .setTextRange(Issues.TextRange.newBuilder().setStartLine(9).setStartLineOffset(10).setEndLine(11).setEndLineOffset(12).setHash("hashLocation12")))
+        .addLocations(Issues.Location.newBuilder().setMessage("Flow 1 - Location No Text Range").setFilePath("foo/bar/Hello.java")))
+      .addFlows(Issues.Flow.newBuilder()
+        .addLocations(Issues.Location.newBuilder().setMessage("Flow 2 - Location 1").setFilePath("foo/bar/Hello.java")
+          .setTextRange(Issues.TextRange.newBuilder().setStartLine(5).setStartLineOffset(1).setEndLine(5).setEndLineOffset(6).setHash("hashLocation21"))))
+      .build();
+
+    var taintNoRange = TaintVulnerabilityLite.newBuilder()
+      .setKey("uuid2")
+      .setRuleKey("sonarjava:S123")
+      .setType("VULNERABILITY")
+      .setUserSeverity("MINOR")
+      .setMainLocation(Location.newBuilder().setFilePath("foo/bar/Hello.java").setMessage("Primary message"))
+      .setCreationDate(123456789L)
+      .build();
+
+    mockServer.addProtobufResponseDelimited("/api/issues/pull_taint?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, taint1, taintNoRange);
+
+    var result = underTest.downloadTaintFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty());
+    assertThat(result.getQueryTimestamp()).isEqualTo(Instant.ofEpochMilli(123L));
+
+    assertThat(result.getChangedTaintIssues()).hasSize(2);
+    assertThat(result.getClosedIssueKeys()).isEmpty();
+
+    var serverTaintIssue = result.getChangedTaintIssues().get(0);
+    assertThat(serverTaintIssue.getKey()).isEqualTo("uuid1");
+    assertThat(serverTaintIssue.getMessage()).isEqualTo("Primary message");
+    assertThat(serverTaintIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(serverTaintIssue.getSeverity()).isEqualTo("MAJOR");
+    assertThat(serverTaintIssue.getType()).isEqualTo("VULNERABILITY");
+    assertThat(serverTaintIssue.getTextRange().getStartLine()).isEqualTo(1);
+    assertThat(serverTaintIssue.getTextRange().getStartLineOffset()).isEqualTo(2);
+    assertThat(serverTaintIssue.getTextRange().getEndLine()).isEqualTo(3);
+    assertThat(serverTaintIssue.getTextRange().getEndLineOffset()).isEqualTo(4);
+    assertThat(serverTaintIssue.getTextRangeHash()).isEqualTo("hash");
+
+    assertThat(serverTaintIssue.getFlows()).hasSize(2);
+    assertThat(serverTaintIssue.getFlows().get(0).locations()).hasSize(3);
+
+    var flowLocation11 = serverTaintIssue.getFlows().get(0).locations().get(0);
+    assertThat(flowLocation11.getFilePath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(flowLocation11.getTextRange().getStartLine()).isEqualTo(5);
+    assertThat(flowLocation11.getTextRange().getStartLineOffset()).isEqualTo(1);
+    assertThat(flowLocation11.getTextRange().getEndLine()).isEqualTo(5);
+    assertThat(flowLocation11.getTextRange().getEndLineOffset()).isEqualTo(6);
+    assertThat(flowLocation11.getTextRangeHash()).isEqualTo("hashLocation11");
+
+    // No text range
+    assertThat(serverTaintIssue.getFlows().get(0).locations().get(2).getTextRangeHash()).isNull();
+
+    assertThat(serverTaintIssue.getFlows().get(1).locations()).hasSize(1);
+
+    var taintIssueNoRange = result.getChangedTaintIssues().get(1);
+    assertThat(taintIssueNoRange.getKey()).isEqualTo("uuid2");
+    assertThat(taintIssueNoRange.getFilePath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(taintIssueNoRange.getTextRange()).isNull();
+    assertThat(taintIssueNoRange.getTextRangeHash()).isNull();
   }
 
 }

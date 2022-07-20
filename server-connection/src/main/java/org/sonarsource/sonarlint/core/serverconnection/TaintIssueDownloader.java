@@ -134,25 +134,6 @@ public class TaintIssueDownloader {
         .setFlows(convertFlows(sourceApi, taintVulnerabilityFromWs.getFlowsList(), componentsByKey, sourceCodeByKey));
   }
 
-  private static ServerTaintIssue.TextRange toServerTaintIssueTextRange(Issues.TextRange textRange) {
-    return new ServerTaintIssue.TextRange(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset());
-  }
-
-  private static ServerTaintIssue convertLiteTaintIssue(TaintVulnerabilityLite liteTaintIssueFromWs) {
-    var mainLocation = liteTaintIssueFromWs.getMainLocation();
-    // We have filtered out issues without file path earlier
-    var filePath = mainLocation.getFilePath();
-    var creationDate = Instant.ofEpochMilli(liteTaintIssueFromWs.getCreationDate());
-    if (mainLocation.hasTextRange()) {
-      return new ServerTaintIssue(liteTaintIssueFromWs.getKey(), liteTaintIssueFromWs.getResolved(), liteTaintIssueFromWs.getRuleKey(), mainLocation.getMessage(),
-        filePath, creationDate, liteTaintIssueFromWs.getUserSeverity(),
-        liteTaintIssueFromWs.getType(), toServerTaintIssueTextRange(mainLocation.getTextRange()), mainLocation.getTextRange().getHash());
-    } else {
-      return new ServerTaintIssue(liteTaintIssueFromWs.getKey(), liteTaintIssueFromWs.getResolved(), liteTaintIssueFromWs.getRuleKey(), mainLocation.getMessage(),
-        filePath, creationDate, liteTaintIssueFromWs.getUserSeverity(), liteTaintIssueFromWs.getType(), null, null);
-    }
-  }
-
   private static List<ServerTaintIssue.Flow> convertFlows(SourceApi sourceApi, List<Flow> flowsList, Map<String, String> componentPathsByKey,
     Map<String, String> sourceCodeByKey) {
     return flowsList.stream()
@@ -164,6 +145,37 @@ public class TaintIssueDownloader {
         return new ServerTaintIssue.ServerIssueLocation(componentPath, textRange, locationFromWs.getMsg(), textRangeHash);
       }).collect(Collectors.toList())))
       .collect(Collectors.toList());
+  }
+
+  private static ServerTaintIssue.TextRange toServerTaintIssueTextRange(Issues.TextRange textRange) {
+    return new ServerTaintIssue.TextRange(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset());
+  }
+
+  private static ServerTaintIssue convertLiteTaintIssue(TaintVulnerabilityLite liteTaintIssueFromWs) {
+    var mainLocation = liteTaintIssueFromWs.getMainLocation();
+    // We have filtered out issues without file path earlier
+    var filePath = mainLocation.getFilePath();
+    var creationDate = Instant.ofEpochMilli(liteTaintIssueFromWs.getCreationDate());
+    ServerTaintIssue taintIssue;
+    if (mainLocation.hasTextRange()) {
+      taintIssue = new ServerTaintIssue(liteTaintIssueFromWs.getKey(), liteTaintIssueFromWs.getResolved(), liteTaintIssueFromWs.getRuleKey(), mainLocation.getMessage(),
+        filePath, creationDate, liteTaintIssueFromWs.getUserSeverity(),
+        liteTaintIssueFromWs.getType(), toServerTaintIssueTextRange(mainLocation.getTextRange()), mainLocation.getTextRange().getHash());
+    } else {
+      taintIssue = new ServerTaintIssue(liteTaintIssueFromWs.getKey(), liteTaintIssueFromWs.getResolved(), liteTaintIssueFromWs.getRuleKey(), mainLocation.getMessage(),
+        filePath, creationDate, liteTaintIssueFromWs.getUserSeverity(), liteTaintIssueFromWs.getType(), null, null);
+    }
+    taintIssue.setFlows(liteTaintIssueFromWs.getFlowsList().stream().map(TaintIssueDownloader::convertFlows).collect(Collectors.toList()));
+    return taintIssue;
+  }
+
+  private static ServerTaintIssue.Flow convertFlows(Issues.Flow flowFromWs) {
+    return new ServerTaintIssue.Flow(flowFromWs.getLocationsList().stream().map(locationFromWs -> {
+      var filePath = locationFromWs.hasFilePath() ? locationFromWs.getFilePath() : null;
+      var textRange = locationFromWs.hasTextRange() ? toServerTaintIssueTextRange(locationFromWs.getTextRange()) : null;
+      return new ServerTaintIssue.ServerIssueLocation(filePath, textRange, locationFromWs.getMessage(),
+        locationFromWs.hasTextRange() ? locationFromWs.getTextRange().getHash() : null);
+    }).collect(Collectors.toList()));
   }
 
   private static ServerTaintIssue.ServerIssueLocation convertPrimaryLocation(SourceApi sourceApi, Issue issueFromWs, Map<String, String> componentPathsByKey,
