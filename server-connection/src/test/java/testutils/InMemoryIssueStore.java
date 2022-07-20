@@ -113,8 +113,22 @@ public class InMemoryIssueStore implements ServerIssueStore {
   }
 
   @Override
-  public void updateIssue(String issueKey, Consumer<ServerIssue> issueConsumer) {
-    issueConsumer.accept(issuesByKey.get(issueKey));
+  public boolean updateIssue(String issueKey, Consumer<ServerIssue> issueUpdater) {
+    if (issuesByKey.containsKey(issueKey)) {
+      issueUpdater.accept(issuesByKey.get(issueKey));
+      return true;
+    }
+    return false;
+  }
+
+  @Override
+  public void updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater) {
+    taintIssuesByFileByBranchByProject.forEach((projectKey, branches) -> branches.forEach(
+      (branchName, taintIssuesByFile) -> taintIssuesByFile.forEach((file, taintIssues) -> taintIssues.forEach(taintIssue -> {
+        if (taintIssue.getKey().equals(issueKey)) {
+          taintIssueUpdater.accept(taintIssue);
+        }
+      }))));
   }
 
   @Override

@@ -72,7 +72,7 @@ public class ServerIssueFixtures {
   public static ServerTaintIssue aServerTaintIssue() {
     return new ServerTaintIssue(
       "key",
-      true,
+      false,
       "repo:key",
       "message",
       "file/path",

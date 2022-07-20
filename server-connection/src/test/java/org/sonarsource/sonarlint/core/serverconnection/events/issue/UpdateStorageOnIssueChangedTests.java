@@ -25,12 +25,13 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
-import org.sonarsource.sonarlint.core.serverconnection.events.issue.UpdateStorageOnIssueChanged;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import testutils.InMemoryIssueStore;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerIssue;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerTaintIssue;
 
 class UpdateStorageOnIssueChangedTests {
 
@@ -73,6 +74,39 @@ class UpdateStorageOnIssueChangedTests {
 
     assertThat(serverIssueStore.load("projectKey", "branch", "file/path"))
       .extracting(ServerIssue::getType)
+      .containsOnly(RuleType.BUG);
+  }
+
+  @Test
+  void should_store_resolved_taint_issue() {
+    serverIssueStore.replaceAllTaintOfFile("projectKey", "branch", "file/path", List.of(aServerTaintIssue().setKey("key1").setResolved(false)));
+
+    handler.handle(new IssueChangedEvent(List.of("key1"), null, null, true));
+
+    assertThat(serverIssueStore.loadTaint("projectKey", "branch", "file/path"))
+      .extracting(ServerTaintIssue::isResolved)
+      .containsOnly(true);
+  }
+
+  @Test
+  void should_store_taint_issue_with_updated_severity() {
+    serverIssueStore.replaceAllTaintOfFile("projectKey", "branch", "file/path", List.of(aServerTaintIssue().setKey("key1").setSeverity(IssueSeverity.MAJOR)));
+
+    handler.handle(new IssueChangedEvent(List.of("key1"), IssueSeverity.MINOR, null, null));
+
+    assertThat(serverIssueStore.loadTaint("projectKey", "branch", "file/path"))
+      .extracting(ServerTaintIssue::getSeverity)
+      .containsOnly(IssueSeverity.MINOR);
+  }
+
+  @Test
+  void should_store_taint_issue_with_updated_type() {
+    serverIssueStore.replaceAllTaintOfFile("projectKey", "branch", "file/path", List.of(aServerTaintIssue().setKey("key1").setType(RuleType.VULNERABILITY)));
+
+    handler.handle(new IssueChangedEvent(List.of("key1"), null, RuleType.BUG, null));
+
+    assertThat(serverIssueStore.loadTaint("projectKey", "branch", "file/path"))
+      .extracting(ServerTaintIssue::getType)
       .containsOnly(RuleType.BUG);
   }
 

@@ -50,7 +50,7 @@ class ServerTaintIssueTests {
     assertThat(issue.getTextRange().getHash()).isEqualTo("checksum1");
     assertThat(issue.setSeverity(IssueSeverity.MAJOR).getSeverity()).isEqualTo(IssueSeverity.MAJOR);
     assertThat(issue.setRuleKey("rule1").getRuleKey()).isEqualTo("rule1");
-    assertThat(issue.isResolved()).isTrue();
+    assertThat(issue.isResolved()).isFalse();
     assertThat(issue.setMessage("msg1").getMessage()).isEqualTo("msg1");
     assertThat(issue.setType(RuleType.BUG).getType()).isEqualTo(RuleType.BUG);
 

@@ -126,7 +126,7 @@ class XodusServerIssueStoreTests {
     assertThat(savedIssues).isNotEmpty();
     var savedIssue = savedIssues.get(0);
     assertThat(savedIssue.getKey()).isEqualTo("key");
-    assertThat(savedIssue.isResolved()).isTrue();
+    assertThat(savedIssue.isResolved()).isFalse();
     assertThat(savedIssue.getRuleKey()).isEqualTo("repo:key");
     assertThat(savedIssue.getMessage()).isEqualTo("message");
     assertThat(savedIssue.getFilePath()).isEqualTo("file/path");
@@ -466,7 +466,7 @@ class XodusServerIssueStoreTests {
     var taintIssues = store.loadTaint("projectKey", "branch", "file/path");
     assertThat(taintIssues)
       .extracting("key", "resolved", "ruleKey", "message", "filePath", "severity", "type")
-      .containsOnly(tuple("key", true, "repo:key", "message", "file/path", IssueSeverity.MINOR, RuleType.VULNERABILITY));
+      .containsOnly(tuple("key", false, "repo:key", "message", "file/path", IssueSeverity.MINOR, RuleType.VULNERABILITY));
     assertThat(taintIssues)
       .extracting("textRange")
       .extracting("startLine", "startLineOffset", "endLine", "endLineOffset", "hash")
@@ -488,5 +488,17 @@ class XodusServerIssueStoreTests {
 
     var taintIssues = store.loadTaint("projectKey", "branch", "file/path");
     assertThat(taintIssues).isEmpty();
+  }
+
+  @Test
+  void should_update_taints() {
+    store.replaceAllTaintOfFile("projectKey", "branch", "file/path", List.of(aServerTaintIssue()));
+
+    store.updateTaintIssue("key", taintIssue -> taintIssue.setResolved(true));
+
+    var taintIssues = store.loadTaint("projectKey", "branch", "file/path");
+    assertThat(taintIssues)
+      .extracting("resolved")
+      .containsOnly(true);
   }
 }

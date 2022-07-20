@@ -30,7 +30,7 @@ import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 
 public class ServerTaintIssue {
   private String key;
-  private final boolean resolved;
+  private boolean resolved;
   private String ruleKey;
   private String message;
   private String filePath;
@@ -96,6 +96,11 @@ public class ServerTaintIssue {
 
   public ServerTaintIssue setKey(String key) {
     this.key = key;
+    return this;
+  }
+
+  public ServerTaintIssue setResolved(boolean resolved) {
+    this.resolved = resolved;
     return this;
   }
 
