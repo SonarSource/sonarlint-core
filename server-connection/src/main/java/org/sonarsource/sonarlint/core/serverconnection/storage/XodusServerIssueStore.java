@@ -511,13 +511,18 @@ public class XodusServerIssueStore implements ServerIssueStore {
   public void insert(String projectKey, String branchName, ServerTaintIssue taintIssue) {
     entityStore.executeInTransaction(txn -> findUnique(txn, TAINT_ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, taintIssue.getKey())
       .ifPresentOrElse(issueEntity -> {
-          LOG.error("Trying to store a taint vulnerability that already exists");
-        }, () -> {
+        LOG.error("Trying to store a taint vulnerability that already exists");
+      }, () -> {
         var project = getOrCreateProject(projectKey, txn);
         var branch = getOrCreateBranch(project, branchName, txn);
         var fileEntity = getOrCreateFile(branch, taintIssue.getFilePath(), txn);
         updateOrCreateTaintIssue(fileEntity, taintIssue, txn);
       }));
+  }
+
+  @Override
+  public void deleteTaintIssue(String issueKeyToDelete) {
+    entityStore.executeInTransaction(txn -> removeTaint(issueKeyToDelete, txn));
   }
 
   @Override

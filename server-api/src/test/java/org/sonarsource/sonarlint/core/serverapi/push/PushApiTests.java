@@ -418,4 +418,22 @@ class PushApiTests {
         tuple("functions/taint.js", "sink: tainted value is used to perform a security-sensitive operation", 17, 10, 3, 2, "hash1"),
         tuple("functions/taint2.js", "sink: tainted value is used to perform a security-sensitive operation", 18, 11, 4, 3, "hash2"));
   }
+
+  @Test
+  void should_notify_taint_vulnerability_closed_event() {
+    var mockResponse = new MockResponse();
+    mockResponse.setBody("event: TaintVulnerabilityClosed\n" +
+      "data: {" +
+      "\"projectKey\": \"projectKey1\"," +
+      "\"key\": \"taintKey\"" +
+      "}\n\n");
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey&languages=java,py", mockResponse);
+
+    List<ServerEvent> receivedEvents = new ArrayList<>();
+    underTest.subscribe(new LinkedHashSet<>(List.of("projectKey")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add, silentLogOutput);
+
+    assertThat(receivedEvents)
+      .extracting("taintIssueKey")
+      .containsOnly("taintKey");
+  }
 }

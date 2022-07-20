@@ -32,6 +32,7 @@ import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.EventParser;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.IssueChangedEventParser;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.RuleSetChangedEventParser;
+import org.sonarsource.sonarlint.core.serverapi.push.parsing.TaintVulnerabilityClosedEventParser;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.TaintVulnerabilityRaisedEventParser;
 import org.sonarsource.sonarlint.core.serverapi.stream.Event;
 import org.sonarsource.sonarlint.core.serverapi.stream.EventStream;
@@ -43,7 +44,8 @@ public class PushApi {
   private static final Map<String, EventParser<?>> parsersByType = Map.of(
     "RuleSetChanged", new RuleSetChangedEventParser(),
     "IssueChangedEvent", new IssueChangedEventParser(),
-    "TaintVulnerabilityRaised", new TaintVulnerabilityRaisedEventParser());
+    "TaintVulnerabilityRaised", new TaintVulnerabilityRaisedEventParser(),
+    "TaintVulnerabilityClosed", new TaintVulnerabilityClosedEventParser());
 
   private final ServerApiHelper helper;
 
