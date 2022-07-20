@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -42,6 +43,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okio.Buffer;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.sonarqube.ws.client.HttpConnector;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsClientFactories;
@@ -303,5 +305,12 @@ public abstract class AbstractConnectedTest {
 
   protected static EndpointParams endpointParams(String url, boolean isSonarCloud, @Nullable String org) {
     return new EndpointParams(url, isSonarCloud, org);
+  }
+
+  private static final Pattern MATCH_ALL_WHITESPACES = Pattern.compile("\\s");
+
+  protected static String hash(String codeSnippet) {
+    String codeSnippetWithoutWhitespaces = MATCH_ALL_WHITESPACES.matcher(codeSnippet).replaceAll("");
+    return DigestUtils.md5Hex(codeSnippetWithoutWhitespaces);
   }
 }
