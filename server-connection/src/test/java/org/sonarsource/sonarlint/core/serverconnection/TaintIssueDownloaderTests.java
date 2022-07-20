@@ -211,7 +211,7 @@ class TaintIssueDownloaderTests {
       .setKey("uuid1")
       .setRuleKey("sonarjava:S123")
       .setType("VULNERABILITY")
-      .setUserSeverity("MAJOR")
+      .setSeverity("MAJOR")
       .setMainLocation(Location.newBuilder().setFilePath("foo/bar/Hello.java").setMessage("Primary message")
         .setTextRange(org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.TextRange.newBuilder().setStartLine(1).setStartLineOffset(2).setEndLine(3)
           .setEndLineOffset(4).setHash("hash")))
@@ -231,7 +231,7 @@ class TaintIssueDownloaderTests {
       .setKey("uuid2")
       .setRuleKey("sonarjava:S123")
       .setType("VULNERABILITY")
-      .setUserSeverity("MINOR")
+      .setSeverity("MINOR")
       .setMainLocation(Location.newBuilder().setFilePath("foo/bar/Hello.java").setMessage("Primary message"))
       .setCreationDate(123456789L)
       .build();

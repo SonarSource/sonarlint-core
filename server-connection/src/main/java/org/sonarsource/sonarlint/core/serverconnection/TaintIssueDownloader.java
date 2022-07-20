@@ -159,11 +159,11 @@ public class TaintIssueDownloader {
     ServerTaintIssue taintIssue;
     if (mainLocation.hasTextRange()) {
       taintIssue = new ServerTaintIssue(liteTaintIssueFromWs.getKey(), liteTaintIssueFromWs.getResolved(), liteTaintIssueFromWs.getRuleKey(), mainLocation.getMessage(),
-        filePath, creationDate, liteTaintIssueFromWs.getUserSeverity(),
+        filePath, creationDate, liteTaintIssueFromWs.getSeverity(),
         liteTaintIssueFromWs.getType(), toServerTaintIssueTextRange(mainLocation.getTextRange()), mainLocation.getTextRange().getHash());
     } else {
       taintIssue = new ServerTaintIssue(liteTaintIssueFromWs.getKey(), liteTaintIssueFromWs.getResolved(), liteTaintIssueFromWs.getRuleKey(), mainLocation.getMessage(),
-        filePath, creationDate, liteTaintIssueFromWs.getUserSeverity(), liteTaintIssueFromWs.getType(), null, null);
+        filePath, creationDate, liteTaintIssueFromWs.getSeverity(), liteTaintIssueFromWs.getType(), null, null);
     }
     taintIssue.setFlows(liteTaintIssueFromWs.getFlowsList().stream().map(TaintIssueDownloader::convertFlows).collect(Collectors.toList()));
     return taintIssue;
