@@ -479,4 +479,14 @@ class XodusServerIssueStoreTests {
         // flow 1
         tuple("message", "file/path", 5, 6, 7, 8, "rangeHash"));
   }
+
+  @Test
+  void should_delete_taints() {
+    store.replaceAllTaintOfFile("projectKey", "branch", "file/path", List.of(aServerTaintIssue()));
+
+    store.deleteTaintIssue("key");
+
+    var taintIssues = store.loadTaint("projectKey", "branch", "file/path");
+    assertThat(taintIssues).isEmpty();
+  }
 }
