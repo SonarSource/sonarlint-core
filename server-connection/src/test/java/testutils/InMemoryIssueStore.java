@@ -22,6 +22,7 @@ package testutils;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -122,6 +123,12 @@ public class InMemoryIssueStore implements ServerIssueStore {
       .computeIfAbsent(branchName, __ -> new HashMap<>())
       .computeIfAbsent(taintIssue.getFilePath(), __ -> new ArrayList<>())
       .add(taintIssue);
+  }
+
+  @Override
+  public void deleteTaintIssue(String issueKeyToDelete) {
+    taintIssuesByFileByBranchByProject.forEach((projectKey, branches) -> branches.forEach(
+      (branchName, taintIssuesByFile) -> taintIssuesByFile.forEach((file, taintIssues) -> taintIssues.removeIf(taintIssue -> issueKeyToDelete.equals(taintIssue.getKey())))));
   }
 
   @Override

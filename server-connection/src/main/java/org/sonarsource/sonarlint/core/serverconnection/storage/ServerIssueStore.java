@@ -101,5 +101,7 @@ public interface ServerIssueStore {
 
   void insert(String projectKey, String branchName, ServerTaintIssue taintIssue);
 
+  void deleteTaintIssue(String issueKeyToDelete);
+
   void close();
 }

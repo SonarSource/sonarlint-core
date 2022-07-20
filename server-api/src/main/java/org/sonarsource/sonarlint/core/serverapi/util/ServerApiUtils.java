@@ -23,6 +23,7 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.TextRange;
@@ -49,8 +50,8 @@ public class ServerApiUtils {
     }
   }
 
-  public static boolean isBlank(@Nullable List<?> list) {
-    return list == null || list.isEmpty();
+  public static boolean isBlank(@Nullable Collection<?> collection) {
+    return collection == null || collection.isEmpty();
   }
 
   public static boolean isBlank(@Nullable String s) {
