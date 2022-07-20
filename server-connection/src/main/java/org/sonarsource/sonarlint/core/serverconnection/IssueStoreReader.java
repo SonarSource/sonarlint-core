@@ -21,9 +21,12 @@ package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStore;
+
+import static java.util.function.Predicate.not;
 
 public class IssueStoreReader {
   private final ServerIssueStore serverIssueStore;
@@ -48,6 +51,7 @@ public class IssueStoreReader {
       return Collections.emptyList();
     }
     var loadedIssues = serverIssueStore.loadTaint(projectBinding.projectKey(), branchName, sqPath);
+    loadedIssues = loadedIssues.stream().filter(not(ServerTaintIssue::isResolved)).collect(Collectors.toList());
     loadedIssues.forEach(issue -> issue.setFilePath(ideFilePath));
     return loadedIssues;
   }
