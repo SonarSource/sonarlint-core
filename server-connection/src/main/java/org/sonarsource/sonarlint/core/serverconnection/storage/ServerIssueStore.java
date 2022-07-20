@@ -97,7 +97,14 @@ public interface ServerIssueStore {
    */
   List<ServerTaintIssue> loadTaint(String projectKey, String branchName, String sqFilePath);
 
-  void updateIssue(String issueKey, Consumer<ServerIssue> issueConsumer);
+  /**
+   * @param issueKey
+   * @param issueUpdater
+   * @return true if the issue with the corresponding key exists in the store and has been updated
+   */
+  boolean updateIssue(String issueKey, Consumer<ServerIssue> issueUpdater);
+
+  void updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater);
 
   void insert(String projectKey, String branchName, ServerTaintIssue taintIssue);
 

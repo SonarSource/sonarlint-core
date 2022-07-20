@@ -384,6 +384,10 @@ public class XodusServerIssueStore implements ServerIssueStore {
 
   private static void updateOrCreateTaintIssue(Entity fileEntity, ServerTaintIssue issue, StoreTransaction transaction) {
     var issueEntity = updateOrCreateIssueCommon(fileEntity, issue.getKey(), transaction, TAINT_ISSUE_ENTITY_TYPE, FILE_TO_TAINT_ISSUES_LINK_NAME);
+    updateTaintIssueEntity(issue, transaction, issueEntity);
+  }
+
+  private static void updateTaintIssueEntity(ServerTaintIssue issue, StoreTransaction transaction, Entity issueEntity) {
     issueEntity.setProperty(RESOLVED_PROPERTY_NAME, issue.isResolved());
     issueEntity.setProperty(RULE_KEY_PROPERTY_NAME, issue.getRuleKey());
     issueEntity.setProperty(MESSAGE_PROPERTY_NAME, issue.getMessage());
@@ -498,21 +502,34 @@ public class XodusServerIssueStore implements ServerIssueStore {
   }
 
   @Override
-  public void updateIssue(String issueKey, Consumer<ServerIssue> issueUpdater) {
-    entityStore.executeInTransaction(txn -> findUnique(txn, ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issueKey)
-      .ifPresent(issueEntity -> {
+  public boolean updateIssue(String issueKey, Consumer<ServerIssue> issueUpdater) {
+    return entityStore.computeInTransaction(txn -> {
+      var optionalEntity = findUnique(txn, ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issueKey);
+      if (optionalEntity.isPresent()) {
+        var issueEntity = optionalEntity.get();
         var currentIssue = adapt(issueEntity);
         issueUpdater.accept(currentIssue);
         updateIssueEntity(issueEntity, currentIssue);
+        return true;
+      }
+      return false;
+    });
+  }
+
+  @Override
+  public void updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater) {
+    entityStore.executeInTransaction(txn -> findUnique(txn, TAINT_ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issueKey)
+      .ifPresent(issueEntity -> {
+        var currentIssue = adaptTaint(issueEntity);
+        taintIssueUpdater.accept(currentIssue);
+        updateTaintIssueEntity(currentIssue, txn, issueEntity);
       }));
   }
 
   @Override
   public void insert(String projectKey, String branchName, ServerTaintIssue taintIssue) {
     entityStore.executeInTransaction(txn -> findUnique(txn, TAINT_ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, taintIssue.getKey())
-      .ifPresentOrElse(issueEntity -> {
-        LOG.error("Trying to store a taint vulnerability that already exists");
-      }, () -> {
+      .ifPresentOrElse(issueEntity -> LOG.error("Trying to store a taint vulnerability that already exists"), () -> {
         var project = getOrCreateProject(projectKey, txn);
         var branch = getOrCreateBranch(project, branchName, txn);
         var fileEntity = getOrCreateFile(branch, taintIssue.getFilePath(), txn);
