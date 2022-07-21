@@ -24,26 +24,24 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.push.ServerEvent;
 import org.sonarsource.sonarlint.core.serverapi.stream.EventStream;
 
 public class ServerEventsAutoSubscriber {
 
-  private final ServerEventHandler eventHandler;
   private final AtomicReference<EventStream> eventStream = new AtomicReference<>();
 
-  public ServerEventsAutoSubscriber(ServerEventHandler<?> eventHandler) {
-    this.eventHandler = eventHandler;
-  }
-
-  public void subscribePermanently(ServerApi serverApi, Set<String> projectKeys, Set<Language> enabledLanguages, ClientLogOutput clientLogOutput) {
+  public void subscribePermanently(ServerApi serverApi, Set<String> projectKeys, Set<Language> enabledLanguages, ServerEventHandler<ServerEvent> eventConsumer,
+    ClientLogOutput clientLogOutput) {
     cancelSubscription();
     if (!projectKeys.isEmpty() && !enabledLanguages.isEmpty()) {
-      attemptSubscription(serverApi, projectKeys, enabledLanguages, clientLogOutput);
+      attemptSubscription(serverApi, projectKeys, enabledLanguages, eventConsumer, clientLogOutput);
     }
   }
 
-  private void attemptSubscription(ServerApi serverApi, Set<String> projectKeys, Set<Language> enabledLanguages, ClientLogOutput clientLogOutput) {
-    eventStream.set(serverApi.push().subscribe(projectKeys, enabledLanguages, eventHandler::handle, clientLogOutput));
+  private void attemptSubscription(ServerApi serverApi, Set<String> projectKeys, Set<Language> enabledLanguages, ServerEventHandler<ServerEvent> eventConsumer,
+    ClientLogOutput clientLogOutput) {
+    eventStream.set(serverApi.push().subscribe(projectKeys, enabledLanguages, eventConsumer::handle, clientLogOutput));
   }
 
   public void cancelSubscription() {

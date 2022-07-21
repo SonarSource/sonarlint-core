@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -70,6 +71,7 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
+import org.sonarsource.sonarlint.core.serverapi.push.ServerEvent;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
 import org.sonarsource.sonarlint.core.serverconnection.IssueStorePaths;
@@ -406,13 +408,14 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
-  public void subscribeForEvents(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, @Nullable ClientLogOutput clientLogOutput) {
+  public void subscribeForEvents(EndpointParams endpoint, HttpClient client, Set<String> projectKeys,
+    Consumer<ServerEvent> eventConsumer, @Nullable ClientLogOutput clientLogOutput) {
     var logOutput = clientLogOutput == null ? this.logOutput : clientLogOutput;
     if (logOutput == null) {
       logOutput = (message, level) -> {
       };
     }
-    serverConnection.subscribeForEvents(endpoint, client, projectKeys, logOutput);
+    serverConnection.subscribeForEvents(endpoint, client, projectKeys, eventConsumer, logOutput);
   }
 
   @Override

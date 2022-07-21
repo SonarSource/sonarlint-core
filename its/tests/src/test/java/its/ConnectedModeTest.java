@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
@@ -67,6 +68,7 @@ import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.GetSecurityHotspotRequestParams;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
+import org.sonarsource.sonarlint.core.serverapi.push.ServerEvent;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 
@@ -98,6 +100,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_RUBY = "sample-ruby";
   private static final String PROJECT_KEY_SCALA = "sample-scala";
   private static final String PROJECT_KEY_XML = "sample-xml";
+  private static final Consumer<ServerEvent> EMPTY_CONSUMER = e -> {
+  };
 
   private static String javaRuleKey(String key) {
     // Starting from SonarJava 6.0 (embedded in SQ 8.2), rule repository has been changed
@@ -649,7 +653,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 4));
 
     updateProject(PROJECT_KEY_JAVA);
-    engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVA), null);
+    engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVA), EMPTY_CONSUMER, null);
     var qualityProfile = getQualityProfile("SonarLint IT Java");
     deactivateRule(qualityProfile, "java:S106");
     Thread.sleep(3000);
@@ -666,7 +670,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6));
 
     updateProject(PROJECT_KEY_JAVA);
-    engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVA), null);
+    engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVA), EMPTY_CONSUMER, null);
     var issueKey = getIssueKeys("java:S106").get(0);
     resolveIssueAsWontFix(issueKey);
     Thread.sleep(3000);
@@ -685,7 +689,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_TAINT, "Java With Taint Vulnerabilities");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_TAINT, "java", "SonarLint Taint Java");
     updateProject(PROJECT_KEY_JAVA_TAINT);
-    engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVA_TAINT), null);
+    List<ServerEvent> events = new ArrayList<>();
+    engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVA_TAINT), events::add, null);
     var projectBinding = new ProjectBinding(PROJECT_KEY_JAVA_TAINT, "", "");
     assertThat(engine.getServerTaintIssues(projectBinding, "master", "src/main/java/foo/DbHelper.java")).isEmpty();
 
@@ -750,6 +755,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     // check TaintVulnerabilityClosed is received
     taintIssues = engine.getServerTaintIssues(projectBinding, "master", "src/main/java/foo/DbHelper.java");
     assertThat(taintIssues).isEmpty();
+
+    assertThat(events).hasSize(4);
   }
 
   private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {
