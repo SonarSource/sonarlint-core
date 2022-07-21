@@ -228,6 +228,48 @@ class XodusServerIssueStoreTests {
   }
 
   @Test
+  void should_remove_closed_taints_by_key_when_merging() {
+    store.replaceAllTaintOfFile("projectKey", "branch", "file/path", List.of(
+      aServerTaintIssue().setKey("key1"),
+      aServerTaintIssue().setKey("key2"),
+      aServerTaintIssue().setKey("key3")));
+
+    store.mergeTaintIssues("projectKey", "branch", List.of(), Set.of("key1", "key3"), Instant.now());
+
+    assertThat(store.loadTaint("projectKey", "branch", "file/path"))
+      .extracting(ServerTaintIssue::getKey)
+      .containsOnly("key2");
+  }
+
+  @Test
+  void should_add_new_taints_when_merging() {
+    store.mergeTaintIssues("projectKey", "branch", List.of(
+      aServerTaintIssue().setKey("key1"),
+      aServerTaintIssue().setKey("key2"),
+      aServerTaintIssue().setKey("key3")), Set.of(), Instant.now());
+
+    assertThat(store.loadTaint("projectKey", "branch", "file/path"))
+      .extracting(ServerTaintIssue::getKey)
+      .containsOnly("key1", "key2", "key3");
+  }
+
+  @Test
+  void should_update_existing_taints_when_merging() {
+    store.replaceAllTaintOfFile("projectKey", "branch", "file/path", List.of(
+      aServerTaintIssue().setType("VULNERABILITY").setKey("key1"),
+      aServerTaintIssue().setType("VULNERABILITY").setKey("key2")));
+
+    store.mergeTaintIssues("projectKey", "branch", List.of(
+      aServerTaintIssue().setType("CODE_SMELL").setKey("key1"),
+      aServerTaintIssue().setType("BUG").setKey("key2"),
+      aServerTaintIssue().setType("VULNERABILITY").setKey("key3")), Set.of(), Instant.now());
+
+    assertThat(store.loadTaint("projectKey", "branch", "file/path"))
+      .extracting(ServerTaintIssue::getKey, ServerTaintIssue::getType)
+      .containsOnly(tuple("key1", "CODE_SMELL"), tuple("key2", "BUG"), tuple("key3", "VULNERABILITY"));
+  }
+
+  @Test
   void should_save_issue_without_line() {
     store.replaceAllIssuesOfProject("projectKey", "branch", List.of(
       aFileLevelServerIssue().setFilePath("file/path")));
@@ -363,28 +405,54 @@ class XodusServerIssueStoreTests {
   }
 
   @Test
-  void should_get_empty_last_timestamp_if_no_project() {
+  void should_get_empty_last_issue_sync_timestamp_if_no_project() {
     assertThat(store.getLastIssueSyncTimestamp("unknown", "unknown")).isEmpty();
   }
 
   @Test
-  void should_get_empty_last_timestamp_if_no_branch() {
+  void should_get_empty_last_issue_sync_timestamp_if_no_branch() {
     store.replaceAllIssuesOfProject("projectKey", "branch", List.of(aServerIssue()));
 
     assertThat(store.getLastIssueSyncTimestamp("projectKey", "unknown")).isEmpty();
   }
 
   @Test
-  void should_get_empty_last_timestamp_if_no_timestamp_on_branch() {
+  void should_get_empty_last_issue_sync_timestamp_if_no_timestamp_on_branch() {
     store.replaceAllIssuesOfProject("projectKey", "branch", List.of(aServerIssue()));
 
     assertThat(store.getLastIssueSyncTimestamp("projectKey", "branch")).isEmpty();
   }
 
   @Test
-  void should_get_last_timestamp() {
+  void should_get_last_issue_sync_timestamp() {
     store.mergeIssues("projectKey", "branch", List.of(aServerIssue()), Set.of(), Instant.ofEpochMilli(123456789));
 
     assertThat(store.getLastIssueSyncTimestamp("projectKey", "branch")).contains(Instant.ofEpochMilli(123456789));
+  }
+
+  @Test
+  void should_get_empty_last_taint_sync_timestamp_if_no_project() {
+    assertThat(store.getLastTaintSyncTimestamp("unknown", "unknown")).isEmpty();
+  }
+
+  @Test
+  void should_get_empty_last_taint_sync_timestamp_if_no_branch() {
+    store.replaceAllIssuesOfProject("projectKey", "branch", List.of(aServerIssue()));
+
+    assertThat(store.getLastTaintSyncTimestamp("projectKey", "unknown")).isEmpty();
+  }
+
+  @Test
+  void should_get_empty_last_taint_sync_timestamp_if_no_timestamp_on_branch() {
+    store.replaceAllIssuesOfProject("projectKey", "branch", List.of(aServerIssue()));
+
+    assertThat(store.getLastTaintSyncTimestamp("projectKey", "branch")).isEmpty();
+  }
+
+  @Test
+  void should_get_last_taint_sync_timestamp() {
+    store.mergeTaintIssues("projectKey", "branch", List.of(aServerTaintIssue()), Set.of(), Instant.ofEpochMilli(123456789));
+
+    assertThat(store.getLastTaintSyncTimestamp("projectKey", "branch")).contains(Instant.ofEpochMilli(123456789));
   }
 }

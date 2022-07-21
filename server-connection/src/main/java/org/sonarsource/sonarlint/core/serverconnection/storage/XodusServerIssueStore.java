@@ -485,7 +485,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
   }
 
   private static void removeTaint(String issueKey, @NotNull StoreTransaction txn) {
-    findUnique(txn, ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issueKey)
+    findUnique(txn, TAINT_ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issueKey)
       .ifPresent(issueEntity -> {
         var fileEntity = issueEntity.getLink(ISSUE_TO_FILE_LINK_NAME);
         if (fileEntity != null) {
