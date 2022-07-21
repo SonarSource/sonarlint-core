@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
@@ -105,11 +106,11 @@ class XodusServerIssueStoreTests {
     assertThat(savedIssue.getCreationDate()).isEqualTo(creationDate);
     assertThat(savedIssue.getUserSeverity()).isEqualTo(IssueSeverity.MINOR);
     assertThat(savedIssue.getType()).isEqualTo(RuleType.BUG);
-    assertThat(((RangeLevelServerIssue) savedIssue).getRangeHash()).isEqualTo("hash");
     assertThat(((RangeLevelServerIssue) savedIssue).getTextRange().getStartLine()).isEqualTo(1);
     assertThat(((RangeLevelServerIssue) savedIssue).getTextRange().getStartLineOffset()).isEqualTo(2);
     assertThat(((RangeLevelServerIssue) savedIssue).getTextRange().getEndLine()).isEqualTo(3);
     assertThat(((RangeLevelServerIssue) savedIssue).getTextRange().getEndLineOffset()).isEqualTo(4);
+    assertThat(((RangeLevelServerIssue) savedIssue).getTextRange().getHash()).isEqualTo("ab12");
   }
 
   @Test
@@ -117,9 +118,9 @@ class XodusServerIssueStoreTests {
     var creationDate = Instant.now();
 
     store
-      .replaceAllTaintOfFile("projectKey", "branch", "file/path", List.of(aServerTaintIssue().setCreationDate(creationDate).setTextRangeHash("myRangeHash")
+      .replaceAllTaintOfFile("projectKey", "branch", "file/path", List.of(aServerTaintIssue().setCreationDate(creationDate)
         .setFlows(List.of(new ServerTaintIssue.Flow(List.of(new ServerTaintIssue.ServerIssueLocation("file/path",
-          new ServerTaintIssue.TextRange(5, 6, 7, 8), "flow message", "myFlowRangeHash")))))));
+          new TextRangeWithHash(5, 6, 7, 8, "myFlowRangeHash"), "flow message")))))));
 
     var savedIssues = store.loadTaint("projectKey", "branch", "file/path");
     assertThat(savedIssues).isNotEmpty();
@@ -128,7 +129,6 @@ class XodusServerIssueStoreTests {
     assertThat(savedIssue.isResolved()).isTrue();
     assertThat(savedIssue.getRuleKey()).isEqualTo("repo:key");
     assertThat(savedIssue.getMessage()).isEqualTo("message");
-    assertThat(savedIssue.getTextRangeHash()).isEqualTo("myRangeHash");
     assertThat(savedIssue.getFilePath()).isEqualTo("file/path");
     assertThat(savedIssue.getCreationDate()).isEqualTo(creationDate);
     assertThat(savedIssue.getSeverity()).isEqualTo(IssueSeverity.MINOR);
@@ -137,9 +137,10 @@ class XodusServerIssueStoreTests {
     assertThat(savedIssue.getTextRange().getStartLineOffset()).isEqualTo(2);
     assertThat(savedIssue.getTextRange().getEndLine()).isEqualTo(3);
     assertThat(savedIssue.getTextRange().getEndLineOffset()).isEqualTo(4);
+    assertThat(savedIssue.getTextRange().getHash()).isEqualTo("ab12");
     assertThat(savedIssue.getFlows()).hasSize(1);
     assertThat(savedIssue.getFlows().get(0).locations())
-      .extracting(ServerIssueLocation::getFilePath, ServerIssueLocation::getMessage, ServerIssueLocation::getTextRangeHash, l -> l.getTextRange().getStartLine(),
+      .extracting(ServerIssueLocation::getFilePath, ServerIssueLocation::getMessage, l -> l.getTextRange().getHash(), l -> l.getTextRange().getStartLine(),
         l -> l.getTextRange().getStartLineOffset(), l -> l.getTextRange().getEndLine(), l -> l.getTextRange().getEndLineOffset())
       .containsOnly(tuple("file/path", "flow message", "myFlowRangeHash", 5, 6, 7, 8));
   }

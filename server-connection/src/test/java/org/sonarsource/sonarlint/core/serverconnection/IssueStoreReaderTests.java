@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStore;
@@ -125,13 +126,12 @@ class IssueStoreReaderTests {
     issueStore.replaceAllTaintOfFile(projectBinding.projectKey(), "branch", "src/path1", List.of(aServerTaintIssue()
       .setFilePath("src/path1")
       .setMessage("Primary")
-      .setTextRange(new ServerTaintIssue.TextRange(1, 2, 3, 4))
-      .setTextRangeHash("Primary location code")
+      .setTextRange(new TextRangeWithHash(1, 2, 3, 4, "ab12"))
       .setFlows(List.of(
         new ServerTaintIssue.Flow(List.of(
-          new ServerTaintIssue.ServerIssueLocation("src/path1", new ServerTaintIssue.TextRange(5, 6, 7, 8), "Flow 1 - Location 1", "ab123"),
-          new ServerTaintIssue.ServerIssueLocation("src/path1", null, "Flow 1 - Location 2 - Without text range", null),
-          new ServerTaintIssue.ServerIssueLocation("src/path2", null, null, null)))))));
+          new ServerTaintIssue.ServerIssueLocation("src/path1", new TextRangeWithHash(5, 6, 7, 8, "ab123"), "Flow 1 - Location 1"),
+          new ServerTaintIssue.ServerIssueLocation("src/path1", null, "Flow 1 - Location 2 - Without text range"),
+          new ServerTaintIssue.ServerIssueLocation("src/path2", null, null)))))));
 
     var issuesReadFromStorage = issueStoreReader.getServerTaintIssues(projectBinding, "branch", "src/path1");
     assertThat(issuesReadFromStorage).hasSize(1);
@@ -142,7 +142,7 @@ class IssueStoreReaderTests {
     assertThat(loadedIssue.getTextRange().getStartLineOffset()).isEqualTo(2);
     assertThat(loadedIssue.getTextRange().getEndLine()).isEqualTo(3);
     assertThat(loadedIssue.getTextRange().getEndLineOffset()).isEqualTo(4);
-    assertThat(loadedIssue.getTextRangeHash()).isEqualTo("Primary location code");
+    assertThat(loadedIssue.getTextRange().getHash()).isEqualTo("ab12");
 
     assertThat(loadedIssue.getFlows()).hasSize(1);
     assertThat(loadedIssue.getFlows().get(0).locations()).hasSize(3);
@@ -152,7 +152,7 @@ class IssueStoreReaderTests {
     assertThat(loadedIssue.getFlows().get(0).locations().get(0).getTextRange().getStartLineOffset()).isEqualTo(6);
     assertThat(loadedIssue.getFlows().get(0).locations().get(0).getTextRange().getEndLine()).isEqualTo(7);
     assertThat(loadedIssue.getFlows().get(0).locations().get(0).getTextRange().getEndLineOffset()).isEqualTo(8);
-    assertThat(loadedIssue.getFlows().get(0).locations().get(0).getTextRangeHash()).isEqualTo("ab123");
+    assertThat(loadedIssue.getFlows().get(0).locations().get(0).getTextRange().getHash()).isEqualTo("ab123");
 
     assertThat(loadedIssue.getFlows().get(0).locations().get(1).getMessage()).isEqualTo("Flow 1 - Location 2 - Without text range");
     assertThat(loadedIssue.getFlows().get(0).locations().get(1).getTextRange()).isNull();

@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.serverconnection.storage;
 import java.time.Instant;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
@@ -60,12 +61,11 @@ public class ServerIssueFixtures {
       true,
       "repo:key",
       "message",
-      "hash",
       "file/path",
       Instant.now(),
       IssueSeverity.MINOR,
       RuleType.BUG,
-      new RangeLevelServerIssue.TextRange(1, 2, 3, 4));
+      new TextRangeWithHash(1, 2, 3, 4, "ab12"));
   }
 
   public static ServerTaintIssue aServerTaintIssue() {
@@ -78,6 +78,6 @@ public class ServerIssueFixtures {
       Instant.now(),
       IssueSeverity.MINOR,
       RuleType.BUG,
-      new ServerTaintIssue.TextRange(1, 2, 3, 4), "rangeHash");
+      new TextRangeWithHash(1, 2, 3, 4, "ab12"));
   }
 }

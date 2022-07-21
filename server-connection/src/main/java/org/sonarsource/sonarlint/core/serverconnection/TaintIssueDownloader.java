@@ -37,6 +37,7 @@ import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -128,7 +129,7 @@ public class TaintIssueDownloader {
       ServerApiUtils.parseOffsetDateTime(taintVulnerabilityFromWs.getCreationDate()).toInstant(),
       IssueSeverity.valueOf(taintVulnerabilityFromWs.getSeverity().name()),
       RuleType.valueOf(taintVulnerabilityFromWs.getType().name()),
-      primaryLocation.getTextRange(), primaryLocation.getTextRangeHash())
+      primaryLocation.getTextRange())
         .setFlows(convertFlows(sourceApi, taintVulnerabilityFromWs.getFlowsList(), componentsByKey, sourceCodeByKey));
   }
 
@@ -137,16 +138,24 @@ public class TaintIssueDownloader {
     return flowsList.stream()
       .map(flowFromWs -> new ServerTaintIssue.Flow(flowFromWs.getLocationsList().stream().map(locationFromWs -> {
         var componentPath = componentPathsByKey.get(locationFromWs.getComponent());
-        var textRange = locationFromWs.hasTextRange() ? convertTextRangeFromWs(locationFromWs.getTextRange()) : null;
-        var codeSnippet = locationFromWs.hasTextRange() ? getCodeSnippet(sourceApi, locationFromWs.getComponent(), locationFromWs.getTextRange(), sourceCodeByKey) : null;
-        var textRangeHash = codeSnippet != null ? hash(codeSnippet) : null;
-        return new ServerTaintIssue.ServerIssueLocation(componentPath, textRange, locationFromWs.getMsg(), textRangeHash);
+        if (locationFromWs.hasTextRange()) {
+          var codeSnippet = getCodeSnippet(sourceApi, locationFromWs.getComponent(), locationFromWs.getTextRange(), sourceCodeByKey);
+          String textRangeHash;
+          if (codeSnippet != null) {
+            textRangeHash = hash(codeSnippet);
+          } else {
+            // Use empty String, the client will detect a mismatch with real hash and apply UX for mismatched locations
+            textRangeHash = "";
+          }
+          return new ServerTaintIssue.ServerIssueLocation(componentPath, convertTextRangeFromWs(locationFromWs.getTextRange(), textRangeHash), locationFromWs.getMsg());
+        }
+        return new ServerTaintIssue.ServerIssueLocation(componentPath, null, locationFromWs.getMsg());
       }).collect(Collectors.toList())))
       .collect(Collectors.toList());
   }
 
-  private static ServerTaintIssue.TextRange toServerTaintIssueTextRange(Issues.TextRange textRange) {
-    return new ServerTaintIssue.TextRange(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset());
+  private static TextRangeWithHash toServerTaintIssueTextRange(Issues.TextRange textRange) {
+    return new TextRangeWithHash(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset(), textRange.getHash());
   }
 
   private static ServerTaintIssue convertLiteTaintIssue(TaintVulnerabilityLite liteTaintIssueFromWs) {
@@ -160,10 +169,10 @@ public class TaintIssueDownloader {
     if (mainLocation.hasTextRange()) {
       taintIssue = new ServerTaintIssue(liteTaintIssueFromWs.getKey(), liteTaintIssueFromWs.getResolved(), liteTaintIssueFromWs.getRuleKey(), mainLocation.getMessage(),
         filePath, creationDate, severity,
-        type, toServerTaintIssueTextRange(mainLocation.getTextRange()), mainLocation.getTextRange().getHash());
+        type, toServerTaintIssueTextRange(mainLocation.getTextRange()));
     } else {
       taintIssue = new ServerTaintIssue(liteTaintIssueFromWs.getKey(), liteTaintIssueFromWs.getResolved(), liteTaintIssueFromWs.getRuleKey(), mainLocation.getMessage(),
-        filePath, creationDate, severity, type, null, null);
+        filePath, creationDate, severity, type, null);
     }
     taintIssue.setFlows(liteTaintIssueFromWs.getFlowsList().stream().map(TaintIssueDownloader::convertFlows).collect(Collectors.toList()));
     return taintIssue;
@@ -172,19 +181,29 @@ public class TaintIssueDownloader {
   private static ServerTaintIssue.Flow convertFlows(Issues.Flow flowFromWs) {
     return new ServerTaintIssue.Flow(flowFromWs.getLocationsList().stream().map(locationFromWs -> {
       var filePath = locationFromWs.hasFilePath() ? locationFromWs.getFilePath() : null;
-      var textRange = locationFromWs.hasTextRange() ? toServerTaintIssueTextRange(locationFromWs.getTextRange()) : null;
-      return new ServerTaintIssue.ServerIssueLocation(filePath, textRange, locationFromWs.getMessage(),
-        locationFromWs.hasTextRange() ? locationFromWs.getTextRange().getHash() : null);
+      if (locationFromWs.hasTextRange()) {
+        return new ServerTaintIssue.ServerIssueLocation(filePath, toServerTaintIssueTextRange(locationFromWs.getTextRange()), locationFromWs.getMessage());
+      } else {
+        return new ServerTaintIssue.ServerIssueLocation(filePath, null, locationFromWs.getMessage());
+      }
     }).collect(Collectors.toList()));
   }
 
   private static ServerTaintIssue.ServerIssueLocation convertPrimaryLocation(SourceApi sourceApi, Issue issueFromWs, Map<String, String> componentPathsByKey,
     Map<String, String> sourceCodeByKey) {
     var componentPath = componentPathsByKey.get(issueFromWs.getComponent());
-    var textRange = issueFromWs.hasTextRange() ? convertTextRangeFromWs(issueFromWs.getTextRange()) : null;
-    var codeSnippet = issueFromWs.hasTextRange() ? getCodeSnippet(sourceApi, issueFromWs.getComponent(), issueFromWs.getTextRange(), sourceCodeByKey) : null;
-    var textRangeHash = codeSnippet != null ? hash(codeSnippet) : null;
-    return new ServerTaintIssue.ServerIssueLocation(componentPath, textRange, issueFromWs.getMessage(), textRangeHash);
+    if (issueFromWs.hasTextRange()) {
+      var codeSnippet = getCodeSnippet(sourceApi, issueFromWs.getComponent(), issueFromWs.getTextRange(), sourceCodeByKey);
+      String textRangeHash;
+      if (codeSnippet != null) {
+        textRangeHash = hash(codeSnippet);
+      } else {
+        // Use empty String, the client will detect a mismatch with real hash and apply UX for mismatched locations
+        textRangeHash = "";
+      }
+      return new ServerTaintIssue.ServerIssueLocation(componentPath, convertTextRangeFromWs(issueFromWs.getTextRange(), textRangeHash), issueFromWs.getMessage());
+    }
+    return new ServerTaintIssue.ServerIssueLocation(componentPath, null, issueFromWs.getMessage());
   }
 
   static String hash(String codeSnippet) {
@@ -192,8 +211,8 @@ public class TaintIssueDownloader {
     return DigestUtils.md5Hex(codeSnippetWithoutWhitespaces);
   }
 
-  private static ServerTaintIssue.TextRange convertTextRangeFromWs(TextRange textRange) {
-    return new ServerTaintIssue.TextRange(textRange.getStartLine(), textRange.getStartOffset(), textRange.getEndLine(), textRange.getEndOffset());
+  private static TextRangeWithHash convertTextRangeFromWs(TextRange textRange, String hash) {
+    return new TextRangeWithHash(textRange.getStartLine(), textRange.getStartOffset(), textRange.getEndLine(), textRange.getEndOffset(), hash);
   }
 
   @CheckForNull

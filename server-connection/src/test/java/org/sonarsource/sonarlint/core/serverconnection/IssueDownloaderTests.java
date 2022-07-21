@@ -172,7 +172,7 @@ class IssueDownloaderTests {
     assertThat(((RangeLevelServerIssue) serverIssue).getTextRange().getStartLineOffset()).isEqualTo(2);
     assertThat(((RangeLevelServerIssue) serverIssue).getTextRange().getEndLine()).isEqualTo(3);
     assertThat(((RangeLevelServerIssue) serverIssue).getTextRange().getEndLineOffset()).isEqualTo(4);
-    assertThat(((RangeLevelServerIssue) serverIssue).getRangeHash()).isEqualTo("hash");
+    assertThat(((RangeLevelServerIssue) serverIssue).getTextRange().getHash()).isEqualTo("hash");
   }
 
   @Test

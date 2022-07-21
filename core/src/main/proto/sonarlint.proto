@@ -35,7 +35,7 @@ message Issues {
     string ruleKey = 2;
     int32 line = 3;
     string message = 4;
-    int32 checksum = 5;
+    string lineHash = 5;
 
     // values carried forward
     reserved 6; // removed assignee

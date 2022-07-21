@@ -36,7 +36,7 @@ public final class DefaultClientIssue implements Issue {
   private final ClientInputFile clientInputFile;
   private final List<Flow> flows;
   private final List<QuickFix> quickFixes;
-  private final org.sonarsource.sonarlint.core.analysis.api.TextRange textRange;
+  private final org.sonarsource.sonarlint.core.commons.TextRange textRange;
 
   public DefaultClientIssue(org.sonarsource.sonarlint.core.analysis.api.Issue i, SonarLintRuleDefinition sonarLintRuleDefinition) {
     this.textRange = i.getTextRange() != null ? i.getTextRange() : null;
@@ -99,7 +99,7 @@ public final class DefaultClientIssue implements Issue {
 
   @CheckForNull
   @Override
-  public org.sonarsource.sonarlint.core.analysis.api.TextRange getTextRange() {
+  public org.sonarsource.sonarlint.core.commons.TextRange getTextRange() {
     return textRange;
   }
 

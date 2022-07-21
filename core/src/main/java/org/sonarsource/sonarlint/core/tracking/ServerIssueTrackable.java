@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.tracking;
 
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
@@ -72,26 +73,17 @@ public class ServerIssueTrackable implements Trackable {
   }
 
   @Override
-  public Integer getLineHash() {
+  public String getLineHash() {
     if (serverIssue instanceof LineLevelServerIssue) {
-      return ((LineLevelServerIssue) serverIssue).getLineHash().hashCode();
+      return ((LineLevelServerIssue) serverIssue).getLineHash();
     }
     return null;
   }
 
   @Override
-  public org.sonarsource.sonarlint.core.issuetracking.TextRange getTextRange() {
+  public TextRangeWithHash getTextRange() {
     if (serverIssue instanceof RangeLevelServerIssue) {
-      var range = ((RangeLevelServerIssue) serverIssue).getTextRange();
-      return new org.sonarsource.sonarlint.core.issuetracking.TextRange(range.getStartLine(), range.getStartLineOffset(), range.getEndLine(), range.getEndLineOffset());
-    }
-    return null;
-  }
-
-  @Override
-  public Integer getTextRangeHash() {
-    if (serverIssue instanceof RangeLevelServerIssue) {
-      return ((RangeLevelServerIssue) serverIssue).getRangeHash().hashCode();
+      return ((RangeLevelServerIssue) serverIssue).getTextRange();
     }
     return null;
   }

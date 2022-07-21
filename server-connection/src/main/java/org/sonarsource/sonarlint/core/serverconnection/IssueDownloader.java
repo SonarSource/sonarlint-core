@@ -30,6 +30,7 @@ import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.IssueLite;
@@ -129,7 +130,7 @@ public class IssueDownloader {
     var ruleType = RuleType.valueOf(liteIssueFromWs.getType().name());
     if (mainLocation.hasTextRange()) {
       return new RangeLevelServerIssue(liteIssueFromWs.getKey(), liteIssueFromWs.getResolved(), liteIssueFromWs.getRuleKey(), mainLocation.getMessage(),
-        mainLocation.getTextRange().getHash(), filePath, creationDate, userSeverity,
+        filePath, creationDate, userSeverity,
         ruleType, toServerIssueTextRange(mainLocation.getTextRange()));
     } else {
       return new FileLevelServerIssue(liteIssueFromWs.getKey(), liteIssueFromWs.getResolved(), liteIssueFromWs.getRuleKey(), mainLocation.getMessage(),
@@ -137,8 +138,8 @@ public class IssueDownloader {
     }
   }
 
-  private static RangeLevelServerIssue.TextRange toServerIssueTextRange(Issues.TextRange textRange) {
-    return new RangeLevelServerIssue.TextRange(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset());
+  private static TextRangeWithHash toServerIssueTextRange(Issues.TextRange textRange) {
+    return new TextRangeWithHash(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset(), textRange.getHash());
   }
 
   public static class PullResult {

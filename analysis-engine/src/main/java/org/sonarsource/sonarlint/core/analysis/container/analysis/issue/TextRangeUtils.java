@@ -24,8 +24,8 @@ public class TextRangeUtils {
   private TextRangeUtils() {
   }
 
-  public static org.sonarsource.sonarlint.core.analysis.api.TextRange convert(org.sonar.api.batch.fs.TextRange analyzerTextRange) {
-    return new org.sonarsource.sonarlint.core.analysis.api.TextRange(
+  public static org.sonarsource.sonarlint.core.commons.TextRange convert(org.sonar.api.batch.fs.TextRange analyzerTextRange) {
+    return new org.sonarsource.sonarlint.core.commons.TextRange(
       analyzerTextRange.start().line(),
       analyzerTextRange.start().lineOffset(),
       analyzerTextRange.end().line(),

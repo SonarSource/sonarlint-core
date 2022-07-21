@@ -26,7 +26,7 @@ import org.sonar.api.batch.fs.TextRange;
 public class DefaultLocation implements IssueLocation {
   private final String message;
   private final ClientInputFile inputFile;
-  private final org.sonarsource.sonarlint.core.analysis.api.TextRange textRange;
+  private final org.sonarsource.sonarlint.core.commons.TextRange textRange;
 
   public DefaultLocation(@Nullable ClientInputFile inputFile, @Nullable TextRange textRange, @Nullable String message) {
     this.textRange = textRange != null ? WithTextRange.convert(textRange) : null;
@@ -46,7 +46,7 @@ public class DefaultLocation implements IssueLocation {
 
   @CheckForNull
   @Override
-  public org.sonarsource.sonarlint.core.analysis.api.TextRange getTextRange() {
+  public org.sonarsource.sonarlint.core.commons.TextRange getTextRange() {
     return textRange;
   }
 }

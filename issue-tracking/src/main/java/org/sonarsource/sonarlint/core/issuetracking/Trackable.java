@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.issuetracking;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 
 public interface Trackable<G> {
 
@@ -44,13 +45,10 @@ public interface Trackable<G> {
   Integer getLine();
 
   @CheckForNull
-  Integer getLineHash();
+  String getLineHash();
 
   @CheckForNull
-  TextRange getTextRange();
-
-  @CheckForNull
-  Integer getTextRangeHash();
+  TextRangeWithHash getTextRange();
 
   @CheckForNull
   Long getCreationDate();

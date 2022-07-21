@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.tracking;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.TextRange;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -36,7 +37,6 @@ class IssueTrackableTests {
   void should_have_null_content_hashes_when_constructed_without_content_info() {
     var trackable = new IssueTrackable(issue);
     assertThat(trackable.getTextRange()).isNull();
-    assertThat(trackable.getTextRangeHash()).isNull();
     assertThat(trackable.getLineHash()).isNull();
   }
 
@@ -44,7 +44,6 @@ class IssueTrackableTests {
   void should_have_null_content_hashes_when_constructed_without_null_content_info() {
     var trackable = new IssueTrackable(issue, null, null);
     assertThat(trackable.getTextRange()).isNull();
-    assertThat(trackable.getTextRangeHash()).isNull();
     assertThat(trackable.getLineHash()).isNull();
   }
 
@@ -52,13 +51,14 @@ class IssueTrackableTests {
   void should_have_non_null_hashes_when_constructed_with_non_null_content_info() {
     var textRangeContent = "text range content";
     var lineContent = "line content";
+    when(issue.getTextRange()).thenReturn(new TextRange(1, 2, 3, 4));
     var trackable = new IssueTrackable(issue, textRangeContent, lineContent);
-    assertThat(trackable.getTextRangeHash()).isEqualTo(hash(textRangeContent));
+    assertThat(trackable.getTextRange().getHash()).isEqualTo(hash(textRangeContent));
     assertThat(trackable.getLineHash()).isEqualTo(hash(lineContent));
   }
 
-  private int hash(String content) {
-    return digest(content).hashCode();
+  private String hash(String content) {
+    return digest(content);
   }
 
   @Test

@@ -24,6 +24,7 @@ import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -34,18 +35,18 @@ class ServerTaintIssueTests {
   void testRoundTrips() {
     var issue = aServerTaintIssue();
     var i1 = Instant.ofEpochMilli(100_000_000);
-    assertThat(issue.setTextRangeHash("checksum1").getTextRangeHash()).isEqualTo("checksum1");
     assertThat(issue.setCreationDate(i1).getCreationDate()).isEqualTo(i1);
     assertThat(issue.setFilePath("path1").getFilePath()).isEqualTo("path1");
     assertThat(issue.setKey("key1").getKey()).isEqualTo("key1");
-    issue.setTextRange(new ServerTaintIssue.TextRange(1,
+    issue.setTextRange(new TextRangeWithHash(1,
       2,
       3,
-      4));
+      4, "checksum1"));
     assertThat(issue.getTextRange().getStartLine()).isEqualTo(1);
     assertThat(issue.getTextRange().getStartLineOffset()).isEqualTo(2);
     assertThat(issue.getTextRange().getEndLine()).isEqualTo(3);
     assertThat(issue.getTextRange().getEndLineOffset()).isEqualTo(4);
+    assertThat(issue.getTextRange().getHash()).isEqualTo("checksum1");
     assertThat(issue.setSeverity(IssueSeverity.MAJOR).getSeverity()).isEqualTo(IssueSeverity.MAJOR);
     assertThat(issue.setRuleKey("rule1").getRuleKey()).isEqualTo("rule1");
     assertThat(issue.isResolved()).isTrue();

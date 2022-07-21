@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Analysis Engine
+ * SonarLint Core - Commons
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,20 +17,33 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analysis.api;
+package org.sonarsource.sonarlint.core.commons;
 
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class TextRangeTests {
+class TextRangeWithHashTests {
+
   @Test
-  void should_initialize_unknown_fields_with_null_for_line_only_TextRange() {
-    var line = 7;
-    var lineOnlyTextRange = new TextRange(line);
-    assertThat(lineOnlyTextRange.getStartLine()).isEqualTo(line);
-    assertThat(lineOnlyTextRange.getStartLineOffset()).isNull();
-    assertThat(lineOnlyTextRange.getEndLine()).isNull();
-    assertThat(lineOnlyTextRange.getEndLineOffset()).isNull();
+  void test_getters() {
+    var textRange = new TextRangeWithHash(1, 2, 3, 4, "md5");
+    assertThat(textRange.getHash()).isEqualTo("md5");
   }
+
+  @Test
+  void test_equals_hashcode() {
+    var textRange = new TextRangeWithHash(1, 2, 3, 4, "md5");
+    assertThat(textRange).hasSameHashCodeAs(new TextRangeWithHash(1, 2, 3, 4, "md5"))
+      .isEqualTo(textRange)
+      .isEqualTo(new TextRangeWithHash(1, 2, 3, 4, "md5"))
+      .isNotEqualTo(new TextRange(1, 2, 3, 4))
+      .isNotEqualTo(new TextRangeWithHash(11, 2, 3, 4, "md5"))
+      .isNotEqualTo(new TextRangeWithHash(1, 22, 3, 4, "md5"))
+      .isNotEqualTo(new TextRangeWithHash(1, 2, 33, 4, "md5"))
+      .isNotEqualTo(new TextRangeWithHash(1, 2, 3, 44, "md5"))
+      .isNotEqualTo(new TextRangeWithHash(1, 2, 3, 4, "md55"))
+      .isNotEqualTo("foo");
+  }
+
 }

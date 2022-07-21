@@ -39,6 +39,7 @@ import jetbrains.exodus.entitystore.StoreTransaction;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
@@ -119,13 +120,12 @@ public class XodusServerIssueStore implements ServerIssueStore {
         var startLineOffset = (Integer) storedIssue.getProperty(START_LINE_OFFSET_PROPERTY_NAME);
         var endLine = (Integer) storedIssue.getProperty(END_LINE_PROPERTY_NAME);
         var endLineOffset = (Integer) storedIssue.getProperty(END_LINE_OFFSET_PROPERTY_NAME);
-        var textRange = new RangeLevelServerIssue.TextRange((int) startLine, startLineOffset, endLine, endLineOffset);
+        var textRange = new TextRangeWithHash((int) startLine, startLineOffset, endLine, endLineOffset, rangeHash);
         return new RangeLevelServerIssue(
           key,
           resolved,
           ruleKey,
           msg,
-          rangeHash,
           filePath,
           creationDate,
           userSeverity,
@@ -149,12 +149,13 @@ public class XodusServerIssueStore implements ServerIssueStore {
 
   private static ServerTaintIssue adaptTaint(Entity storedIssue) {
     var startLine = (Integer) storedIssue.getProperty(START_LINE_PROPERTY_NAME);
-    ServerTaintIssue.TextRange textRange = null;
+    TextRangeWithHash textRange = null;
     if (startLine != null) {
       var startLineOffset = (Integer) storedIssue.getProperty(START_LINE_OFFSET_PROPERTY_NAME);
       var endLine = (Integer) storedIssue.getProperty(END_LINE_PROPERTY_NAME);
       var endLineOffset = (Integer) storedIssue.getProperty(END_LINE_OFFSET_PROPERTY_NAME);
-      textRange = new ServerTaintIssue.TextRange(startLine, startLineOffset, endLine, endLineOffset);
+      var hash = (String) storedIssue.getProperty(RANGE_HASH_PROPERTY_NAME);
+      textRange = new TextRangeWithHash(startLine, startLineOffset, endLine, endLineOffset, hash);
     }
     return new ServerTaintIssue(
       (String) requireNonNull(storedIssue.getProperty(KEY_PROPERTY_NAME)),
@@ -165,7 +166,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
       Instant.parse((String) requireNonNull(storedIssue.getProperty(CREATION_DATE_PROPERTY_NAME))),
       (IssueSeverity) requireNonNull(storedIssue.getProperty(SEVERITY_PROPERTY_NAME)),
       (RuleType) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME)),
-      textRange, (String) storedIssue.getProperty(RANGE_HASH_PROPERTY_NAME))
+      textRange)
         .setFlows(StreamSupport.stream(storedIssue.getLinks(ISSUE_TO_FLOWS_LINK_NAME).spliterator(), false).map(XodusServerIssueStore::adaptFlow).collect(Collectors.toList()));
   }
 
@@ -176,18 +177,18 @@ public class XodusServerIssueStore implements ServerIssueStore {
 
   private static ServerTaintIssue.ServerIssueLocation adaptLocation(Entity locationEntity) {
     var startLine = locationEntity.getProperty(START_LINE_PROPERTY_NAME);
-    ServerTaintIssue.TextRange textRange = null;
+    TextRangeWithHash textRange = null;
     if (startLine != null) {
       var startLineOffset = (Integer) locationEntity.getProperty(START_LINE_OFFSET_PROPERTY_NAME);
       var endLine = (Integer) locationEntity.getProperty(END_LINE_PROPERTY_NAME);
       var endLineOffset = (Integer) locationEntity.getProperty(END_LINE_OFFSET_PROPERTY_NAME);
-      textRange = new ServerTaintIssue.TextRange((int) startLine, startLineOffset, endLine, endLineOffset);
+      var hash = (String) locationEntity.getProperty(RANGE_HASH_PROPERTY_NAME);
+      textRange = new TextRangeWithHash((int) startLine, startLineOffset, endLine, endLineOffset, hash);
     }
     return new ServerTaintIssue.ServerIssueLocation(
       (String) locationEntity.getProperty(FILE_PATH_PROPERTY_NAME),
       textRange,
-      (String) locationEntity.getProperty(MESSAGE_PROPERTY_NAME),
-      (String) locationEntity.getProperty(RANGE_HASH_PROPERTY_NAME));
+      (String) locationEntity.getProperty(MESSAGE_PROPERTY_NAME));
   }
 
   @Override
@@ -372,12 +373,12 @@ public class XodusServerIssueStore implements ServerIssueStore {
       issueEntity.setProperty(START_LINE_PROPERTY_NAME, lineIssue.getLine());
     } else if (issue instanceof RangeLevelServerIssue) {
       var rangeIssue = (RangeLevelServerIssue) issue;
-      issueEntity.setProperty(RANGE_HASH_PROPERTY_NAME, rangeIssue.getRangeHash());
       var textRange = rangeIssue.getTextRange();
       issueEntity.setProperty(START_LINE_PROPERTY_NAME, textRange.getStartLine());
       issueEntity.setProperty(START_LINE_OFFSET_PROPERTY_NAME, textRange.getStartLineOffset());
       issueEntity.setProperty(END_LINE_PROPERTY_NAME, textRange.getEndLine());
       issueEntity.setProperty(END_LINE_OFFSET_PROPERTY_NAME, textRange.getEndLineOffset());
+      issueEntity.setProperty(RANGE_HASH_PROPERTY_NAME, textRange.getHash());
     }
   }
 
@@ -396,10 +397,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
       issueEntity.setProperty(START_LINE_OFFSET_PROPERTY_NAME, textRange.getStartLineOffset());
       issueEntity.setProperty(END_LINE_PROPERTY_NAME, textRange.getEndLine());
       issueEntity.setProperty(END_LINE_OFFSET_PROPERTY_NAME, textRange.getEndLineOffset());
-      var textRangeHash = issue.getTextRangeHash();
-      if (textRangeHash != null) {
-        issueEntity.setProperty(RANGE_HASH_PROPERTY_NAME, textRangeHash);
-      }
+      issueEntity.setProperty(RANGE_HASH_PROPERTY_NAME, textRange.getHash());
     }
     deleteFlowAndLocations(issueEntity);
     issue.getFlows().forEach(flow -> storeFlow(flow, issueEntity, transaction));
@@ -460,10 +458,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
       locationEntity.setProperty(START_LINE_OFFSET_PROPERTY_NAME, locationTextRange.getStartLineOffset());
       locationEntity.setProperty(END_LINE_PROPERTY_NAME, locationTextRange.getEndLine());
       locationEntity.setProperty(END_LINE_OFFSET_PROPERTY_NAME, locationTextRange.getEndLineOffset());
-      var textRangeHash = location.getTextRangeHash();
-      if (textRangeHash != null) {
-        locationEntity.setProperty(RANGE_HASH_PROPERTY_NAME, textRangeHash);
-      }
+      locationEntity.setProperty(RANGE_HASH_PROPERTY_NAME, locationTextRange.getHash());
     }
   }
 

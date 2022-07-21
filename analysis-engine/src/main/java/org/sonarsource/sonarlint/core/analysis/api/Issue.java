@@ -24,6 +24,7 @@ import java.util.Optional;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
+import org.sonarsource.sonarlint.core.commons.TextRange;
 
 public class Issue implements IssueLocation {
   private final String ruleKey;
@@ -84,9 +85,7 @@ public class Issue implements IssueLocation {
     sb.append("rule=").append(ruleKey);
     if (textRange != null) {
       var startLine = textRange.getStartLine();
-      if (startLine != null) {
-        sb.append(", line=").append(startLine);
-      }
+      sb.append(", line=").append(startLine);
     }
     if (clientInputFile != null) {
       sb.append(", file=").append(clientInputFile.uri());

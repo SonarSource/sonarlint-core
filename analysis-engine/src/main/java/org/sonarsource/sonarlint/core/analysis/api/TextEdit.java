@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.analysis.api;
 
+import org.sonarsource.sonarlint.core.commons.TextRange;
+
 public interface TextEdit {
 
   TextRange range();

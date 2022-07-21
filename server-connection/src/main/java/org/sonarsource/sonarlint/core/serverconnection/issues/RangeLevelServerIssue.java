@@ -23,69 +23,27 @@ import java.time.Instant;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 
 /**
  * Issues with precise location (from api/issues/pull, SQ >= 9.6)
  */
 public class RangeLevelServerIssue extends ServerIssue<RangeLevelServerIssue> {
-  private TextRange textRange;
-  private String rangeHash;
+  private TextRangeWithHash textRange;
 
-  public RangeLevelServerIssue(String key, boolean resolved, String ruleKey, String message, String rangeHash, String filePath, Instant creationDate,
-    @Nullable IssueSeverity userSeverity, RuleType type, TextRange textRange) {
+  public RangeLevelServerIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant creationDate,
+    @Nullable IssueSeverity userSeverity, RuleType type, TextRangeWithHash textRange) {
     super(key, resolved, ruleKey, message, filePath, creationDate, userSeverity, type);
-    this.rangeHash = rangeHash;
     this.textRange = textRange;
   }
 
-  public String getRangeHash() {
-    return rangeHash;
-  }
-
-  public TextRange getTextRange() {
+  public TextRangeWithHash getTextRange() {
     return textRange;
   }
 
-  public RangeLevelServerIssue setRangeHash(String rangeHash) {
-    this.rangeHash = rangeHash;
-    return this;
-  }
-
-  public RangeLevelServerIssue setTextRange(TextRange textRange) {
+  public RangeLevelServerIssue setTextRange(TextRangeWithHash textRange) {
     this.textRange = textRange;
     return this;
-  }
-
-  public static class TextRange {
-
-    private final int startLine;
-    private final int startLineOffset;
-    private final int endLine;
-    private final int endLineOffset;
-
-    public TextRange(int startLine, int startLineOffset, int endLine, int endLineOffset) {
-      this.startLine = startLine;
-      this.startLineOffset = startLineOffset;
-      this.endLine = endLine;
-      this.endLineOffset = endLineOffset;
-    }
-
-    public int getStartLine() {
-      return startLine;
-    }
-
-    public int getStartLineOffset() {
-      return startLineOffset;
-    }
-
-    public int getEndLine() {
-      return endLine;
-    }
-
-    public int getEndLineOffset() {
-      return endLineOffset;
-    }
-
   }
 
 }

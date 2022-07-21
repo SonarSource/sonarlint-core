@@ -157,7 +157,7 @@ class TaintIssueDownloaderTests {
     assertThat(taintIssue.getTextRange().getStartLineOffset()).isEqualTo(7);
     assertThat(taintIssue.getTextRange().getEndLine()).isEqualTo(4);
     assertThat(taintIssue.getTextRange().getEndLineOffset()).isEqualTo(9);
-    assertThat(taintIssue.getTextRangeHash()).isEqualTo(hash("My\n\tCode\n  Snippet"));
+    assertThat(taintIssue.getTextRange().getHash()).isEqualTo(hash("My\n\tCode\n  Snippet"));
 
     assertThat(taintIssue.getFlows()).hasSize(2);
     assertThat(taintIssue.getFlows().get(0).locations()).hasSize(4);
@@ -168,16 +168,16 @@ class TaintIssueDownloaderTests {
     assertThat(flowLocation11.getTextRange().getStartLineOffset()).isEqualTo(1);
     assertThat(flowLocation11.getTextRange().getEndLine()).isEqualTo(5);
     assertThat(flowLocation11.getTextRange().getEndLineOffset()).isEqualTo(6);
-    assertThat(flowLocation11.getTextRangeHash()).isEqualTo(hash("After"));
+    assertThat(flowLocation11.getTextRange().getHash()).isEqualTo(hash("After"));
 
     // Invalid text range
-    assertThat(taintIssue.getFlows().get(0).locations().get(1).getTextRangeHash()).isNull();
+    assertThat(taintIssue.getFlows().get(0).locations().get(1).getTextRange().getHash()).isEmpty();
 
     // 404
-    assertThat(taintIssue.getFlows().get(0).locations().get(2).getTextRangeHash()).isNull();
+    assertThat(taintIssue.getFlows().get(0).locations().get(2).getTextRange().getHash()).isEmpty();
 
     // No text range
-    assertThat(taintIssue.getFlows().get(0).locations().get(3).getTextRangeHash()).isNull();
+    assertThat(taintIssue.getFlows().get(0).locations().get(3).getTextRange()).isNull();
 
     assertThat(taintIssue.getFlows().get(1).locations()).hasSize(1);
   }
@@ -265,7 +265,7 @@ class TaintIssueDownloaderTests {
     assertThat(serverTaintIssue.getTextRange().getStartLineOffset()).isEqualTo(2);
     assertThat(serverTaintIssue.getTextRange().getEndLine()).isEqualTo(3);
     assertThat(serverTaintIssue.getTextRange().getEndLineOffset()).isEqualTo(4);
-    assertThat(serverTaintIssue.getTextRangeHash()).isEqualTo("hash");
+    assertThat(serverTaintIssue.getTextRange().getHash()).isEqualTo("hash");
 
     assertThat(serverTaintIssue.getFlows()).hasSize(2);
     assertThat(serverTaintIssue.getFlows().get(0).locations()).hasSize(3);
@@ -276,10 +276,10 @@ class TaintIssueDownloaderTests {
     assertThat(flowLocation11.getTextRange().getStartLineOffset()).isEqualTo(1);
     assertThat(flowLocation11.getTextRange().getEndLine()).isEqualTo(5);
     assertThat(flowLocation11.getTextRange().getEndLineOffset()).isEqualTo(6);
-    assertThat(flowLocation11.getTextRangeHash()).isEqualTo("hashLocation11");
+    assertThat(flowLocation11.getTextRange().getHash()).isEqualTo("hashLocation11");
 
     // No text range
-    assertThat(serverTaintIssue.getFlows().get(0).locations().get(2).getTextRangeHash()).isNull();
+    assertThat(serverTaintIssue.getFlows().get(0).locations().get(2).getTextRange()).isNull();
 
     assertThat(serverTaintIssue.getFlows().get(1).locations()).hasSize(1);
 
@@ -287,7 +287,7 @@ class TaintIssueDownloaderTests {
     assertThat(taintIssueNoRange.getKey()).isEqualTo("uuid2");
     assertThat(taintIssueNoRange.getFilePath()).isEqualTo("foo/bar/Hello.java");
     assertThat(taintIssueNoRange.getTextRange()).isNull();
-    assertThat(taintIssueNoRange.getTextRangeHash()).isNull();
+    assertThat(taintIssueNoRange.getTextRange()).isNull();
   }
 
 }

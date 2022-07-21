@@ -130,7 +130,7 @@ public class ProtobufIssueStore<T> implements TrackableIssueStore<T> {
       builder.setCreationDate(localIssue.getCreationDate());
     }
     if (localIssue.getLineHash() != null) {
-      builder.setChecksum(localIssue.getLineHash());
+      builder.setLineHash(localIssue.getLineHash());
     }
     if (localIssue.getServerIssueKey() != null) {
       builder.setServerIssueKey(localIssue.getServerIssueKey());

@@ -26,9 +26,9 @@ import org.mockito.MockitoAnnotations;
 import org.sonar.api.batch.fs.InputComponent;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
-import org.sonarsource.sonarlint.core.analysis.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 
 import static org.assertj.core.api.Assertions.assertThat;

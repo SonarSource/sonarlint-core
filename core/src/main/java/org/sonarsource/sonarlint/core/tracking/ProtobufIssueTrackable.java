@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.tracking;
 import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
-import org.sonarsource.sonarlint.core.issuetracking.TextRange;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Issues.Issue;
 
@@ -50,13 +50,8 @@ public class ProtobufIssueTrackable implements Trackable {
   }
 
   @Override
-  public Integer getTextRangeHash() {
-    return null;
-  }
-
-  @Override
-  public Integer getLineHash() {
-    return issue.getChecksum();
+  public String getLineHash() {
+    return issue.getLineHash();
   }
 
   @Override
@@ -90,7 +85,7 @@ public class ProtobufIssueTrackable implements Trackable {
   }
 
   @Override
-  public TextRange getTextRange() {
+  public TextRangeWithHash getTextRange() {
     throw new UnsupportedOperationException();
   }
 }

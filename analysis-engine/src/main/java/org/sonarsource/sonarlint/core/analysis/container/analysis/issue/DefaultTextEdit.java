@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.analysis.container.analysis.issue;
 
 import org.sonarsource.sonarlint.core.analysis.api.TextEdit;
-import org.sonarsource.sonarlint.core.analysis.api.TextRange;
+import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.plugin.api.issue.NewTextEdit;
 
 public class DefaultTextEdit implements TextEdit, NewTextEdit {

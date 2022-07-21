@@ -60,8 +60,8 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectionValidator;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -500,14 +500,14 @@ public class SonarCloudTest extends AbstractConnectedTest {
     assertThat(sinkIssues).hasSize(1);
 
     var taintIssue = sinkIssues.get(0);
-    assertThat(taintIssue.getTextRangeHash()).isEqualTo(hash("statement.executeQuery(query)"));
+    assertThat(taintIssue.getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
     assertThat(taintIssue.getSeverity()).isEqualTo(IssueSeverity.MAJOR);
     assertThat(taintIssue.getType()).isEqualTo(RuleType.VULNERABILITY);
     assertThat(taintIssue.getFlows()).isNotEmpty();
     var flow = taintIssue.getFlows().get(0);
     assertThat(flow.locations()).isNotEmpty();
-    assertThat(flow.locations().get(0).getTextRangeHash()).isEqualTo(hash("statement.executeQuery(query)"));
-    assertThat(flow.locations().get(flow.locations().size() - 1).getTextRangeHash()).isIn(hash("request.getParameter(\"user\")"), hash("request.getParameter(\"pass\")"));
+    assertThat(flow.locations().get(0).getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
+    assertThat(flow.locations().get(flow.locations().size() - 1).getTextRange().getHash()).isIn(hash("request.getParameter(\"user\")"), hash("request.getParameter(\"pass\")"));
   }
 
   private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {
