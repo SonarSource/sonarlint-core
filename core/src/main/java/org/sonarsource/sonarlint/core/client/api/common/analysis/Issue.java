@@ -23,12 +23,14 @@ import java.util.List;
 import org.sonarsource.sonarlint.core.analysis.api.Flow;
 import org.sonarsource.sonarlint.core.analysis.api.IssueLocation;
 import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 
 public interface Issue extends IssueLocation {
 
-  String getSeverity();
+  IssueSeverity getSeverity();
 
-  String getType();
+  RuleType getType();
 
   String getRuleKey();
 

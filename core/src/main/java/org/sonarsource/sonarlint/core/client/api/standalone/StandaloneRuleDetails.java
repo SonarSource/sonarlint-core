@@ -24,10 +24,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import org.sonar.api.rule.RuleKey;
-import org.sonar.api.rules.RuleType;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.RuleKey;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamDefinition;
 
@@ -38,7 +39,7 @@ public class StandaloneRuleDetails implements RuleDetails {
 
   private final RuleKey key;
   private final String name;
-  private final String severity;
+  private final IssueSeverity severity;
   private final RuleType type;
   private final String description;
   private final Map<String, StandaloneRuleParam> params;
@@ -51,8 +52,8 @@ public class StandaloneRuleDetails implements RuleDetails {
     var sonarApiRuleKey = RuleKey.parse(ruleFromDefinition.getKey());
     this.key = sonarApiRuleKey;
     this.name = ruleFromDefinition.getName();
-    this.severity = ruleFromDefinition.getSeverity();
-    this.type = RuleType.valueOf(ruleFromDefinition.getType());
+    this.severity = ruleFromDefinition.getDefaultSeverity();
+    this.type = ruleFromDefinition.getType();
     this.description = ruleFromDefinition.getHtmlDescription();
     this.isActiveByDefault = ruleFromDefinition.isActiveByDefault();
     this.language = ruleFromDefinition.getLanguage();
@@ -95,13 +96,13 @@ public class StandaloneRuleDetails implements RuleDetails {
   }
 
   @Override
-  public String getSeverity() {
+  public IssueSeverity getDefaultSeverity() {
     return severity;
   }
 
   @Override
-  public String getType() {
-    return type.name();
+  public RuleType getType() {
+    return type;
   }
 
   public String[] getTags() {

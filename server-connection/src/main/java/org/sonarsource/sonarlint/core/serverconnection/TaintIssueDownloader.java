@@ -33,8 +33,10 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -67,16 +69,12 @@ public class TaintIssueDownloader {
 
     Set<String> taintRuleKeys = serverApi.rules().getAllTaintRules(List.of(Language.values()), progress);
     Map<String, String> sourceCodeByKey = new HashMap<>();
-    try {
-      var downloadVulnerabilitiesForRules = issueApi.downloadVulnerabilitiesForRules(key, taintRuleKeys, branchName, progress);
-      downloadVulnerabilitiesForRules.getIssues()
-        .stream()
-        .map(i -> convertTaintVulnerability(serverApi.source(), i, downloadVulnerabilitiesForRules.getComponentPathsByKey(), sourceCodeByKey))
-        .filter(Objects::nonNull)
-        .forEach(result::add);
-    } catch (Exception e) {
-      LOG.warn("Unable to fetch taint vulnerabilities", e);
-    }
+    var downloadVulnerabilitiesForRules = issueApi.downloadVulnerabilitiesForRules(key, taintRuleKeys, branchName, progress);
+    downloadVulnerabilitiesForRules.getIssues()
+      .stream()
+      .map(i -> convertTaintVulnerability(serverApi.source(), i, downloadVulnerabilitiesForRules.getComponentPathsByKey(), sourceCodeByKey))
+      .filter(Objects::nonNull)
+      .forEach(result::add);
 
     return result;
   }
@@ -128,8 +126,8 @@ public class TaintIssueDownloader {
       primaryLocation.getMessage(),
       filePath,
       ServerApiUtils.parseOffsetDateTime(taintVulnerabilityFromWs.getCreationDate()).toInstant(),
-      taintVulnerabilityFromWs.getSeverity().name(),
-      taintVulnerabilityFromWs.getType().name(),
+      IssueSeverity.valueOf(taintVulnerabilityFromWs.getSeverity().name()),
+      RuleType.valueOf(taintVulnerabilityFromWs.getType().name()),
       primaryLocation.getTextRange(), primaryLocation.getTextRangeHash())
         .setFlows(convertFlows(sourceApi, taintVulnerabilityFromWs.getFlowsList(), componentsByKey, sourceCodeByKey));
   }
@@ -157,13 +155,15 @@ public class TaintIssueDownloader {
     var filePath = mainLocation.getFilePath();
     var creationDate = Instant.ofEpochMilli(liteTaintIssueFromWs.getCreationDate());
     ServerTaintIssue taintIssue;
+    var severity = IssueSeverity.valueOf(liteTaintIssueFromWs.getSeverity().name());
+    var type = RuleType.valueOf(liteTaintIssueFromWs.getType().name());
     if (mainLocation.hasTextRange()) {
       taintIssue = new ServerTaintIssue(liteTaintIssueFromWs.getKey(), liteTaintIssueFromWs.getResolved(), liteTaintIssueFromWs.getRuleKey(), mainLocation.getMessage(),
-        filePath, creationDate, liteTaintIssueFromWs.getSeverity(),
-        liteTaintIssueFromWs.getType(), toServerTaintIssueTextRange(mainLocation.getTextRange()), mainLocation.getTextRange().getHash());
+        filePath, creationDate, severity,
+        type, toServerTaintIssueTextRange(mainLocation.getTextRange()), mainLocation.getTextRange().getHash());
     } else {
       taintIssue = new ServerTaintIssue(liteTaintIssueFromWs.getKey(), liteTaintIssueFromWs.getResolved(), liteTaintIssueFromWs.getRuleKey(), mainLocation.getMessage(),
-        filePath, creationDate, liteTaintIssueFromWs.getSeverity(), liteTaintIssueFromWs.getType(), null, null);
+        filePath, creationDate, severity, type, null, null);
     }
     taintIssue.setFlows(liteTaintIssueFromWs.getFlowsList().stream().map(TaintIssueDownloader::convertFlows).collect(Collectors.toList()));
     return taintIssue;

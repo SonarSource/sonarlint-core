@@ -27,12 +27,15 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.Flow;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.Paging;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.Severity;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.TextRange;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Location;
@@ -83,6 +86,8 @@ class TaintIssueDownloaderTests {
         .setTextRange(TextRange.newBuilder().setStartLine(2).setStartOffset(7).setEndLine(4).setEndOffset(9))
         .setCreationDate("2021-01-11T18:17:31+0000")
         .setComponent(FILE_1_KEY)
+        .setType(Common.RuleType.VULNERABILITY)
+        .setSeverity(Severity.INFO)
         .addFlows(Flow.newBuilder()
           .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Location 1").setComponent(FILE_1_KEY)
             .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(5).setEndOffset(6)))
@@ -100,6 +105,8 @@ class TaintIssueDownloaderTests {
         .setMessage("Project level issue")
         .setCreationDate("2021-01-11T18:17:31+0000")
         .setComponent(PROJECT_KEY)
+        .setType(Common.RuleType.VULNERABILITY)
+        .setSeverity(Severity.CRITICAL)
         .addFlows(Flow.newBuilder()
           .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Location 1").setComponent(FILE_1_KEY)
             .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(5).setEndOffset(6)))
@@ -144,6 +151,8 @@ class TaintIssueDownloaderTests {
 
     assertThat(taintIssue.getMessage()).isEqualTo("Primary message 2");
     assertThat(taintIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(taintIssue.getType()).isEqualTo(RuleType.VULNERABILITY);
+    assertThat(taintIssue.getSeverity()).isEqualTo(IssueSeverity.INFO);
     assertThat(taintIssue.getTextRange().getStartLine()).isEqualTo(2);
     assertThat(taintIssue.getTextRange().getStartLineOffset()).isEqualTo(7);
     assertThat(taintIssue.getTextRange().getEndLine()).isEqualTo(4);
@@ -179,7 +188,9 @@ class TaintIssueDownloaderTests {
       .addIssues(Issues.Issue.newBuilder()
         .setRule("javasecurity:S789")
         .setCreationDate("2021-01-11T18:17:31+0000")
-        .setComponent(FILE_1_KEY))
+        .setComponent(FILE_1_KEY)
+        .setType(Common.RuleType.BUG)
+        .setSeverity(Severity.INFO))
       .addComponents(Issues.Component.newBuilder()
         .setKey(FILE_1_KEY)
         .setPath("foo/bar/Hello2.java"))
@@ -210,8 +221,8 @@ class TaintIssueDownloaderTests {
     var taint1 = TaintVulnerabilityLite.newBuilder()
       .setKey("uuid1")
       .setRuleKey("sonarjava:S123")
-      .setType("VULNERABILITY")
-      .setSeverity("MAJOR")
+      .setType(Common.RuleType.VULNERABILITY)
+      .setSeverity(Common.Severity.MAJOR)
       .setMainLocation(Location.newBuilder().setFilePath("foo/bar/Hello.java").setMessage("Primary message")
         .setTextRange(org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.TextRange.newBuilder().setStartLine(1).setStartLineOffset(2).setEndLine(3)
           .setEndLineOffset(4).setHash("hash")))
@@ -230,8 +241,8 @@ class TaintIssueDownloaderTests {
     var taintNoRange = TaintVulnerabilityLite.newBuilder()
       .setKey("uuid2")
       .setRuleKey("sonarjava:S123")
-      .setType("VULNERABILITY")
-      .setSeverity("MINOR")
+      .setType(Common.RuleType.VULNERABILITY)
+      .setSeverity(Common.Severity.MINOR)
       .setMainLocation(Location.newBuilder().setFilePath("foo/bar/Hello.java").setMessage("Primary message"))
       .setCreationDate(123456789L)
       .build();
@@ -248,8 +259,8 @@ class TaintIssueDownloaderTests {
     assertThat(serverTaintIssue.getKey()).isEqualTo("uuid1");
     assertThat(serverTaintIssue.getMessage()).isEqualTo("Primary message");
     assertThat(serverTaintIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
-    assertThat(serverTaintIssue.getSeverity()).isEqualTo("MAJOR");
-    assertThat(serverTaintIssue.getType()).isEqualTo("VULNERABILITY");
+    assertThat(serverTaintIssue.getSeverity()).isEqualTo(IssueSeverity.MAJOR);
+    assertThat(serverTaintIssue.getType()).isEqualTo(RuleType.VULNERABILITY);
     assertThat(serverTaintIssue.getTextRange().getStartLine()).isEqualTo(1);
     assertThat(serverTaintIssue.getTextRange().getStartLineOffset()).isEqualTo(2);
     assertThat(serverTaintIssue.getTextRange().getEndLine()).isEqualTo(3);

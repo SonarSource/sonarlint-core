@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.issuetracking;
 
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -28,16 +30,16 @@ import static org.mockito.Mockito.when;
 class CombinedTrackableTests {
   @Test
   void testMerge() {
-    var base = createMock("base", 0);
-    var next = createMock("next", 1);
+    var base = createMock("base", 0, IssueSeverity.MINOR, RuleType.VULNERABILITY);
+    var next = createMock("next", 1, IssueSeverity.BLOCKER, RuleType.SECURITY_HOTSPOT);
 
     var combined = new CombinedTrackable(base, next, true);
 
     assertThat(combined.getServerIssueKey()).isEqualTo("baseServerIssueKey");
-    assertThat(combined.getSeverity()).isEqualTo("baseSeverity");
-    assertThat(combined.getType()).isEqualTo("baseType");
-    assertThat(combined.getCreationDate()).isEqualTo(0);
-    assertThat(combined.isResolved()).isEqualTo(false);
+    assertThat(combined.getSeverity()).isEqualTo(IssueSeverity.MINOR);
+    assertThat(combined.getType()).isEqualTo(RuleType.VULNERABILITY);
+    assertThat(combined.getCreationDate()).isZero();
+    assertThat(combined.isResolved()).isFalse();
 
     assertThat(combined.getLine()).isEqualTo(1);
     assertThat(combined.getMessage()).isEqualTo("nextMessage");
@@ -47,7 +49,7 @@ class CombinedTrackableTests {
     assertThat(combined.getTextRangeHash()).isEqualTo(1);
   }
 
-  private Trackable createMock(String name, int number) {
+  private Trackable createMock(String name, int number, IssueSeverity severity, RuleType type) {
     var t = mock(Trackable.class);
     when(t.getCreationDate()).thenReturn((long) number);
     when(t.getLine()).thenReturn(number);
@@ -55,9 +57,9 @@ class CombinedTrackableTests {
     when(t.getMessage()).thenReturn(name + "Message");
     when(t.getRuleKey()).thenReturn(name + "RuleKey");
     when(t.getServerIssueKey()).thenReturn(name + "ServerIssueKey");
-    when(t.getSeverity()).thenReturn(name + "Severity");
+    when(t.getSeverity()).thenReturn(severity);
     when(t.getTextRangeHash()).thenReturn(number);
-    when(t.getType()).thenReturn(name + "Type");
+    when(t.getType()).thenReturn(type);
     when(t.getTextRange()).thenReturn(new TextRange(number));
     when(t.isResolved()).thenReturn(number == 1);
     return t;

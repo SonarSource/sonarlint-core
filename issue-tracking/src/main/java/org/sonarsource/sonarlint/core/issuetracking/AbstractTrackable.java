@@ -19,11 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.issuetracking;
 
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
+
 public class AbstractTrackable<G> implements Trackable<G> {
   private final G clientObject;
   protected String ruleKey;
-  protected String severity;
-  protected String type;
+  protected IssueSeverity severity;
+  protected RuleType type;
   protected String message;
   protected Integer line;
   protected Integer lineHash;
@@ -60,12 +63,12 @@ public class AbstractTrackable<G> implements Trackable<G> {
   }
 
   @Override
-  public String getSeverity() {
+  public IssueSeverity getSeverity() {
     return severity;
   }
 
   @Override
-  public String getType() {
+  public RuleType getType() {
     return type;
   }
 

@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 
 public class ServerTaintIssue {
   private String key;
@@ -32,13 +34,13 @@ public class ServerTaintIssue {
   private String message;
   private String filePath;
   private Instant creationDate;
-  private String severity;
-  private String type;
+  private IssueSeverity severity;
+  private RuleType type;
   private List<Flow> flows = new ArrayList<>();
   private TextRange textRange;
   private String textRangeHash;
 
-  public ServerTaintIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant creationDate, String severity, String type,
+  public ServerTaintIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant creationDate, IssueSeverity severity, RuleType type,
     @Nullable TextRange textRange, @Nullable String textRangeHash) {
     this.key = key;
     this.resolved = resolved;
@@ -76,11 +78,11 @@ public class ServerTaintIssue {
     return creationDate;
   }
 
-  public String getSeverity() {
+  public IssueSeverity getSeverity() {
     return severity;
   }
 
-  public String getType() {
+  public RuleType getType() {
     return type;
   }
 
@@ -122,12 +124,12 @@ public class ServerTaintIssue {
     return this;
   }
 
-  public ServerTaintIssue setSeverity(String severity) {
+  public ServerTaintIssue setSeverity(IssueSeverity severity) {
     this.severity = severity;
     return this;
   }
 
-  public ServerTaintIssue setType(String type) {
+  public ServerTaintIssue setType(RuleType type) {
     this.type = type;
     return this;
   }

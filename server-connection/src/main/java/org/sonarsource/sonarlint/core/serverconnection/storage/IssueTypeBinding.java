@@ -1,5 +1,5 @@
 /*
- * SonarLint Issue Tracking
+ * SonarLint Core - Server Connection
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,47 +17,26 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.issuetracking;
+package org.sonarsource.sonarlint.core.serverconnection.storage;
 
-import javax.annotation.CheckForNull;
-import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import java.io.ByteArrayInputStream;
+import jetbrains.exodus.bindings.BindingUtils;
+import jetbrains.exodus.bindings.ComparableBinding;
+import jetbrains.exodus.util.LightOutputStream;
+import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 
-public interface Trackable<G> {
+public class IssueTypeBinding extends ComparableBinding {
 
-  G getClientObject();
+  @Override
+  public Comparable readObject(@NotNull ByteArrayInputStream stream) {
+    return RuleType.values()[BindingUtils.readInt(stream)];
+  }
 
-  String getRuleKey();
-
-  IssueSeverity getSeverity();
-
-  String getMessage();
-
-  @CheckForNull
-  RuleType getType();
-
-  /**
-   * The line index, starting with 1. Null means that
-   * issue does not relate to a line (file issue for example).
-   */
-  @CheckForNull
-  Integer getLine();
-
-  @CheckForNull
-  Integer getLineHash();
-
-  @CheckForNull
-  TextRange getTextRange();
-
-  @CheckForNull
-  Integer getTextRangeHash();
-
-  @CheckForNull
-  Long getCreationDate();
-
-  @CheckForNull
-  String getServerIssueKey();
-
-  boolean isResolved();
+  @Override
+  public void writeObject(@NotNull LightOutputStream output, @NotNull Comparable object) {
+    final RuleType cPair = (RuleType) object;
+    output.writeUnsignedInt(cPair.ordinal() ^ 0x80000000);
+  }
 
 }

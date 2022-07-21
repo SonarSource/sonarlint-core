@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core.serverconnection.issues;
 
 import java.time.Instant;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 
 /**
  * Issues with precise location (from api/issues/pull, SQ >= 9.6)
@@ -29,9 +31,8 @@ public class RangeLevelServerIssue extends ServerIssue<RangeLevelServerIssue> {
   private TextRange textRange;
   private String rangeHash;
 
-  public RangeLevelServerIssue(String key, boolean resolved, String ruleKey, String message, String rangeHash, String filePath, Instant creationDate, @Nullable String userSeverity,
-    String type,
-    TextRange textRange) {
+  public RangeLevelServerIssue(String key, boolean resolved, String ruleKey, String message, String rangeHash, String filePath, Instant creationDate,
+    @Nullable IssueSeverity userSeverity, RuleType type, TextRange textRange) {
     super(key, resolved, ruleKey, message, filePath, creationDate, userSeverity, type);
     this.rangeHash = rangeHash;
     this.textRange = textRange;

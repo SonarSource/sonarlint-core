@@ -28,7 +28,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -68,7 +70,8 @@ public class RulesApi {
       .thenApply(response -> {
         try (response) {
           var rule = Rules.ShowResponse.parseFrom(response.bodyAsStream()).getRule();
-          return new ServerRule(rule.getName(), rule.getSeverity(), rule.getType().toString(), rule.getLang(), rule.getHtmlDesc(), rule.getHtmlNote());
+          return new ServerRule(rule.getName(), IssueSeverity.valueOf(rule.getSeverity()), RuleType.valueOf(rule.getType().name()), rule.getLang(), rule.getHtmlDesc(),
+            rule.getHtmlNote());
         } catch (Exception e) {
           LOG.error("Error when fetching rule + '" + ruleKey + "'", e);
           throw new UnexpectedBodyException(e);
@@ -93,7 +96,7 @@ public class RulesApi {
         Rules.Active ar = activeEntry.getValue().getActiveListList().get(0);
         activeRulesByKey.put(ruleKey, new ServerActiveRule(
           ruleKey,
-          ar.getSeverity(),
+          IssueSeverity.valueOf(ar.getSeverity()),
           ar.getParamsList().stream().collect(Collectors.toMap(Rules.Active.Param::getKey, Rules.Active.Param::getValue)),
           ruleTemplatesByRuleKey.get(ruleKey)));
 

@@ -54,8 +54,10 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBranches;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
@@ -156,7 +158,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
       var activeRuleForAnalysis = new ActiveRule(rule.getKey(), rule.getLanguage().getLanguageKey());
       activeRuleForAnalysis.setParams(rule.getDefaultParams());
       activeRules.add(activeRuleForAnalysis);
-      activeRulesMetadata.put(activeRuleForAnalysis.getRuleKey(), new ActiveRuleMetadata(rule.getSeverity(), rule.getType()));
+      activeRulesMetadata.put(activeRuleForAnalysis.getRuleKey(), new ActiveRuleMetadata(rule.getDefaultSeverity(), rule.getType()));
     }
 
     private ActiveRuleMetadata getRuleMetadata(String ruleKey) {
@@ -164,10 +166,10 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     }
 
     private static class ActiveRuleMetadata {
-      private final String severity;
-      private final String type;
+      private final IssueSeverity severity;
+      private final RuleType type;
 
-      private ActiveRuleMetadata(String severity, String type) {
+      private ActiveRuleMetadata(IssueSeverity severity, RuleType type) {
         this.severity = severity;
         this.type = type;
       }
@@ -294,7 +296,8 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
       if (globalConfig.getExtraPluginsPathsByKey().containsKey(ruleDefFromPlugin.getLanguage().getPluginKey()) || projectKey == null) {
         // if no project key, or for rules from extra plugins there will be no rules metadata in the storage
         return CompletableFuture.completedFuture(
-          new ConnectedRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(), ruleDefFromPlugin.getSeverity(), ruleDefFromPlugin.getType(),
+          new ConnectedRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(), ruleDefFromPlugin.getDefaultSeverity(),
+            ruleDefFromPlugin.getType(),
             ruleDefFromPlugin.getLanguage(), ""));
       }
     }
@@ -323,7 +326,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
           return new ServerApi(new ServerApiHelper(endpoint, client)).rules().getRule(activeRuleFromStorage.getRuleKey())
             .thenApply(serverRule -> ruleDefFromPluginOpt
               .map(ruleDefFromPlugin -> new ConnectedRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(),
-                Optional.ofNullable(serverSeverity).orElse(ruleDefFromPlugin.getSeverity()), ruleDefFromPlugin.getType(), ruleDefFromPlugin.getLanguage(),
+                Optional.ofNullable(serverSeverity).orElse(ruleDefFromPlugin.getDefaultSeverity()), ruleDefFromPlugin.getType(), ruleDefFromPlugin.getLanguage(),
                 serverRule.getHtmlNote()))
               .orElse(new ConnectedRuleDetails(ruleKey, serverRule.getName(), serverRule.getHtmlDesc(),
                 Optional.ofNullable(serverSeverity).orElse(serverRule.getSeverity()),

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 
 public class RuleSetChangedEvent implements ServerEvent {
   private final List<String> projectKeys;
@@ -50,11 +51,11 @@ public class RuleSetChangedEvent implements ServerEvent {
   public static class ActiveRule {
     private final String key;
     private final String languageKey;
-    private final String severity;
+    private final IssueSeverity severity;
     private final Map<String, String> parameters;
     private final String templateKey;
 
-    public ActiveRule(String key, String languageKey, String severity, Map<String, String> parameters, @Nullable String templateKey) {
+    public ActiveRule(String key, String languageKey, IssueSeverity severity, Map<String, String> parameters, @Nullable String templateKey) {
       this.key = key;
       this.languageKey = languageKey;
       this.severity = severity;
@@ -70,7 +71,7 @@ public class RuleSetChangedEvent implements ServerEvent {
       return languageKey;
     }
 
-    public String getSeverity() {
+    public IssueSeverity getSeverity() {
       return severity;
     }
 

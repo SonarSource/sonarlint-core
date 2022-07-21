@@ -27,7 +27,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonar.scanner.protocol.input.ScannerInput;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.IssueLite;
@@ -107,13 +109,14 @@ public class IssueDownloader {
     // We have filtered out issues without file path earlier
     var filePath = batchIssueFromWs.getPath();
     var creationDate = Instant.ofEpochMilli(batchIssueFromWs.getCreationDate());
-    var userSeverity = batchIssueFromWs.getManualSeverity() ? batchIssueFromWs.getSeverity().name() : null;
+    var userSeverity = batchIssueFromWs.getManualSeverity() ? IssueSeverity.valueOf(batchIssueFromWs.getSeverity().name()) : null;
+    var ruleType = RuleType.valueOf(batchIssueFromWs.getType());
     if (batchIssueFromWs.hasLine()) {
       return new LineLevelServerIssue(batchIssueFromWs.getKey(), batchIssueFromWs.hasResolution(), ruleKey, batchIssueFromWs.getMsg(), batchIssueFromWs.getChecksum(), filePath,
-        creationDate, userSeverity, batchIssueFromWs.getType(), batchIssueFromWs.getLine());
+        creationDate, userSeverity, ruleType, batchIssueFromWs.getLine());
     } else {
       return new FileLevelServerIssue(batchIssueFromWs.getKey(), batchIssueFromWs.hasResolution(), ruleKey, batchIssueFromWs.getMsg(), filePath, creationDate, userSeverity,
-        batchIssueFromWs.getType());
+        ruleType);
     }
   }
 
@@ -122,14 +125,15 @@ public class IssueDownloader {
     // We have filtered out issues without file path earlier
     var filePath = mainLocation.getFilePath();
     var creationDate = Instant.ofEpochMilli(liteIssueFromWs.getCreationDate());
-    var userSeverity = liteIssueFromWs.hasUserSeverity() ? liteIssueFromWs.getUserSeverity() : null;
+    var userSeverity = liteIssueFromWs.hasUserSeverity() ? IssueSeverity.valueOf(liteIssueFromWs.getUserSeverity().name()) : null;
+    var ruleType = RuleType.valueOf(liteIssueFromWs.getType().name());
     if (mainLocation.hasTextRange()) {
       return new RangeLevelServerIssue(liteIssueFromWs.getKey(), liteIssueFromWs.getResolved(), liteIssueFromWs.getRuleKey(), mainLocation.getMessage(),
         mainLocation.getTextRange().getHash(), filePath, creationDate, userSeverity,
-        liteIssueFromWs.getType(), toServerIssueTextRange(mainLocation.getTextRange()));
+        ruleType, toServerIssueTextRange(mainLocation.getTextRange()));
     } else {
       return new FileLevelServerIssue(liteIssueFromWs.getKey(), liteIssueFromWs.getResolved(), liteIssueFromWs.getRuleKey(), mainLocation.getMessage(),
-        filePath, creationDate, userSeverity, liteIssueFromWs.getType());
+        filePath, creationDate, userSeverity, ruleType);
     }
   }
 

@@ -28,7 +28,9 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
@@ -85,8 +87,8 @@ class RuleExtractorMediumTests {
       var pythonRule = allRules.stream().filter(r -> r.getKey().equals("python:S139")).findFirst();
       assertThat(pythonRule).hasValueSatisfying(rule -> {
         assertThat(rule.getKey()).isEqualTo("python:S139");
-        assertThat(rule.getType()).isEqualTo("CODE_SMELL");
-        assertThat(rule.getSeverity()).isEqualTo("MINOR");
+        assertThat(rule.getType()).isEqualTo(RuleType.CODE_SMELL);
+        assertThat(rule.getDefaultSeverity()).isEqualTo(IssueSeverity.MINOR);
         assertThat(rule.getLanguage()).isEqualTo(Language.PYTHON);
         assertThat(rule.getName()).isEqualTo("Comments should not be located at the end of lines of code");
         assertThat(rule.isActiveByDefault()).isFalse();

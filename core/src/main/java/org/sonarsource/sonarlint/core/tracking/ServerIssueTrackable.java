@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
@@ -43,12 +45,13 @@ public class ServerIssueTrackable implements Trackable {
   }
 
   @Override
-  public String getSeverity() {
-    return serverIssue.getUserSeverity();
+  public IssueSeverity getSeverity() {
+    var userSeverity = serverIssue.getUserSeverity();
+    return userSeverity != null ? userSeverity : null;
   }
 
   @Override
-  public String getType() {
+  public RuleType getType() {
     return serverIssue.getType();
   }
 

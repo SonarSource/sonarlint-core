@@ -27,6 +27,8 @@ import org.sonar.api.batch.fs.InputComponent;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.api.TextRange;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,8 +59,8 @@ class DefaultClientIssueTests {
     textRange = new TextRange(1, 2, 2, 3);
 
     when(rule.getName()).thenReturn("name");
-    when(rule.getType()).thenReturn("BUG");
-    when(rule.getSeverity()).thenReturn("MAJOR");
+    when(rule.getType()).thenReturn(RuleType.BUG);
+    when(rule.getDefaultSeverity()).thenReturn(IssueSeverity.MAJOR);
 
     var issue = new Issue("rule:S123", "msg", textRange, clientInputFile, null, null);
 
@@ -70,8 +72,8 @@ class DefaultClientIssueTests {
     assertThat(underTest.getEndLineOffset()).isEqualTo(3);
 
     assertThat(underTest.getMessage()).isEqualTo("msg");
-    assertThat(underTest.getSeverity()).isEqualTo("MAJOR");
-    assertThat(underTest.getType()).isEqualTo("BUG");
+    assertThat(underTest.getSeverity()).isEqualTo(IssueSeverity.MAJOR);
+    assertThat(underTest.getType()).isEqualTo(RuleType.BUG);
     assertThat(underTest.getInputFile()).isEqualTo(clientInputFile);
   }
 

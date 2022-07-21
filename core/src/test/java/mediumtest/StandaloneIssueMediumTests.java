@@ -57,6 +57,7 @@ import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.progress.CanceledException;
@@ -146,7 +147,7 @@ class StandaloneIssueMediumTests {
     var ruleDetails = sonarlint.getRuleDetails("javascript:S1481").get();
     assertThat(ruleDetails.getName()).isEqualTo("Unused local variables and functions should be removed");
     assertThat(ruleDetails.getLanguage()).isEqualTo(Language.JS);
-    assertThat(ruleDetails.getSeverity()).isEqualTo("MINOR");
+    assertThat(ruleDetails.getDefaultSeverity()).isEqualTo(IssueSeverity.MINOR);
     assertThat(ruleDetails.getTags()).containsOnly("unused");
     assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "If a local variable or a local function is declared but not used");
 
@@ -221,7 +222,7 @@ class StandaloneIssueMediumTests {
     var ruleDetails = sonarlint.getRuleDetails("typescript:S1764").get();
     assertThat(ruleDetails.getName()).isEqualTo("Identical expressions should not be used on both sides of a binary operator");
     assertThat(ruleDetails.getLanguage()).isEqualTo(Language.TS);
-    assertThat(ruleDetails.getSeverity()).isEqualTo("MAJOR");
+    assertThat(ruleDetails.getDefaultSeverity()).isEqualTo(IssueSeverity.MAJOR);
     assertThat(ruleDetails.getTags()).isEmpty();
     assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "Using the same value on either side of a binary operator is almost always a mistake");
 
@@ -417,10 +418,10 @@ class StandaloneIssueMediumTests {
 
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, Issue::getEndLine, Issue::getEndLineOffset,
       i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-        tuple("java:S1220", null, null, null, null, A_JAVA_FILE_PATH, "MINOR"),
-        tuple("java:S1481", 3, 8, 3, 9, A_JAVA_FILE_PATH, "MINOR"),
-        tuple("java:S106", 4, 4, 4, 14, A_JAVA_FILE_PATH, "MAJOR"),
-        tuple("java:S1135", 5, 0, 5, 27, A_JAVA_FILE_PATH, "INFO"));
+        tuple("java:S1220", null, null, null, null, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
+        tuple("java:S1481", 3, 8, 3, 9, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
+        tuple("java:S106", 4, 4, 4, 14, A_JAVA_FILE_PATH, IssueSeverity.MAJOR),
+        tuple("java:S1135", 5, 0, 5, 27, A_JAVA_FILE_PATH, IssueSeverity.INFO));
   }
 
   // SLCORE-350
@@ -445,8 +446,8 @@ class StandaloneIssueMediumTests {
 
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, Issue::getEndLine, Issue::getEndLineOffset,
       i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-        tuple("java:S1220", null, null, null, null, A_JAVA_FILE_PATH, "MINOR"),
-        tuple("java:S1481", 3, 8, 3, 9, A_JAVA_FILE_PATH, "MINOR"));
+        tuple("java:S1220", null, null, null, null, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
+        tuple("java:S1481", 3, 8, 3, 9, A_JAVA_FILE_PATH, IssueSeverity.MINOR));
   }
 
   // SLCORE-251
@@ -517,7 +518,7 @@ class StandaloneIssueMediumTests {
       null, null);
 
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S3421", 6, "pom.xml", "MINOR"));
+      tuple("java:S3421", 6, "pom.xml", IssueSeverity.MINOR));
   }
 
   @Test
@@ -541,8 +542,8 @@ class StandaloneIssueMediumTests {
       null, null);
 
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S1220", null, A_JAVA_FILE_PATH, "MINOR"),
-      tuple("java:S1481", 4, A_JAVA_FILE_PATH, "MINOR"));
+      tuple("java:S1220", null, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
+      tuple("java:S1481", 4, A_JAVA_FILE_PATH, IssueSeverity.MINOR));
   }
 
   @Test
@@ -588,8 +589,8 @@ class StandaloneIssueMediumTests {
       issues::add, null, null);
 
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S1220", null, A_JAVA_FILE_PATH, "MINOR"),
-      tuple("java:S1481", 3, A_JAVA_FILE_PATH, "MINOR"));
+      tuple("java:S1220", null, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
+      tuple("java:S1481", 3, A_JAVA_FILE_PATH, IssueSeverity.MINOR));
   }
 
   @Test
@@ -615,8 +616,8 @@ class StandaloneIssueMediumTests {
       issues::add, (msg, lvl) -> logs.add(msg), null);
 
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S1220", null, A_JAVA_FILE_PATH, "MINOR"),
-      tuple("java:S1481", 3, A_JAVA_FILE_PATH, "MINOR"));
+      tuple("java:S1220", null, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
+      tuple("java:S1481", 3, A_JAVA_FILE_PATH, IssueSeverity.MINOR));
 
     assertThat(logs).contains("Rule 'java:S106' was excluded using its deprecated key 'squid:S106'. Please fix your configuration.");
   }
@@ -644,10 +645,10 @@ class StandaloneIssueMediumTests {
       issues::add, null, null);
 
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S3553", 3, A_JAVA_FILE_PATH, "MAJOR"),
-      tuple("java:S106", 5, A_JAVA_FILE_PATH, "MAJOR"),
-      tuple("java:S1220", null, A_JAVA_FILE_PATH, "MINOR"),
-      tuple("java:S1481", 4, A_JAVA_FILE_PATH, "MINOR"));
+      tuple("java:S3553", 3, A_JAVA_FILE_PATH, IssueSeverity.MAJOR),
+      tuple("java:S106", 5, A_JAVA_FILE_PATH, IssueSeverity.MAJOR),
+      tuple("java:S1220", null, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
+      tuple("java:S1481", 4, A_JAVA_FILE_PATH, IssueSeverity.MINOR));
   }
 
   @Test
@@ -674,10 +675,10 @@ class StandaloneIssueMediumTests {
       issues::add, (msg, lvl) -> logs.add(msg), null);
 
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S3553", 3, A_JAVA_FILE_PATH, "MAJOR"),
-      tuple("java:S106", 5, A_JAVA_FILE_PATH, "MAJOR"),
-      tuple("java:S1220", null, A_JAVA_FILE_PATH, "MINOR"),
-      tuple("java:S1481", 4, A_JAVA_FILE_PATH, "MINOR"));
+      tuple("java:S3553", 3, A_JAVA_FILE_PATH, IssueSeverity.MAJOR),
+      tuple("java:S106", 5, A_JAVA_FILE_PATH, IssueSeverity.MAJOR),
+      tuple("java:S1220", null, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
+      tuple("java:S1481", 4, A_JAVA_FILE_PATH, IssueSeverity.MINOR));
 
     assertThat(logs).contains("Rule 'java:S3553' was included using its deprecated key 'squid:S3553'. Please fix your configuration.");
   }
@@ -701,8 +702,8 @@ class StandaloneIssueMediumTests {
       issues::add, null, null);
 
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile() != null ? i.getInputFile().relativePath() : null, Issue::getSeverity).containsOnly(
-      tuple("java:S2094", 2, "foo/Foo.java", "MINOR"),
-      tuple("java:S1228", null, null, "MINOR"));
+      tuple("java:S2094", 2, "foo/Foo.java", IssueSeverity.MINOR),
+      tuple("java:S1228", null, null, IssueSeverity.MINOR));
   }
 
   @Test
@@ -731,9 +732,9 @@ class StandaloneIssueMediumTests {
       issues::add, null, null);
 
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S106", 5, A_JAVA_FILE_PATH, "MAJOR"),
-      tuple("java:S1220", null, A_JAVA_FILE_PATH, "MINOR"),
-      tuple("java:S1481", 4, A_JAVA_FILE_PATH, "MINOR"));
+      tuple("java:S106", 5, A_JAVA_FILE_PATH, IssueSeverity.MAJOR),
+      tuple("java:S1220", null, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
+      tuple("java:S1481", 4, A_JAVA_FILE_PATH, IssueSeverity.MINOR));
   }
 
   @Test

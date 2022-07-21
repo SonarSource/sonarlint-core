@@ -23,7 +23,9 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
@@ -58,7 +60,7 @@ class RulesApiTests {
       Rules.ShowResponse.newBuilder().setRule(
         Rules.Rule.newBuilder()
           .setName("name")
-          .setSeverity("severity")
+          .setSeverity("MINOR")
           .setType(Common.RuleType.VULNERABILITY)
           .setLang(Language.PYTHON.getLanguageKey())
           .setHtmlDesc("htmlDesc")
@@ -71,7 +73,7 @@ class RulesApiTests {
     var rule = rulesApi.getRule("java:S1234").get();
 
     assertThat(rule).extracting("name", "severity", "type", "language", "htmlDesc", "htmlNote")
-      .contains("name", "severity", "VULNERABILITY", Language.PYTHON, "htmlDesc", "htmlNote");
+      .contains("name", IssueSeverity.MINOR, RuleType.VULNERABILITY, Language.PYTHON, "htmlDesc", "htmlNote");
   }
 
   @Test
@@ -80,7 +82,7 @@ class RulesApiTests {
       Rules.ShowResponse.newBuilder().setRule(
         Rules.Rule.newBuilder()
           .setName("name")
-          .setSeverity("severity")
+          .setSeverity("MAJOR")
           .setType(Common.RuleType.VULNERABILITY)
           .setLang(Language.PYTHON.getLanguageKey())
           .setHtmlDesc("htmlDesc")
@@ -93,7 +95,7 @@ class RulesApiTests {
     var rule = rulesApi.getRule("java:S1234").get();
 
     assertThat(rule).extracting("name", "severity", "type", "language", "htmlDesc", "htmlNote")
-      .contains("name", "severity", "VULNERABILITY", Language.PYTHON, "htmlDesc", "htmlNote");
+      .contains("name", IssueSeverity.MAJOR, RuleType.VULNERABILITY, Language.PYTHON, "htmlDesc", "htmlNote");
   }
 
   @Test
@@ -127,8 +129,8 @@ class RulesApiTests {
 
     assertThat(activeRules)
       .extracting("ruleKey", "severity", "templateKey", "params")
-      .containsOnly(tuple("repo:key", "MINOR", "", Map.of()),
-        tuple("repo:key_with_template", "MAJOR", "template", Map.of("paramKey", "paramValue")));
+      .containsOnly(tuple("repo:key", IssueSeverity.MINOR, "", Map.of()),
+        tuple("repo:key_with_template", IssueSeverity.MAJOR, "template", Map.of("paramKey", "paramValue")));
   }
 
 }

@@ -26,10 +26,14 @@ import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonar.scanner.protocol.Constants.Severity;
 import org.sonar.scanner.protocol.input.ScannerInput;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.IssueLite;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Location;
@@ -68,6 +72,9 @@ class IssueDownloaderTests {
       .setLine(1)
       .setCreationDate(123456789L)
       .setPath("foo/bar/Hello.java")
+      .setType("BUG")
+      .setManualSeverity(false)
+      .setSeverity(Severity.BLOCKER)
       .build();
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, response);
@@ -78,10 +85,37 @@ class IssueDownloaderTests {
     var serverIssue = issues.get(0);
     assertThat(serverIssue).isInstanceOf(LineLevelServerIssue.class);
     assertThat(serverIssue.getKey()).isEqualTo("uuid");
+    assertThat(serverIssue.getType()).isEqualTo(RuleType.BUG);
+    assertThat(serverIssue.getUserSeverity()).isNull();
     assertThat(((LineLevelServerIssue) serverIssue).getLineHash()).isEqualTo("hash");
     assertThat(serverIssue.getMessage()).isEqualTo("Primary message");
     assertThat(serverIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
     assertThat(((LineLevelServerIssue) serverIssue).getLine()).isEqualTo(1);
+  }
+
+  @Test
+  void test_download_one_issue_old_batch_ws_with_user_severity() {
+    var response = ScannerInput.ServerIssue.newBuilder()
+      .setKey("uuid")
+      .setRuleRepository("sonarjava")
+      .setRuleKey("S123")
+      .setChecksum("hash")
+      .setMsg("Primary message")
+      .setLine(1)
+      .setCreationDate(123456789L)
+      .setPath("foo/bar/Hello.java")
+      .setType("BUG")
+      .setManualSeverity(true)
+      .setSeverity(Severity.BLOCKER)
+      .build();
+
+    mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, response);
+
+    var issues = underTest.downloadFromBatch(serverApi, DUMMY_KEY, null);
+    assertThat(issues).hasSize(1);
+
+    var serverIssue = issues.get(0);
+    assertThat(serverIssue.getUserSeverity()).isEqualTo(IssueSeverity.BLOCKER);
   }
 
   @Test
@@ -93,6 +127,7 @@ class IssueDownloaderTests {
       .setMsg("Primary message")
       .setCreationDate(123456789L)
       .setPath("foo/bar/Hello.java")
+      .setType("BUG")
       .build();
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, response);
@@ -113,7 +148,7 @@ class IssueDownloaderTests {
     var issue = IssueLite.newBuilder()
       .setKey("uuid")
       .setRuleKey("sonarjava:S123")
-      .setType("BUG")
+      .setType(Common.RuleType.BUG)
       .setMainLocation(Location.newBuilder().setFilePath("foo/bar/Hello.java").setMessage("Primary message")
         .setTextRange(org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.TextRange.newBuilder().setStartLine(1).setStartLineOffset(2).setEndLine(3)
           .setEndLineOffset(4).setHash("hash")))
@@ -132,7 +167,7 @@ class IssueDownloaderTests {
     assertThat(serverIssue.getMessage()).isEqualTo("Primary message");
     assertThat(serverIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
     assertThat(serverIssue.getUserSeverity()).isNull();
-    assertThat(serverIssue.getType()).isEqualTo("BUG");
+    assertThat(serverIssue.getType()).isEqualTo(RuleType.BUG);
     assertThat(((RangeLevelServerIssue) serverIssue).getTextRange().getStartLine()).isEqualTo(1);
     assertThat(((RangeLevelServerIssue) serverIssue).getTextRange().getStartLineOffset()).isEqualTo(2);
     assertThat(((RangeLevelServerIssue) serverIssue).getTextRange().getEndLine()).isEqualTo(3);
@@ -146,8 +181,8 @@ class IssueDownloaderTests {
     var issue = IssueLite.newBuilder()
       .setKey("uuid")
       .setRuleKey("sonarjava:S123")
-      .setType("BUG")
-      .setUserSeverity("MAJOR")
+      .setType(Common.RuleType.BUG)
+      .setUserSeverity(Common.Severity.MAJOR)
       .setMainLocation(Location.newBuilder().setFilePath("foo/bar/Hello.java").setMessage("Primary message")
         .setTextRange(org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.TextRange.newBuilder().setStartLine(1).setStartLineOffset(2).setEndLine(3)
           .setEndLineOffset(4).setHash("hash")))
@@ -161,7 +196,7 @@ class IssueDownloaderTests {
     assertThat(result.getClosedIssueKeys()).isEmpty();
 
     var serverIssue = result.getChangedIssues().get(0);
-    assertThat(serverIssue.getUserSeverity()).isEqualTo("MAJOR");
+    assertThat(serverIssue.getUserSeverity()).isEqualTo(IssueSeverity.MAJOR);
   }
 
   @Test
@@ -172,6 +207,7 @@ class IssueDownloaderTests {
       .setRuleKey("sonarjava:S123")
       .setMainLocation(Location.newBuilder().setFilePath("foo/bar/Hello.java").setMessage("Primary message"))
       .setCreationDate(123456789L)
+      .setType(Common.RuleType.BUG)
       .build();
 
     mockServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, issue);
@@ -185,6 +221,7 @@ class IssueDownloaderTests {
     assertThat(serverIssue.getKey()).isEqualTo("uuid");
     assertThat(serverIssue.getMessage()).isEqualTo("Primary message");
     assertThat(serverIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(serverIssue.getType()).isEqualTo(RuleType.BUG);
   }
 
   @Test
@@ -252,6 +289,7 @@ class IssueDownloaderTests {
       .setCreationDate(123456789L)
       .setPath("foo/bar/Hello.java")
       .setModuleKey("project")
+      .setType("BUG")
       .build();
 
     var taint1 = ScannerInput.ServerIssue.newBuilder()
@@ -263,6 +301,7 @@ class IssueDownloaderTests {
       .setCreationDate(123456789L)
       .setPath("foo/bar/Hello2.java")
       .setModuleKey("project")
+      .setType("VULNERABILITY")
       .build();
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, issue1, taint1);
@@ -303,6 +342,7 @@ class IssueDownloaderTests {
       .setRuleRepository("sonarjava")
       .setRuleKey("S123")
       .setPath("src/Foo.java")
+      .setType("BUG")
       .build();
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY + "&branch=branchName", response);

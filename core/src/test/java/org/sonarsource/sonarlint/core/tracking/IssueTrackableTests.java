@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.tracking;
 
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -62,11 +63,10 @@ class IssueTrackableTests {
 
   @Test
   void should_delegate_fields_to_issue() {
-    var severity = "dummy severity";
-    when(issue.getSeverity()).thenReturn(severity);
+    when(issue.getSeverity()).thenReturn(IssueSeverity.BLOCKER);
 
     var trackable = new IssueTrackable(issue, null, null);
     assertThat(trackable.getClientObject()).isEqualTo(issue);
-    assertThat(trackable.getSeverity()).isEqualTo(severity);
+    assertThat(trackable.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
   }
 }

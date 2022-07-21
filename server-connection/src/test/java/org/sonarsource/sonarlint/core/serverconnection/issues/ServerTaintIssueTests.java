@@ -22,7 +22,8 @@ package org.sonarsource.sonarlint.core.serverconnection.issues;
 import java.time.Instant;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -45,11 +46,11 @@ class ServerTaintIssueTests {
     assertThat(issue.getTextRange().getStartLineOffset()).isEqualTo(2);
     assertThat(issue.getTextRange().getEndLine()).isEqualTo(3);
     assertThat(issue.getTextRange().getEndLineOffset()).isEqualTo(4);
-    assertThat(issue.setSeverity("MAJOR").getSeverity()).isEqualTo("MAJOR");
+    assertThat(issue.setSeverity(IssueSeverity.MAJOR).getSeverity()).isEqualTo(IssueSeverity.MAJOR);
     assertThat(issue.setRuleKey("rule1").getRuleKey()).isEqualTo("rule1");
     assertThat(issue.isResolved()).isTrue();
     assertThat(issue.setMessage("msg1").getMessage()).isEqualTo("msg1");
-    assertThat(issue.setType("type").getType()).isEqualTo("type");
+    assertThat(issue.setType(RuleType.BUG).getType()).isEqualTo(RuleType.BUG);
 
     assertThat(issue.getFlows()).isEmpty();
 

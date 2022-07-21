@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core.serverconnection.issues;
 
 import java.time.Instant;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 
 /**
  * Issues with line level precision (from old /batch/issues WS, in SQ < 9.6 and SC)
@@ -29,8 +31,8 @@ public class LineLevelServerIssue extends ServerIssue<LineLevelServerIssue> {
   private int line;
   private String lineHash;
 
-  public LineLevelServerIssue(String key, boolean resolved, String ruleKey, String message, String lineHash, String filePath, Instant creationDate, @Nullable String userSeverity,
-    String type, int line) {
+  public LineLevelServerIssue(String key, boolean resolved, String ruleKey, String message, String lineHash, String filePath, Instant creationDate,
+    @Nullable IssueSeverity userSeverity, RuleType type, int line) {
     super(key, resolved, ruleKey, message, filePath, creationDate, userSeverity, type);
     this.lineHash = lineHash;
     this.line = line;

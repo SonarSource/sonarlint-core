@@ -27,6 +27,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
@@ -80,8 +82,8 @@ class XodusServerIssueStoreTests {
     assertThat(((LineLevelServerIssue) savedIssue).getLineHash()).isEqualTo("hash");
     assertThat(savedIssue.getFilePath()).isEqualTo("file/path");
     assertThat(savedIssue.getCreationDate()).isEqualTo(creationDate);
-    assertThat(savedIssue.getUserSeverity()).isEqualTo("MINOR");
-    assertThat(savedIssue.getType()).isEqualTo("BUG");
+    assertThat(savedIssue.getUserSeverity()).isEqualTo(IssueSeverity.MINOR);
+    assertThat(savedIssue.getType()).isEqualTo(RuleType.BUG);
     assertThat(((LineLevelServerIssue) savedIssue).getLine()).isEqualTo(1);
   }
 
@@ -101,8 +103,8 @@ class XodusServerIssueStoreTests {
     assertThat(savedIssue.getMessage()).isEqualTo("message");
     assertThat(savedIssue.getFilePath()).isEqualTo("file/path");
     assertThat(savedIssue.getCreationDate()).isEqualTo(creationDate);
-    assertThat(savedIssue.getUserSeverity()).isEqualTo("MINOR");
-    assertThat(savedIssue.getType()).isEqualTo("BUG");
+    assertThat(savedIssue.getUserSeverity()).isEqualTo(IssueSeverity.MINOR);
+    assertThat(savedIssue.getType()).isEqualTo(RuleType.BUG);
     assertThat(((RangeLevelServerIssue) savedIssue).getRangeHash()).isEqualTo("hash");
     assertThat(((RangeLevelServerIssue) savedIssue).getTextRange().getStartLine()).isEqualTo(1);
     assertThat(((RangeLevelServerIssue) savedIssue).getTextRange().getStartLineOffset()).isEqualTo(2);
@@ -129,8 +131,8 @@ class XodusServerIssueStoreTests {
     assertThat(savedIssue.getTextRangeHash()).isEqualTo("myRangeHash");
     assertThat(savedIssue.getFilePath()).isEqualTo("file/path");
     assertThat(savedIssue.getCreationDate()).isEqualTo(creationDate);
-    assertThat(savedIssue.getSeverity()).isEqualTo("MINOR");
-    assertThat(savedIssue.getType()).isEqualTo("BUG");
+    assertThat(savedIssue.getSeverity()).isEqualTo(IssueSeverity.MINOR);
+    assertThat(savedIssue.getType()).isEqualTo(RuleType.BUG);
     assertThat(savedIssue.getTextRange().getStartLine()).isEqualTo(1);
     assertThat(savedIssue.getTextRange().getStartLineOffset()).isEqualTo(2);
     assertThat(savedIssue.getTextRange().getEndLine()).isEqualTo(3);
@@ -214,17 +216,17 @@ class XodusServerIssueStoreTests {
   @Test
   void should_update_existing_issues_when_merging() {
     store.replaceAllIssuesOfProject("projectKey", "branch", List.of(
-      aServerIssue().setType("VULNERABILITY").setKey("key1"),
-      aServerIssue().setType("VULNERABILITY").setKey("key2")));
+      aServerIssue().setType(RuleType.VULNERABILITY).setKey("key1"),
+      aServerIssue().setType(RuleType.VULNERABILITY).setKey("key2")));
 
     store.mergeIssues("projectKey", "branch", List.of(
-      aServerIssue().setType("CODE_SMELL").setKey("key1"),
-      aServerIssue().setType("BUG").setKey("key2"),
-      aServerIssue().setType("VULNERABILITY").setKey("key3")), Set.of(), Instant.now());
+      aServerIssue().setType(RuleType.CODE_SMELL).setKey("key1"),
+      aServerIssue().setType(RuleType.BUG).setKey("key2"),
+      aServerIssue().setType(RuleType.VULNERABILITY).setKey("key3")), Set.of(), Instant.now());
 
     assertThat(store.load("projectKey", "branch", "file/path"))
       .extracting(ServerIssue::getKey, ServerIssue::getType)
-      .containsOnly(tuple("key1", "CODE_SMELL"), tuple("key2", "BUG"), tuple("key3", "VULNERABILITY"));
+      .containsOnly(tuple("key1", RuleType.CODE_SMELL), tuple("key2", RuleType.BUG), tuple("key3", RuleType.VULNERABILITY));
   }
 
   @Test
@@ -256,17 +258,17 @@ class XodusServerIssueStoreTests {
   @Test
   void should_update_existing_taints_when_merging() {
     store.replaceAllTaintOfFile("projectKey", "branch", "file/path", List.of(
-      aServerTaintIssue().setType("VULNERABILITY").setKey("key1"),
-      aServerTaintIssue().setType("VULNERABILITY").setKey("key2")));
+      aServerTaintIssue().setType(RuleType.VULNERABILITY).setKey("key1"),
+      aServerTaintIssue().setType(RuleType.VULNERABILITY).setKey("key2")));
 
     store.mergeTaintIssues("projectKey", "branch", List.of(
-      aServerTaintIssue().setType("CODE_SMELL").setKey("key1"),
-      aServerTaintIssue().setType("BUG").setKey("key2"),
-      aServerTaintIssue().setType("VULNERABILITY").setKey("key3")), Set.of(), Instant.now());
+      aServerTaintIssue().setType(RuleType.CODE_SMELL).setKey("key1"),
+      aServerTaintIssue().setType(RuleType.BUG).setKey("key2"),
+      aServerTaintIssue().setType(RuleType.VULNERABILITY).setKey("key3")), Set.of(), Instant.now());
 
     assertThat(store.loadTaint("projectKey", "branch", "file/path"))
       .extracting(ServerTaintIssue::getKey, ServerTaintIssue::getType)
-      .containsOnly(tuple("key1", "CODE_SMELL"), tuple("key2", "BUG"), tuple("key3", "VULNERABILITY"));
+      .containsOnly(tuple("key1", RuleType.CODE_SMELL), tuple("key2", RuleType.BUG), tuple("key3", RuleType.VULNERABILITY));
   }
 
   @Test

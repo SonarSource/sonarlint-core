@@ -37,6 +37,8 @@ import jetbrains.exodus.entitystore.PersistentEntityStore;
 import jetbrains.exodus.entitystore.PersistentEntityStores;
 import jetbrains.exodus.entitystore.StoreTransaction;
 import org.jetbrains.annotations.NotNull;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
@@ -81,6 +83,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
   private static final String FILE_PATH_PROPERTY_NAME = "filePath";
   private static final String CREATION_DATE_PROPERTY_NAME = "creationDate";
   private static final String USER_SEVERITY_PROPERTY_NAME = "userSeverity";
+  private static final String SEVERITY_PROPERTY_NAME = "severity";
   private static final String TYPE_PROPERTY_NAME = "type";
   private static final String PATH_PROPERTY_NAME = "path";
   private static final String NAME_PROPERTY_NAME = "name";
@@ -91,6 +94,10 @@ public class XodusServerIssueStore implements ServerIssueStore {
 
   public XodusServerIssueStore(Path baseDir) {
     entityStore = PersistentEntityStores.newInstance(baseDir.resolve(FILE_NAME).toAbsolutePath().toString());
+    entityStore.executeInTransaction(txn -> {
+      entityStore.registerCustomPropertyType(txn, IssueSeverity.class, new IssueSeverityBinding());
+      entityStore.registerCustomPropertyType(txn, RuleType.class, new IssueTypeBinding());
+    });
   }
 
   private static ServerIssue adapt(Entity storedIssue) {
@@ -102,8 +109,8 @@ public class XodusServerIssueStore implements ServerIssueStore {
     // FIXME We could save storage by not storing filePath on the issue entity, but instead relying on the relation with file entity
     var filePath = (String) requireNonNull(storedIssue.getProperty(FILE_PATH_PROPERTY_NAME));
     var creationDate = Instant.parse((String) requireNonNull(storedIssue.getProperty(CREATION_DATE_PROPERTY_NAME)));
-    var userSeverity = (String) storedIssue.getProperty(USER_SEVERITY_PROPERTY_NAME);
-    var type = (String) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME));
+    var userSeverity = (IssueSeverity) storedIssue.getProperty(USER_SEVERITY_PROPERTY_NAME);
+    var type = (RuleType) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME));
     if (startLine == null) {
       return new FileLevelServerIssue(key, resolved, ruleKey, msg, filePath, creationDate, userSeverity, type);
     } else {
@@ -156,8 +163,8 @@ public class XodusServerIssueStore implements ServerIssueStore {
       (String) requireNonNull(storedIssue.getProperty(MESSAGE_PROPERTY_NAME)),
       (String) requireNonNull(storedIssue.getProperty(FILE_PATH_PROPERTY_NAME)),
       Instant.parse((String) requireNonNull(storedIssue.getProperty(CREATION_DATE_PROPERTY_NAME))),
-      (String) requireNonNull(storedIssue.getProperty(USER_SEVERITY_PROPERTY_NAME)),
-      (String) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME)),
+      (IssueSeverity) requireNonNull(storedIssue.getProperty(SEVERITY_PROPERTY_NAME)),
+      (RuleType) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME)),
       textRange, (String) storedIssue.getProperty(RANGE_HASH_PROPERTY_NAME))
         .setFlows(StreamSupport.stream(storedIssue.getLinks(ISSUE_TO_FLOWS_LINK_NAME).spliterator(), false).map(XodusServerIssueStore::adaptFlow).collect(Collectors.toList()));
   }
@@ -381,7 +388,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
     issueEntity.setProperty(MESSAGE_PROPERTY_NAME, issue.getMessage());
     issueEntity.setProperty(FILE_PATH_PROPERTY_NAME, issue.getFilePath());
     issueEntity.setProperty(CREATION_DATE_PROPERTY_NAME, issue.getCreationDate().toString());
-    issueEntity.setProperty(USER_SEVERITY_PROPERTY_NAME, issue.getSeverity());
+    issueEntity.setProperty(SEVERITY_PROPERTY_NAME, issue.getSeverity());
     issueEntity.setProperty(TYPE_PROPERTY_NAME, issue.getType());
     var textRange = issue.getTextRange();
     if (textRange != null) {

@@ -59,6 +59,8 @@ import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectionValidator;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
@@ -499,6 +501,8 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
     var taintIssue = sinkIssues.get(0);
     assertThat(taintIssue.getTextRangeHash()).isEqualTo(hash("statement.executeQuery(query)"));
+    assertThat(taintIssue.getSeverity()).isEqualTo(IssueSeverity.MAJOR);
+    assertThat(taintIssue.getType()).isEqualTo(RuleType.VULNERABILITY);
     assertThat(taintIssue.getFlows()).isNotEmpty();
     var flow = taintIssue.getFlows().get(0);
     assertThat(flow.locations()).isNotEmpty();

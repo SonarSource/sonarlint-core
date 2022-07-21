@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.tracking;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.TextRange;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 
 import static org.sonarsource.sonarlint.core.tracking.DigestUtils.digest;
@@ -66,12 +68,12 @@ public class IssueTrackable implements Trackable<Issue> {
   }
 
   @Override
-  public String getSeverity() {
+  public IssueSeverity getSeverity() {
     return issue.getSeverity();
   }
 
   @Override
-  public String getType() {
+  public RuleType getType() {
     return issue.getType();
   }
 

@@ -41,7 +41,9 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.RuleType;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules.Rule;
 import testutils.MockWebServerExtensionWithProtobuf;
@@ -147,26 +149,30 @@ class ConnectedEmbeddedPluginMediumTests {
 
     // Reported issues will refers to new rule keys
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("java:S106", 4, inputFile.getPath(), "BLOCKER"),
-      tuple("java:myCustomRule", 5, inputFile.getPath(), "MAJOR"),
-      tuple("java:S1220", null, inputFile.getPath(), "MINOR"),
-      tuple("java:S1481", 3, inputFile.getPath(), "BLOCKER"));
+      tuple("java:S106", 4, inputFile.getPath(), IssueSeverity.BLOCKER),
+      tuple("java:myCustomRule", 5, inputFile.getPath(), IssueSeverity.MAJOR),
+      tuple("java:S1220", null, inputFile.getPath(), IssueSeverity.MINOR),
+      tuple("java:S1481", 3, inputFile.getPath(), IssueSeverity.BLOCKER));
 
     // Requests to the server should be made using deprecated rule keys
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=squid:S106",
-      Rules.ShowResponse.newBuilder().setRule(Rule.newBuilder().setLang(Language.JAVA.getLanguageKey()).setHtmlNote("S106 Extended rule description")).build());
+      Rules.ShowResponse.newBuilder()
+        .setRule(Rule.newBuilder().setLang(Language.JAVA.getLanguageKey()).setHtmlNote("S106 Extended rule description").setSeverity("MAJOR").setType(RuleType.BUG)).build());
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=squid:myCustomRule",
       Rules.ShowResponse.newBuilder()
-        .setRule(Rule.newBuilder().setLang(Language.JAVA.getLanguageKey()).setHtmlDesc("My custom rule template desc").setHtmlNote("My custom rule extended description")).build());
+        .setRule(Rule.newBuilder().setLang(Language.JAVA.getLanguageKey()).setHtmlDesc("My custom rule template desc").setHtmlNote("My custom rule extended description")
+          .setSeverity("MINOR").setType(RuleType.CODE_SMELL))
+        .build());
 
     ConnectedRuleDetails s106RuleDetails = sonarlint.getActiveRuleDetails(mockWebServerExtension.endpointParams(), httpClient(), "java:S106", JAVA_MODULE_KEY).get();
-    assertThat(s106RuleDetails.getSeverity()).isEqualTo("BLOCKER");
+    assertThat(s106RuleDetails.getDefaultSeverity()).isEqualTo(IssueSeverity.BLOCKER);
     assertThat(s106RuleDetails.getLanguage()).isEqualTo(Language.JAVA);
+    assertThat(s106RuleDetails.getType()).isEqualTo(org.sonarsource.sonarlint.core.commons.RuleType.CODE_SMELL);
     assertThat(s106RuleDetails.getHtmlDescription()).contains("<p>When logging a message there are several important requirements");
     assertThat(s106RuleDetails.getExtendedDescription()).isEqualTo("S106 Extended rule description");
 
     ConnectedRuleDetails myCustomRuleDetails = sonarlint.getActiveRuleDetails(mockWebServerExtension.endpointParams(), httpClient(), "java:myCustomRule", JAVA_MODULE_KEY).get();
-    assertThat(myCustomRuleDetails.getSeverity()).isEqualTo("MAJOR");
+    assertThat(myCustomRuleDetails.getDefaultSeverity()).isEqualTo(IssueSeverity.MAJOR);
     assertThat(s106RuleDetails.getLanguage()).isEqualTo(Language.JAVA);
     assertThat(myCustomRuleDetails.getHtmlDescription()).isEqualTo("My custom rule template desc");
     assertThat(myCustomRuleDetails.getExtendedDescription()).isEqualTo("My custom rule extended description");

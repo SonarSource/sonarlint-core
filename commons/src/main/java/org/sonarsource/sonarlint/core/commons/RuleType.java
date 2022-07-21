@@ -1,5 +1,5 @@
 /*
- * SonarLint Issue Tracking
+ * SonarLint Core - Commons
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,47 +17,13 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.issuetracking;
+package org.sonarsource.sonarlint.core.commons;
 
-import javax.annotation.CheckForNull;
-import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.RuleType;
+public enum RuleType {
 
-public interface Trackable<G> {
-
-  G getClientObject();
-
-  String getRuleKey();
-
-  IssueSeverity getSeverity();
-
-  String getMessage();
-
-  @CheckForNull
-  RuleType getType();
-
-  /**
-   * The line index, starting with 1. Null means that
-   * issue does not relate to a line (file issue for example).
-   */
-  @CheckForNull
-  Integer getLine();
-
-  @CheckForNull
-  Integer getLineHash();
-
-  @CheckForNull
-  TextRange getTextRange();
-
-  @CheckForNull
-  Integer getTextRangeHash();
-
-  @CheckForNull
-  Long getCreationDate();
-
-  @CheckForNull
-  String getServerIssueKey();
-
-  boolean isResolved();
+  CODE_SMELL,
+  BUG,
+  VULNERABILITY,
+  SECURITY_HOTSPOT
 
 }

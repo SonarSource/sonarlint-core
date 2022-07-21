@@ -62,6 +62,8 @@ import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 
 import static its.tools.ItUtils.SONAR_VERSION;
@@ -136,6 +138,8 @@ public class TaintVulnerabilitiesDownloadTest extends AbstractConnectedTest {
 
     var taintIssue = sinkIssues.get(0);
     assertThat(taintIssue.getTextRangeHash()).isEqualTo(hash("statement.executeQuery(query)"));
+    assertThat(taintIssue.getSeverity()).isEqualTo(IssueSeverity.MAJOR);
+    assertThat(taintIssue.getType()).isEqualTo(RuleType.VULNERABILITY);
     assertThat(taintIssue.getFlows()).isNotEmpty();
     var flow = taintIssue.getFlows().get(0);
     assertThat(flow.locations()).isNotEmpty();

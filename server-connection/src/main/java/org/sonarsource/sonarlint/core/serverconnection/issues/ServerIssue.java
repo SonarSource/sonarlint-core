@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.serverconnection.issues;
 import java.time.Instant;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 
 public abstract class ServerIssue<G extends ServerIssue<G>> {
   private String key;
@@ -30,10 +32,10 @@ public abstract class ServerIssue<G extends ServerIssue<G>> {
   private String message;
   private String filePath;
   private Instant creationDate;
-  private String userSeverity;
-  private String type;
+  private IssueSeverity userSeverity;
+  private RuleType type;
 
-  protected ServerIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant creationDate, @Nullable String userSeverity, String type) {
+  protected ServerIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant creationDate, @Nullable IssueSeverity userSeverity, RuleType type) {
     this.key = key;
     this.resolved = resolved;
     this.ruleKey = ruleKey;
@@ -69,11 +71,11 @@ public abstract class ServerIssue<G extends ServerIssue<G>> {
   }
 
   @CheckForNull
-  public String getUserSeverity() {
+  public IssueSeverity getUserSeverity() {
     return userSeverity;
   }
 
-  public String getType() {
+  public RuleType getType() {
     return type;
   }
 
@@ -102,12 +104,12 @@ public abstract class ServerIssue<G extends ServerIssue<G>> {
     return (G) this;
   }
 
-  public G setUserSeverity(@Nullable String userSeverity) {
+  public G setUserSeverity(@Nullable IssueSeverity userSeverity) {
     this.userSeverity = userSeverity;
     return (G) this;
   }
 
-  public G setType(String type) {
+  public G setType(RuleType type) {
     this.type = type;
     return (G) this;
   }
