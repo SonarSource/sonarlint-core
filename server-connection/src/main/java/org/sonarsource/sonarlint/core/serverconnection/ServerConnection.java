@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
@@ -41,6 +42,7 @@ import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
+import org.sonarsource.sonarlint.core.serverapi.push.ServerEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.TaintVulnerabilityClosedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.TaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.events.EventDispatcher;
@@ -63,7 +65,6 @@ import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectSto
 public class ServerConnection {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final String connectionId;
   private final Set<Language> enabledLanguages;
   private final ProjectStorage projectStorage;
   private final StorageReader storageReader;
@@ -77,9 +78,9 @@ public class ServerConnection {
   private final boolean isSonarCloud;
 
   private final Path connectionStorageRoot;
+  private final EventDispatcher coreEventRouter;
 
   public ServerConnection(Path globalStorageRoot, String connectionId, boolean isSonarCloud, Set<Language> enabledLanguages, Set<String> embeddedPluginKeys) {
-    this.connectionId = connectionId;
     this.isSonarCloud = isSonarCloud;
     this.enabledLanguages = enabledLanguages;
 
@@ -98,12 +99,12 @@ public class ServerConnection {
     this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguages, embeddedPluginKeys, pluginsStorage, projectStorage);
     this.projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(projectStoragePaths);
     pluginsStorage.cleanUp();
-    var eventRouter = new EventDispatcher()
+    coreEventRouter = new EventDispatcher()
       .dispatch(RuleSetChangedEvent.class, new UpdateStorageOnRuleSetChanged(projectStorage))
       .dispatch(IssueChangedEvent.class, new UpdateStorageOnIssueChanged(serverIssueStore))
       .dispatch(TaintVulnerabilityRaisedEvent.class, new UpdateStorageOnTaintVulnerabilityRaised(serverIssueStore))
       .dispatch(TaintVulnerabilityClosedEvent.class, new UpdateStorageOnTaintVulnerabilityClosed(serverIssueStore));
-    this.serverEventsAutoSubscriber = new ServerEventsAutoSubscriber(eventRouter);
+    this.serverEventsAutoSubscriber = new ServerEventsAutoSubscriber();
   }
 
   public Map<String, Path> getStoredPluginPathsByKey() {
@@ -140,8 +141,14 @@ public class ServerConnection {
     return issueStoreReader.getServerTaintIssues(projectBinding, branchName, ideFilePath);
   }
 
-  public void subscribeForEvents(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, ClientLogOutput clientLogOutput) {
-    serverEventsAutoSubscriber.subscribePermanently(new ServerApi(new ServerApiHelper(endpoint, client)), projectKeys, enabledLanguages, clientLogOutput);
+  public void subscribeForEvents(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, Consumer<ServerEvent> clientEventConsumer, ClientLogOutput clientLogOutput) {
+    serverEventsAutoSubscriber.subscribePermanently(new ServerApi(new ServerApiHelper(endpoint, client)), projectKeys, enabledLanguages,
+      e -> notifyHandlers(e, clientEventConsumer), clientLogOutput);
+  }
+
+  private void notifyHandlers(ServerEvent serverEvent, Consumer<ServerEvent> clientEventConsumer) {
+    coreEventRouter.handle(serverEvent);
+    clientEventConsumer.accept(serverEvent);
   }
 
   public ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> ideFilePaths) {
