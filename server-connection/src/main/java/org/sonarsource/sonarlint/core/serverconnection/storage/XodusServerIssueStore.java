@@ -45,6 +45,7 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.Optional.ofNullable;
 
 public class XodusServerIssueStore implements ServerIssueStore {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -250,14 +251,8 @@ public class XodusServerIssueStore implements ServerIssueStore {
     return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, PROJECT_ENTITY_TYPE, KEY_PROPERTY_NAME, projectKey)
       .map(project -> project.getLinks(PROJECT_TO_BRANCHES_LINK_NAME))
       .flatMap(branches -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName))
-      .map(branch -> {
-        var lastSyncMs = (Long) branch.getProperty(LAST_ISSUE_SYNC_PROPERTY_NAME);
-        if (lastSyncMs != null) {
-          return Optional.of(Instant.ofEpochMilli(lastSyncMs));
-        } else {
-          return Optional.<Instant>empty();
-        }
-      }).orElse(Optional.<Instant>empty()));
+      .flatMap(branch -> ofNullable((Long) branch.getProperty(LAST_ISSUE_SYNC_PROPERTY_NAME)))
+      .map(Instant::ofEpochMilli));
   }
 
   @Override
@@ -265,14 +260,8 @@ public class XodusServerIssueStore implements ServerIssueStore {
     return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, PROJECT_ENTITY_TYPE, KEY_PROPERTY_NAME, projectKey)
       .map(project -> project.getLinks(PROJECT_TO_BRANCHES_LINK_NAME))
       .flatMap(branches -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName))
-      .map(branch -> {
-        var lastSyncMs = (Long) branch.getProperty(LAST_TAINT_SYNC_PROPERTY_NAME);
-        if (lastSyncMs != null) {
-          return Optional.of(Instant.ofEpochMilli(lastSyncMs));
-        } else {
-          return Optional.<Instant>empty();
-        }
-      }).orElse(Optional.<Instant>empty()));
+      .flatMap(branch -> ofNullable((Long) branch.getProperty(LAST_TAINT_SYNC_PROPERTY_NAME)))
+      .map(Instant::ofEpochMilli));
   }
 
   @Override
