@@ -26,16 +26,22 @@ import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 
 public class IssueChangedEvent implements ServerEvent {
+  private final String projectKey;
   private final List<String> impactedIssueKeys;
   private final IssueSeverity userSeverity;
   private final RuleType userType;
   private final Boolean resolved;
 
-  public IssueChangedEvent(List<String> impactedIssueKeys, @Nullable IssueSeverity userSeverity, @Nullable RuleType userType, @Nullable Boolean resolved) {
+  public IssueChangedEvent(String projectKey, List<String> impactedIssueKeys, @Nullable IssueSeverity userSeverity, @Nullable RuleType userType, @Nullable Boolean resolved) {
+    this.projectKey = projectKey;
     this.impactedIssueKeys = impactedIssueKeys;
     this.userSeverity = userSeverity;
     this.userType = userType;
     this.resolved = resolved;
+  }
+
+  public String getProjectKey() {
+    return projectKey;
   }
 
   public List<String> getImpactedIssueKeys() {

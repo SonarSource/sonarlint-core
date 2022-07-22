@@ -43,6 +43,7 @@ public class IssueChangedEventParser implements EventParser<IssueChangedEvent> {
       return Optional.empty();
     }
     return Optional.of(new IssueChangedEvent(
+      payload.projectKey,
       payload.issues.stream().map(issueChange -> issueChange.issueKey).collect(Collectors.toList()),
       payload.userSeverity != null ? IssueSeverity.valueOf(payload.userSeverity) : null,
       payload.userType != null ? RuleType.valueOf(payload.userType) : null,
