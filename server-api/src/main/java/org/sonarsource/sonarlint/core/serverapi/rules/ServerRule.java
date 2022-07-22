@@ -19,17 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.rules;
 
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 
 public class ServerRule {
   private final String name;
   private final String htmlDesc;
   private final String htmlNote;
-  private final String severity;
-  private final String type;
+  private final IssueSeverity severity;
+  private final RuleType type;
   private final Language language;
 
-  public ServerRule(String name, String severity, String type, String language, String htmlDesc, String htmlNote) {
+  public ServerRule(String name, IssueSeverity severity, RuleType type, String language, String htmlDesc, String htmlNote) {
     this.name = name;
     this.severity = severity;
     this.type = type;
@@ -50,11 +52,11 @@ public class ServerRule {
     return htmlNote;
   }
 
-  public String getSeverity() {
+  public IssueSeverity getSeverity() {
     return severity;
   }
 
-  public String getType() {
+  public RuleType getType() {
     return type;
   }
 

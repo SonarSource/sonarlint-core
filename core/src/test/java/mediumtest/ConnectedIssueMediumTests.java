@@ -46,7 +46,9 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.RuleType;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
 import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileListener;
@@ -124,11 +126,12 @@ class ConnectedIssueMediumTests {
   void simpleJavaBound(@TempDir Path baseDir) throws Exception {
     var inputFile = prepareJavaInputFile(baseDir);
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=java:S1481",
-      Rules.ShowResponse.newBuilder().setRule(Rules.Rule.newBuilder().setLang(Language.JAVA.getLanguageKey())).build());
+      Rules.ShowResponse.newBuilder().setRule(Rules.Rule.newBuilder().setLang(Language.JAVA.getLanguageKey()).setSeverity("INFO").setType(RuleType.BUG)).build());
 
     // Severity of java:S1481 changed to BLOCKER in the quality profile
-    assertThat(sonarlint.getActiveRuleDetails(null, null, "java:S1481", null).get().getSeverity()).isEqualTo("MINOR");
-    assertThat(sonarlint.getActiveRuleDetails(mockWebServerExtension.endpointParams(), httpClient(), "java:S1481", JAVA_MODULE_KEY).get().getSeverity()).isEqualTo("BLOCKER");
+    assertThat(sonarlint.getActiveRuleDetails(null, null, "java:S1481", null).get().getDefaultSeverity()).isEqualTo(IssueSeverity.MINOR);
+    assertThat(sonarlint.getActiveRuleDetails(mockWebServerExtension.endpointParams(), httpClient(), "java:S1481", JAVA_MODULE_KEY).get().getDefaultSeverity())
+      .isEqualTo(IssueSeverity.BLOCKER);
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
       .setProjectKey(JAVA_MODULE_KEY)
@@ -139,9 +142,9 @@ class ConnectedIssueMediumTests {
       new StoreIssueListener(issues), null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("java:S106", 4, inputFile.getPath(), "MAJOR"),
-      tuple("java:S1220", null, inputFile.getPath(), "MINOR"),
-      tuple("java:S1481", 3, inputFile.getPath(), "BLOCKER"));
+      tuple("java:S106", 4, inputFile.getPath(), IssueSeverity.MAJOR),
+      tuple("java:S1220", null, inputFile.getPath(), IssueSeverity.MINOR),
+      tuple("java:S1481", 3, inputFile.getPath(), IssueSeverity.BLOCKER));
   }
 
   @Test

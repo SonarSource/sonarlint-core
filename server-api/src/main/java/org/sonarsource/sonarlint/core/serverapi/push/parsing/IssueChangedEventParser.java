@@ -23,6 +23,8 @@ import com.google.gson.Gson;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 
@@ -42,8 +44,8 @@ public class IssueChangedEventParser implements EventParser<IssueChangedEvent> {
     }
     return Optional.of(new IssueChangedEvent(
       payload.issues.stream().map(issueChange -> issueChange.issueKey).collect(Collectors.toList()),
-      payload.userSeverity,
-      payload.userType,
+      payload.userSeverity != null ? IssueSeverity.valueOf(payload.userSeverity) : null,
+      payload.userType != null ? RuleType.valueOf(payload.userType) : null,
       payload.resolved));
   }
 

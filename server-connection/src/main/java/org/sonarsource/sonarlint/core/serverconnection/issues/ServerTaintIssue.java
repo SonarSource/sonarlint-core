@@ -17,35 +17,35 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection;
+package org.sonarsource.sonarlint.core.serverconnection.issues;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 
 public class ServerTaintIssue {
   private String key;
   private final boolean resolved;
   private String ruleKey;
   private String message;
-  private String lineHash;
   private String filePath;
   private Instant creationDate;
-  private String severity;
-  private String type;
+  private IssueSeverity severity;
+  private RuleType type;
   private List<Flow> flows = new ArrayList<>();
-  private TextRange textRange;
-  private String codeSnippet;
+  private TextRangeWithHash textRange;
 
-  public ServerTaintIssue(String key, boolean resolved, String ruleKey, String message, String lineHash, String filePath, Instant creationDate, String severity, String type,
-    @Nullable TextRange textRange) {
+  public ServerTaintIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant creationDate, IssueSeverity severity, RuleType type,
+    @Nullable TextRangeWithHash textRange) {
     this.key = key;
     this.resolved = resolved;
     this.ruleKey = ruleKey;
     this.message = message;
-    this.lineHash = lineHash;
     this.filePath = filePath;
     this.creationDate = creationDate;
     this.severity = severity;
@@ -53,15 +53,15 @@ public class ServerTaintIssue {
     this.textRange = textRange;
   }
 
-  public String key() {
+  public String getKey() {
     return key;
   }
 
-  public boolean resolved() {
+  public boolean isResolved() {
     return resolved;
   }
 
-  public String ruleKey() {
+  public String getRuleKey() {
     return ruleKey;
   }
 
@@ -69,37 +69,29 @@ public class ServerTaintIssue {
     return message;
   }
 
-  public String lineHash() {
-    return lineHash;
-  }
-
   public String getFilePath() {
     return filePath;
   }
 
-  public Instant creationDate() {
+  public Instant getCreationDate() {
     return creationDate;
   }
 
-  public String severity() {
+  public IssueSeverity getSeverity() {
     return severity;
   }
 
-  public String type() {
+  public RuleType getType() {
     return type;
   }
 
-  public TextRange getTextRange() {
+  @CheckForNull
+  public TextRangeWithHash getTextRange() {
     return textRange;
   }
 
   public List<Flow> getFlows() {
     return flows;
-  }
-
-  @CheckForNull
-  public String getCodeSnippet() {
-    return codeSnippet;
   }
 
   public ServerTaintIssue setKey(String key) {
@@ -117,11 +109,6 @@ public class ServerTaintIssue {
     return this;
   }
 
-  public ServerTaintIssue setLineHash(String lineHash) {
-    this.lineHash = lineHash;
-    return this;
-  }
-
   public ServerTaintIssue setFilePath(String filePath) {
     this.filePath = filePath;
     return this;
@@ -132,17 +119,17 @@ public class ServerTaintIssue {
     return this;
   }
 
-  public ServerTaintIssue setSeverity(String severity) {
+  public ServerTaintIssue setSeverity(IssueSeverity severity) {
     this.severity = severity;
     return this;
   }
 
-  public ServerTaintIssue setType(String type) {
+  public ServerTaintIssue setType(RuleType type) {
     this.type = type;
     return this;
   }
 
-  public ServerTaintIssue setTextRange(@Nullable TextRange textRange) {
+  public ServerTaintIssue setTextRange(@Nullable TextRangeWithHash textRange) {
     this.textRange = textRange;
     return this;
   }
@@ -150,43 +137,6 @@ public class ServerTaintIssue {
   public ServerTaintIssue setFlows(List<Flow> flows) {
     this.flows = flows;
     return this;
-  }
-
-  public ServerTaintIssue setCodeSnippet(@Nullable String codeSnippet) {
-    this.codeSnippet = codeSnippet;
-    return this;
-  }
-
-  public static class TextRange {
-
-    private final int startLine;
-    private final int startLineOffset;
-    private final int endLine;
-    private final int endLineOffset;
-
-    public TextRange(int startLine, int startLineOffset, int endLine, int endLineOffset) {
-      this.startLine = startLine;
-      this.startLineOffset = startLineOffset;
-      this.endLine = endLine;
-      this.endLineOffset = endLineOffset;
-    }
-
-    public int getStartLine() {
-      return startLine;
-    }
-
-    public int getStartLineOffset() {
-      return startLineOffset;
-    }
-
-    public int getEndLine() {
-      return endLine;
-    }
-
-    public int getEndLineOffset() {
-      return endLineOffset;
-    }
-
   }
 
   public static class Flow {
@@ -204,14 +154,12 @@ public class ServerTaintIssue {
   public static class ServerIssueLocation {
     private final String message;
     private final String filePath;
-    private final String codeSnippet;
-    private final TextRange textRange;
+    private final TextRangeWithHash textRange;
 
-    public ServerIssueLocation(@Nullable String filePath, @Nullable TextRange textRange, @Nullable String message, @Nullable String codeSnippet) {
+    public ServerIssueLocation(@Nullable String filePath, @Nullable TextRangeWithHash textRange, @Nullable String message) {
       this.textRange = textRange;
       this.filePath = filePath;
       this.message = message;
-      this.codeSnippet = codeSnippet;
     }
 
     @CheckForNull
@@ -224,12 +172,7 @@ public class ServerTaintIssue {
     }
 
     @CheckForNull
-    public String getCodeSnippet() {
-      return codeSnippet;
-    }
-
-    @CheckForNull
-    public TextRange getTextRange() {
+    public TextRangeWithHash getTextRange() {
       return textRange;
     }
   }

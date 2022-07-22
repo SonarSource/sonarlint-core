@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Analysis Engine
+ * SonarLint Core - Commons
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,19 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analysis.container.analysis.issue;
+package org.sonarsource.sonarlint.core.commons;
 
-public class TextRangeUtils {
+public enum IssueSeverity {
 
-  private TextRangeUtils() {
-  }
-
-  public static org.sonarsource.sonarlint.core.commons.TextRange convert(org.sonar.api.batch.fs.TextRange analyzerTextRange) {
-    return new org.sonarsource.sonarlint.core.commons.TextRange(
-      analyzerTextRange.start().line(),
-      analyzerTextRange.start().lineOffset(),
-      analyzerTextRange.end().line(),
-      analyzerTextRange.end().lineOffset());
-  }
+  INFO,
+  MINOR,
+  MAJOR,
+  CRITICAL,
+  BLOCKER
 
 }

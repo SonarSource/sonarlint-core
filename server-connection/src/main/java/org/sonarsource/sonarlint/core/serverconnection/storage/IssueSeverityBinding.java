@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Analysis Engine
+ * SonarLint Core - Server Connection
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,19 +17,26 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analysis.container.analysis.issue;
+package org.sonarsource.sonarlint.core.serverconnection.storage;
 
-public class TextRangeUtils {
+import java.io.ByteArrayInputStream;
+import jetbrains.exodus.bindings.BindingUtils;
+import jetbrains.exodus.bindings.ComparableBinding;
+import jetbrains.exodus.util.LightOutputStream;
+import org.jetbrains.annotations.NotNull;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 
-  private TextRangeUtils() {
+public class IssueSeverityBinding extends ComparableBinding {
+
+  @Override
+  public Comparable readObject(@NotNull ByteArrayInputStream stream) {
+    return IssueSeverity.values()[BindingUtils.readInt(stream)];
   }
 
-  public static org.sonarsource.sonarlint.core.commons.TextRange convert(org.sonar.api.batch.fs.TextRange analyzerTextRange) {
-    return new org.sonarsource.sonarlint.core.commons.TextRange(
-      analyzerTextRange.start().line(),
-      analyzerTextRange.start().lineOffset(),
-      analyzerTextRange.end().line(),
-      analyzerTextRange.end().lineOffset());
+  @Override
+  public void writeObject(@NotNull LightOutputStream output, @NotNull Comparable object) {
+    final IssueSeverity cPair = (IssueSeverity) object;
+    output.writeUnsignedInt(cPair.ordinal() ^ 0x80000000);
   }
 
 }

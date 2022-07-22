@@ -21,7 +21,9 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 
 public class ConnectedRuleDetails implements RuleDetails {
 
@@ -29,15 +31,16 @@ public class ConnectedRuleDetails implements RuleDetails {
   private final Language language;
   private final String name;
   private final String htmlDescription;
-  private final String severity;
-  private final String type;
+  private final IssueSeverity defaultSeverity;
+  private final RuleType type;
   private final String extendedDescription;
 
-  public ConnectedRuleDetails(String key, String name, @Nullable String htmlDescription, String severity, @Nullable String type, Language language, String extendedDescription) {
+  public ConnectedRuleDetails(String key, String name, @Nullable String htmlDescription, IssueSeverity defaultSeverity, RuleType type, Language language,
+    String extendedDescription) {
     this.key = key;
     this.name = name;
     this.htmlDescription = htmlDescription;
-    this.severity = severity;
+    this.defaultSeverity = defaultSeverity;
     this.type = type;
     this.language = language;
     this.extendedDescription = extendedDescription;
@@ -64,12 +67,12 @@ public class ConnectedRuleDetails implements RuleDetails {
   }
 
   @Override
-  public String getSeverity() {
-    return severity;
+  public IssueSeverity getDefaultSeverity() {
+    return defaultSeverity;
   }
 
   @Override
-  public String getType() {
+  public RuleType getType() {
     return type;
   }
 

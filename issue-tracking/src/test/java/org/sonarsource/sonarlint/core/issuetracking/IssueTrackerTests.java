@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -40,18 +41,18 @@ class IssueTrackerTests {
 
   // note: these mock trackables are used by many test cases,
   // with their line numbers to distinguish their identities.
-  private final Trackable trackable1 = builder().line(1).build();
-  private final Trackable trackable2 = builder().line(2).build();
+  private final Trackable trackable1 = builder().line(1).textRange(new TextRangeWithHash(1, 2, 3, 4, "md51")).build();
+  private final Trackable trackable2 = builder().line(2).textRange(new TextRangeWithHash(2, 2, 3, 4, "md52")).build();
 
   static class MockTrackableBuilder {
     String ruleKey = "";
     Integer line = null;
     String message = "";
-    Integer textRangeHash = null;
-    Integer lineHash = null;
+    String lineHash = null;
     Long creationDate = null;
     String serverIssueKey = null;
     boolean resolved = false;
+    TextRangeWithHash textRange = null;
 
     static int counter = Integer.MIN_VALUE;
 
@@ -70,12 +71,7 @@ class IssueTrackerTests {
       return this;
     }
 
-    MockTrackableBuilder textRangeHash(Integer textRangeHash) {
-      this.textRangeHash = textRangeHash;
-      return this;
-    }
-
-    MockTrackableBuilder lineHash(Integer lineHash) {
+    MockTrackableBuilder lineHash(String lineHash) {
       this.lineHash = lineHash;
       return this;
     }
@@ -95,38 +91,40 @@ class IssueTrackerTests {
       return this;
     }
 
+    MockTrackableBuilder textRange(TextRangeWithHash textRange) {
+      this.textRange = textRange;
+      return this;
+    }
+
     MockTrackableBuilder copy() {
       return builder()
         .line(line)
         .message(message)
-        .textRangeHash(textRangeHash)
         .lineHash(lineHash)
         .ruleKey(ruleKey)
         .creationDate(creationDate)
         .serverIssueKey(serverIssueKey)
+        .textRange(textRange)
         .resolved(resolved);
     }
 
     Trackable build() {
       var mock = mock(Trackable.class);
       when(mock.getLine()).thenReturn(line);
-      when(mock.getTextRangeHash()).thenReturn(textRangeHash);
       when(mock.getLineHash()).thenReturn(lineHash);
       when(mock.getRuleKey()).thenReturn(ruleKey);
       when(mock.getMessage()).thenReturn(message);
       when(mock.getCreationDate()).thenReturn(creationDate);
       when(mock.getServerIssueKey()).thenReturn(serverIssueKey);
       when(mock.isResolved()).thenReturn(resolved);
+      when(mock.getTextRange()).thenReturn(textRange);
 
       // ensure default unique values for fields used by matchers (except server issue key)
       if (line == null) {
         when(mock.getLine()).thenReturn(counter++);
       }
       if (lineHash == null) {
-        when(mock.getLineHash()).thenReturn(counter++);
-      }
-      if (textRangeHash == null) {
-        when(mock.getTextRangeHash()).thenReturn(counter++);
+        when(mock.getLineHash()).thenReturn("lineHash" + counter++);
       }
       if (message.isEmpty()) {
         when(mock.getMessage()).thenReturn("m" + (counter++));
@@ -195,8 +193,7 @@ class IssueTrackerTests {
     var base = builder()
       .line(7)
       .message("dummy message")
-      .textRangeHash(11)
-      .lineHash(13)
+      .lineHash("md5")
       .ruleKey(ruleKey)
       .serverIssueKey("dummy serverIssueKey")
       .creationDate(17L);
@@ -223,27 +220,26 @@ class IssueTrackerTests {
   void should_match_by_line_and_text_range_hash() {
     var base = builder().ruleKey("dummy ruleKey");
     var line = 7;
-    var textRangeHash = 11;
-    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().line(line).textRangeHash(textRangeHash).build()));
+    tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().line(line).textRange(new TextRangeWithHash(1, 2, 3, 4, "md5")).build()));
 
-    var differentLine = base.line(line + 1).textRangeHash(textRangeHash).build();
-    var differentTextRangeHash = base.line(line).textRangeHash(textRangeHash + 1).build();
-    var differentBoth = base.line(line + 1).textRangeHash(textRangeHash + 1).build();
-    var same = base.line(line).textRangeHash(textRangeHash).build();
+    var differentLine = base.line(line + 1).textRange(new TextRangeWithHash(1, 2, 3, 4, "md5")).build();
+    var differentTextRangeHash = base.line(line).textRange(new TextRangeWithHash(1, 2, 3, 4, "md6")).build();
+    var differentBoth = base.line(line + 1).textRange(new TextRangeWithHash(1, 2, 3, 4, "md6")).build();
+    var same = base.line(line).textRange(new TextRangeWithHash(1, 2, 3, 4, "md5")).build();
     tracker.matchAndTrackAsNew(file1, Arrays.asList(differentLine, differentTextRangeHash, differentBoth, same));
 
     Collection<Trackable> current = cache.getCurrentTrackables(file1);
     assertThat(current).hasSize(4);
     assertThat(current)
-      .extracting("line", "textRangeHash")
-      .containsOnlyOnce(tuple(line, textRangeHash));
+      .extracting("line", "textRange.hash")
+      .containsOnlyOnce(tuple(line, "md5"));
   }
 
   @Test
   void should_match_by_line_and_line_hash() {
     var base = builder().ruleKey("dummy ruleKey");
     var line = 7;
-    var lineHash = 11;
+    var lineHash = "11";
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().line(line).lineHash(lineHash).build()));
 
     var differentLine = base.line(line + 1).lineHash(lineHash).build();
@@ -281,7 +277,7 @@ class IssueTrackerTests {
 
   @Test
   void should_match_by_text_range_hash() {
-    var base = builder().ruleKey("dummy ruleKey").textRangeHash(11);
+    var base = builder().ruleKey("dummy ruleKey").textRange(new TextRangeWithHash(1, 2, 3, 4, "md5"));
     var newLine = 7;
 
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().line(newLine + 3).build()));
@@ -294,7 +290,7 @@ class IssueTrackerTests {
 
   @Test
   void should_match_by_line_hash() {
-    var base = builder().ruleKey("dummy ruleKey").lineHash(11);
+    var base = builder().ruleKey("dummy ruleKey").lineHash("md5");
     var newLine = 7;
 
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().line(newLine + 3).build()));
@@ -307,12 +303,12 @@ class IssueTrackerTests {
 
   @Test
   void should_match_local_issues_by_line_hash() {
-    var lineContent = "dummy content";
+    var lineHash = "dummy content";
     var newLine = 7;
 
-    var trackable = builder().line(newLine + 3).lineHash(lineContent.hashCode()).build();
-    var movedTrackable = builder().line(newLine).lineHash(lineContent.hashCode()).build();
-    var nonMatchingTrackable = builder().lineHash((lineContent + "x").hashCode()).build();
+    var trackable = builder().line(newLine + 3).lineHash(lineHash).build();
+    var movedTrackable = builder().line(newLine).lineHash(lineHash).build();
+    var nonMatchingTrackable = builder().lineHash((lineHash + "x")).build();
 
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(trackable));
     tracker.matchAndTrackAsNew(file1, Arrays.asList(movedTrackable, nonMatchingTrackable));
@@ -337,12 +333,12 @@ class IssueTrackerTests {
   void should_match_server_issues_by_line_hash() {
     var ruleKey = "dummy ruleKey";
     var message = "dummy message";
-    var lineContent = "dummy content";
+    var lineHash = "md5";
     var newLine = 7;
 
-    var trackable = builder().ruleKey(ruleKey).message(message).line(newLine).lineHash(lineContent.hashCode()).build();
-    var movedTrackable = builder().line(newLine).lineHash(lineContent.hashCode()).build();
-    var nonMatchingTrackable = builder().lineHash((lineContent + "x").hashCode()).build();
+    var trackable = builder().ruleKey(ruleKey).message(message).line(newLine).lineHash(lineHash).build();
+    var movedTrackable = builder().line(newLine).lineHash(lineHash).build();
+    var nonMatchingTrackable = builder().lineHash((lineHash + "x")).build();
 
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(trackable));
     tracker.matchAndTrackAsBase(file1, Arrays.asList(movedTrackable, nonMatchingTrackable));
@@ -370,7 +366,7 @@ class IssueTrackerTests {
 
   @Test
   void should_preserve_creation_date() {
-    var base = builder().ruleKey("dummy ruleKey").line(7).textRangeHash(11);
+    var base = builder().ruleKey("dummy ruleKey").line(7);
     var creationDate = 123L;
 
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(base.copy().creationDate(creationDate).build()));
@@ -384,7 +380,7 @@ class IssueTrackerTests {
   @Test
   void should_preserve_creation_date_of_leaked_issues_in_connected_mode() {
     Long leakCreationDate = 1L;
-    var leak = builder().ruleKey("dummy ruleKey").line(7).textRangeHash(11).creationDate(leakCreationDate).build();
+    var leak = builder().ruleKey("dummy ruleKey").line(7).creationDate(leakCreationDate).build();
 
     // fake first analysis, trackable has a date
     tracker.matchAndTrackAsNew(file1, Collections.singletonList(leak));
@@ -397,7 +393,7 @@ class IssueTrackerTests {
 
   @Test
   void should_preserve_server_issue_details() {
-    var base = builder().ruleKey("dummy ruleKey").line(7).textRangeHash(11);
+    var base = builder().ruleKey("dummy ruleKey").line(7);
     var serverIssueKey = "dummy serverIssueKey";
     var resolved = true;
 
@@ -411,7 +407,7 @@ class IssueTrackerTests {
 
   @Test
   void should_drop_server_issue_reference_if_gone() {
-    var base = builder().ruleKey("dummy ruleKey").line(7).textRangeHash(11);
+    var base = builder().ruleKey("dummy ruleKey").line(7);
     var serverIssueKey = "dummy serverIssueKey";
     var resolved = true;
 

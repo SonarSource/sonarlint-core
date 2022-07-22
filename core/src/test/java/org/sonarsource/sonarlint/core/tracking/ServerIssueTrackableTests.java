@@ -44,7 +44,7 @@ class ServerIssueTrackableTests {
   @Test
   void should_delegate_fields_to_server_issue() {
     assertThat(trackable.getMessage()).isEqualTo(serverIssue.getMessage());
-    assertThat(trackable.getLineHash()).isEqualTo(serverIssue.getLineHash().hashCode());
+    assertThat(trackable.getLineHash()).isEqualTo(serverIssue.getLineHash());
     assertThat(trackable.getRuleKey()).isEqualTo(serverIssue.getRuleKey());
     assertThat(trackable.isResolved()).isTrue();
     assertThat(trackable.getSeverity()).isEqualTo(serverIssue.getUserSeverity());

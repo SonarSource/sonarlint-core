@@ -19,9 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.analysis.api.TextRange;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 
 import static org.sonarsource.sonarlint.core.tracking.DigestUtils.digest;
@@ -29,9 +32,8 @@ import static org.sonarsource.sonarlint.core.tracking.DigestUtils.digest;
 public class IssueTrackable implements Trackable<Issue> {
 
   private final Issue issue;
-  private final org.sonarsource.sonarlint.core.issuetracking.TextRange textRange;
-  private final Integer textRangeHash;
-  private final Integer lineHash;
+  private final TextRangeWithHash textRange;
+  private final String lineHash;
 
   public IssueTrackable(Issue issue) {
     this(issue, null, null);
@@ -41,18 +43,18 @@ public class IssueTrackable implements Trackable<Issue> {
     @Nullable String lineContent) {
     this.issue = issue;
     var fromAnalysis = issue.getTextRange();
-    this.textRange = fromAnalysis != null ? convertToTrackingTextRange(fromAnalysis) : null;
-    this.textRangeHash = hashOrNull(textRangeContent);
+    this.textRange = fromAnalysis != null ? convertToTrackingTextRange(fromAnalysis, hashOrNull(textRangeContent)) : null;
     this.lineHash = hashOrNull(lineContent);
   }
 
-  static org.sonarsource.sonarlint.core.issuetracking.TextRange convertToTrackingTextRange(TextRange fromAnalysis) {
-    return new org.sonarsource.sonarlint.core.issuetracking.TextRange(fromAnalysis.getStartLine(), fromAnalysis.getStartLineOffset(), fromAnalysis.getEndLine(),
-      fromAnalysis.getEndLineOffset());
+  static TextRangeWithHash convertToTrackingTextRange(org.sonarsource.sonarlint.core.commons.TextRange fromAnalysis, String hash) {
+    return new TextRangeWithHash(fromAnalysis.getStartLine(), fromAnalysis.getStartLineOffset(), fromAnalysis.getEndLine(),
+      fromAnalysis.getEndLineOffset(), hash != null ? hash : "");
   }
 
-  private static Integer hashOrNull(@Nullable String content) {
-    return content != null ? digest(content).hashCode() : null;
+  @CheckForNull
+  private static String hashOrNull(@Nullable String content) {
+    return content != null ? digest(content) : null;
   }
 
   @Override
@@ -66,12 +68,12 @@ public class IssueTrackable implements Trackable<Issue> {
   }
 
   @Override
-  public String getSeverity() {
+  public IssueSeverity getSeverity() {
     return issue.getSeverity();
   }
 
   @Override
-  public String getType() {
+  public RuleType getType() {
     return issue.getType();
   }
 
@@ -86,18 +88,13 @@ public class IssueTrackable implements Trackable<Issue> {
   }
 
   @Override
-  public Integer getLineHash() {
+  public String getLineHash() {
     return lineHash;
   }
 
   @Override
-  public org.sonarsource.sonarlint.core.issuetracking.TextRange getTextRange() {
+  public TextRangeWithHash getTextRange() {
     return textRange;
-  }
-
-  @Override
-  public Integer getTextRangeHash() {
-    return textRangeHash;
   }
 
   @Override

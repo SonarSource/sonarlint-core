@@ -21,13 +21,16 @@ package org.sonarsource.sonarlint.core.serverconnection.issues;
 
 import java.time.Instant;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 
 /**
  * Issues reported at file level.
  */
 public class FileLevelServerIssue extends ServerIssue<FileLevelServerIssue> {
 
-  public FileLevelServerIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant creationDate, @Nullable String userSeverity, String type) {
+  public FileLevelServerIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant creationDate, @Nullable IssueSeverity userSeverity,
+    RuleType type) {
     super(key, resolved, ruleKey, message, filePath, creationDate, userSeverity, type);
   }
 

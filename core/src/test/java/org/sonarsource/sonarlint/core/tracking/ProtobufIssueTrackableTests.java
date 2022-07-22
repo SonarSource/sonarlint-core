@@ -32,7 +32,7 @@ class ProtobufIssueTrackableTests {
 
   private final Sonarlint.Issues.Issue completeIssue = Sonarlint.Issues.Issue.newBuilder()
     .setMessage("message")
-    .setChecksum(7)
+    .setLineHash("ab12")
     .setRuleKey("rule key")
     .setResolved(true)
     .build();
@@ -55,11 +55,6 @@ class ProtobufIssueTrackableTests {
   }
 
   @Test
-  void should_have_null_textRangeHash() {
-    assertThat(completeTrackable.getTextRangeHash()).isNull();
-  }
-
-  @Test
   void should_not_have_severity() {
     assertThrows(UnsupportedOperationException.class, () -> completeTrackable.getSeverity());
   }
@@ -72,7 +67,7 @@ class ProtobufIssueTrackableTests {
   @Test
   void should_delegate_fields_to_protobuf_issue() {
     assertThat(completeTrackable.getMessage()).isEqualTo(completeIssue.getMessage());
-    assertThat(completeTrackable.getLineHash()).isEqualTo(completeIssue.getChecksum());
+    assertThat(completeTrackable.getLineHash()).isEqualTo(completeIssue.getLineHash());
     assertThat(completeTrackable.getRuleKey()).isEqualTo(completeIssue.getRuleKey());
     assertThat(completeTrackable.isResolved()).isEqualTo(completeIssue.getResolved());
   }

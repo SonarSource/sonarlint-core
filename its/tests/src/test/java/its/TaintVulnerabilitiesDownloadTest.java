@@ -62,6 +62,7 @@ import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 
 import static its.tools.ItUtils.SONAR_VERSION;
@@ -121,24 +122,31 @@ public class TaintVulnerabilitiesDownloadTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void download_all_issues_include_taint_vulnerabilities_and_code_snippets() {
+  public void download_taint_vulnerabilities() {
     ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "");
 
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
 
-    // Reload file issues to get taint
-    engine.downloadAllServerIssuesForFile(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding, "src/main/java/foo/DbHelper.java", "master", null);
+    // For SQ 9.6+
+    engine.syncServerTaintIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, "master", null);
+    engine.downloadAllServerTaintIssuesForFile(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding, "src/main/java/foo/DbHelper.java", "master", null);
 
     var sinkIssues = engine.getServerTaintIssues(projectBinding, "master", "src/main/java/foo/DbHelper.java");
+
     assertThat(sinkIssues).hasSize(1);
 
     var taintIssue = sinkIssues.get(0);
-    assertThat(taintIssue.getCodeSnippet()).isEqualTo("statement.executeQuery(query)");
+    assertThat(taintIssue.getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
+
+    // FIXME https://sonarsource.atlassian.net/browse/SONAR-16371?focusedCommentId=121188
+    // assertThat(taintIssue.getSeverity()).isEqualTo(IssueSeverity.MAJOR);
+
+    assertThat(taintIssue.getType()).isEqualTo(RuleType.VULNERABILITY);
     assertThat(taintIssue.getFlows()).isNotEmpty();
     var flow = taintIssue.getFlows().get(0);
     assertThat(flow.locations()).isNotEmpty();
-    assertThat(flow.locations().get(0).getCodeSnippet()).isEqualTo("statement.executeQuery(query)");
-    assertThat(flow.locations().get(flow.locations().size() - 1).getCodeSnippet()).isIn("request.getParameter(\"user\")", "request.getParameter(\"pass\")");
+    assertThat(flow.locations().get(0).getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
+    assertThat(flow.locations().get(flow.locations().size() - 1).getTextRange().getHash()).isIn(hash("request.getParameter(\"user\")"), hash("request.getParameter(\"pass\")"));
   }
 
   private void analyzeMavenProject(String projectDirName) {

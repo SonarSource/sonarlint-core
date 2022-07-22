@@ -24,17 +24,19 @@ import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.Flow;
 import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 
 public final class DefaultClientIssue implements Issue {
-  private final String severity;
-  private final String type;
+  private final IssueSeverity severity;
+  private final RuleType type;
   private final String ruleKey;
   private final String primaryMessage;
   private final ClientInputFile clientInputFile;
   private final List<Flow> flows;
   private final List<QuickFix> quickFixes;
-  private final org.sonarsource.sonarlint.core.analysis.api.TextRange textRange;
+  private final org.sonarsource.sonarlint.core.commons.TextRange textRange;
 
   public DefaultClientIssue(org.sonarsource.sonarlint.core.analysis.api.Issue i, SonarLintRuleDefinition sonarLintRuleDefinition) {
     this.textRange = i.getTextRange() != null ? i.getTextRange() : null;
@@ -42,12 +44,12 @@ public final class DefaultClientIssue implements Issue {
     this.clientInputFile = i.getInputFile();
     this.flows = i.flows();
     this.quickFixes = i.quickFixes();
-    this.severity = sonarLintRuleDefinition.getSeverity();
+    this.severity = sonarLintRuleDefinition.getDefaultSeverity();
     this.type = sonarLintRuleDefinition.getType();
     this.ruleKey = sonarLintRuleDefinition.getKey();
   }
 
-  public DefaultClientIssue(org.sonarsource.sonarlint.core.analysis.api.Issue i, String severity, String type) {
+  public DefaultClientIssue(org.sonarsource.sonarlint.core.analysis.api.Issue i, IssueSeverity severity, RuleType type) {
     this.textRange = i.getTextRange() != null ? i.getTextRange() : null;
     this.primaryMessage = i.getMessage();
     this.clientInputFile = i.getInputFile();
@@ -59,12 +61,12 @@ public final class DefaultClientIssue implements Issue {
   }
 
   @Override
-  public String getSeverity() {
+  public IssueSeverity getSeverity() {
     return severity;
   }
 
   @Override
-  public String getType() {
+  public RuleType getType() {
     return type;
   }
 
@@ -97,7 +99,7 @@ public final class DefaultClientIssue implements Issue {
 
   @CheckForNull
   @Override
-  public org.sonarsource.sonarlint.core.analysis.api.TextRange getTextRange() {
+  public org.sonarsource.sonarlint.core.commons.TextRange getTextRange() {
     return textRange;
   }
 

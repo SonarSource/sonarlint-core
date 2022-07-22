@@ -19,16 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.issuetracking;
 
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
+
 public class AbstractTrackable<G> implements Trackable<G> {
   private final G clientObject;
   protected String ruleKey;
-  protected String severity;
-  protected String type;
+  protected IssueSeverity severity;
+  protected RuleType type;
   protected String message;
   protected Integer line;
-  protected Integer lineHash;
-  protected TextRange textRange;
-  protected Integer textRangeHash;
+  protected String lineHash;
+  protected TextRangeWithHash textRange;
   protected Long creationDate;
   protected String serverIssueKey;
   protected boolean resolved;
@@ -43,7 +46,6 @@ public class AbstractTrackable<G> implements Trackable<G> {
     this.line = trackable.getLine();
     this.lineHash = trackable.getLineHash();
     this.textRange = trackable.getTextRange();
-    this.textRangeHash = trackable.getTextRangeHash();
     this.creationDate = trackable.getCreationDate();
     this.serverIssueKey = trackable.getServerIssueKey();
     this.resolved = trackable.isResolved();
@@ -60,12 +62,12 @@ public class AbstractTrackable<G> implements Trackable<G> {
   }
 
   @Override
-  public String getSeverity() {
+  public IssueSeverity getSeverity() {
     return severity;
   }
 
   @Override
-  public String getType() {
+  public RuleType getType() {
     return type;
   }
 
@@ -80,18 +82,13 @@ public class AbstractTrackable<G> implements Trackable<G> {
   }
 
   @Override
-  public Integer getLineHash() {
+  public String getLineHash() {
     return lineHash;
   }
 
   @Override
-  public TextRange getTextRange() {
+  public TextRangeWithHash getTextRange() {
     return textRange;
-  }
-
-  @Override
-  public Integer getTextRangeHash() {
-    return textRangeHash;
   }
 
   @Override
