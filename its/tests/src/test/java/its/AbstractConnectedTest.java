@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -63,6 +64,8 @@ public abstract class AbstractConnectedTest {
     .build();
 
   private static final OkHttpClient SQ_CLIENT = CLIENT_NO_AUTH.newBuilder()
+    .connectTimeout(30, TimeUnit.SECONDS)
+    .readTimeout(10, TimeUnit.MINUTES)
     .addNetworkInterceptor(new PreemptiveAuthenticatorInterceptor(Credentials.basic(SONARLINT_USER, SONARLINT_PWD)))
     .build();
 
