@@ -37,8 +37,8 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.serverconnection.DownloadException;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
-import org.sonarsource.sonarlint.core.serverconnection.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
 /**
  * Entry point for SonarLint.
@@ -114,13 +114,23 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
   void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable ClientProgressMonitor monitor);
 
   /**
-   * Downloads and stores server issues for a given file. Starting from SQ 9.6, this is only fetching taint vulnerabilities as issues updates are coming by SSE.
+   * Downloads and stores server issues for a given file. Starting from SQ 9.6, this is noop as issues updates are coming by SSE.
    *
    * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, boolean, String, ClientProgressMonitor)})
    * @param ideFilePath    relative to the project in the IDE.
    * @throws DownloadException if it fails to download
    */
   void downloadAllServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName,
+    @Nullable ClientProgressMonitor monitor);
+
+  /**
+   * Downloads and stores server taint issues for a given file. Starting from SQ 9.6, this is noop as taint issues updates are coming by SSE.
+   *
+   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, boolean, String, ClientProgressMonitor)})
+   * @param ideFilePath    relative to the project in the IDE.
+   * @throws DownloadException if it fails to download
+   */
+  void downloadAllServerTaintIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName,
     @Nullable ClientProgressMonitor monitor);
 
   /**
@@ -138,6 +148,14 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @param projectKey   key of the project
    */
   void syncServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor);
+
+  /**
+   * Sync server taint issues incrementally for a given project (will only work for supported servers).
+   *
+   * @param endpoint from which to download issues
+   * @param projectKey   key of the project
+   */
+  void syncServerTaintIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor);
 
   /**
    * Get a list of files that are excluded from analysis, out of the provided files.

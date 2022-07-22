@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import testutils.InMemoryIssueStore;
@@ -53,24 +55,24 @@ class UpdateStorageOnIssueChangedTests {
 
   @Test
   void should_store_issue_with_updated_severity() {
-    serverIssueStore.replaceAllIssuesOfProject("projectKey", "branch", List.of(aServerIssue().setKey("key1").setUserSeverity("MAJOR")));
+    serverIssueStore.replaceAllIssuesOfProject("projectKey", "branch", List.of(aServerIssue().setKey("key1").setUserSeverity(IssueSeverity.MAJOR)));
 
-    handler.handle(new IssueChangedEvent(List.of("key1"), "MINOR", null, null));
+    handler.handle(new IssueChangedEvent(List.of("key1"), IssueSeverity.MINOR, null, null));
 
     assertThat(serverIssueStore.load("projectKey", "branch", "file/path"))
       .extracting(ServerIssue::getUserSeverity)
-      .containsOnly("MINOR");
+      .containsOnly(IssueSeverity.MINOR);
   }
 
   @Test
   void should_store_issue_with_updated_type() {
-    serverIssueStore.replaceAllIssuesOfProject("projectKey", "branch", List.of(aServerIssue().setKey("key1").setType("VULNERABILITY")));
+    serverIssueStore.replaceAllIssuesOfProject("projectKey", "branch", List.of(aServerIssue().setKey("key1").setType(RuleType.VULNERABILITY)));
 
-    handler.handle(new IssueChangedEvent(List.of("key1"), null, "BUG", null));
+    handler.handle(new IssueChangedEvent(List.of("key1"), null, RuleType.BUG, null));
 
     assertThat(serverIssueStore.load("projectKey", "branch", "file/path"))
       .extracting(ServerIssue::getType)
-      .containsOnly("BUG");
+      .containsOnly(RuleType.BUG);
   }
 
 }

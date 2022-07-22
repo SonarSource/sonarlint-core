@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
@@ -122,7 +123,7 @@ public class ProjectStorage {
   private static ServerActiveRule adapt(Sonarlint.RuleSet.ActiveRule rule) {
     return new ServerActiveRule(
       rule.getRuleKey(),
-      rule.getSeverity(),
+      IssueSeverity.valueOf(rule.getSeverity()),
       rule.getParamsMap(),
       rule.getTemplateKey());
   }
@@ -144,7 +145,7 @@ public class ProjectStorage {
   private static Sonarlint.RuleSet.ActiveRule adapt(ServerActiveRule rule) {
     return Sonarlint.RuleSet.ActiveRule.newBuilder()
       .setRuleKey(rule.getRuleKey())
-      .setSeverity(rule.getSeverity())
+      .setSeverity(rule.getSeverity().name())
       .setTemplateKey(rule.getTemplateKey())
       .putAllParams(rule.getParams())
       .build();

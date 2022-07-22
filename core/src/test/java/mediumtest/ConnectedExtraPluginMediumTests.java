@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import testutils.PluginLocator;
 import testutils.TestUtils;
@@ -95,9 +96,9 @@ class ConnectedExtraPluginMediumTests {
   @Test
   void readRuleDescriptionFromExtraPlugin() throws Exception {
     var ruleDetails = sonarlint.getActiveRuleDetails(null, null, "php:S3334", null).get();
-    assertThat(ruleDetails.getSeverity()).isEqualTo("BLOCKER");
+    assertThat(ruleDetails.getDefaultSeverity()).isEqualTo(IssueSeverity.BLOCKER);
     assertThat(ruleDetails.getExtendedDescription()).isEmpty();
-    assertThat(sonarlint.getActiveRuleDetails(null, null, "php:S3334", JAVA_MODULE_KEY).get().getSeverity()).isEqualTo("BLOCKER");
+    assertThat(sonarlint.getActiveRuleDetails(null, null, "php:S3334", JAVA_MODULE_KEY).get().getDefaultSeverity()).isEqualTo(IssueSeverity.BLOCKER);
   }
 
   @Test
@@ -114,15 +115,15 @@ class ConnectedExtraPluginMediumTests {
       new StoreIssueListener(issues), null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("java:S106", 4, inputFile.getPath(), "MAJOR"),
-      tuple("java:S1220", null, inputFile.getPath(), "MINOR"),
-      tuple("java:S1481", 3, inputFile.getPath(), "MINOR"),
-      tuple("java:S113", null, inputFile.getPath(), "MINOR"),
-      tuple("java:S1228", null, null, "MINOR"),
-      tuple("java:S1106", 1, inputFile.getPath(), "MINOR"),
-      tuple("java:S1106", 2, inputFile.getPath(), "MINOR"),
-      tuple("java:S1451", null, inputFile.getPath(), "BLOCKER"),
-      tuple("java:NoSonar", 5, inputFile.getPath(), "MAJOR"));
+      tuple("java:S106", 4, inputFile.getPath(), IssueSeverity.MAJOR),
+      tuple("java:S1220", null, inputFile.getPath(), IssueSeverity.MINOR),
+      tuple("java:S1481", 3, inputFile.getPath(), IssueSeverity.MINOR),
+      tuple("java:S113", null, inputFile.getPath(), IssueSeverity.MINOR),
+      tuple("java:S1228", null, null, IssueSeverity.MINOR),
+      tuple("java:S1106", 1, inputFile.getPath(), IssueSeverity.MINOR),
+      tuple("java:S1106", 2, inputFile.getPath(), IssueSeverity.MINOR),
+      tuple("java:S1451", null, inputFile.getPath(), IssueSeverity.BLOCKER),
+      tuple("java:NoSonar", 5, inputFile.getPath(), IssueSeverity.MAJOR));
   }
 
   private ClientInputFile prepareJavaInputFile() throws IOException {

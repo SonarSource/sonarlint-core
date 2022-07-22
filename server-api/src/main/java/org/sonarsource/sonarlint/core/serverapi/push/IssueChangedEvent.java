@@ -22,14 +22,16 @@ package org.sonarsource.sonarlint.core.serverapi.push;
 import java.util.List;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 
 public class IssueChangedEvent implements ServerEvent {
   private final List<String> impactedIssueKeys;
-  private final String userSeverity;
-  private final String userType;
+  private final IssueSeverity userSeverity;
+  private final RuleType userType;
   private final Boolean resolved;
 
-  public IssueChangedEvent(List<String> impactedIssueKeys, @Nullable String userSeverity, @Nullable String userType, @Nullable Boolean resolved) {
+  public IssueChangedEvent(List<String> impactedIssueKeys, @Nullable IssueSeverity userSeverity, @Nullable RuleType userType, @Nullable Boolean resolved) {
     this.impactedIssueKeys = impactedIssueKeys;
     this.userSeverity = userSeverity;
     this.userType = userType;
@@ -41,12 +43,12 @@ public class IssueChangedEvent implements ServerEvent {
   }
 
   @CheckForNull
-  public String getUserSeverity() {
+  public IssueSeverity getUserSeverity() {
     return userSeverity;
   }
 
   @CheckForNull
-  public String getUserType() {
+  public RuleType getUserType() {
     return userType;
   }
 

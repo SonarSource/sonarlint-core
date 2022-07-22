@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
@@ -28,19 +26,17 @@ import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonar.scanner.protocol.Constants.Severity;
 import org.sonar.scanner.protocol.input.ScannerInput;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
-import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.Flow;
-import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.Paging;
-import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.TextRange;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.IssueLite;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Location;
-import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
@@ -51,18 +47,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class IssueDownloaderTests {
 
-  private static final String PROJECT_KEY = "project";
-  private static final String FILE_1_KEY = PROJECT_KEY + ":foo/bar/Hello.java";
-  private static final String FILE_2_KEY = PROJECT_KEY + ":foo/bar/Hello2.java";
-  private static final String FILE_3_KEY = PROJECT_KEY + ":foo/bar/Hello3.java";
-
   private static final String DUMMY_KEY = "dummyKey";
 
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
   private ServerApi serverApi;
-
-  private static final ProgressMonitor PROGRESS = new ProgressMonitor(null);
 
   private IssueDownloader underTest;
 
@@ -83,6 +72,9 @@ class IssueDownloaderTests {
       .setLine(1)
       .setCreationDate(123456789L)
       .setPath("foo/bar/Hello.java")
+      .setType("BUG")
+      .setManualSeverity(false)
+      .setSeverity(Severity.BLOCKER)
       .build();
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, response);
@@ -93,10 +85,37 @@ class IssueDownloaderTests {
     var serverIssue = issues.get(0);
     assertThat(serverIssue).isInstanceOf(LineLevelServerIssue.class);
     assertThat(serverIssue.getKey()).isEqualTo("uuid");
+    assertThat(serverIssue.getType()).isEqualTo(RuleType.BUG);
+    assertThat(serverIssue.getUserSeverity()).isNull();
     assertThat(((LineLevelServerIssue) serverIssue).getLineHash()).isEqualTo("hash");
     assertThat(serverIssue.getMessage()).isEqualTo("Primary message");
     assertThat(serverIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
     assertThat(((LineLevelServerIssue) serverIssue).getLine()).isEqualTo(1);
+  }
+
+  @Test
+  void test_download_one_issue_old_batch_ws_with_user_severity() {
+    var response = ScannerInput.ServerIssue.newBuilder()
+      .setKey("uuid")
+      .setRuleRepository("sonarjava")
+      .setRuleKey("S123")
+      .setChecksum("hash")
+      .setMsg("Primary message")
+      .setLine(1)
+      .setCreationDate(123456789L)
+      .setPath("foo/bar/Hello.java")
+      .setType("BUG")
+      .setManualSeverity(true)
+      .setSeverity(Severity.BLOCKER)
+      .build();
+
+    mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, response);
+
+    var issues = underTest.downloadFromBatch(serverApi, DUMMY_KEY, null);
+    assertThat(issues).hasSize(1);
+
+    var serverIssue = issues.get(0);
+    assertThat(serverIssue.getUserSeverity()).isEqualTo(IssueSeverity.BLOCKER);
   }
 
   @Test
@@ -108,6 +127,7 @@ class IssueDownloaderTests {
       .setMsg("Primary message")
       .setCreationDate(123456789L)
       .setPath("foo/bar/Hello.java")
+      .setType("BUG")
       .build();
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, response);
@@ -128,7 +148,7 @@ class IssueDownloaderTests {
     var issue = IssueLite.newBuilder()
       .setKey("uuid")
       .setRuleKey("sonarjava:S123")
-      .setType("BUG")
+      .setType(Common.RuleType.BUG)
       .setMainLocation(Location.newBuilder().setFilePath("foo/bar/Hello.java").setMessage("Primary message")
         .setTextRange(org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.TextRange.newBuilder().setStartLine(1).setStartLineOffset(2).setEndLine(3)
           .setEndLineOffset(4).setHash("hash")))
@@ -147,12 +167,12 @@ class IssueDownloaderTests {
     assertThat(serverIssue.getMessage()).isEqualTo("Primary message");
     assertThat(serverIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
     assertThat(serverIssue.getUserSeverity()).isNull();
-    assertThat(serverIssue.getType()).isEqualTo("BUG");
+    assertThat(serverIssue.getType()).isEqualTo(RuleType.BUG);
     assertThat(((RangeLevelServerIssue) serverIssue).getTextRange().getStartLine()).isEqualTo(1);
     assertThat(((RangeLevelServerIssue) serverIssue).getTextRange().getStartLineOffset()).isEqualTo(2);
     assertThat(((RangeLevelServerIssue) serverIssue).getTextRange().getEndLine()).isEqualTo(3);
     assertThat(((RangeLevelServerIssue) serverIssue).getTextRange().getEndLineOffset()).isEqualTo(4);
-    assertThat(((RangeLevelServerIssue) serverIssue).getRangeHash()).isEqualTo("hash");
+    assertThat(((RangeLevelServerIssue) serverIssue).getTextRange().getHash()).isEqualTo("hash");
   }
 
   @Test
@@ -161,8 +181,8 @@ class IssueDownloaderTests {
     var issue = IssueLite.newBuilder()
       .setKey("uuid")
       .setRuleKey("sonarjava:S123")
-      .setType("BUG")
-      .setUserSeverity("MAJOR")
+      .setType(Common.RuleType.BUG)
+      .setUserSeverity(Common.Severity.MAJOR)
       .setMainLocation(Location.newBuilder().setFilePath("foo/bar/Hello.java").setMessage("Primary message")
         .setTextRange(org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.TextRange.newBuilder().setStartLine(1).setStartLineOffset(2).setEndLine(3)
           .setEndLineOffset(4).setHash("hash")))
@@ -176,7 +196,7 @@ class IssueDownloaderTests {
     assertThat(result.getClosedIssueKeys()).isEmpty();
 
     var serverIssue = result.getChangedIssues().get(0);
-    assertThat(serverIssue.getUserSeverity()).isEqualTo("MAJOR");
+    assertThat(serverIssue.getUserSeverity()).isEqualTo(IssueSeverity.MAJOR);
   }
 
   @Test
@@ -187,6 +207,7 @@ class IssueDownloaderTests {
       .setRuleKey("sonarjava:S123")
       .setMainLocation(Location.newBuilder().setFilePath("foo/bar/Hello.java").setMessage("Primary message"))
       .setCreationDate(123456789L)
+      .setType(Common.RuleType.BUG)
       .build();
 
     mockServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, issue);
@@ -200,6 +221,7 @@ class IssueDownloaderTests {
     assertThat(serverIssue.getKey()).isEqualTo("uuid");
     assertThat(serverIssue.getMessage()).isEqualTo("Primary message");
     assertThat(serverIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(serverIssue.getType()).isEqualTo(RuleType.BUG);
   }
 
   @Test
@@ -257,115 +279,7 @@ class IssueDownloaderTests {
   }
 
   @Test
-  void test_download_issues_fetch_vulnerabilities() {
-    var ruleSearchResponse = Rules.SearchResponse.newBuilder()
-      .setTotal(1)
-      .addRules(Rules.Rule.newBuilder()
-        .setKey("javasecurity:S789"))
-      .build();
-
-    var issueSearchResponse = Issues.SearchWsResponse.newBuilder()
-      .addIssues(Issues.Issue.newBuilder()
-        .setKey("uuid1")
-        .setRule("javasecurity:S789")
-        .setHash("hash2")
-        .setMessage("Primary message 2")
-        .setTextRange(TextRange.newBuilder().setStartLine(2).setStartOffset(7).setEndLine(4).setEndOffset(9))
-        .setCreationDate("2021-01-11T18:17:31+0000")
-        .setComponent(FILE_1_KEY)
-        .addFlows(Flow.newBuilder()
-          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Location 1").setComponent(FILE_1_KEY)
-            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(5).setEndOffset(6)))
-          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Invalid text range").setComponent(FILE_1_KEY)
-            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(7).setEndOffset(6)))
-          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Another file").setComponent(FILE_2_KEY)
-            .setTextRange(TextRange.newBuilder().setStartLine(9).setStartOffset(10).setEndLine(11).setEndOffset(12)))
-          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Location No Text Range").setComponent(FILE_3_KEY)))
-        .addFlows(Flow.newBuilder()
-          .addLocations(Common.Location.newBuilder().setMsg("Flow 2 - Location 1").setComponent(FILE_1_KEY)
-            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(5).setEndOffset(6)))))
-      .addIssues(Issues.Issue.newBuilder()
-        .setKey("uuid2")
-        .setRule("javasecurity:S789")
-        .setMessage("Project level issue")
-        .setCreationDate("2021-01-11T18:17:31+0000")
-        .setComponent(PROJECT_KEY)
-        .addFlows(Flow.newBuilder()
-          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Location 1").setComponent(FILE_1_KEY)
-            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(5).setEndOffset(6)))
-          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Invalid text range").setComponent(FILE_1_KEY)
-            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(7).setEndOffset(6)))
-          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Another file").setComponent(FILE_2_KEY)
-            .setTextRange(TextRange.newBuilder().setStartLine(9).setStartOffset(10).setEndLine(11).setEndOffset(12)))
-          .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Location No Text Range").setComponent(FILE_3_KEY)))
-        .addFlows(Flow.newBuilder()
-          .addLocations(Common.Location.newBuilder().setMsg("Flow 2 - Location 1").setComponent(FILE_1_KEY)
-            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(5).setEndOffset(6)))))
-      .addComponents(Issues.Component.newBuilder()
-        .setKey(PROJECT_KEY))
-      .addComponents(Issues.Component.newBuilder()
-        .setKey(FILE_1_KEY)
-        .setPath("foo/bar/Hello.java"))
-      .addComponents(Issues.Component.newBuilder()
-        .setKey(FILE_2_KEY)
-        .setPath("foo/bar/Hello2.java"))
-      .addComponents(Issues.Component.newBuilder()
-        .setKey(FILE_3_KEY)
-        .setPath("foo/bar/Hello3.java"))
-      .setPaging(Paging.newBuilder()
-        .setPageIndex(1)
-        .setPageSize(500)
-        .setTotal(1))
-      .build();
-
-    mockServer.addProtobufResponse(
-      "/api/rules/search.protobuf?repositories=roslyn.sonaranalyzer.security.cs,javasecurity,jssecurity,phpsecurity,pythonsecurity,tssecurity&f=repo&s=key&ps=500&p=1",
-      ruleSearchResponse);
-    mockServer.addProtobufResponse(
-      "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys=" + DUMMY_KEY + "&rules=javasecurity%3AS789&ps=500&p=1",
-      issueSearchResponse);
-    mockServer.addStringResponse("/api/sources/raw?key=" + URLEncoder.encode(FILE_1_KEY, StandardCharsets.UTF_8), "Even\nBefore My\n\tCode\n  Snippet And\n After");
-
-    var issues = underTest.downloadTaint(serverApi, DUMMY_KEY, null, PROGRESS);
-
-    assertThat(issues).hasSize(1);
-
-    var taintIssue = issues.get(0);
-
-    assertThat(taintIssue.lineHash()).isEqualTo("hash2");
-    assertThat(taintIssue.getMessage()).isEqualTo("Primary message 2");
-    assertThat(taintIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
-    assertThat(taintIssue.getTextRange().getStartLine()).isEqualTo(2);
-    assertThat(taintIssue.getTextRange().getStartLineOffset()).isEqualTo(7);
-    assertThat(taintIssue.getTextRange().getEndLine()).isEqualTo(4);
-    assertThat(taintIssue.getTextRange().getEndLineOffset()).isEqualTo(9);
-    assertThat(taintIssue.getCodeSnippet()).isEqualTo("My\n\tCode\n  Snippet");
-
-    assertThat(taintIssue.getFlows()).hasSize(2);
-    assertThat(taintIssue.getFlows().get(0).locations()).hasSize(4);
-
-    var flowLocation11 = taintIssue.getFlows().get(0).locations().get(0);
-    assertThat(flowLocation11.getFilePath()).isEqualTo("foo/bar/Hello.java");
-    assertThat(flowLocation11.getTextRange().getStartLine()).isEqualTo(5);
-    assertThat(flowLocation11.getTextRange().getStartLineOffset()).isEqualTo(1);
-    assertThat(flowLocation11.getTextRange().getEndLine()).isEqualTo(5);
-    assertThat(flowLocation11.getTextRange().getEndLineOffset()).isEqualTo(6);
-    assertThat(flowLocation11.getCodeSnippet()).isEqualTo("After");
-
-    // Invalid text range
-    assertThat(taintIssue.getFlows().get(0).locations().get(1).getCodeSnippet()).isNull();
-
-    // 404
-    assertThat(taintIssue.getFlows().get(0).locations().get(2).getCodeSnippet()).isNull();
-
-    // No text range
-    assertThat(taintIssue.getFlows().get(0).locations().get(3).getCodeSnippet()).isNull();
-
-    assertThat(taintIssue.getFlows().get(1).locations()).hasSize(1);
-  }
-
-  @Test
-  void test_ignore_failure_when_fetching_taint_vulnerabilities() {
+  void test_ignore_taint_vulnerabilities() {
     var issue1 = ScannerInput.ServerIssue.newBuilder()
       .setRuleRepository("sonarjava")
       .setRuleKey("S123")
@@ -375,6 +289,7 @@ class IssueDownloaderTests {
       .setCreationDate(123456789L)
       .setPath("foo/bar/Hello.java")
       .setModuleKey("project")
+      .setType("BUG")
       .build();
 
     var taint1 = ScannerInput.ServerIssue.newBuilder()
@@ -386,21 +301,10 @@ class IssueDownloaderTests {
       .setCreationDate(123456789L)
       .setPath("foo/bar/Hello2.java")
       .setModuleKey("project")
-      .build();
-
-    var ruleSearchResponse = Rules.SearchResponse.newBuilder()
-      .setTotal(1)
-      .addRules(Rules.Rule.newBuilder()
-        .setKey("javasecurity:S789"))
+      .setType("VULNERABILITY")
       .build();
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, issue1, taint1);
-    mockServer.addProtobufResponse(
-      "/api/rules/search.protobuf?repositories=roslyn.sonaranalyzer.security.cs,javasecurity,jssecurity,phpsecurity,pythonsecurity,tssecurity&f=repo&s=key&ps=500&p=1",
-      ruleSearchResponse);
-    mockServer.addResponse(
-      "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys=" + DUMMY_KEY + "&rules=javasecurity%3AS789&ps=500&p=1",
-      new MockResponse().setResponseCode(404));
 
     var issues = underTest.downloadFromBatch(serverApi, DUMMY_KEY, null);
 
@@ -438,42 +342,12 @@ class IssueDownloaderTests {
       .setRuleRepository("sonarjava")
       .setRuleKey("S123")
       .setPath("src/Foo.java")
+      .setType("BUG")
       .build();
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY + "&branch=branchName", response);
 
     var issues = underTest.downloadFromBatch(serverApi, DUMMY_KEY, "branchName");
-    assertThat(issues).hasSize(1);
-  }
-
-  @Test
-  void test_filter_taint_issues_by_branch_if_branch_parameter_provided() {
-    var response = Issues.SearchWsResponse.newBuilder()
-      .addIssues(Issues.Issue.newBuilder()
-        .setRule("javasecurity:S789")
-        .setCreationDate("2021-01-11T18:17:31+0000")
-        .setComponent(FILE_1_KEY))
-      .addComponents(Issues.Component.newBuilder()
-        .setKey(FILE_1_KEY)
-        .setPath("foo/bar/Hello2.java"))
-      .setPaging(Paging.newBuilder()
-        .setPageIndex(1)
-        .setPageSize(500)
-        .setTotal(1))
-      .build();
-    var ruleSearchResponse = Rules.SearchResponse.newBuilder()
-      .setTotal(1)
-      .addRules(Rules.Rule.newBuilder()
-        .setKey("javasecurity:S789"))
-      .build();
-    mockServer.addProtobufResponse(
-      "/api/rules/search.protobuf?repositories=roslyn.sonaranalyzer.security.cs,javasecurity,jssecurity,phpsecurity,pythonsecurity,tssecurity&f=repo&s=key&ps=500&p=1",
-      ruleSearchResponse);
-    mockServer.addProtobufResponse(
-      "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED&types=VULNERABILITY&componentKeys=dummyKey&rules=javasecurity%3AS789&branch=branchName&ps=500&p=1", response);
-
-    var issues = underTest.downloadTaint(serverApi, DUMMY_KEY, "branchName", PROGRESS);
-
     assertThat(issues).hasSize(1);
   }
 

@@ -23,6 +23,7 @@ import com.google.gson.Gson;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
 
@@ -46,7 +47,7 @@ public class RuleSetChangedEventParser implements EventParser<RuleSetChangedEven
       payload.activatedRules.stream().map(changedRule -> new RuleSetChangedEvent.ActiveRule(
         changedRule.key,
         changedRule.language,
-        changedRule.severity,
+        IssueSeverity.valueOf(changedRule.severity),
         changedRule.params.stream().collect(Collectors.toMap(p -> p.key, p -> p.value)),
         changedRule.templateKey))
         .collect(Collectors.toList()),

@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import mediumtest.fixtures.ProjectStorageFixture;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -39,12 +40,11 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.commons.Language;
-import mediumtest.fixtures.ProjectStorageFixture;
 import testutils.TestUtils;
 
+import static mediumtest.fixtures.StorageFixture.newStorage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static mediumtest.fixtures.StorageFixture.newStorage;
 import static testutils.TestUtils.createNoOpLogOutput;
 
 class ConnectedIssueExclusionsMediumTests {
@@ -101,13 +101,13 @@ class ConnectedIssueExclusionsMediumTests {
     var inputFile1 = prepareJavaInputFile1();
     var inputFile2 = prepareJavaInputFile2();
 
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S106", 5, FILE1_PATH, "MAJOR"),
-      tuple("java:S1220", null, FILE1_PATH, "MINOR"),
-      tuple("java:S1481", 3, FILE1_PATH, "BLOCKER"),
-      tuple("java:S106", 4, FILE2_PATH, "MAJOR"),
-      tuple("java:S1220", null, FILE2_PATH, "MINOR"),
-      tuple("java:S1481", 3, FILE2_PATH, "BLOCKER"));
+    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("java:S106", 5, FILE1_PATH),
+      tuple("java:S1220", null, FILE1_PATH),
+      tuple("java:S1481", 3, FILE1_PATH),
+      tuple("java:S106", 4, FILE2_PATH),
+      tuple("java:S1220", null, FILE2_PATH),
+      tuple("java:S1481", 3, FILE2_PATH));
 
     storeProjectSettings(Map.of("sonar.issue.ignore.multicriteria", "1",
       "sonar.issue.ignore.multicriteria.1.resourceKey", "*",
@@ -117,30 +117,30 @@ class ConnectedIssueExclusionsMediumTests {
     storeProjectSettings(Map.of("sonar.issue.ignore.multicriteria", "1",
       "sonar.issue.ignore.multicriteria.1.resourceKey", "*",
       "sonar.issue.ignore.multicriteria.1.ruleKey", "*S1481"));
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S106", 5, FILE1_PATH, "MAJOR"),
-      tuple("java:S1220", null, FILE1_PATH, "MINOR"),
-      tuple("java:S106", 4, FILE2_PATH, "MAJOR"),
-      tuple("java:S1220", null, FILE2_PATH, "MINOR"));
+    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("java:S106", 5, FILE1_PATH),
+      tuple("java:S1220", null, FILE1_PATH),
+      tuple("java:S106", 4, FILE2_PATH),
+      tuple("java:S1220", null, FILE2_PATH));
 
     storeProjectSettings(Map.of("sonar.issue.ignore.multicriteria", "1",
       "sonar.issue.ignore.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.ignore.multicriteria.1.ruleKey", "*"));
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S106", 5, FILE1_PATH, "MAJOR"),
-      tuple("java:S1220", null, FILE1_PATH, "MINOR"),
-      tuple("java:S1481", 3, FILE1_PATH, "BLOCKER"));
+    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("java:S106", 5, FILE1_PATH),
+      tuple("java:S1220", null, FILE1_PATH),
+      tuple("java:S1481", 3, FILE1_PATH));
 
     storeProjectSettings(Map.of("sonar.issue.ignore.multicriteria", "1,2",
       "sonar.issue.ignore.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.ignore.multicriteria.1.ruleKey", "java:S1481",
       "sonar.issue.ignore.multicriteria.2.resourceKey", FILE1_PATH,
       "sonar.issue.ignore.multicriteria.2.ruleKey", "java:S106"));
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S1220", null, FILE1_PATH, "MINOR"),
-      tuple("java:S1481", 3, FILE1_PATH, "BLOCKER"),
-      tuple("java:S106", 4, FILE2_PATH, "MAJOR"),
-      tuple("java:S1220", null, FILE2_PATH, "MINOR"));
+    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("java:S1220", null, FILE1_PATH),
+      tuple("java:S1481", 3, FILE1_PATH),
+      tuple("java:S106", 4, FILE2_PATH),
+      tuple("java:S1220", null, FILE2_PATH));
   }
 
   @Test
@@ -148,24 +148,24 @@ class ConnectedIssueExclusionsMediumTests {
     var inputFile1 = prepareJavaInputFile1();
     var inputFile2 = prepareJavaInputFile2();
 
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S106", 5, FILE1_PATH, "MAJOR"),
-      tuple("java:S1220", null, FILE1_PATH, "MINOR"),
-      tuple("java:S1481", 3, FILE1_PATH, "BLOCKER"),
-      tuple("java:S106", 4, FILE2_PATH, "MAJOR"),
-      tuple("java:S1220", null, FILE2_PATH, "MINOR"),
-      tuple("java:S1481", 3, FILE2_PATH, "BLOCKER"));
+    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("java:S106", 5, FILE1_PATH),
+      tuple("java:S1220", null, FILE1_PATH),
+      tuple("java:S1481", 3, FILE1_PATH),
+      tuple("java:S106", 4, FILE2_PATH),
+      tuple("java:S1220", null, FILE2_PATH),
+      tuple("java:S1481", 3, FILE2_PATH));
 
     storeProjectSettings(Map.of("sonar.issue.ignore.allfile", "1",
       "sonar.issue.ignore.allfile.1.fileRegexp", "NOSL1"));
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S106", 4, FILE2_PATH, "MAJOR"),
-      tuple("java:S1220", null, FILE2_PATH, "MINOR"),
-      tuple("java:S1481", 3, FILE2_PATH, "BLOCKER"));
+    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("java:S106", 4, FILE2_PATH),
+      tuple("java:S1220", null, FILE2_PATH),
+      tuple("java:S1481", 3, FILE2_PATH));
 
     storeProjectSettings(Map.of("sonar.issue.ignore.allfile", "1",
       "sonar.issue.ignore.allfile.1.fileRegexp", "NOSL(1|2)"));
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).isEmpty();
+    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).isEmpty();
   }
 
   @Test
@@ -173,23 +173,23 @@ class ConnectedIssueExclusionsMediumTests {
     var inputFile1 = prepareJavaInputFile1();
     var inputFile2 = prepareJavaInputFile2();
 
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S106", 5, FILE1_PATH, "MAJOR"),
-      tuple("java:S1220", null, FILE1_PATH, "MINOR"),
-      tuple("java:S1481", 3, FILE1_PATH, "BLOCKER"),
-      tuple("java:S106", 4, FILE2_PATH, "MAJOR"),
-      tuple("java:S1220", null, FILE2_PATH, "MINOR"),
-      tuple("java:S1481", 3, FILE2_PATH, "BLOCKER"));
+    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("java:S106", 5, FILE1_PATH),
+      tuple("java:S1220", null, FILE1_PATH),
+      tuple("java:S1481", 3, FILE1_PATH),
+      tuple("java:S106", 4, FILE2_PATH),
+      tuple("java:S1220", null, FILE2_PATH),
+      tuple("java:S1481", 3, FILE2_PATH));
 
     storeProjectSettings(Map.of("sonar.issue.ignore.block", "1",
       "sonar.issue.ignore.block.1.beginBlockRegexp", "SON.*-OFF",
       "sonar.issue.ignore.block.1.endBlockRegexp", "SON.*-ON"));
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S1220", null, FILE1_PATH, "MINOR"),
-      tuple("java:S1481", 3, FILE1_PATH, "BLOCKER"),
-      tuple("java:S106", 4, FILE2_PATH, "MAJOR"),
-      tuple("java:S1220", null, FILE2_PATH, "MINOR"),
-      tuple("java:S1481", 3, FILE2_PATH, "BLOCKER"));
+    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("java:S1220", null, FILE1_PATH),
+      tuple("java:S1481", 3, FILE1_PATH),
+      tuple("java:S106", 4, FILE2_PATH),
+      tuple("java:S1220", null, FILE2_PATH),
+      tuple("java:S1481", 3, FILE2_PATH));
   }
 
   @Test
@@ -200,42 +200,42 @@ class ConnectedIssueExclusionsMediumTests {
     storeProjectSettings(Map.of("sonar.issue.enforce.multicriteria", "1",
       "sonar.issue.enforce.multicriteria.1.resourceKey", "Foo*.java",
       "sonar.issue.enforce.multicriteria.1.ruleKey", "*"));
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S106", 5, FILE1_PATH, "MAJOR"),
-      tuple("java:S1220", null, FILE1_PATH, "MINOR"),
-      tuple("java:S1481", 3, FILE1_PATH, "BLOCKER"),
-      tuple("java:S106", 4, FILE2_PATH, "MAJOR"),
-      tuple("java:S1220", null, FILE2_PATH, "MINOR"),
-      tuple("java:S1481", 3, FILE2_PATH, "BLOCKER"));
+    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("java:S106", 5, FILE1_PATH),
+      tuple("java:S1220", null, FILE1_PATH),
+      tuple("java:S1481", 3, FILE1_PATH),
+      tuple("java:S106", 4, FILE2_PATH),
+      tuple("java:S1220", null, FILE2_PATH),
+      tuple("java:S1481", 3, FILE2_PATH));
 
     storeProjectSettings(Map.of("sonar.issue.enforce.multicriteria", "1",
       "sonar.issue.enforce.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.enforce.multicriteria.1.ruleKey", "*S1481"));
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S106", 5, FILE1_PATH, "MAJOR"),
-      tuple("java:S1220", null, FILE1_PATH, "MINOR"),
-      tuple("java:S106", 4, FILE2_PATH, "MAJOR"),
-      tuple("java:S1220", null, FILE2_PATH, "MINOR"),
-      tuple("java:S1481", 3, FILE2_PATH, "BLOCKER"));
+    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("java:S106", 5, FILE1_PATH),
+      tuple("java:S1220", null, FILE1_PATH),
+      tuple("java:S106", 4, FILE2_PATH),
+      tuple("java:S1220", null, FILE2_PATH),
+      tuple("java:S1481", 3, FILE2_PATH));
 
     storeProjectSettings(Map.of("sonar.issue.enforce.multicriteria", "1",
       "sonar.issue.enforce.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.enforce.multicriteria.1.ruleKey", "*"));
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S106", 4, FILE2_PATH, "MAJOR"),
-      tuple("java:S1220", null, FILE2_PATH, "MINOR"),
-      tuple("java:S1481", 3, FILE2_PATH, "BLOCKER"));
+    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("java:S106", 4, FILE2_PATH),
+      tuple("java:S1220", null, FILE2_PATH),
+      tuple("java:S1481", 3, FILE2_PATH));
 
     storeProjectSettings(Map.of("sonar.issue.enforce.multicriteria", "1,2",
       "sonar.issue.enforce.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.enforce.multicriteria.1.ruleKey", "java:S1481",
       "sonar.issue.enforce.multicriteria.2.resourceKey", FILE1_PATH,
       "sonar.issue.enforce.multicriteria.2.ruleKey", "java:S106"));
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S106", 5, FILE1_PATH, "MAJOR"),
-      tuple("java:S1220", null, FILE1_PATH, "MINOR"),
-      tuple("java:S1220", null, FILE2_PATH, "MINOR"),
-      tuple("java:S1481", 3, FILE2_PATH, "BLOCKER"));
+    assertThat(collectIssues(inputFile1, inputFile2)).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("java:S106", 5, FILE1_PATH),
+      tuple("java:S1220", null, FILE1_PATH),
+      tuple("java:S1220", null, FILE2_PATH),
+      tuple("java:S1481", 3, FILE2_PATH));
   }
 
   private List<Issue> collectIssues(ClientInputFile inputFile1, ClientInputFile inputFile2) {

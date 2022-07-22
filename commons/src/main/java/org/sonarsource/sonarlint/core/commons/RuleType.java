@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Analysis Engine
+ * SonarLint Core - Commons
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,20 +17,13 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analysis.api;
+package org.sonarsource.sonarlint.core.commons;
 
-import org.junit.jupiter.api.Test;
+public enum RuleType {
 
-import static org.assertj.core.api.Assertions.assertThat;
+  CODE_SMELL,
+  BUG,
+  VULNERABILITY,
+  SECURITY_HOTSPOT
 
-class TextRangeTests {
-  @Test
-  void should_initialize_unknown_fields_with_null_for_line_only_TextRange() {
-    var line = 7;
-    var lineOnlyTextRange = new TextRange(line);
-    assertThat(lineOnlyTextRange.getStartLine()).isEqualTo(line);
-    assertThat(lineOnlyTextRange.getStartLineOffset()).isNull();
-    assertThat(lineOnlyTextRange.getEndLine()).isNull();
-    assertThat(lineOnlyTextRange.getEndLineOffset()).isNull();
-  }
 }

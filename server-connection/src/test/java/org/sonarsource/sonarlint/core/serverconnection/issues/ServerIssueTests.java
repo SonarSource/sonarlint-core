@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core.serverconnection.issues;
 
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerIssue;
@@ -33,11 +35,11 @@ class ServerIssueTests {
     assertThat(issue.setCreationDate(i1).getCreationDate()).isEqualTo(i1);
     assertThat(issue.setFilePath("path1").getFilePath()).isEqualTo("path1");
     assertThat(issue.setKey("key1").getKey()).isEqualTo("key1");
-    assertThat(issue.setUserSeverity("MAJOR").getUserSeverity()).isEqualTo("MAJOR");
+    assertThat(issue.setUserSeverity(IssueSeverity.MAJOR).getUserSeverity()).isEqualTo(IssueSeverity.MAJOR);
     assertThat(issue.setRuleKey("rule1").getRuleKey()).isEqualTo("rule1");
     assertThat(issue.isResolved()).isTrue();
     assertThat(issue.setMessage("msg1").getMessage()).isEqualTo("msg1");
-    assertThat(issue.setType("type").getType()).isEqualTo("type");
+    assertThat(issue.setType(RuleType.BUG).getType()).isEqualTo(RuleType.BUG);
   }
 
 }

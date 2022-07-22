@@ -21,21 +21,22 @@ package org.sonarsource.sonarlint.core.serverapi.rules;
 
 import java.util.Map;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 
 public class ServerActiveRule {
   private final String ruleKey;
-  private final String severity;
+  private final IssueSeverity severity;
   private final Map<String, String> params;
   private final String templateKey;
 
-  public ServerActiveRule(String ruleKey, String severity, Map<String, String> params, @Nullable String templateKey) {
+  public ServerActiveRule(String ruleKey, IssueSeverity severity, Map<String, String> params, @Nullable String templateKey) {
     this.ruleKey = ruleKey;
     this.severity = severity;
     this.params = params;
     this.templateKey = templateKey;
   }
 
-  public String getSeverity() {
+  public IssueSeverity getSeverity() {
     return severity;
   }
 

@@ -27,6 +27,8 @@ import org.sonar.api.rule.RuleKey;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.api.server.rule.RulesDefinition.Param;
 import org.sonar.markdown.Markdown;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.Language;
 
 import static java.util.stream.Collectors.toSet;
@@ -35,8 +37,8 @@ public class SonarLintRuleDefinition {
 
   private final String key;
   private final String name;
-  private final String severity;
-  private final String type;
+  private final IssueSeverity defaultSeverity;
+  private final RuleType type;
   private final String description;
   private final Map<String, SonarLintRuleParamDefinition> params;
   private final Map<String, String> defaultParams = new HashMap<>();
@@ -48,8 +50,8 @@ public class SonarLintRuleDefinition {
   public SonarLintRuleDefinition(RulesDefinition.Rule rule) {
     this.key = RuleKey.of(rule.repository().key(), rule.key()).toString();
     this.name = rule.name();
-    this.severity = rule.severity();
-    this.type = rule.type().toString();
+    this.defaultSeverity = IssueSeverity.valueOf(rule.severity());
+    this.type = RuleType.valueOf(rule.type().name());
     this.description = rule.htmlDescription() != null ? rule.htmlDescription() : Markdown.convertToHtml(rule.markdownDescription());
     this.isActiveByDefault = rule.activatedByDefault();
     this.language = Language.forKey(rule.repository().language()).orElseThrow(() -> new IllegalStateException("Unknown language with key: " + rule.repository().language()));
@@ -76,11 +78,11 @@ public class SonarLintRuleDefinition {
     return name;
   }
 
-  public String getSeverity() {
-    return severity;
+  public IssueSeverity getDefaultSeverity() {
+    return defaultSeverity;
   }
 
-  public String getType() {
+  public RuleType getType() {
     return type;
   }
 

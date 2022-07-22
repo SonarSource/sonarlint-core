@@ -31,11 +31,13 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 import okhttp3.Credentials;
 import okhttp3.OkHttpClient;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
+import org.apache.commons.exec.ExecuteException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -44,6 +46,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 import org.sonarqube.ws.MediaTypes;
+import org.sonarqube.ws.client.GetRequest;
 import org.sonarqube.ws.client.HttpConnector;
 import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
@@ -56,14 +59,18 @@ import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectionValidator;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.awaitility.Awaitility.waitAtMost;
 
 @Category(SonarCloud.class)
 public class SonarCloudTest extends AbstractConnectedTest {
@@ -85,6 +92,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_RUBY = "sample-ruby";
   private static final String PROJECT_KEY_SCALA = "sample-scala";
   private static final String PROJECT_KEY_XML = "sample-xml";
+  private static final String PROJECT_KEY_JAVA_TAINT = "sample-java-taint";
 
   protected static final OkHttpClient SC_CLIENT = CLIENT_NO_AUTH.newBuilder()
     .addNetworkInterceptor(new PreemptiveAuthenticatorInterceptor(Credentials.basic(SONARCLOUD_USER, SONARCLOUD_PASSWORD)))
@@ -120,6 +128,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
     restoreProfile("ruby-sonarlint.xml");
     restoreProfile("scala-sonarlint.xml");
     restoreProfile("xml-sonarlint.xml");
+    restoreProfile("java-sonarlint-with-taint.xml");
 
     provisionProject(PROJECT_KEY_JAVA, "Sample Java");
     provisionProject(PROJECT_KEY_JAVA_PACKAGE, "Sample Java Package");
@@ -133,6 +142,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
     provisionProject(PROJECT_KEY_KOTLIN, "Sample Kotlin");
     provisionProject(PROJECT_KEY_SCALA, "Sample Scala");
     provisionProject(PROJECT_KEY_XML, "Sample XML");
+    provisionProject(PROJECT_KEY_JAVA_TAINT, "Java With Taint Vulnerabilities");
 
     associateProjectToQualityProfile(PROJECT_KEY_JAVA, "java", "SonarLint IT Java");
     associateProjectToQualityProfile(PROJECT_KEY_JAVA_PACKAGE, "java", "SonarLint IT Java Package");
@@ -146,14 +156,12 @@ public class SonarCloudTest extends AbstractConnectedTest {
     associateProjectToQualityProfile(PROJECT_KEY_KOTLIN, "kotlin", "SonarLint IT Kotlin");
     associateProjectToQualityProfile(PROJECT_KEY_SCALA, "scala", "SonarLint IT Scala");
     associateProjectToQualityProfile(PROJECT_KEY_XML, "xml", "SonarLint IT XML");
+    associateProjectToQualityProfile(PROJECT_KEY_JAVA_TAINT, "java", "SonarLint Taint Java");
 
     // Build project to have bytecode
-    var line = "mvn clean compile";
-    var cmdLine = CommandLine.parse(line);
-    var executor = new DefaultExecutor();
-    executor.setWorkingDirectory(new File("projects/sample-java"));
-    var exitValue = executor.execute(cmdLine);
-    assertThat(exitValue).isZero();
+    runMaven(Paths.get("projects/sample-java"), "clean", "compile");
+
+    analyzeMavenProject(projectKey(PROJECT_KEY_JAVA_TAINT), PROJECT_KEY_JAVA_TAINT);
 
     Map<String, String> globalProps = new HashMap<>();
     globalProps.put("sonar.global.label", "It works");
@@ -189,7 +197,8 @@ public class SonarCloudTest extends AbstractConnectedTest {
       projectKey(PROJECT_KEY_KOTLIN),
       projectKey(PROJECT_KEY_RUBY),
       projectKey(PROJECT_KEY_SCALA),
-      projectKey(PROJECT_KEY_XML));
+      projectKey(PROJECT_KEY_XML),
+      projectKey(PROJECT_KEY_JAVA_TAINT));
 
     ALL_PROJECTS.forEach(p -> engine.updateProject(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), p, null));
     engine.sync(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), ALL_PROJECTS, null);
@@ -478,6 +487,29 @@ public class SonarCloudTest extends AbstractConnectedTest {
         .isFalse();
   }
 
+  @Test
+  public void download_taint_vulnerabilities_for_file() throws Exception {
+
+    ProjectBinding projectBinding = new ProjectBinding(projectKey(PROJECT_KEY_JAVA_TAINT), "", "");
+
+    engine.downloadAllServerTaintIssuesForFile(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), projectBinding, "src/main/java/foo/DbHelper.java", "master",
+      null);
+
+    var sinkIssues = engine.getServerTaintIssues(projectBinding, "master", "src/main/java/foo/DbHelper.java");
+
+    assertThat(sinkIssues).hasSize(1);
+
+    var taintIssue = sinkIssues.get(0);
+    assertThat(taintIssue.getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
+    assertThat(taintIssue.getSeverity()).isEqualTo(IssueSeverity.MAJOR);
+    assertThat(taintIssue.getType()).isEqualTo(RuleType.VULNERABILITY);
+    assertThat(taintIssue.getFlows()).isNotEmpty();
+    var flow = taintIssue.getFlows().get(0);
+    assertThat(flow.locations()).isNotEmpty();
+    assertThat(flow.locations().get(0).getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
+    assertThat(flow.locations().get(flow.locations().size() - 1).getTextRange().getHash()).isIn(hash("request.getParameter(\"user\")"), hash("request.getParameter(\"pass\")"));
+  }
+
   private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {
     adminWsClient.settings().set(new SetRequest()
       .setKey(key)
@@ -498,5 +530,31 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   private static EndpointParams sonarcloudEndpoint(@Nullable String orgKey) {
     return endpointParams(SONARCLOUD_STAGING_URL, true, orgKey);
+  }
+
+  private static void analyzeMavenProject(String projectKey, String projectDirName) throws ExecuteException, IOException {
+    var projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
+    runMaven(projectDir, "clean", "package", "sonar:sonar",
+      "-Dsonar.projectKey=" + projectKey,
+      "-Dsonar.host.url=" + SONARCLOUD_STAGING_URL,
+      "-Dsonar.organization=" + SONARCLOUD_ORGANIZATION,
+      "-Dsonar.login=" + SONARCLOUD_USER,
+      "-Dsonar.password=" + SONARCLOUD_PASSWORD);
+
+    waitAtMost(1, TimeUnit.MINUTES).until(() -> {
+      var request = new GetRequest("api/analysis_reports/is_queue_empty");
+      try (var response = adminWsClient.wsConnector().call(request)) {
+        return "true".equals(response.content());
+      }
+    });
+  }
+
+  private static void runMaven(Path workDir, String... args) throws ExecuteException, IOException {
+    var cmdLine = CommandLine.parse("mvn");
+    cmdLine.addArguments(args);
+    var executor = new DefaultExecutor();
+    executor.setWorkingDirectory(workDir.toFile());
+    var exitValue = executor.execute(cmdLine);
+    assertThat(exitValue).isZero();
   }
 }

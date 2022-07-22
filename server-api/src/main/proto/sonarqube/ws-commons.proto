@@ -77,7 +77,7 @@ message Location {
 }
 
 enum RuleType {
-  // Zero is required in order to not get MAINTAINABILITY as default value
+  // Zero is required in order to not get CODE_SMELL as default value
   // See http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
   UNKNOWN = 0;
 

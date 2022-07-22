@@ -37,7 +37,7 @@ import java.util.function.Supplier;
 public class Tracker<R extends Trackable, B extends Trackable> {
 
   public Tracking<R, B> track(Supplier<Collection<R>> rawTrackableSupplier, Supplier<Collection<B>> baseTrackableSupplier) {
-    var tracking = new Tracking<R, B>(rawTrackableSupplier, baseTrackableSupplier);
+    var tracking = new Tracking<>(rawTrackableSupplier, baseTrackableSupplier);
 
     // 1. match issues with same server issue key
     match(tracking, ServerIssueSearchKeyFactory.INSTANCE);
@@ -102,13 +102,14 @@ public class Tracker<R extends Trackable, B extends Trackable> {
 
   private static class LineAndTextRangeHashKey implements SearchKey {
     private final String ruleKey;
-    private final Integer textRangeHash;
+    private final String textRangeHash;
     private final Integer line;
 
     LineAndTextRangeHashKey(Trackable trackable) {
       this.ruleKey = trackable.getRuleKey();
       this.line = trackable.getLine();
-      this.textRangeHash = trackable.getTextRangeHash();
+      var textRange = trackable.getTextRange();
+      this.textRangeHash = textRange != null ? textRange.getHash() : "";
     }
 
     // note: the design of the enclosing caller ensures that 'o' is of the correct class and not null
@@ -142,7 +143,7 @@ public class Tracker<R extends Trackable, B extends Trackable> {
   private static class LineAndLineHashKey implements SearchKey {
     private final String ruleKey;
     private final Integer line;
-    private final Integer lineHash;
+    private final String lineHash;
 
     LineAndLineHashKey(Trackable trackable) {
       this.ruleKey = trackable.getRuleKey();
@@ -180,7 +181,7 @@ public class Tracker<R extends Trackable, B extends Trackable> {
 
   private static class LineHashKey implements SearchKey {
     private final String ruleKey;
-    private final Integer lineHash;
+    private final String lineHash;
 
     LineHashKey(Trackable trackable) {
       this.ruleKey = trackable.getRuleKey();
@@ -216,12 +217,13 @@ public class Tracker<R extends Trackable, B extends Trackable> {
   private static class TextRangeHashAndMessageKey implements SearchKey {
     private final String ruleKey;
     private final String message;
-    private final Integer textRangeHash;
+    private final String textRangeHash;
 
     TextRangeHashAndMessageKey(Trackable trackable) {
       this.ruleKey = trackable.getRuleKey();
       this.message = trackable.getMessage();
-      this.textRangeHash = trackable.getTextRangeHash();
+      var textRange = trackable.getTextRange();
+      this.textRangeHash = textRange != null ? textRange.getHash() : null;
     }
 
     // note: the design of the enclosing caller ensures that 'o' is of the correct class and not null
@@ -293,11 +295,12 @@ public class Tracker<R extends Trackable, B extends Trackable> {
 
   private static class TextRangeHashKey implements SearchKey {
     private final String ruleKey;
-    private final Integer textRangeHash;
+    private final String textRangeHash;
 
     TextRangeHashKey(Trackable trackable) {
       this.ruleKey = trackable.getRuleKey();
-      this.textRangeHash = trackable.getTextRangeHash();
+      var textRange = trackable.getTextRange();
+      this.textRangeHash = textRange != null ? textRange.getHash() : null;
     }
 
     // note: the design of the enclosing caller ensures that 'o' is of the correct class and not null

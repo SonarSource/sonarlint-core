@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Analysis Engine
+ * SonarLint Core - Commons
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,47 +17,55 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analysis.api;
+package org.sonarsource.sonarlint.core.commons;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
+import java.util.Objects;
 
 public class TextRange {
 
-  private final Integer startLine;
-  private final Integer startLineOffset;
-  private final Integer endLine;
-  private final Integer endLineOffset;
+  private final int startLine;
+  private final int startLineOffset;
+  private final int endLine;
+  private final int endLineOffset;
 
-  public TextRange(Integer line) {
-    this(line, null, null, null);
-  }
-
-  public TextRange(Integer startLine, @Nullable Integer startLineOffset, @Nullable Integer endLine, @Nullable Integer endLineOffset) {
+  public TextRange(int startLine, int startLineOffset, int endLine, int endLineOffset) {
     this.startLine = startLine;
     this.startLineOffset = startLineOffset;
     this.endLine = endLine;
     this.endLineOffset = endLineOffset;
   }
 
-  @CheckForNull
-  public Integer getStartLine() {
+  public int getStartLine() {
     return startLine;
   }
 
-  @CheckForNull
-  public Integer getStartLineOffset() {
+  public int getStartLineOffset() {
     return startLineOffset;
   }
 
-  @CheckForNull
-  public Integer getEndLine() {
+  public int getEndLine() {
     return endLine;
   }
 
-  @CheckForNull
-  public Integer getEndLineOffset() {
+  public int getEndLineOffset() {
     return endLineOffset;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(endLine, endLineOffset, startLine, startLineOffset);
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (!(obj instanceof TextRange)) {
+      return false;
+    }
+    TextRange other = (TextRange) obj;
+    return endLine == other.endLine && endLineOffset == other.endLineOffset && startLine == other.startLine && startLineOffset == other.startLineOffset;
   }
 
 }

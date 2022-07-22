@@ -41,6 +41,7 @@ import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
@@ -103,7 +104,7 @@ class StandaloneNodeJsTests {
     var ruleDetails = sonarlint.getRuleDetails(JAVASCRIPT_S1481).get();
     assertThat(ruleDetails.getName()).isEqualTo("Unused local variables and functions should be removed");
     assertThat(ruleDetails.getLanguage()).isEqualTo(Language.JS);
-    assertThat(ruleDetails.getSeverity()).isEqualTo("MINOR");
+    assertThat(ruleDetails.getDefaultSeverity()).isEqualTo(IssueSeverity.MINOR);
     assertThat(ruleDetails.getTags()).containsOnly("unused");
     assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "If a local variable or a local function is declared but not used");
 

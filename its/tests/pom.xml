@@ -54,6 +54,11 @@
       <artifactId>guava</artifactId>
       <version>26.0-android</version>
     </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
 
