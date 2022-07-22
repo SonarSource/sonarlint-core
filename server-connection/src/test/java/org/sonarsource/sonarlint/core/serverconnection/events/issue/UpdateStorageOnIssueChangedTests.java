@@ -48,7 +48,7 @@ class UpdateStorageOnIssueChangedTests {
   void should_store_resolved_issue() {
     serverIssueStore.replaceAllIssuesOfProject("projectKey", "branch", List.of(aServerIssue().setKey("key1").setResolved(false)));
 
-    handler.handle(new IssueChangedEvent(List.of("key1"), null, null, true));
+    handler.handle(new IssueChangedEvent("projectKey", List.of("key1"), null, null, true));
 
     assertThat(serverIssueStore.load("projectKey", "branch", "file/path"))
       .extracting(ServerIssue::isResolved)
@@ -59,7 +59,7 @@ class UpdateStorageOnIssueChangedTests {
   void should_store_issue_with_updated_severity() {
     serverIssueStore.replaceAllIssuesOfProject("projectKey", "branch", List.of(aServerIssue().setKey("key1").setUserSeverity(IssueSeverity.MAJOR)));
 
-    handler.handle(new IssueChangedEvent(List.of("key1"), IssueSeverity.MINOR, null, null));
+    handler.handle(new IssueChangedEvent("projectKey", List.of("key1"), IssueSeverity.MINOR, null, null));
 
     assertThat(serverIssueStore.load("projectKey", "branch", "file/path"))
       .extracting(ServerIssue::getUserSeverity)
@@ -70,7 +70,7 @@ class UpdateStorageOnIssueChangedTests {
   void should_store_issue_with_updated_type() {
     serverIssueStore.replaceAllIssuesOfProject("projectKey", "branch", List.of(aServerIssue().setKey("key1").setType(RuleType.VULNERABILITY)));
 
-    handler.handle(new IssueChangedEvent(List.of("key1"), null, RuleType.BUG, null));
+    handler.handle(new IssueChangedEvent("projectKey", List.of("key1"), null, RuleType.BUG, null));
 
     assertThat(serverIssueStore.load("projectKey", "branch", "file/path"))
       .extracting(ServerIssue::getType)
@@ -81,7 +81,7 @@ class UpdateStorageOnIssueChangedTests {
   void should_store_resolved_taint_issue() {
     serverIssueStore.replaceAllTaintOfFile("projectKey", "branch", "file/path", List.of(aServerTaintIssue().setKey("key1").setResolved(false)));
 
-    handler.handle(new IssueChangedEvent(List.of("key1"), null, null, true));
+    handler.handle(new IssueChangedEvent("projectKey", List.of("key1"), null, null, true));
 
     assertThat(serverIssueStore.loadTaint("projectKey", "branch", "file/path"))
       .extracting(ServerTaintIssue::isResolved)
@@ -92,7 +92,7 @@ class UpdateStorageOnIssueChangedTests {
   void should_store_taint_issue_with_updated_severity() {
     serverIssueStore.replaceAllTaintOfFile("projectKey", "branch", "file/path", List.of(aServerTaintIssue().setKey("key1").setSeverity(IssueSeverity.MAJOR)));
 
-    handler.handle(new IssueChangedEvent(List.of("key1"), IssueSeverity.MINOR, null, null));
+    handler.handle(new IssueChangedEvent("projectKey", List.of("key1"), IssueSeverity.MINOR, null, null));
 
     assertThat(serverIssueStore.loadTaint("projectKey", "branch", "file/path"))
       .extracting(ServerTaintIssue::getSeverity)
@@ -103,7 +103,7 @@ class UpdateStorageOnIssueChangedTests {
   void should_store_taint_issue_with_updated_type() {
     serverIssueStore.replaceAllTaintOfFile("projectKey", "branch", "file/path", List.of(aServerTaintIssue().setKey("key1").setType(RuleType.VULNERABILITY)));
 
-    handler.handle(new IssueChangedEvent(List.of("key1"), null, RuleType.BUG, null));
+    handler.handle(new IssueChangedEvent("projectKey", List.of("key1"), null, RuleType.BUG, null));
 
     assertThat(serverIssueStore.loadTaint("projectKey", "branch", "file/path"))
       .extracting(ServerTaintIssue::getType)
