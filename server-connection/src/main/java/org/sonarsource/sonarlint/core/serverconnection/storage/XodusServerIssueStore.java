@@ -80,7 +80,6 @@ public class XodusServerIssueStore implements ServerIssueStore {
   private static final String RULE_KEY_PROPERTY_NAME = "ruleKey";
   private static final String LINE_HASH_PROPERTY_NAME = "lineHash";
   private static final String RANGE_HASH_PROPERTY_NAME = "rangeHash";
-  private static final String FILE_PATH_PROPERTY_NAME = "filePath";
   private static final String CREATION_DATE_PROPERTY_NAME = "creationDate";
   private static final String USER_SEVERITY_PROPERTY_NAME = "userSeverity";
   private static final String SEVERITY_PROPERTY_NAME = "severity";
@@ -103,13 +102,12 @@ public class XodusServerIssueStore implements ServerIssueStore {
   }
 
   private static ServerIssue adapt(Entity storedIssue) {
+    var filePath = (String) requireNonNull(storedIssue.getLink(ISSUE_TO_FILE_LINK_NAME).getProperty(PATH_PROPERTY_NAME));
     var startLine = storedIssue.getProperty(START_LINE_PROPERTY_NAME);
     var key = (String) requireNonNull(storedIssue.getProperty(KEY_PROPERTY_NAME));
     var resolved = Boolean.TRUE.equals(storedIssue.getProperty(RESOLVED_PROPERTY_NAME));
     var ruleKey = (String) requireNonNull(storedIssue.getProperty(RULE_KEY_PROPERTY_NAME));
     var msg = requireNonNull(storedIssue.getBlobString(MESSAGE_BLOB_NAME));
-    // FIXME We could save storage by not storing filePath on the issue entity, but instead relying on the relation with file entity
-    var filePath = (String) requireNonNull(storedIssue.getProperty(FILE_PATH_PROPERTY_NAME));
     var creationDate = Instant.parse((String) requireNonNull(storedIssue.getProperty(CREATION_DATE_PROPERTY_NAME)));
     var userSeverity = (IssueSeverity) storedIssue.getProperty(USER_SEVERITY_PROPERTY_NAME);
     var type = (RuleType) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME));
@@ -149,6 +147,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
   }
 
   private static ServerTaintIssue adaptTaint(Entity storedIssue) {
+    var filePath = (String) requireNonNull(storedIssue.getLink(ISSUE_TO_FILE_LINK_NAME).getProperty(PATH_PROPERTY_NAME));
     var startLine = (Integer) storedIssue.getProperty(START_LINE_PROPERTY_NAME);
     TextRangeWithHash textRange = null;
     if (startLine != null) {
@@ -163,7 +162,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
       Boolean.TRUE.equals(storedIssue.getProperty(RESOLVED_PROPERTY_NAME)),
       (String) requireNonNull(storedIssue.getProperty(RULE_KEY_PROPERTY_NAME)),
       requireNonNull(storedIssue.getBlobString(MESSAGE_BLOB_NAME)),
-      (String) requireNonNull(storedIssue.getProperty(FILE_PATH_PROPERTY_NAME)),
+      filePath,
       Instant.parse((String) requireNonNull(storedIssue.getProperty(CREATION_DATE_PROPERTY_NAME))),
       (IssueSeverity) requireNonNull(storedIssue.getProperty(SEVERITY_PROPERTY_NAME)),
       (RuleType) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME)),
@@ -187,7 +186,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
       textRange = new TextRangeWithHash((int) startLine, startLineOffset, endLine, endLineOffset, hash);
     }
     return new ServerTaintIssue.ServerIssueLocation(
-      (String) locationEntity.getProperty(FILE_PATH_PROPERTY_NAME),
+      (String) locationEntity.getProperty(PATH_PROPERTY_NAME),
       textRange,
       locationEntity.getBlobString(MESSAGE_BLOB_NAME));
   }
@@ -280,7 +279,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
       var branch = getOrCreateBranch(project, branchName, txn);
       var issuesByFile = issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
       branch.getLinks(BRANCH_TO_FILES_LINK_NAME).forEach(fileEntity -> {
-        var entityFilePath = fileEntity.getProperty(FILE_PATH_PROPERTY_NAME);
+        var entityFilePath = fileEntity.getProperty(PATH_PROPERTY_NAME);
         replaceAllIssuesOfFile(issuesByFile.getOrDefault(entityFilePath, List.of()), txn, fileEntity);
         issuesByFile.remove(entityFilePath);
       });
@@ -361,7 +360,6 @@ public class XodusServerIssueStore implements ServerIssueStore {
     issueEntity.setProperty(RESOLVED_PROPERTY_NAME, issue.isResolved());
     issueEntity.setProperty(RULE_KEY_PROPERTY_NAME, issue.getRuleKey());
     issueEntity.setBlobString(MESSAGE_BLOB_NAME, issue.getMessage());
-    issueEntity.setProperty(FILE_PATH_PROPERTY_NAME, issue.getFilePath());
     issueEntity.setProperty(CREATION_DATE_PROPERTY_NAME, issue.getCreationDate().toString());
     var userSeverity = issue.getUserSeverity();
     if (userSeverity != null) {
@@ -392,7 +390,6 @@ public class XodusServerIssueStore implements ServerIssueStore {
     issueEntity.setProperty(RESOLVED_PROPERTY_NAME, issue.isResolved());
     issueEntity.setProperty(RULE_KEY_PROPERTY_NAME, issue.getRuleKey());
     issueEntity.setBlobString(MESSAGE_BLOB_NAME, issue.getMessage());
-    issueEntity.setProperty(FILE_PATH_PROPERTY_NAME, issue.getFilePath());
     issueEntity.setProperty(CREATION_DATE_PROPERTY_NAME, issue.getCreationDate().toString());
     issueEntity.setProperty(SEVERITY_PROPERTY_NAME, issue.getSeverity());
     issueEntity.setProperty(TYPE_PROPERTY_NAME, issue.getType());
@@ -455,7 +452,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
     locationEntity.setBlobString(MESSAGE_BLOB_NAME, location.getMessage());
     String filePath = location.getFilePath();
     if (filePath != null) {
-      locationEntity.setProperty(FILE_PATH_PROPERTY_NAME, filePath);
+      locationEntity.setProperty(PATH_PROPERTY_NAME, filePath);
     }
     var locationTextRange = location.getTextRange();
     if (locationTextRange != null) {
