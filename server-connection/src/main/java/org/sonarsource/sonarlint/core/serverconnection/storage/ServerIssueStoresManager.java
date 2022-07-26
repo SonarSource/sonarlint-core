@@ -17,21 +17,29 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection.events.taint;
+package org.sonarsource.sonarlint.core.serverconnection.storage;
 
-import org.sonarsource.sonarlint.core.serverapi.push.TaintVulnerabilityClosedEvent;
-import org.sonarsource.sonarlint.core.serverconnection.events.ServerEventHandler;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStoresManager;
+import java.nio.file.Path;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class UpdateStorageOnTaintVulnerabilityClosed implements ServerEventHandler<TaintVulnerabilityClosedEvent> {
-  private final ServerIssueStoresManager serverIssueStoresManager;
+public class ServerIssueStoresManager {
 
-  public UpdateStorageOnTaintVulnerabilityClosed(ServerIssueStoresManager serverIssueStoresManager) {
-    this.serverIssueStoresManager = serverIssueStoresManager;
+  Map<String, ProjectServerIssueStore> serverIssueStoreByKey = new ConcurrentHashMap<>();
+  private final Path projectsStorageBaseDir;
+
+  public ServerIssueStoresManager(Path projectsStorageBaseDir) {
+    this.projectsStorageBaseDir = projectsStorageBaseDir;
+
   }
 
-  @Override
-  public void handle(TaintVulnerabilityClosedEvent event) {
-    serverIssueStoresManager.get(event.getProjectKey()).deleteTaintIssue(event.getTaintIssueKey());
+  public ProjectServerIssueStore get(String projectKey) {
+    return serverIssueStoreByKey.computeIfAbsent(projectKey,
+      p -> new XodusServerIssueStore(projectsStorageBaseDir.resolve(ProjectStoragePaths.encodeForFs(projectKey)).resolve("issues")));
+  }
+
+  public void close() {
+    serverIssueStoreByKey.values().forEach(ProjectServerIssueStore::close);
+    serverIssueStoreByKey.clear();
   }
 }

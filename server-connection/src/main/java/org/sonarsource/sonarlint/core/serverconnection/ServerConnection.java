@@ -57,8 +57,8 @@ import org.sonarsource.sonarlint.core.serverconnection.prefix.FileTreeMatcher;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStoresManager;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageReader;
-import org.sonarsource.sonarlint.core.serverconnection.storage.XodusServerIssueStore;
 
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 
@@ -74,7 +74,7 @@ public class ServerConnection {
   private final ProjectStorageUpdateExecutor projectStorageUpdateExecutor;
   private final ServerEventsAutoSubscriber serverEventsAutoSubscriber;
   private final ServerIssueUpdater issuesUpdater;
-  private final XodusServerIssueStore serverIssueStore;
+  private final ServerIssueStoresManager serverIssueStoresManager;
   private final boolean isSonarCloud;
 
   private final Path connectionStorageRoot;
@@ -91,18 +91,18 @@ public class ServerConnection {
     projectStorage = new ProjectStorage(projectsStorageRoot);
 
     this.storageReader = new StorageReader(projectStoragePaths);
-    serverIssueStore = new XodusServerIssueStore(projectsStorageRoot);
-    this.issueStoreReader = new IssueStoreReader(serverIssueStore);
-    this.issuesUpdater = new ServerIssueUpdater(serverIssueStore, new IssueDownloader(enabledLanguages), new TaintIssueDownloader(enabledLanguages));
+    this.serverIssueStoresManager = new ServerIssueStoresManager(projectsStorageRoot);
+    this.issueStoreReader = new IssueStoreReader(serverIssueStoresManager);
+    this.issuesUpdater = new ServerIssueUpdater(serverIssueStoresManager, new IssueDownloader(enabledLanguages), new TaintIssueDownloader(enabledLanguages));
     this.pluginsStorage = new PluginsStorage(connectionStorageRoot.resolve("plugins"));
     this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguages, embeddedPluginKeys, pluginsStorage, projectStorage);
     this.projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(projectStoragePaths);
     pluginsStorage.cleanUp();
     coreEventRouter = new EventDispatcher()
       .dispatch(RuleSetChangedEvent.class, new UpdateStorageOnRuleSetChanged(projectStorage))
-      .dispatch(IssueChangedEvent.class, new UpdateStorageOnIssueChanged(serverIssueStore))
-      .dispatch(TaintVulnerabilityRaisedEvent.class, new UpdateStorageOnTaintVulnerabilityRaised(serverIssueStore))
-      .dispatch(TaintVulnerabilityClosedEvent.class, new UpdateStorageOnTaintVulnerabilityClosed(serverIssueStore));
+      .dispatch(IssueChangedEvent.class, new UpdateStorageOnIssueChanged(serverIssueStoresManager))
+      .dispatch(TaintVulnerabilityRaisedEvent.class, new UpdateStorageOnTaintVulnerabilityRaised(serverIssueStoresManager))
+      .dispatch(TaintVulnerabilityClosedEvent.class, new UpdateStorageOnTaintVulnerabilityClosed(serverIssueStoresManager));
     this.serverEventsAutoSubscriber = new ServerEventsAutoSubscriber();
   }
 
@@ -216,7 +216,7 @@ public class ServerConnection {
 
   public void stop(boolean deleteStorage) {
     serverEventsAutoSubscriber.stop();
-    serverIssueStore.close();
+    serverIssueStoresManager.close();
     if (deleteStorage) {
       FileUtils.deleteRecursively(connectionStorageRoot);
     }
