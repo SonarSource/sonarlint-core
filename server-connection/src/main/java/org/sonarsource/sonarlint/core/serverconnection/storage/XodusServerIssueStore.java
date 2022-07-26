@@ -114,7 +114,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
     if (startLine == null) {
       return new FileLevelServerIssue(key, resolved, ruleKey, msg, filePath, creationDate, userSeverity, type);
     } else {
-      var rangeHash = (String) storedIssue.getProperty(RANGE_HASH_PROPERTY_NAME);
+      var rangeHash = storedIssue.getBlobString(RANGE_HASH_PROPERTY_NAME);
       if (rangeHash != null) {
         var startLineOffset = (Integer) storedIssue.getProperty(START_LINE_OFFSET_PROPERTY_NAME);
         var endLine = (Integer) storedIssue.getProperty(END_LINE_PROPERTY_NAME);
@@ -136,7 +136,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
           resolved,
           ruleKey,
           msg,
-          (String) storedIssue.getProperty(LINE_HASH_PROPERTY_NAME),
+          storedIssue.getBlobString(LINE_HASH_PROPERTY_NAME),
           filePath,
           creationDate,
           userSeverity,
@@ -154,7 +154,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
       var startLineOffset = (Integer) storedIssue.getProperty(START_LINE_OFFSET_PROPERTY_NAME);
       var endLine = (Integer) storedIssue.getProperty(END_LINE_PROPERTY_NAME);
       var endLineOffset = (Integer) storedIssue.getProperty(END_LINE_OFFSET_PROPERTY_NAME);
-      var hash = (String) storedIssue.getProperty(RANGE_HASH_PROPERTY_NAME);
+      var hash = storedIssue.getBlobString(RANGE_HASH_PROPERTY_NAME);
       textRange = new TextRangeWithHash(startLine, startLineOffset, endLine, endLineOffset, hash);
     }
     return new ServerTaintIssue(
@@ -182,7 +182,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
       var startLineOffset = (Integer) locationEntity.getProperty(START_LINE_OFFSET_PROPERTY_NAME);
       var endLine = (Integer) locationEntity.getProperty(END_LINE_PROPERTY_NAME);
       var endLineOffset = (Integer) locationEntity.getProperty(END_LINE_OFFSET_PROPERTY_NAME);
-      var hash = (String) locationEntity.getProperty(RANGE_HASH_PROPERTY_NAME);
+      var hash = locationEntity.getBlobString(RANGE_HASH_PROPERTY_NAME);
       textRange = new TextRangeWithHash((int) startLine, startLineOffset, endLine, endLineOffset, hash);
     }
     return new ServerTaintIssue.ServerIssueLocation(
@@ -368,7 +368,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
     issueEntity.setProperty(TYPE_PROPERTY_NAME, issue.getType());
     if (issue instanceof LineLevelServerIssue) {
       var lineIssue = (LineLevelServerIssue) issue;
-      issueEntity.setProperty(LINE_HASH_PROPERTY_NAME, lineIssue.getLineHash());
+      issueEntity.setBlobString(LINE_HASH_PROPERTY_NAME, lineIssue.getLineHash());
       issueEntity.setProperty(START_LINE_PROPERTY_NAME, lineIssue.getLine());
     } else if (issue instanceof RangeLevelServerIssue) {
       var rangeIssue = (RangeLevelServerIssue) issue;
@@ -377,7 +377,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
       issueEntity.setProperty(START_LINE_OFFSET_PROPERTY_NAME, textRange.getStartLineOffset());
       issueEntity.setProperty(END_LINE_PROPERTY_NAME, textRange.getEndLine());
       issueEntity.setProperty(END_LINE_OFFSET_PROPERTY_NAME, textRange.getEndLineOffset());
-      issueEntity.setProperty(RANGE_HASH_PROPERTY_NAME, textRange.getHash());
+      issueEntity.setBlobString(RANGE_HASH_PROPERTY_NAME, textRange.getHash());
     }
   }
 
@@ -399,7 +399,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
       issueEntity.setProperty(START_LINE_OFFSET_PROPERTY_NAME, textRange.getStartLineOffset());
       issueEntity.setProperty(END_LINE_PROPERTY_NAME, textRange.getEndLine());
       issueEntity.setProperty(END_LINE_OFFSET_PROPERTY_NAME, textRange.getEndLineOffset());
-      issueEntity.setProperty(RANGE_HASH_PROPERTY_NAME, textRange.getHash());
+      issueEntity.setBlobString(RANGE_HASH_PROPERTY_NAME, textRange.getHash());
     }
     deleteFlowAndLocations(issueEntity);
     issue.getFlows().forEach(flow -> storeFlow(flow, issueEntity, transaction));
@@ -460,7 +460,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
       locationEntity.setProperty(START_LINE_OFFSET_PROPERTY_NAME, locationTextRange.getStartLineOffset());
       locationEntity.setProperty(END_LINE_PROPERTY_NAME, locationTextRange.getEndLine());
       locationEntity.setProperty(END_LINE_OFFSET_PROPERTY_NAME, locationTextRange.getEndLineOffset());
-      locationEntity.setProperty(RANGE_HASH_PROPERTY_NAME, locationTextRange.getHash());
+      locationEntity.setBlobString(RANGE_HASH_PROPERTY_NAME, locationTextRange.getHash());
     }
   }
 
