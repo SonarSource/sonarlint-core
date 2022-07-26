@@ -394,7 +394,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
       if (idePath == null) {
         continue;
       }
-      var sqPath = IssueStorePaths.idePathToSqPath(projectBinding, idePath);
+      var sqPath = IssueStorePaths.idePathToServerPath(projectBinding, idePath);
       if (sqPath == null) {
         // we can't map it to a SonarQube path, so just apply exclusions to the original ide path
         sqPath = idePath;
@@ -419,13 +419,13 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
-  public void downloadAllServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName,
+  public void downloadAllServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
     @Nullable ClientProgressMonitor monitor) {
     serverConnection.downloadServerIssuesForFile(endpoint, client, projectBinding, ideFilePath, branchName);
   }
 
   @Override
-  public void downloadAllServerTaintIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName,
+  public void downloadAllServerTaintIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
     @Nullable ClientProgressMonitor monitor) {
     serverConnection.downloadServerTaintIssuesForFile(endpoint, client, projectBinding, ideFilePath, branchName, new ProgressMonitor(monitor));
   }

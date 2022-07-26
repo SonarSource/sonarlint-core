@@ -122,7 +122,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @param ideFilePath    relative to the project in the IDE.
    * @throws DownloadException if it fails to download
    */
-  void downloadAllServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName,
+  void downloadAllServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
     @Nullable ClientProgressMonitor monitor);
 
   /**
@@ -132,7 +132,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @param ideFilePath    relative to the project in the IDE.
    * @throws DownloadException if it fails to download
    */
-  void downloadAllServerTaintIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName,
+  void downloadAllServerTaintIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
     @Nullable ClientProgressMonitor monitor);
 
   /**

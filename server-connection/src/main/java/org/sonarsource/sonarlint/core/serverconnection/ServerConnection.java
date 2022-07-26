@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
@@ -164,13 +163,13 @@ public class ServerConnection {
       FilenameUtils.separatorsToUnix(match.idePrefix().toString()));
   }
 
-  public void downloadServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName) {
+  public void downloadServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName) {
     var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
     var serverVersion = checkStatusAndGetServerVersion(serverApi);
     issuesUpdater.updateFileIssues(serverApi, projectBinding, ideFilePath, branchName, isSonarCloud, serverVersion);
   }
 
-  public void downloadServerTaintIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName,
+  public void downloadServerTaintIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
     ProgressMonitor progress) {
     var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
     var serverVersion = checkStatusAndGetServerVersion(serverApi);

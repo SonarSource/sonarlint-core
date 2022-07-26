@@ -36,7 +36,7 @@ public class IssueStoreReader {
   }
 
   public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String branchName, String ideFilePath) {
-    var sqPath = IssueStorePaths.idePathToSqPath(projectBinding, ideFilePath);
+    var sqPath = IssueStorePaths.idePathToServerPath(projectBinding, ideFilePath);
     if (sqPath == null) {
       return Collections.emptyList();
     }
@@ -46,7 +46,7 @@ public class IssueStoreReader {
   }
 
   public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName, String ideFilePath) {
-    var sqPath = IssueStorePaths.idePathToSqPath(projectBinding, ideFilePath);
+    var sqPath = IssueStorePaths.idePathToServerPath(projectBinding, ideFilePath);
     if (sqPath == null) {
       return Collections.emptyList();
     }

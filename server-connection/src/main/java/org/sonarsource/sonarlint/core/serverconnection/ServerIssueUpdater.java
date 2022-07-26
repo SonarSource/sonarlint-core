@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -67,13 +66,13 @@ public class ServerIssueUpdater {
     serverIssueStore.mergeTaintIssues(branchName, result.getChangedTaintIssues(), result.getClosedIssueKeys(), result.getQueryTimestamp());
   }
 
-  public void updateFileIssues(ServerApi serverApi, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName, boolean isSonarCloud,
+  public void updateFileIssues(ServerApi serverApi, ProjectBinding projectBinding, String ideFilePath, String branchName, boolean isSonarCloud,
     Version serverVersion) {
-    var fileKey = IssueStorePaths.idePathToFileKey(projectBinding, ideFilePath);
-    if (fileKey == null) {
+    String serverFilePath = IssueStorePaths.idePathToServerPath(projectBinding, ideFilePath);
+    if (serverFilePath == null) {
       return;
     }
-    String serverFilePath = IssueStorePaths.idePathToSqPath(projectBinding, ideFilePath);
+    var fileKey = IssueStorePaths.componentKey(projectBinding, serverFilePath);
     if (!IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
       List<ServerIssue> issues = new ArrayList<>();
       try {
@@ -88,13 +87,13 @@ public class ServerIssueUpdater {
     }
   }
 
-  public void updateFileTaints(ServerApi serverApi, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName, boolean isSonarCloud,
+  public void updateFileTaints(ServerApi serverApi, ProjectBinding projectBinding, String ideFilePath, String branchName, boolean isSonarCloud,
     Version serverVersion, ProgressMonitor progress) {
-    var fileKey = IssueStorePaths.idePathToFileKey(projectBinding, ideFilePath);
-    if (fileKey == null) {
+    String serverFilePath = IssueStorePaths.idePathToServerPath(projectBinding, ideFilePath);
+    if (serverFilePath == null) {
       return;
     }
-    String serverFilePath = IssueStorePaths.idePathToSqPath(projectBinding, ideFilePath);
+    var fileKey = IssueStorePaths.componentKey(projectBinding, serverFilePath);
     if (!IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
       List<ServerTaintIssue> taintIssues = new ArrayList<>();
       try {
