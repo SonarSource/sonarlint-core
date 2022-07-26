@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,15 +28,24 @@ public class ServerIssueStoresManager {
 
   Map<String, ProjectServerIssueStore> serverIssueStoreByKey = new ConcurrentHashMap<>();
   private final Path projectsStorageBaseDir;
+  private final Path workDir;
 
-  public ServerIssueStoresManager(Path projectsStorageBaseDir) {
+  public ServerIssueStoresManager(Path projectsStorageBaseDir, Path workDir) {
     this.projectsStorageBaseDir = projectsStorageBaseDir;
+    this.workDir = workDir;
 
   }
 
   public ProjectServerIssueStore get(String projectKey) {
+    var xodusBackupPath = projectsStorageBaseDir.resolve(ProjectStoragePaths.encodeForFs(projectKey)).resolve("issues");
     return serverIssueStoreByKey.computeIfAbsent(projectKey,
-      p -> new XodusServerIssueStore(projectsStorageBaseDir.resolve(ProjectStoragePaths.encodeForFs(projectKey)).resolve("issues")));
+      p -> {
+        try {
+          return new XodusServerIssueStore(xodusBackupPath, workDir);
+        } catch (IOException e) {
+          throw new IllegalStateException("Unable to create server issue database", e);
+        }
+      });
   }
 
   public void close() {

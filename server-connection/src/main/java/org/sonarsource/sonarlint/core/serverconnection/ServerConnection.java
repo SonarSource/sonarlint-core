@@ -80,7 +80,7 @@ public class ServerConnection {
   private final Path connectionStorageRoot;
   private final EventDispatcher coreEventRouter;
 
-  public ServerConnection(Path globalStorageRoot, String connectionId, boolean isSonarCloud, Set<Language> enabledLanguages, Set<String> embeddedPluginKeys) {
+  public ServerConnection(Path globalStorageRoot, String connectionId, boolean isSonarCloud, Set<Language> enabledLanguages, Set<String> embeddedPluginKeys, Path workDir) {
     this.isSonarCloud = isSonarCloud;
     this.enabledLanguages = enabledLanguages;
 
@@ -91,7 +91,7 @@ public class ServerConnection {
     projectStorage = new ProjectStorage(projectsStorageRoot);
 
     this.storageReader = new StorageReader(projectStoragePaths);
-    this.serverIssueStoresManager = new ServerIssueStoresManager(projectsStorageRoot);
+    this.serverIssueStoresManager = new ServerIssueStoresManager(projectsStorageRoot, workDir);
     this.issueStoreReader = new IssueStoreReader(serverIssueStoresManager);
     this.issuesUpdater = new ServerIssueUpdater(serverIssueStoresManager, new IssueDownloader(enabledLanguages), new TaintIssueDownloader(enabledLanguages));
     this.pluginsStorage = new PluginsStorage(connectionStorageRoot.resolve("plugins"));

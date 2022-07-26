@@ -97,7 +97,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     this.globalConfig = globalConfig;
 
     serverConnection = new ServerConnection(globalConfig.getStorageRoot(), globalConfig.getConnectionId(), globalConfig.isSonarCloud(), globalConfig.getEnabledLanguages(),
-      globalConfig.getEmbeddedPluginPathsByKey().keySet());
+      globalConfig.getEmbeddedPluginPathsByKey().keySet(), globalConfig.getWorkDir());
     start();
   }
 

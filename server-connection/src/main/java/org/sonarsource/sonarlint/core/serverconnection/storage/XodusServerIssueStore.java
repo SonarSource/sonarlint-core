@@ -20,7 +20,10 @@
 
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -36,6 +39,8 @@ import jetbrains.exodus.entitystore.EntityIterable;
 import jetbrains.exodus.entitystore.PersistentEntityStore;
 import jetbrains.exodus.entitystore.PersistentEntityStores;
 import jetbrains.exodus.entitystore.StoreTransaction;
+import jetbrains.exodus.util.CompressBackupUtil;
+import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -50,6 +55,8 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import static java.util.Objects.requireNonNull;
 
 public class XodusServerIssueStore implements ProjectServerIssueStore {
+  private static final String BACKUP_TAR_GZ = "backup.tar.gz";
+
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private static final String BRANCH_ENTITY_TYPE = "Branch";
@@ -88,8 +95,23 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
 
   private final PersistentEntityStore entityStore;
 
-  public XodusServerIssueStore(Path baseDir) {
-    entityStore = PersistentEntityStores.newInstance(baseDir.toAbsolutePath().toString());
+  private final Path backupFile;
+
+  private final Path xodusDbDir;
+
+  public XodusServerIssueStore(Path backupDir, Path workDir) throws IOException {
+    xodusDbDir = Files.createTempDirectory(workDir, "xodus-issue-store");
+    backupFile = backupDir.resolve(BACKUP_TAR_GZ);
+    if (Files.isRegularFile(backupFile)) {
+      LOG.debug("Restoring previous server issue database from {}", backupFile);
+      try {
+        TarGzUtils.extractTarGz(backupFile, xodusDbDir);
+      } catch (Exception e) {
+        LOG.error("Unable to restore backup {}", backupFile);
+      }
+    }
+    LOG.debug("Starting server issue database from {}", xodusDbDir);
+    entityStore = PersistentEntityStores.newInstance(xodusDbDir.toAbsolutePath().toString());
     entityStore.executeInTransaction(txn -> {
       entityStore.registerCustomPropertyType(txn, IssueSeverity.class, new IssueSeverityBinding());
       entityStore.registerCustomPropertyType(txn, RuleType.class, new IssueTypeBinding());
@@ -521,6 +543,18 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
 
   @Override
   public void close() {
+    backup();
     entityStore.close();
+    FileUtils.deleteQuietly(xodusDbDir.toFile());
+  }
+
+  public void backup() {
+    LOG.debug("Creating backup of server issue database in {}", backupFile);
+    try {
+      var backupTmp = CompressBackupUtil.backup(entityStore, backupFile.getParent().toFile(), "backup", false);
+      Files.move(backupTmp.toPath(), backupFile, StandardCopyOption.ATOMIC_MOVE);
+    } catch (Exception e) {
+      LOG.error("Unable to backup server issue database", e);
+    }
   }
 }

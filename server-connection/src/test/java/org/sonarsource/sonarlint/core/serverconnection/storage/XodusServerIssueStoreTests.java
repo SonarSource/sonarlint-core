@@ -19,6 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
@@ -26,10 +29,14 @@ import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
 import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
@@ -47,13 +54,19 @@ import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssu
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerTaintIssue;
 
 class XodusServerIssueStoreTests {
+
+  @RegisterExtension
+  SonarLintLogTester logTester = new SonarLintLogTester(true);
+
   @TempDir
-  Path tmpBaseDir;
+  Path workDir;
+  @TempDir
+  Path backupDir;
   private XodusServerIssueStore store;
 
   @BeforeEach
-  void setUp() {
-    store = new XodusServerIssueStore(tmpBaseDir);
+  void setUp() throws IOException {
+    store = new XodusServerIssueStore(backupDir, workDir);
   }
 
   @AfterEach
@@ -492,5 +505,71 @@ class XodusServerIssueStoreTests {
     assertThat(taintIssues)
       .extracting("resolved")
       .containsOnly(true);
+  }
+
+  @Test
+  void should_restore_from_backup() throws IOException {
+    var creationDate = Instant.now();
+
+    store
+      .replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setFilePath("file/path").setCreationDate(creationDate)));
+
+    assertThat(backupDir).isEmptyDirectory();
+
+    store.close();
+
+    assertThat(backupDir).isDirectoryContaining("glob:**backup.tar.gz");
+
+    FileUtils.deleteRecursively(workDir);
+    Files.createDirectories(workDir);
+
+    store = new XodusServerIssueStore(backupDir, workDir);
+
+    var savedIssues = store.load("branch", "file/path");
+    assertThat(savedIssues).isNotEmpty();
+  }
+
+  @Test
+  void should_log_and_continue_if_invalid_backup() throws IOException {
+    var creationDate = Instant.now();
+
+    store
+      .replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setFilePath("file/path").setCreationDate(creationDate)));
+
+    assertThat(backupDir).isEmptyDirectory();
+
+    store.close();
+
+    assertThat(backupDir).isDirectoryContaining("glob:**backup.tar.gz");
+
+    Files.writeString(backupDir.resolve("backup.tar.gz"), "Garbage", StandardCharsets.UTF_8);
+
+    store = new XodusServerIssueStore(backupDir, workDir);
+
+    assertThat(logTester.logs(Level.ERROR)).contains("Unable to restore backup " + backupDir.resolve("backup.tar.gz"));
+
+    var savedIssues = store.load("branch", "file/path");
+    assertThat(savedIssues).isEmpty();
+  }
+
+  @Test
+  void should_allow_concurrent_instances() throws IOException {
+    var creationDate = Instant.now();
+
+    store
+      .replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setFilePath("file/path").setCreationDate(creationDate)));
+    store.close();
+    assertThat(backupDir).isDirectoryContaining("glob:**backup.tar.gz");
+
+    store = new XodusServerIssueStore(backupDir, workDir);
+    var store2 = new XodusServerIssueStore(backupDir, workDir);
+
+    var savedIssues = store.load("branch", "file/path");
+    assertThat(savedIssues).isNotEmpty();
+
+    var savedIssues2 = store2.load("branch", "file/path");
+    assertThat(savedIssues2).isNotEmpty();
+
+    store2.close();
   }
 }
