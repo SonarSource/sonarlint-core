@@ -227,13 +227,14 @@ public class XodusServerIssueStore implements ServerIssueStore {
 
   @Override
   public void mergeIssues(String projectKey, String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp) {
+    var issuesByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
     timed("Merged " + issuesToMerge.size() + " issues in store. Closed " + closedIssueKeysToDelete.size() + ".", () -> entityStore.executeInTransaction(txn -> {
       var project = getOrCreateProject(projectKey, txn);
       var branch = getOrCreateBranch(project, branchName, txn);
-      var issuesByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
       issuesByFilePath.forEach((filePath, issues) -> {
         var fileEntity = getOrCreateFile(branch, filePath, txn);
         issues.forEach(issue -> updateOrCreateIssue(fileEntity, issue, txn));
+        txn.flush();
       });
       closedIssueKeysToDelete.forEach(issueKey -> remove(issueKey, txn));
       branch.setProperty(LAST_ISSUE_SYNC_PROPERTY_NAME, syncTimestamp);
@@ -242,13 +243,14 @@ public class XodusServerIssueStore implements ServerIssueStore {
 
   @Override
   public void mergeTaintIssues(String projectKey, String branchName, List<ServerTaintIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp) {
+    var issuesByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerTaintIssue::getFilePath));
     timed("Merged " + issuesToMerge.size() + " taint issues in store. Closed " + closedIssueKeysToDelete.size() + ".", () -> entityStore.executeInTransaction(txn -> {
       var project = getOrCreateProject(projectKey, txn);
       var branch = getOrCreateBranch(project, branchName, txn);
-      var issuesByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerTaintIssue::getFilePath));
       issuesByFilePath.forEach((filePath, issues) -> {
         var fileEntity = getOrCreateFile(branch, filePath, txn);
         issues.forEach(issue -> updateOrCreateTaintIssue(fileEntity, issue, txn));
+        txn.flush();
       });
       closedIssueKeysToDelete.forEach(issueKey -> removeTaint(issueKey, txn));
       branch.setProperty(LAST_TAINT_SYNC_PROPERTY_NAME, syncTimestamp);
@@ -273,20 +275,27 @@ public class XodusServerIssueStore implements ServerIssueStore {
 
   @Override
   public void replaceAllIssuesOfProject(String projectKey, String branchName, List<ServerIssue> issues) {
+    var issuesByFile = issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
     timed("Wrote " + issues.size() + " issues in store", () -> entityStore.executeInTransaction(txn -> {
       var project = getOrCreateProject(projectKey, txn);
       var branch = getOrCreateBranch(project, branchName, txn);
-      var issuesByFile = issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
       branch.getLinks(BRANCH_TO_FILES_LINK_NAME).forEach(fileEntity -> {
         var entityFilePath = fileEntity.getProperty(PATH_PROPERTY_NAME);
-        replaceAllIssuesOfFile(issuesByFile.getOrDefault(entityFilePath, List.of()), txn, fileEntity);
-        issuesByFile.remove(entityFilePath);
+        if (!issuesByFile.containsKey(entityFilePath)) {
+          deleteAllIssuesOfFile(txn, fileEntity);
+        }
       });
+      txn.flush();
       issuesByFile.forEach((filePath, fileIssues) -> {
         var fileEntity = getOrCreateFile(branch, filePath, txn);
         replaceAllIssuesOfFile(fileIssues, txn, fileEntity);
+        txn.flush();
       });
     }));
+  }
+
+  private static void deleteAllIssuesOfFile(@NotNull StoreTransaction txn, Entity fileEntity) {
+    replaceAllIssuesOfFile(List.of(), txn, fileEntity);
   }
 
   private static void timed(String msg, Runnable transaction) {
