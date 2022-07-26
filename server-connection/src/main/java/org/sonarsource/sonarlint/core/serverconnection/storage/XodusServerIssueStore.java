@@ -20,7 +20,10 @@
 
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -42,6 +45,7 @@ import jetbrains.exodus.entitystore.StoreTransaction;
 import jetbrains.exodus.util.CompressBackupUtil;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
@@ -51,6 +55,11 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIss
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue.Flow;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue.ServerIssueLocation;
+import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint.Location;
+import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint.TextRange;
 
 import static java.util.Objects.requireNonNull;
 
@@ -63,15 +72,11 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private static final String FILE_ENTITY_TYPE = "File";
   private static final String ISSUE_ENTITY_TYPE = "Issue";
   private static final String TAINT_ISSUE_ENTITY_TYPE = "TaintIssue";
-  private static final String FLOW_ENTITY_TYPE = "Flow";
-  private static final String LOCATION_ENTITY_TYPE = "Location";
 
   private static final String BRANCH_TO_FILES_LINK_NAME = "files";
   private static final String FILE_TO_ISSUES_LINK_NAME = "issues";
   private static final String FILE_TO_TAINT_ISSUES_LINK_NAME = "taintIssues";
   private static final String ISSUE_TO_FILE_LINK_NAME = "file";
-  private static final String ISSUE_TO_FLOWS_LINK_NAME = "flows";
-  private static final String FLOW_TO_LOCATIONS_LINK_NAME = "locations";
 
   private static final String START_LINE_PROPERTY_NAME = "startLine";
   private static final String START_LINE_OFFSET_PROPERTY_NAME = "startLineOffset";
@@ -92,6 +97,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private static final String LAST_TAINT_SYNC_PROPERTY_NAME = "lastTaintSync";
 
   private static final String MESSAGE_BLOB_NAME = "message";
+  private static final String FLOWS_BLOB_NAME = "flows";
 
   private final PersistentEntityStore entityStore;
 
@@ -185,28 +191,14 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       (IssueSeverity) requireNonNull(storedIssue.getProperty(SEVERITY_PROPERTY_NAME)),
       (RuleType) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME)),
       textRange)
-        .setFlows(StreamSupport.stream(storedIssue.getLinks(ISSUE_TO_FLOWS_LINK_NAME).spliterator(), false).map(XodusServerIssueStore::adaptFlow).collect(Collectors.toList()));
+        .setFlows(readFlows(storedIssue.getBlob(FLOWS_BLOB_NAME)));
   }
 
-  private static ServerTaintIssue.Flow adaptFlow(Entity flowEntity) {
-    return new ServerTaintIssue.Flow(
-      StreamSupport.stream(flowEntity.getLinks(FLOW_TO_LOCATIONS_LINK_NAME).spliterator(), false).map(XodusServerIssueStore::adaptLocation).collect(Collectors.toList()));
-  }
-
-  private static ServerTaintIssue.ServerIssueLocation adaptLocation(Entity locationEntity) {
-    var startLine = locationEntity.getProperty(START_LINE_PROPERTY_NAME);
-    TextRangeWithHash textRange = null;
-    if (startLine != null) {
-      var startLineOffset = (Integer) locationEntity.getProperty(START_LINE_OFFSET_PROPERTY_NAME);
-      var endLine = (Integer) locationEntity.getProperty(END_LINE_PROPERTY_NAME);
-      var endLineOffset = (Integer) locationEntity.getProperty(END_LINE_OFFSET_PROPERTY_NAME);
-      var hash = locationEntity.getBlobString(RANGE_HASH_PROPERTY_NAME);
-      textRange = new TextRangeWithHash((int) startLine, startLineOffset, endLine, endLineOffset, hash);
+  private static List<Flow> readFlows(@Nullable InputStream blob) {
+    if (blob == null) {
+      return List.of();
     }
-    return new ServerTaintIssue.ServerIssueLocation(
-      (String) locationEntity.getProperty(PATH_PROPERTY_NAME),
-      textRange,
-      locationEntity.getBlobString(MESSAGE_BLOB_NAME));
+    return ProtobufUtil.readMessages(blob, Sonarlint.Flow.parser()).stream().map(XodusServerIssueStore::toJavaFlow).collect(Collectors.toList());
   }
 
   @Override
@@ -385,10 +377,10 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
 
   private static void updateOrCreateTaintIssue(Entity fileEntity, ServerTaintIssue issue, StoreTransaction transaction) {
     var issueEntity = updateOrCreateIssueCommon(fileEntity, issue.getKey(), transaction, TAINT_ISSUE_ENTITY_TYPE, FILE_TO_TAINT_ISSUES_LINK_NAME);
-    updateTaintIssueEntity(issue, transaction, issueEntity);
+    updateTaintIssueEntity(issue, issueEntity);
   }
 
-  private static void updateTaintIssueEntity(ServerTaintIssue issue, StoreTransaction transaction, Entity issueEntity) {
+  private static void updateTaintIssueEntity(ServerTaintIssue issue, Entity issueEntity) {
     issueEntity.setProperty(RESOLVED_PROPERTY_NAME, issue.isResolved());
     issueEntity.setProperty(RULE_KEY_PROPERTY_NAME, issue.getRuleKey());
     issueEntity.setBlobString(MESSAGE_BLOB_NAME, issue.getMessage());
@@ -403,8 +395,13 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       issueEntity.setProperty(END_LINE_OFFSET_PROPERTY_NAME, textRange.getEndLineOffset());
       issueEntity.setBlobString(RANGE_HASH_PROPERTY_NAME, textRange.getHash());
     }
-    deleteFlowAndLocations(issueEntity);
-    issue.getFlows().forEach(flow -> storeFlow(flow, issueEntity, transaction));
+    issueEntity.setBlob(FLOWS_BLOB_NAME, toProtoFlow(issue.getFlows()));
+  }
+
+  private static InputStream toProtoFlow(List<Flow> flows) {
+    var buffer = new ByteArrayOutputStream();
+    ProtobufUtil.writeMessages(buffer, flows.stream().map(XodusServerIssueStore::toProtoFlow).collect(Collectors.toList()));
+    return new ByteArrayInputStream(buffer.toByteArray());
   }
 
   private static Entity updateOrCreateIssueCommon(Entity fileEntity, String issueKey, StoreTransaction transaction, String entityType, String fileToIssueLink) {
@@ -442,30 +439,6 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     return entities;
   }
 
-  private static void storeFlow(ServerTaintIssue.Flow flow, Entity issueEntity, StoreTransaction transaction) {
-    var flowEntity = transaction.newEntity(FLOW_ENTITY_TYPE);
-    issueEntity.addLink(ISSUE_TO_FLOWS_LINK_NAME, flowEntity);
-    flow.locations().forEach(location -> storeLocation(location, flowEntity, transaction));
-  }
-
-  private static void storeLocation(ServerTaintIssue.ServerIssueLocation location, Entity flowEntity, StoreTransaction transaction) {
-    var locationEntity = transaction.newEntity(LOCATION_ENTITY_TYPE);
-    flowEntity.addLink(FLOW_TO_LOCATIONS_LINK_NAME, locationEntity);
-    locationEntity.setBlobString(MESSAGE_BLOB_NAME, location.getMessage());
-    String filePath = location.getFilePath();
-    if (filePath != null) {
-      locationEntity.setProperty(PATH_PROPERTY_NAME, filePath);
-    }
-    var locationTextRange = location.getTextRange();
-    if (locationTextRange != null) {
-      locationEntity.setProperty(START_LINE_PROPERTY_NAME, locationTextRange.getStartLine());
-      locationEntity.setProperty(START_LINE_OFFSET_PROPERTY_NAME, locationTextRange.getStartLineOffset());
-      locationEntity.setProperty(END_LINE_PROPERTY_NAME, locationTextRange.getEndLine());
-      locationEntity.setProperty(END_LINE_OFFSET_PROPERTY_NAME, locationTextRange.getEndLineOffset());
-      locationEntity.setBlobString(RANGE_HASH_PROPERTY_NAME, locationTextRange.getHash());
-    }
-  }
-
   private static void remove(String issueKey, @NotNull StoreTransaction txn) {
     findUnique(txn, ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issueKey)
       .ifPresent(issueEntity -> {
@@ -474,7 +447,6 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
           fileEntity.deleteLink(FILE_TO_ISSUES_LINK_NAME, issueEntity);
         }
         issueEntity.deleteLinks(ISSUE_TO_FILE_LINK_NAME);
-        deleteFlowAndLocations(issueEntity);
         issueEntity.delete();
       });
   }
@@ -487,18 +459,8 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
           fileEntity.deleteLink(FILE_TO_TAINT_ISSUES_LINK_NAME, issueEntity);
         }
         issueEntity.deleteLinks(ISSUE_TO_FILE_LINK_NAME);
-        deleteFlowAndLocations(issueEntity);
         issueEntity.delete();
       });
-  }
-
-  private static void deleteFlowAndLocations(Entity issueEntity) {
-    issueEntity.getLinks(ISSUE_TO_FLOWS_LINK_NAME).forEach(flow -> {
-      flow.getLinks(FLOW_TO_LOCATIONS_LINK_NAME).forEach(Entity::delete);
-      flow.deleteLinks(FLOW_TO_LOCATIONS_LINK_NAME);
-      flow.delete();
-    });
-    issueEntity.deleteLinks(ISSUE_TO_FLOWS_LINK_NAME);
   }
 
   @Override
@@ -522,7 +484,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       .ifPresent(issueEntity -> {
         var currentIssue = adaptTaint(issueEntity);
         taintIssueUpdater.accept(currentIssue);
-        updateTaintIssueEntity(currentIssue, txn, issueEntity);
+        updateTaintIssueEntity(currentIssue, issueEntity);
       }));
   }
 
@@ -556,5 +518,43 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     } catch (Exception e) {
       LOG.error("Unable to backup server issue database", e);
     }
+  }
+
+  private static Flow toJavaFlow(Sonarlint.Flow flowProto) {
+    return new Flow(flowProto.getLocationList().stream().map(XodusServerIssueStore::toJavaLocation).collect(Collectors.toList()));
+  }
+
+  private static ServerIssueLocation toJavaLocation(Location locationProto) {
+    return new ServerIssueLocation(locationProto.hasFilePath() ? locationProto.getFilePath() : null,
+      locationProto.hasTextRange() ? toTextRangeJava(locationProto.getTextRange()) : null, locationProto.getMessage());
+  }
+
+  private static TextRangeWithHash toTextRangeJava(TextRange textRange) {
+    return new TextRangeWithHash(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset(), textRange.getHash());
+  }
+
+  private static Sonarlint.Flow toProtoFlow(Flow javaFlow) {
+    var flowBuilder = Sonarlint.Flow.newBuilder();
+    javaFlow.locations().forEach(l -> flowBuilder.addLocation(toProtoLocation(l)));
+    return flowBuilder.build();
+  }
+
+  private static Location toProtoLocation(ServerIssueLocation l) {
+    var location = Location.newBuilder();
+    String filePath = l.getFilePath();
+    if (filePath != null) {
+      location.setFilePath(filePath);
+    }
+    location.setMessage(l.getMessage());
+    var textRange = l.getTextRange();
+    if (textRange != null) {
+      location.setTextRange(TextRange.newBuilder()
+        .setStartLine(textRange.getStartLine())
+        .setStartLineOffset(textRange.getStartLineOffset())
+        .setEndLine(textRange.getEndLine())
+        .setEndLineOffset(textRange.getEndLineOffset())
+        .setHash(textRange.getHash()));
+    }
+    return location.build();
   }
 }

@@ -42,6 +42,7 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIss
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue.Flow;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue.ServerIssueLocation;
 
 import static java.time.temporal.ChronoUnit.MILLIS;
@@ -473,16 +474,50 @@ class XodusServerIssueStoreTests {
       .extracting("key", "resolved", "ruleKey", "message", "filePath", "severity", "type")
       .containsOnly(tuple("key", false, "repo:key", "message", "file/path", IssueSeverity.MINOR, RuleType.VULNERABILITY));
     assertThat(taintIssues)
-      .extracting("textRange")
+      .extracting(ServerTaintIssue::getTextRange)
       .extracting("startLine", "startLineOffset", "endLine", "endLineOffset", "hash")
       .containsOnly(tuple(1, 2, 3, 4, "ab12"));
     assertThat(taintIssues)
-      .flatExtracting("flows")
-      .flatExtracting("locations")
+      .flatExtracting(ServerTaintIssue::getFlows)
+      .flatExtracting(Flow::locations)
       .extracting("message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "textRange.hash")
       .containsOnly(
         // flow 1
         tuple("message", "file/path", 5, 6, 7, 8, "rangeHash"));
+  }
+
+  @Test
+  void should_insert_taint_with_file_level_location() {
+    store.insert("branch", aServerTaintIssue().setFlows(List.of(new ServerTaintIssue.Flow(List.of(new ServerTaintIssue.ServerIssueLocation(
+      "file/path",
+      null,
+      "message"))))));
+
+    var taintIssues = store.loadTaint("branch", "file/path");
+    assertThat(taintIssues)
+      .flatExtracting(ServerTaintIssue::getFlows)
+      .flatExtracting(Flow::locations)
+      .extracting("message", "filePath", "textRange")
+      .containsOnly(
+        // flow 1
+        tuple("message", "file/path", null));
+  }
+
+  @Test
+  void should_insert_taint_with_project_level_location() {
+    store.insert("branch", aServerTaintIssue().setFlows(List.of(new ServerTaintIssue.Flow(List.of(new ServerTaintIssue.ServerIssueLocation(
+      null,
+      null,
+      "message"))))));
+
+    var taintIssues = store.loadTaint("branch", "file/path");
+    assertThat(taintIssues)
+      .flatExtracting(ServerTaintIssue::getFlows)
+      .flatExtracting(Flow::locations)
+      .extracting("message", "filePath", "textRange")
+      .containsOnly(
+        // flow 1
+        tuple("message", null, null));
   }
 
   @Test
