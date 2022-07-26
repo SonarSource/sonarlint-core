@@ -86,9 +86,8 @@ public class ServerConnection {
 
     connectionStorageRoot = globalStorageRoot.resolve(encodeForFs(connectionId));
 
-    var projectStoragePaths = new ProjectStoragePaths(connectionStorageRoot);
-
     var projectsStorageRoot = connectionStorageRoot.resolve("projects");
+    var projectStoragePaths = new ProjectStoragePaths(projectsStorageRoot);
     projectStorage = new ProjectStorage(projectsStorageRoot);
 
     this.storageReader = new StorageReader(projectStoragePaths);

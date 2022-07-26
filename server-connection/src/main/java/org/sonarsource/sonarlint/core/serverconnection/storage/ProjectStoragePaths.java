@@ -31,8 +31,8 @@ public class ProjectStoragePaths {
 
   private final Path projectStorageRoot;
 
-  public ProjectStoragePaths(Path serverStorageRoot) {
-    projectStorageRoot = serverStorageRoot.resolve("projects");
+  public ProjectStoragePaths(Path projectsStorageRoot) {
+    this.projectStorageRoot = projectsStorageRoot;
   }
 
   public Path getProjectStorageRoot(String projectKey) {

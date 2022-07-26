@@ -45,7 +45,7 @@ class ProjectStoragePathsTests {
 
     var moduleStorageRoot = manager.getProjectStorageRoot("module.:key/with_branch%");
     assertThat(moduleStorageRoot)
-      .isEqualTo(connectionStorageRoot.resolve("projects").resolve("6d6f64756c652e3a6b65792f776974685f6272616e636825"));
+      .isEqualTo(connectionStorageRoot.resolve("6d6f64756c652e3a6b65792f776974685f6272616e636825"));
   }
 
   @Test
@@ -53,7 +53,6 @@ class ProjectStoragePathsTests {
     var manager = new ProjectStoragePaths(connectionStorageRoot);
 
     assertThat(manager.getComponentListPath("project")).isEqualTo(connectionStorageRoot
-      .resolve("projects")
       .resolve("70726f6a656374")
       .resolve("component_list.pb"));
   }
