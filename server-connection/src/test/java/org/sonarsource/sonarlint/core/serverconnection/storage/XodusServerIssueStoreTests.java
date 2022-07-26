@@ -37,8 +37,10 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue.ServerIssueLocation;
 
+import static java.time.temporal.ChronoUnit.MILLIS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.assertj.core.api.Assertions.within;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aBatchServerIssue;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aFileLevelServerIssue;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerIssue;
@@ -82,7 +84,7 @@ class XodusServerIssueStoreTests {
     assertThat(savedIssue.getMessage()).isEqualTo("message");
     assertThat(((LineLevelServerIssue) savedIssue).getLineHash()).isEqualTo("hash");
     assertThat(savedIssue.getFilePath()).isEqualTo("file/path");
-    assertThat(savedIssue.getCreationDate()).isEqualTo(creationDate);
+    assertThat(savedIssue.getCreationDate()).isCloseTo(creationDate, within(1, MILLIS));
     assertThat(savedIssue.getUserSeverity()).isEqualTo(IssueSeverity.MINOR);
     assertThat(savedIssue.getType()).isEqualTo(RuleType.BUG);
     assertThat(((LineLevelServerIssue) savedIssue).getLine()).isEqualTo(1);
@@ -103,7 +105,7 @@ class XodusServerIssueStoreTests {
     assertThat(savedIssue.getRuleKey()).isEqualTo("repo:key");
     assertThat(savedIssue.getMessage()).isEqualTo("message");
     assertThat(savedIssue.getFilePath()).isEqualTo("file/path");
-    assertThat(savedIssue.getCreationDate()).isEqualTo(creationDate);
+    assertThat(savedIssue.getCreationDate()).isCloseTo(creationDate, within(1, MILLIS));
     assertThat(savedIssue.getUserSeverity()).isEqualTo(IssueSeverity.MINOR);
     assertThat(savedIssue.getType()).isEqualTo(RuleType.BUG);
     assertThat(((RangeLevelServerIssue) savedIssue).getTextRange().getStartLine()).isEqualTo(1);
@@ -130,7 +132,7 @@ class XodusServerIssueStoreTests {
     assertThat(savedIssue.getRuleKey()).isEqualTo("repo:key");
     assertThat(savedIssue.getMessage()).isEqualTo("message");
     assertThat(savedIssue.getFilePath()).isEqualTo("file/path");
-    assertThat(savedIssue.getCreationDate()).isEqualTo(creationDate);
+    assertThat(savedIssue.getCreationDate()).isCloseTo(creationDate, within(1, MILLIS));
     assertThat(savedIssue.getSeverity()).isEqualTo(IssueSeverity.MINOR);
     assertThat(savedIssue.getType()).isEqualTo(RuleType.VULNERABILITY);
     assertThat(savedIssue.getTextRange().getStartLine()).isEqualTo(1);

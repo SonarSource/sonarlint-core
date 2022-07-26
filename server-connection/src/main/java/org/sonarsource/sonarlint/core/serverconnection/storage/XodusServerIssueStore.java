@@ -98,6 +98,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
     entityStore.executeInTransaction(txn -> {
       entityStore.registerCustomPropertyType(txn, IssueSeverity.class, new IssueSeverityBinding());
       entityStore.registerCustomPropertyType(txn, RuleType.class, new IssueTypeBinding());
+      entityStore.registerCustomPropertyType(txn, Instant.class, new InstantBinding());
     });
   }
 
@@ -108,7 +109,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
     var resolved = Boolean.TRUE.equals(storedIssue.getProperty(RESOLVED_PROPERTY_NAME));
     var ruleKey = (String) requireNonNull(storedIssue.getProperty(RULE_KEY_PROPERTY_NAME));
     var msg = requireNonNull(storedIssue.getBlobString(MESSAGE_BLOB_NAME));
-    var creationDate = Instant.parse((String) requireNonNull(storedIssue.getProperty(CREATION_DATE_PROPERTY_NAME)));
+    var creationDate = (Instant) requireNonNull(storedIssue.getProperty(CREATION_DATE_PROPERTY_NAME));
     var userSeverity = (IssueSeverity) storedIssue.getProperty(USER_SEVERITY_PROPERTY_NAME);
     var type = (RuleType) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME));
     if (startLine == null) {
@@ -163,7 +164,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
       (String) requireNonNull(storedIssue.getProperty(RULE_KEY_PROPERTY_NAME)),
       requireNonNull(storedIssue.getBlobString(MESSAGE_BLOB_NAME)),
       filePath,
-      Instant.parse((String) requireNonNull(storedIssue.getProperty(CREATION_DATE_PROPERTY_NAME))),
+      (Instant) requireNonNull(storedIssue.getProperty(CREATION_DATE_PROPERTY_NAME)),
       (IssueSeverity) requireNonNull(storedIssue.getProperty(SEVERITY_PROPERTY_NAME)),
       (RuleType) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME)),
       textRange)
@@ -235,7 +236,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
         issues.forEach(issue -> updateOrCreateIssue(fileEntity, issue, txn));
       });
       closedIssueKeysToDelete.forEach(issueKey -> remove(issueKey, txn));
-      branch.setProperty(LAST_ISSUE_SYNC_PROPERTY_NAME, syncTimestamp.toEpochMilli());
+      branch.setProperty(LAST_ISSUE_SYNC_PROPERTY_NAME, syncTimestamp);
     }));
   }
 
@@ -250,7 +251,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
         issues.forEach(issue -> updateOrCreateTaintIssue(fileEntity, issue, txn));
       });
       closedIssueKeysToDelete.forEach(issueKey -> removeTaint(issueKey, txn));
-      branch.setProperty(LAST_TAINT_SYNC_PROPERTY_NAME, syncTimestamp.toEpochMilli());
+      branch.setProperty(LAST_TAINT_SYNC_PROPERTY_NAME, syncTimestamp);
     }));
   }
 
@@ -259,8 +260,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
     return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, PROJECT_ENTITY_TYPE, KEY_PROPERTY_NAME, projectKey)
       .map(project -> project.getLinks(PROJECT_TO_BRANCHES_LINK_NAME))
       .flatMap(branches -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName))
-      .flatMap(branch -> ofNullable((Long) branch.getProperty(LAST_ISSUE_SYNC_PROPERTY_NAME)))
-      .map(Instant::ofEpochMilli));
+      .flatMap(branch -> ofNullable((Instant) branch.getProperty(LAST_ISSUE_SYNC_PROPERTY_NAME))));
   }
 
   @Override
@@ -268,8 +268,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
     return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, PROJECT_ENTITY_TYPE, KEY_PROPERTY_NAME, projectKey)
       .map(project -> project.getLinks(PROJECT_TO_BRANCHES_LINK_NAME))
       .flatMap(branches -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName))
-      .flatMap(branch -> ofNullable((Long) branch.getProperty(LAST_TAINT_SYNC_PROPERTY_NAME)))
-      .map(Instant::ofEpochMilli));
+      .flatMap(branch -> ofNullable((Instant) branch.getProperty(LAST_TAINT_SYNC_PROPERTY_NAME))));
   }
 
   @Override
@@ -360,7 +359,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
     issueEntity.setProperty(RESOLVED_PROPERTY_NAME, issue.isResolved());
     issueEntity.setProperty(RULE_KEY_PROPERTY_NAME, issue.getRuleKey());
     issueEntity.setBlobString(MESSAGE_BLOB_NAME, issue.getMessage());
-    issueEntity.setProperty(CREATION_DATE_PROPERTY_NAME, issue.getCreationDate().toString());
+    issueEntity.setProperty(CREATION_DATE_PROPERTY_NAME, issue.getCreationDate());
     var userSeverity = issue.getUserSeverity();
     if (userSeverity != null) {
       issueEntity.setProperty(USER_SEVERITY_PROPERTY_NAME, userSeverity);
@@ -390,7 +389,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
     issueEntity.setProperty(RESOLVED_PROPERTY_NAME, issue.isResolved());
     issueEntity.setProperty(RULE_KEY_PROPERTY_NAME, issue.getRuleKey());
     issueEntity.setBlobString(MESSAGE_BLOB_NAME, issue.getMessage());
-    issueEntity.setProperty(CREATION_DATE_PROPERTY_NAME, issue.getCreationDate().toString());
+    issueEntity.setProperty(CREATION_DATE_PROPERTY_NAME, issue.getCreationDate());
     issueEntity.setProperty(SEVERITY_PROPERTY_NAME, issue.getSeverity());
     issueEntity.setProperty(TYPE_PROPERTY_NAME, issue.getType());
     var textRange = issue.getTextRange();
