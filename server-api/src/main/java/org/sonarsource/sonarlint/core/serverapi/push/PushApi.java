@@ -43,7 +43,7 @@ public class PushApi {
   private static final String API_PATH = "api/push/sonarlint_events";
   private static final Map<String, EventParser<?>> parsersByType = Map.of(
     "RuleSetChanged", new RuleSetChangedEventParser(),
-    "IssueChangedEvent", new IssueChangedEventParser(),
+    "IssueChanged", new IssueChangedEventParser(),
     "TaintVulnerabilityRaised", new TaintVulnerabilityRaisedEventParser(),
     "TaintVulnerabilityClosed", new TaintVulnerabilityClosedEventParser());
 
