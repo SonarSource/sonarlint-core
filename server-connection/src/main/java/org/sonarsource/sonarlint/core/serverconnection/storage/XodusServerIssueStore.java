@@ -20,7 +20,13 @@
 
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -36,7 +42,10 @@ import jetbrains.exodus.entitystore.EntityIterable;
 import jetbrains.exodus.entitystore.PersistentEntityStore;
 import jetbrains.exodus.entitystore.PersistentEntityStores;
 import jetbrains.exodus.entitystore.StoreTransaction;
+import jetbrains.exodus.util.CompressBackupUtil;
+import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
@@ -46,30 +55,28 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIss
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue.Flow;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue.ServerIssueLocation;
+import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint.Location;
+import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint.TextRange;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.Optional.ofNullable;
 
-public class XodusServerIssueStore implements ServerIssueStore {
+public class XodusServerIssueStore implements ProjectServerIssueStore {
+  private static final String BACKUP_TAR_GZ = "backup.tar.gz";
+
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private static final String FILE_NAME = "sonarlint.db";
-
-  private static final String PROJECT_ENTITY_TYPE = "Project";
   private static final String BRANCH_ENTITY_TYPE = "Branch";
   private static final String FILE_ENTITY_TYPE = "File";
   private static final String ISSUE_ENTITY_TYPE = "Issue";
   private static final String TAINT_ISSUE_ENTITY_TYPE = "TaintIssue";
-  private static final String FLOW_ENTITY_TYPE = "Flow";
-  private static final String LOCATION_ENTITY_TYPE = "Location";
 
-  private static final String PROJECT_TO_BRANCHES_LINK_NAME = "branches";
   private static final String BRANCH_TO_FILES_LINK_NAME = "files";
   private static final String FILE_TO_ISSUES_LINK_NAME = "issues";
   private static final String FILE_TO_TAINT_ISSUES_LINK_NAME = "taintIssues";
   private static final String ISSUE_TO_FILE_LINK_NAME = "file";
-  private static final String ISSUE_TO_FLOWS_LINK_NAME = "flows";
-  private static final String FLOW_TO_LOCATIONS_LINK_NAME = "locations";
 
   private static final String START_LINE_PROPERTY_NAME = "startLine";
   private static final String START_LINE_OFFSET_PROPERTY_NAME = "startLineOffset";
@@ -78,10 +85,8 @@ public class XodusServerIssueStore implements ServerIssueStore {
   private static final String KEY_PROPERTY_NAME = "key";
   private static final String RESOLVED_PROPERTY_NAME = "resolved";
   private static final String RULE_KEY_PROPERTY_NAME = "ruleKey";
-  private static final String MESSAGE_PROPERTY_NAME = "message";
   private static final String LINE_HASH_PROPERTY_NAME = "lineHash";
   private static final String RANGE_HASH_PROPERTY_NAME = "rangeHash";
-  private static final String FILE_PATH_PROPERTY_NAME = "filePath";
   private static final String CREATION_DATE_PROPERTY_NAME = "creationDate";
   private static final String USER_SEVERITY_PROPERTY_NAME = "userSeverity";
   private static final String SEVERITY_PROPERTY_NAME = "severity";
@@ -91,31 +96,49 @@ public class XodusServerIssueStore implements ServerIssueStore {
   private static final String LAST_ISSUE_SYNC_PROPERTY_NAME = "lastIssueSync";
   private static final String LAST_TAINT_SYNC_PROPERTY_NAME = "lastTaintSync";
 
+  private static final String MESSAGE_BLOB_NAME = "message";
+  private static final String FLOWS_BLOB_NAME = "flows";
+
   private final PersistentEntityStore entityStore;
 
-  public XodusServerIssueStore(Path baseDir) {
-    entityStore = PersistentEntityStores.newInstance(baseDir.resolve(FILE_NAME).toAbsolutePath().toString());
+  private final Path backupFile;
+
+  private final Path xodusDbDir;
+
+  public XodusServerIssueStore(Path backupDir, Path workDir) throws IOException {
+    xodusDbDir = Files.createTempDirectory(workDir, "xodus-issue-store");
+    backupFile = backupDir.resolve(BACKUP_TAR_GZ);
+    if (Files.isRegularFile(backupFile)) {
+      LOG.debug("Restoring previous server issue database from {}", backupFile);
+      try {
+        TarGzUtils.extractTarGz(backupFile, xodusDbDir);
+      } catch (Exception e) {
+        LOG.error("Unable to restore backup {}", backupFile);
+      }
+    }
+    LOG.debug("Starting server issue database from {}", xodusDbDir);
+    entityStore = PersistentEntityStores.newInstance(xodusDbDir.toAbsolutePath().toString());
     entityStore.executeInTransaction(txn -> {
       entityStore.registerCustomPropertyType(txn, IssueSeverity.class, new IssueSeverityBinding());
       entityStore.registerCustomPropertyType(txn, RuleType.class, new IssueTypeBinding());
+      entityStore.registerCustomPropertyType(txn, Instant.class, new InstantBinding());
     });
   }
 
   private static ServerIssue adapt(Entity storedIssue) {
+    var filePath = (String) requireNonNull(storedIssue.getLink(ISSUE_TO_FILE_LINK_NAME).getProperty(PATH_PROPERTY_NAME));
     var startLine = storedIssue.getProperty(START_LINE_PROPERTY_NAME);
     var key = (String) requireNonNull(storedIssue.getProperty(KEY_PROPERTY_NAME));
     var resolved = Boolean.TRUE.equals(storedIssue.getProperty(RESOLVED_PROPERTY_NAME));
     var ruleKey = (String) requireNonNull(storedIssue.getProperty(RULE_KEY_PROPERTY_NAME));
-    var msg = (String) requireNonNull(storedIssue.getProperty(MESSAGE_PROPERTY_NAME));
-    // FIXME We could save storage by not storing filePath on the issue entity, but instead relying on the relation with file entity
-    var filePath = (String) requireNonNull(storedIssue.getProperty(FILE_PATH_PROPERTY_NAME));
-    var creationDate = Instant.parse((String) requireNonNull(storedIssue.getProperty(CREATION_DATE_PROPERTY_NAME)));
+    var msg = requireNonNull(storedIssue.getBlobString(MESSAGE_BLOB_NAME));
+    var creationDate = (Instant) requireNonNull(storedIssue.getProperty(CREATION_DATE_PROPERTY_NAME));
     var userSeverity = (IssueSeverity) storedIssue.getProperty(USER_SEVERITY_PROPERTY_NAME);
     var type = (RuleType) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME));
     if (startLine == null) {
       return new FileLevelServerIssue(key, resolved, ruleKey, msg, filePath, creationDate, userSeverity, type);
     } else {
-      var rangeHash = (String) storedIssue.getProperty(RANGE_HASH_PROPERTY_NAME);
+      var rangeHash = storedIssue.getBlobString(RANGE_HASH_PROPERTY_NAME);
       if (rangeHash != null) {
         var startLineOffset = (Integer) storedIssue.getProperty(START_LINE_OFFSET_PROPERTY_NAME);
         var endLine = (Integer) storedIssue.getProperty(END_LINE_PROPERTY_NAME);
@@ -137,7 +160,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
           resolved,
           ruleKey,
           msg,
-          (String) storedIssue.getProperty(LINE_HASH_PROPERTY_NAME),
+          storedIssue.getBlobString(LINE_HASH_PROPERTY_NAME),
           filePath,
           creationDate,
           userSeverity,
@@ -148,63 +171,48 @@ public class XodusServerIssueStore implements ServerIssueStore {
   }
 
   private static ServerTaintIssue adaptTaint(Entity storedIssue) {
+    var filePath = (String) requireNonNull(storedIssue.getLink(ISSUE_TO_FILE_LINK_NAME).getProperty(PATH_PROPERTY_NAME));
     var startLine = (Integer) storedIssue.getProperty(START_LINE_PROPERTY_NAME);
     TextRangeWithHash textRange = null;
     if (startLine != null) {
       var startLineOffset = (Integer) storedIssue.getProperty(START_LINE_OFFSET_PROPERTY_NAME);
       var endLine = (Integer) storedIssue.getProperty(END_LINE_PROPERTY_NAME);
       var endLineOffset = (Integer) storedIssue.getProperty(END_LINE_OFFSET_PROPERTY_NAME);
-      var hash = (String) storedIssue.getProperty(RANGE_HASH_PROPERTY_NAME);
+      var hash = storedIssue.getBlobString(RANGE_HASH_PROPERTY_NAME);
       textRange = new TextRangeWithHash(startLine, startLineOffset, endLine, endLineOffset, hash);
     }
     return new ServerTaintIssue(
       (String) requireNonNull(storedIssue.getProperty(KEY_PROPERTY_NAME)),
       Boolean.TRUE.equals(storedIssue.getProperty(RESOLVED_PROPERTY_NAME)),
       (String) requireNonNull(storedIssue.getProperty(RULE_KEY_PROPERTY_NAME)),
-      (String) requireNonNull(storedIssue.getProperty(MESSAGE_PROPERTY_NAME)),
-      (String) requireNonNull(storedIssue.getProperty(FILE_PATH_PROPERTY_NAME)),
-      Instant.parse((String) requireNonNull(storedIssue.getProperty(CREATION_DATE_PROPERTY_NAME))),
+      requireNonNull(storedIssue.getBlobString(MESSAGE_BLOB_NAME)),
+      filePath,
+      (Instant) requireNonNull(storedIssue.getProperty(CREATION_DATE_PROPERTY_NAME)),
       (IssueSeverity) requireNonNull(storedIssue.getProperty(SEVERITY_PROPERTY_NAME)),
       (RuleType) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME)),
       textRange)
-        .setFlows(StreamSupport.stream(storedIssue.getLinks(ISSUE_TO_FLOWS_LINK_NAME).spliterator(), false).map(XodusServerIssueStore::adaptFlow).collect(Collectors.toList()));
+        .setFlows(readFlows(storedIssue.getBlob(FLOWS_BLOB_NAME)));
   }
 
-  private static ServerTaintIssue.Flow adaptFlow(Entity flowEntity) {
-    return new ServerTaintIssue.Flow(
-      StreamSupport.stream(flowEntity.getLinks(FLOW_TO_LOCATIONS_LINK_NAME).spliterator(), false).map(XodusServerIssueStore::adaptLocation).collect(Collectors.toList()));
-  }
-
-  private static ServerTaintIssue.ServerIssueLocation adaptLocation(Entity locationEntity) {
-    var startLine = locationEntity.getProperty(START_LINE_PROPERTY_NAME);
-    TextRangeWithHash textRange = null;
-    if (startLine != null) {
-      var startLineOffset = (Integer) locationEntity.getProperty(START_LINE_OFFSET_PROPERTY_NAME);
-      var endLine = (Integer) locationEntity.getProperty(END_LINE_PROPERTY_NAME);
-      var endLineOffset = (Integer) locationEntity.getProperty(END_LINE_OFFSET_PROPERTY_NAME);
-      var hash = (String) locationEntity.getProperty(RANGE_HASH_PROPERTY_NAME);
-      textRange = new TextRangeWithHash((int) startLine, startLineOffset, endLine, endLineOffset, hash);
+  private static List<Flow> readFlows(@Nullable InputStream blob) {
+    if (blob == null) {
+      return List.of();
     }
-    return new ServerTaintIssue.ServerIssueLocation(
-      (String) locationEntity.getProperty(FILE_PATH_PROPERTY_NAME),
-      textRange,
-      (String) locationEntity.getProperty(MESSAGE_PROPERTY_NAME));
+    return ProtobufUtil.readMessages(blob, Sonarlint.Flow.parser()).stream().map(XodusServerIssueStore::toJavaFlow).collect(Collectors.toList());
   }
 
   @Override
-  public List<ServerIssue> load(String projectKey, String branchName, String filePath) {
-    return loadIssue(projectKey, branchName, filePath, FILE_TO_ISSUES_LINK_NAME, XodusServerIssueStore::adapt);
+  public List<ServerIssue> load(String branchName, String filePath) {
+    return loadIssue(branchName, filePath, FILE_TO_ISSUES_LINK_NAME, XodusServerIssueStore::adapt);
   }
 
   @Override
-  public List<ServerTaintIssue> loadTaint(String projectKey, String branchName, String filePath) {
-    return loadIssue(projectKey, branchName, filePath, FILE_TO_TAINT_ISSUES_LINK_NAME, XodusServerIssueStore::adaptTaint);
+  public List<ServerTaintIssue> loadTaint(String branchName, String filePath) {
+    return loadIssue(branchName, filePath, FILE_TO_TAINT_ISSUES_LINK_NAME, XodusServerIssueStore::adaptTaint);
   }
 
-  private <G> List<G> loadIssue(String projectKey, String branchName, String filePath, String linkName, Function<Entity, G> adapter) {
-    return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, PROJECT_ENTITY_TYPE, KEY_PROPERTY_NAME, projectKey)
-      .map(project -> project.getLinks(PROJECT_TO_BRANCHES_LINK_NAME))
-      .flatMap(branches -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName))
+  private <G> List<G> loadIssue(String branchName, String filePath, String linkName, Function<Entity, G> adapter) {
+    return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
       .map(branch -> branch.getLinks(BRANCH_TO_FILES_LINK_NAME))
       .flatMap(files -> findUnique(txn, FILE_ENTITY_TYPE, PATH_PROPERTY_NAME, filePath))
       .map(fileToLoad -> fileToLoad.getLinks(linkName))
@@ -215,79 +223,78 @@ public class XodusServerIssueStore implements ServerIssueStore {
   }
 
   @Override
-  public void replaceAllIssuesOfFile(String projectKey, String branchName, String serverFilePath, List<ServerIssue> issues) {
+  public void replaceAllIssuesOfFile(String branchName, String serverFilePath, List<ServerIssue> issues) {
     timed("Wrote " + issues.size() + " issues in store", () -> entityStore.executeInTransaction(txn -> {
-      var project = getOrCreateProject(projectKey, txn);
-      var branch = getOrCreateBranch(project, branchName, txn);
+      var branch = getOrCreateBranch(branchName, txn);
       var fileEntity = getOrCreateFile(branch, serverFilePath, txn);
       replaceAllIssuesOfFile(issues, txn, fileEntity);
     }));
   }
 
   @Override
-  public void mergeIssues(String projectKey, String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp) {
+  public void mergeIssues(String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp) {
+    var issuesByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
     timed("Merged " + issuesToMerge.size() + " issues in store. Closed " + closedIssueKeysToDelete.size() + ".", () -> entityStore.executeInTransaction(txn -> {
-      var project = getOrCreateProject(projectKey, txn);
-      var branch = getOrCreateBranch(project, branchName, txn);
-      var issuesByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
+      var branch = getOrCreateBranch(branchName, txn);
       issuesByFilePath.forEach((filePath, issues) -> {
         var fileEntity = getOrCreateFile(branch, filePath, txn);
         issues.forEach(issue -> updateOrCreateIssue(fileEntity, issue, txn));
+        txn.flush();
       });
       closedIssueKeysToDelete.forEach(issueKey -> remove(issueKey, txn));
-      branch.setProperty(LAST_ISSUE_SYNC_PROPERTY_NAME, syncTimestamp.toEpochMilli());
+      branch.setProperty(LAST_ISSUE_SYNC_PROPERTY_NAME, syncTimestamp);
     }));
   }
 
   @Override
-  public void mergeTaintIssues(String projectKey, String branchName, List<ServerTaintIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp) {
+  public void mergeTaintIssues(String branchName, List<ServerTaintIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp) {
+    var issuesByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerTaintIssue::getFilePath));
     timed("Merged " + issuesToMerge.size() + " taint issues in store. Closed " + closedIssueKeysToDelete.size() + ".", () -> entityStore.executeInTransaction(txn -> {
-      var project = getOrCreateProject(projectKey, txn);
-      var branch = getOrCreateBranch(project, branchName, txn);
-      var issuesByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerTaintIssue::getFilePath));
+      var branch = getOrCreateBranch(branchName, txn);
       issuesByFilePath.forEach((filePath, issues) -> {
         var fileEntity = getOrCreateFile(branch, filePath, txn);
         issues.forEach(issue -> updateOrCreateTaintIssue(fileEntity, issue, txn));
+        txn.flush();
       });
       closedIssueKeysToDelete.forEach(issueKey -> removeTaint(issueKey, txn));
-      branch.setProperty(LAST_TAINT_SYNC_PROPERTY_NAME, syncTimestamp.toEpochMilli());
+      branch.setProperty(LAST_TAINT_SYNC_PROPERTY_NAME, syncTimestamp);
     }));
   }
 
   @Override
-  public Optional<Instant> getLastIssueSyncTimestamp(String projectKey, String branchName) {
-    return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, PROJECT_ENTITY_TYPE, KEY_PROPERTY_NAME, projectKey)
-      .map(project -> project.getLinks(PROJECT_TO_BRANCHES_LINK_NAME))
-      .flatMap(branches -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName))
-      .flatMap(branch -> ofNullable((Long) branch.getProperty(LAST_ISSUE_SYNC_PROPERTY_NAME)))
-      .map(Instant::ofEpochMilli));
+  public Optional<Instant> getLastIssueSyncTimestamp(String branchName) {
+    return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
+      .map(branch -> (Instant) branch.getProperty(LAST_ISSUE_SYNC_PROPERTY_NAME)));
   }
 
   @Override
-  public Optional<Instant> getLastTaintSyncTimestamp(String projectKey, String branchName) {
-    return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, PROJECT_ENTITY_TYPE, KEY_PROPERTY_NAME, projectKey)
-      .map(project -> project.getLinks(PROJECT_TO_BRANCHES_LINK_NAME))
-      .flatMap(branches -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName))
-      .flatMap(branch -> ofNullable((Long) branch.getProperty(LAST_TAINT_SYNC_PROPERTY_NAME)))
-      .map(Instant::ofEpochMilli));
+  public Optional<Instant> getLastTaintSyncTimestamp(String branchName) {
+    return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
+      .map(branch -> (Instant) branch.getProperty(LAST_TAINT_SYNC_PROPERTY_NAME)));
   }
 
   @Override
-  public void replaceAllIssuesOfProject(String projectKey, String branchName, List<ServerIssue> issues) {
+  public void replaceAllIssuesOfBranch(String branchName, List<ServerIssue> issues) {
+    var issuesByFile = issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
     timed("Wrote " + issues.size() + " issues in store", () -> entityStore.executeInTransaction(txn -> {
-      var project = getOrCreateProject(projectKey, txn);
-      var branch = getOrCreateBranch(project, branchName, txn);
-      var issuesByFile = issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
+      var branch = getOrCreateBranch(branchName, txn);
       branch.getLinks(BRANCH_TO_FILES_LINK_NAME).forEach(fileEntity -> {
-        var entityFilePath = fileEntity.getProperty(FILE_PATH_PROPERTY_NAME);
-        replaceAllIssuesOfFile(issuesByFile.getOrDefault(entityFilePath, List.of()), txn, fileEntity);
-        issuesByFile.remove(entityFilePath);
+        var entityFilePath = fileEntity.getProperty(PATH_PROPERTY_NAME);
+        if (!issuesByFile.containsKey(entityFilePath)) {
+          deleteAllIssuesOfFile(txn, fileEntity);
+        }
       });
+      txn.flush();
       issuesByFile.forEach((filePath, fileIssues) -> {
         var fileEntity = getOrCreateFile(branch, filePath, txn);
         replaceAllIssuesOfFile(fileIssues, txn, fileEntity);
+        txn.flush();
       });
     }));
+  }
+
+  private static void deleteAllIssuesOfFile(@NotNull StoreTransaction txn, Entity fileEntity) {
+    replaceAllIssuesOfFile(List.of(), txn, fileEntity);
   }
 
   private static void timed(String msg, Runnable transaction) {
@@ -305,10 +312,9 @@ public class XodusServerIssueStore implements ServerIssueStore {
   }
 
   @Override
-  public void replaceAllTaintOfFile(String projectKey, String branchName, String serverFilePath, List<ServerTaintIssue> issues) {
+  public void replaceAllTaintOfFile(String branchName, String serverFilePath, List<ServerTaintIssue> issues) {
     timed("Wrote " + issues.size() + " taint issues in store", () -> entityStore.executeInTransaction(txn -> {
-      var project = getOrCreateProject(projectKey, txn);
-      var branch = getOrCreateBranch(project, branchName, txn);
+      var branch = getOrCreateBranch(branchName, txn);
       var fileEntity = getOrCreateFile(branch, serverFilePath, txn);
 
       fileEntity.getLinks(FILE_TO_TAINT_ISSUES_LINK_NAME).forEach(Entity::delete);
@@ -318,23 +324,11 @@ public class XodusServerIssueStore implements ServerIssueStore {
     }));
   }
 
-  private static Entity getOrCreateProject(String projectKey, StoreTransaction txn) {
-    return findUnique(txn, PROJECT_ENTITY_TYPE, KEY_PROPERTY_NAME, projectKey)
-      .orElseGet(() -> {
-        var project = txn.newEntity(PROJECT_ENTITY_TYPE);
-        project.setProperty(KEY_PROPERTY_NAME, projectKey);
-        return project;
-      });
-  }
-
-  private static Entity getOrCreateBranch(Entity projectEntity, String branchName, StoreTransaction txn) {
-    var branchIterable = projectEntity.getLinks(PROJECT_TO_BRANCHES_LINK_NAME)
-      .intersect(findAll(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName));
-    return Optional.ofNullable(branchIterable.getFirst())
+  private static Entity getOrCreateBranch(String branchName, StoreTransaction txn) {
+    return findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
       .orElseGet(() -> {
         var branch = txn.newEntity(BRANCH_ENTITY_TYPE);
         branch.setProperty(NAME_PROPERTY_NAME, branchName);
-        projectEntity.addLink(PROJECT_TO_BRANCHES_LINK_NAME, branch);
         return branch;
       });
   }
@@ -359,9 +353,8 @@ public class XodusServerIssueStore implements ServerIssueStore {
   private static void updateIssueEntity(Entity issueEntity, ServerIssue issue) {
     issueEntity.setProperty(RESOLVED_PROPERTY_NAME, issue.isResolved());
     issueEntity.setProperty(RULE_KEY_PROPERTY_NAME, issue.getRuleKey());
-    issueEntity.setProperty(MESSAGE_PROPERTY_NAME, issue.getMessage());
-    issueEntity.setProperty(FILE_PATH_PROPERTY_NAME, issue.getFilePath());
-    issueEntity.setProperty(CREATION_DATE_PROPERTY_NAME, issue.getCreationDate().toString());
+    issueEntity.setBlobString(MESSAGE_BLOB_NAME, issue.getMessage());
+    issueEntity.setProperty(CREATION_DATE_PROPERTY_NAME, issue.getCreationDate());
     var userSeverity = issue.getUserSeverity();
     if (userSeverity != null) {
       issueEntity.setProperty(USER_SEVERITY_PROPERTY_NAME, userSeverity);
@@ -369,7 +362,7 @@ public class XodusServerIssueStore implements ServerIssueStore {
     issueEntity.setProperty(TYPE_PROPERTY_NAME, issue.getType());
     if (issue instanceof LineLevelServerIssue) {
       var lineIssue = (LineLevelServerIssue) issue;
-      issueEntity.setProperty(LINE_HASH_PROPERTY_NAME, lineIssue.getLineHash());
+      issueEntity.setBlobString(LINE_HASH_PROPERTY_NAME, lineIssue.getLineHash());
       issueEntity.setProperty(START_LINE_PROPERTY_NAME, lineIssue.getLine());
     } else if (issue instanceof RangeLevelServerIssue) {
       var rangeIssue = (RangeLevelServerIssue) issue;
@@ -378,21 +371,20 @@ public class XodusServerIssueStore implements ServerIssueStore {
       issueEntity.setProperty(START_LINE_OFFSET_PROPERTY_NAME, textRange.getStartLineOffset());
       issueEntity.setProperty(END_LINE_PROPERTY_NAME, textRange.getEndLine());
       issueEntity.setProperty(END_LINE_OFFSET_PROPERTY_NAME, textRange.getEndLineOffset());
-      issueEntity.setProperty(RANGE_HASH_PROPERTY_NAME, textRange.getHash());
+      issueEntity.setBlobString(RANGE_HASH_PROPERTY_NAME, textRange.getHash());
     }
   }
 
   private static void updateOrCreateTaintIssue(Entity fileEntity, ServerTaintIssue issue, StoreTransaction transaction) {
     var issueEntity = updateOrCreateIssueCommon(fileEntity, issue.getKey(), transaction, TAINT_ISSUE_ENTITY_TYPE, FILE_TO_TAINT_ISSUES_LINK_NAME);
-    updateTaintIssueEntity(issue, transaction, issueEntity);
+    updateTaintIssueEntity(issue, issueEntity);
   }
 
-  private static void updateTaintIssueEntity(ServerTaintIssue issue, StoreTransaction transaction, Entity issueEntity) {
+  private static void updateTaintIssueEntity(ServerTaintIssue issue, Entity issueEntity) {
     issueEntity.setProperty(RESOLVED_PROPERTY_NAME, issue.isResolved());
     issueEntity.setProperty(RULE_KEY_PROPERTY_NAME, issue.getRuleKey());
-    issueEntity.setProperty(MESSAGE_PROPERTY_NAME, issue.getMessage());
-    issueEntity.setProperty(FILE_PATH_PROPERTY_NAME, issue.getFilePath());
-    issueEntity.setProperty(CREATION_DATE_PROPERTY_NAME, issue.getCreationDate().toString());
+    issueEntity.setBlobString(MESSAGE_BLOB_NAME, issue.getMessage());
+    issueEntity.setProperty(CREATION_DATE_PROPERTY_NAME, issue.getCreationDate());
     issueEntity.setProperty(SEVERITY_PROPERTY_NAME, issue.getSeverity());
     issueEntity.setProperty(TYPE_PROPERTY_NAME, issue.getType());
     var textRange = issue.getTextRange();
@@ -401,10 +393,15 @@ public class XodusServerIssueStore implements ServerIssueStore {
       issueEntity.setProperty(START_LINE_OFFSET_PROPERTY_NAME, textRange.getStartLineOffset());
       issueEntity.setProperty(END_LINE_PROPERTY_NAME, textRange.getEndLine());
       issueEntity.setProperty(END_LINE_OFFSET_PROPERTY_NAME, textRange.getEndLineOffset());
-      issueEntity.setProperty(RANGE_HASH_PROPERTY_NAME, textRange.getHash());
+      issueEntity.setBlobString(RANGE_HASH_PROPERTY_NAME, textRange.getHash());
     }
-    deleteFlowAndLocations(issueEntity);
-    issue.getFlows().forEach(flow -> storeFlow(flow, issueEntity, transaction));
+    issueEntity.setBlob(FLOWS_BLOB_NAME, toProtoFlow(issue.getFlows()));
+  }
+
+  private static InputStream toProtoFlow(List<Flow> flows) {
+    var buffer = new ByteArrayOutputStream();
+    ProtobufUtil.writeMessages(buffer, flows.stream().map(XodusServerIssueStore::toProtoFlow).collect(Collectors.toList()));
+    return new ByteArrayInputStream(buffer.toByteArray());
   }
 
   private static Entity updateOrCreateIssueCommon(Entity fileEntity, String issueKey, StoreTransaction transaction, String entityType, String fileToIssueLink) {
@@ -442,30 +439,6 @@ public class XodusServerIssueStore implements ServerIssueStore {
     return entities;
   }
 
-  private static void storeFlow(ServerTaintIssue.Flow flow, Entity issueEntity, StoreTransaction transaction) {
-    var flowEntity = transaction.newEntity(FLOW_ENTITY_TYPE);
-    issueEntity.addLink(ISSUE_TO_FLOWS_LINK_NAME, flowEntity);
-    flow.locations().forEach(location -> storeLocation(location, flowEntity, transaction));
-  }
-
-  private static void storeLocation(ServerTaintIssue.ServerIssueLocation location, Entity flowEntity, StoreTransaction transaction) {
-    var locationEntity = transaction.newEntity(LOCATION_ENTITY_TYPE);
-    flowEntity.addLink(FLOW_TO_LOCATIONS_LINK_NAME, locationEntity);
-    locationEntity.setProperty(MESSAGE_PROPERTY_NAME, location.getMessage());
-    String filePath = location.getFilePath();
-    if (filePath != null) {
-      locationEntity.setProperty(FILE_PATH_PROPERTY_NAME, filePath);
-    }
-    var locationTextRange = location.getTextRange();
-    if (locationTextRange != null) {
-      locationEntity.setProperty(START_LINE_PROPERTY_NAME, locationTextRange.getStartLine());
-      locationEntity.setProperty(START_LINE_OFFSET_PROPERTY_NAME, locationTextRange.getStartLineOffset());
-      locationEntity.setProperty(END_LINE_PROPERTY_NAME, locationTextRange.getEndLine());
-      locationEntity.setProperty(END_LINE_OFFSET_PROPERTY_NAME, locationTextRange.getEndLineOffset());
-      locationEntity.setProperty(RANGE_HASH_PROPERTY_NAME, locationTextRange.getHash());
-    }
-  }
-
   private static void remove(String issueKey, @NotNull StoreTransaction txn) {
     findUnique(txn, ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issueKey)
       .ifPresent(issueEntity -> {
@@ -474,7 +447,6 @@ public class XodusServerIssueStore implements ServerIssueStore {
           fileEntity.deleteLink(FILE_TO_ISSUES_LINK_NAME, issueEntity);
         }
         issueEntity.deleteLinks(ISSUE_TO_FILE_LINK_NAME);
-        deleteFlowAndLocations(issueEntity);
         issueEntity.delete();
       });
   }
@@ -487,18 +459,8 @@ public class XodusServerIssueStore implements ServerIssueStore {
           fileEntity.deleteLink(FILE_TO_TAINT_ISSUES_LINK_NAME, issueEntity);
         }
         issueEntity.deleteLinks(ISSUE_TO_FILE_LINK_NAME);
-        deleteFlowAndLocations(issueEntity);
         issueEntity.delete();
       });
-  }
-
-  private static void deleteFlowAndLocations(Entity issueEntity) {
-    issueEntity.getLinks(ISSUE_TO_FLOWS_LINK_NAME).forEach(flow -> {
-      flow.getLinks(FLOW_TO_LOCATIONS_LINK_NAME).forEach(Entity::delete);
-      flow.deleteLinks(FLOW_TO_LOCATIONS_LINK_NAME);
-      flow.delete();
-    });
-    issueEntity.deleteLinks(ISSUE_TO_FLOWS_LINK_NAME);
   }
 
   @Override
@@ -522,16 +484,15 @@ public class XodusServerIssueStore implements ServerIssueStore {
       .ifPresent(issueEntity -> {
         var currentIssue = adaptTaint(issueEntity);
         taintIssueUpdater.accept(currentIssue);
-        updateTaintIssueEntity(currentIssue, txn, issueEntity);
+        updateTaintIssueEntity(currentIssue, issueEntity);
       }));
   }
 
   @Override
-  public void insert(String projectKey, String branchName, ServerTaintIssue taintIssue) {
+  public void insert(String branchName, ServerTaintIssue taintIssue) {
     entityStore.executeInTransaction(txn -> findUnique(txn, TAINT_ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, taintIssue.getKey())
       .ifPresentOrElse(issueEntity -> LOG.error("Trying to store a taint vulnerability that already exists"), () -> {
-        var project = getOrCreateProject(projectKey, txn);
-        var branch = getOrCreateBranch(project, branchName, txn);
+        var branch = getOrCreateBranch(branchName, txn);
         var fileEntity = getOrCreateFile(branch, taintIssue.getFilePath(), txn);
         updateOrCreateTaintIssue(fileEntity, taintIssue, txn);
       }));
@@ -544,6 +505,56 @@ public class XodusServerIssueStore implements ServerIssueStore {
 
   @Override
   public void close() {
+    backup();
     entityStore.close();
+    FileUtils.deleteQuietly(xodusDbDir.toFile());
+  }
+
+  public void backup() {
+    LOG.debug("Creating backup of server issue database in {}", backupFile);
+    try {
+      var backupTmp = CompressBackupUtil.backup(entityStore, backupFile.getParent().toFile(), "backup", false);
+      Files.move(backupTmp.toPath(), backupFile, StandardCopyOption.ATOMIC_MOVE);
+    } catch (Exception e) {
+      LOG.error("Unable to backup server issue database", e);
+    }
+  }
+
+  private static Flow toJavaFlow(Sonarlint.Flow flowProto) {
+    return new Flow(flowProto.getLocationList().stream().map(XodusServerIssueStore::toJavaLocation).collect(Collectors.toList()));
+  }
+
+  private static ServerIssueLocation toJavaLocation(Location locationProto) {
+    return new ServerIssueLocation(locationProto.hasFilePath() ? locationProto.getFilePath() : null,
+      locationProto.hasTextRange() ? toTextRangeJava(locationProto.getTextRange()) : null, locationProto.getMessage());
+  }
+
+  private static TextRangeWithHash toTextRangeJava(TextRange textRange) {
+    return new TextRangeWithHash(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset(), textRange.getHash());
+  }
+
+  private static Sonarlint.Flow toProtoFlow(Flow javaFlow) {
+    var flowBuilder = Sonarlint.Flow.newBuilder();
+    javaFlow.locations().forEach(l -> flowBuilder.addLocation(toProtoLocation(l)));
+    return flowBuilder.build();
+  }
+
+  private static Location toProtoLocation(ServerIssueLocation l) {
+    var location = Location.newBuilder();
+    String filePath = l.getFilePath();
+    if (filePath != null) {
+      location.setFilePath(filePath);
+    }
+    location.setMessage(l.getMessage());
+    var textRange = l.getTextRange();
+    if (textRange != null) {
+      location.setTextRange(TextRange.newBuilder()
+        .setStartLine(textRange.getStartLine())
+        .setStartLineOffset(textRange.getStartLineOffset())
+        .setEndLine(textRange.getEndLine())
+        .setEndLineOffset(textRange.getEndLineOffset())
+        .setHash(textRange.getHash()));
+    }
+    return location.build();
   }
 }

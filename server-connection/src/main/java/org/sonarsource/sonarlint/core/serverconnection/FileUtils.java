@@ -22,14 +22,11 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.AtomicMoveNotSupportedException;
-import java.nio.file.CopyOption;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.function.Consumer;
+import org.apache.commons.io.file.PathUtils;
 
 public class FileUtils {
 
@@ -71,35 +68,8 @@ public class FileUtils {
       retry(() -> Files.move(src, dest, StandardCopyOption.ATOMIC_MOVE));
     } catch (AtomicMoveNotSupportedException e) {
       // Fallback to non atomic move
-      Files.walkFileTree(src, new CopyRecursivelyVisitor(src, dest));
+      PathUtils.copyDirectory(src, dest);
       deleteRecursively(src);
-    }
-  }
-
-  private static class CopyRecursivelyVisitor extends SimpleFileVisitor<Path> {
-    private final Path fromPath;
-    private final Path toPath;
-    private final CopyOption[] copyOptions;
-
-    public CopyRecursivelyVisitor(Path fromPath, Path toPath, CopyOption... copyOptions) {
-      this.fromPath = fromPath;
-      this.toPath = toPath;
-      this.copyOptions = copyOptions;
-    }
-
-    @Override
-    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-      var targetPath = toPath.resolve(fromPath.relativize(dir));
-      if (!Files.exists(targetPath)) {
-        Files.createDirectory(targetPath);
-      }
-      return FileVisitResult.CONTINUE;
-    }
-
-    @Override
-    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-      Files.copy(file, toPath.resolve(fromPath.relativize(file)), copyOptions);
-      return FileVisitResult.CONTINUE;
     }
   }
 
@@ -113,19 +83,7 @@ public class FileUtils {
       return;
     }
     try {
-      Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
-        @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-          retry(() -> Files.delete(file));
-          return FileVisitResult.CONTINUE;
-        }
-
-        @Override
-        public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-          retry(() -> Files.delete(dir));
-          return FileVisitResult.CONTINUE;
-        }
-      });
+      PathUtils.deleteDirectory(path);
     } catch (IOException e) {
       throw new IllegalStateException("Unable to delete directory " + path, e);
     }

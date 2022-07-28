@@ -27,18 +27,26 @@ import org.apache.commons.lang3.StringUtils;
 
 public class IssueStorePaths {
 
-  @CheckForNull
-  public static String idePathToFileKey(ProjectBinding projectBinding, String ideFilePath) {
-    var sqFilePath = idePathToSqPath(projectBinding, ideFilePath);
+  private IssueStorePaths() {
 
-    if (sqFilePath == null) {
-      return null;
-    }
-    return projectBinding.projectKey() + ":" + sqFilePath;
   }
 
   @CheckForNull
-  public static String idePathToSqPath(ProjectBinding projectBinding, String ideFilePathStr) {
+  public static String idePathToFileKey(ProjectBinding projectBinding, String ideFilePath) {
+    var serverFilePath = idePathToServerPath(projectBinding, ideFilePath);
+
+    if (serverFilePath == null) {
+      return null;
+    }
+    return componentKey(projectBinding, serverFilePath);
+  }
+
+  public static String componentKey(ProjectBinding projectBinding, String serverFilePath) {
+    return projectBinding.projectKey() + ":" + serverFilePath;
+  }
+
+  @CheckForNull
+  public static String idePathToServerPath(ProjectBinding projectBinding, String ideFilePathStr) {
     var ideFilePath = Paths.get(ideFilePathStr);
     Path commonPart;
     if (StringUtils.isNotEmpty(projectBinding.idePathPrefix())) {
@@ -50,9 +58,9 @@ public class IssueStorePaths {
     } else {
       commonPart = ideFilePath;
     }
-    if (StringUtils.isNotEmpty(projectBinding.sqPathPrefix())) {
-      var sqPathPrefix = Paths.get(projectBinding.sqPathPrefix());
-      return FilenameUtils.separatorsToUnix(sqPathPrefix.resolve(commonPart).toString());
+    if (StringUtils.isNotEmpty(projectBinding.serverPathPrefix())) {
+      var serverPathPrefix = Paths.get(projectBinding.serverPathPrefix());
+      return FilenameUtils.separatorsToUnix(serverPathPrefix.resolve(commonPart).toString());
     } else {
       return FilenameUtils.separatorsToUnix(commonPart.toString());
     }

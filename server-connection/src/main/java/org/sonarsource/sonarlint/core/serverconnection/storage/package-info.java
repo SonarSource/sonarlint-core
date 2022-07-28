@@ -17,26 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+@ParametersAreNonnullByDefault
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
-import java.io.ByteArrayInputStream;
-import jetbrains.exodus.bindings.BindingUtils;
-import jetbrains.exodus.bindings.ComparableBinding;
-import jetbrains.exodus.util.LightOutputStream;
-import org.jetbrains.annotations.NotNull;
-import org.sonarsource.sonarlint.core.commons.RuleType;
-
-public class IssueTypeBinding extends ComparableBinding {
-
-  @Override
-  public Comparable readObject(@NotNull ByteArrayInputStream stream) {
-    return RuleType.values()[BindingUtils.readInt(stream)];
-  }
-
-  @Override
-  public void writeObject(@NotNull LightOutputStream output, @NotNull Comparable object) {
-    final RuleType cPair = (RuleType) object;
-    output.writeUnsignedInt(cPair.ordinal() ^ 0x80_000_000);
-  }
-
-}
+import javax.annotation.ParametersAreNonnullByDefault;
