@@ -22,6 +22,7 @@ package its;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.sonar.orchestrator.Orchestrator;
+import com.sonar.orchestrator.build.MavenBuild;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,6 +36,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -45,15 +47,22 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okio.Buffer;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.assertj.core.internal.Failures;
+import org.sonarqube.ws.Issues;
+import org.sonarqube.ws.Qualityprofiles.SearchWsResponse.QualityProfile;
 import org.sonarqube.ws.client.HttpConnector;
+import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsClientFactories;
+import org.sonarqube.ws.client.qualityprofiles.SearchRequest;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.http.HttpConnectionListener;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+
+import static org.junit.Assert.assertTrue;
 
 public abstract class AbstractConnectedTest {
   protected static final String SONARLINT_USER = "sonarlint";
@@ -316,4 +325,65 @@ public abstract class AbstractConnectedTest {
     String codeSnippetWithoutWhitespaces = MATCH_ALL_WHITESPACES.matcher(codeSnippet).replaceAll("");
     return DigestUtils.md5Hex(codeSnippetWithoutWhitespaces);
   }
+
+  protected static void analyzeMavenProject(Orchestrator orchestrator, String projectDirName) {
+    analyzeMavenProject(orchestrator, projectDirName, Map.of());
+  }
+
+  protected static void analyzeMavenProject(Orchestrator orchestrator, String projectDirName, Map<String, String> extraProperties) {
+    var projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
+    var pom = projectDir.resolve("pom.xml");
+    orchestrator.executeBuild(MavenBuild.create(pom.toFile())
+      .setCleanPackageSonarGoals()
+      .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
+      .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD)
+      .setProperties(extraProperties));
+  }
+
+  protected QualityProfile getQualityProfile(WsClient adminWsClient, String qualityProfileName) {
+    var searchReq = new SearchRequest();
+    searchReq.setQualityProfile(qualityProfileName);
+    searchReq.setDefaults("false");
+    var search = adminWsClient.qualityprofiles().search(searchReq);
+    for (QualityProfile profile : search.getProfilesList()) {
+      if (profile.getName().equals(qualityProfileName)) {
+        return profile;
+      }
+    }
+    throw Failures.instance().failure("Unable to get quality profile " + qualityProfileName);
+  }
+
+  protected void deactivateRule(WsClient adminWsClient, QualityProfile qualityProfile, String ruleKey) {
+    var request = new PostRequest("/api/qualityprofiles/deactivate_rule")
+      .setParam("key", qualityProfile.getKey())
+      .setParam("rule", ruleKey);
+    try (var response = adminWsClient.wsConnector().call(request)) {
+      assertTrue("Unable to deactivate rule", response.isSuccessful());
+    }
+  }
+
+  protected static List<String> getIssueKeys(WsClient adminWsClient, String ruleKey) {
+    var searchReq = new org.sonarqube.ws.client.issues.SearchRequest();
+    searchReq.setRules(List.of(ruleKey));
+    var response = adminWsClient.issues().search(searchReq);
+    return response.getIssuesList().stream().map(Issues.Issue::getKey).collect(Collectors.toList());
+  }
+
+  protected static void resolveIssueAsWontFix(WsClient adminWsClient, String issueKey) {
+    changeIssueStatus(adminWsClient, issueKey, "wontfix");
+  }
+
+  protected static void reopenIssue(WsClient adminWsClient, String issueKey) {
+    changeIssueStatus(adminWsClient, issueKey, "reopen");
+  }
+
+  protected static void changeIssueStatus(WsClient adminWsClient, String issueKey, String status) {
+    var request = new PostRequest("/api/issues/do_transition")
+      .setParam("issue", issueKey)
+      .setParam("transition", status);
+    try (var response = adminWsClient.wsConnector().call(request)) {
+      assertTrue("Unable to resolve issue", response.isSuccessful());
+    }
+  }
+
 }

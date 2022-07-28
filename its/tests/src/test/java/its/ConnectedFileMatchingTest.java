@@ -20,7 +20,6 @@
 package its;
 
 import com.sonar.orchestrator.Orchestrator;
-import com.sonar.orchestrator.build.MavenBuild;
 import its.tools.SonarlintProject;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -73,7 +72,7 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
     newAdminWsClient(ORCHESTRATOR).users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
     // Project has 5 modules: B, B/B1, B/B2, A, A/A1 and A/A2
-    analyzeMavenProject("multi-modules-sample");
+    analyzeMavenProject(ORCHESTRATOR, "multi-modules-sample");
   }
 
   @Before
@@ -171,12 +170,4 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
       .build();
   }
 
-  private static void analyzeMavenProject(String projectDirName) {
-    var projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
-    var pom = projectDir.resolve("pom.xml");
-    ORCHESTRATOR.executeBuild(MavenBuild.create(pom.toFile())
-      .setCleanPackageSonarGoals()
-      .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
-      .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
-  }
 }
