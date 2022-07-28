@@ -28,10 +28,13 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStore;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStoresManager;
 import testutils.InMemoryIssueStore;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerIssue;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerTaintIssue;
 
@@ -39,18 +42,20 @@ class IssueStoreReaderTests {
   private static final String PROJECT_KEY = "root";
 
   private IssueStoreReader issueStoreReader;
-  private final ServerIssueStore issueStore = new InMemoryIssueStore();
+  private final ProjectServerIssueStore issueStore = new InMemoryIssueStore();
   private final ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "");
 
   @BeforeEach
   void setUp() {
-    issueStoreReader = new IssueStoreReader(issueStore);
+    ServerIssueStoresManager manager = mock(ServerIssueStoresManager.class);
+    when(manager.get(PROJECT_KEY)).thenReturn(issueStore);
+    issueStoreReader = new IssueStoreReader(manager);
   }
 
   @Test
   void testSingleModule() {
     // setup issues
-    issueStore.replaceAllIssuesOfProject(projectBinding.projectKey(), "branch", Collections.singletonList(createServerIssue("src/path1")));
+    issueStore.replaceAllIssuesOfBranch("branch", Collections.singletonList(createServerIssue("src/path1")));
 
     // test
 
@@ -70,7 +75,7 @@ class IssueStoreReaderTests {
   @Test
   void return_empty_list_if_local_path_is_invalid() {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "", "local");
-    issueStore.replaceAllIssuesOfProject(projectBinding.projectKey(), "branch", Collections.singletonList(createServerIssue("src/path1")));
+    issueStore.replaceAllIssuesOfBranch("branch", Collections.singletonList(createServerIssue("src/path1")));
     assertThat(issueStoreReader.getServerIssues(projectBinding, "branch", "src/path1"))
       .isEmpty();
   }
@@ -80,7 +85,7 @@ class IssueStoreReaderTests {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "sq", "local");
 
     // setup issues
-    issueStore.replaceAllIssuesOfProject(projectBinding.projectKey(), "branch", Collections.singletonList(createServerIssue("sq/src/path1")));
+    issueStore.replaceAllIssuesOfBranch("branch", Collections.singletonList(createServerIssue("sq/src/path1")));
 
     // test
 
@@ -95,7 +100,7 @@ class IssueStoreReaderTests {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "", "local");
 
     // setup issues
-    issueStore.replaceAllIssuesOfProject(projectBinding.projectKey(), "branch", Collections.singletonList(createServerIssue("src/path1")));
+    issueStore.replaceAllIssuesOfBranch("branch", Collections.singletonList(createServerIssue("src/path1")));
 
     // test
 
@@ -110,7 +115,7 @@ class IssueStoreReaderTests {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "sq", "");
 
     // setup issues
-    issueStore.replaceAllIssuesOfProject(projectBinding.projectKey(), "branch", Collections.singletonList(createServerIssue("sq/src/path1")));
+    issueStore.replaceAllIssuesOfBranch("branch", Collections.singletonList(createServerIssue("sq/src/path1")));
 
     // test
 
@@ -123,7 +128,7 @@ class IssueStoreReaderTests {
   @Test
   void canReadFlowsFromStorage() {
     // setup issues
-    issueStore.replaceAllTaintOfFile(projectBinding.projectKey(), "branch", "src/path1", List.of(aServerTaintIssue()
+    issueStore.replaceAllTaintOfFile("branch", "src/path1", List.of(aServerTaintIssue()
       .setFilePath("src/path1")
       .setMessage("Primary")
       .setTextRange(new TextRangeWithHash(1, 2, 3, 4, "ab12"))

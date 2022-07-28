@@ -23,13 +23,13 @@ import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.events.ServerEventHandler;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStore;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStoresManager;
 
 public class UpdateStorageOnIssueChanged implements ServerEventHandler<IssueChangedEvent> {
-  private final ServerIssueStore serverIssueStore;
+  private final ServerIssueStoresManager serverIssueStoresManager;
 
-  public UpdateStorageOnIssueChanged(ServerIssueStore serverIssueStore) {
-    this.serverIssueStore = serverIssueStore;
+  public UpdateStorageOnIssueChanged(ServerIssueStoresManager serverIssueStoresManager) {
+    this.serverIssueStoresManager = serverIssueStoresManager;
   }
 
   @Override
@@ -37,18 +37,19 @@ public class UpdateStorageOnIssueChanged implements ServerEventHandler<IssueChan
     var userSeverity = event.getUserSeverity();
     var userType = event.getUserType();
     var resolved = event.getResolved();
-    event.getImpactedIssueKeys().forEach(issueKey -> update(userSeverity, userType, resolved, issueKey));
+    var projectKey = event.getProjectKey();
+    event.getImpactedIssueKeys().forEach(issueKey -> update(projectKey, userSeverity, userType, resolved, issueKey));
   }
 
-  private void update(IssueSeverity userSeverity, RuleType userType, Boolean resolved, String issueKey) {
-    var updated = updateNormalIssue(userSeverity, userType, resolved, issueKey);
+  private void update(String projectKey, IssueSeverity userSeverity, RuleType userType, Boolean resolved, String issueKey) {
+    var updated = updateNormalIssue(projectKey, userSeverity, userType, resolved, issueKey);
     if (!updated) {
-      updateTaintIssue(userSeverity, userType, resolved, issueKey);
+      updateTaintIssue(projectKey, userSeverity, userType, resolved, issueKey);
     }
   }
 
-  private boolean updateNormalIssue(IssueSeverity userSeverity, RuleType userType, Boolean resolved, String issueKey) {
-    return serverIssueStore.updateIssue(issueKey, issue -> {
+  private boolean updateNormalIssue(String projectKey, IssueSeverity userSeverity, RuleType userType, Boolean resolved, String issueKey) {
+    return serverIssueStoresManager.get(projectKey).updateIssue(issueKey, issue -> {
       if (userSeverity != null) {
         issue.setUserSeverity(userSeverity);
       }
@@ -61,8 +62,8 @@ public class UpdateStorageOnIssueChanged implements ServerEventHandler<IssueChan
     });
   }
 
-  private void updateTaintIssue(IssueSeverity userSeverity, RuleType userType, Boolean resolved, String issueKey) {
-    serverIssueStore.updateTaintIssue(issueKey, issue -> {
+  private void updateTaintIssue(String projectKey, IssueSeverity userSeverity, RuleType userType, Boolean resolved, String issueKey) {
+    serverIssueStoresManager.get(projectKey).updateTaintIssue(issueKey, issue -> {
       if (userSeverity != null) {
         issue.setSeverity(userSeverity);
       }

@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
@@ -57,8 +56,8 @@ import org.sonarsource.sonarlint.core.serverconnection.prefix.FileTreeMatcher;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStoresManager;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageReader;
-import org.sonarsource.sonarlint.core.serverconnection.storage.XodusServerIssueStore;
 
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 
@@ -74,13 +73,13 @@ public class ServerConnection {
   private final ProjectStorageUpdateExecutor projectStorageUpdateExecutor;
   private final ServerEventsAutoSubscriber serverEventsAutoSubscriber;
   private final ServerIssueUpdater issuesUpdater;
-  private final XodusServerIssueStore serverIssueStore;
+  private final ServerIssueStoresManager serverIssueStoresManager;
   private final boolean isSonarCloud;
 
   private final Path connectionStorageRoot;
   private final EventDispatcher coreEventRouter;
 
-  public ServerConnection(Path globalStorageRoot, String connectionId, boolean isSonarCloud, Set<Language> enabledLanguages, Set<String> embeddedPluginKeys) {
+  public ServerConnection(Path globalStorageRoot, String connectionId, boolean isSonarCloud, Set<Language> enabledLanguages, Set<String> embeddedPluginKeys, Path workDir) {
     this.isSonarCloud = isSonarCloud;
     this.enabledLanguages = enabledLanguages;
 
@@ -91,18 +90,18 @@ public class ServerConnection {
     projectStorage = new ProjectStorage(projectsStorageRoot);
 
     this.storageReader = new StorageReader(projectStoragePaths);
-    serverIssueStore = new XodusServerIssueStore(projectsStorageRoot);
-    this.issueStoreReader = new IssueStoreReader(serverIssueStore);
-    this.issuesUpdater = new ServerIssueUpdater(serverIssueStore, new IssueDownloader(enabledLanguages), new TaintIssueDownloader(enabledLanguages));
+    this.serverIssueStoresManager = new ServerIssueStoresManager(projectsStorageRoot, workDir);
+    this.issueStoreReader = new IssueStoreReader(serverIssueStoresManager);
+    this.issuesUpdater = new ServerIssueUpdater(serverIssueStoresManager, new IssueDownloader(enabledLanguages), new TaintIssueDownloader(enabledLanguages));
     this.pluginsStorage = new PluginsStorage(connectionStorageRoot.resolve("plugins"));
     this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguages, embeddedPluginKeys, pluginsStorage, projectStorage);
     this.projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(projectStoragePaths);
     pluginsStorage.cleanUp();
     coreEventRouter = new EventDispatcher()
       .dispatch(RuleSetChangedEvent.class, new UpdateStorageOnRuleSetChanged(projectStorage))
-      .dispatch(IssueChangedEvent.class, new UpdateStorageOnIssueChanged(serverIssueStore))
-      .dispatch(TaintVulnerabilityRaisedEvent.class, new UpdateStorageOnTaintVulnerabilityRaised(serverIssueStore))
-      .dispatch(TaintVulnerabilityClosedEvent.class, new UpdateStorageOnTaintVulnerabilityClosed(serverIssueStore));
+      .dispatch(IssueChangedEvent.class, new UpdateStorageOnIssueChanged(serverIssueStoresManager))
+      .dispatch(TaintVulnerabilityRaisedEvent.class, new UpdateStorageOnTaintVulnerabilityRaised(serverIssueStoresManager))
+      .dispatch(TaintVulnerabilityClosedEvent.class, new UpdateStorageOnTaintVulnerabilityClosed(serverIssueStoresManager));
     this.serverEventsAutoSubscriber = new ServerEventsAutoSubscriber();
   }
 
@@ -164,13 +163,13 @@ public class ServerConnection {
       FilenameUtils.separatorsToUnix(match.idePrefix().toString()));
   }
 
-  public void downloadServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName) {
+  public void downloadServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName) {
     var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
     var serverVersion = checkStatusAndGetServerVersion(serverApi);
     issuesUpdater.updateFileIssues(serverApi, projectBinding, ideFilePath, branchName, isSonarCloud, serverVersion);
   }
 
-  public void downloadServerTaintIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, @Nullable String branchName,
+  public void downloadServerTaintIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
     ProgressMonitor progress) {
     var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
     var serverVersion = checkStatusAndGetServerVersion(serverApi);
@@ -216,7 +215,7 @@ public class ServerConnection {
 
   public void stop(boolean deleteStorage) {
     serverEventsAutoSubscriber.stop();
-    serverIssueStore.close();
+    serverIssueStoresManager.close();
     if (deleteStorage) {
       FileUtils.deleteRecursively(connectionStorageRoot);
     }

@@ -24,33 +24,33 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStore;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStoresManager;
 
 import static java.util.function.Predicate.not;
 
 public class IssueStoreReader {
-  private final ServerIssueStore serverIssueStore;
+  private final ServerIssueStoresManager serverIssueStoresManager;
 
-  public IssueStoreReader(ServerIssueStore serverIssueStore) {
-    this.serverIssueStore = serverIssueStore;
+  public IssueStoreReader(ServerIssueStoresManager serverIssueStoresManager) {
+    this.serverIssueStoresManager = serverIssueStoresManager;
   }
 
   public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String branchName, String ideFilePath) {
-    var sqPath = IssueStorePaths.idePathToSqPath(projectBinding, ideFilePath);
+    var sqPath = IssueStorePaths.idePathToServerPath(projectBinding, ideFilePath);
     if (sqPath == null) {
       return Collections.emptyList();
     }
-    var loadedIssues = serverIssueStore.load(projectBinding.projectKey(), branchName, sqPath);
+    var loadedIssues = serverIssueStoresManager.get(projectBinding.projectKey()).load(branchName, sqPath);
     loadedIssues.forEach(issue -> issue.setFilePath(ideFilePath));
     return loadedIssues;
   }
 
   public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName, String ideFilePath) {
-    var sqPath = IssueStorePaths.idePathToSqPath(projectBinding, ideFilePath);
+    var sqPath = IssueStorePaths.idePathToServerPath(projectBinding, ideFilePath);
     if (sqPath == null) {
       return Collections.emptyList();
     }
-    var loadedIssues = serverIssueStore.loadTaint(projectBinding.projectKey(), branchName, sqPath);
+    var loadedIssues = serverIssueStoresManager.get(projectBinding.projectKey()).loadTaint(branchName, sqPath);
     loadedIssues = loadedIssues.stream().filter(not(ServerTaintIssue::isResolved)).collect(Collectors.toList());
     loadedIssues.forEach(issue -> issue.setFilePath(ideFilePath));
     return loadedIssues;

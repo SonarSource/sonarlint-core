@@ -28,7 +28,7 @@ class ProjectBindingTests {
   void should_assign_all_parameters_in_constructor() {
     var projectBinding = new ProjectBinding("key", "sqPrefix", "localPrefix");
     assertThat(projectBinding.projectKey()).isEqualTo("key");
-    assertThat(projectBinding.sqPathPrefix()).isEqualTo("sqPrefix");
+    assertThat(projectBinding.serverPathPrefix()).isEqualTo("sqPrefix");
     assertThat(projectBinding.idePathPrefix()).isEqualTo("localPrefix");
   }
 

@@ -27,17 +27,17 @@ import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
-public interface ServerIssueStore {
+public interface ProjectServerIssueStore {
 
   /**
-   * Store issues for a project by replacing existing ones.
+   * Store issues for a branch by replacing existing ones.
    */
-  void replaceAllIssuesOfProject(String projectKey, String branchName, List<ServerIssue> issues);
+  void replaceAllIssuesOfBranch(String branchName, List<ServerIssue> issues);
 
   /**
    * Store issues for a single file by replacing existing ones and moving issues if necessary.
    */
-  void replaceAllIssuesOfFile(String projectKey, String branchName, String serverFilePath, List<ServerIssue> issues);
+  void replaceAllIssuesOfFile(String branchName, String serverFilePath, List<ServerIssue> issues);
 
   /**
    * Merge provided issues to stored ones for the given project:
@@ -45,7 +45,7 @@ public interface ServerIssueStore {
    *  - existing issues are updated
    *  - closed issues are removed from the store
    */
-  void mergeIssues(String projectKey, String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp);
+  void mergeIssues(String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp);
 
   /**
    * Merge provided taint issues to stored ones for the given project:
@@ -53,19 +53,19 @@ public interface ServerIssueStore {
    *  - existing issues are updated
    *  - closed issues are removed from the store
    */
-  void mergeTaintIssues(String projectKey, String branchName, List<ServerTaintIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp);
+  void mergeTaintIssues(String branchName, List<ServerTaintIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp);
 
   /**
    * Return the timestamp of the last issue sync for a given branch.
    * @return empty if the issues of the branch have never been pulled
    */
-  Optional<Instant> getLastIssueSyncTimestamp(String projectKey, String branchName);
+  Optional<Instant> getLastIssueSyncTimestamp(String branchName);
 
   /**
    * Return the timestamp of the last taint issue sync for a given branch.
    * @return empty if the taint issues of the branch have never been pulled
    */
-  Optional<Instant> getLastTaintSyncTimestamp(String projectKey, String branchName);
+  Optional<Instant> getLastTaintSyncTimestamp(String branchName);
 
   /**
    * Load issues stored for specified file.
@@ -75,7 +75,7 @@ public interface ServerIssueStore {
    * @param sqFilePath the relative path to the base of project, in SonarQube
    * @return issues, possibly empty
    */
-  List<ServerIssue> load(String projectKey, String branchName, String sqFilePath);
+  List<ServerIssue> load(String branchName, String sqFilePath);
 
   /**
    * Store taint issues for a single file.
@@ -84,7 +84,7 @@ public interface ServerIssueStore {
    * - Directories with too many files
    * - (Too deep paths?)
    */
-  void replaceAllTaintOfFile(String projectKey, String branchName, String serverFilePath, List<ServerTaintIssue> taintIssues);
+  void replaceAllTaintOfFile(String branchName, String serverFilePath, List<ServerTaintIssue> taintIssues);
 
   /**
    * Load taint issues stored for specified file.
@@ -95,7 +95,7 @@ public interface ServerIssueStore {
    * @param sqFilePath the relative path to the base of project, in SonarQube
    * @return issues, possibly empty
    */
-  List<ServerTaintIssue> loadTaint(String projectKey, String branchName, String sqFilePath);
+  List<ServerTaintIssue> loadTaint(String branchName, String sqFilePath);
 
   /**
    * @param issueKey
@@ -106,7 +106,7 @@ public interface ServerIssueStore {
 
   void updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater);
 
-  void insert(String projectKey, String branchName, ServerTaintIssue taintIssue);
+  void insert(String branchName, ServerTaintIssue taintIssue);
 
   void deleteTaintIssue(String issueKeyToDelete);
 

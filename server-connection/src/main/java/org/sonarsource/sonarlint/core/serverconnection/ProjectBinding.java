@@ -23,18 +23,17 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Describes the link between a project in the IDE and a project in SonarQube.
+ * Describes the link between a project in the IDE and a project in SonarQube/SonarCloud.
  *
- * @since 3.10
  */
 public class ProjectBinding {
   private final String projectKey;
-  private final String sqPathPrefix;
+  private final String serverPathPrefix;
   private final String idePathPrefix;
 
-  public ProjectBinding(String projectKey, String sqPathPrefix, String idePathPrefix) {
+  public ProjectBinding(String projectKey, String serverPathPrefix, String idePathPrefix) {
     this.projectKey = projectKey;
-    this.sqPathPrefix = sqPathPrefix;
+    this.serverPathPrefix = serverPathPrefix;
     this.idePathPrefix = idePathPrefix;
   }
 
@@ -42,8 +41,8 @@ public class ProjectBinding {
     return projectKey;
   }
 
-  public String sqPathPrefix() {
-    return sqPathPrefix;
+  public String serverPathPrefix() {
+    return serverPathPrefix;
   }
 
   public String idePathPrefix() {
@@ -51,10 +50,10 @@ public class ProjectBinding {
   }
 
   public Optional<String> serverPathToIdePath(String serverPath) {
-    if (!serverPath.startsWith(sqPathPrefix())) {
+    if (!serverPath.startsWith(serverPathPrefix())) {
       return Optional.empty();
     }
-    var localPrefixLen = sqPathPrefix().length();
+    var localPrefixLen = serverPathPrefix().length();
     if (localPrefixLen > 0) {
       localPrefixLen++;
     }
@@ -75,12 +74,12 @@ public class ProjectBinding {
     }
     var that = (ProjectBinding) o;
     return Objects.equals(projectKey, that.projectKey) &&
-      Objects.equals(sqPathPrefix, that.sqPathPrefix) &&
+      Objects.equals(serverPathPrefix, that.serverPathPrefix) &&
       Objects.equals(idePathPrefix, that.idePathPrefix);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(projectKey, sqPathPrefix, idePathPrefix);
+    return Objects.hash(projectKey, serverPathPrefix, idePathPrefix);
   }
 }

@@ -22,7 +22,6 @@ package testutils;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -31,83 +30,83 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStore;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 
 import static java.util.Optional.ofNullable;
 
-public class InMemoryIssueStore implements ServerIssueStore {
-  private final Map<String, Map<String, Map<String, List<ServerIssue>>>> issuesByFileByBranchByProject = new HashMap<>();
-  private final Map<String, Map<String, Instant>> lastIssueSyncByBranchByProject = new HashMap<>();
+public class InMemoryIssueStore implements ProjectServerIssueStore {
+  private final Map<String, Map<String, List<ServerIssue>>> issuesByFileByBranch = new HashMap<>();
+  private final Map<String, Instant> lastIssueSyncByBranch = new HashMap<>();
   private final Map<String, ServerIssue> issuesByKey = new HashMap<>();
-  private final Map<String, Map<String, Map<String, List<ServerTaintIssue>>>> taintIssuesByFileByBranchByProject = new HashMap<>();
-  private final Map<String, Map<String, Instant>> lastTaintSyncByBranchByProject = new HashMap<>();
+  private final Map<String, Map<String, List<ServerTaintIssue>>> taintIssuesByFileByBranch = new HashMap<>();
+  private final Map<String, Instant> lastTaintSyncByBranch = new HashMap<>();
   private final Map<String, ServerTaintIssue> taintIssuesByKey = new HashMap<>();
 
   @Override
-  public void replaceAllIssuesOfFile(String projectKey, String branchName, String serverFilePath, List<ServerIssue> issues) {
-    issuesByFileByBranchByProject.computeIfAbsent(projectKey, __ -> new HashMap<>())
+  public void replaceAllIssuesOfFile(String branchName, String serverFilePath, List<ServerIssue> issues) {
+    issuesByFileByBranch
       .computeIfAbsent(branchName, __ -> new HashMap<>())
       .put(serverFilePath, issues);
     issues.forEach(issue -> issuesByKey.put(issue.getKey(), issue));
   }
 
   @Override
-  public void mergeIssues(String projectKey, String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp) {
+  public void mergeIssues(String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp) {
     var issuesToMergeByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
     // does not handle issue moving file (e.g. file renaming)
-    issuesByFileByBranchByProject.computeIfAbsent(projectKey, __ -> new HashMap<>())
+    issuesByFileByBranch
       .computeIfAbsent(branchName, __ -> new HashMap<>())
       .putAll(issuesToMergeByFilePath);
     issuesToMerge.forEach(issue -> issuesByKey.put(issue.getKey(), issue));
     closedIssueKeysToDelete.forEach(issuesByKey::remove);
-    lastIssueSyncByBranchByProject.computeIfAbsent(projectKey, __ -> new HashMap<>()).put(branchName, syncTimestamp);
+    lastIssueSyncByBranch.put(branchName, syncTimestamp);
   }
 
   @Override
-  public void mergeTaintIssues(String projectKey, String branchName, List<ServerTaintIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp) {
+  public void mergeTaintIssues(String branchName, List<ServerTaintIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp) {
     var issuesToMergeByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerTaintIssue::getFilePath));
     // does not handle issue moving file (e.g. file renaming)
-    taintIssuesByFileByBranchByProject.computeIfAbsent(projectKey, __ -> new HashMap<>())
+    taintIssuesByFileByBranch
       .computeIfAbsent(branchName, __ -> new HashMap<>())
       .putAll(issuesToMergeByFilePath);
     issuesToMerge.forEach(issue -> taintIssuesByKey.put(issue.getKey(), issue));
     closedIssueKeysToDelete.forEach(taintIssuesByKey::remove);
-    lastTaintSyncByBranchByProject.computeIfAbsent(projectKey, __ -> new HashMap<>()).put(branchName, syncTimestamp);
+    lastTaintSyncByBranch.put(branchName, syncTimestamp);
   }
 
   @Override
-  public Optional<Instant> getLastIssueSyncTimestamp(String projectKey, String branchName) {
-    return ofNullable(lastIssueSyncByBranchByProject.getOrDefault(projectKey, Map.of()).get(branchName));
+  public Optional<Instant> getLastIssueSyncTimestamp(String branchName) {
+    return ofNullable(lastIssueSyncByBranch.get(branchName));
   }
 
   @Override
-  public Optional<Instant> getLastTaintSyncTimestamp(String projectKey, String branchName) {
-    return ofNullable(lastTaintSyncByBranchByProject.getOrDefault(projectKey, Map.of()).get(branchName));
+  public Optional<Instant> getLastTaintSyncTimestamp(String branchName) {
+    return ofNullable(lastTaintSyncByBranch.get(branchName));
   }
 
   @Override
-  public void replaceAllIssuesOfProject(String projectKey, String branchName, List<ServerIssue> issues) {
-    issuesByFileByBranchByProject.put(projectKey, Map.of(branchName, issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath))));
+  public void replaceAllIssuesOfBranch(String branchName, List<ServerIssue> issues) {
+    issuesByFileByBranch.put(branchName, issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath)));
     issues.forEach(issue -> issuesByKey.put(issue.getKey(), issue));
   }
 
   @Override
-  public List<ServerIssue> load(String projectKey, String branchName, String sqFilePath) {
-    return issuesByFileByBranchByProject.getOrDefault(projectKey, Map.of())
+  public List<ServerIssue> load(String branchName, String sqFilePath) {
+    return issuesByFileByBranch
       .getOrDefault(branchName, Map.of())
       .getOrDefault(sqFilePath, List.of());
   }
 
   @Override
-  public void replaceAllTaintOfFile(String projectKey, String branchName, String filePath, List<ServerTaintIssue> issues) {
-    taintIssuesByFileByBranchByProject.computeIfAbsent(projectKey, __ -> new HashMap<>())
+  public void replaceAllTaintOfFile(String branchName, String filePath, List<ServerTaintIssue> issues) {
+    taintIssuesByFileByBranch
       .computeIfAbsent(branchName, __ -> new HashMap<>())
       .put(filePath, issues);
   }
 
   @Override
-  public List<ServerTaintIssue> loadTaint(String projectKey, String branchName, String sqFilePath) {
-    return taintIssuesByFileByBranchByProject.getOrDefault(projectKey, Map.of())
+  public List<ServerTaintIssue> loadTaint(String branchName, String sqFilePath) {
+    return taintIssuesByFileByBranch
       .getOrDefault(branchName, Map.of())
       .getOrDefault(sqFilePath, List.of());
   }
@@ -123,17 +122,17 @@ public class InMemoryIssueStore implements ServerIssueStore {
 
   @Override
   public void updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater) {
-    taintIssuesByFileByBranchByProject.forEach((projectKey, branches) -> branches.forEach(
+    taintIssuesByFileByBranch.forEach(
       (branchName, taintIssuesByFile) -> taintIssuesByFile.forEach((file, taintIssues) -> taintIssues.forEach(taintIssue -> {
         if (taintIssue.getKey().equals(issueKey)) {
           taintIssueUpdater.accept(taintIssue);
         }
-      }))));
+      })));
   }
 
   @Override
-  public void insert(String projectKey, String branchName, ServerTaintIssue taintIssue) {
-    taintIssuesByFileByBranchByProject.computeIfAbsent(projectKey, __ -> new HashMap<>())
+  public void insert(String branchName, ServerTaintIssue taintIssue) {
+    taintIssuesByFileByBranch
       .computeIfAbsent(branchName, __ -> new HashMap<>())
       .computeIfAbsent(taintIssue.getFilePath(), __ -> new ArrayList<>())
       .add(taintIssue);
@@ -141,8 +140,8 @@ public class InMemoryIssueStore implements ServerIssueStore {
 
   @Override
   public void deleteTaintIssue(String issueKeyToDelete) {
-    taintIssuesByFileByBranchByProject.forEach((projectKey, branches) -> branches.forEach(
-      (branchName, taintIssuesByFile) -> taintIssuesByFile.forEach((file, taintIssues) -> taintIssues.removeIf(taintIssue -> issueKeyToDelete.equals(taintIssue.getKey())))));
+    taintIssuesByFileByBranch.forEach(
+      (branchName, taintIssuesByFile) -> taintIssuesByFile.forEach((file, taintIssues) -> taintIssues.removeIf(taintIssue -> issueKeyToDelete.equals(taintIssue.getKey()))));
   }
 
   @Override

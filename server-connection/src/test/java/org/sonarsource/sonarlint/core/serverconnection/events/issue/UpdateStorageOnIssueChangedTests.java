@@ -27,85 +27,91 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStoresManager;
 import testutils.InMemoryIssueStore;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerIssue;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerTaintIssue;
 
 class UpdateStorageOnIssueChangedTests {
 
+  private static final String PROJECT_KEY = "projectKey";
   private InMemoryIssueStore serverIssueStore;
   private UpdateStorageOnIssueChanged handler;
 
   @BeforeEach
   void setUp() {
     serverIssueStore = new InMemoryIssueStore();
-    handler = new UpdateStorageOnIssueChanged(serverIssueStore);
+    ServerIssueStoresManager manager = mock(ServerIssueStoresManager.class);
+    when(manager.get(PROJECT_KEY)).thenReturn(serverIssueStore);
+    handler = new UpdateStorageOnIssueChanged(manager);
   }
 
   @Test
   void should_store_resolved_issue() {
-    serverIssueStore.replaceAllIssuesOfProject("projectKey", "branch", List.of(aServerIssue().setKey("key1").setResolved(false)));
+    serverIssueStore.replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setKey("key1").setResolved(false)));
 
-    handler.handle(new IssueChangedEvent("projectKey", List.of("key1"), null, null, true));
+    handler.handle(new IssueChangedEvent(PROJECT_KEY, List.of("key1"), null, null, true));
 
-    assertThat(serverIssueStore.load("projectKey", "branch", "file/path"))
+    assertThat(serverIssueStore.load("branch", "file/path"))
       .extracting(ServerIssue::isResolved)
       .containsOnly(true);
   }
 
   @Test
   void should_store_issue_with_updated_severity() {
-    serverIssueStore.replaceAllIssuesOfProject("projectKey", "branch", List.of(aServerIssue().setKey("key1").setUserSeverity(IssueSeverity.MAJOR)));
+    serverIssueStore.replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setKey("key1").setUserSeverity(IssueSeverity.MAJOR)));
 
-    handler.handle(new IssueChangedEvent("projectKey", List.of("key1"), IssueSeverity.MINOR, null, null));
+    handler.handle(new IssueChangedEvent(PROJECT_KEY, List.of("key1"), IssueSeverity.MINOR, null, null));
 
-    assertThat(serverIssueStore.load("projectKey", "branch", "file/path"))
+    assertThat(serverIssueStore.load("branch", "file/path"))
       .extracting(ServerIssue::getUserSeverity)
       .containsOnly(IssueSeverity.MINOR);
   }
 
   @Test
   void should_store_issue_with_updated_type() {
-    serverIssueStore.replaceAllIssuesOfProject("projectKey", "branch", List.of(aServerIssue().setKey("key1").setType(RuleType.VULNERABILITY)));
+    serverIssueStore.replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setKey("key1").setType(RuleType.VULNERABILITY)));
 
-    handler.handle(new IssueChangedEvent("projectKey", List.of("key1"), null, RuleType.BUG, null));
+    handler.handle(new IssueChangedEvent(PROJECT_KEY, List.of("key1"), null, RuleType.BUG, null));
 
-    assertThat(serverIssueStore.load("projectKey", "branch", "file/path"))
+    assertThat(serverIssueStore.load("branch", "file/path"))
       .extracting(ServerIssue::getType)
       .containsOnly(RuleType.BUG);
   }
 
   @Test
   void should_store_resolved_taint_issue() {
-    serverIssueStore.replaceAllTaintOfFile("projectKey", "branch", "file/path", List.of(aServerTaintIssue().setKey("key1").setResolved(false)));
+    serverIssueStore.replaceAllTaintOfFile("branch", "file/path", List.of(aServerTaintIssue().setKey("key1").setResolved(false)));
 
-    handler.handle(new IssueChangedEvent("projectKey", List.of("key1"), null, null, true));
+    handler.handle(new IssueChangedEvent(PROJECT_KEY, List.of("key1"), null, null, true));
 
-    assertThat(serverIssueStore.loadTaint("projectKey", "branch", "file/path"))
+    assertThat(serverIssueStore.loadTaint("branch", "file/path"))
       .extracting(ServerTaintIssue::isResolved)
       .containsOnly(true);
   }
 
   @Test
   void should_store_taint_issue_with_updated_severity() {
-    serverIssueStore.replaceAllTaintOfFile("projectKey", "branch", "file/path", List.of(aServerTaintIssue().setKey("key1").setSeverity(IssueSeverity.MAJOR)));
+    serverIssueStore.replaceAllTaintOfFile("branch", "file/path", List.of(aServerTaintIssue().setKey("key1").setSeverity(IssueSeverity.MAJOR)));
 
-    handler.handle(new IssueChangedEvent("projectKey", List.of("key1"), IssueSeverity.MINOR, null, null));
+    handler.handle(new IssueChangedEvent(PROJECT_KEY, List.of("key1"), IssueSeverity.MINOR, null, null));
 
-    assertThat(serverIssueStore.loadTaint("projectKey", "branch", "file/path"))
+    assertThat(serverIssueStore.loadTaint("branch", "file/path"))
       .extracting(ServerTaintIssue::getSeverity)
       .containsOnly(IssueSeverity.MINOR);
   }
 
   @Test
   void should_store_taint_issue_with_updated_type() {
-    serverIssueStore.replaceAllTaintOfFile("projectKey", "branch", "file/path", List.of(aServerTaintIssue().setKey("key1").setType(RuleType.VULNERABILITY)));
+    serverIssueStore.replaceAllTaintOfFile("branch", "file/path", List.of(aServerTaintIssue().setKey("key1").setType(RuleType.VULNERABILITY)));
 
-    handler.handle(new IssueChangedEvent("projectKey", List.of("key1"), null, RuleType.BUG, null));
+    handler.handle(new IssueChangedEvent(PROJECT_KEY, List.of("key1"), null, RuleType.BUG, null));
 
-    assertThat(serverIssueStore.loadTaint("projectKey", "branch", "file/path"))
+    assertThat(serverIssueStore.loadTaint("branch", "file/path"))
       .extracting(ServerTaintIssue::getType)
       .containsOnly(RuleType.BUG);
   }

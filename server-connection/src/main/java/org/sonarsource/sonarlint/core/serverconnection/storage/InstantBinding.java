@@ -20,23 +20,23 @@
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
 import java.io.ByteArrayInputStream;
+import java.time.Instant;
 import jetbrains.exodus.bindings.BindingUtils;
 import jetbrains.exodus.bindings.ComparableBinding;
 import jetbrains.exodus.util.LightOutputStream;
 import org.jetbrains.annotations.NotNull;
-import org.sonarsource.sonarlint.core.commons.RuleType;
 
-public class IssueTypeBinding extends ComparableBinding {
+public class InstantBinding extends ComparableBinding {
 
   @Override
   public Comparable readObject(@NotNull ByteArrayInputStream stream) {
-    return RuleType.values()[BindingUtils.readInt(stream)];
+    return Instant.ofEpochMilli(BindingUtils.readLong(stream));
   }
 
   @Override
   public void writeObject(@NotNull LightOutputStream output, @NotNull Comparable object) {
-    final RuleType cPair = (RuleType) object;
-    output.writeUnsignedInt(cPair.ordinal() ^ 0x80_000_000);
+    final var instant = (Instant) object;
+    output.writeUnsignedLong(instant.toEpochMilli() ^ 0x8_000_000_000_000_000L);
   }
 
 }
