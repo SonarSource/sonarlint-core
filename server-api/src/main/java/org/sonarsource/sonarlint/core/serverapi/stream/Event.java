@@ -38,7 +38,7 @@ public class Event {
 
   @Override
   public String toString() {
-    return "type: " + type + "\\n" +
-      "data: " + data + "";
+    return "[type: " + type + ", " +
+      "data: " + data + "]";
   }
 }

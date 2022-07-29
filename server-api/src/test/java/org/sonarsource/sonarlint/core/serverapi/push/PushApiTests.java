@@ -265,7 +265,7 @@ class PushApiTests {
   @Test
   void should_notify_issue_changed_event_when_resolved_status_changed() {
     var mockResponse = new MockResponse();
-    mockResponse.setBody("event: IssueChangedEvent\n" +
+    mockResponse.setBody("event: IssueChanged\n" +
       "data: {" +
       "\"projectKey\": \"projectKey1\"," +
       "\"issues\": [{" +
@@ -288,7 +288,7 @@ class PushApiTests {
   @Test
   void should_notify_issue_changed_event_when_severity_changed() {
     var mockResponse = new MockResponse();
-    mockResponse.setBody("event: IssueChangedEvent\n" +
+    mockResponse.setBody("event: IssueChanged\n" +
       "data: {" +
       "\"projectKey\": \"projectKey1\"," +
       "\"issues\": [{" +
@@ -311,7 +311,7 @@ class PushApiTests {
   @Test
   void should_notify_issue_changed_event_when_type_changed() {
     var mockResponse = new MockResponse();
-    mockResponse.setBody("event: IssueChangedEvent\n" +
+    mockResponse.setBody("event: IssueChanged\n" +
       "data: {" +
       "\"projectKey\": \"projectKey1\"," +
       "\"issues\": [{" +

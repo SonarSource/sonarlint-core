@@ -96,8 +96,7 @@ public class ConnectedModeSynchronizationTest extends AbstractConnectedTest {
     assumeTrue("SonarQube should support pulling issues",
       ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6));
 
-    // to replace with the sync call when implemented
-    engine.downloadAllServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_LANGUAGE_MIX, "master", null);
+    engine.syncServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_LANGUAGE_MIX, "master", null);
 
     var javaIssues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY_LANGUAGE_MIX, "", ""), "master", "src/main/java/foo/Foo.java");
     var pythonIssues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY_LANGUAGE_MIX, "", ""), "master", "src/main/java/foo/main.py");
