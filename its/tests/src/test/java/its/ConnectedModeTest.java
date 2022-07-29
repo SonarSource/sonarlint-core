@@ -21,7 +21,6 @@ package its;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.sonar.orchestrator.Orchestrator;
-import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
 import java.io.File;
@@ -31,12 +30,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -63,6 +63,8 @@ import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.GetSecurityHotspotRequestParams;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
+import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
+import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.ServerEvent;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
@@ -95,8 +97,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_RUBY = "sample-ruby";
   private static final String PROJECT_KEY_SCALA = "sample-scala";
   private static final String PROJECT_KEY_XML = "sample-xml";
-  private static final Consumer<ServerEvent> EMPTY_CONSUMER = e -> {
-  };
 
   private static String javaRuleKey(String key) {
     // Starting from SonarJava 6.0 (embedded in SQ 8.2), rule repository has been changed
@@ -130,8 +130,10 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     .restoreProfileAtStartup(FileLocation.ofClasspath("/ruby-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/scala-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/xml-sonarlint.xml"))
-    .setServerProperty("sonar.pushevents.polling.initial.delay", "0")
+    // Ensure SSE are processed correctly just after SQ startup
+    .setServerProperty("sonar.pushevents.polling.initial.delay", "2")
     .setServerProperty("sonar.pushevents.polling.period", "1")
+    .setServerProperty("sonar.pushevents.polling.last.timestamp", "1")
     .build();
 
   @ClassRule
@@ -186,11 +188,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_GLOBAL_EXTENSION, "cobol", "SonarLint IT Global Extension");
 
     // Build project to have bytecode and analyze
-    ORCHESTRATOR.executeBuild(MavenBuild.create(new File("projects/sample-java/pom.xml"))
-      .setCleanPackageSonarGoals()
-      .setProperty("sonar.projectKey", PROJECT_KEY_JAVA)
-      .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
-      .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
+    analyzeMavenProject(ORCHESTRATOR, PROJECT_KEY_JAVA, Map.of("sonar.projectKey", PROJECT_KEY_JAVA));
   }
 
   @Before
@@ -642,10 +640,19 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 4));
 
     updateProject(PROJECT_KEY_JAVA);
-    engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVA), EMPTY_CONSUMER, null);
+    Deque<ServerEvent> events = new ConcurrentLinkedDeque<>();
+    engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVA), events::add, null);
     var qualityProfile = getQualityProfile(adminWsClient, "SonarLint IT Java");
     deactivateRule(adminWsClient, qualityProfile, "java:S106");
-    Thread.sleep(3000);
+    waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
+      assertThat(events).isNotEmpty();
+      assertThat(events.getLast())
+        .isInstanceOfSatisfying(RuleSetChangedEvent.class, e -> {
+          assertThat(e.getDeactivatedRules()).containsOnly("java:S106");
+          assertThat(e.getActivatedRules()).isEmpty();
+          assertThat(e.getProjectKeys()).containsOnly(PROJECT_KEY_JAVA);
+        });
+    });
 
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA, "src/main/java/foo/Foo.java"), issueListener, null, null);
@@ -659,19 +666,28 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6));
 
     updateProject(PROJECT_KEY_JAVA);
-    engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVA), EMPTY_CONSUMER, null);
+    Deque<ServerEvent> events = new ConcurrentLinkedDeque<>();
+    engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVA), events::add, null);
     var issueKey = getIssueKeys(adminWsClient, "java:S106").get(0);
     resolveIssueAsWontFix(adminWsClient, issueKey);
 
     waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
-      var serverIssues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY_JAVA, "", ""), "master", "src/main/java/foo/Foo.java");
-
-      assertThat(serverIssues)
-        .extracting(ServerIssue::getRuleKey, ServerIssue::isResolved)
-        .contains(tuple("java:S106", true));
-
+      assertThat(events).isNotEmpty();
+      assertThat(events.getLast())
+        .isInstanceOfSatisfying(IssueChangedEvent.class, e -> {
+          assertThat(e.getImpactedIssueKeys()).containsOnly(issueKey);
+          assertThat(e.getResolved()).isTrue();
+          assertThat(e.getUserSeverity()).isNull();
+          assertThat(e.getUserType()).isNull();
+          assertThat(e.getProjectKey()).isEqualTo(PROJECT_KEY_JAVA);
+        });
     });
 
+    var serverIssues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY_JAVA, "", ""), "master", "src/main/java/foo/Foo.java");
+
+    assertThat(serverIssues)
+      .extracting(ServerIssue::getRuleKey, ServerIssue::isResolved)
+      .contains(tuple("java:S106", true));
   }
 
   private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {
