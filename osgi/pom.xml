@@ -53,6 +53,9 @@
             <Embed-Dependency>*;scope=compile|runtime;inline=true;classifier=</Embed-Dependency>
             <Import-Package>
               org.eclipse.jgit.*;resolution:=optional,
+              kotlin.*;version="${kotlin.version}",
+              org.slf4j;version="1.2.3",
+              org.slf4j.spi;version="1.2.3",
             </Import-Package>
             <Export-Package>
               org.sonarsource.sonarlint.core.*;version="${project.version}",

@@ -54,10 +54,18 @@
     <jdk.min.version>11</jdk.min.version>
     <gson.version>2.9.0</gson.version>
     <mockito.version>4.4.0</mockito.version>
+    <kotlin.version>1.6.10</kotlin.version>
   </properties>
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>org.jetbrains.kotlin</groupId>
+        <artifactId>kotlin-bom</artifactId>
+        <version>${kotlin.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-api</artifactId>
@@ -111,7 +119,7 @@
       <dependency>
         <groupId>org.awaitility</groupId>
         <artifactId>awaitility</artifactId>
-        <version>4.0.3</version>
+        <version>4.2.0</version>
       </dependency>
       <dependency>
         <groupId>org.mockito</groupId>
