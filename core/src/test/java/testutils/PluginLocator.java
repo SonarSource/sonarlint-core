@@ -27,7 +27,7 @@ public class PluginLocator {
 
   public static final String SONAR_JAVA_PLUGIN_JAR = "sonar-java-plugin-6.0.0.20538.jar";
   public static final String SONAR_JAVA_PLUGIN_JAR_HASH = "eb27aea472a0d7d91ed529086ce8ee1c";
-  public static final String SONAR_JAVASCRIPT_PLUGIN_JAR = "sonar-javascript-plugin-9.1.0.17747.jar";
+  public static final String SONAR_JAVASCRIPT_PLUGIN_JAR = "sonar-javascript-plugin-9.6.0.18814.jar";
   public static final String SONAR_JAVASCRIPT_PLUGIN_JAR_HASH = "2fab92be44e07f1d367f891a55258736";
   public static final String SONAR_PHP_PLUGIN_JAR = "sonar-php-plugin-3.23.1.8766.jar";
   public static final String SONAR_PYTHON_PLUGIN_JAR = "sonar-python-plugin-1.14.0.3086.jar";

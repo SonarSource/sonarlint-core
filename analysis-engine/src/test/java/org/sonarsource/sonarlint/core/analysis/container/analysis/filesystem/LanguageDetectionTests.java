@@ -64,6 +64,20 @@ class LanguageDetectionTests {
   }
 
   @Test
+  void recognise_yaml_files() throws IOException {
+    var detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
+
+    assertThat(detection.language(newInputFile("lambda.yaml"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.YAML);
+    assertThat(detection.language(newInputFile("lambda.yml"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.YAML);
+    assertThat(detection.language(newInputFile("config/lambda.yml"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.YAML);
+    assertThat(detection.language(newInputFile("config/lambda.YAML"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.YAML);
+
+    assertThat(detection.language(newInputFile("wrong.ylm"))).isNull();
+    assertThat(detection.language(newInputFile("config.js"))).isNotEqualTo(org.sonarsource.sonarlint.core.commons.Language.YAML);
+
+  }
+
+  @Test
   void should_not_fail_if_no_language() throws Exception {
     var detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
     assertThat(detection.language(newInputFile("Foo.blabla"))).isNull();

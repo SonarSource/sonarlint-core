@@ -120,7 +120,7 @@ class StandaloneIssueMediumTests {
       .addPlugin(PluginLocator.getJavaPluginPath())
       .addPlugin(PluginLocator.getPhpPluginPath())
       .addPlugin(PluginLocator.getPythonPluginPath())
-      .addEnabledLanguages(Language.JS, Language.JAVA, Language.PHP, Language.PYTHON, Language.TS, Language.C)
+      .addEnabledLanguages(Language.JS, Language.JAVA, Language.PHP, Language.PYTHON, Language.TS, Language.C, Language.YAML)
       .setSonarLintUserHome(sonarlintUserHome)
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
       .setExtraProperties(extraProperties);
@@ -152,8 +152,8 @@ class StandaloneIssueMediumTests {
     assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "If a local variable or a local function is declared but not used");
 
     var content = "function foo() {\n"
-      + "  var x;\n"
-      + "  var y; //NOSONAR\n"
+      + "  let x;\n"
+      + "  let y; //NOSONAR\n"
       + "}";
     var inputFile = prepareInputFile("foo.js", content, false);
 
@@ -242,6 +242,32 @@ class StandaloneIssueMediumTests {
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
       tuple("typescript:S1764", 2, "foo.ts"));
 
+  }
+  @Test
+  void simpleJavaScriptInYamlFile() throws Exception {
+    String content = "Resources:\n" +
+            "  LambdaFunction:\n" +
+            "    Type: 'AWS::Lambda::Function'\n" +
+            "    Properties:\n" +
+            "      Code:\n" +
+            "        ZipFile: >\n" +
+            "          exports.handler = function(event, context) {\n" +
+            "            let x;\n" +
+            "          };\n" +
+            "      Runtime: nodejs8.10";
+
+    var inputFile = prepareInputFile("foo.yaml", content, false);
+
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(
+            StandaloneAnalysisConfiguration.builder()
+                    .setBaseDir(baseDir.toPath())
+                    .addInputFile(inputFile)
+                    .build(),
+            issues::add, (s, level) -> System.out.println(s),
+            null);
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+            tuple("javascript:S1481", 8, "foo.yaml"));
   }
 
   @Test
