@@ -39,7 +39,7 @@ public enum Language {
   COBOL("cobol", "cobol", "COBOL", new String[0], "sonar.cobol.file.suffixes"),
   HTML("web", "web", "HTML", new String[] {".html", ".xhtml", ".cshtml", ".vbhtml", ".aspx", ".ascx", ".rhtml", ".erb", ".shtm", ".shtml"}, "sonar.html.file.suffixes"),
   JAVA("java", "java", "Java", new String[] {".java", ".jav"}, "sonar.java.file.suffixes"),
-  JS("js", "javascript", "JavaScript", new String[] {".js", ".jsx", ".vue"}, "sonar.javascript.file.suffixes"),
+  JS("js", Constants.JAVASCRIPT_PLUGIN_KEY, "JavaScript", new String[] {".js", ".jsx", ".vue"}, "sonar.javascript.file.suffixes"),
   KOTLIN("kotlin", "kotlin", "Kotlin", new String[] {".kt"}, "sonar.kotlin.file.suffixes"),
   PHP("php", "php", "PHP", new String[] {"php", "php3", "php4", "php5", "phtml", "inc"}, "sonar.php.file.suffixes"),
   PLI("pli", "pli", "PL/I", new String[] {".pli"}, "sonar.pli.file.suffixes"),
@@ -51,11 +51,11 @@ public enum Language {
   SECRETS("secrets", "secrets", "Secrets", new String[0], "sonar.secrets.file.suffixes"),
   SWIFT("swift", "swift", "Swift", new String[] {".swift"}, "sonar.swift.file.suffixes"),
   TSQL("tsql", "tsql", "T-SQL", new String[] {".tsql"}, "sonar.tsql.file.suffixes"),
-  TS("ts", "javascript", "TypeScript", new String[] {".ts", ".tsx"},
+  TS("ts", Constants.JAVASCRIPT_PLUGIN_KEY, "TypeScript", new String[] {".ts", ".tsx"},
     "sonar.typescript.file.suffixes"),
   JSP("jsp", "web", "JSP", new String[] {".jsp", ".jspf", ".jspx"}, "sonar.jsp.file.suffixes"),
-  XML("xml", "xml", "XML", new String[] {".xml", ".xsd", ".xsl"}, "sonar.xml.file.suffixes");
-
+  XML("xml", "xml", "XML", new String[] {".xml", ".xsd", ".xsl"}, "sonar.xml.file.suffixes"),
+  YAML("yaml", Constants.JAVASCRIPT_PLUGIN_KEY, "YAML", new String[] {".yml", "yaml"}, "sonar.yaml.file.suffixes");
   private String languageKey;
   private String pluginKey;
   private String[] defaultFileSuffixes;
@@ -115,6 +115,10 @@ public enum Language {
   @Override
   public String toString() {
     return getLabel();
+  }
+
+  private static class Constants {
+    public static final String JAVASCRIPT_PLUGIN_KEY = "javascript";
   }
 
 }
