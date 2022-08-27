@@ -39,10 +39,6 @@ public class InputFileBuilder {
     this.exclusionsScanner = exclusionsScanner;
   }
 
-  LanguageDetection langDetection() {
-    return langDetection;
-  }
-
   SonarLintInputFile create(ClientInputFile inputFile) {
     var defaultInputFile = new SonarLintInputFile(inputFile, f -> {
       LOG.debug("Initializing metadata of file {}", f.uri());

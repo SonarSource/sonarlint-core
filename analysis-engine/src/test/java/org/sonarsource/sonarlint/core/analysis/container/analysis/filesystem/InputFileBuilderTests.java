@@ -68,8 +68,6 @@ class InputFileBuilderTests {
     assertThat(inputFile.key()).isEqualTo(path.toUri().toString());
     assertThat(inputFile.lines()).isEqualTo(1);
 
-    assertThat(builder.langDetection()).isEqualTo(langDetection);
-
     verify(issueExclusionsLoader).createCharHandlerFor(inputFile);
   }
 
