@@ -214,7 +214,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private <G> List<G> loadIssue(String branchName, String filePath, String linkName, Function<Entity, G> adapter) {
     return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
       .map(branch -> branch.getLinks(BRANCH_TO_FILES_LINK_NAME))
-      .flatMap(files -> findUnique(txn, FILE_ENTITY_TYPE, PATH_PROPERTY_NAME, filePath))
+      .flatMap(files -> findUniqueAmong(files, PATH_PROPERTY_NAME, filePath))
       .map(fileToLoad -> fileToLoad.getLinks(linkName))
       .map(issueEntities -> StreamSupport.stream(issueEntities.spliterator(), false)
         .map(adapter)
