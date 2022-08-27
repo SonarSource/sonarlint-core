@@ -205,6 +205,17 @@ class XodusServerIssueStoreTests {
   }
 
   @Test
+  void should_load_issues_of_the_right_file() {
+    store.replaceAllIssuesOfBranch("branch1", List.of(aServerIssue().setFilePath("file/path1").setKey("key1")));
+    store.replaceAllIssuesOfBranch("branch2", List.of(aServerIssue().setFilePath("file/Path1").setKey("key2")));
+
+    var issues = store.load("branch1", "file/path1");
+    assertThat(issues)
+      .extracting(ServerIssue::getKey)
+      .containsOnly("key1");
+  }
+
+  @Test
   void should_remove_closed_issues_by_key_when_merging() {
     store.replaceAllIssuesOfBranch("branch", List.of(
       aServerIssue().setKey("key1"),

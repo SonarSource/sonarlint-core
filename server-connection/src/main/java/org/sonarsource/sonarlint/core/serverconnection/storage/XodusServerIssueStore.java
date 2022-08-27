@@ -334,9 +334,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   private static Entity getOrCreateFile(Entity branchEntity, String filePath, StoreTransaction txn) {
-    var fileIterable = branchEntity.getLinks(BRANCH_TO_FILES_LINK_NAME)
-      .intersect(findAll(txn, FILE_ENTITY_TYPE, PATH_PROPERTY_NAME, filePath));
-    return Optional.ofNullable(fileIterable.getFirst())
+    return findUniqueAmong(branchEntity.getLinks(BRANCH_TO_FILES_LINK_NAME), PATH_PROPERTY_NAME, filePath)
       .orElseGet(() -> {
         var file = txn.newEntity(FILE_ENTITY_TYPE);
         file.setProperty(PATH_PROPERTY_NAME, filePath);
@@ -421,22 +419,13 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private static Optional<Entity> findUnique(StoreTransaction transaction, String entityType, String propertyName, String caseSensitivePropertyValue) {
     // the find is case-insensitive but we need an exact match
     var entities = transaction.find(entityType, propertyName, caseSensitivePropertyValue);
-    return StreamSupport.stream(entities.spliterator(), false)
-      .filter(e -> caseSensitivePropertyValue.equals(e.getProperty(propertyName)))
-      .findFirst();
+    return findUniqueAmong(entities, propertyName, caseSensitivePropertyValue);
   }
 
-  private static EntityIterable findAll(StoreTransaction transaction, String entityType, String propertyName, String propertyValue) {
-    // the find is case-insensitive but we need an exact match
-    var entities = transaction.find(entityType, propertyName, propertyValue);
-
-    var entityIterator = entities.iterator();
-    while (entityIterator.hasNext()) {
-      if (!propertyValue.equals(entityIterator.next().getProperty(propertyName))) {
-        entityIterator.remove();
-      }
-    }
-    return entities;
+  private static Optional<Entity> findUniqueAmong(EntityIterable iterable, String propertyName, String caseSensitivePropertyValue) {
+    return StreamSupport.stream(iterable.spliterator(), false)
+      .filter(e -> caseSensitivePropertyValue.equals(e.getProperty(propertyName)))
+      .findFirst();
   }
 
   private static void remove(String issueKey, @NotNull StoreTransaction txn) {
