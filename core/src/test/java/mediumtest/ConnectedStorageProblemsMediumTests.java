@@ -65,8 +65,8 @@ class ConnectedStorageProblemsMediumTests {
     sonarlint = new ConnectedSonarLintEngineImpl(config);
 
     var serverBranches = sonarlint.getServerBranches("foo");
-    assertThat(serverBranches.getBranchNames()).isEmpty();
-    assertThat(serverBranches.getMainBranchName()).isEmpty();
+    assertThat(serverBranches.getBranchNames()).containsOnly("master");
+    assertThat(serverBranches.getMainBranchName()).isEqualTo("master");
 
     var thrown = assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails(null, null, "rule", null));
     assertThat(thrown).hasMessage("Unable to find rule details for 'rule'");
