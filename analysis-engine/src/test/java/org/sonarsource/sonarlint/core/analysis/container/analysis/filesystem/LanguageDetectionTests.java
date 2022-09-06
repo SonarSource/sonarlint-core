@@ -78,6 +78,17 @@ class LanguageDetectionTests {
   }
 
   @Test
+  void recognise_css_files() throws IOException {
+    var detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
+
+    assertThat(detection.language(newInputFile("style.css"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.CSS);
+    assertThat(detection.language(newInputFile("style.less"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.CSS);
+    assertThat(detection.language(newInputFile("style.scss"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.CSS);
+
+    assertThat(detection.language(newInputFile("style.stylus"))).isNull();
+  }
+
+  @Test
   void should_not_fail_if_no_language() throws Exception {
     var detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
     assertThat(detection.language(newInputFile("Foo.blabla"))).isNull();
