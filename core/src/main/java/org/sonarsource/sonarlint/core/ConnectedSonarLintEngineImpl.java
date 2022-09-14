@@ -87,7 +87,6 @@ import static org.apache.commons.lang3.StringUtils.trimToNull;
 
 public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine implements ConnectedSonarLintEngine {
 
-  private static final String DEFAULT_SERVER_BRANCH = "master";
   private final ConnectedGlobalConfiguration globalConfig;
   private final ServerConnection serverConnection;
   private final AtomicReference<AnalysisContext> analysisContext = new AtomicReference<>();
@@ -351,13 +350,8 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
 
   @Override
   public ProjectBranches getServerBranches(String projectKey) {
-    try {
-      var projectBranchesFromStorage = serverConnection.getProjectBranches(projectKey);
-      return toApi(projectBranchesFromStorage);
-    } catch (StorageException e) {
-      LOG.error("Unable to read projects branches from the storage", e);
-      return new ProjectBranches(Set.of(DEFAULT_SERVER_BRANCH), DEFAULT_SERVER_BRANCH);
-    }
+    var projectBranchesFromStorage = serverConnection.getProjectBranches(projectKey);
+    return toApi(projectBranchesFromStorage);
   }
 
   private static ProjectBranches toApi(org.sonarsource.sonarlint.core.serverconnection.ProjectBranches projectBranchesFromStorage) {
