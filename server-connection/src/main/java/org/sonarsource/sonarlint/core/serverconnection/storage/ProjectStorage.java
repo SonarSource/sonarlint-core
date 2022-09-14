@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
@@ -40,7 +39,6 @@ import static org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUt
 
 public class ProjectStorage {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final String DEFAULT_MAIN_BRANCH_NAME = "master";
 
   private final Path projectsRootPath;
   private final RWLock rwLock = new RWLock();
@@ -72,9 +70,7 @@ public class ProjectStorage {
 
   public ProjectBranches getProjectBranches(String projectKey) {
     var pbFilePath = getProjectBranchesFilePath(projectKey);
-    return adapt(rwLock.read(() -> !Files.exists(pbFilePath) ?
-      Sonarlint.ProjectBranches.newBuilder().setMainBranchName(DEFAULT_MAIN_BRANCH_NAME).addBranchName(DEFAULT_MAIN_BRANCH_NAME).build()
-      : ProtobufUtil.readFile(pbFilePath, Sonarlint.ProjectBranches.parser())));
+    return adapt(rwLock.read(() -> ProtobufUtil.readFile(pbFilePath, Sonarlint.ProjectBranches.parser())));
   }
 
   private static ProjectBranches adapt(Sonarlint.ProjectBranches projectBranches) {
