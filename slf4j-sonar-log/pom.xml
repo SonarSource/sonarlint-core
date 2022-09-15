@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-parent</artifactId>
-    <version>8.9-SNAPSHOT</version>
+    <version>8.8.1-SNAPSHOT</version>
   </parent>
   <artifactId>sonarlint-slf4j-sonar-log</artifactId>
   <name>SonarLint Core - Slf4j log adaptor</name>
