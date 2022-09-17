@@ -65,7 +65,7 @@ class ConnectedEmbeddedPluginMediumTests {
   private static ConnectedSonarLintEngineImpl sonarlint;
 
   @BeforeAll
-  static void prepare(@TempDir Path slHome) throws Exception {
+  static void prepare(@TempDir Path slHome) {
     var storage = newStorage(SERVER_ID)
       .withJSPlugin()
       .withJavaPlugin()
@@ -74,6 +74,7 @@ class ConnectedEmbeddedPluginMediumTests {
         .withRuleSet("java", ruleSet -> ruleSet
           // Emulate server returning a deprecated key for local analyzer
           .withActiveRule("squid:S106", "BLOCKER")
+          .withActiveRule("java:S3776", "BLOCKER", Map.of("blah", "blah"))
           // Emulate server returning a deprecated template key
           .withCustomActiveRule("squid:myCustomRule", "squid:S124", "MAJOR", Map.of("message", "Needs to be reviewed", "regularExpression", ".*REVIEW.*"))
           .withActiveRule("java:S1220", "MINOR")
@@ -147,7 +148,7 @@ class ConnectedEmbeddedPluginMediumTests {
       .build(),
       new StoreIssueListener(issues), null, null);
 
-    // Reported issues will refers to new rule keys
+    // Reported issues will refer to new rule keys
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
       tuple("java:S106", 4, inputFile.getPath(), IssueSeverity.BLOCKER),
       tuple("java:myCustomRule", 5, inputFile.getPath(), IssueSeverity.MAJOR),
@@ -176,6 +177,38 @@ class ConnectedEmbeddedPluginMediumTests {
     assertThat(s106RuleDetails.getLanguage()).isEqualTo(Language.JAVA);
     assertThat(myCustomRuleDetails.getHtmlDescription()).isEqualTo("My custom rule template desc");
     assertThat(myCustomRuleDetails.getExtendedDescription()).isEqualTo("My custom rule extended description");
+  }
+
+  @Test
+  void ignore_unknown_active_rule_parameters(@TempDir Path baseDir) throws Exception {
+    var inputFile = prepareInputFile(baseDir, "Foo.java", "package com;\n" +
+      "public class Foo {\n"
+      + "  public void foo() {\n"
+      + "    while (true) {\n"
+      + "      while (true) {\n"
+      + "        while (true) {\n"
+      + "          while (true) {\n"
+      + "            while (true) {\n"
+      + "              while (true) {\n"
+      + "              }\n"
+      + "            }\n"
+      + "          }\n"
+      + "        }\n"
+      + "      }\n"
+      + "    }\n"
+      + "  }\n"
+      + "}", false);
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
+        .setProjectKey(JAVA_MODULE_KEY)
+        .setBaseDir(baseDir)
+        .addInputFile(inputFile)
+        .setModuleKey("key")
+        .build(),
+      new StoreIssueListener(issues), null, null);
+
+    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
+      tuple("java:S3776", 3, inputFile.getPath(), IssueSeverity.BLOCKER));
   }
 
   private ClientInputFile prepareJavaInputFile(Path baseDir) throws IOException {
