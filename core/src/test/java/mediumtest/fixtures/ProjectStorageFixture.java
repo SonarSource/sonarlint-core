@@ -110,7 +110,11 @@ public class ProjectStorageFixture {
       }
 
       public RuleSetBuilder withActiveRule(String ruleKey, String severity) {
-        activeRules.add(new ActiveRule(ruleKey, severity, null, Map.of()));
+        return withActiveRule(ruleKey, severity, Map.of());
+      }
+
+      public RuleSetBuilder withActiveRule(String ruleKey, String severity, Map<String, String> params) {
+        activeRules.add(new ActiveRule(ruleKey, severity, null, params));
         return this;
       }
 

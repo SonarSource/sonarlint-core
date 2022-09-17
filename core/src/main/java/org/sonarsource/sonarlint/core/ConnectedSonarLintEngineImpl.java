@@ -148,11 +148,21 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     public void includeRule(SonarLintRuleDefinition ruleOrTemplateDefinition, ServerActiveRule activeRule) {
       var activeRuleForAnalysis = new ActiveRule(activeRule.getRuleKey(), ruleOrTemplateDefinition.getLanguage().getLanguageKey());
       activeRuleForAnalysis.setTemplateRuleKey(trimToNull(activeRule.getTemplateKey()));
-      Map<String, String> effectiveParams = new HashMap<>(ruleOrTemplateDefinition.getDefaultParams());
-      effectiveParams.putAll(activeRule.getParams());
-      activeRuleForAnalysis.setParams(effectiveParams);
+      activeRuleForAnalysis.setParams(getEffectiveParams(ruleOrTemplateDefinition, activeRule));
       activeRules.add(activeRuleForAnalysis);
       activeRulesMetadata.put(activeRule.getRuleKey(), new ActiveRuleMetadata(activeRule.getSeverity(), ruleOrTemplateDefinition.getType()));
+    }
+
+    private static Map<String, String> getEffectiveParams(SonarLintRuleDefinition ruleOrTemplateDefinition, ServerActiveRule activeRule) {
+      Map<String, String> effectiveParams = new HashMap<>(ruleOrTemplateDefinition.getDefaultParams());
+      activeRule.getParams().forEach((paramName, paramValue) -> {
+        if (!ruleOrTemplateDefinition.getParams().containsKey(paramName)) {
+          LOG.debug("Rule parameter '{}' for rule '{}' does not exist in embedded analyzer, ignoring.", paramName, ruleOrTemplateDefinition.getKey());
+          return;
+        }
+        effectiveParams.put(paramName, paramValue);
+      });
+      return effectiveParams;
     }
 
     public void includeRule(SonarLintRuleDefinition rule) {
