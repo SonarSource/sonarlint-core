@@ -109,7 +109,7 @@ public class RulesApi {
   private String getSearchByQualityProfileUrl(String qualityProfileKey) {
     var builder = new StringBuilder();
     builder.append("/api/rules/search.protobuf?qprofile=");
-    builder.append(qualityProfileKey);
+    builder.append(UrlUtils.urlEncode(qualityProfileKey));
     serverApiHelper.getOrganizationKey().ifPresent(org -> builder.append("&organization=").append(UrlUtils.urlEncode(org)));
     builder.append("&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY&s=key");
     return builder.toString();
