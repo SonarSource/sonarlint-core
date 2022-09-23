@@ -47,14 +47,14 @@
     <protobuf.version>3.20.0</protobuf.version>
     <protobuf.compiler>${settings.localRepository}/com/google/protobuf/protoc/${protobuf.version}/protoc-${protobuf.version}-${os.detected.classifier}.exe</protobuf.compiler>
     <gitRepositoryName>sonarlint-core</gitRepositoryName>
-    <okhttp.version>5.0.0-alpha.2</okhttp.version>
-    <junit.jupiter.version>5.8.2</junit.jupiter.version>
-    <junit.vintage.version>5.8.2</junit.vintage.version>
+    <okhttp.version>5.0.0-alpha.10</okhttp.version>
+    <junit.jupiter.version>5.9.1</junit.jupiter.version>
+    <junit.vintage.version>5.9.1</junit.vintage.version>
     <artifactsToPublish>${project.groupId}:sonarlint-core:jar</artifactsToPublish>
     <jdk.min.version>11</jdk.min.version>
-    <gson.version>2.9.0</gson.version>
-    <mockito.version>4.4.0</mockito.version>
-    <kotlin.version>1.6.10</kotlin.version>
+    <gson.version>2.9.1</gson.version>
+    <mockito.version>4.8.0</mockito.version>
+    <kotlin.version>1.6.21</kotlin.version>
   </properties>
 
   <dependencyManagement>
@@ -114,7 +114,7 @@
       <dependency>
         <groupId>org.assertj</groupId>
         <artifactId>assertj-core</artifactId>
-        <version>3.22.0</version>
+        <version>3.23.1</version>
       </dependency>
       <dependency>
         <groupId>org.awaitility</groupId>
