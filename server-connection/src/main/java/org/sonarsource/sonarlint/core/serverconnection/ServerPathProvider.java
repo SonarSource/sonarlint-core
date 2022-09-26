@@ -31,8 +31,6 @@ public class ServerPathProvider {
   }
 
   private static final String MIN_SQ_VERSION = "9.7";
-  private static final String AUTH_PATH = "/sonarlint/auth";
-  private static final String MANUAL_TOKEN_GENERATION_PATH = "/account/security";
 
   public static String getServerPath(EndpointParams endpoint, HttpClient client, int port, String ideName) throws ExecutionException, InterruptedException {
     var serverApi = new ServerApi(endpoint, client);
@@ -45,9 +43,9 @@ public class ServerPathProvider {
     var serverVersion = Version.create(serverVersionStr);
     var path = new StringBuilder(baseUrl);
     if (serverVersion.satisfiesMinRequirement(minVersion)) {
-      path.append(AUTH_PATH);
+      path.append("/sonarlint/auth");
     } else {
-      path.append(MANUAL_TOKEN_GENERATION_PATH);
+      path.append("/account/security");
     }
     path.append("?port=").append(port).append("&ideName=").append(ideName);
     return path.toString();
