@@ -27,10 +27,10 @@ class ServerPathProviderTests {
 
 
   @Test
-  void new_auth_path_for_sonar_cloud() {
+  void old_token_generation_path_for_sonar_cloud() {
     var serverPath = ServerPathProvider.buildServerPath("baseUrl", "5.1", 1234, "My IDE", true);
 
-    assertThat(serverPath).isEqualTo("baseUrl/sonarlint/auth?port=1234&ideName=My+IDE");
+    assertThat(serverPath).isEqualTo("baseUrl/account/security");
   }
 
   @Test

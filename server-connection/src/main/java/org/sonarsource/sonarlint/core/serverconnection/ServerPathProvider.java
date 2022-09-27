@@ -44,10 +44,10 @@ public class ServerPathProvider {
     var minVersion = Version.create(MIN_SQ_VERSION);
     var serverVersion = Version.create(serverVersionStr);
     var path = new StringBuilder(baseUrl);
-    if (isSonarCloud || serverVersion.satisfiesMinRequirement(minVersion)) {
-      path.append("/sonarlint/auth").append("?port=").append(port).append("&ideName=").append(UrlUtils.urlEncode(ideName));
-    } else {
+    if (isSonarCloud || !serverVersion.satisfiesMinRequirement(minVersion)) {
       path.append("/account/security");
+    } else {
+      path.append("/sonarlint/auth").append("?port=").append(port).append("&ideName=").append(UrlUtils.urlEncode(ideName));
     }
     return path.toString();
   }
