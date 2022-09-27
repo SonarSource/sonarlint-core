@@ -34,10 +34,10 @@ public class ServerPathProvider {
   private static final String MIN_SQ_VERSION = "9.7";
 
   public static String getServerUrlForTokenGeneration(EndpointParams endpoint, HttpClient client,
-    int port, String ideName, boolean isSonarCloud) throws ExecutionException, InterruptedException {
+    int port, String ideName) throws ExecutionException, InterruptedException {
     var serverApi = new ServerApi(endpoint, client);
     var systemInfo = serverApi.system().getStatus().get();
-    return buildServerPath(endpoint.getBaseUrl(), systemInfo.getVersion(), port, ideName, isSonarCloud);
+    return buildServerPath(endpoint.getBaseUrl(), systemInfo.getVersion(), port, ideName, endpoint.isSonarCloud());
   }
 
   static String buildServerPath(String baseUrl, String serverVersionStr, int port, String ideName, boolean isSonarCloud) {
