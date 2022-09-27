@@ -24,6 +24,7 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
+import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 
 public class ServerPathProvider {
 
@@ -32,22 +33,22 @@ public class ServerPathProvider {
 
   private static final String MIN_SQ_VERSION = "9.7";
 
-  public static String getServerPath(EndpointParams endpoint, HttpClient client, int port, String ideName) throws ExecutionException, InterruptedException {
+  public static String getServerUrlForTokenGeneration(EndpointParams endpoint, HttpClient client,
+    int port, String ideName, boolean isSonarCloud) throws ExecutionException, InterruptedException {
     var serverApi = new ServerApi(endpoint, client);
     var systemInfo = serverApi.system().getStatus().get();
-    return buildServerPath(endpoint.getBaseUrl(), systemInfo.getVersion(), port, ideName);
+    return buildServerPath(endpoint.getBaseUrl(), systemInfo.getVersion(), port, ideName, isSonarCloud);
   }
 
-  static String buildServerPath(String baseUrl, String serverVersionStr, int port, String ideName) {
+  static String buildServerPath(String baseUrl, String serverVersionStr, int port, String ideName, boolean isSonarCloud) {
     var minVersion = Version.create(MIN_SQ_VERSION);
     var serverVersion = Version.create(serverVersionStr);
     var path = new StringBuilder(baseUrl);
-    if (serverVersion.satisfiesMinRequirement(minVersion)) {
-      path.append("/sonarlint/auth");
+    if (isSonarCloud || serverVersion.satisfiesMinRequirement(minVersion)) {
+      path.append("/sonarlint/auth").append("?port=").append(port).append("&ideName=").append(UrlUtils.urlEncode(ideName));
     } else {
       path.append("/account/security");
     }
-    path.append("?port=").append(port).append("&ideName=").append(ideName);
     return path.toString();
   }
 

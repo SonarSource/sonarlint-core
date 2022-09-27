@@ -27,24 +27,33 @@ class ServerPathProviderTests {
 
 
   @Test
-  void new_auth_path_for_9_7_version() {
-    var serverPath = ServerPathProvider.buildServerPath("baseUrl", "9.7", 1234, "My IDE");
+  void new_auth_path_for_sonar_cloud() {
+    var serverPath = ServerPathProvider.buildServerPath("baseUrl", "5.1", 1234, "My IDE", true);
 
-    assertThat(serverPath).isEqualTo("baseUrl/sonarlint/auth?port=1234&ideName=My IDE");
+    assertThat(serverPath).isEqualTo("baseUrl/sonarlint/auth?port=1234&ideName=My+IDE");
+  }
+
+  @Test
+  void new_auth_path_for_9_7_version() {
+    var serverPath = ServerPathProvider.buildServerPath("baseUrl", "9.7", 1234, "My IDE", false);
+
+    assertThat(serverPath).isEqualTo("baseUrl/sonarlint/auth?port=1234&ideName=My+IDE");
   }
 
   @Test
   void new_auth_path_for_version_greater_than_9_7() {
-    var serverPath = ServerPathProvider.buildServerPath("baseUrl", "9.8", 1234, "My IDE");
+    var serverPath = ServerPathProvider.buildServerPath("baseUrl", "9.8", 1234, "My IDE", false);
 
-    assertThat(serverPath).isEqualTo("baseUrl/sonarlint/auth?port=1234&ideName=My IDE");
+    assertThat(serverPath).isEqualTo("baseUrl/sonarlint/auth?port=1234&ideName=My+IDE");
   }
 
   @Test
   void profile_token_generation_path_for_version_lower_than_9_7() {
-    var serverPath = ServerPathProvider.buildServerPath("baseUrl", "9.6", 1234, "My IDE");
+    var serverPath = ServerPathProvider.buildServerPath("baseUrl", "9.6", 1234, "My IDE", false);
 
-    assertThat(serverPath).isEqualTo("baseUrl/account/security?port=1234&ideName=My IDE");
+    assertThat(serverPath).isEqualTo("baseUrl/account/security");
   }
+
+
 
 }
