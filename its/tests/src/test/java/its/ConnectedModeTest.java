@@ -697,8 +697,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7));
 
     var serverPath = ServerPathProvider.getServerPath(endpointParams(ORCHESTRATOR), sqHttpClient(), 1234, "My IDE");
-
-    assertThat(serverPath).isEqualTo("http://127.0.0.1:64921/sonarlint/auth?port=1234&ideName=My IDE");
+    var port = ORCHESTRATOR.getServer().getSearchPort() + 1;
+    assertThat(serverPath).isEqualTo("http://127.0.0.1:" + port + "/sonarlint/auth?port=1234&ideName=My IDE");
   }
   
   private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {
