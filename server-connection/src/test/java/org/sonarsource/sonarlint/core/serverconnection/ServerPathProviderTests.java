@@ -54,6 +54,4 @@ class ServerPathProviderTests {
     assertThat(serverPath).isEqualTo("baseUrl/account/security");
   }
 
-
-
 }
