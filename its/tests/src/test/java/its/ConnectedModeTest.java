@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
@@ -68,6 +69,7 @@ import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.ServerEvent;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.ServerPathProvider;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static java.util.Collections.singletonList;
@@ -690,6 +692,17 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       .contains(tuple("java:S106", true));
   }
 
+  @Test
+  public void providesCorrectServerPathForTokenGeneration() throws InterruptedException, ExecutionException {
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7));
+
+    var serverPath = ServerPathProvider.getServerUrlForTokenGeneration(endpointParams(ORCHESTRATOR),
+      sqHttpClient(), 1234, "My IDE");
+
+    var sqUrl = ORCHESTRATOR.getServer().getUrl();
+    assertThat(serverPath).isEqualTo(sqUrl + "/sonarlint/auth?port=1234&ideName=My+IDE");
+  }
+  
   private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {
     adminWsClient.settings().set(new SetRequest()
       .setKey(key)
