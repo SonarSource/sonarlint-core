@@ -61,7 +61,7 @@ class ServerPathProviderTests {
   }
 
   @Test
-  void test() throws ExecutionException, InterruptedException {
+  void should_provide_token_generation_path_for_base_server_url() throws ExecutionException, InterruptedException {
     mockWebServerExtension.addStringResponse("/api/system/status", "{\"status\": \"UP\", \"version\": \"9.6\", \"id\": \"xzy\"}");
     var client = MockWebServerExtension.httpClient();
     var baseUrl = mockWebServerExtension.url("");
