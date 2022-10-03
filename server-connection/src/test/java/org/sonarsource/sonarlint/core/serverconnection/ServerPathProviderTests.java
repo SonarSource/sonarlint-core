@@ -19,12 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
+import testutils.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ServerPathProviderTests {
 
+  @RegisterExtension
+  private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
 
   @Test
   void old_token_generation_path_for_sonar_cloud() {
@@ -52,6 +58,17 @@ class ServerPathProviderTests {
     var serverPath = ServerPathProvider.buildServerPath("baseUrl", "9.6", 1234, "My IDE", false);
 
     assertThat(serverPath).isEqualTo("baseUrl/account/security");
+  }
+
+  @Test
+  void should_provide_token_generation_path_for_base_server_url() throws ExecutionException, InterruptedException {
+    mockWebServerExtension.addStringResponse("/api/system/status", "{\"status\": \"UP\", \"version\": \"9.6\", \"id\": \"xzy\"}");
+    var client = MockWebServerExtension.httpClient();
+    var baseUrl = mockWebServerExtension.url("");
+
+    var serverUrl = ServerPathProvider.getServerUrlForTokenGeneration(mockWebServerExtension.endpointParams(), client, 1234, "My IDE");
+
+    assertThat(serverUrl).isEqualTo(baseUrl + "/account/security");
   }
 
 }

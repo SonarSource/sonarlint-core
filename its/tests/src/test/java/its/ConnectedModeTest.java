@@ -691,17 +691,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       .extracting(ServerIssue::getRuleKey, ServerIssue::isResolved)
       .contains(tuple("java:S106", true));
   }
-
-  @Test
-  public void providesCorrectServerPathForTokenGeneration() throws InterruptedException, ExecutionException {
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7));
-
-    var serverPath = ServerPathProvider.getServerUrlForTokenGeneration(endpointParams(ORCHESTRATOR),
-      sqHttpClient(), 1234, "My IDE");
-
-    var sqUrl = ORCHESTRATOR.getServer().getUrl();
-    assertThat(serverPath).isEqualTo(sqUrl + "/sonarlint/auth?port=1234&ideName=My+IDE");
-  }
   
   private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {
     adminWsClient.settings().set(new SetRequest()
