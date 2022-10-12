@@ -25,6 +25,7 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
+import org.sonarsource.sonarlint.core.serverapi.system.ServerInfo;
 
 public class ServerPathProvider {
 
@@ -34,9 +35,17 @@ public class ServerPathProvider {
   private static final String MIN_SQ_VERSION = "9.7";
 
   public static String getServerUrlForTokenGeneration(EndpointParams endpoint, HttpClient client,
-    int port, String ideName) throws ExecutionException, InterruptedException {
+    int port, String ideName) {
     var serverApi = new ServerApi(endpoint, client);
-    var systemInfo = serverApi.system().getStatus().get();
+    ServerInfo systemInfo;
+    try {
+      systemInfo = serverApi.system().getStatus().get();
+    } catch (InterruptedException | IllegalStateException e) {
+      Thread.currentThread().interrupt();
+      throw new DownloadException("Failed to get server status for " + endpoint.getBaseUrl() + " due to thread interruption", e);
+    } catch (ExecutionException e) {
+      throw new DownloadException("Failed to get server status for " + endpoint.getBaseUrl(), e);
+    }
     return buildServerPath(endpoint.getBaseUrl(), systemInfo.getVersion(), port, ideName, endpoint.isSonarCloud());
   }
 
@@ -44,12 +53,20 @@ public class ServerPathProvider {
     var minVersion = Version.create(MIN_SQ_VERSION);
     var serverVersion = Version.create(serverVersionStr);
     var path = new StringBuilder(baseUrl);
+    var portParameter = getPortParameter(port);
     if (isSonarCloud || !serverVersion.satisfiesMinRequirement(minVersion)) {
       path.append("/account/security");
     } else {
-      path.append("/sonarlint/auth").append("?port=").append(port).append("&ideName=").append(UrlUtils.urlEncode(ideName));
+      path.append("/sonarlint/auth").append("?ideName=").append(UrlUtils.urlEncode(ideName)).append(portParameter);
     }
     return path.toString();
+  }
+
+  private static String getPortParameter(int port) {
+    if (port == -1) {
+      return "";
+    }
+    return "&port=" + port;
   }
 
 }
