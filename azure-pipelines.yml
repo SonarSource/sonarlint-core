@@ -551,7 +551,7 @@ stages:
     stageDependencies: build
     jobs:
     - job: its
-      displayName: Run ITs
+      displayName: Run ITs 2
       strategy:
         matrix:
           SonarCloud:
@@ -627,7 +627,7 @@ stages:
     stageDependencies: build
     jobs:
     - job: its
-      displayName: Run ITs
+      displayName: Run ITs 2
       strategy:
         matrix:
           SonarCloud:
@@ -701,7 +701,7 @@ stages:
     stageDependencies: build
     jobs:
     - job: its
-      displayName: Run ITs
+      displayName: Run ITs 2
       strategy:
         matrix:
           SonarCloud:
@@ -773,7 +773,7 @@ stages:
     burgrName: 'qa_sl_4'
     burgrType: 'qa'
     stageName: 'qa_sl_4'
-    stageDisplayName: Run ITs
+    stageDisplayName: Run ITs 2
     stageDependencies: build
     jobs:
     - job: its
@@ -851,7 +851,7 @@ stages:
     stageDependencies: build
     jobs:
     - job: its
-      displayName: Run ITs
+      displayName: Run ITs 2
       strategy:
         matrix:
           SonarCloud:
