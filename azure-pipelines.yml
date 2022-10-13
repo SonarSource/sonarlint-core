@@ -143,6 +143,10 @@ stages:
       - template: update-maven-version-steps.yml
         parameters:
           mavenSettingsFilePath: $(mavenSettings.secureFilePath)
+      - task: Bash@3
+        inputs:
+          targetType: 'inline'
+          script: env && ls -al $(Pipeline.Workspace)/.m2/repository && cat $(mavenSettings.secureFilePath)
       - task: Maven@3
         displayName: 'Run Maven goal $(GOAL)'
         env:
