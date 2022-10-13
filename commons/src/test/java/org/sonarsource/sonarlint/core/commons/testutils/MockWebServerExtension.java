@@ -72,6 +72,12 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
 
   @Override
   public void afterEach(ExtensionContext context) throws Exception {
+    if (!Thread.interrupted()) {
+      server.shutdown();
+    }
+  }
+
+  public void shutdownServer() throws Exception {
     server.shutdown();
   }
 

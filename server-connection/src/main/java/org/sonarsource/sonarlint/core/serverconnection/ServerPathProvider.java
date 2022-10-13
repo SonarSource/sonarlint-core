@@ -38,15 +38,21 @@ public class ServerPathProvider {
     int port, String ideName) {
     var serverApi = new ServerApi(endpoint, client);
     ServerInfo systemInfo;
+    systemInfo = getServerInfo(endpoint, serverApi);
+    return buildServerPath(endpoint.getBaseUrl(), systemInfo.getVersion(), port, ideName, endpoint.isSonarCloud());
+  }
+
+  static ServerInfo getServerInfo(EndpointParams endpoint, ServerApi serverApi) {
+    ServerInfo systemInfo;
     try {
       systemInfo = serverApi.system().getStatus().get();
-    } catch (InterruptedException | IllegalStateException e) {
+    } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new DownloadException("Failed to get server status for " + endpoint.getBaseUrl() + " due to thread interruption", e);
     } catch (ExecutionException e) {
-      throw new DownloadException("Failed to get server status for " + endpoint.getBaseUrl(), e);
+      throw new DownloadException("Failed to get server status for " + endpoint.getBaseUrl() + " due to malformed response", e);
     }
-    return buildServerPath(endpoint.getBaseUrl(), systemInfo.getVersion(), port, ideName, endpoint.isSonarCloud());
+    return systemInfo;
   }
 
   static String buildServerPath(String baseUrl, String serverVersionStr, int port, String ideName, boolean isSonarCloud) {
