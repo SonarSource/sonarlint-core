@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
@@ -34,26 +34,16 @@ public class ServerPathProvider {
 
   private static final String MIN_SQ_VERSION = "9.7";
 
-  public static String getServerUrlForTokenGeneration(EndpointParams endpoint, HttpClient client,
+  public static CompletableFuture<String> getServerUrlForTokenGeneration(EndpointParams endpoint, HttpClient client,
     int port, String ideName) {
     var serverApi = new ServerApi(endpoint, client);
-    ServerInfo systemInfo;
-    systemInfo = getServerInfo(endpoint, serverApi);
-    return buildServerPath(endpoint.getBaseUrl(), systemInfo.getVersion(), port, ideName, endpoint.isSonarCloud());
+    CompletableFuture<ServerInfo> systemInfoFuture;
+    systemInfoFuture = serverApi.system().getStatus();
+    return systemInfoFuture.thenApply(systemInfo ->
+      buildServerPath(endpoint.getBaseUrl(), systemInfo.getVersion(), port, ideName, endpoint.isSonarCloud()));
   }
 
-  static ServerInfo getServerInfo(EndpointParams endpoint, ServerApi serverApi) {
-    ServerInfo systemInfo;
-    try {
-      systemInfo = serverApi.system().getStatus().get();
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new DownloadException("Failed to get server status for " + endpoint.getBaseUrl() + " due to thread interruption", e);
-    } catch (ExecutionException e) {
-      throw new DownloadException("Failed to get server status for " + endpoint.getBaseUrl() + " due to malformed response", e);
-    }
-    return systemInfo;
-  }
+
 
   static String buildServerPath(String baseUrl, String serverVersionStr, int port, String ideName, boolean isSonarCloud) {
     var minVersion = Version.create(MIN_SQ_VERSION);

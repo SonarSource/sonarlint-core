@@ -19,21 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
-import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverapi.system.ServerInfo;
-import org.sonarsource.sonarlint.core.serverapi.system.SystemApi;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class ServerPathProviderTests {
 
@@ -76,45 +68,14 @@ class ServerPathProviderTests {
   }
 
   @Test
-  void should_provide_token_generation_path_for_base_server_url() {
+  void should_provide_token_generation_path_for_base_server_url() throws ExecutionException, InterruptedException {
     mockWebServerExtension.addStringResponse("/api/system/status", "{\"status\": \"UP\", \"version\": \"9.6\", \"id\": \"xzy\"}");
     var client = MockWebServerExtension.httpClient();
     var baseUrl = mockWebServerExtension.url("");
 
-    var serverUrl = ServerPathProvider.getServerUrlForTokenGeneration(mockWebServerExtension.endpointParams(), client, 1234, "My IDE");
+    var serverUrl = ServerPathProvider.getServerUrlForTokenGeneration(mockWebServerExtension.endpointParams(), client, 1234, "My IDE").get();
 
     assertThat(serverUrl).isEqualTo(baseUrl + "/account/security");
-  }
-
-  @Test
-  void should_throw_download_exception_on_malformed_json() {
-    mockWebServerExtension.addStringResponse("/api/system/status", "not a json");
-    var client = MockWebServerExtension.httpClient();
-    var baseUrl = mockWebServerExtension.url("");
-    var endpointParams = mockWebServerExtension.endpointParams();
-
-    assertThatThrownBy(() ->
-      ServerPathProvider.getServerUrlForTokenGeneration(endpointParams, client, 1234, "My IDE"))
-      .isInstanceOf(DownloadException.class)
-      .hasMessage("Failed to get server status for " + baseUrl + " due to malformed response");
-  }
-
-  @Test
-  void should_rethrow_download_exception_on_thread_interrupted_exception() throws Exception {
-    var serverApi = mock(ServerApi.class);
-    var systemApi = mock(SystemApi.class);
-    var statusFuture = mock(CompletableFuture.class);
-    when(serverApi.system()).thenReturn(systemApi);
-    when(systemApi.getStatus()).thenReturn(statusFuture);
-    when(statusFuture.get()).thenThrow(InterruptedException.class);
-
-    var baseUrl = mockWebServerExtension.url("");
-    var endpointParams = mockWebServerExtension.endpointParams();
-
-    mockWebServerExtension.shutdownServer();
-    assertThatThrownBy(() -> ServerPathProvider.getServerInfo(endpointParams, serverApi))
-      .isInstanceOf(DownloadException.class)
-      .hasMessage("Failed to get server status for " + baseUrl + " due to thread interruption");
   }
 
 }
