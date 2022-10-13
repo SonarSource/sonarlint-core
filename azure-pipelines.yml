@@ -1,6 +1,5 @@
 trigger:
 - master
-- test/dav
 
 schedules:
 - cron: "0 0 * * *"
