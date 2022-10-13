@@ -247,3 +247,388 @@ stages:
       - bash: git checkout .
         name: revertPomChanges
         displayName: Revert changes made to pom.xml to not break cache feature
+
+- template: stage-with-burgr-notifications.yml@commonTemplates
+  parameters:
+    burgrName: 'qa_sl_2'
+    burgrType: 'qa'
+    stageName: 'qa_sl_2'
+    stageDisplayName: Run ITs 2
+    stageDependencies: build
+    jobs:
+    - job: its
+      displayName: Run ITs 2
+      strategy:
+        matrix:
+          SonarCloud:
+            SQ_VERSION: 'SonarCloud'
+            JDKVersion: '1.11'
+            Category: '-Dgroups=SonarCloud'
+          Dogfood:
+            SQ_VERSION: 'DEV'
+            JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
+          Latest:
+            SQ_VERSION: 'LATEST_RELEASE'
+            JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
+          Lts89:
+            SQ_VERSION: 'LATEST_RELEASE[8.9]'
+            JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
+          Lts79:
+            SQ_VERSION: 'LATEST_RELEASE[7.9]'
+            JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
+      variables:
+        MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
+        MAVEN_OPTS: '-Xmx3072m -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+      steps:
+      - checkout: self
+        fetchDepth: 1
+      - task: Cache@2
+        inputs:
+          key: 'its | "$(SQ_VERSION)" | maven | "$(Agent.OS)" | **/pom.xml, !its/target**'
+          path: $(MAVEN_CACHE_FOLDER)
+        displayName: Cache Maven local repo
+      - task: DownloadSecureFile@1
+        displayName: 'Download Maven settings'
+        name: mavenSettings
+        inputs:
+          secureFile: 'maven-settings.xml'
+      - template: update-maven-version-steps.yml
+        parameters:
+          mavenSettingsFilePath: $(mavenSettings.secureFilePath)
+      - task: Maven@3
+        displayName: 'Run Maven ITs for SQ $(SQ_VERSION)'
+        env:
+          ARTIFACTORY_QA_READER_USERNAME: $(ARTIFACTORY_QA_READER_SL_USERNAME)
+          ARTIFACTORY_QA_READER_PASSWORD: $(ARTIFACTORY_QA_READER_SL_PASSWORD)
+          # For Orchestrator
+          ARTIFACTORY_API_KEY: $(ARTIFACTORY_API_KEY)
+          GITHUB_TOKEN: $(GITHUB_TOKEN)
+          # SonarLintInstaller
+          MAVEN_LOCAL_REPOSITORY: $(MAVEN_CACHE_FOLDER)
+          # SonarCloudTest
+          SONARCLOUD_IT_PASSWORD: $(SONARCLOUD_IT_PASSWORD)
+        inputs:
+          goals: 'verify'
+          mavenPomFile: 'its/pom.xml'
+          options: '-B --settings $(mavenSettings.secureFilePath) -Denable-repo=qa -Dsonar.runtimeVersion=$(SQ_VERSION) $(Category)'
+          publishJUnitResults: true
+          testResultsFiles: '**/surefire-reports/TEST-*.xml'
+          testRunTitle: 'ITs $(SQ_VERSION)'
+          javaHomeOption: 'JDKVersion'
+          jdkVersionOption: $(JDKVersion)
+          mavenOptions: $(MAVEN_OPTS)
+      - bash: git checkout .
+        name: revertPomChanges
+        displayName: Revert changes made to pom.xml to not break cache feature
+
+- template: stage-with-burgr-notifications.yml@commonTemplates
+  parameters:
+    burgrName: 'qa_sl_3'
+    burgrType: 'qa'
+    stageName: 'qa_sl_3'
+    stageDisplayName: Run ITs 2
+    stageDependencies: build
+    jobs:
+    - job: its
+      displayName: Run ITs 2
+      strategy:
+        matrix:
+          SonarCloud:
+            SQ_VERSION: 'SonarCloud'
+            JDKVersion: '1.11'
+            Category: '-Dgroups=SonarCloud'
+          Dogfood:
+            SQ_VERSION: 'DEV'
+            JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
+          Latest:
+            SQ_VERSION: 'LATEST_RELEASE'
+            JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
+          Lts89:
+            SQ_VERSION: 'LATEST_RELEASE[8.9]'
+            JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
+          Lts79:
+            SQ_VERSION: 'LATEST_RELEASE[7.9]'
+            JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
+      variables:
+        MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
+        MAVEN_OPTS: '-Xmx3072m -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+      steps:
+      - checkout: self
+        fetchDepth: 1
+      - task: Cache@2
+        inputs:
+          key: 'its | "$(SQ_VERSION)" | maven | "$(Agent.OS)" | **/pom.xml, !its/target**'
+          path: $(MAVEN_CACHE_FOLDER)
+        displayName: Cache Maven local repo
+      - task: DownloadSecureFile@1
+        displayName: 'Download Maven settings'
+        name: mavenSettings
+        inputs:
+          secureFile: 'maven-settings.xml'
+      - template: update-maven-version-steps.yml
+        parameters:
+          mavenSettingsFilePath: $(mavenSettings.secureFilePath)
+      - task: Maven@3
+        displayName: 'Run Maven ITs for SQ $(SQ_VERSION)'
+        env:
+          ARTIFACTORY_QA_READER_USERNAME: $(ARTIFACTORY_QA_READER_SL_USERNAME)
+          ARTIFACTORY_QA_READER_PASSWORD: $(ARTIFACTORY_QA_READER_SL_PASSWORD)
+          # For Orchestrator
+          ARTIFACTORY_API_KEY: $(ARTIFACTORY_API_KEY)
+          GITHUB_TOKEN: $(GITHUB_TOKEN)
+          # SonarLintInstaller
+          MAVEN_LOCAL_REPOSITORY: $(MAVEN_CACHE_FOLDER)
+          # SonarCloudTest
+          SONARCLOUD_IT_PASSWORD: $(SONARCLOUD_IT_PASSWORD)
+        inputs:
+          goals: 'verify'
+          mavenPomFile: 'its/pom.xml'
+          options: '-B --settings $(mavenSettings.secureFilePath) -Denable-repo=qa -Dsonar.runtimeVersion=$(SQ_VERSION) $(Category)'
+          publishJUnitResults: true
+          testResultsFiles: '**/surefire-reports/TEST-*.xml'
+          testRunTitle: 'ITs $(SQ_VERSION)'
+          javaHomeOption: 'JDKVersion'
+          jdkVersionOption: $(JDKVersion)
+          mavenOptions: $(MAVEN_OPTS)
+      - bash: git checkout .
+        name: revertPomChanges
+        displayName: Revert changes made to pom.xml to not break cache feature
+
+- template: stage-with-burgr-notifications.yml@commonTemplates
+  parameters:
+    burgrName: 'qa_sl_4'
+    burgrType: 'qa'
+    stageName: 'qa_sl_4'
+    stageDisplayName: Run ITs 2
+    stageDependencies: build
+    jobs:
+    - job: its
+      displayName: Run ITs 2
+      strategy:
+        matrix:
+          SonarCloud:
+            SQ_VERSION: 'SonarCloud'
+            JDKVersion: '1.11'
+            Category: '-Dgroups=SonarCloud'
+          Dogfood:
+            SQ_VERSION: 'DEV'
+            JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
+          Latest:
+            SQ_VERSION: 'LATEST_RELEASE'
+            JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
+          Lts89:
+            SQ_VERSION: 'LATEST_RELEASE[8.9]'
+            JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
+          Lts79:
+            SQ_VERSION: 'LATEST_RELEASE[7.9]'
+            JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
+      variables:
+        MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
+        MAVEN_OPTS: '-Xmx3072m -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+      steps:
+      - checkout: self
+        fetchDepth: 1
+      - task: Cache@2
+        inputs:
+          key: 'its | "$(SQ_VERSION)" | maven | "$(Agent.OS)" | **/pom.xml, !its/target**'
+          path: $(MAVEN_CACHE_FOLDER)
+        displayName: Cache Maven local repo
+      - task: DownloadSecureFile@1
+        displayName: 'Download Maven settings'
+        name: mavenSettings
+        inputs:
+          secureFile: 'maven-settings.xml'
+      - template: update-maven-version-steps.yml
+        parameters:
+          mavenSettingsFilePath: $(mavenSettings.secureFilePath)
+      - task: Maven@3
+        displayName: 'Run Maven ITs for SQ $(SQ_VERSION)'
+        env:
+          ARTIFACTORY_QA_READER_USERNAME: $(ARTIFACTORY_QA_READER_SL_USERNAME)
+          ARTIFACTORY_QA_READER_PASSWORD: $(ARTIFACTORY_QA_READER_SL_PASSWORD)
+          # For Orchestrator
+          ARTIFACTORY_API_KEY: $(ARTIFACTORY_API_KEY)
+          GITHUB_TOKEN: $(GITHUB_TOKEN)
+          # SonarLintInstaller
+          MAVEN_LOCAL_REPOSITORY: $(MAVEN_CACHE_FOLDER)
+          # SonarCloudTest
+          SONARCLOUD_IT_PASSWORD: $(SONARCLOUD_IT_PASSWORD)
+        inputs:
+          goals: 'verify'
+          mavenPomFile: 'its/pom.xml'
+          options: '-B --settings $(mavenSettings.secureFilePath) -Denable-repo=qa -Dsonar.runtimeVersion=$(SQ_VERSION) $(Category)'
+          publishJUnitResults: true
+          testResultsFiles: '**/surefire-reports/TEST-*.xml'
+          testRunTitle: 'ITs $(SQ_VERSION)'
+          javaHomeOption: 'JDKVersion'
+          jdkVersionOption: $(JDKVersion)
+          mavenOptions: $(MAVEN_OPTS)
+      - bash: git checkout .
+        name: revertPomChanges
+        displayName: Revert changes made to pom.xml to not break cache feature
+
+- template: stage-with-burgr-notifications.yml@commonTemplates
+  parameters:
+    burgrName: 'qa_sl_5'
+    burgrType: 'qa'
+    stageName: 'qa_sl_5'
+    stageDisplayName: Run ITs 2
+    stageDependencies: build
+    jobs:
+    - job: its
+      displayName: Run ITs 2
+      strategy:
+        matrix:
+          SonarCloud:
+            SQ_VERSION: 'SonarCloud'
+            JDKVersion: '1.11'
+            Category: '-Dgroups=SonarCloud'
+          Dogfood:
+            SQ_VERSION: 'DEV'
+            JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
+          Latest:
+            SQ_VERSION: 'LATEST_RELEASE'
+            JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
+          Lts89:
+            SQ_VERSION: 'LATEST_RELEASE[8.9]'
+            JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
+          Lts79:
+            SQ_VERSION: 'LATEST_RELEASE[7.9]'
+            JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
+      variables:
+        MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
+        MAVEN_OPTS: '-Xmx3072m -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+      steps:
+      - checkout: self
+        fetchDepth: 1
+      - task: Cache@2
+        inputs:
+          key: 'its | "$(SQ_VERSION)" | maven | "$(Agent.OS)" | **/pom.xml, !its/target**'
+          path: $(MAVEN_CACHE_FOLDER)
+        displayName: Cache Maven local repo
+      - task: DownloadSecureFile@1
+        displayName: 'Download Maven settings'
+        name: mavenSettings
+        inputs:
+          secureFile: 'maven-settings.xml'
+      - template: update-maven-version-steps.yml
+        parameters:
+          mavenSettingsFilePath: $(mavenSettings.secureFilePath)
+      - task: Maven@3
+        displayName: 'Run Maven ITs for SQ $(SQ_VERSION)'
+        env:
+          ARTIFACTORY_QA_READER_USERNAME: $(ARTIFACTORY_QA_READER_SL_USERNAME)
+          ARTIFACTORY_QA_READER_PASSWORD: $(ARTIFACTORY_QA_READER_SL_PASSWORD)
+          # For Orchestrator
+          ARTIFACTORY_API_KEY: $(ARTIFACTORY_API_KEY)
+          GITHUB_TOKEN: $(GITHUB_TOKEN)
+          # SonarLintInstaller
+          MAVEN_LOCAL_REPOSITORY: $(MAVEN_CACHE_FOLDER)
+          # SonarCloudTest
+          SONARCLOUD_IT_PASSWORD: $(SONARCLOUD_IT_PASSWORD)
+        inputs:
+          goals: 'verify'
+          mavenPomFile: 'its/pom.xml'
+          options: '-B --settings $(mavenSettings.secureFilePath) -Denable-repo=qa -Dsonar.runtimeVersion=$(SQ_VERSION) $(Category)'
+          publishJUnitResults: true
+          testResultsFiles: '**/surefire-reports/TEST-*.xml'
+          testRunTitle: 'ITs $(SQ_VERSION)'
+          javaHomeOption: 'JDKVersion'
+          jdkVersionOption: $(JDKVersion)
+          mavenOptions: $(MAVEN_OPTS)
+      - bash: git checkout .
+        name: revertPomChanges
+        displayName: Revert changes made to pom.xml to not break cache feature
+
+- template: stage-with-burgr-notifications.yml@commonTemplates
+  parameters:
+    burgrName: 'qa_sl_6'
+    burgrType: 'qa'
+    stageName: 'qa_sl_6'
+    stageDisplayName: Run ITs 2
+    stageDependencies: build
+    jobs:
+    - job: its
+      displayName: Run ITs 2
+      strategy:
+        matrix:
+          SonarCloud:
+            SQ_VERSION: 'SonarCloud'
+            JDKVersion: '1.11'
+            Category: '-Dgroups=SonarCloud'
+          Dogfood:
+            SQ_VERSION: 'DEV'
+            JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
+          Latest:
+            SQ_VERSION: 'LATEST_RELEASE'
+            JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
+          Lts89:
+            SQ_VERSION: 'LATEST_RELEASE[8.9]'
+            JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
+          Lts79:
+            SQ_VERSION: 'LATEST_RELEASE[7.9]'
+            JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
+      variables:
+        MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
+        MAVEN_OPTS: '-Xmx3072m -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+      steps:
+      - checkout: self
+        fetchDepth: 1
+      - task: Cache@2
+        inputs:
+          key: 'its | "$(SQ_VERSION)" | maven | "$(Agent.OS)" | **/pom.xml, !its/target**'
+          path: $(MAVEN_CACHE_FOLDER)
+        displayName: Cache Maven local repo
+      - task: DownloadSecureFile@1
+        displayName: 'Download Maven settings'
+        name: mavenSettings
+        inputs:
+          secureFile: 'maven-settings.xml'
+      - template: update-maven-version-steps.yml
+        parameters:
+          mavenSettingsFilePath: $(mavenSettings.secureFilePath)
+      - task: Maven@3
+        displayName: 'Run Maven ITs for SQ $(SQ_VERSION)'
+        env:
+          ARTIFACTORY_QA_READER_USERNAME: $(ARTIFACTORY_QA_READER_SL_USERNAME)
+          ARTIFACTORY_QA_READER_PASSWORD: $(ARTIFACTORY_QA_READER_SL_PASSWORD)
+          # For Orchestrator
+          ARTIFACTORY_API_KEY: $(ARTIFACTORY_API_KEY)
+          GITHUB_TOKEN: $(GITHUB_TOKEN)
+          # SonarLintInstaller
+          MAVEN_LOCAL_REPOSITORY: $(MAVEN_CACHE_FOLDER)
+          # SonarCloudTest
+          SONARCLOUD_IT_PASSWORD: $(SONARCLOUD_IT_PASSWORD)
+        inputs:
+          goals: 'verify'
+          mavenPomFile: 'its/pom.xml'
+          options: '-B --settings $(mavenSettings.secureFilePath) -Denable-repo=qa -Dsonar.runtimeVersion=$(SQ_VERSION) $(Category)'
+          publishJUnitResults: true
+          testResultsFiles: '**/surefire-reports/TEST-*.xml'
+          testRunTitle: 'ITs $(SQ_VERSION)'
+          javaHomeOption: 'JDKVersion'
+          jdkVersionOption: $(JDKVersion)
+          mavenOptions: $(MAVEN_OPTS)
+      - bash: git checkout .
+        name: revertPomChanges
+        displayName: Revert changes made to pom.xml to not break cache feature
