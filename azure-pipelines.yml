@@ -14,8 +14,8 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  - group: sonarsource-build-variables
   - group: sonarlint-build-variables
+  - group: sonarsource-build-variables
 
 resources:
   repositories:
