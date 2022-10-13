@@ -15,6 +15,7 @@ pool:
 
 variables:
   - group: sonarsource-build-variables
+  - group: sonarlint-build-variables
 
 resources:
   repositories:
