@@ -126,16 +126,10 @@ stages:
             GOAL: 'help:effective-pom'
             JDKVersion: '1.11'
       variables:
-        MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
-        MAVEN_OPTS: '-Xmx3072m -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+        MAVEN_OPTS: '-Xmx3072m'
       steps:
       - checkout: self
         fetchDepth: 1
-      - task: Cache@2
-        inputs:
-          key: 'its | "$(GOAL)" | maven | "$(Agent.OS)" | **/pom.xml, !its/target**'
-          path: $(MAVEN_CACHE_FOLDER)
-        displayName: Cache Maven local repo
       - task: DownloadSecureFile@1
         displayName: 'Download Maven settings'
         name: mavenSettings
@@ -147,7 +141,7 @@ stages:
       - task: Bash@3
         inputs:
           targetType: 'inline'
-          script: env && ls -al $(Pipeline.Workspace)/.m2/repository && cat $(mavenSettings.secureFilePath)
+          script: env && cat $(mavenSettings.secureFilePath)
       - task: Maven@3
         displayName: 'Run Maven goal $(GOAL)'
         env:
@@ -156,8 +150,6 @@ stages:
           # For Orchestrator
           ARTIFACTORY_API_KEY: $(ARTIFACTORY_API_KEY)
           GITHUB_TOKEN: $(GITHUB_TOKEN)
-          # SonarLintInstaller
-          MAVEN_LOCAL_REPOSITORY: $(MAVEN_CACHE_FOLDER)
           # SonarCloudTest
           SONARCLOUD_IT_PASSWORD: $(SONARCLOUD_IT_PASSWORD)
         inputs:
@@ -204,16 +196,10 @@ stages:
             JDKVersion: '1.11'
             Category: '-DexcludedGroups=SonarCloud'
       variables:
-        MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
-        MAVEN_OPTS: '-Xmx3072m -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+        MAVEN_OPTS: '-Xmx3072m'
       steps:
       - checkout: self
         fetchDepth: 1
-      - task: Cache@2
-        inputs:
-          key: 'its | "$(SQ_VERSION)" | maven | "$(Agent.OS)" | **/pom.xml, !its/target**'
-          path: $(MAVEN_CACHE_FOLDER)
-        displayName: Cache Maven local repo
       - task: DownloadSecureFile@1
         displayName: 'Download Maven settings'
         name: mavenSettings
@@ -230,8 +216,6 @@ stages:
           # For Orchestrator
           ARTIFACTORY_API_KEY: $(ARTIFACTORY_API_KEY)
           GITHUB_TOKEN: $(GITHUB_TOKEN)
-          # SonarLintInstaller
-          MAVEN_LOCAL_REPOSITORY: $(MAVEN_CACHE_FOLDER)
           # SonarCloudTest
           SONARCLOUD_IT_PASSWORD: $(SONARCLOUD_IT_PASSWORD)
         inputs:
@@ -281,16 +265,10 @@ stages:
             JDKVersion: '1.11'
             Category: '-DexcludedGroups=SonarCloud'
       variables:
-        MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
-        MAVEN_OPTS: '-Xmx3072m -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+        MAVEN_OPTS: '-Xmx3072m'
       steps:
       - checkout: self
         fetchDepth: 1
-      - task: Cache@2
-        inputs:
-          key: 'its | "$(SQ_VERSION)" | maven | "$(Agent.OS)" | **/pom.xml, !its/target**'
-          path: $(MAVEN_CACHE_FOLDER)
-        displayName: Cache Maven local repo
       - task: DownloadSecureFile@1
         displayName: 'Download Maven settings'
         name: mavenSettings
@@ -307,8 +285,6 @@ stages:
           # For Orchestrator
           ARTIFACTORY_API_KEY: $(ARTIFACTORY_API_KEY)
           GITHUB_TOKEN: $(GITHUB_TOKEN)
-          # SonarLintInstaller
-          MAVEN_LOCAL_REPOSITORY: $(MAVEN_CACHE_FOLDER)
           # SonarCloudTest
           SONARCLOUD_IT_PASSWORD: $(SONARCLOUD_IT_PASSWORD)
         inputs:
@@ -358,16 +334,10 @@ stages:
             JDKVersion: '1.11'
             Category: '-DexcludedGroups=SonarCloud'
       variables:
-        MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
-        MAVEN_OPTS: '-Xmx3072m -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+        MAVEN_OPTS: '-Xmx3072m'
       steps:
       - checkout: self
         fetchDepth: 1
-      - task: Cache@2
-        inputs:
-          key: 'its | "$(SQ_VERSION)" | maven | "$(Agent.OS)" | **/pom.xml, !its/target**'
-          path: $(MAVEN_CACHE_FOLDER)
-        displayName: Cache Maven local repo
       - task: DownloadSecureFile@1
         displayName: 'Download Maven settings'
         name: mavenSettings
@@ -384,8 +354,6 @@ stages:
           # For Orchestrator
           ARTIFACTORY_API_KEY: $(ARTIFACTORY_API_KEY)
           GITHUB_TOKEN: $(GITHUB_TOKEN)
-          # SonarLintInstaller
-          MAVEN_LOCAL_REPOSITORY: $(MAVEN_CACHE_FOLDER)
           # SonarCloudTest
           SONARCLOUD_IT_PASSWORD: $(SONARCLOUD_IT_PASSWORD)
         inputs:
@@ -435,16 +403,10 @@ stages:
             JDKVersion: '1.11'
             Category: '-DexcludedGroups=SonarCloud'
       variables:
-        MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
-        MAVEN_OPTS: '-Xmx3072m -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+        MAVEN_OPTS: '-Xmx3072m'
       steps:
       - checkout: self
         fetchDepth: 1
-      - task: Cache@2
-        inputs:
-          key: 'its | "$(SQ_VERSION)" | maven | "$(Agent.OS)" | **/pom.xml, !its/target**'
-          path: $(MAVEN_CACHE_FOLDER)
-        displayName: Cache Maven local repo
       - task: DownloadSecureFile@1
         displayName: 'Download Maven settings'
         name: mavenSettings
@@ -461,8 +423,6 @@ stages:
           # For Orchestrator
           ARTIFACTORY_API_KEY: $(ARTIFACTORY_API_KEY)
           GITHUB_TOKEN: $(GITHUB_TOKEN)
-          # SonarLintInstaller
-          MAVEN_LOCAL_REPOSITORY: $(MAVEN_CACHE_FOLDER)
           # SonarCloudTest
           SONARCLOUD_IT_PASSWORD: $(SONARCLOUD_IT_PASSWORD)
         inputs:
@@ -512,16 +472,10 @@ stages:
             JDKVersion: '1.11'
             Category: '-DexcludedGroups=SonarCloud'
       variables:
-        MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
-        MAVEN_OPTS: '-Xmx3072m -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+        MAVEN_OPTS: '-Xmx3072m'
       steps:
       - checkout: self
         fetchDepth: 1
-      - task: Cache@2
-        inputs:
-          key: 'its | "$(SQ_VERSION)" | maven | "$(Agent.OS)" | **/pom.xml, !its/target**'
-          path: $(MAVEN_CACHE_FOLDER)
-        displayName: Cache Maven local repo
       - task: DownloadSecureFile@1
         displayName: 'Download Maven settings'
         name: mavenSettings
@@ -538,8 +492,6 @@ stages:
           # For Orchestrator
           ARTIFACTORY_API_KEY: $(ARTIFACTORY_API_KEY)
           GITHUB_TOKEN: $(GITHUB_TOKEN)
-          # SonarLintInstaller
-          MAVEN_LOCAL_REPOSITORY: $(MAVEN_CACHE_FOLDER)
           # SonarCloudTest
           SONARCLOUD_IT_PASSWORD: $(SONARCLOUD_IT_PASSWORD)
         inputs:
@@ -589,16 +541,10 @@ stages:
             JDKVersion: '1.11'
             Category: '-DexcludedGroups=SonarCloud'
       variables:
-        MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
-        MAVEN_OPTS: '-Xmx3072m -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+        MAVEN_OPTS: '-Xmx3072m'
       steps:
       - checkout: self
         fetchDepth: 1
-      - task: Cache@2
-        inputs:
-          key: 'its | "$(SQ_VERSION)" | maven | "$(Agent.OS)" | **/pom.xml, !its/target**'
-          path: $(MAVEN_CACHE_FOLDER)
-        displayName: Cache Maven local repo
       - task: DownloadSecureFile@1
         displayName: 'Download Maven settings'
         name: mavenSettings
@@ -615,8 +561,6 @@ stages:
           # For Orchestrator
           ARTIFACTORY_API_KEY: $(ARTIFACTORY_API_KEY)
           GITHUB_TOKEN: $(GITHUB_TOKEN)
-          # SonarLintInstaller
-          MAVEN_LOCAL_REPOSITORY: $(MAVEN_CACHE_FOLDER)
           # SonarCloudTest
           SONARCLOUD_IT_PASSWORD: $(SONARCLOUD_IT_PASSWORD)
         inputs:
