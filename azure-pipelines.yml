@@ -122,8 +122,11 @@ stages:
           Settings:
             GOAL: 'help:effective-settings'
             JDKVersion: '1.11'
-          POM:
-            GOAL: 'help:effective-pom'
+          ActiveProfiles:
+            GOAL: 'help:active-profiles'
+            JDKVersion: '1.11'
+          AllProfiles:
+            GOAL: 'help:all-profiles'
             JDKVersion: '1.11'
       variables:
         MAVEN_OPTS: '-Xmx3072m'
@@ -237,11 +240,11 @@ stages:
     burgrName: 'qa_sl_2'
     burgrType: 'qa'
     stageName: 'qa_sl_2'
-    stageDisplayName: Run ITs 2
+    stageDisplayName: Run Active Profiles
     stageDependencies: build
     jobs:
     - job: its
-      displayName: Run ITs 2
+      displayName: Run Active Profiles
       strategy:
         matrix:
           SonarCloud:
@@ -288,7 +291,7 @@ stages:
           # SonarCloudTest
           SONARCLOUD_IT_PASSWORD: $(SONARCLOUD_IT_PASSWORD)
         inputs:
-          goals: 'verify'
+          goals: 'help:active-profiles'
           mavenPomFile: 'its/pom.xml'
           options: '-B --settings $(mavenSettings.secureFilePath) -Denable-repo=qa -Dsonar.runtimeVersion=$(SQ_VERSION) $(Category)'
           publishJUnitResults: true
@@ -306,11 +309,11 @@ stages:
     burgrName: 'qa_sl_3'
     burgrType: 'qa'
     stageName: 'qa_sl_3'
-    stageDisplayName: Run ITs 2
+    stageDisplayName: Run All Profiles
     stageDependencies: build
     jobs:
     - job: its
-      displayName: Run ITs 2
+      displayName: Run All Profiles
       strategy:
         matrix:
           SonarCloud:
@@ -357,7 +360,7 @@ stages:
           # SonarCloudTest
           SONARCLOUD_IT_PASSWORD: $(SONARCLOUD_IT_PASSWORD)
         inputs:
-          goals: 'verify'
+          goals: 'help:all-profiles'
           mavenPomFile: 'its/pom.xml'
           options: '-B --settings $(mavenSettings.secureFilePath) -Denable-repo=qa -Dsonar.runtimeVersion=$(SQ_VERSION) $(Category)'
           publishJUnitResults: true
