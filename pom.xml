@@ -37,6 +37,7 @@
     <module>report-aggregate</module>
     <module>vcs</module>
     <module>server-connection</module>
+    <module>client-api</module>
   </modules>
 
   <properties>
