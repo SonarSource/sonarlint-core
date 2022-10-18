@@ -21,23 +21,23 @@ package org.sonarsource.sonarlint.core.clientapi.connection.config;
 
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
-public class ConnectionModifiedParams {
+public class DidAddConnectionParams {
 
-  private final Either<SonarQubeConnectionConfiguration, SonarCloudConnectionConfiguration> modifiedConnection;
+  private final Either<SonarQubeConnectionConfiguration, SonarCloudConnectionConfiguration> addedConnection;
 
-  public ConnectionModifiedParams(Either<SonarQubeConnectionConfiguration, SonarCloudConnectionConfiguration> modifiedConnection) {
-    this.modifiedConnection = modifiedConnection;
+  public DidAddConnectionParams(Either<SonarQubeConnectionConfiguration, SonarCloudConnectionConfiguration> addedConnection) {
+    this.addedConnection = addedConnection;
   }
 
-  public ConnectionModifiedParams(SonarQubeConnectionConfiguration modifiedConnection) {
-    this.modifiedConnection = Either.forLeft(modifiedConnection);
+  public DidAddConnectionParams(SonarQubeConnectionConfiguration addedConnection) {
+    this.addedConnection = Either.forLeft(addedConnection);
   }
 
-  public ConnectionModifiedParams(SonarCloudConnectionConfiguration modifiedConnection) {
-    this.modifiedConnection = Either.forRight(modifiedConnection);
+  public DidAddConnectionParams(SonarCloudConnectionConfiguration addedConnection) {
+    this.addedConnection = Either.forRight(addedConnection);
   }
 
-  public Either<SonarQubeConnectionConfiguration, SonarCloudConnectionConfiguration> getModifiedConnection() {
-    return modifiedConnection;
+  public Either<SonarQubeConnectionConfiguration, SonarCloudConnectionConfiguration> getAddedConnection() {
+    return addedConnection;
   }
 }

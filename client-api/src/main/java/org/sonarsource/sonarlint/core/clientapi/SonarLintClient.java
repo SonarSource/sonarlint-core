@@ -19,5 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.clientapi;
 
+import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
+import org.sonarsource.sonarlint.core.clientapi.config.binding.SuggestAutoBindParams;
+
 public interface SonarLintClient {
+
+  @JsonNotification
+  void suggestAutoBind(SuggestAutoBindParams params);
 }

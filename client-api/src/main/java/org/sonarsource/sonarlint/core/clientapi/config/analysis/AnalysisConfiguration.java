@@ -17,17 +17,10 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi;
+package org.sonarsource.sonarlint.core.clientapi.config.analysis;
 
-import org.eclipse.lsp4j.jsonrpc.services.JsonDelegate;
-import org.sonarsource.sonarlint.core.clientapi.connection.ConnectionService;
+public class AnalysisConfiguration {
 
-public interface SonarLintBackend {
-
-  /**
-   * The service responsible to keep track of configured connections.
-   */
-  @JsonDelegate
-  ConnectionService getConnectionConfigurationService();
+  // TODO rule config, analyzer properties, java classpath, inclusions/exclusions, ...
 
 }
