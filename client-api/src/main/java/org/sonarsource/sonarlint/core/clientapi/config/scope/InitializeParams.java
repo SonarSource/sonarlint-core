@@ -21,11 +21,11 @@ package org.sonarsource.sonarlint.core.clientapi.config.scope;
 
 import java.util.List;
 
-public class RegisterConfigurationScopesParams {
+public class InitializeParams {
 
   private final List<ConfigurationScope> configScopes;
 
-  public RegisterConfigurationScopesParams(List<ConfigurationScope> configScopes) {
+  public InitializeParams(List<ConfigurationScope> configScopes) {
     this.configScopes = configScopes;
   }
 }

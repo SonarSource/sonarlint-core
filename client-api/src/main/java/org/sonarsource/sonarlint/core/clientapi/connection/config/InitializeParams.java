@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.clientapi.connection.config;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RegisterConnectionsParams {
+public class InitializeParams {
 
   List<SonarQubeConnectionConfiguration> sonarQubeConnections = new ArrayList<>();
   List<SonarCloudConnectionConfiguration> sonarCloudConnections = new ArrayList<>();
