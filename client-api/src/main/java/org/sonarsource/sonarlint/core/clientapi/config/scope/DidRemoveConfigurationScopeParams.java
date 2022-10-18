@@ -17,27 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.connection.config;
+package org.sonarsource.sonarlint.core.clientapi.config.scope;
 
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
-public class ConnectionAddedParams {
+public class DidRemoveConfigurationScopeParams {
+  @NonNull
+  private final String removedId;
 
-  private final Either<SonarQubeConnectionConfiguration, SonarCloudConnectionConfiguration> addedConnection;
-
-  public ConnectionAddedParams(Either<SonarQubeConnectionConfiguration, SonarCloudConnectionConfiguration> addedConnection) {
-    this.addedConnection = addedConnection;
+  public DidRemoveConfigurationScopeParams(@NonNull String removedId) {
+    this.removedId = removedId;
   }
 
-  public ConnectionAddedParams(SonarQubeConnectionConfiguration addedConnection) {
-    this.addedConnection = Either.forLeft(addedConnection);
-  }
-
-  public ConnectionAddedParams(SonarCloudConnectionConfiguration addedConnection) {
-    this.addedConnection = Either.forRight(addedConnection);
-  }
-
-  public Either<SonarQubeConnectionConfiguration, SonarCloudConnectionConfiguration> getAddedConnection() {
-    return addedConnection;
+  @NonNull
+  public String getRemovedId() {
+    return removedId;
   }
 }

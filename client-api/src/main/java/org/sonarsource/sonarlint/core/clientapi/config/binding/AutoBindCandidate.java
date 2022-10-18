@@ -17,17 +17,33 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi;
+package org.sonarsource.sonarlint.core.clientapi.config.binding;
 
-import org.eclipse.lsp4j.jsonrpc.services.JsonDelegate;
-import org.sonarsource.sonarlint.core.clientapi.connection.ConnectionService;
+import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
-public interface SonarLintBackend {
+public class AutoBindCandidate {
+  private final String connectionId;
+  private final String sonarProjectKey;
+  private final String sonarProjectName;
 
-  /**
-   * The service responsible to keep track of configured connections.
-   */
-  @JsonDelegate
-  ConnectionService getConnectionConfigurationService();
+  public AutoBindCandidate(@NonNull String connectionId, @NonNull String sonarProjectKey, @NonNull String sonarProjectName) {
+    this.connectionId = connectionId;
+    this.sonarProjectKey = sonarProjectKey;
+    this.sonarProjectName = sonarProjectName;
+  }
 
+  @NonNull
+  public String getConnectionId() {
+    return connectionId;
+  }
+
+  @NonNull
+  public String getSonarProjectKey() {
+    return sonarProjectKey;
+  }
+
+  @NonNull
+  public String getSonarProjectName() {
+    return sonarProjectName;
+  }
 }

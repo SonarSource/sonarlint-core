@@ -17,17 +17,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.connection.config;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.clientapi.config;
 
-public class ConnectionRemovedParams {
+import javax.annotation.ParametersAreNonnullByDefault;
 
-  private final String connectionId;
-
-  public ConnectionRemovedParams(String connectionId) {
-    this.connectionId = connectionId;
-  }
-
-  public String getConnectionId() {
-    return connectionId;
-  }
-}
