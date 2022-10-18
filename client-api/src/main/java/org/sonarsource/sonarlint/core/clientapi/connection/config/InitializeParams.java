@@ -19,11 +19,24 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.connection.config;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class InitializeParams {
 
-  List<SonarQubeConnectionConfiguration> sonarQubeConnections = new ArrayList<>();
-  List<SonarCloudConnectionConfiguration> sonarCloudConnections = new ArrayList<>();
+  private final List<SonarQubeConnectionConfiguration> sonarQubeConnections;
+  private final List<SonarCloudConnectionConfiguration> sonarCloudConnections;
+
+
+  public InitializeParams(List<SonarQubeConnectionConfiguration> sonarQubeConnections, List<SonarCloudConnectionConfiguration> sonarCloudConnections) {
+    this.sonarQubeConnections = sonarQubeConnections;
+    this.sonarCloudConnections = sonarCloudConnections;
+  }
+
+  public List<SonarQubeConnectionConfiguration> getSonarQubeConnections() {
+    return sonarQubeConnections;
+  }
+
+  public List<SonarCloudConnectionConfiguration> getSonarCloudConnections() {
+    return sonarCloudConnections;
+  }
 }

@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.clientapi.connection.config;
 
 import java.util.Objects;
 
-abstract class AbstractConnectionConfiguration {
+public abstract class AbstractConnectionConfiguration {
 
   /**
    * The id of the connection on the client side
