@@ -19,9 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.connection;
 
-import org.sonarsource.sonarlint.core.clientapi.connection.config.ConnectionAddedParams;
-import org.sonarsource.sonarlint.core.clientapi.connection.config.ConnectionModifiedParams;
-import org.sonarsource.sonarlint.core.clientapi.connection.config.ConnectionRemovedParams;
+import java.util.concurrent.CompletableFuture;
+import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
+import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
+import org.sonarsource.sonarlint.core.clientapi.connection.config.DidAddConnectionParams;
+import org.sonarsource.sonarlint.core.clientapi.connection.config.DidUpdateConnectionParams;
+import org.sonarsource.sonarlint.core.clientapi.connection.config.DidRemoveConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.RegisterConnectionsParams;
 
 /**
@@ -40,21 +43,25 @@ public interface ConnectionService {
   /**
    * Called by client once at startup, in order to register existing connections to the backend.
    */
-  void registerConnections(RegisterConnectionsParams params);
+  @JsonRequest
+  CompletableFuture<Void> registerConnections(RegisterConnectionsParams params);
 
   /**
    * Called by the client when a new connection has been added.
    */
-  void connectionAdded(ConnectionAddedParams params);
+  @JsonNotification
+  void didAddConnection(DidAddConnectionParams params);
 
   /**
    * Called by the client when a connection has been removed.
    */
-  void connectionRemoved(ConnectionRemovedParams params);
+  @JsonNotification
+  void didRemoveConnection(DidRemoveConnectionParams params);
 
   /**
    * Called by the client when a connection has been updated.
    */
-  void connectionUpdated(ConnectionModifiedParams params);
+  @JsonNotification
+  void didUpdateConnection(DidUpdateConnectionParams params);
 
 }

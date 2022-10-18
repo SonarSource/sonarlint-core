@@ -17,17 +17,17 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi;
+package org.sonarsource.sonarlint.core.clientapi.connection.config;
 
-import org.eclipse.lsp4j.jsonrpc.services.JsonDelegate;
-import org.sonarsource.sonarlint.core.clientapi.connection.ConnectionService;
+public class DidRemoveConnectionParams {
 
-public interface SonarLintBackend {
+  private final String connectionId;
 
-  /**
-   * The service responsible to keep track of configured connections.
-   */
-  @JsonDelegate
-  ConnectionService getConnectionConfigurationService();
+  public DidRemoveConnectionParams(String connectionId) {
+    this.connectionId = connectionId;
+  }
 
+  public String getConnectionId() {
+    return connectionId;
+  }
 }
