@@ -25,7 +25,6 @@
       <groupId>org.eclipse.lsp4j</groupId>
       <artifactId>org.eclipse.lsp4j.jsonrpc</artifactId>
       <version>0.16.0</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>

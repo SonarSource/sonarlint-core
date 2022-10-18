@@ -25,7 +25,7 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.config.scope.DidAddConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.config.scope.DidRemoveConfigurationScopeParams;
-import org.sonarsource.sonarlint.core.clientapi.config.scope.RegisterConfigurationScopesParams;
+import org.sonarsource.sonarlint.core.clientapi.config.scope.InitializeParams;
 
 /**
  * The client is the source of truth for the configuration, but the backend needs to be kept in sync.
@@ -33,10 +33,10 @@ import org.sonarsource.sonarlint.core.clientapi.config.scope.RegisterConfigurati
 public interface ConfigurationService {
 
   /**
-   * Called by client in order to register configuration scopes at startup.
+   * Called by client in order to initialize the configuration service at startup.
    */
   @JsonRequest
-  CompletableFuture<Void> registerConfigurationScopes(RegisterConfigurationScopesParams params);
+  CompletableFuture<Void> initialize(InitializeParams params);
 
   /**
    * Called by the client when a configuration scope has been added.
