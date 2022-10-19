@@ -61,19 +61,23 @@ class ServerPathProviderTests {
   }
 
   @Test
-  void profile_token_generation_for_not_started_loopback_server() {
-    var serverPath = ServerPathProvider.buildServerPath("baseUrl", "9.7", -1, "My IDE", false);
-
-    assertThat(serverPath).isEqualTo("baseUrl/sonarlint/auth?ideName=My+IDE");
-  }
-
-  @Test
   void should_provide_token_generation_path_for_base_server_url() throws ExecutionException, InterruptedException {
     mockWebServerExtension.addStringResponse("/api/system/status", "{\"status\": \"UP\", \"version\": \"9.6\", \"id\": \"xzy\"}");
     var client = MockWebServerExtension.httpClient();
     var baseUrl = mockWebServerExtension.url("");
 
     var serverUrl = ServerPathProvider.getServerUrlForTokenGeneration(mockWebServerExtension.endpointParams(), client, 1234, "My IDE").get();
+
+    assertThat(serverUrl).isEqualTo(baseUrl + "/account/security");
+  }
+
+  @Test
+  void should_provide_token_generation_fallback_path_for_base_server_url() throws ExecutionException, InterruptedException {
+    mockWebServerExtension.addStringResponse("/api/system/status", "{\"status\": \"UP\", \"version\": \"9.6\", \"id\": \"xzy\"}");
+    var client = MockWebServerExtension.httpClient();
+    var baseUrl = mockWebServerExtension.url("");
+
+    var serverUrl = ServerPathProvider.getFallbackServerUrlForTokenGeneration(mockWebServerExtension.endpointParams(), client, "My IDE").get();
 
     assertThat(serverUrl).isEqualTo(baseUrl + "/account/security");
   }

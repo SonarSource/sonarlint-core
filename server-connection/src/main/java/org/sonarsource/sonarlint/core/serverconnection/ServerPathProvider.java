@@ -20,12 +20,12 @@
 package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.util.concurrent.CompletableFuture;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
-import org.sonarsource.sonarlint.core.serverapi.system.ServerInfo;
 
 public class ServerPathProvider {
 
@@ -37,15 +37,17 @@ public class ServerPathProvider {
   public static CompletableFuture<String> getServerUrlForTokenGeneration(EndpointParams endpoint, HttpClient client,
     int port, String ideName) {
     var serverApi = new ServerApi(endpoint, client);
-    CompletableFuture<ServerInfo> systemInfoFuture;
-    systemInfoFuture = serverApi.system().getStatus();
-    return systemInfoFuture.thenApply(systemInfo ->
+    return serverApi.system().getStatus().thenApply(systemInfo ->
       buildServerPath(endpoint.getBaseUrl(), systemInfo.getVersion(), port, ideName, endpoint.isSonarCloud()));
   }
 
+  public static CompletableFuture<String> getFallbackServerUrlForTokenGeneration(EndpointParams endpoint, HttpClient client, String ideName) {
+    var serverApi = new ServerApi(endpoint, client);
+    return serverApi.system().getStatus().thenApply(systemInfo ->
+      buildServerPath(endpoint.getBaseUrl(), systemInfo.getVersion(), null, ideName, endpoint.isSonarCloud()));
+  }
 
-
-  static String buildServerPath(String baseUrl, String serverVersionStr, int port, String ideName, boolean isSonarCloud) {
+  static String buildServerPath(String baseUrl, String serverVersionStr, @Nullable Integer port, String ideName, boolean isSonarCloud) {
     var minVersion = Version.create(MIN_SQ_VERSION);
     var serverVersion = Version.create(serverVersionStr);
     var path = new StringBuilder(baseUrl);
@@ -58,8 +60,8 @@ public class ServerPathProvider {
     return path.toString();
   }
 
-  private static String getPortParameter(int port) {
-    if (port == -1) {
+  private static String getPortParameter(@Nullable Integer port) {
+    if (port == null) {
       return "";
     }
     return "&port=" + port;
