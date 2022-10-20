@@ -111,11 +111,8 @@ public class ServerApiHelper {
   }
 
   public static String concat(String baseUrl, String relativePath) {
-    var fullUrl = new StringBuilder();
-    fullUrl.append(baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl);
-    fullUrl.append("/");
-    fullUrl.append(relativePath.startsWith("/") ? relativePath.substring(1) : relativePath);
-    return fullUrl.toString();
+    return StringUtils.appendIfMissing(baseUrl, "/") +
+      (relativePath.startsWith("/") ? relativePath.substring(1) : relativePath);
   }
 
   public static RuntimeException handleError(HttpClient.Response toBeClosed) {
