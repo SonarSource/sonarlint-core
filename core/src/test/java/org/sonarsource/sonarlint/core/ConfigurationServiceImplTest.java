@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.clientapi.config.scope.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopeAddedEvent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -86,13 +87,19 @@ class ConfigurationServiceImplTest {
   }
 
   @Test
-  void add_configuration() throws ExecutionException, InterruptedException {
+  void add_configuration_and_post_event() throws ExecutionException, InterruptedException {
     underTest.initialize(new InitializeParams(List.of(CONFIG_1))).get();
 
     underTest.didAddConfigurationScope(new DidAddConfigurationScopeParams(CONFIG_2));
 
     assertThat(underTest.getConfigScopeIds()).containsOnly("id1", "id2");
     assertThat(underTest.getBindingConfiguration("id2")).isEqualTo(BINDING_2);
+
+    ArgumentCaptor<ConfigurationScopeAddedEvent> captor = ArgumentCaptor.forClass(ConfigurationScopeAddedEvent.class);
+    verify(eventBus).post(captor.capture());
+    var event = captor.getValue();
+
+    assertThat(event.getAddedConfigurationScopeId()).isEqualTo("id2");
   }
 
   @Test
