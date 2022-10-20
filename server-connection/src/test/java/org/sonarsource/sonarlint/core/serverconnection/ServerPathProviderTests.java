@@ -68,7 +68,7 @@ class ServerPathProviderTests {
 
     var serverUrl = ServerPathProvider.getServerUrlForTokenGeneration(mockWebServerExtension.endpointParams(), client, 1234, "My IDE").get();
 
-    assertThat(serverUrl).isEqualTo(baseUrl + "/account/security");
+    assertThat(serverUrl).isEqualTo(baseUrl + "account/security");
   }
 
   @Test
@@ -79,7 +79,7 @@ class ServerPathProviderTests {
 
     var serverUrl = ServerPathProvider.getFallbackServerUrlForTokenGeneration(mockWebServerExtension.endpointParams(), client, "My IDE").get();
 
-    assertThat(serverUrl).isEqualTo(baseUrl + "/account/security");
+    assertThat(serverUrl).isEqualTo(baseUrl + "account/security");
   }
 
 }

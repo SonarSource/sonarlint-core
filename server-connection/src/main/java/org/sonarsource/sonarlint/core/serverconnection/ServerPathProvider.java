@@ -25,6 +25,7 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 
 public class ServerPathProvider {
@@ -50,14 +51,14 @@ public class ServerPathProvider {
   static String buildServerPath(String baseUrl, String serverVersionStr, @Nullable Integer port, String ideName, boolean isSonarCloud) {
     var minVersion = Version.create(MIN_SQ_VERSION);
     var serverVersion = Version.create(serverVersionStr);
-    var path = new StringBuilder(baseUrl);
+    var relativePath = new StringBuilder();
     var portParameter = getPortParameter(port);
     if (isSonarCloud || !serverVersion.satisfiesMinRequirement(minVersion)) {
-      path.append("/account/security");
+      relativePath.append("/account/security");
     } else {
-      path.append("/sonarlint/auth").append("?ideName=").append(UrlUtils.urlEncode(ideName)).append(portParameter);
+      relativePath.append("/sonarlint/auth").append("?ideName=").append(UrlUtils.urlEncode(ideName)).append(portParameter);
     }
-    return path.toString();
+    return ServerApiHelper.concat(baseUrl, relativePath.toString());
   }
 
   private static String getPortParameter(@Nullable Integer port) {

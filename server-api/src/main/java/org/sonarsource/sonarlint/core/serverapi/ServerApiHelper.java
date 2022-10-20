@@ -107,9 +107,12 @@ public class ServerApiHelper {
   }
 
   private String buildEndpointUrl(String relativePath) {
+    return concat(endpointParams.getBaseUrl(), relativePath);
+  }
+
+  public static String concat(String baseUrl, String relativePath) {
     var fullUrl = new StringBuilder();
-    var endpointUrl = endpointParams.getBaseUrl();
-    fullUrl.append(endpointUrl.endsWith("/") ? endpointUrl.substring(0, endpointUrl.length() - 1) : endpointUrl);
+    fullUrl.append(baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl);
     fullUrl.append("/");
     fullUrl.append(relativePath.startsWith("/") ? relativePath.substring(1) : relativePath);
     return fullUrl.toString();
