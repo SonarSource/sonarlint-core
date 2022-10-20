@@ -19,11 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CompletableFuture;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 
 public class ServerPathProvider {
@@ -33,23 +35,37 @@ public class ServerPathProvider {
 
   private static final String MIN_SQ_VERSION = "9.7";
 
-  public static String getServerUrlForTokenGeneration(EndpointParams endpoint, HttpClient client,
-    int port, String ideName) throws ExecutionException, InterruptedException {
+  public static CompletableFuture<String> getServerUrlForTokenGeneration(EndpointParams endpoint, HttpClient client,
+    int port, String ideName) {
     var serverApi = new ServerApi(endpoint, client);
-    var systemInfo = serverApi.system().getStatus().get();
-    return buildServerPath(endpoint.getBaseUrl(), systemInfo.getVersion(), port, ideName, endpoint.isSonarCloud());
+    return serverApi.system().getStatus().thenApply(systemInfo ->
+      buildServerPath(endpoint.getBaseUrl(), systemInfo.getVersion(), port, ideName, endpoint.isSonarCloud()));
   }
 
-  static String buildServerPath(String baseUrl, String serverVersionStr, int port, String ideName, boolean isSonarCloud) {
+  public static CompletableFuture<String> getFallbackServerUrlForTokenGeneration(EndpointParams endpoint, HttpClient client, String ideName) {
+    var serverApi = new ServerApi(endpoint, client);
+    return serverApi.system().getStatus().thenApply(systemInfo ->
+      buildServerPath(endpoint.getBaseUrl(), systemInfo.getVersion(), null, ideName, endpoint.isSonarCloud()));
+  }
+
+  static String buildServerPath(String baseUrl, String serverVersionStr, @Nullable Integer port, String ideName, boolean isSonarCloud) {
     var minVersion = Version.create(MIN_SQ_VERSION);
     var serverVersion = Version.create(serverVersionStr);
-    var path = new StringBuilder(baseUrl);
+    var relativePath = new StringBuilder();
+    var portParameter = getPortParameter(port);
     if (isSonarCloud || !serverVersion.satisfiesMinRequirement(minVersion)) {
-      path.append("/account/security");
+      relativePath.append("/account/security");
     } else {
-      path.append("/sonarlint/auth").append("?port=").append(port).append("&ideName=").append(UrlUtils.urlEncode(ideName));
+      relativePath.append("/sonarlint/auth").append("?ideName=").append(UrlUtils.urlEncode(ideName)).append(portParameter);
     }
-    return path.toString();
+    return ServerApiHelper.concat(baseUrl, relativePath.toString());
+  }
+
+  private static String getPortParameter(@Nullable Integer port) {
+    if (port == null) {
+      return "";
+    }
+    return "&port=" + port;
   }
 
 }
