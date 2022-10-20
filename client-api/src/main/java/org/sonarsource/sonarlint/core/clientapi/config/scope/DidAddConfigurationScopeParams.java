@@ -24,14 +24,14 @@ import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 public class DidAddConfigurationScopeParams {
 
   @NonNull
-  private final ConfigurationScope added;
+  private final ConfigurationScopeWithBinding added;
 
-  public DidAddConfigurationScopeParams(@NonNull ConfigurationScope added) {
+  public DidAddConfigurationScopeParams(@NonNull ConfigurationScopeWithBinding added) {
     this.added = added;
   }
 
   @NonNull
-  public ConfigurationScope getAdded() {
+  public ConfigurationScopeWithBinding getAdded() {
     return added;
   }
 }

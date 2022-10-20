@@ -32,7 +32,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class ConnectionServiceImpl implements ConnectionService {
 
-  private final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final Map<String, AbstractConnectionConfiguration> connectionsById = new HashMap<>();
 
@@ -59,7 +59,7 @@ public class ConnectionServiceImpl implements ConnectionService {
   @Override
   public void didRemoveConnection(DidRemoveConnectionParams params) {
     var idToRemove = params.getConnectionId();
-    AbstractConnectionConfiguration removed = connectionsById.remove(idToRemove);
+    var removed = connectionsById.remove(idToRemove);
     if (removed == null) {
       LOG.error("Attempt to remove connection '{}' that was not registered", idToRemove);
     }
