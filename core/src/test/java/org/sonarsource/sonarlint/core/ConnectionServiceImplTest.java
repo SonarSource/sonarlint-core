@@ -46,6 +46,7 @@ import static org.mockito.Mockito.verify;
 
 class ConnectionServiceImplTest {
 
+  private final ConnectionConfigurationReferential referential = new ConnectionConfigurationReferential();
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester();
 
@@ -61,7 +62,7 @@ class ConnectionServiceImplTest {
   @BeforeEach
   public void setUp() {
     eventBus = mock(EventBus.class);
-    underTest = new ConnectionServiceImpl(eventBus);
+    underTest = new ConnectionServiceImpl(eventBus, referential);
   }
 
 
@@ -69,7 +70,7 @@ class ConnectionServiceImplTest {
   void initialize_provide_connections() throws ExecutionException, InterruptedException {
     underTest.initialize(new InitializeParams(List.of(SQ_1, SQ_2), List.of(SC_1, SC_2))).get();
 
-    assertThat(underTest.getConnectionsById()).containsOnly(entry("sq1", SQ_1), entry("sq2", SQ_2), entry("sc1", SC_1), entry("sc2", SC_2));
+    assertThat(referential.getConnectionsById()).containsOnly(entry("sq1", SQ_1), entry("sq2", SQ_2), entry("sc1", SC_1), entry("sc2", SC_2));
   }
 
   @Test
@@ -77,13 +78,13 @@ class ConnectionServiceImplTest {
     underTest.initialize(new InitializeParams(List.of(), List.of())).get();
 
     underTest.didAddConnection(new DidAddConnectionParams(SQ_1));
-    assertThat(underTest.getConnectionsById()).containsOnly(entry("sq1", SQ_1));
+    assertThat(referential.getConnectionsById()).containsOnly(entry("sq1", SQ_1));
 
     underTest.didAddConnection(new DidAddConnectionParams(SQ_2));
-    assertThat(underTest.getConnectionsById()).containsOnly(entry("sq1", SQ_1), entry("sq2", SQ_2));
+    assertThat(referential.getConnectionsById()).containsOnly(entry("sq1", SQ_1), entry("sq2", SQ_2));
 
     underTest.didAddConnection(new DidAddConnectionParams(SC_1));
-    assertThat(underTest.getConnectionsById()).containsOnly(entry("sq1", SQ_1), entry("sq2", SQ_2), entry("sc1", SC_1));
+    assertThat(referential.getConnectionsById()).containsOnly(entry("sq1", SQ_1), entry("sq2", SQ_2), entry("sc1", SC_1));
 
     ArgumentCaptor<ConnectionAddedEvent> captor = ArgumentCaptor.forClass(ConnectionAddedEvent.class);
     verify(eventBus, times(3)).post(captor.capture());
@@ -99,7 +100,7 @@ class ConnectionServiceImplTest {
     underTest.didAddConnection(new DidAddConnectionParams(SQ_1));
 
     underTest.didAddConnection(new DidAddConnectionParams(SQ_1_DUP));
-    assertThat(underTest.getConnectionsById()).containsOnly(entry("sq1", SQ_1_DUP));
+    assertThat(referential.getConnectionsById()).containsOnly(entry("sq1", SQ_1_DUP));
 
     assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).containsExactly("Duplicate connection registered: sq1");
   }
@@ -109,13 +110,13 @@ class ConnectionServiceImplTest {
     underTest.initialize(new InitializeParams(List.of(SQ_1), List.of())).get();
 
     underTest.didAddConnection(new DidAddConnectionParams(SC_1));
-    assertThat(underTest.getConnectionsById()).containsKeys("sq1", "sc1");
+    assertThat(referential.getConnectionsById()).containsKeys("sq1", "sc1");
 
     underTest.didRemoveConnection(new DidRemoveConnectionParams("sc1"));
-    assertThat(underTest.getConnectionsById()).containsKeys("sq1");
+    assertThat(referential.getConnectionsById()).containsKeys("sq1");
 
     underTest.didRemoveConnection(new DidRemoveConnectionParams("sq1"));
-    assertThat(underTest.getConnectionsById()).isEmpty();
+    assertThat(referential.getConnectionsById()).isEmpty();
   }
 
   @Test
@@ -124,7 +125,7 @@ class ConnectionServiceImplTest {
 
     underTest.didRemoveConnection(new DidRemoveConnectionParams("sc1"));
 
-    assertThat(underTest.getConnectionsById()).containsKeys("sq1");
+    assertThat(referential.getConnectionsById()).containsKeys("sq1");
     assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).containsExactly("Attempt to remove connection 'sc1' that was not registered");
   }
 
@@ -134,7 +135,7 @@ class ConnectionServiceImplTest {
 
     underTest.didUpdateConnection(new DidUpdateConnectionParams(SQ_1_DUP));
 
-    assertThat(underTest.getConnectionsById()).containsOnly(entry("sq1", SQ_1_DUP));
+    assertThat(referential.getConnectionsById()).containsOnly(entry("sq1", SQ_1_DUP));
   }
 
   @Test
@@ -143,7 +144,7 @@ class ConnectionServiceImplTest {
 
     underTest.didUpdateConnection(new DidUpdateConnectionParams(SQ_2));
 
-    assertThat(underTest.getConnectionsById()).containsOnly(entry("sq1", SQ_1), entry("sq2", SQ_2));
+    assertThat(referential.getConnectionsById()).containsOnly(entry("sq1", SQ_1), entry("sq2", SQ_2));
     assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).containsExactly("Attempt to update connection 'sq2' that was not registered");
   }
 }

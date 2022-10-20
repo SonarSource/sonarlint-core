@@ -20,8 +20,6 @@
 package org.sonarsource.sonarlint.core;
 
 import com.google.common.eventbus.EventBus;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.clientapi.connection.ConnectionService;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.AbstractConnectionConfiguration;
@@ -36,17 +34,18 @@ public class ConnectionServiceImpl implements ConnectionService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final Map<String, AbstractConnectionConfiguration> connectionsById = new HashMap<>();
   private final EventBus clientEventBus;
+  private final ConnectionConfigurationReferential referential;
 
-  public ConnectionServiceImpl(EventBus clientEventBus) {
+  public ConnectionServiceImpl(EventBus clientEventBus, ConnectionConfigurationReferential referential) {
     this.clientEventBus = clientEventBus;
+    this.referential = referential;
   }
 
   @Override
   public CompletableFuture<Void> initialize(InitializeParams params) {
-    params.getSonarQubeConnections().forEach(c -> connectionsById.put(c.getConnectionId(), c));
-    params.getSonarCloudConnections().forEach(c -> connectionsById.put(c.getConnectionId(), c));
+    params.getSonarQubeConnections().forEach(referential::addOrReplace);
+    params.getSonarCloudConnections().forEach(referential::addOrReplace);
     return CompletableFuture.completedFuture(null);
   }
 
@@ -56,19 +55,19 @@ public class ConnectionServiceImpl implements ConnectionService {
   }
 
   private <T> T addConnection(AbstractConnectionConfiguration connectionConfiguration) {
-    var previous = connectionsById.put(connectionConfiguration.getConnectionId(), connectionConfiguration);
+    var previous = referential.getConnectionById(connectionConfiguration.getConnectionId());
     if (previous != null) {
       LOG.error("Duplicate connection registered: {}", previous.getConnectionId());
-    } else {
-      clientEventBus.post(new ConnectionAddedEvent(connectionConfiguration.getConnectionId()));
     }
+    referential.addOrReplace(connectionConfiguration);
+    clientEventBus.post(new ConnectionAddedEvent(connectionConfiguration.getConnectionId()));
     return null;
   }
 
   @Override
   public void didRemoveConnection(DidRemoveConnectionParams params) {
     var idToRemove = params.getConnectionId();
-    var removed = connectionsById.remove(idToRemove);
+    var removed = referential.remove(idToRemove);
     if (removed == null) {
       LOG.error("Attempt to remove connection '{}' that was not registered", idToRemove);
     }
@@ -82,16 +81,13 @@ public class ConnectionServiceImpl implements ConnectionService {
 
   private <T> T updateConnection(AbstractConnectionConfiguration connectionConfiguration) {
     String connectionId = connectionConfiguration.getConnectionId();
-    AbstractConnectionConfiguration previous = connectionsById.get(connectionId);
+    AbstractConnectionConfiguration previous = referential.getConnectionById(connectionId);
     if (previous == null) {
       LOG.error("Attempt to update connection '{}' that was not registered", connectionId);
     }
 
-    connectionsById.put(connectionId, connectionConfiguration);
+    referential.addOrReplace(connectionConfiguration);
     return null;
   }
 
-  public Map<String, AbstractConnectionConfiguration> getConnectionsById() {
-    return Map.copyOf(connectionsById);
-  }
 }
