@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
+import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.connection.ConnectionService;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -41,12 +42,14 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   private final ExecutorService clientEventsExecutorService = Executors.newSingleThreadExecutor(r -> new Thread("SonarLint Client Events Processor"));
   private final ConnectionConfigurationReferential connectionConfigurationReferential = new ConnectionConfigurationReferential();
   private final ConfigurationReferential configurationReferential = new ConfigurationReferential();
+  private final SonarLintClient client;
 
-  public SonarLintBackendImpl() {
+  public SonarLintBackendImpl(SonarLintClient client) {
+    this.client = client;
     this.clientEventBus = new AsyncEventBus("clientEvents", clientEventsExecutorService);
     this.configurationService = new ConfigurationServiceImpl(clientEventBus, configurationReferential);
     this.connectionService = new ConnectionServiceImpl(clientEventBus, connectionConfigurationReferential);
-    var autoBinding = new AutoBinding();
+    var autoBinding = new AutoBinding(configurationReferential, connectionConfigurationReferential, client);
     clientEventBus.register(autoBinding);
   }
 

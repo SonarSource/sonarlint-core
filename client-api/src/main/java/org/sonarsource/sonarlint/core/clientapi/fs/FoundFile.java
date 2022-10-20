@@ -17,20 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi;
+package org.sonarsource.sonarlint.core.clientapi.fs;
 
-import java.util.concurrent.CompletableFuture;
-import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
-import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
-import org.sonarsource.sonarlint.core.clientapi.config.binding.SuggestAutoBindParams;
-import org.sonarsource.sonarlint.core.clientapi.fs.FindFileByNamesInScopeParams;
-import org.sonarsource.sonarlint.core.clientapi.fs.FindFileByNamesInScopeResponse;
+public class FoundFile {
 
-public interface SonarLintClient {
+  private final String filename;
 
-  @JsonNotification
-  void suggestAutoBind(SuggestAutoBindParams params);
+  private final String content;
 
-  @JsonRequest
-  CompletableFuture<FindFileByNamesInScopeResponse> findFileByNamesInScope(FindFileByNamesInScopeParams params);
+  public FoundFile(String filename, String content) {
+    this.filename = filename;
+    this.content = content;
+  }
+
+  public String getFilename() {
+    return filename;
+  }
+
+  public String getContent() {
+    return content;
+  }
 }

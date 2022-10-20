@@ -68,7 +68,7 @@ At the end of this step, we should have a possibly empty list of binding clues h
 
 For each binding clue, find the matching connection(s) among configured ones in IDE settings.
 
-For a _SonarQube Binding Clue_, select all SonarQube connections having the samefootnote:[determining that two URLs are pointing to the same server is tricky, so here we do at best] url. If we don't have a _serverUrl_ for this binding clue, select all SonarQube connections.
+For a _SonarQube Binding Clue_, select all SonarQube connections having the samefootnote:[determining that two URLs are pointing to the same server is tricky, so here we do at best] url.
 
 For a _SonarCloud Binding Clue_, select all SonarCloud connections having the same _organization_. If we don't have an organization for this candidate binding, select all SonarCloud connections.
 
