@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import com.google.common.eventbus.EventBus;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -31,6 +32,7 @@ import org.sonarsource.sonarlint.core.clientapi.config.scope.DidAddConfiguration
 import org.sonarsource.sonarlint.core.clientapi.config.scope.DidRemoveConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.config.scope.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 
 public class ConfigurationServiceImpl implements ConfigurationService {
 
@@ -38,6 +40,11 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 
   private final Map<String, ConfigurationScope> configScopePerId = new HashMap<>();
   private final Map<String, BindingConfiguration> bindingPerConfigScopeId = new HashMap<>();
+  private final EventBus clientEventBus;
+
+  public ConfigurationServiceImpl(EventBus clientEventBus) {
+    this.clientEventBus = clientEventBus;
+  }
 
   @Override
   public CompletableFuture<Void> initialize(InitializeParams params) {
@@ -77,7 +84,21 @@ public class ConfigurationServiceImpl implements ConfigurationService {
       LOG.error("Attempt to update binding in configuration scope '{}' that was not registered", configScopeId);
       return;
     }
-    bindingPerConfigScopeId.put(configScopeId, params.getUpdatedBinding());
+    var newBindingConfig = params.getUpdatedBinding();
+    bindingPerConfigScopeId.put(configScopeId, newBindingConfig);
+
+    postChangedEventIfNeeded(configScopeId, previousBindingConfig, newBindingConfig);
+  }
+
+  private void postChangedEventIfNeeded(String configScopeId, BindingConfiguration previousBindingConfig, BindingConfiguration newBindingConfig) {
+    var previousConfigForEvent = new BindingConfigChangedEvent.BindingConfig(configScopeId, previousBindingConfig.getConnectionId(),
+      previousBindingConfig.getSonarProjectKey(), previousBindingConfig.isAutoBindEnabled());
+    var newConfigForEvent = new BindingConfigChangedEvent.BindingConfig(configScopeId, newBindingConfig.getConnectionId(),
+      newBindingConfig.getSonarProjectKey(), newBindingConfig.isAutoBindEnabled());
+
+    if (!previousConfigForEvent.equals(newConfigForEvent)) {
+      clientEventBus.post(new BindingConfigChangedEvent(previousConfigForEvent, newConfigForEvent));
+    }
   }
 
   public Set<String> getConfigScopeIds() {

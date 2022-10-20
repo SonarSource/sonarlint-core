@@ -19,14 +19,31 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import com.google.common.eventbus.AsyncEventBus;
+import com.google.common.eventbus.EventBus;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.connection.ConnectionService;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class SonarLintBackendImpl implements SonarLintBackend {
 
-  private final ConfigurationServiceImpl configurationService = new ConfigurationServiceImpl();
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
+
+  private final ConfigurationServiceImpl configurationService;
   private final ConnectionServiceImpl connectionService = new ConnectionServiceImpl();
+
+  private final EventBus clientEventBus;
+  private final ExecutorService clientEventsExecutorService = Executors.newSingleThreadExecutor(r -> new Thread("SonarLint Client Events Processor"));
+
+  public SonarLintBackendImpl() {
+    this.clientEventBus = new AsyncEventBus("clientEvents", clientEventsExecutorService);
+    this.configurationService = new ConfigurationServiceImpl(clientEventBus);
+  }
 
   @Override
   public ConnectionService getConnectionService() {
@@ -36,5 +53,21 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   @Override
   public ConfigurationService getConfigurationService() {
     return configurationService;
+  }
+
+  @Override
+  public CompletableFuture<Void> shutdown() {
+    return CompletableFuture.runAsync(() -> {
+      clientEventsExecutorService.shutdown();
+      try {
+        boolean success = clientEventsExecutorService.awaitTermination(10, TimeUnit.SECONDS);
+        if (!success) {
+          LOG.error("Unable to terminate clientEventsExecutorService in time");
+        }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new IllegalStateException(e);
+      }
+    });
   }
 }

@@ -19,10 +19,14 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import com.google.common.eventbus.EventBus;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.BindingConfiguration;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.config.scope.ConfigurationScopeWithBinding;
@@ -31,21 +35,33 @@ import org.sonarsource.sonarlint.core.clientapi.config.scope.DidRemoveConfigurat
 import org.sonarsource.sonarlint.core.clientapi.config.scope.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class ConfigurationServiceImplTest {
 
   public static final BindingConfiguration BINDING_1 = new BindingConfiguration("connection1", "projectKey1", false);
-  public static final BindingConfiguration BINDING_2 = new BindingConfiguration("connection1", "projectKey2", false);
+  public static final BindingConfiguration BINDING_2 = new BindingConfiguration("connection1", "projectKey2", true);
   public static final ConfigurationScopeWithBinding CONFIG_1 = new ConfigurationScopeWithBinding("id1", null, true, "Scope 1", BINDING_1);
   public static final ConfigurationScopeWithBinding CONFIG_1_DUP = new ConfigurationScopeWithBinding("id1", null, false, "Scope 1 dup", BINDING_2);
   public static final ConfigurationScopeWithBinding CONFIG_2 = new ConfigurationScopeWithBinding("id2", null, true, "Scope 2", BINDING_2);
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester();
 
-  private ConfigurationServiceImpl underTest = new ConfigurationServiceImpl();
+  private EventBus eventBus;
+  private ConfigurationServiceImpl underTest;
+
+
+  @BeforeEach
+  public void setUp() {
+    eventBus = mock(EventBus.class);
+    underTest = new ConfigurationServiceImpl(eventBus);
+  }
+
 
   @Test
   void initialize_empty() throws ExecutionException, InterruptedException {
@@ -111,7 +127,7 @@ class ConfigurationServiceImplTest {
   }
 
   @Test
-  void update_binding_config() throws ExecutionException, InterruptedException {
+  void update_binding_config_and_post_event() throws ExecutionException, InterruptedException {
     underTest.initialize(new InitializeParams(List.of(CONFIG_1))).get();
     assertThat(underTest.getBindingConfiguration("id1")).isEqualTo(BINDING_1);
 
@@ -119,6 +135,20 @@ class ConfigurationServiceImplTest {
 
     assertThat(underTest.getConfigScopeIds()).containsOnly("id1");
     assertThat(underTest.getBindingConfiguration("id1")).isEqualTo(BINDING_2);
+
+    ArgumentCaptor<BindingConfigChangedEvent> captor = ArgumentCaptor.forClass(BindingConfigChangedEvent.class);
+    verify(eventBus).post(captor.capture());
+    var event = captor.getValue();
+
+    assertThat(event.getPreviousConfig().getConfigScopeId()).isEqualTo("id1");
+    assertThat(event.getPreviousConfig().getConnectionId()).isEqualTo("connection1");
+    assertThat(event.getPreviousConfig().getSonarProjectKey()).isEqualTo("projectKey1");
+    assertThat(event.getPreviousConfig().isAutoBindEnabled()).isFalse();
+
+    assertThat(event.getNewConfig().getConfigScopeId()).isEqualTo("id1");
+    assertThat(event.getNewConfig().getConnectionId()).isEqualTo("connection1");
+    assertThat(event.getNewConfig().getSonarProjectKey()).isEqualTo("projectKey2");
+    assertThat(event.getNewConfig().isAutoBindEnabled()).isTrue();
   }
 
   @Test
