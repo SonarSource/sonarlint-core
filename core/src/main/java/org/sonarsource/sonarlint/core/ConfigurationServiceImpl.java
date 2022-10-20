@@ -20,14 +20,10 @@
 package org.sonarsource.sonarlint.core;
 
 import com.google.common.eventbus.EventBus;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.clientapi.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.BindingConfiguration;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.DidUpdateBindingParams;
-import org.sonarsource.sonarlint.core.clientapi.config.scope.ConfigurationScope;
 import org.sonarsource.sonarlint.core.clientapi.config.scope.DidAddConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.config.scope.DidRemoveConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.config.scope.InitializeParams;
@@ -39,20 +35,17 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final Map<String, ConfigurationScope> configScopePerId = new HashMap<>();
-  private final Map<String, BindingConfiguration> bindingPerConfigScopeId = new HashMap<>();
   private final EventBus clientEventBus;
+  private final ConfigurationReferential referential;
 
-  public ConfigurationServiceImpl(EventBus clientEventBus) {
+  public ConfigurationServiceImpl(EventBus clientEventBus, ConfigurationReferential referential) {
     this.clientEventBus = clientEventBus;
+    this.referential = referential;
   }
 
   @Override
   public CompletableFuture<Void> initialize(InitializeParams params) {
-    params.getConfigScopes().forEach(config -> {
-      configScopePerId.put(config.getId(), config);
-      bindingPerConfigScopeId.put(config.getId(), config.getBinding());
-    });
+    params.getConfigScopes().forEach(referential::addOrReplace);
     return CompletableFuture.completedFuture(null);
   }
 
@@ -60,8 +53,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
   public void didAddConfigurationScope(DidAddConfigurationScopeParams params) {
     var added = params.getAdded();
     var id = added.getId();
-    var previous = configScopePerId.put(id, added);
-    bindingPerConfigScopeId.put(id, added.getBinding());
+    var previous = referential.addOrReplace(added);
     if (previous != null) {
       LOG.error("Duplicate configuration scope registered: {}", id);
     } else {
@@ -72,8 +64,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
   @Override
   public void didRemoveConfigurationScope(DidRemoveConfigurationScopeParams params) {
     var idToRemove = params.getRemovedId();
-    var removed = configScopePerId.remove(idToRemove);
-    bindingPerConfigScopeId.remove(idToRemove);
+    var removed = referential.remove(idToRemove);
     if (removed == null) {
       LOG.error("Attempt to remove configuration scope '{}' that was not registered", idToRemove);
     }
@@ -82,13 +73,13 @@ public class ConfigurationServiceImpl implements ConfigurationService {
   @Override
   public void didUpdateBinding(DidUpdateBindingParams params) {
     var configScopeId = params.getConfigScopeId();
-    var previousBindingConfig = bindingPerConfigScopeId.get(configScopeId);
+    var previousBindingConfig = referential.getBindingConfiguration(configScopeId);
     if (previousBindingConfig == null) {
       LOG.error("Attempt to update binding in configuration scope '{}' that was not registered", configScopeId);
       return;
     }
     var newBindingConfig = params.getUpdatedBinding();
-    bindingPerConfigScopeId.put(configScopeId, newBindingConfig);
+    referential.updateBinding(configScopeId, newBindingConfig);
 
     postChangedEventIfNeeded(configScopeId, previousBindingConfig, newBindingConfig);
   }
@@ -104,15 +95,4 @@ public class ConfigurationServiceImpl implements ConfigurationService {
     }
   }
 
-  public Set<String> getConfigScopeIds() {
-    return Set.copyOf(configScopePerId.keySet());
-  }
-
-  public BindingConfiguration getBindingConfiguration(String configScopeId) {
-    var bindingConfiguration = bindingPerConfigScopeId.get(configScopeId);
-    if (bindingConfiguration == null) {
-      throw new IllegalStateException("Unknown scope with id '" + configScopeId + "'");
-    }
-    return bindingConfiguration;
-  }
 }

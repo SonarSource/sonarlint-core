@@ -40,10 +40,11 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   private final EventBus clientEventBus;
   private final ExecutorService clientEventsExecutorService = Executors.newSingleThreadExecutor(r -> new Thread("SonarLint Client Events Processor"));
   private final ConnectionConfigurationReferential connectionConfigurationReferential = new ConnectionConfigurationReferential();
+  private final ConfigurationReferential configurationReferential = new ConfigurationReferential();
 
   public SonarLintBackendImpl() {
     this.clientEventBus = new AsyncEventBus("clientEvents", clientEventsExecutorService);
-    this.configurationService = new ConfigurationServiceImpl(clientEventBus);
+    this.configurationService = new ConfigurationServiceImpl(clientEventBus, configurationReferential);
     this.connectionService = new ConnectionServiceImpl(clientEventBus, connectionConfigurationReferential);
     var autoBinding = new AutoBinding();
     clientEventBus.register(autoBinding);
