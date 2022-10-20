@@ -3,7 +3,7 @@
 
 == Overview
 
-For xref:glossary.adoc#connected_mode[connected mode] to work, a xref:glossary.adoc#connection[connection] should be defined to allow SonarLint to communicate with the server. Then, SonarLint needs to know which xref:glossary.adoc#sonar_project[Sonar Project] should be considered. This is the xref:glossary.adoc#binding[_binding_]. Inside IDE, there could be different bindings, for different xref:glossary.adoc#bindable[_bindables_].
+For xref:glossary.adoc#connected_mode[connected mode] to work, a xref:glossary.adoc#connection[connection] should be defined to allow SonarLint to communicate with the server. Then, SonarLint needs to know which xref:glossary.adoc#sonar_project[Sonar Project] should be considered. This is the xref:glossary.adoc#binding[_binding_]. Inside IDE, there could be different bindings, for different xref:glossary.adoc#configuration_scope[_configuration scopes_].
 
 For most users, there will be only one configured connection (to their corporate SonarQube server, or to SonarCloud). But every time they open a new project or solution, they will need to do the binding. This process can be tedious, and easily forgotten.
 
@@ -13,13 +13,13 @@ Auto-binding is the feature where SonarLint assist users as much as possible to 
 
 Auto-binding is triggered:
 
-* when a xref:glossary.adoc#bindable[_bindable_] is opened (only for this _bindable_)
-* when a xref:glossary.adoc#connection_config[connection configuration] is added/updated (for all _bindables_)
+* when a xref:glossary.adoc#configuration_scope[configuration scope] is added (only for this _configuration scope_)
+* when a xref:glossary.adoc#connection_config[connection configuration] is added/updated (for all _configuration scopes_)
 
 == Conditions
 
 1. At least one xref:glossary.adoc#connection_config[connection configuration] is defined
-2. Only consider xref:glossary.adoc#bindable[bindables] that:
+2. Only consider xref:glossary.adoc#configuration_scope[configuration scopes] that:
 ** are not bound (or maybe if we know the binding is **invalid**? #TBD#)
 ** have their _autoBindingEnabled_ attribute set to `true`
 
@@ -27,9 +27,9 @@ Auto-binding is triggered:
 
 === SonarQube/SonarCloud scanner configuration file auto-detection
 
-For each bindable:
+For each xref:glossary.adoc#configuration_scope[configuration scope]:
 
-1. Search for the presence of files `sonar-project.properties` or `.sonarcloud.properties`. This step should be under IDE responsibility, since the bindable layout and filesystem is very IDE specific. The IDE should provide the list of files (with filename) and their text content.
+1. Search for the presence of files `sonar-project.properties` or `.sonarcloud.properties`. This step should be under IDE responsibility, since the configuration scope layout and filesystem is very IDE specific. The IDE should provide the list of files (with filename) and their text content.
 
 2. Extract from each file content the following properties (all are optional):
 - `sonar.projectKey`
@@ -40,7 +40,7 @@ For each bindable:
 - if the file is `.sonarcloud.properties`, this is SonarCloud (AutoScan)
 - if there is a `sonar.organization`, this is SonarCloud
 - if the `sonar.host.url` is equal to `https://sonarcloud.io` or one of the aliases used for tests, this is SonarCloud, any other non-empty value means it is SonarQube
-- at this stage keep properties as a generic binding clue
+- at this stage keep properties (normally only _projectKey_) as an unknown binding clue
 
 At the end of this step, we should have a possibly empty list of binding clues having one of those types and attributes:
 
@@ -48,7 +48,7 @@ At the end of this step, we should have a possibly empty list of binding clues h
 |=======
 |SonarQube Binding Clue
 |projectKey: string?
-|serverUrl: string?
+|serverUrl: string
 |=======
 
 [%autowidth,options="header"]
@@ -60,7 +60,7 @@ At the end of this step, we should have a possibly empty list of binding clues h
 
 [%autowidth,options="header"]
 |=======
-|Binding Clue
+|Unknown Binding Clue
 |projectKey: string
 |=======
 
@@ -84,9 +84,9 @@ We should favor binding clues with a non-empty _projectKey_.
 
 ==== Exact matching on projectKey
 
-For each binding clue having a projectKey, search for a Sonar Project having the exact same _projectKey_ among the matched connections. If there is at least one perfect match, return the match(es).
+For each binding clue having a projectKey, search for a xref:glossary.adoc#sonar_project[Sonar project] having the exact same _projectKey_ among the matched connections. If there is at least one perfect match, return the match(es).
 
-==== Matching based on bindable _name_
+==== Matching based on configuration scope _name_
 
 If no perfect matches were found in the previous step, then for each _binding clue_ with no _projectKey_, we should do a search among all _Sonar Projects_ of their matched connections.
 If there was no binding clues with no _projectKey_, then simply do a search for all connections.
@@ -96,7 +96,7 @@ The matching is based on a scoring described in `TextSearchIndex`. If there is o
 
 == Outcome
 
-For each bindable where auto-binding was _executed_, the IDE will receive one result, with the following options:
+For each configuration scopes where auto-binding was _executed_, the IDE will receive one notification, with the following content:
 
 1. if there is a single best candidate:
 - the Sonar Project candidate + connectionId
@@ -105,9 +105,11 @@ For each bindable where auto-binding was _executed_, the IDE will receive one re
 - the list of (Sonar Project candidate + connectionId)
 
 3. if there are no candidates
-- `NO_MATCHES_FOUND` response (to differentiate from bindable that have been excluded from auto-binding, and allow clients to forward users to manual binding)
+- empty candidate list (to indicate to clients that auto-binding was attempted but could not find good results, and client should usually forward users to manual binding)
+
+Configuration scopes that have been skipped from auto-binding at any time in the previously described algorithm will produce no notifications.
 
 [#do_not_ask_again]
 == Do not ask again
 
-It is the responsibility of the IDE to offer the "Do not ask again" option in the auto-binding notification, and it should be remembered for this bindable in IDE settings. When declaring a _bindable_, the attribute _autoBindingEnabled_ will be set accordingly.
+It is the responsibility of the IDE to offer the "Do not ask again" option in the auto-binding notification, and it should be remembered for this configuration scope in IDE settings. When the client synchronize _configuration scopes_ with the backend, the attribute _autoBindingEnabled_ will be set accordingly.
