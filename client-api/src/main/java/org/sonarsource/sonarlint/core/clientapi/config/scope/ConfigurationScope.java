@@ -41,14 +41,12 @@ public class ConfigurationScope {
    */
   @NonNull
   private final String name;
-  private final BindingConfiguration binding;
 
-  public ConfigurationScope(@NonNull String id, @Nullable String parentId, boolean bindable, @NonNull String name, @Nullable BindingConfiguration binding) {
+  public ConfigurationScope(@NonNull String id, @Nullable String parentId, boolean bindable, @NonNull String name) {
     this.id = id;
     this.parentId = parentId;
     this.bindable = bindable;
     this.name = name;
-    this.binding = binding;
   }
 
   @NonNull
@@ -69,7 +67,4 @@ public class ConfigurationScope {
     return name;
   }
 
-  public BindingConfiguration getBinding() {
-    return binding;
-  }
 }

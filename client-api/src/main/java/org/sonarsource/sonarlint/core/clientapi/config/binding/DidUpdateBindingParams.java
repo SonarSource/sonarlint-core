@@ -23,12 +23,19 @@ import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
 public class DidUpdateBindingParams {
 
+  private final String configScopeId;
   @NonNull
   private final BindingConfiguration updatedBinding;
 
 
-  public DidUpdateBindingParams(@NonNull BindingConfiguration updatedBinding) {
+  public DidUpdateBindingParams(@NonNull String configScopeId, @NonNull BindingConfiguration updatedBinding) {
+    this.configScopeId = configScopeId;
     this.updatedBinding = updatedBinding;
+  }
+
+  @NonNull
+  public String getConfigScopeId() {
+    return configScopeId;
   }
 
   @NonNull

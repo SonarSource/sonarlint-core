@@ -20,25 +20,17 @@
 package org.sonarsource.sonarlint.core.clientapi.config.binding;
 
 import javax.annotation.Nullable;
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
 public class BindingConfiguration {
 
-  private final String configurationScopeId;
   private final String connectionId;
   private final String sonarProjectKey;
   private boolean autoBindEnabled;
 
-  public BindingConfiguration(@NonNull String configurationScopeId, @Nullable String connectionId, @Nullable String sonarProjectKey, boolean autoBindEnabled) {
-    this.configurationScopeId = configurationScopeId;
+  public BindingConfiguration(@Nullable String connectionId, @Nullable String sonarProjectKey, boolean autoBindEnabled) {
     this.connectionId = connectionId;
     this.sonarProjectKey = sonarProjectKey;
     this.autoBindEnabled = autoBindEnabled;
-  }
-
-  @NonNull
-  public String getConfigurationScopeId() {
-    return configurationScopeId;
   }
 
   public String getConnectionId() {

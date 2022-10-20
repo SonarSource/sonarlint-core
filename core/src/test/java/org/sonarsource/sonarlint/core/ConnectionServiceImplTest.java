@@ -41,7 +41,7 @@ class ConnectionServiceImplTest {
   SonarLintLogTester logTester = new SonarLintLogTester();
 
   public static final SonarQubeConnectionConfiguration SQ_1 = new SonarQubeConnectionConfiguration("sq1", "url1");
-  public static final SonarQubeConnectionConfiguration SQ_1_dup = new SonarQubeConnectionConfiguration("sq1", "url1_dup");
+  public static final SonarQubeConnectionConfiguration SQ_1_DUP = new SonarQubeConnectionConfiguration("sq1", "url1_dup");
   public static final SonarQubeConnectionConfiguration SQ_2 = new SonarQubeConnectionConfiguration("sq2", "url2");
   public static final SonarCloudConnectionConfiguration SC_1 = new SonarCloudConnectionConfiguration("sc1", "org1");
   public static final SonarCloudConnectionConfiguration SC_2 = new SonarCloudConnectionConfiguration("sc2", "org2");
@@ -74,8 +74,8 @@ class ConnectionServiceImplTest {
 
     underTest.didAddConnection(new DidAddConnectionParams(SQ_1));
 
-    underTest.didAddConnection(new DidAddConnectionParams(SQ_1_dup));
-    assertThat(underTest.getConnectionsById()).containsOnly(entry("sq1", SQ_1_dup));
+    underTest.didAddConnection(new DidAddConnectionParams(SQ_1_DUP));
+    assertThat(underTest.getConnectionsById()).containsOnly(entry("sq1", SQ_1_DUP));
 
     assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).containsExactly("Duplicate connection registered: sq1");
   }
@@ -108,9 +108,9 @@ class ConnectionServiceImplTest {
   void update_connection() throws ExecutionException, InterruptedException {
     underTest.initialize(new InitializeParams(List.of(SQ_1), List.of())).get();
 
-    underTest.didUpdateConnection(new DidUpdateConnectionParams(SQ_1_dup));
+    underTest.didUpdateConnection(new DidUpdateConnectionParams(SQ_1_DUP));
 
-    assertThat(underTest.getConnectionsById()).containsOnly(entry("sq1", SQ_1_dup));
+    assertThat(underTest.getConnectionsById()).containsOnly(entry("sq1", SQ_1_DUP));
   }
 
   @Test

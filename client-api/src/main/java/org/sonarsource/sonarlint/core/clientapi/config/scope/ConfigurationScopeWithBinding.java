@@ -17,18 +17,22 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi;
+package org.sonarsource.sonarlint.core.clientapi.config.scope;
 
-import org.eclipse.lsp4j.jsonrpc.services.JsonDelegate;
-import org.sonarsource.sonarlint.core.clientapi.config.ConfigurationService;
-import org.sonarsource.sonarlint.core.clientapi.connection.ConnectionService;
+import javax.annotation.Nullable;
+import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
+import org.sonarsource.sonarlint.core.clientapi.config.binding.BindingConfiguration;
 
-public interface SonarLintBackend {
+public class ConfigurationScopeWithBinding extends ConfigurationScope {
 
-  @JsonDelegate
-  ConnectionService getConnectionService();
+  private final BindingConfiguration binding;
 
-  @JsonDelegate
-  ConfigurationService getConfigurationService();
+  public ConfigurationScopeWithBinding(@NonNull String id, @Nullable String parentId, boolean bindable, @NonNull String name, @NonNull BindingConfiguration binding) {
+    super(id, parentId, bindable, name);
+    this.binding = binding;
+  }
 
+  public BindingConfiguration getBinding() {
+    return binding;
+  }
 }
