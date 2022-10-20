@@ -33,6 +33,7 @@ import org.sonarsource.sonarlint.core.clientapi.config.scope.DidRemoveConfigurat
 import org.sonarsource.sonarlint.core.clientapi.config.scope.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopeAddedEvent;
 
 public class ConfigurationServiceImpl implements ConfigurationService {
 
@@ -63,6 +64,8 @@ public class ConfigurationServiceImpl implements ConfigurationService {
     bindingPerConfigScopeId.put(id, added.getBinding());
     if (previous != null) {
       LOG.error("Duplicate configuration scope registered: {}", id);
+    } else {
+      clientEventBus.post(new ConfigurationScopeAddedEvent(id));
     }
   }
 
