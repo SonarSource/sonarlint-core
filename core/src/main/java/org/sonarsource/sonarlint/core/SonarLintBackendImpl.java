@@ -35,7 +35,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final ConfigurationServiceImpl configurationService;
-  private final ConnectionServiceImpl connectionService = new ConnectionServiceImpl();
+  private final ConnectionServiceImpl connectionService;
 
   private final EventBus clientEventBus;
   private final ExecutorService clientEventsExecutorService = Executors.newSingleThreadExecutor(r -> new Thread("SonarLint Client Events Processor"));
@@ -43,6 +43,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   public SonarLintBackendImpl() {
     this.clientEventBus = new AsyncEventBus("clientEvents", clientEventsExecutorService);
     this.configurationService = new ConfigurationServiceImpl(clientEventBus);
+    this.connectionService = new ConnectionServiceImpl(clientEventBus);
   }
 
   @Override

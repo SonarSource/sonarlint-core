@@ -19,10 +19,14 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import com.google.common.eventbus.EventBus;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.DidAddConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.DidRemoveConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.DidUpdateConnectionParams;
@@ -31,9 +35,14 @@ import org.sonarsource.sonarlint.core.clientapi.connection.config.SonarCloudConn
 import org.sonarsource.sonarlint.core.clientapi.connection.config.SonarQubeConnectionConfiguration;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopeAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConnectionAddedEvent;
 
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 class ConnectionServiceImplTest {
 
@@ -45,7 +54,16 @@ class ConnectionServiceImplTest {
   public static final SonarQubeConnectionConfiguration SQ_2 = new SonarQubeConnectionConfiguration("sq2", "url2");
   public static final SonarCloudConnectionConfiguration SC_1 = new SonarCloudConnectionConfiguration("sc1", "org1");
   public static final SonarCloudConnectionConfiguration SC_2 = new SonarCloudConnectionConfiguration("sc2", "org2");
-  ConnectionServiceImpl underTest = new ConnectionServiceImpl();
+
+  EventBus eventBus;
+  ConnectionServiceImpl underTest;
+
+  @BeforeEach
+  public void setUp() {
+    eventBus = mock(EventBus.class);
+    underTest = new ConnectionServiceImpl(eventBus);
+  }
+
 
   @Test
   void initialize_provide_connections() throws ExecutionException, InterruptedException {
@@ -55,7 +73,7 @@ class ConnectionServiceImplTest {
   }
 
   @Test
-  void add_new_connection() throws ExecutionException, InterruptedException {
+  void add_new_connection_and_post_event() throws ExecutionException, InterruptedException {
     underTest.initialize(new InitializeParams(List.of(), List.of())).get();
 
     underTest.didAddConnection(new DidAddConnectionParams(SQ_1));
@@ -66,6 +84,12 @@ class ConnectionServiceImplTest {
 
     underTest.didAddConnection(new DidAddConnectionParams(SC_1));
     assertThat(underTest.getConnectionsById()).containsOnly(entry("sq1", SQ_1), entry("sq2", SQ_2), entry("sc1", SC_1));
+
+    ArgumentCaptor<ConnectionAddedEvent> captor = ArgumentCaptor.forClass(ConnectionAddedEvent.class);
+    verify(eventBus, times(3)).post(captor.capture());
+    var events = captor.getAllValues();
+
+    assertThat(events).extracting(ConnectionAddedEvent::getAddedConnectionId).containsExactly("sq1", "sq2", "sc1");
   }
 
   @Test

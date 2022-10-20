@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import com.google.common.eventbus.EventBus;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -29,12 +30,18 @@ import org.sonarsource.sonarlint.core.clientapi.connection.config.DidRemoveConne
 import org.sonarsource.sonarlint.core.clientapi.connection.config.DidUpdateConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.event.ConnectionAddedEvent;
 
 public class ConnectionServiceImpl implements ConnectionService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final Map<String, AbstractConnectionConfiguration> connectionsById = new HashMap<>();
+  private final EventBus clientEventBus;
+
+  public ConnectionServiceImpl(EventBus clientEventBus) {
+    this.clientEventBus = clientEventBus;
+  }
 
   @Override
   public CompletableFuture<Void> initialize(InitializeParams params) {
@@ -52,6 +59,8 @@ public class ConnectionServiceImpl implements ConnectionService {
     var previous = connectionsById.put(connectionConfiguration.getConnectionId(), connectionConfiguration);
     if (previous != null) {
       LOG.error("Duplicate connection registered: {}", previous.getConnectionId());
+    } else {
+      clientEventBus.post(new ConnectionAddedEvent(connectionConfiguration.getConnectionId()));
     }
     return null;
   }
