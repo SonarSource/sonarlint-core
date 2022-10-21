@@ -23,13 +23,13 @@ import java.util.List;
 
 public class InitializeParams {
 
-  private final List<ConfigurationScopeWithBinding> configScopes;
+  private final List<ConfigurationScopeDto> configScopes;
 
-  public InitializeParams(List<ConfigurationScopeWithBinding> configScopes) {
+  public InitializeParams(List<ConfigurationScopeDto> configScopes) {
     this.configScopes = configScopes;
   }
 
-  public List<ConfigurationScopeWithBinding> getConfigScopes() {
+  public List<ConfigurationScopeDto> getConfigScopes() {
     return configScopes;
   }
 }

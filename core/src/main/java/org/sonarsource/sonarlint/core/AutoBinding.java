@@ -40,20 +40,24 @@ import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.client.api.util.TextSearchIndex;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.AutoBindCandidate;
-import org.sonarsource.sonarlint.core.clientapi.config.binding.BindingConfiguration;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.SuggestAutoBindParams;
-import org.sonarsource.sonarlint.core.clientapi.config.scope.ConfigurationScope;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.SonarQubeConnectionConfiguration;
 import org.sonarsource.sonarlint.core.clientapi.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.fs.FoundFile;
+import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionAddedEvent;
+import org.sonarsource.sonarlint.core.referential.BindingConfiguration;
+import org.sonarsource.sonarlint.core.referential.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.referential.ConfigurationScope;
+import org.sonarsource.sonarlint.core.referential.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 
@@ -70,13 +74,13 @@ public class AutoBinding {
   public static final String AUTOSCAN_CONFIG_FILENAME = ".sonarcloud.properties";
   private static final String SONARCLOUD_URL = "https://sonarcloud.io";
 
-  private final ConfigurationReferential configReferential;
-  private final ConnectionConfigurationReferential connectionReferential;
+  private final ConfigurationRepository configRepository;
+  private final ConnectionConfigurationRepository connectionRepository;
   private final SonarLintClient client;
 
-  public AutoBinding(ConfigurationReferential configReferential, ConnectionConfigurationReferential connectionReferential, SonarLintClient client) {
-    this.configReferential = configReferential;
-    this.connectionReferential = connectionReferential;
+  public AutoBinding(ConfigurationRepository configRepository, ConnectionConfigurationRepository connectionRepository, SonarLintClient client) {
+    this.configRepository = configRepository;
+    this.connectionRepository = connectionRepository;
     this.client = client;
   }
 
@@ -91,7 +95,7 @@ public class AutoBinding {
   @Subscribe
   public void configurationScopeAdded(ConfigurationScopeAddedEvent event) {
     var configScopeId = event.getAddedConfigurationScopeId();
-    var bindingConfiguration = configReferential.getBindingConfiguration(configScopeId);
+    var bindingConfiguration = configRepository.getBindingConfiguration(configScopeId);
     if (bindingConfiguration == null) {
       // Maybe the configuration was removed since the event was raised
       LOG.debug("Configuration scope '{}' not found. Ignoring event.", configScopeId);
@@ -105,7 +109,7 @@ public class AutoBinding {
   @Subscribe
   public void connectionAdded(ConnectionAddedEvent event) {
     // Double check if added connection has not been removed in the meantime
-    if (connectionReferential.getConnectionById(event.getAddedConnectionId()) != null) {
+    if (connectionRepository.getConnectionById(event.getAddedConnectionId()) != null) {
       autoBindAll();
     }
   }
@@ -127,7 +131,7 @@ public class AutoBinding {
     if (!checkAtLeastOneConnection()) {
       return;
     }
-    var allConfigScopeIds = configReferential.getConfigScopeIds();
+    var allConfigScopeIds = configRepository.getConfigScopeIds();
     var candidateConfigScopeForAutoBinding = new HashSet<String>();
     for (String configScopeId : allConfigScopeIds) {
       if (checkIfValidCandidateForAutoBinding(configScopeId)) {
@@ -163,14 +167,14 @@ public class AutoBinding {
       }
     }
     if (candidates.isEmpty()) {
-      var configScopeName = Optional.ofNullable(configReferential.getConfigurationScope(checkedConfigScopeId)).map(ConfigurationScope::getName).orElse(null);
+      var configScopeName = Optional.ofNullable(configRepository.getConfigurationScope(checkedConfigScopeId)).map(ConfigurationScope::getName).orElse(null);
       if (isNotBlank(configScopeName)) {
         var cluesWithoutProjectKey = cluesAndConnections.stream().filter(c -> c.bindingClue.getSonarProjectKey() == null).collect(toList());
         for (BindingClueWithConnections bindingClueWithConnections : cluesWithoutProjectKey) {
           searchGoodMatchInConnections(candidates, configScopeName, bindingClueWithConnections.connectionIds);
         }
         if (cluesWithoutProjectKey.isEmpty()) {
-          searchGoodMatchInConnections(candidates, configScopeName, connectionReferential.getConnectionsById().keySet());
+          searchGoodMatchInConnections(candidates, configScopeName, connectionRepository.getConnectionsById().keySet());
         }
       }
     }
@@ -197,8 +201,15 @@ public class AutoBinding {
   }
 
   private ServerApi getServerApi(String connectionId) {
-    // TODO
-    throw new UnsupportedOperationException("getServerApi");
+    var connectionConfig = connectionRepository.getConnectionById(connectionId);
+    EndpointParams params;
+    if (connectionConfig instanceof SonarQubeConnectionConfiguration) {
+      params = new EndpointParams(((SonarQubeConnectionConfiguration) connectionConfig).getServerUrl(), false, null);
+    } else {
+      params = new EndpointParams(SONARCLOUD_URL, true, ((SonarCloudConnectionConfiguration) connectionConfig).getOrganization());
+    }
+    HttpClient httpClient = client.getHttpClient(connectionId);
+    return new ServerApi(params, httpClient);
   }
 
   @NotNull
@@ -256,7 +267,7 @@ public class AutoBinding {
   private Set<String> matchConnections(BindingClue bindingClue) {
     if (bindingClue instanceof SonarQubeBindingClue) {
       var serverUrl = ((SonarQubeBindingClue) bindingClue).serverUrl;
-      return connectionReferential.getConnectionsById().values().stream()
+      return connectionRepository.getConnectionsById().values().stream()
         .filter(SonarQubeConnectionConfiguration.class::isInstance)
         .map(SonarQubeConnectionConfiguration.class::cast)
         .filter(c -> isSameServerUrl(c.getServerUrl(), serverUrl))
@@ -265,14 +276,14 @@ public class AutoBinding {
     }
     if (bindingClue instanceof SonarCloudBindingClue) {
       var organization = ((SonarCloudBindingClue) bindingClue).organization;
-      return connectionReferential.getConnectionsById().values().stream()
+      return connectionRepository.getConnectionsById().values().stream()
         .filter(SonarCloudConnectionConfiguration.class::isInstance)
         .map(SonarCloudConnectionConfiguration.class::cast)
         .filter(c -> organization == null || Objects.equals(organization, c.getOrganization()))
         .map(AbstractConnectionConfiguration::getConnectionId)
         .collect(toSet());
     }
-    return connectionReferential.getConnectionsById().keySet();
+    return connectionRepository.getConnectionsById().keySet();
   }
 
   private static boolean isSameServerUrl(String left, String right) {
@@ -382,7 +393,7 @@ public class AutoBinding {
   }
 
   private boolean checkIfValidCandidateForAutoBinding(String configScopeId) {
-    var bindingConfiguration = configReferential.getBindingConfiguration(configScopeId);
+    var bindingConfiguration = configRepository.getBindingConfiguration(configScopeId);
     if (bindingConfiguration == null) {
       // Race condition
       LOG.debug("Configuration scope '{}' is gone. Skipping auto-binding", configScopeId);
@@ -402,11 +413,11 @@ public class AutoBinding {
   private boolean isBound(BindingConfiguration bindingConfiguration) {
     return bindingConfiguration.getConnectionId() != null
       && bindingConfiguration.getSonarProjectKey() != null
-      && connectionReferential.getConnectionById(bindingConfiguration.getConnectionId()) != null;
+      && connectionRepository.getConnectionById(bindingConfiguration.getConnectionId()) != null;
   }
 
   private boolean checkAtLeastOneConnection() {
-    if (connectionReferential.getConnectionsById().isEmpty()) {
+    if (connectionRepository.getConnectionsById().isEmpty()) {
       LOG.debug("No connections defined");
       return false;
     }

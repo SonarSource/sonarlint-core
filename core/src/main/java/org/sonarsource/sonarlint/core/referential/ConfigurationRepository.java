@@ -17,25 +17,22 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core;
+package org.sonarsource.sonarlint.core.referential;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.CheckForNull;
-import org.sonarsource.sonarlint.core.clientapi.config.binding.BindingConfiguration;
-import org.sonarsource.sonarlint.core.clientapi.config.scope.ConfigurationScope;
-import org.sonarsource.sonarlint.core.clientapi.config.scope.ConfigurationScopeWithBinding;
 
-public class ConfigurationReferential {
+public class ConfigurationRepository {
 
   private final Map<String, ConfigurationScope> configScopePerId = new HashMap<>();
   private final Map<String, BindingConfiguration> bindingPerConfigScopeId = new HashMap<>();
 
-  public ConfigurationScope addOrReplace(ConfigurationScopeWithBinding configScope) {
+  public ConfigurationScope addOrReplace(ConfigurationScope configScope, BindingConfiguration bindingConfig) {
     var id = configScope.getId();
     var previous = configScopePerId.put(id, configScope);
-    bindingPerConfigScopeId.put(id, configScope.getBinding());
+    bindingPerConfigScopeId.put(id, bindingConfig);
     return previous;
   }
 

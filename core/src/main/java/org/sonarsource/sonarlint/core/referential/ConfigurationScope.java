@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,29 +17,43 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.config.binding;
+package org.sonarsource.sonarlint.core.referential;
 
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
-public class DidUpdateBindingParams {
+public class ConfigurationScope {
 
-  private final String configScopeId;
-  @NonNull
-  private final BindingConfigurationDto updatedBinding;
+  private final String id;
+  private final String parentId;
+  private final boolean bindable;
+  /**
+   * The name of this configuration scope. Used for auto-binding.
+   */
+  private final String name;
 
-
-  public DidUpdateBindingParams(@NonNull String configScopeId, @NonNull BindingConfigurationDto updatedBinding) {
-    this.configScopeId = configScopeId;
-    this.updatedBinding = updatedBinding;
+  public ConfigurationScope(String id, @Nullable String parentId, boolean bindable, String name) {
+    this.id = id;
+    this.parentId = parentId;
+    this.bindable = bindable;
+    this.name = name;
   }
 
-  @NonNull
-  public String getConfigScopeId() {
-    return configScopeId;
+  public String getId() {
+    return id;
   }
 
-  @NonNull
-  public BindingConfigurationDto getUpdatedBinding() {
-    return updatedBinding;
+  @CheckForNull
+  public String getParentId() {
+    return parentId;
   }
+
+  public boolean isBindable() {
+    return bindable;
+  }
+
+  public String getName() {
+    return name;
+  }
+
 }

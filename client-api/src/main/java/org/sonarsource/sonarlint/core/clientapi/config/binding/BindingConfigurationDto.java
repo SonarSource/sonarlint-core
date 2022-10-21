@@ -17,22 +17,31 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.config.scope;
+package org.sonarsource.sonarlint.core.clientapi.config.binding;
 
 import javax.annotation.Nullable;
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
-import org.sonarsource.sonarlint.core.clientapi.config.binding.BindingConfiguration;
 
-public class ConfigurationScopeWithBinding extends ConfigurationScope {
+public class BindingConfigurationDto {
 
-  private final BindingConfiguration binding;
+  private final String connectionId;
+  private final String sonarProjectKey;
+  private boolean autoBindEnabled;
 
-  public ConfigurationScopeWithBinding(@NonNull String id, @Nullable String parentId, boolean bindable, @NonNull String name, @NonNull BindingConfiguration binding) {
-    super(id, parentId, bindable, name);
-    this.binding = binding;
+  public BindingConfigurationDto(@Nullable String connectionId, @Nullable String sonarProjectKey, boolean autoBindEnabled) {
+    this.connectionId = connectionId;
+    this.sonarProjectKey = sonarProjectKey;
+    this.autoBindEnabled = autoBindEnabled;
   }
 
-  public BindingConfiguration getBinding() {
-    return binding;
+  public String getConnectionId() {
+    return connectionId;
+  }
+
+  public String getSonarProjectKey() {
+    return sonarProjectKey;
+  }
+
+  public boolean isAutoBindEnabled() {
+    return autoBindEnabled;
   }
 }

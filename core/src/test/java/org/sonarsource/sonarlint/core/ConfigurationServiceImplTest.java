@@ -26,10 +26,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
-import org.sonarsource.sonarlint.core.clientapi.config.binding.BindingConfiguration;
+import org.sonarsource.sonarlint.core.clientapi.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.DidUpdateBindingParams;
-import org.sonarsource.sonarlint.core.clientapi.config.scope.ConfigurationScopeWithBinding;
+import org.sonarsource.sonarlint.core.clientapi.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.clientapi.config.scope.DidAddConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.config.scope.DidRemoveConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.config.scope.InitializeParams;
@@ -37,64 +36,62 @@ import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeAddedEvent;
+import org.sonarsource.sonarlint.core.referential.ConfigurationRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class ConfigurationServiceImplTest {
 
-  public static final BindingConfiguration BINDING_1 = new BindingConfiguration("connection1", "projectKey1", false);
-  public static final BindingConfiguration BINDING_2 = new BindingConfiguration("connection1", "projectKey2", true);
-  public static final ConfigurationScopeWithBinding CONFIG_1 = new ConfigurationScopeWithBinding("id1", null, true, "Scope 1", BINDING_1);
-  public static final ConfigurationScopeWithBinding CONFIG_1_DUP = new ConfigurationScopeWithBinding("id1", null, false, "Scope 1 dup", BINDING_2);
-  public static final ConfigurationScopeWithBinding CONFIG_2 = new ConfigurationScopeWithBinding("id2", null, true, "Scope 2", BINDING_2);
-  private final ConfigurationReferential referential = new ConfigurationReferential();
+  public static final BindingConfigurationDto BINDING_DTO_1 = new BindingConfigurationDto("connection1", "projectKey1", false);
+  public static final BindingConfigurationDto BINDING_DTO_2 = new BindingConfigurationDto("connection1", "projectKey2", true);
+  public static final ConfigurationScopeDto CONFIG_DTO_1 = new ConfigurationScopeDto("id1", null, true, "Scope 1", BINDING_DTO_1);
+  public static final ConfigurationScopeDto CONFIG_DTO_1_DUP = new ConfigurationScopeDto("id1", null, false, "Scope 1 dup", BINDING_DTO_2);
+  public static final ConfigurationScopeDto CONFIG_DTO_2 = new ConfigurationScopeDto("id2", null, true, "Scope 2", BINDING_DTO_2);
+  private final ConfigurationRepository repository = new ConfigurationRepository();
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester();
 
   private EventBus eventBus;
   private ConfigurationServiceImpl underTest;
 
-
   @BeforeEach
   public void setUp() {
     eventBus = mock(EventBus.class);
-    underTest = new ConfigurationServiceImpl(eventBus, referential);
+    underTest = new ConfigurationServiceImpl(eventBus, repository);
   }
-
 
   @Test
   void initialize_empty() throws ExecutionException, InterruptedException {
     underTest.initialize(new InitializeParams(List.of())).get();
 
-    assertThat(referential.getConfigScopeIds()).isEmpty();
+    assertThat(repository.getConfigScopeIds()).isEmpty();
   }
 
   @Test
   void get_binding_of_unknown_config_returns_null() throws ExecutionException, InterruptedException {
     underTest.initialize(new InitializeParams(List.of())).get();
 
-    assertThat(referential.getBindingConfiguration("not_found")).isNull();
+    assertThat(repository.getBindingConfiguration("not_found")).isNull();
   }
 
   @Test
   void initialize_provides_bindings() throws ExecutionException, InterruptedException {
-    underTest.initialize(new InitializeParams(List.of(CONFIG_1))).get();
+    underTest.initialize(new InitializeParams(List.of(CONFIG_DTO_1))).get();
 
-    assertThat(referential.getConfigScopeIds()).containsOnly("id1");
-    assertThat(referential.getBindingConfiguration("id1")).isEqualTo(BINDING_1);
+    assertThat(repository.getConfigScopeIds()).containsOnly("id1");
+    assertThat(repository.getBindingConfiguration("id1")).usingRecursiveComparison().isEqualTo(BINDING_DTO_1);
   }
 
   @Test
   void add_configuration_and_post_event() throws ExecutionException, InterruptedException {
-    underTest.initialize(new InitializeParams(List.of(CONFIG_1))).get();
+    underTest.initialize(new InitializeParams(List.of(CONFIG_DTO_1))).get();
 
-    underTest.didAddConfigurationScope(new DidAddConfigurationScopeParams(CONFIG_2));
+    underTest.didAddConfigurationScope(new DidAddConfigurationScopeParams(CONFIG_DTO_2));
 
-    assertThat(referential.getConfigScopeIds()).containsOnly("id1", "id2");
-    assertThat(referential.getBindingConfiguration("id2")).isEqualTo(BINDING_2);
+    assertThat(repository.getConfigScopeIds()).containsOnly("id1", "id2");
+    assertThat(repository.getBindingConfiguration("id2")).usingRecursiveComparison().isEqualTo(BINDING_DTO_2);
 
     ArgumentCaptor<ConfigurationScopeAddedEvent> captor = ArgumentCaptor.forClass(ConfigurationScopeAddedEvent.class);
     verify(eventBus).post(captor.capture());
@@ -105,44 +102,44 @@ class ConfigurationServiceImplTest {
 
   @Test
   void add_duplicate_should_log_and_update() throws ExecutionException, InterruptedException {
-    underTest.initialize(new InitializeParams(List.of(CONFIG_1))).get();
+    underTest.initialize(new InitializeParams(List.of(CONFIG_DTO_1))).get();
 
-    underTest.didAddConfigurationScope(new DidAddConfigurationScopeParams(CONFIG_1_DUP));
+    underTest.didAddConfigurationScope(new DidAddConfigurationScopeParams(CONFIG_DTO_1_DUP));
 
-    assertThat(referential.getConfigScopeIds()).containsOnly("id1");
-    assertThat(referential.getBindingConfiguration("id1")).isEqualTo(BINDING_2);
+    assertThat(repository.getConfigScopeIds()).containsOnly("id1");
+    assertThat(repository.getBindingConfiguration("id1")).usingRecursiveComparison().isEqualTo(BINDING_DTO_2);
 
     assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).containsExactly("Duplicate configuration scope registered: id1");
   }
 
   @Test
   void remove_configuration() throws ExecutionException, InterruptedException {
-    underTest.initialize(new InitializeParams(List.of(CONFIG_1))).get();
+    underTest.initialize(new InitializeParams(List.of(CONFIG_DTO_1))).get();
 
     underTest.didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams("id1"));
 
-    assertThat(referential.getConfigScopeIds()).isEmpty();
+    assertThat(repository.getConfigScopeIds()).isEmpty();
   }
 
   @Test
   void remove_unknown_configuration_should_log() throws ExecutionException, InterruptedException {
-    underTest.initialize(new InitializeParams(List.of(CONFIG_1))).get();
+    underTest.initialize(new InitializeParams(List.of(CONFIG_DTO_1))).get();
 
     underTest.didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams("id2"));
 
-    assertThat(referential.getConfigScopeIds()).containsOnly("id1");
+    assertThat(repository.getConfigScopeIds()).containsOnly("id1");
     assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).containsExactly("Attempt to remove configuration scope 'id2' that was not registered");
   }
 
   @Test
   void update_binding_config_and_post_event() throws ExecutionException, InterruptedException {
-    underTest.initialize(new InitializeParams(List.of(CONFIG_1))).get();
-    assertThat(referential.getBindingConfiguration("id1")).isEqualTo(BINDING_1);
+    underTest.initialize(new InitializeParams(List.of(CONFIG_DTO_1))).get();
+    assertThat(repository.getBindingConfiguration("id1")).usingRecursiveComparison().isEqualTo(BINDING_DTO_1);
 
-    underTest.didUpdateBinding(new DidUpdateBindingParams("id1", BINDING_2));
+    underTest.didUpdateBinding(new DidUpdateBindingParams("id1", BINDING_DTO_2));
 
-    assertThat(referential.getConfigScopeIds()).containsOnly("id1");
-    assertThat(referential.getBindingConfiguration("id1")).isEqualTo(BINDING_2);
+    assertThat(repository.getConfigScopeIds()).containsOnly("id1");
+    assertThat(repository.getBindingConfiguration("id1")).usingRecursiveComparison().isEqualTo(BINDING_DTO_2);
 
     ArgumentCaptor<BindingConfigChangedEvent> captor = ArgumentCaptor.forClass(BindingConfigChangedEvent.class);
     verify(eventBus).post(captor.capture());
@@ -161,9 +158,9 @@ class ConfigurationServiceImplTest {
 
   @Test
   void update_binding_config_for_unknown_config_scope_should_log() throws ExecutionException, InterruptedException {
-    underTest.initialize(new InitializeParams(List.of(CONFIG_1))).get();
+    underTest.initialize(new InitializeParams(List.of(CONFIG_DTO_1))).get();
 
-    underTest.didUpdateBinding(new DidUpdateBindingParams("id2", BINDING_2));
+    underTest.didUpdateBinding(new DidUpdateBindingParams("id2", BINDING_DTO_2));
 
     assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).containsExactly("Attempt to update binding in configuration scope 'id2' that was not registered");
   }

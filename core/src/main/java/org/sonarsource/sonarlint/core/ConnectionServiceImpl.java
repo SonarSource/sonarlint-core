@@ -29,15 +29,16 @@ import org.sonarsource.sonarlint.core.clientapi.connection.config.DidUpdateConne
 import org.sonarsource.sonarlint.core.clientapi.connection.config.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.ConnectionAddedEvent;
+import org.sonarsource.sonarlint.core.referential.ConnectionConfigurationRepository;
 
 public class ConnectionServiceImpl implements ConnectionService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final EventBus clientEventBus;
-  private final ConnectionConfigurationReferential referential;
+  private final ConnectionConfigurationRepository referential;
 
-  public ConnectionServiceImpl(EventBus clientEventBus, ConnectionConfigurationReferential referential) {
+  public ConnectionServiceImpl(EventBus clientEventBus, ConnectionConfigurationRepository referential) {
     this.clientEventBus = clientEventBus;
     this.referential = referential;
   }
