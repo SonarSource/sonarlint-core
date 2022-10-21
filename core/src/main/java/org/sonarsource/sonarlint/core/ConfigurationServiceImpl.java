@@ -21,44 +21,65 @@ package org.sonarsource.sonarlint.core;
 
 import com.google.common.eventbus.EventBus;
 import java.util.concurrent.CompletableFuture;
+import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.clientapi.config.ConfigurationService;
-import org.sonarsource.sonarlint.core.clientapi.config.binding.BindingConfiguration;
+import org.sonarsource.sonarlint.core.clientapi.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.DidUpdateBindingParams;
+import org.sonarsource.sonarlint.core.clientapi.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.clientapi.config.scope.DidAddConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.config.scope.DidRemoveConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.config.scope.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeAddedEvent;
+import org.sonarsource.sonarlint.core.referential.BindingConfiguration;
+import org.sonarsource.sonarlint.core.referential.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.referential.ConfigurationScope;
 
 public class ConfigurationServiceImpl implements ConfigurationService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final EventBus clientEventBus;
-  private final ConfigurationReferential referential;
+  private final ConfigurationRepository referential;
 
-  public ConfigurationServiceImpl(EventBus clientEventBus, ConfigurationReferential referential) {
+  public ConfigurationServiceImpl(EventBus clientEventBus, ConfigurationRepository referential) {
     this.clientEventBus = clientEventBus;
     this.referential = referential;
   }
 
   @Override
   public CompletableFuture<Void> initialize(InitializeParams params) {
-    params.getConfigScopes().forEach(referential::addOrReplace);
+    params.getConfigScopes().forEach(this::addOrUpdateReferential);
     return CompletableFuture.completedFuture(null);
   }
 
   @Override
   public void didAddConfigurationScope(DidAddConfigurationScopeParams params) {
-    var added = params.getAdded();
-    var id = added.getId();
-    var previous = referential.addOrReplace(added);
+    var addedDto = params.getAdded();
+    ConfigurationScope previous = addOrUpdateReferential(addedDto);
     if (previous != null) {
-      LOG.error("Duplicate configuration scope registered: {}", id);
+      LOG.error("Duplicate configuration scope registered: {}", addedDto.getId());
     } else {
-      clientEventBus.post(new ConfigurationScopeAddedEvent(id));
+      clientEventBus.post(new ConfigurationScopeAddedEvent(addedDto.getId()));
     }
+  }
+
+  private ConfigurationScope addOrUpdateReferential(ConfigurationScopeDto dto) {
+    var configScopeInReferential = toReferential(dto);
+    var bindingDto = dto.getBinding();
+    var bindingConfigInReferential = toReferential(bindingDto);
+    return referential.addOrReplace(configScopeInReferential, bindingConfigInReferential);
+  }
+
+  @NotNull
+  private static org.sonarsource.sonarlint.core.referential.BindingConfiguration toReferential(BindingConfigurationDto dto) {
+    return new org.sonarsource.sonarlint.core.referential.BindingConfiguration(dto.getConnectionId(), dto.getSonarProjectKey(), dto.isAutoBindEnabled());
+  }
+
+  @NotNull
+  private static ConfigurationScope toReferential(ConfigurationScopeDto dto) {
+    return new ConfigurationScope(dto.getId(), dto.getParentId(), dto.isBindable(), dto.getName());
   }
 
   @Override
@@ -78,7 +99,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
       LOG.error("Attempt to update binding in configuration scope '{}' that was not registered", configScopeId);
       return;
     }
-    var newBindingConfig = params.getUpdatedBinding();
+    var newBindingConfig = toReferential(params.getUpdatedBinding());
     referential.updateBinding(configScopeId, newBindingConfig);
 
     postChangedEventIfNeeded(configScopeId, previousBindingConfig, newBindingConfig);

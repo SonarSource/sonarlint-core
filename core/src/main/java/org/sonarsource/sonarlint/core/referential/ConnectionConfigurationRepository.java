@@ -17,15 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core;
+package org.sonarsource.sonarlint.core.referential;
 
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.AbstractConnectionConfiguration;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
-public class ConnectionConfigurationReferential {
+public class ConnectionConfigurationRepository {
 
   private final Map<String, AbstractConnectionConfiguration> connectionsById = new HashMap<>();
 

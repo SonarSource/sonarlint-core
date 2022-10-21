@@ -25,6 +25,7 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.SuggestAutoBindParams;
 import org.sonarsource.sonarlint.core.clientapi.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.fs.FindFileByNamesInScopeResponse;
+import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 
 public interface SonarLintClient {
 
@@ -33,4 +34,11 @@ public interface SonarLintClient {
 
   @JsonRequest
   CompletableFuture<FindFileByNamesInScopeResponse> findFileByNamesInScope(FindFileByNamesInScopeParams params);
+
+  /**
+   * Temporary workaround until we decide what to do regarding HTTP requests
+   * @deprecated will be removed
+   */
+  @Deprecated(forRemoval = true)
+  HttpClient getHttpClient(String connectionId);
 }

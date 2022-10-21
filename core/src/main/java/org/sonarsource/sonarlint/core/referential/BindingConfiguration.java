@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,17 +17,15 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.config.binding;
-
-import javax.annotation.Nullable;
+package org.sonarsource.sonarlint.core.referential;
 
 public class BindingConfiguration {
 
   private final String connectionId;
   private final String sonarProjectKey;
-  private boolean autoBindEnabled;
+  private final boolean autoBindEnabled;
 
-  public BindingConfiguration(@Nullable String connectionId, @Nullable String sonarProjectKey, boolean autoBindEnabled) {
+  public BindingConfiguration(String connectionId, String sonarProjectKey, boolean autoBindEnabled) {
     this.connectionId = connectionId;
     this.sonarProjectKey = sonarProjectKey;
     this.autoBindEnabled = autoBindEnabled;
@@ -44,4 +42,5 @@ public class BindingConfiguration {
   public boolean isAutoBindEnabled() {
     return autoBindEnabled;
   }
+
 }

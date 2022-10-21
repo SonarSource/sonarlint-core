@@ -30,6 +30,8 @@ import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.connection.ConnectionService;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.referential.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.referential.ConnectionConfigurationRepository;
 
 public class SonarLintBackendImpl implements SonarLintBackend {
 
@@ -40,16 +42,16 @@ public class SonarLintBackendImpl implements SonarLintBackend {
 
   private final EventBus clientEventBus;
   private final ExecutorService clientEventsExecutorService = Executors.newSingleThreadExecutor(r -> new Thread("SonarLint Client Events Processor"));
-  private final ConnectionConfigurationReferential connectionConfigurationReferential = new ConnectionConfigurationReferential();
-  private final ConfigurationReferential configurationReferential = new ConfigurationReferential();
+  private final ConnectionConfigurationRepository connectionConfigurationRepository = new ConnectionConfigurationRepository();
+  private final ConfigurationRepository configurationRepository = new ConfigurationRepository();
   private final SonarLintClient client;
 
   public SonarLintBackendImpl(SonarLintClient client) {
     this.client = client;
     this.clientEventBus = new AsyncEventBus("clientEvents", clientEventsExecutorService);
-    this.configurationService = new ConfigurationServiceImpl(clientEventBus, configurationReferential);
-    this.connectionService = new ConnectionServiceImpl(clientEventBus, connectionConfigurationReferential);
-    var autoBinding = new AutoBinding(configurationReferential, connectionConfigurationReferential, client);
+    this.configurationService = new ConfigurationServiceImpl(clientEventBus, configurationRepository);
+    this.connectionService = new ConnectionServiceImpl(clientEventBus, connectionConfigurationRepository);
+    var autoBinding = new AutoBinding(configurationRepository, connectionConfigurationRepository, client);
     clientEventBus.register(autoBinding);
   }
 
