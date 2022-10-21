@@ -96,18 +96,19 @@ The matching is based on a scoring described in `TextSearchIndex`. If there is o
 
 == Outcome
 
-For each configuration scopes where auto-binding was _executed_, the IDE will receive one notification, with the following content:
+At the end of the auto-binding process, one single notification will be sent (1 trigger -> 1 notification maximum). The notification will contain the
+auto-binding candidates for each configuration scopes where auto-binding was _executed_. For each configuration scope:
 
 1. if there is a single best candidate:
-- the Sonar Project candidate + connectionId
+- the single Sonar Project candidate + connectionId
 
 2. if there are multiple best candidates (and less than a threshold #TBD#):
-- the list of (Sonar Project candidate + connectionId)
+- the list of (Sonar Project candidates + connectionIds)
 
 3. if there are no candidates
 - empty candidate list (to indicate to clients that auto-binding was attempted but could not find good results, and client should usually forward users to manual binding)
 
-Configuration scopes that have been skipped from auto-binding at any time in the previously described algorithm will produce no notifications.
+Configuration scopes that have been skipped from auto-binding at any time in the previously described algorithm will not be listed in the notification.
 
 [#do_not_ask_again]
 == Do not ask again
