@@ -23,6 +23,7 @@ import com.google.common.eventbus.Subscribe;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +36,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.client.api.util.TextSearchIndex;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
@@ -118,7 +118,8 @@ public class AutoBinding {
     if (!checkIfValidCandidateForAutoBinding(configScopeId)) {
       return;
     }
-    autoBindAfterChecks(configScopeId);
+    var autoBindCandidates = autoBindAfterChecks(configScopeId);
+    client.suggestAutoBind(new SuggestAutoBindParams(Map.of(configScopeId, autoBindCandidates)));
   }
 
   private void autoBindAll() {
@@ -134,13 +135,23 @@ public class AutoBinding {
       }
     }
 
-    candidateConfigScopeForAutoBinding.forEach(this::autoBindAfterChecks);
+    if (candidateConfigScopeForAutoBinding.isEmpty()) {
+      return;
+    }
+
+    Map<String, List<AutoBindCandidate>> candidates = new HashMap<>();
+
+    candidateConfigScopeForAutoBinding.forEach(configScopeId -> {
+      var autoBindCandidates = autoBindAfterChecks(configScopeId);
+      candidates.put(configScopeId, autoBindCandidates);
+    });
+
+    client.suggestAutoBind(new SuggestAutoBindParams(candidates));
   }
 
-  private void autoBindAfterChecks(String checkedConfigScopeId) {
+  private List<AutoBindCandidate> autoBindAfterChecks(String checkedConfigScopeId) {
     List<BindingClue> bindingClues = collectBindingClues(checkedConfigScopeId);
     List<BindingClueWithConnections> cluesAndConnections = matchConnections(bindingClues);
-
 
     List<AutoBindCandidate> candidates = new ArrayList<>();
     var cluesWithProjectKey = cluesAndConnections.stream().filter(c -> c.bindingClue.getSonarProjectKey() != null).collect(toList());
@@ -163,11 +174,7 @@ public class AutoBinding {
         }
       }
     }
-
-    if (!candidates.isEmpty()) {
-      client.suggestAutoBind(new SuggestAutoBindParams(candidates));
-    }
-
+    return candidates;
   }
 
   private void searchGoodMatchInConnections(List<AutoBindCandidate> candidates, String configScopeName, Set<String> connectionIdsToSearch) {

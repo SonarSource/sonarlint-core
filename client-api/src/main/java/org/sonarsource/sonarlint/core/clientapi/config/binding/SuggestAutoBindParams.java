@@ -19,19 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.config.binding;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
 public class SuggestAutoBindParams {
 
-  private final List<AutoBindCandidate> candidates;
+  Map<String, List<AutoBindCandidate>> candidates = new HashMap<>();
 
-  public SuggestAutoBindParams(@NonNull List<AutoBindCandidate> candidates) {
+  public SuggestAutoBindParams(@NonNull Map<String, List<AutoBindCandidate>> candidates) {
     this.candidates = candidates;
   }
 
   @NonNull
-  public List<AutoBindCandidate> getCandidates() {
+  public Map<String, List<AutoBindCandidate>> getCandidates() {
     return candidates;
   }
 }
