@@ -17,12 +17,11 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.repository;
+package org.sonarsource.sonarlint.core.repository.connection;
 
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.CheckForNull;
-import org.sonarsource.sonarlint.core.clientapi.connection.config.AbstractConnectionConfiguration;
 
 public class ConnectionConfigurationRepository {
 

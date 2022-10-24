@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,26 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.connection.config;
+package org.sonarsource.sonarlint.core.repository.connection;
 
-import java.util.List;
+import java.util.Objects;
 
-public class InitializeParams {
+public abstract class AbstractConnectionConfiguration {
 
-  private final List<SonarQubeConnectionConfigurationDto> sonarQubeConnections;
-  private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections;
+  /**
+   * The id of the connection on the client side
+   */
+  private final String connectionId;
 
-
-  public InitializeParams(List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections) {
-    this.sonarQubeConnections = sonarQubeConnections;
-    this.sonarCloudConnections = sonarCloudConnections;
+  protected AbstractConnectionConfiguration(String connectionId) {
+    Objects.requireNonNull(connectionId, "Connection id is mandatory");
+    this.connectionId = connectionId;
   }
 
-  public List<SonarQubeConnectionConfigurationDto> getSonarQubeConnections() {
-    return sonarQubeConnections;
+  public String getConnectionId() {
+    return connectionId;
   }
 
-  public List<SonarCloudConnectionConfigurationDto> getSonarCloudConnections() {
-    return sonarCloudConnections;
-  }
 }

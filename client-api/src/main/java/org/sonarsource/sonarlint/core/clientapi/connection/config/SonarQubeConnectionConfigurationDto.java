@@ -19,24 +19,27 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.connection.config;
 
-import java.util.List;
+import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
-public class InitializeParams {
+public class SonarQubeConnectionConfigurationDto {
 
-  private final List<SonarQubeConnectionConfigurationDto> sonarQubeConnections;
-  private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections;
+  /**
+   * The id of the connection on the client side
+   */
+  private final String connectionId;
+  private final String serverUrl;
 
-
-  public InitializeParams(List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections) {
-    this.sonarQubeConnections = sonarQubeConnections;
-    this.sonarCloudConnections = sonarCloudConnections;
+  public SonarQubeConnectionConfigurationDto(@NonNull String connectionId, @NonNull String serverUrl) {
+    this.connectionId = connectionId;
+    this.serverUrl = serverUrl;
   }
 
-  public List<SonarQubeConnectionConfigurationDto> getSonarQubeConnections() {
-    return sonarQubeConnections;
+  public String getConnectionId() {
+    return connectionId;
   }
 
-  public List<SonarCloudConnectionConfigurationDto> getSonarCloudConnections() {
-    return sonarCloudConnections;
+  public String getServerUrl() {
+    return serverUrl;
   }
+
 }

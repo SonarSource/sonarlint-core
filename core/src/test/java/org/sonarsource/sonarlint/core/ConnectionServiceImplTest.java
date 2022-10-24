@@ -30,12 +30,12 @@ import org.sonarsource.sonarlint.core.clientapi.connection.config.DidAddConnecti
 import org.sonarsource.sonarlint.core.clientapi.connection.config.DidRemoveConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.DidUpdateConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.InitializeParams;
-import org.sonarsource.sonarlint.core.clientapi.connection.config.SonarCloudConnectionConfiguration;
-import org.sonarsource.sonarlint.core.clientapi.connection.config.SonarQubeConnectionConfiguration;
+import org.sonarsource.sonarlint.core.clientapi.connection.config.SonarCloudConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.clientapi.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.ConnectionAddedEvent;
-import org.sonarsource.sonarlint.core.repository.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,11 +49,11 @@ class ConnectionServiceImplTest {
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester();
 
-  public static final SonarQubeConnectionConfiguration SQ_1 = new SonarQubeConnectionConfiguration("sq1", "url1");
-  public static final SonarQubeConnectionConfiguration SQ_1_DUP = new SonarQubeConnectionConfiguration("sq1", "url1_dup");
-  public static final SonarQubeConnectionConfiguration SQ_2 = new SonarQubeConnectionConfiguration("sq2", "url2");
-  public static final SonarCloudConnectionConfiguration SC_1 = new SonarCloudConnectionConfiguration("sc1", "org1");
-  public static final SonarCloudConnectionConfiguration SC_2 = new SonarCloudConnectionConfiguration("sc2", "org2");
+  public static final SonarQubeConnectionConfigurationDto SQ_DTO_1 = new SonarQubeConnectionConfigurationDto("sq1", "url1");
+  public static final SonarQubeConnectionConfigurationDto SQ_DTO_1_DUP = new SonarQubeConnectionConfigurationDto("sq1", "url1_dup");
+  public static final SonarQubeConnectionConfigurationDto SQ_DTO_2 = new SonarQubeConnectionConfigurationDto("sq2", "url2");
+  public static final SonarCloudConnectionConfigurationDto SC_DTO_1 = new SonarCloudConnectionConfigurationDto("sc1", "org1");
+  public static final SonarCloudConnectionConfigurationDto SC_DTO_2 = new SonarCloudConnectionConfigurationDto("sc2", "org2");
 
   EventBus eventBus;
   ConnectionServiceImpl underTest;
@@ -67,23 +67,25 @@ class ConnectionServiceImplTest {
 
   @Test
   void initialize_provide_connections() throws ExecutionException, InterruptedException {
-    underTest.initialize(new InitializeParams(List.of(SQ_1, SQ_2), List.of(SC_1, SC_2))).get();
+    underTest.initialize(new InitializeParams(List.of(SQ_DTO_1, SQ_DTO_2), List.of(SC_DTO_1, SC_DTO_2))).get();
 
-    assertThat(repository.getConnectionsById()).containsOnly(entry("sq1", SQ_1), entry("sq2", SQ_2), entry("sc1", SC_1), entry("sc2", SC_2));
+    assertThat(repository.getConnectionsById()).containsOnlyKeys("sq1", "sq2", "sc1","sc2");
   }
 
   @Test
   void add_new_connection_and_post_event() throws ExecutionException, InterruptedException {
     underTest.initialize(new InitializeParams(List.of(), List.of())).get();
 
-    underTest.didAddConnection(new DidAddConnectionParams(SQ_1));
-    assertThat(repository.getConnectionsById()).containsOnly(entry("sq1", SQ_1));
+    underTest.didAddConnection(new DidAddConnectionParams(SQ_DTO_1));
+    assertThat(repository.getConnectionsById()).containsOnlyKeys("sq1");
+    assertThat(repository.getConnectionById("sq1")).usingRecursiveComparison().isEqualTo(SQ_DTO_1);
 
-    underTest.didAddConnection(new DidAddConnectionParams(SQ_2));
-    assertThat(repository.getConnectionsById()).containsOnly(entry("sq1", SQ_1), entry("sq2", SQ_2));
+    underTest.didAddConnection(new DidAddConnectionParams(SQ_DTO_2));
+    assertThat(repository.getConnectionsById()).containsOnlyKeys("sq1", "sq2");
 
-    underTest.didAddConnection(new DidAddConnectionParams(SC_1));
-    assertThat(repository.getConnectionsById()).containsOnly(entry("sq1", SQ_1), entry("sq2", SQ_2), entry("sc1", SC_1));
+    underTest.didAddConnection(new DidAddConnectionParams(SC_DTO_1));
+    assertThat(repository.getConnectionsById()).containsOnlyKeys("sq1", "sq2", "sc1");
+    assertThat(repository.getConnectionById("sc1")).usingRecursiveComparison().isEqualTo(SC_DTO_1);
 
     ArgumentCaptor<ConnectionAddedEvent> captor = ArgumentCaptor.forClass(ConnectionAddedEvent.class);
     verify(eventBus, times(3)).post(captor.capture());
@@ -96,19 +98,19 @@ class ConnectionServiceImplTest {
   void add_duplicate_connection_should_log_and_update() throws ExecutionException, InterruptedException {
     underTest.initialize(new InitializeParams(List.of(), List.of())).get();
 
-    underTest.didAddConnection(new DidAddConnectionParams(SQ_1));
+    underTest.didAddConnection(new DidAddConnectionParams(SQ_DTO_1));
 
-    underTest.didAddConnection(new DidAddConnectionParams(SQ_1_DUP));
-    assertThat(repository.getConnectionsById()).containsOnly(entry("sq1", SQ_1_DUP));
+    underTest.didAddConnection(new DidAddConnectionParams(SQ_DTO_1_DUP));
+    assertThat(repository.getConnectionById("sq1")).usingRecursiveComparison().isEqualTo(SQ_DTO_1_DUP);
 
     assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).containsExactly("Duplicate connection registered: sq1");
   }
 
   @Test
   void remove_connection() throws ExecutionException, InterruptedException {
-    underTest.initialize(new InitializeParams(List.of(SQ_1), List.of())).get();
+    underTest.initialize(new InitializeParams(List.of(SQ_DTO_1), List.of())).get();
 
-    underTest.didAddConnection(new DidAddConnectionParams(SC_1));
+    underTest.didAddConnection(new DidAddConnectionParams(SC_DTO_1));
     assertThat(repository.getConnectionsById()).containsKeys("sq1", "sc1");
 
     underTest.didRemoveConnection(new DidRemoveConnectionParams("sc1"));
@@ -120,7 +122,7 @@ class ConnectionServiceImplTest {
 
   @Test
   void remove_connection_should_log_if_unknown_connection_and_ignore() throws ExecutionException, InterruptedException {
-    underTest.initialize(new InitializeParams(List.of(SQ_1), List.of())).get();
+    underTest.initialize(new InitializeParams(List.of(SQ_DTO_1), List.of())).get();
 
     underTest.didRemoveConnection(new DidRemoveConnectionParams("sc1"));
 
@@ -130,20 +132,21 @@ class ConnectionServiceImplTest {
 
   @Test
   void update_connection() throws ExecutionException, InterruptedException {
-    underTest.initialize(new InitializeParams(List.of(SQ_1), List.of())).get();
+    underTest.initialize(new InitializeParams(List.of(SQ_DTO_1), List.of())).get();
 
-    underTest.didUpdateConnection(new DidUpdateConnectionParams(SQ_1_DUP));
+    underTest.didUpdateConnection(new DidUpdateConnectionParams(SQ_DTO_1_DUP));
 
-    assertThat(repository.getConnectionsById()).containsOnly(entry("sq1", SQ_1_DUP));
+    assertThat(repository.getConnectionById("sq1")).usingRecursiveComparison().isEqualTo(SQ_DTO_1_DUP);
   }
 
   @Test
   void update_connection_should_log_if_unknown_connection_and_add() throws ExecutionException, InterruptedException {
-    underTest.initialize(new InitializeParams(List.of(SQ_1), List.of())).get();
+    underTest.initialize(new InitializeParams(List.of(SQ_DTO_1), List.of())).get();
 
-    underTest.didUpdateConnection(new DidUpdateConnectionParams(SQ_2));
+    underTest.didUpdateConnection(new DidUpdateConnectionParams(SQ_DTO_2));
 
-    assertThat(repository.getConnectionsById()).containsOnly(entry("sq1", SQ_1), entry("sq2", SQ_2));
+    assertThat(repository.getConnectionsById()).containsOnlyKeys("sq1", "sq2");
+    assertThat(repository.getConnectionById("sq2")).usingRecursiveComparison().isEqualTo(SQ_DTO_2);
     assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).containsExactly("Attempt to update connection 'sq2' that was not registered");
   }
 }

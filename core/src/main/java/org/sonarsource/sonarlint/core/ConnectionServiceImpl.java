@@ -22,53 +22,64 @@ package org.sonarsource.sonarlint.core;
 import com.google.common.eventbus.EventBus;
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.clientapi.connection.ConnectionService;
-import org.sonarsource.sonarlint.core.clientapi.connection.config.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.DidAddConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.DidRemoveConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.DidUpdateConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.InitializeParams;
+import org.sonarsource.sonarlint.core.clientapi.connection.config.SonarCloudConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.clientapi.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.ConnectionAddedEvent;
-import org.sonarsource.sonarlint.core.repository.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
+import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
+import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
 
 public class ConnectionServiceImpl implements ConnectionService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final EventBus clientEventBus;
-  private final ConnectionConfigurationRepository referential;
+  private final ConnectionConfigurationRepository repository;
 
-  public ConnectionServiceImpl(EventBus clientEventBus, ConnectionConfigurationRepository referential) {
+  public ConnectionServiceImpl(EventBus clientEventBus, ConnectionConfigurationRepository repository) {
     this.clientEventBus = clientEventBus;
-    this.referential = referential;
+    this.repository = repository;
   }
 
   @Override
   public CompletableFuture<Void> initialize(InitializeParams params) {
-    params.getSonarQubeConnections().forEach(referential::addOrReplace);
-    params.getSonarCloudConnections().forEach(referential::addOrReplace);
+    params.getSonarQubeConnections().forEach(c -> repository.addOrReplace(adapt(c)));
+    params.getSonarCloudConnections().forEach(c -> repository.addOrReplace(adapt(c)));
     return CompletableFuture.completedFuture(null);
   }
 
   @Override
   public void didAddConnection(DidAddConnectionParams params) {
-    params.getAddedConnection().map(this::addConnection, this::addConnection);
+    addConnection(params.getAddedConnection().map(ConnectionServiceImpl::adapt, ConnectionServiceImpl::adapt));
   }
 
-  private <T> T addConnection(AbstractConnectionConfiguration connectionConfiguration) {
-    var previous = referential.getConnectionById(connectionConfiguration.getConnectionId());
+  private void addConnection(AbstractConnectionConfiguration connectionConfiguration) {
+    var previous = repository.getConnectionById(connectionConfiguration.getConnectionId());
     if (previous != null) {
       LOG.error("Duplicate connection registered: {}", previous.getConnectionId());
     }
-    referential.addOrReplace(connectionConfiguration);
+    repository.addOrReplace(connectionConfiguration);
     clientEventBus.post(new ConnectionAddedEvent(connectionConfiguration.getConnectionId()));
-    return null;
+  }
+
+  private static AbstractConnectionConfiguration adapt(SonarQubeConnectionConfigurationDto sqDto) {
+    return new SonarQubeConnectionConfiguration(sqDto.getConnectionId(), sqDto.getServerUrl());
+  }
+
+  private static AbstractConnectionConfiguration adapt(SonarCloudConnectionConfigurationDto sqDto) {
+    return new SonarCloudConnectionConfiguration(sqDto.getConnectionId(), sqDto.getOrganization());
   }
 
   @Override
   public void didRemoveConnection(DidRemoveConnectionParams params) {
     var idToRemove = params.getConnectionId();
-    var removed = referential.remove(idToRemove);
+    var removed = repository.remove(idToRemove);
     if (removed == null) {
       LOG.error("Attempt to remove connection '{}' that was not registered", idToRemove);
     }
@@ -76,19 +87,18 @@ public class ConnectionServiceImpl implements ConnectionService {
 
   @Override
   public void didUpdateConnection(DidUpdateConnectionParams params) {
-    params.getUpdatedConnection().map(this::updateConnection, this::updateConnection);
+    updateConnection(params.getUpdatedConnection().map(ConnectionServiceImpl::adapt, ConnectionServiceImpl::adapt));
 
   }
 
-  private <T> T updateConnection(AbstractConnectionConfiguration connectionConfiguration) {
+  private void updateConnection(AbstractConnectionConfiguration connectionConfiguration) {
     String connectionId = connectionConfiguration.getConnectionId();
-    AbstractConnectionConfiguration previous = referential.getConnectionById(connectionId);
+    AbstractConnectionConfiguration previous = repository.getConnectionById(connectionId);
     if (previous == null) {
       LOG.error("Attempt to update connection '{}' that was not registered", connectionId);
     }
 
-    referential.addOrReplace(connectionConfiguration);
-    return null;
+    repository.addOrReplace(connectionConfiguration);
   }
 
 }

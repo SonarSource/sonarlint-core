@@ -23,21 +23,21 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 public class DidUpdateConnectionParams {
 
-  private final Either<SonarQubeConnectionConfiguration, SonarCloudConnectionConfiguration> updatedConnection;
+  private final Either<SonarQubeConnectionConfigurationDto, SonarCloudConnectionConfigurationDto> updatedConnection;
 
-  public DidUpdateConnectionParams(Either<SonarQubeConnectionConfiguration, SonarCloudConnectionConfiguration> updatedConnection) {
+  public DidUpdateConnectionParams(Either<SonarQubeConnectionConfigurationDto, SonarCloudConnectionConfigurationDto> updatedConnection) {
     this.updatedConnection = updatedConnection;
   }
 
-  public DidUpdateConnectionParams(SonarQubeConnectionConfiguration updatedConnection) {
+  public DidUpdateConnectionParams(SonarQubeConnectionConfigurationDto updatedConnection) {
     this.updatedConnection = Either.forLeft(updatedConnection);
   }
 
-  public DidUpdateConnectionParams(SonarCloudConnectionConfiguration updatedConnection) {
+  public DidUpdateConnectionParams(SonarCloudConnectionConfigurationDto updatedConnection) {
     this.updatedConnection = Either.forRight(updatedConnection);
   }
 
-  public Either<SonarQubeConnectionConfiguration, SonarCloudConnectionConfiguration> getUpdatedConnection() {
+  public Either<SonarQubeConnectionConfigurationDto, SonarCloudConnectionConfigurationDto> getUpdatedConnection() {
     return updatedConnection;
   }
 }

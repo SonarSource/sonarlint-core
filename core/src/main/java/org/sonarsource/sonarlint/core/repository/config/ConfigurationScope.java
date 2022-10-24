@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,24 +17,43 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.connection.config;
+package org.sonarsource.sonarlint.core.repository.config;
 
-import java.util.Objects;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
-public abstract class AbstractConnectionConfiguration {
+public class ConfigurationScope {
 
+  private final String id;
+  private final String parentId;
+  private final boolean bindable;
   /**
-   * The id of the connection on the client side
+   * The name of this configuration scope. Used for auto-binding.
    */
-  private final String connectionId;
+  private final String name;
 
-  protected AbstractConnectionConfiguration(String connectionId) {
-    Objects.requireNonNull(connectionId, "Connection id is mandatory");
-    this.connectionId = connectionId;
+  public ConfigurationScope(String id, @Nullable String parentId, boolean bindable, String name) {
+    this.id = id;
+    this.parentId = parentId;
+    this.bindable = bindable;
+    this.name = name;
   }
 
-  public String getConnectionId() {
-    return connectionId;
+  public String getId() {
+    return id;
+  }
+
+  @CheckForNull
+  public String getParentId() {
+    return parentId;
+  }
+
+  public boolean isBindable() {
+    return bindable;
+  }
+
+  public String getName() {
+    return name;
   }
 
 }

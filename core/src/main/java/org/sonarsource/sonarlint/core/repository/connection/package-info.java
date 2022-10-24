@@ -17,30 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.repository;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.repository.connection;
 
-public class BindingConfiguration {
-
-  private final String connectionId;
-  private final String sonarProjectKey;
-  private final boolean autoBindEnabled;
-
-  public BindingConfiguration(String connectionId, String sonarProjectKey, boolean autoBindEnabled) {
-    this.connectionId = connectionId;
-    this.sonarProjectKey = sonarProjectKey;
-    this.autoBindEnabled = autoBindEnabled;
-  }
-
-  public String getConnectionId() {
-    return connectionId;
-  }
-
-  public String getSonarProjectKey() {
-    return sonarProjectKey;
-  }
-
-  public boolean isAutoBindEnabled() {
-    return autoBindEnabled;
-  }
-
-}
+import javax.annotation.ParametersAreNonnullByDefault;
