@@ -60,6 +60,7 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 
+import static java.lang.String.join;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -89,61 +90,43 @@ public class BindingSuggestionProvider {
   public void bindingConfigChanged(BindingConfigChangedEvent event) {
     // Check if binding suggestion was switched on
     if (!event.getNewConfig().isBindingSuggestionDisabled() && event.getPreviousConfig().isBindingSuggestionDisabled()) {
-      suggestBindingForConfigScope(event.getNewConfig().getConfigScopeId());
+      suggestBindingForGivenScopesAndAllConnections(Set.of(event.getNewConfig().getConfigScopeId()));
     }
   }
 
   @Subscribe
-  public void configurationScopeAdded(ConfigurationScopesAddedEvent event) {
+  public void configurationScopesAdded(ConfigurationScopesAddedEvent event) {
     var configScopeIds = event.getAddedConfigurationScopeIds();
-    Set<String> configScopeIdsToSuggest = new HashSet<>();
-    for (String configScopeId : configScopeIds) {
-      var configScope = configRepository.getConfigurationScope(configScopeId);
-      var bindingConfiguration = configRepository.getBindingConfiguration(configScopeId);
-      if (configScope == null || bindingConfiguration == null) {
-        // Maybe the configuration was removed since the event was raised
-        LOG.debug("Configuration scope '{}' not found. Ignoring event.", configScopeId);
-        continue;
+    suggestBindingForGivenScopesAndAllConnections(configScopeIds);
+  }
+
+  private void suggestBindingForGivenScopesAndAllConnections(Set<String> configScopeIdsToSuggest) {
+    if (!configScopeIdsToSuggest.isEmpty()) {
+      var allConnectionIds = connectionRepository.getConnectionsById().keySet();
+      if (allConnectionIds.isEmpty()) {
+        LOG.debug("No connections configured, skipping binding suggestions.");
+        return;
       }
-      if (configScope.isBindable() && !bindingConfiguration.isBindingSuggestionDisabled()) {
-        configScopeIdsToSuggest.add(configScopeId);
-      }
+      LOG.debug("Binding suggestion computation started for config scopes '{}'...", join(",", configScopeIdsToSuggest));
+      suggestBindingForScopesAndConnections(configScopeIdsToSuggest, allConnectionIds);
     }
-    suggestBindingForConfigScopes(configScopeIdsToSuggest);
   }
 
   @Subscribe
   public void connectionAdded(ConnectionAddedEvent event) {
     // Double check if added connection has not been removed in the meantime
-    if (connectionRepository.getConnectionById(event.getAddedConnectionId()) != null) {
-      suggestBindingForAllScopes();
+    var addedConnectionId = event.getAddedConnectionId();
+    if (connectionRepository.getConnectionById(addedConnectionId) != null) {
+      LOG.debug("Binding suggestions computation started for connection '{}'...", addedConnectionId);
+      var allConfigScopeIds = configRepository.getConfigScopeIds();
+      var eligibleConnectionIds = Set.of(addedConnectionId);
+      suggestBindingForScopesAndConnections(allConfigScopeIds, eligibleConnectionIds);
     }
   }
 
-  private void suggestBindingForConfigScopes(Set<String> configScopeIds) {
-    configScopeIds.forEach(this::suggestBindingForConfigScope);
-  }
-
-  private void suggestBindingForConfigScope(String configScopeId) {
-    LOG.debug("Binding suggestion computation started for config scope '{}'...", configScopeId);
-    if (noConnectionsConfigured()) {
-      return;
-    }
-    if (!isScopeEligibleForBindingSuggestion(configScopeId)) {
-      return;
-    }
-    var bindingSuggestions = suggestBindingForEligibleScope(configScopeId);
-    client.suggestBinding(new SuggestBindingParams(Map.of(configScopeId, bindingSuggestions)));
-  }
-
-  private void suggestBindingForAllScopes() {
-    LOG.debug("Binding suggestions computation started...");
-    if (noConnectionsConfigured()) {
-      return;
-    }
-    var allConfigScopeIds = configRepository.getConfigScopeIds();
+  private void suggestBindingForScopesAndConnections(Set<String> configScopeIds, Set<String> eligibleConnectionIds) {
     var eligibleConfigScopesForBindingSuggestion = new HashSet<String>();
-    for (String configScopeId : allConfigScopeIds) {
+    for (String configScopeId : configScopeIds) {
       if (isScopeEligibleForBindingSuggestion(configScopeId)) {
         eligibleConfigScopesForBindingSuggestion.add(configScopeId);
       }
@@ -156,7 +139,7 @@ public class BindingSuggestionProvider {
     Map<String, List<BindingSuggestionDto>> suggestions = new HashMap<>();
 
     eligibleConfigScopesForBindingSuggestion.forEach(configScopeId -> {
-      var scopeSuggestions = suggestBindingForEligibleScope(configScopeId);
+      var scopeSuggestions = suggestBindingForEligibleScope(configScopeId, eligibleConnectionIds);
       LOG.debug("Found {} {} for configuration scope '{}'", scopeSuggestions.size(), singlePlural(scopeSuggestions.size(), "suggestion", "suggestions"), configScopeId);
       suggestions.put(configScopeId, scopeSuggestions);
     });
@@ -164,9 +147,9 @@ public class BindingSuggestionProvider {
     client.suggestBinding(new SuggestBindingParams(suggestions));
   }
 
-  private List<BindingSuggestionDto> suggestBindingForEligibleScope(String checkedConfigScopeId) {
+  private List<BindingSuggestionDto> suggestBindingForEligibleScope(String checkedConfigScopeId, Set<String> eligibleConnectionIds) {
     List<BindingClue> bindingClues = collectBindingClues(checkedConfigScopeId);
-    List<BindingClueWithConnections> cluesAndConnections = matchConnections(bindingClues);
+    List<BindingClueWithConnections> cluesAndConnections = matchConnections(bindingClues, eligibleConnectionIds);
 
     List<BindingSuggestionDto> suggestions = new ArrayList<>();
     var cluesWithProjectKey = cluesAndConnections.stream().filter(c -> c.bindingClue.getSonarProjectKey() != null).collect(toList());
@@ -250,11 +233,11 @@ public class BindingSuggestionProvider {
   }
 
   @NotNull
-  private List<BindingClueWithConnections> matchConnections(List<BindingClue> bindingClues) {
+  private List<BindingClueWithConnections> matchConnections(List<BindingClue> bindingClues, Set<String> eligibleConnectionIds) {
     LOG.debug("Match connections...");
     List<BindingClueWithConnections> cluesAndConnections = new ArrayList<>();
     for (BindingClue bindingClue : bindingClues) {
-      var connectionsIds = matchConnections(bindingClue);
+      var connectionsIds = matchConnections(bindingClue, eligibleConnectionIds);
       if (!connectionsIds.isEmpty()) {
         cluesAndConnections.add(new BindingClueWithConnections(bindingClue, connectionsIds));
       }
@@ -305,10 +288,10 @@ public class BindingSuggestionProvider {
     return bindingClues;
   }
 
-  private Set<String> matchConnections(BindingClue bindingClue) {
+  private Set<String> matchConnections(BindingClue bindingClue, Set<String> eligibleConnectionIds) {
     if (bindingClue instanceof SonarQubeBindingClue) {
       var serverUrl = ((SonarQubeBindingClue) bindingClue).serverUrl;
-      return connectionRepository.getConnectionsById().values().stream()
+      return eligibleConnectionIds.stream().map(connectionRepository::getConnectionById)
         .filter(SonarQubeConnectionConfiguration.class::isInstance)
         .map(SonarQubeConnectionConfiguration.class::cast)
         .filter(c -> c.isSameServerUrl(serverUrl))
@@ -317,7 +300,7 @@ public class BindingSuggestionProvider {
     }
     if (bindingClue instanceof SonarCloudBindingClue) {
       var organization = ((SonarCloudBindingClue) bindingClue).organization;
-      return connectionRepository.getConnectionsById().values().stream()
+      return eligibleConnectionIds.stream().map(connectionRepository::getConnectionById)
         .filter(SonarCloudConnectionConfiguration.class::isInstance)
         .map(SonarCloudConnectionConfiguration.class::cast)
         .filter(c -> organization == null || Objects.equals(organization, c.getOrganization()))
@@ -431,10 +414,15 @@ public class BindingSuggestionProvider {
   }
 
   private boolean isScopeEligibleForBindingSuggestion(String configScopeId) {
+    var configScope = configRepository.getConfigurationScope(configScopeId);
     var bindingConfiguration = configRepository.getBindingConfiguration(configScopeId);
-    if (bindingConfiguration == null) {
+    if (configScope == null || bindingConfiguration == null) {
       // Race condition
       LOG.debug("Configuration scope '{}' is gone.", configScopeId);
+      return false;
+    }
+    if (!configScope.isBindable()) {
+      LOG.debug("Configuration scope '{}' is not bindable.", configScopeId);
       return false;
     }
     if (isValidBinding(bindingConfiguration)) {
@@ -453,11 +441,5 @@ public class BindingSuggestionProvider {
       .orElse(false);
   }
 
-  private boolean noConnectionsConfigured() {
-    if (connectionRepository.getConnectionsById().isEmpty()) {
-      LOG.debug("No connections defined");
-      return true;
-    }
-    return false;
-  }
+
 }
