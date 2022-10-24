@@ -19,13 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.config;
 
-import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
-import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.DidUpdateBindingParams;
-import org.sonarsource.sonarlint.core.clientapi.config.scope.DidAddConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.clientapi.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.clientapi.config.scope.DidRemoveConfigurationScopeParams;
-import org.sonarsource.sonarlint.core.clientapi.config.scope.InitializeParams;
 
 /**
  * The client is the source of truth for the configuration, but the backend needs to be kept in sync.
@@ -33,16 +30,10 @@ import org.sonarsource.sonarlint.core.clientapi.config.scope.InitializeParams;
 public interface ConfigurationService {
 
   /**
-   * Called by client in order to initialize the configuration service at startup.
-   */
-  @JsonRequest
-  CompletableFuture<Void> initialize(InitializeParams params);
-
-  /**
-   * Called by the client when a configuration scope has been added.
+   * Called by the client when configuration scopes have been added.
    */
   @JsonNotification
-  void didAddConfigurationScope(DidAddConfigurationScopeParams params);
+  void didAddConfigurationScopes(DidAddConfigurationScopesParams params);
 
   /**
    * Called by the client when a configuration scope has been removed.

@@ -26,16 +26,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.config.scope.ConfigurationScopeDto;
-import org.sonarsource.sonarlint.core.clientapi.config.scope.DidAddConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.clientapi.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.clientapi.config.scope.DidRemoveConfigurationScopeParams;
-import org.sonarsource.sonarlint.core.clientapi.config.scope.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
-import org.sonarsource.sonarlint.core.event.ConfigurationScopeAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -64,47 +64,49 @@ class ConfigurationServiceImplTest {
 
   @Test
   void initialize_empty() throws ExecutionException, InterruptedException {
-    underTest.initialize(new InitializeParams(List.of())).get();
-
     assertThat(repository.getConfigScopeIds()).isEmpty();
   }
 
   @Test
   void get_binding_of_unknown_config_returns_null() throws ExecutionException, InterruptedException {
-    underTest.initialize(new InitializeParams(List.of())).get();
-
     assertThat(repository.getBindingConfiguration("not_found")).isNull();
   }
 
   @Test
-  void initialize_provides_bindings() throws ExecutionException, InterruptedException {
-    underTest.initialize(new InitializeParams(List.of(CONFIG_DTO_1))).get();
+  void add_configuration_should_post_event() throws ExecutionException, InterruptedException {
+    underTest.didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(CONFIG_DTO_2)));
 
-    assertThat(repository.getConfigScopeIds()).containsOnly("id1");
-    assertThat(repository.getBindingConfiguration("id1")).usingRecursiveComparison().isEqualTo(BINDING_DTO_1);
-  }
-
-  @Test
-  void add_configuration_and_post_event() throws ExecutionException, InterruptedException {
-    underTest.initialize(new InitializeParams(List.of(CONFIG_DTO_1))).get();
-
-    underTest.didAddConfigurationScope(new DidAddConfigurationScopeParams(CONFIG_DTO_2));
-
-    assertThat(repository.getConfigScopeIds()).containsOnly("id1", "id2");
+    assertThat(repository.getConfigScopeIds()).containsOnly("id2");
     assertThat(repository.getBindingConfiguration("id2")).usingRecursiveComparison().isEqualTo(BINDING_DTO_2);
 
-    ArgumentCaptor<ConfigurationScopeAddedEvent> captor = ArgumentCaptor.forClass(ConfigurationScopeAddedEvent.class);
+    ArgumentCaptor<ConfigurationScopesAddedEvent> captor = ArgumentCaptor.forClass(ConfigurationScopesAddedEvent.class);
     verify(eventBus).post(captor.capture());
     var event = captor.getValue();
 
-    assertThat(event.getAddedConfigurationScopeId()).isEqualTo("id2");
+    assertThat(event.getAddedConfigurationScopeIds()).containsOnly("id2");
+  }
+
+  @Test
+  void add_multiple_configurations_should_post_batch_event() throws ExecutionException, InterruptedException {
+    underTest.didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(CONFIG_DTO_1, CONFIG_DTO_2)));
+
+    assertThat(repository.getConfigScopeIds()).containsOnly("id1", "id2");
+    assertThat(repository.getBindingConfiguration("id1")).usingRecursiveComparison().isEqualTo(BINDING_DTO_1);
+    assertThat(repository.getBindingConfiguration("id2")).usingRecursiveComparison().isEqualTo(BINDING_DTO_2);
+
+    ArgumentCaptor<ConfigurationScopesAddedEvent> captor = ArgumentCaptor.forClass(ConfigurationScopesAddedEvent.class);
+    verify(eventBus).post(captor.capture());
+    var event = captor.getValue();
+
+    assertThat(event.getAddedConfigurationScopeIds()).containsOnly("id1", "id2");
   }
 
   @Test
   void add_duplicate_should_log_and_update() throws ExecutionException, InterruptedException {
-    underTest.initialize(new InitializeParams(List.of(CONFIG_DTO_1))).get();
+    underTest.didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(CONFIG_DTO_1)));
+    assertThat(repository.getBindingConfiguration("id1")).usingRecursiveComparison().isEqualTo(BINDING_DTO_1);
 
-    underTest.didAddConfigurationScope(new DidAddConfigurationScopeParams(CONFIG_DTO_1_DUP));
+    underTest.didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(CONFIG_DTO_1_DUP)));
 
     assertThat(repository.getConfigScopeIds()).containsOnly("id1");
     assertThat(repository.getBindingConfiguration("id1")).usingRecursiveComparison().isEqualTo(BINDING_DTO_2);
@@ -114,7 +116,8 @@ class ConfigurationServiceImplTest {
 
   @Test
   void remove_configuration() throws ExecutionException, InterruptedException {
-    underTest.initialize(new InitializeParams(List.of(CONFIG_DTO_1))).get();
+    underTest.didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(CONFIG_DTO_1)));
+    assertThat(repository.getConfigScopeIds()).containsOnly("id1");
 
     underTest.didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams("id1"));
 
@@ -123,7 +126,8 @@ class ConfigurationServiceImplTest {
 
   @Test
   void remove_unknown_configuration_should_log() throws ExecutionException, InterruptedException {
-    underTest.initialize(new InitializeParams(List.of(CONFIG_DTO_1))).get();
+    underTest.didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(CONFIG_DTO_1)));
+    assertThat(repository.getConfigScopeIds()).containsOnly("id1");
 
     underTest.didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams("id2"));
 
@@ -133,8 +137,11 @@ class ConfigurationServiceImplTest {
 
   @Test
   void update_binding_config_and_post_event() throws ExecutionException, InterruptedException {
-    underTest.initialize(new InitializeParams(List.of(CONFIG_DTO_1))).get();
+    underTest.didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(CONFIG_DTO_1)));
     assertThat(repository.getBindingConfiguration("id1")).usingRecursiveComparison().isEqualTo(BINDING_DTO_1);
+
+    // Ignore add event
+    Mockito.reset(eventBus);
 
     underTest.didUpdateBinding(new DidUpdateBindingParams("id1", BINDING_DTO_2));
 
@@ -158,7 +165,7 @@ class ConfigurationServiceImplTest {
 
   @Test
   void update_binding_config_for_unknown_config_scope_should_log() throws ExecutionException, InterruptedException {
-    underTest.initialize(new InitializeParams(List.of(CONFIG_DTO_1))).get();
+    underTest.didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(CONFIG_DTO_1)));
 
     underTest.didUpdateBinding(new DidUpdateBindingParams("id2", BINDING_DTO_2));
 

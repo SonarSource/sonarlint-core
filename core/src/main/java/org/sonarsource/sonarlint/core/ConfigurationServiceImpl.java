@@ -20,18 +20,18 @@
 package org.sonarsource.sonarlint.core;
 
 import com.google.common.eventbus.EventBus;
-import java.util.concurrent.CompletableFuture;
+import java.util.HashSet;
+import java.util.Set;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.clientapi.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.config.scope.ConfigurationScopeDto;
-import org.sonarsource.sonarlint.core.clientapi.config.scope.DidAddConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.clientapi.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.clientapi.config.scope.DidRemoveConfigurationScopeParams;
-import org.sonarsource.sonarlint.core.clientapi.config.scope.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
-import org.sonarsource.sonarlint.core.event.ConfigurationScopeAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
@@ -49,20 +49,18 @@ public class ConfigurationServiceImpl implements ConfigurationService {
   }
 
   @Override
-  public CompletableFuture<Void> initialize(InitializeParams params) {
-    params.getConfigScopes().forEach(this::addOrUpdateRepository);
-    return CompletableFuture.completedFuture(null);
-  }
-
-  @Override
-  public void didAddConfigurationScope(DidAddConfigurationScopeParams params) {
-    var addedDto = params.getAdded();
-    ConfigurationScope previous = addOrUpdateRepository(addedDto);
-    if (previous != null) {
-      LOG.error("Duplicate configuration scope registered: {}", addedDto.getId());
-    } else {
-      clientEventBus.post(new ConfigurationScopeAddedEvent(addedDto.getId()));
+  public void didAddConfigurationScopes(DidAddConfigurationScopesParams params) {
+    var addedDtos = params.getAddedScopes();
+    Set<String> addedIds = new HashSet<>();
+    for (ConfigurationScopeDto addedDto : addedDtos) {
+      ConfigurationScope previous = addOrUpdateRepository(addedDto);
+      if (previous != null) {
+        LOG.error("Duplicate configuration scope registered: {}", addedDto.getId());
+      } else {
+        addedIds.add(addedDto.getId());
+      }
     }
+      clientEventBus.post(new ConfigurationScopesAddedEvent(addedIds));
   }
 
   private ConfigurationScope addOrUpdateRepository(ConfigurationScopeDto dto) {
