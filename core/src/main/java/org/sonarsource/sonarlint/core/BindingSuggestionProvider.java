@@ -98,13 +98,14 @@ public class BindingSuggestionProvider {
     var configScopeIds = event.getAddedConfigurationScopeIds();
     Set<String> configScopeIdsToSuggest = new HashSet<>();
     for (String configScopeId : configScopeIds) {
+      var configScope = configRepository.getConfigurationScope(configScopeId);
       var bindingConfiguration = configRepository.getBindingConfiguration(configScopeId);
-      if (bindingConfiguration == null) {
+      if (configScope == null || bindingConfiguration == null) {
         // Maybe the configuration was removed since the event was raised
         LOG.debug("Configuration scope '{}' not found. Ignoring event.", configScopeId);
         continue;
       }
-      if (!bindingConfiguration.isBindingSuggestionDisabled()) {
+      if (configScope.isBindable() && !bindingConfiguration.isBindingSuggestionDisabled()) {
         configScopeIdsToSuggest.add(configScopeId);
       }
     }
