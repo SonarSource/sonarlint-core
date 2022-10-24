@@ -66,13 +66,14 @@ import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.StringUtils.removeEnd;
 import static org.apache.commons.lang.StringUtils.trimToNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration.SONARCLOUD_URL;
 
 public class AutoBinding {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   public static final String SONAR_SCANNER_CONFIG_FILENAME = "sonar-project.properties";
   public static final String AUTOSCAN_CONFIG_FILENAME = ".sonarcloud.properties";
-  private static final String SONARCLOUD_URL = "https://sonarcloud.io";
+
 
   private final ConfigurationRepository configRepository;
   private final ConnectionConfigurationRepository connectionRepository;
