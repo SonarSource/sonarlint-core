@@ -44,7 +44,6 @@ import org.sonarsource.sonarlint.core.clientapi.config.binding.SuggestAutoBindPa
 import org.sonarsource.sonarlint.core.clientapi.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.fs.FoundFileDto;
-import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
@@ -166,7 +165,13 @@ public class AutoBinding {
       var sonarProjectKey = requireNonNull(bindingClueWithConnections.bindingClue.getSonarProjectKey());
       for (String connectionId : bindingClueWithConnections.connectionIds) {
         LOG.debug("Query if project '{}' exists on connection '{}'...", sonarProjectKey, connectionId);
-        var project = getServerApi(connectionId).component().getProject(sonarProjectKey);
+        Optional<ServerProject> project;
+        try {
+          project = getServerApi(connectionId).flatMap(s -> s.component().getProject(sonarProjectKey));
+        } catch (Exception e) {
+          LOG.error("Error while querying project '{}' from connection '{}'", sonarProjectKey, connectionId, e);
+          continue;
+        }
         project.ifPresent(serverProject -> candidates.add(new AutoBindCandidate(connectionId, sonarProjectKey, serverProject.getName())));
       }
     }
@@ -188,26 +193,36 @@ public class AutoBinding {
   private void searchGoodMatchInConnections(List<AutoBindCandidate> candidates, String configScopeName, Set<String> connectionIdsToSearch) {
     for (String connectionId : connectionIdsToSearch) {
       LOG.debug("Attempt to find a good match for '{}' on connection '{}'...", configScopeName, connectionId);
-      var projects = getServerApi(connectionId).component().getAllProjects(new ProgressMonitor(null));
-      LOG.debug("Creating index for {} {}", projects.size(), singlePlural(projects.size(), "project", "projects"));
-      var index = new TextSearchIndex<ServerProject>();
-      projects.forEach(p -> index.index(p, p.getKey() + " " + p.getName()));
-      var searchResult = index.search(configScopeName);
-      if (!searchResult.isEmpty()) {
-        Double bestScore = Double.MIN_VALUE;
-        for (Map.Entry<ServerProject, Double> serverProjectScoreEntry : searchResult.entrySet()) {
-          if (serverProjectScoreEntry.getValue() < bestScore) {
-            break;
+      List<ServerProject> projects;
+      try {
+        projects = getServerApi(connectionId).map(s -> s.component().getAllProjects(new ProgressMonitor(null))).orElse(List.of());
+      } catch (Exception e) {
+        LOG.error("Error while querying projects from connection '{}'", connectionId, e);
+        continue;
+      }
+      if (projects.isEmpty()) {
+        LOG.debug("No projects for connection '{}'", connectionId);
+      } else {
+        LOG.debug("Creating index for {} {}", projects.size(), singlePlural(projects.size(), "project", "projects"));
+        var index = new TextSearchIndex<ServerProject>();
+        projects.forEach(p -> index.index(p, p.getKey() + " " + p.getName()));
+        var searchResult = index.search(configScopeName);
+        if (!searchResult.isEmpty()) {
+          Double bestScore = Double.MIN_VALUE;
+          for (Map.Entry<ServerProject, Double> serverProjectScoreEntry : searchResult.entrySet()) {
+            if (serverProjectScoreEntry.getValue() < bestScore) {
+              break;
+            }
+            bestScore = serverProjectScoreEntry.getValue();
+            candidates.add(new AutoBindCandidate(connectionId, serverProjectScoreEntry.getKey().getKey(), serverProjectScoreEntry.getKey().getName()));
           }
-          bestScore = serverProjectScoreEntry.getValue();
-          candidates.add(new AutoBindCandidate(connectionId, serverProjectScoreEntry.getKey().getKey(), serverProjectScoreEntry.getKey().getName()));
+          LOG.debug("Best score = {}", bestScore);
         }
-        LOG.debug("Best score = {}", bestScore);
       }
     }
   }
 
-  private ServerApi getServerApi(String connectionId) {
+  private Optional<ServerApi> getServerApi(String connectionId) {
     var connectionConfig = connectionRepository.getConnectionById(connectionId);
     EndpointParams params;
     if (connectionConfig instanceof SonarQubeConnectionConfiguration) {
@@ -217,8 +232,12 @@ public class AutoBinding {
     } else {
       throw new IllegalStateException("Unknown connection type");
     }
-    HttpClient httpClient = client.getHttpClient(connectionId);
-    return new ServerApi(params, httpClient);
+    var httpClient = client.getHttpClient(connectionId);
+    if (httpClient != null) {
+      return Optional.of(new ServerApi(params, httpClient));
+    } else {
+      return Optional.empty();
+    }
   }
 
   @NotNull

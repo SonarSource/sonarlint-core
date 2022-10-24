@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.clientapi;
 
 import java.util.concurrent.CompletableFuture;
+import javax.annotation.CheckForNull;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.SuggestAutoBindParams;
@@ -40,5 +41,6 @@ public interface SonarLintClient {
    * @deprecated will be removed
    */
   @Deprecated(forRemoval = true)
+  @CheckForNull
   HttpClient getHttpClient(String connectionId);
 }
