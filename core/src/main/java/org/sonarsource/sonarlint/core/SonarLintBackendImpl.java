@@ -41,7 +41,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   private final ConnectionServiceImpl connectionService;
 
   private final EventBus clientEventBus;
-  private final ExecutorService clientEventsExecutorService = Executors.newSingleThreadExecutor(r -> new Thread("SonarLint Client Events Processor"));
+  private final ExecutorService clientEventsExecutorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Client Events Processor"));
   private final ConnectionConfigurationRepository connectionConfigurationRepository = new ConnectionConfigurationRepository();
   private final ConfigurationRepository configurationRepository = new ConfigurationRepository();
   private final SonarLintClient client;
