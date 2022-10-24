@@ -1,17 +1,17 @@
-[#autobinding]
-= Auto-Binding
+[#binding_suggestion]
+= Binding Suggestion
 
 == Overview
 
 For xref:glossary.adoc#connected_mode[connected mode] to work, a xref:glossary.adoc#connection[connection] should be defined to allow SonarLint to communicate with the server. Then, SonarLint needs to know which xref:glossary.adoc#sonar_project[Sonar Project] should be considered. This is the xref:glossary.adoc#binding[_binding_]. Inside IDE, there could be different bindings, for different xref:glossary.adoc#configuration_scope[_configuration scopes_].
 
-For most users, there will be only one configured connection (to their corporate SonarQube server, or to SonarCloud). But every time they open a new project or solution, they will need to do the binding. This process can be tedious, and easily forgotten.
+For most users, there will be only one configured connection (to their corporate SonarQube server, or to SonarCloud). But every time they open a new project or solution, they will need to setup the binding. This process can be tedious, and easily forgotten.
 
-Auto-binding is the feature where SonarLint assist users as much as possible to configure binding.
+Binding suggestion is the feature where SonarLint assist users as much as possible to configure binding.
 
 == Triggers
 
-Auto-binding is triggered:
+Binding suggestion is triggered:
 
 * when a xref:glossary.adoc#configuration_scope[configuration scope] is added (only for this _configuration scope_)
 * when a xref:glossary.adoc#connection_config[connection configuration] is added/updated (for all _configuration scopes_)
@@ -21,7 +21,7 @@ Auto-binding is triggered:
 1. At least one xref:glossary.adoc#connection_config[connection configuration] is defined
 2. Only consider xref:glossary.adoc#configuration_scope[configuration scopes] that:
 ** are not bound (or maybe if we know the binding is **invalid**? #TBD#)
-** have their _autoBindingEnabled_ attribute set to `true`
+** have their _bindingSuggestionDisabled_ attribute set to `false`
 
 == Algorithm
 
@@ -96,21 +96,21 @@ The matching is based on a scoring described in `TextSearchIndex`. If there is o
 
 == Outcome
 
-At the end of the auto-binding process, one single notification will be sent (1 trigger -> 1 notification maximum). The notification will contain the
-auto-binding candidates for each configuration scopes where auto-binding was _executed_. For each configuration scope:
+At the end of the binding suggestion computation, one single notification will be sent (1 trigger -> 1 notification maximum). The notification will contain the
+binding suggestion(s) for each configuration scopes where the computation was _executed_. For each configuration scope:
 
-1. if there is a single best candidate:
-- the single Sonar Project candidate + connectionId
+1. if there is a single best suggestion:
+- the single Sonar Project suggestion + connectionId
 
-2. if there are multiple best candidates (and less than a threshold #TBD#):
-- the list of (Sonar Project candidates + connectionIds)
+2. if there are multiple best suggestions (and less than a threshold #TBD#):
+- the list of (Sonar Project suggestions + connectionIds)
 
-3. if there are no candidates
-- empty candidate list (to indicate to clients that auto-binding was attempted but could not find good results, and client should usually forward users to manual binding)
+3. if there are no suggestions
+- empty suggestion list (to indicate to clients that binding suggestion was attempted but could not find good results, and client should usually forward users to manual binding)
 
-Configuration scopes that have been skipped from auto-binding at any time in the previously described algorithm will not be listed in the notification.
+Configuration scopes that have been skipped from binding suggestion at any time in the previously described algorithm will not be listed in the notification.
 
 [#do_not_ask_again]
 == Do not ask again
 
-It is the responsibility of the IDE to offer the "Do not ask again" option in the auto-binding notification, and it should be remembered for this configuration scope in IDE settings. When the client synchronize _configuration scopes_ with the backend, the attribute _autoBindingEnabled_ will be set accordingly.
+It is the responsibility of the IDE to offer the "Do not ask again" option in the binding suggestion notification, and it should be remembered for this configuration scope in IDE settings. When the client synchronize _configuration scopes_ with the backend, the attribute _bindingSuggestionDisabled_ will be set accordingly.

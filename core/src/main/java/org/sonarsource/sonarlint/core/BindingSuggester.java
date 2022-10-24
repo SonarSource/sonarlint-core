@@ -39,8 +39,8 @@ import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.client.api.util.TextSearchIndex;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.config.binding.AutoBindCandidate;
-import org.sonarsource.sonarlint.core.clientapi.config.binding.SuggestAutoBindParams;
+import org.sonarsource.sonarlint.core.clientapi.config.binding.BindingSuggestionDto;
+import org.sonarsource.sonarlint.core.clientapi.config.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.fs.FoundFileDto;
@@ -69,7 +69,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singlePlural;
 import static org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration.SONARCLOUD_URL;
 
-public class AutoBinding {
+public class BindingSuggester {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   public static final String SONAR_SCANNER_CONFIG_FILENAME = "sonar-project.properties";
@@ -79,7 +79,7 @@ public class AutoBinding {
   private final ConnectionConfigurationRepository connectionRepository;
   private final SonarLintClient client;
 
-  public AutoBinding(ConfigurationRepository configRepository, ConnectionConfigurationRepository connectionRepository, SonarLintClient client) {
+  public BindingSuggester(ConfigurationRepository configRepository, ConnectionConfigurationRepository connectionRepository, SonarLintClient client) {
     this.configRepository = configRepository;
     this.connectionRepository = connectionRepository;
     this.client = client;
@@ -87,9 +87,9 @@ public class AutoBinding {
 
   @Subscribe
   public void bindingConfigChanged(BindingConfigChangedEvent event) {
-    // Check if auto-bind is switched on
-    if (event.getNewConfig().isAutoBindEnabled() && !event.getPreviousConfig().isAutoBindEnabled()) {
-      autoBindConfigScope(event.getNewConfig().getConfigScopeId());
+    // Check if binding suggestion was switched on
+    if (!event.getNewConfig().isBindingSuggestionDisabled() && event.getPreviousConfig().isBindingSuggestionDisabled()) {
+      suggestBindingForConfigScope(event.getNewConfig().getConfigScopeId());
     }
   }
 
@@ -102,8 +102,8 @@ public class AutoBinding {
       LOG.debug("Configuration scope '{}' not found. Ignoring event.", configScopeId);
       return;
     }
-    if (bindingConfiguration.isAutoBindEnabled()) {
-      autoBindConfigScope(configScopeId);
+    if (!bindingConfiguration.isBindingSuggestionDisabled()) {
+      suggestBindingForConfigScope(configScopeId);
     }
   }
 
@@ -111,55 +111,55 @@ public class AutoBinding {
   public void connectionAdded(ConnectionAddedEvent event) {
     // Double check if added connection has not been removed in the meantime
     if (connectionRepository.getConnectionById(event.getAddedConnectionId()) != null) {
-      autoBindAll();
+      suggestBindingForAllScopes();
     }
   }
 
-  private void autoBindConfigScope(String configScopeId) {
-    LOG.debug("Auto-binding started for config scope '{}'...", configScopeId);
+  private void suggestBindingForConfigScope(String configScopeId) {
+    LOG.debug("Binding suggestion computation started for config scope '{}'...", configScopeId);
     if (noConnectionsConfigured()) {
       return;
     }
-    if (!checkIfValidCandidateForAutoBinding(configScopeId)) {
+    if (!isScopeEligibleForBindingSuggestion(configScopeId)) {
       return;
     }
-    var autoBindCandidates = autoBindAfterChecks(configScopeId);
-    client.suggestAutoBind(new SuggestAutoBindParams(Map.of(configScopeId, autoBindCandidates)));
+    var bindingSuggestions = suggestBindingForEligibleScope(configScopeId);
+    client.suggestBinding(new SuggestBindingParams(Map.of(configScopeId, bindingSuggestions)));
   }
 
-  private void autoBindAll() {
-    LOG.debug("Auto-binding started...");
+  private void suggestBindingForAllScopes() {
+    LOG.debug("Binding suggestions computation started...");
     if (noConnectionsConfigured()) {
       return;
     }
     var allConfigScopeIds = configRepository.getConfigScopeIds();
-    var candidateConfigScopeForAutoBinding = new HashSet<String>();
+    var eligibleConfigScopesForBindingSuggestion = new HashSet<String>();
     for (String configScopeId : allConfigScopeIds) {
-      if (checkIfValidCandidateForAutoBinding(configScopeId)) {
-        candidateConfigScopeForAutoBinding.add(configScopeId);
+      if (isScopeEligibleForBindingSuggestion(configScopeId)) {
+        eligibleConfigScopesForBindingSuggestion.add(configScopeId);
       }
     }
 
-    if (candidateConfigScopeForAutoBinding.isEmpty()) {
+    if (eligibleConfigScopesForBindingSuggestion.isEmpty()) {
       return;
     }
 
-    Map<String, List<AutoBindCandidate>> candidates = new HashMap<>();
+    Map<String, List<BindingSuggestionDto>> suggestions = new HashMap<>();
 
-    candidateConfigScopeForAutoBinding.forEach(configScopeId -> {
-      var autoBindCandidates = autoBindAfterChecks(configScopeId);
-      LOG.debug("Found {} {} for configuration scope '{}'", autoBindCandidates.size(), singlePlural(autoBindCandidates.size(), "candidate", "candidates"), configScopeId);
-      candidates.put(configScopeId, autoBindCandidates);
+    eligibleConfigScopesForBindingSuggestion.forEach(configScopeId -> {
+      var scopeSuggestions = suggestBindingForEligibleScope(configScopeId);
+      LOG.debug("Found {} {} for configuration scope '{}'", scopeSuggestions.size(), singlePlural(scopeSuggestions.size(), "suggestion", "suggestions"), configScopeId);
+      suggestions.put(configScopeId, scopeSuggestions);
     });
 
-    client.suggestAutoBind(new SuggestAutoBindParams(candidates));
+    client.suggestBinding(new SuggestBindingParams(suggestions));
   }
 
-  private List<AutoBindCandidate> autoBindAfterChecks(String checkedConfigScopeId) {
+  private List<BindingSuggestionDto> suggestBindingForEligibleScope(String checkedConfigScopeId) {
     List<BindingClue> bindingClues = collectBindingClues(checkedConfigScopeId);
     List<BindingClueWithConnections> cluesAndConnections = matchConnections(bindingClues);
 
-    List<AutoBindCandidate> candidates = new ArrayList<>();
+    List<BindingSuggestionDto> suggestions = new ArrayList<>();
     var cluesWithProjectKey = cluesAndConnections.stream().filter(c -> c.bindingClue.getSonarProjectKey() != null).collect(toList());
     for (BindingClueWithConnections bindingClueWithConnections : cluesWithProjectKey) {
       var sonarProjectKey = requireNonNull(bindingClueWithConnections.bindingClue.getSonarProjectKey());
@@ -172,25 +172,25 @@ public class AutoBinding {
           LOG.error("Error while querying project '{}' from connection '{}'", sonarProjectKey, connectionId, e);
           continue;
         }
-        project.ifPresent(serverProject -> candidates.add(new AutoBindCandidate(connectionId, sonarProjectKey, serverProject.getName())));
+        project.ifPresent(serverProject -> suggestions.add(new BindingSuggestionDto(connectionId, sonarProjectKey, serverProject.getName())));
       }
     }
-    if (candidates.isEmpty()) {
+    if (suggestions.isEmpty()) {
       var configScopeName = Optional.ofNullable(configRepository.getConfigurationScope(checkedConfigScopeId)).map(ConfigurationScope::getName).orElse(null);
       if (isNotBlank(configScopeName)) {
         var cluesWithoutProjectKey = cluesAndConnections.stream().filter(c -> c.bindingClue.getSonarProjectKey() == null).collect(toList());
         for (BindingClueWithConnections bindingClueWithConnections : cluesWithoutProjectKey) {
-          searchGoodMatchInConnections(candidates, configScopeName, bindingClueWithConnections.connectionIds);
+          searchGoodMatchInConnections(suggestions, configScopeName, bindingClueWithConnections.connectionIds);
         }
         if (cluesWithoutProjectKey.isEmpty()) {
-          searchGoodMatchInConnections(candidates, configScopeName, connectionRepository.getConnectionsById().keySet());
+          searchGoodMatchInConnections(suggestions, configScopeName, connectionRepository.getConnectionsById().keySet());
         }
       }
     }
-    return candidates;
+    return suggestions;
   }
 
-  private void searchGoodMatchInConnections(List<AutoBindCandidate> candidates, String configScopeName, Set<String> connectionIdsToSearch) {
+  private void searchGoodMatchInConnections(List<BindingSuggestionDto> suggestions, String configScopeName, Set<String> connectionIdsToSearch) {
     for (String connectionId : connectionIdsToSearch) {
       LOG.debug("Attempt to find a good match for '{}' on connection '{}'...", configScopeName, connectionId);
       List<ServerProject> projects;
@@ -214,7 +214,7 @@ public class AutoBinding {
               break;
             }
             bestScore = serverProjectScoreEntry.getValue();
-            candidates.add(new AutoBindCandidate(connectionId, serverProjectScoreEntry.getKey().getKey(), serverProjectScoreEntry.getKey().getName()));
+            suggestions.add(new BindingSuggestionDto(connectionId, serverProjectScoreEntry.getKey().getKey(), serverProjectScoreEntry.getKey().getName()));
           }
           LOG.debug("Best score = {}", bestScore);
         }
@@ -421,19 +421,19 @@ public class AutoBinding {
     }
   }
 
-  private boolean checkIfValidCandidateForAutoBinding(String configScopeId) {
+  private boolean isScopeEligibleForBindingSuggestion(String configScopeId) {
     var bindingConfiguration = configRepository.getBindingConfiguration(configScopeId);
     if (bindingConfiguration == null) {
       // Race condition
-      LOG.debug("Configuration scope '{}' is gone. Skipping auto-binding", configScopeId);
+      LOG.debug("Configuration scope '{}' is gone.", configScopeId);
       return false;
     }
     if (isValidBinding(bindingConfiguration)) {
-      LOG.debug("Configuration scope '{}' is already bound. Skipping.", configScopeId);
+      LOG.debug("Configuration scope '{}' is already bound.", configScopeId);
       return false;
     }
-    if (!bindingConfiguration.isAutoBindEnabled()) {
-      LOG.debug("Configuration scope '{}' has auto-bind disabled. Skipping.", configScopeId);
+    if (bindingConfiguration.isBindingSuggestionDisabled()) {
+      LOG.debug("Configuration scope '{}' has binding suggestions disabled.", configScopeId);
       return false;
     }
     return true;

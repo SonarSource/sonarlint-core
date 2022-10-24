@@ -28,12 +28,12 @@ public class BindingConfiguration {
 
   private final String connectionId;
   private final String sonarProjectKey;
-  private final boolean autoBindEnabled;
+  private final boolean bindingSuggestionDisabled;
 
-  public BindingConfiguration(@Nullable String connectionId, @Nullable String sonarProjectKey, boolean autoBindEnabled) {
+  public BindingConfiguration(@Nullable String connectionId, @Nullable String sonarProjectKey, boolean bindingSuggestionDisabled) {
     this.connectionId = connectionId;
     this.sonarProjectKey = sonarProjectKey;
-    this.autoBindEnabled = autoBindEnabled;
+    this.bindingSuggestionDisabled = bindingSuggestionDisabled;
   }
 
   @CheckForNull
@@ -46,8 +46,8 @@ public class BindingConfiguration {
     return sonarProjectKey;
   }
 
-  public boolean isAutoBindEnabled() {
-    return autoBindEnabled;
+  public boolean isBindingSuggestionDisabled() {
+    return bindingSuggestionDisabled;
   }
 
   public boolean isBound() {

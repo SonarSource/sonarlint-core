@@ -45,13 +45,13 @@ public class BindingConfigChangedEvent {
     private final String configScopeId;
     private final String connectionId;
     private final String sonarProjectKey;
-    private final boolean autoBindEnabled;
+    private final boolean bindingSuggestionDisabled;
 
-    public BindingConfig(String configScopeId, @Nullable String connectionId, @Nullable String sonarProjectKey, boolean autoBindEnabled) {
+    public BindingConfig(String configScopeId, @Nullable String connectionId, @Nullable String sonarProjectKey, boolean bindingSuggestionDisabled) {
       this.configScopeId = configScopeId;
       this.connectionId = connectionId;
       this.sonarProjectKey = sonarProjectKey;
-      this.autoBindEnabled = autoBindEnabled;
+      this.bindingSuggestionDisabled = bindingSuggestionDisabled;
     }
 
     public String getConfigScopeId() {
@@ -68,8 +68,8 @@ public class BindingConfigChangedEvent {
       return sonarProjectKey;
     }
 
-    public boolean isAutoBindEnabled() {
-      return autoBindEnabled;
+    public boolean isBindingSuggestionDisabled() {
+      return bindingSuggestionDisabled;
     }
 
     @Override
@@ -81,7 +81,7 @@ public class BindingConfigChangedEvent {
         return false;
       }
       BindingConfig that = (BindingConfig) o;
-      return autoBindEnabled == that.autoBindEnabled
+      return bindingSuggestionDisabled == that.bindingSuggestionDisabled
         && configScopeId.equals(that.configScopeId)
         && Objects.equals(connectionId, that.connectionId)
         && Objects.equals(sonarProjectKey, that.sonarProjectKey);
@@ -89,7 +89,7 @@ public class BindingConfigChangedEvent {
 
     @Override
     public int hashCode() {
-      return Objects.hash(configScopeId, connectionId, sonarProjectKey, autoBindEnabled);
+      return Objects.hash(configScopeId, connectionId, sonarProjectKey, bindingSuggestionDisabled);
     }
   }
 
