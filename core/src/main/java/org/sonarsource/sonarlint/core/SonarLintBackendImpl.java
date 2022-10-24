@@ -30,8 +30,8 @@ import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.connection.ConnectionService;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.referential.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.referential.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.ConnectionConfigurationRepository;
 
 public class SonarLintBackendImpl implements SonarLintBackend {
 

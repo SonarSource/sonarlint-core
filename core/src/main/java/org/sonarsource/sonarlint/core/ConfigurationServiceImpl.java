@@ -32,9 +32,9 @@ import org.sonarsource.sonarlint.core.clientapi.config.scope.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeAddedEvent;
-import org.sonarsource.sonarlint.core.referential.BindingConfiguration;
-import org.sonarsource.sonarlint.core.referential.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.referential.ConfigurationScope;
+import org.sonarsource.sonarlint.core.repository.BindingConfiguration;
+import org.sonarsource.sonarlint.core.repository.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.ConfigurationScope;
 
 public class ConfigurationServiceImpl implements ConfigurationService {
 
@@ -73,8 +73,8 @@ public class ConfigurationServiceImpl implements ConfigurationService {
   }
 
   @NotNull
-  private static org.sonarsource.sonarlint.core.referential.BindingConfiguration toReferential(BindingConfigurationDto dto) {
-    return new org.sonarsource.sonarlint.core.referential.BindingConfiguration(dto.getConnectionId(), dto.getSonarProjectKey(), dto.isAutoBindEnabled());
+  private static org.sonarsource.sonarlint.core.repository.BindingConfiguration toReferential(BindingConfigurationDto dto) {
+    return new org.sonarsource.sonarlint.core.repository.BindingConfiguration(dto.getConnectionId(), dto.getSonarProjectKey(), dto.isAutoBindEnabled());
   }
 
   @NotNull
