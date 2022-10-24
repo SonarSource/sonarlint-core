@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core.repository.connection;
 
 public class SonarCloudConnectionConfiguration extends AbstractConnectionConfiguration {
 
+  public static final String SONARCLOUD_URL = System.getProperty("sonarlint.internal.sonarcloud.url", "https://sonarcloud.io");
+
   private final String organization;
 
   public SonarCloudConnectionConfiguration(String connectionId, String organization) {
