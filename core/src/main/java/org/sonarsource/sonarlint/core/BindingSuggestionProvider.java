@@ -69,7 +69,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singlePlural;
 import static org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration.SONARCLOUD_URL;
 
-public class BindingSuggester {
+public class BindingSuggestionProvider {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   public static final String SONAR_SCANNER_CONFIG_FILENAME = "sonar-project.properties";
@@ -79,7 +79,7 @@ public class BindingSuggester {
   private final ConnectionConfigurationRepository connectionRepository;
   private final SonarLintClient client;
 
-  public BindingSuggester(ConfigurationRepository configRepository, ConnectionConfigurationRepository connectionRepository, SonarLintClient client) {
+  public BindingSuggestionProvider(ConfigurationRepository configRepository, ConnectionConfigurationRepository connectionRepository, SonarLintClient client) {
     this.configRepository = configRepository;
     this.connectionRepository = connectionRepository;
     this.client = client;
