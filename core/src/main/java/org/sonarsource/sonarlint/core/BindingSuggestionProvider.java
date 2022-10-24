@@ -47,7 +47,7 @@ import org.sonarsource.sonarlint.core.clientapi.fs.FoundFileDto;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
-import org.sonarsource.sonarlint.core.event.ConfigurationScopeAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionAddedEvent;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -94,17 +94,21 @@ public class BindingSuggestionProvider {
   }
 
   @Subscribe
-  public void configurationScopeAdded(ConfigurationScopeAddedEvent event) {
-    var configScopeId = event.getAddedConfigurationScopeId();
-    var bindingConfiguration = configRepository.getBindingConfiguration(configScopeId);
-    if (bindingConfiguration == null) {
-      // Maybe the configuration was removed since the event was raised
-      LOG.debug("Configuration scope '{}' not found. Ignoring event.", configScopeId);
-      return;
+  public void configurationScopeAdded(ConfigurationScopesAddedEvent event) {
+    var configScopeIds = event.getAddedConfigurationScopeIds();
+    Set<String> configScopeIdsToSuggest = new HashSet<>();
+    for (String configScopeId : configScopeIds) {
+      var bindingConfiguration = configRepository.getBindingConfiguration(configScopeId);
+      if (bindingConfiguration == null) {
+        // Maybe the configuration was removed since the event was raised
+        LOG.debug("Configuration scope '{}' not found. Ignoring event.", configScopeId);
+        continue;
+      }
+      if (!bindingConfiguration.isBindingSuggestionDisabled()) {
+        configScopeIdsToSuggest.add(configScopeId);
+      }
     }
-    if (!bindingConfiguration.isBindingSuggestionDisabled()) {
-      suggestBindingForConfigScope(configScopeId);
-    }
+    suggestBindingForConfigScopes(configScopeIdsToSuggest);
   }
 
   @Subscribe
@@ -113,6 +117,10 @@ public class BindingSuggestionProvider {
     if (connectionRepository.getConnectionById(event.getAddedConnectionId()) != null) {
       suggestBindingForAllScopes();
     }
+  }
+
+  private void suggestBindingForConfigScopes(Set<String> configScopeIds) {
+    configScopeIds.forEach(this::suggestBindingForConfigScope);
   }
 
   private void suggestBindingForConfigScope(String configScopeId) {

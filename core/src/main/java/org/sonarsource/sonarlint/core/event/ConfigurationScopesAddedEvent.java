@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,19 +17,19 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.config.scope;
+package org.sonarsource.sonarlint.core.event;
 
-import java.util.List;
+import java.util.Set;
 
-public class InitializeParams {
+public class ConfigurationScopesAddedEvent {
 
-  private final List<ConfigurationScopeDto> configScopes;
+  private final Set<String> addedConfigurationScopeIds;
 
-  public InitializeParams(List<ConfigurationScopeDto> configScopes) {
-    this.configScopes = configScopes;
+  public ConfigurationScopesAddedEvent(Set<String> addedConfigurationScopeIds) {
+    this.addedConfigurationScopeIds = addedConfigurationScopeIds;
   }
 
-  public List<ConfigurationScopeDto> getConfigScopes() {
-    return configScopes;
+  public Set<String> getAddedConfigurationScopeIds() {
+    return addedConfigurationScopeIds;
   }
 }
