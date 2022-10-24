@@ -24,16 +24,16 @@ import java.util.List;
 import java.util.Map;
 import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
-public class SuggestAutoBindParams {
+public class SuggestBindingParams {
 
-  Map<String, List<AutoBindCandidate>> candidates = new HashMap<>();
+  Map<String, List<BindingSuggestionDto>> suggestions = new HashMap<>();
 
-  public SuggestAutoBindParams(@NonNull Map<String, List<AutoBindCandidate>> candidates) {
-    this.candidates = candidates;
+  public SuggestBindingParams(@NonNull Map<String, List<BindingSuggestionDto>> suggestions) {
+    this.suggestions = suggestions;
   }
 
   @NonNull
-  public Map<String, List<AutoBindCandidate>> getCandidates() {
-    return candidates;
+  public Map<String, List<BindingSuggestionDto>> getSuggestions() {
+    return suggestions;
   }
 }

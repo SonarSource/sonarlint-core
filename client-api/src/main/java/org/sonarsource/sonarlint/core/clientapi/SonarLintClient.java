@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import javax.annotation.CheckForNull;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
-import org.sonarsource.sonarlint.core.clientapi.config.binding.SuggestAutoBindParams;
+import org.sonarsource.sonarlint.core.clientapi.config.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
@@ -31,7 +31,7 @@ import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 public interface SonarLintClient {
 
   @JsonNotification
-  void suggestAutoBind(SuggestAutoBindParams params);
+  void suggestBinding(SuggestBindingParams params);
 
   @JsonRequest
   CompletableFuture<FindFileByNamesInScopeResponse> findFileByNamesInScope(FindFileByNamesInScopeParams params);

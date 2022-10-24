@@ -74,7 +74,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 
   @NotNull
   private static BindingConfiguration adapt(BindingConfigurationDto dto) {
-    return new BindingConfiguration(dto.getConnectionId(), dto.getSonarProjectKey(), dto.isAutoBindEnabled());
+    return new BindingConfiguration(dto.getConnectionId(), dto.getSonarProjectKey(), dto.isBindingSuggestionDisabled());
   }
 
   @NotNull
@@ -107,9 +107,9 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 
   private void postChangedEventIfNeeded(String configScopeId, BindingConfiguration previousBindingConfig, BindingConfiguration newBindingConfig) {
     var previousConfigForEvent = new BindingConfigChangedEvent.BindingConfig(configScopeId, previousBindingConfig.getConnectionId(),
-      previousBindingConfig.getSonarProjectKey(), previousBindingConfig.isAutoBindEnabled());
+      previousBindingConfig.getSonarProjectKey(), previousBindingConfig.isBindingSuggestionDisabled());
     var newConfigForEvent = new BindingConfigChangedEvent.BindingConfig(configScopeId, newBindingConfig.getConnectionId(),
-      newBindingConfig.getSonarProjectKey(), newBindingConfig.isAutoBindEnabled());
+      newBindingConfig.getSonarProjectKey(), newBindingConfig.isBindingSuggestionDisabled());
 
     if (!previousConfigForEvent.equals(newConfigForEvent)) {
       clientEventBus.post(new BindingConfigChangedEvent(previousConfigForEvent, newConfigForEvent));

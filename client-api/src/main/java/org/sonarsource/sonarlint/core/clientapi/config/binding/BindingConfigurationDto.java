@@ -25,12 +25,12 @@ public class BindingConfigurationDto {
 
   private final String connectionId;
   private final String sonarProjectKey;
-  private boolean autoBindEnabled;
+  private boolean bindingSuggestionDisabled;
 
-  public BindingConfigurationDto(@Nullable String connectionId, @Nullable String sonarProjectKey, boolean autoBindEnabled) {
+  public BindingConfigurationDto(@Nullable String connectionId, @Nullable String sonarProjectKey, boolean bindingSuggestionDisabled) {
     this.connectionId = connectionId;
     this.sonarProjectKey = sonarProjectKey;
-    this.autoBindEnabled = autoBindEnabled;
+    this.bindingSuggestionDisabled = bindingSuggestionDisabled;
   }
 
   public String getConnectionId() {
@@ -41,7 +41,7 @@ public class BindingConfigurationDto {
     return sonarProjectKey;
   }
 
-  public boolean isAutoBindEnabled() {
-    return autoBindEnabled;
+  public boolean isBindingSuggestionDisabled() {
+    return bindingSuggestionDisabled;
   }
 }

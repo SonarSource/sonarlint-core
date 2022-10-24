@@ -21,12 +21,12 @@ package org.sonarsource.sonarlint.core.clientapi.config.binding;
 
 import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
-public class AutoBindCandidate {
+public class BindingSuggestionDto {
   private final String connectionId;
   private final String sonarProjectKey;
   private final String sonarProjectName;
 
-  public AutoBindCandidate(@NonNull String connectionId, @NonNull String sonarProjectKey, @NonNull String sonarProjectName) {
+  public BindingSuggestionDto(@NonNull String connectionId, @NonNull String sonarProjectKey, @NonNull String sonarProjectName) {
     this.connectionId = connectionId;
     this.sonarProjectKey = sonarProjectKey;
     this.sonarProjectName = sonarProjectName;

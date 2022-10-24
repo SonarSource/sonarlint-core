@@ -51,7 +51,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     this.clientEventBus = new AsyncEventBus("clientEvents", clientEventsExecutorService);
     this.configurationService = new ConfigurationServiceImpl(clientEventBus, configurationRepository);
     this.connectionService = new ConnectionServiceImpl(clientEventBus, connectionConfigurationRepository);
-    var autoBinding = new AutoBinding(configurationRepository, connectionConfigurationRepository, client);
+    var autoBinding = new BindingSuggester(configurationRepository, connectionConfigurationRepository, client);
     clientEventBus.register(autoBinding);
   }
 
