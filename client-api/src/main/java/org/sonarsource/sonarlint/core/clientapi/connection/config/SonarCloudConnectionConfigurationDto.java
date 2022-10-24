@@ -19,13 +19,23 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.connection.config;
 
-public class SonarCloudConnectionConfiguration extends AbstractConnectionConfiguration {
+import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
+public class SonarCloudConnectionConfigurationDto {
+
+  /**
+   * The id of the connection on the client side
+   */
+  private final String connectionId;
   private final String organization;
 
-  public SonarCloudConnectionConfiguration(String connectionId, String organization) {
-    super(connectionId);
+  public SonarCloudConnectionConfigurationDto(@NonNull String connectionId, @NonNull String organization) {
+    this.connectionId = connectionId;
     this.organization = organization;
+  }
+
+  public String getConnectionId() {
+    return connectionId;
   }
 
   public String getOrganization() {

@@ -36,7 +36,7 @@ import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeAddedEvent;
-import org.sonarsource.sonarlint.core.repository.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

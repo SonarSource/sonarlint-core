@@ -17,43 +17,18 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.repository;
+package org.sonarsource.sonarlint.core.repository.connection;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
+public class SonarQubeConnectionConfiguration extends AbstractConnectionConfiguration {
 
-public class ConfigurationScope {
+  private final String serverUrl;
 
-  private final String id;
-  private final String parentId;
-  private final boolean bindable;
-  /**
-   * The name of this configuration scope. Used for auto-binding.
-   */
-  private final String name;
-
-  public ConfigurationScope(String id, @Nullable String parentId, boolean bindable, String name) {
-    this.id = id;
-    this.parentId = parentId;
-    this.bindable = bindable;
-    this.name = name;
+  public SonarQubeConnectionConfiguration(String connectionId, String serverUrl) {
+    super(connectionId);
+    this.serverUrl = serverUrl;
   }
 
-  public String getId() {
-    return id;
+  public String getServerUrl() {
+    return serverUrl;
   }
-
-  @CheckForNull
-  public String getParentId() {
-    return parentId;
-  }
-
-  public boolean isBindable() {
-    return bindable;
-  }
-
-  public String getName() {
-    return name;
-  }
-
 }

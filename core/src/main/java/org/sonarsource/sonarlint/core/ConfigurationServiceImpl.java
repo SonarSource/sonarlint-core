@@ -32,32 +32,32 @@ import org.sonarsource.sonarlint.core.clientapi.config.scope.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeAddedEvent;
-import org.sonarsource.sonarlint.core.repository.BindingConfiguration;
-import org.sonarsource.sonarlint.core.repository.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.repository.ConfigurationScope;
+import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 
 public class ConfigurationServiceImpl implements ConfigurationService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final EventBus clientEventBus;
-  private final ConfigurationRepository referential;
+  private final ConfigurationRepository repository;
 
-  public ConfigurationServiceImpl(EventBus clientEventBus, ConfigurationRepository referential) {
+  public ConfigurationServiceImpl(EventBus clientEventBus, ConfigurationRepository repository) {
     this.clientEventBus = clientEventBus;
-    this.referential = referential;
+    this.repository = repository;
   }
 
   @Override
   public CompletableFuture<Void> initialize(InitializeParams params) {
-    params.getConfigScopes().forEach(this::addOrUpdateReferential);
+    params.getConfigScopes().forEach(this::addOrUpdateRepository);
     return CompletableFuture.completedFuture(null);
   }
 
   @Override
   public void didAddConfigurationScope(DidAddConfigurationScopeParams params) {
     var addedDto = params.getAdded();
-    ConfigurationScope previous = addOrUpdateReferential(addedDto);
+    ConfigurationScope previous = addOrUpdateRepository(addedDto);
     if (previous != null) {
       LOG.error("Duplicate configuration scope registered: {}", addedDto.getId());
     } else {
@@ -65,27 +65,27 @@ public class ConfigurationServiceImpl implements ConfigurationService {
     }
   }
 
-  private ConfigurationScope addOrUpdateReferential(ConfigurationScopeDto dto) {
-    var configScopeInReferential = toReferential(dto);
+  private ConfigurationScope addOrUpdateRepository(ConfigurationScopeDto dto) {
+    var configScopeInReferential = adapt(dto);
     var bindingDto = dto.getBinding();
-    var bindingConfigInReferential = toReferential(bindingDto);
-    return referential.addOrReplace(configScopeInReferential, bindingConfigInReferential);
+    var bindingConfigInReferential = adapt(bindingDto);
+    return repository.addOrReplace(configScopeInReferential, bindingConfigInReferential);
   }
 
   @NotNull
-  private static org.sonarsource.sonarlint.core.repository.BindingConfiguration toReferential(BindingConfigurationDto dto) {
-    return new org.sonarsource.sonarlint.core.repository.BindingConfiguration(dto.getConnectionId(), dto.getSonarProjectKey(), dto.isAutoBindEnabled());
+  private static BindingConfiguration adapt(BindingConfigurationDto dto) {
+    return new BindingConfiguration(dto.getConnectionId(), dto.getSonarProjectKey(), dto.isAutoBindEnabled());
   }
 
   @NotNull
-  private static ConfigurationScope toReferential(ConfigurationScopeDto dto) {
+  private static ConfigurationScope adapt(ConfigurationScopeDto dto) {
     return new ConfigurationScope(dto.getId(), dto.getParentId(), dto.isBindable(), dto.getName());
   }
 
   @Override
   public void didRemoveConfigurationScope(DidRemoveConfigurationScopeParams params) {
     var idToRemove = params.getRemovedId();
-    var removed = referential.remove(idToRemove);
+    var removed = repository.remove(idToRemove);
     if (removed == null) {
       LOG.error("Attempt to remove configuration scope '{}' that was not registered", idToRemove);
     }
@@ -94,13 +94,13 @@ public class ConfigurationServiceImpl implements ConfigurationService {
   @Override
   public void didUpdateBinding(DidUpdateBindingParams params) {
     var configScopeId = params.getConfigScopeId();
-    var previousBindingConfig = referential.getBindingConfiguration(configScopeId);
+    var previousBindingConfig = repository.getBindingConfiguration(configScopeId);
     if (previousBindingConfig == null) {
       LOG.error("Attempt to update binding in configuration scope '{}' that was not registered", configScopeId);
       return;
     }
-    var newBindingConfig = toReferential(params.getUpdatedBinding());
-    referential.updateBinding(configScopeId, newBindingConfig);
+    var newBindingConfig = adapt(params.getUpdatedBinding());
+    repository.updateBinding(configScopeId, newBindingConfig);
 
     postChangedEventIfNeeded(configScopeId, previousBindingConfig, newBindingConfig);
   }
