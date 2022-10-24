@@ -117,7 +117,7 @@ public class AutoBinding {
 
   private void autoBindConfigScope(String configScopeId) {
     LOG.debug("Auto-binding started for config scope '{}'...", configScopeId);
-    if (!checkAtLeastOneConnection()) {
+    if (noConnectionsConfigured()) {
       return;
     }
     if (!checkIfValidCandidateForAutoBinding(configScopeId)) {
@@ -129,7 +129,7 @@ public class AutoBinding {
 
   private void autoBindAll() {
     LOG.debug("Auto-binding started...");
-    if (!checkAtLeastOneConnection()) {
+    if (noConnectionsConfigured()) {
       return;
     }
     var allConfigScopeIds = configRepository.getConfigScopeIds();
@@ -444,11 +444,11 @@ public class AutoBinding {
       .orElse(false);
   }
 
-  private boolean checkAtLeastOneConnection() {
+  private boolean noConnectionsConfigured() {
     if (connectionRepository.getConnectionsById().isEmpty()) {
       LOG.debug("No connections defined");
-      return false;
+      return true;
     }
-    return true;
+    return false;
   }
 }
