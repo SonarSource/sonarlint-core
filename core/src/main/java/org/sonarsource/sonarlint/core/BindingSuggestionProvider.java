@@ -28,12 +28,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.sonarsource.sonarlint.core.BindingClueProvider.BindingClueWithConnections;
-import org.sonarsource.sonarlint.core.client.api.util.TextSearchIndex;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionAddedEvent;
@@ -41,10 +39,6 @@ import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
-import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
-import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
-import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
-import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 
 import static java.lang.String.join;
@@ -52,23 +46,23 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singlePlural;
-import static org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration.SONARCLOUD_URL;
 
 public class BindingSuggestionProvider {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-
   private final ConfigurationRepository configRepository;
   private final ConnectionConfigurationRepository connectionRepository;
   private final SonarLintClient client;
   private final BindingClueProvider bindingClueProvider;
+  private final SonarProjectsCache sonarProjectsCache;
 
   public BindingSuggestionProvider(ConfigurationRepository configRepository, ConnectionConfigurationRepository connectionRepository, SonarLintClient client,
-    BindingClueProvider bindingClueProvider) {
+    BindingClueProvider bindingClueProvider, SonarProjectsCache sonarProjectsCache) {
     this.configRepository = configRepository;
     this.connectionRepository = connectionRepository;
     this.client = client;
     this.bindingClueProvider = bindingClueProvider;
+    this.sonarProjectsCache = sonarProjectsCache;
   }
 
   @Subscribe
@@ -140,15 +134,9 @@ public class BindingSuggestionProvider {
     for (BindingClueWithConnections bindingClueWithConnections : cluesWithProjectKey) {
       var sonarProjectKey = requireNonNull(bindingClueWithConnections.getBindingClue().getSonarProjectKey());
       for (String connectionId : bindingClueWithConnections.getConnectionIds()) {
-        LOG.debug("Query if project '{}' exists on connection '{}'...", sonarProjectKey, connectionId);
-        Optional<ServerProject> project;
-        try {
-          project = getServerApi(connectionId).flatMap(s -> s.component().getProject(sonarProjectKey));
-        } catch (Exception e) {
-          LOG.error("Error while querying project '{}' from connection '{}'", sonarProjectKey, connectionId, e);
-          continue;
-        }
-        project.ifPresent(serverProject -> suggestions.add(new BindingSuggestionDto(connectionId, sonarProjectKey, serverProject.getName())));
+        sonarProjectsCache
+          .getSonarProject(connectionId, sonarProjectKey)
+          .ifPresent(serverProject -> suggestions.add(new BindingSuggestionDto(connectionId, sonarProjectKey, serverProject.getName())));
       }
     }
     if (suggestions.isEmpty()) {
@@ -174,24 +162,7 @@ public class BindingSuggestionProvider {
 
   private void searchGoodMatchInConnection(List<BindingSuggestionDto> suggestions, String configScopeName, String connectionId) {
     LOG.debug("Attempt to find a good match for '{}' on connection '{}'...", configScopeName, connectionId);
-    List<ServerProject> projects;
-    try {
-      projects = getServerApi(connectionId).map(s -> s.component().getAllProjects(new ProgressMonitor(null))).orElse(List.of());
-    } catch (Exception e) {
-      LOG.error("Error while querying projects from connection '{}'", connectionId, e);
-      return;
-    }
-    if (projects.isEmpty()) {
-      LOG.debug("No projects found for connection '{}'", connectionId);
-    } else {
-      searchGoodMatchAmongSonarProjects(suggestions, configScopeName, connectionId, projects);
-    }
-  }
-
-  private static void searchGoodMatchAmongSonarProjects(List<BindingSuggestionDto> suggestions, String configScopeName, String connectionId, List<ServerProject> projects) {
-    LOG.debug("Creating index for {} {}", projects.size(), singlePlural(projects.size(), "project", "projects"));
-    var index = new TextSearchIndex<ServerProject>();
-    projects.forEach(p -> index.index(p, p.getKey() + " " + p.getName()));
+    var index = sonarProjectsCache.getTextSearchIndex(connectionId);
     var searchResult = index.search(configScopeName);
     if (!searchResult.isEmpty()) {
       Double bestScore = Double.MIN_VALUE;
@@ -203,24 +174,6 @@ public class BindingSuggestionProvider {
         suggestions.add(new BindingSuggestionDto(connectionId, serverProjectScoreEntry.getKey().getKey(), serverProjectScoreEntry.getKey().getName()));
       }
       LOG.debug("Best score = {}", bestScore);
-    }
-  }
-
-  private Optional<ServerApi> getServerApi(String connectionId) {
-    var connectionConfig = connectionRepository.getConnectionById(connectionId);
-    EndpointParams params;
-    if (connectionConfig instanceof SonarQubeConnectionConfiguration) {
-      params = new EndpointParams(((SonarQubeConnectionConfiguration) connectionConfig).getServerUrl(), false, null);
-    } else if (connectionConfig instanceof SonarCloudConnectionConfiguration) {
-      params = new EndpointParams(SONARCLOUD_URL, true, ((SonarCloudConnectionConfiguration) connectionConfig).getOrganization());
-    } else {
-      throw new IllegalStateException("Unknown connection type");
-    }
-    var httpClient = client.getHttpClient(connectionId);
-    if (httpClient != null) {
-      return Optional.of(new ServerApi(params, httpClient));
-    } else {
-      return Optional.empty();
     }
   }
 
