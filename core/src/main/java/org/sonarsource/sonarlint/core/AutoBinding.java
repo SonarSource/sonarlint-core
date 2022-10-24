@@ -270,7 +270,7 @@ public class AutoBinding {
       return connectionRepository.getConnectionsById().values().stream()
         .filter(SonarQubeConnectionConfiguration.class::isInstance)
         .map(SonarQubeConnectionConfiguration.class::cast)
-        .filter(c -> isSameServerUrl(c.getServerUrl(), serverUrl))
+        .filter(c -> c.isSameServerUrl(serverUrl))
         .map(AbstractConnectionConfiguration::getConnectionId)
         .collect(toSet());
     }
@@ -286,9 +286,7 @@ public class AutoBinding {
     return connectionRepository.getConnectionsById().keySet();
   }
 
-  private static boolean isSameServerUrl(String left, String right) {
-    return Objects.equals(removeEnd(left, "/"), removeEnd(right, "/"));
-  }
+
 
   @CheckForNull
   private static ScannerProperties extractScannerProperties(FoundFile matchedFile) {
