@@ -397,7 +397,7 @@ public class AutoBinding {
       LOG.debug("Configuration scope '{}' is gone. Skipping auto-binding", configScopeId);
       return false;
     }
-    if (isBound(bindingConfiguration)) {
+    if (isValidBinding(bindingConfiguration)) {
       LOG.debug("Configuration scope '{}' is already bound. Skipping.", configScopeId);
       return false;
     }
@@ -408,10 +408,10 @@ public class AutoBinding {
     return true;
   }
 
-  private boolean isBound(BindingConfiguration bindingConfiguration) {
-    return bindingConfiguration.getConnectionId() != null
-      && bindingConfiguration.getSonarProjectKey() != null
-      && connectionRepository.getConnectionById(bindingConfiguration.getConnectionId()) != null;
+  private boolean isValidBinding(BindingConfiguration bindingConfiguration) {
+    return bindingConfiguration.
+      ifBound((connectionId, projectKey) -> connectionRepository.getConnectionById(connectionId) != null)
+      .orElse(false);
   }
 
   private boolean checkAtLeastOneConnection() {

@@ -19,28 +19,46 @@
  */
 package org.sonarsource.sonarlint.core.repository.config;
 
+import java.util.Optional;
+import java.util.function.BiFunction;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+
 public class BindingConfiguration {
 
   private final String connectionId;
   private final String sonarProjectKey;
   private final boolean autoBindEnabled;
 
-  public BindingConfiguration(String connectionId, String sonarProjectKey, boolean autoBindEnabled) {
+  public BindingConfiguration(@Nullable String connectionId, @Nullable String sonarProjectKey, boolean autoBindEnabled) {
     this.connectionId = connectionId;
     this.sonarProjectKey = sonarProjectKey;
     this.autoBindEnabled = autoBindEnabled;
   }
 
+  @CheckForNull
   public String getConnectionId() {
     return connectionId;
   }
 
+  @CheckForNull
   public String getSonarProjectKey() {
     return sonarProjectKey;
   }
 
   public boolean isAutoBindEnabled() {
     return autoBindEnabled;
+  }
+
+  public boolean isBound() {
+    return connectionId != null && sonarProjectKey != null;
+  }
+
+  public <G> Optional<G> ifBound(BiFunction<String, String, G> calledIfBound) {
+    if (isBound()) {
+      return Optional.of(calledIfBound.apply(connectionId, sonarProjectKey));
+    }
+    return Optional.empty();
   }
 
 }
