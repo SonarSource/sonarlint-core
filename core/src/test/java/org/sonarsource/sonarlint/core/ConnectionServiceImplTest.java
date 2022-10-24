@@ -35,7 +35,7 @@ import org.sonarsource.sonarlint.core.clientapi.connection.config.SonarQubeConne
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.ConnectionAddedEvent;
-import org.sonarsource.sonarlint.core.referential.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.ConnectionConfigurationRepository;
 
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;

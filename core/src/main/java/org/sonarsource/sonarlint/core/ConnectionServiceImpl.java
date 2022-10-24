@@ -29,7 +29,7 @@ import org.sonarsource.sonarlint.core.clientapi.connection.config.DidUpdateConne
 import org.sonarsource.sonarlint.core.clientapi.connection.config.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.ConnectionAddedEvent;
-import org.sonarsource.sonarlint.core.referential.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.ConnectionConfigurationRepository;
 
 public class ConnectionServiceImpl implements ConnectionService {
 
