@@ -19,19 +19,25 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.fs;
 
-public class FoundFile {
+public class FoundFileDto {
 
-  private final String filename;
+  private final String fileName;
+  private final String filePath;
 
   private final String content;
 
-  public FoundFile(String filename, String content) {
-    this.filename = filename;
+  public FoundFileDto(String fileName, String filePath, String content) {
+    this.fileName = fileName;
+    this.filePath = filePath;
     this.content = content;
   }
 
-  public String getFilename() {
-    return filename;
+  public String getFileName() {
+    return fileName;
+  }
+
+  public String getFilePath() {
+    return filePath;
   }
 
   public String getContent() {

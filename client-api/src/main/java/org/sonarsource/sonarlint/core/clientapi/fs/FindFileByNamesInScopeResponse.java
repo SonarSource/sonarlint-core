@@ -23,13 +23,13 @@ import java.util.List;
 
 public class FindFileByNamesInScopeResponse {
 
-  private final List<FoundFile> foundFiles;
+  private final List<FoundFileDto> foundFiles;
 
-  public FindFileByNamesInScopeResponse(List<FoundFile> foundFiles) {
+  public FindFileByNamesInScopeResponse(List<FoundFileDto> foundFiles) {
     this.foundFiles = foundFiles;
   }
 
-  public List<FoundFile> getFoundFiles() {
+  public List<FoundFileDto> getFoundFiles() {
     return foundFiles;
   }
 }

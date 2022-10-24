@@ -43,7 +43,7 @@ import org.sonarsource.sonarlint.core.clientapi.config.binding.AutoBindCandidate
 import org.sonarsource.sonarlint.core.clientapi.config.binding.SuggestAutoBindParams;
 import org.sonarsource.sonarlint.core.clientapi.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.fs.FindFileByNamesInScopeResponse;
-import org.sonarsource.sonarlint.core.clientapi.fs.FoundFile;
+import org.sonarsource.sonarlint.core.clientapi.fs.FoundFileDto;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -61,11 +61,13 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.StringUtils.removeEnd;
 import static org.apache.commons.lang.StringUtils.trimToNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singlePlural;
 import static org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration.SONARCLOUD_URL;
 
 public class AutoBinding {
@@ -73,7 +75,6 @@ public class AutoBinding {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   public static final String SONAR_SCANNER_CONFIG_FILENAME = "sonar-project.properties";
   public static final String AUTOSCAN_CONFIG_FILENAME = ".sonarcloud.properties";
-
 
   private final ConfigurationRepository configRepository;
   private final ConnectionConfigurationRepository connectionRepository;
@@ -148,6 +149,7 @@ public class AutoBinding {
 
     candidateConfigScopeForAutoBinding.forEach(configScopeId -> {
       var autoBindCandidates = autoBindAfterChecks(configScopeId);
+      LOG.debug("Found {} {} for configuration scope '{}'", autoBindCandidates.size(), singlePlural(autoBindCandidates.size(), "candidate", "candidates"), configScopeId);
       candidates.put(configScopeId, autoBindCandidates);
     });
 
@@ -161,8 +163,9 @@ public class AutoBinding {
     List<AutoBindCandidate> candidates = new ArrayList<>();
     var cluesWithProjectKey = cluesAndConnections.stream().filter(c -> c.bindingClue.getSonarProjectKey() != null).collect(toList());
     for (BindingClueWithConnections bindingClueWithConnections : cluesWithProjectKey) {
-      var sonarProjectKey = bindingClueWithConnections.bindingClue.getSonarProjectKey();
+      var sonarProjectKey = requireNonNull(bindingClueWithConnections.bindingClue.getSonarProjectKey());
       for (String connectionId : bindingClueWithConnections.connectionIds) {
+        LOG.debug("Query if project '{}' exists on connection '{}'...", sonarProjectKey, connectionId);
         var project = getServerApi(connectionId).component().getProject(sonarProjectKey);
         project.ifPresent(serverProject -> candidates.add(new AutoBindCandidate(connectionId, sonarProjectKey, serverProject.getName())));
       }
@@ -184,7 +187,9 @@ public class AutoBinding {
 
   private void searchGoodMatchInConnections(List<AutoBindCandidate> candidates, String configScopeName, Set<String> connectionIdsToSearch) {
     for (String connectionId : connectionIdsToSearch) {
+      LOG.debug("Attempt to find a good match for '{}' on connection '{}'...", configScopeName, connectionId);
       var projects = getServerApi(connectionId).component().getAllProjects(new ProgressMonitor(null));
+      LOG.debug("Creating index for {} {}", projects.size(), singlePlural(projects.size(), "project", "projects"));
       var index = new TextSearchIndex<ServerProject>();
       projects.forEach(p -> index.index(p, p.getKey() + " " + p.getName()));
       var searchResult = index.search(configScopeName);
@@ -197,6 +202,7 @@ public class AutoBinding {
           bestScore = serverProjectScoreEntry.getValue();
           candidates.add(new AutoBindCandidate(connectionId, serverProjectScoreEntry.getKey().getKey(), serverProjectScoreEntry.getKey().getName()));
         }
+        LOG.debug("Best score = {}", bestScore);
       }
     }
   }
@@ -206,8 +212,10 @@ public class AutoBinding {
     EndpointParams params;
     if (connectionConfig instanceof SonarQubeConnectionConfiguration) {
       params = new EndpointParams(((SonarQubeConnectionConfiguration) connectionConfig).getServerUrl(), false, null);
-    } else {
+    } else if (connectionConfig instanceof SonarCloudConnectionConfiguration) {
       params = new EndpointParams(SONARCLOUD_URL, true, ((SonarCloudConnectionConfiguration) connectionConfig).getOrganization());
+    } else {
+      throw new IllegalStateException("Unknown connection type");
     }
     HttpClient httpClient = client.getHttpClient(connectionId);
     return new ServerApi(params, httpClient);
@@ -215,6 +223,7 @@ public class AutoBinding {
 
   @NotNull
   private List<BindingClueWithConnections> matchConnections(List<BindingClue> bindingClues) {
+    LOG.debug("Match connections...");
     List<BindingClueWithConnections> cluesAndConnections = new ArrayList<>();
     for (BindingClue bindingClue : bindingClues) {
       var connectionsIds = matchConnections(bindingClue);
@@ -222,6 +231,7 @@ public class AutoBinding {
         cluesAndConnections.add(new BindingClueWithConnections(bindingClue, connectionsIds));
       }
     }
+    LOG.debug("{} {} having at least one matching connection", cluesAndConnections.size(), singlePlural(cluesAndConnections.size(), "clue", "clues"));
     return cluesAndConnections;
   }
 
@@ -236,6 +246,7 @@ public class AutoBinding {
   }
 
   private List<BindingClue> collectBindingClues(String checkedConfigScopeId) {
+    LOG.debug("Query client for binding clues...");
     FindFileByNamesInScopeResponse response;
     try {
       response = client.findFileByNamesInScope(new FindFileByNamesInScopeParams(checkedConfigScopeId, List.of(SONAR_SCANNER_CONFIG_FILENAME, AUTOSCAN_CONFIG_FILENAME))).get(1,
@@ -252,16 +263,17 @@ public class AutoBinding {
     }
 
     List<BindingClue> bindingClues = new ArrayList<>();
-    for (FoundFile foundFile : response.getFoundFiles()) {
+    for (FoundFileDto foundFile : response.getFoundFiles()) {
       var scannerProps = extractScannerProperties(foundFile);
       if (scannerProps == null) {
         continue;
       }
-      var bindingClue = computeBindingClue(foundFile.getFilename(), scannerProps);
+      var bindingClue = computeBindingClue(foundFile.getFileName(), scannerProps);
       if (bindingClue != null) {
         bindingClues.add(bindingClue);
       }
     }
+    LOG.debug("Found {} binding {}", bindingClues.size(), singlePlural(bindingClues.size(), "clue", "clues"));
     return bindingClues;
   }
 
@@ -287,15 +299,14 @@ public class AutoBinding {
     return connectionRepository.getConnectionsById().keySet();
   }
 
-
-
   @CheckForNull
-  private static ScannerProperties extractScannerProperties(FoundFile matchedFile) {
+  private static ScannerProperties extractScannerProperties(FoundFileDto matchedFile) {
+    LOG.debug("Extracting scanner properties from {}", matchedFile.getFilePath());
     var properties = new Properties();
     try {
       properties.load(new StringReader(matchedFile.getContent()));
     } catch (IOException e) {
-      LOG.error("Unable to parse content of file '{}'", matchedFile.getFilename(), e);
+      LOG.error("Unable to parse content of file '{}'", matchedFile.getFilePath(), e);
       return null;
     }
     return new ScannerProperties(getAndTrim(properties, "sonar.projectKey"), getAndTrim(properties, "sonar.organization"),
@@ -410,8 +421,7 @@ public class AutoBinding {
   }
 
   private boolean isValidBinding(BindingConfiguration bindingConfiguration) {
-    return bindingConfiguration.
-      ifBound((connectionId, projectKey) -> connectionRepository.getConnectionById(connectionId) != null)
+    return bindingConfiguration.ifBound((connectionId, projectKey) -> connectionRepository.getConnectionById(connectionId) != null)
       .orElse(false);
   }
 
