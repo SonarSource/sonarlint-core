@@ -34,10 +34,9 @@ import org.sonarsource.sonarlint.core.clientapi.connection.config.SonarCloudConn
 import org.sonarsource.sonarlint.core.clientapi.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.event.ConnectionAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 
-import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -87,11 +86,11 @@ class ConnectionServiceImplTest {
     assertThat(repository.getConnectionsById()).containsOnlyKeys("sq1", "sq2", "sc1");
     assertThat(repository.getConnectionById("sc1")).usingRecursiveComparison().isEqualTo(SC_DTO_1);
 
-    ArgumentCaptor<ConnectionAddedEvent> captor = ArgumentCaptor.forClass(ConnectionAddedEvent.class);
+    ArgumentCaptor<ConnectionConfigurationAddedEvent> captor = ArgumentCaptor.forClass(ConnectionConfigurationAddedEvent.class);
     verify(eventBus, times(3)).post(captor.capture());
     var events = captor.getAllValues();
 
-    assertThat(events).extracting(ConnectionAddedEvent::getAddedConnectionId).containsExactly("sq1", "sq2", "sc1");
+    assertThat(events).extracting(ConnectionConfigurationAddedEvent::getAddedConnectionId).containsExactly("sq1", "sq2", "sc1");
   }
 
   @Test

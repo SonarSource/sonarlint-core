@@ -19,15 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.event;
 
-public class ConnectionAddedEvent {
+public class ConnectionConfigurationRemovedEvent {
 
-  private final String addedConnectionId;
+  private final String removedConnectionId;
 
-  public ConnectionAddedEvent(String addedConnectionId) {
-    this.addedConnectionId = addedConnectionId;
+  public ConnectionConfigurationRemovedEvent(String removedConnectionId) {
+    this.removedConnectionId = removedConnectionId;
   }
 
-  public String getAddedConnectionId() {
-    return addedConnectionId;
+  public String getRemovedConnectionId() {
+    return removedConnectionId;
   }
 }

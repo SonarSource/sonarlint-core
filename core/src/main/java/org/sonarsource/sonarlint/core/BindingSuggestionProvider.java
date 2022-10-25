@@ -34,7 +34,7 @@ import org.sonarsource.sonarlint.core.clientapi.config.binding.SuggestBindingPar
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
-import org.sonarsource.sonarlint.core.event.ConnectionAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
@@ -92,7 +92,7 @@ public class BindingSuggestionProvider {
   }
 
   @Subscribe
-  public void connectionAdded(ConnectionAddedEvent event) throws InterruptedException {
+  public void connectionAdded(ConnectionConfigurationAddedEvent event) throws InterruptedException {
     // Double check if added connection has not been removed in the meantime
     var addedConnectionId = event.getAddedConnectionId();
     if (connectionRepository.getConnectionById(addedConnectionId) != null) {

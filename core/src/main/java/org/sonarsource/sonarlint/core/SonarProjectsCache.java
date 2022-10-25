@@ -21,31 +21,25 @@ package org.sonarsource.sonarlint.core;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.eventbus.Subscribe;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.sonarsource.sonarlint.core.client.api.util.TextSearchIndex;
-import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
-import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
-import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
-import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
-import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
+import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 
 import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singlePlural;
-import static org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration.SONARCLOUD_URL;
 
 public class SonarProjectsCache {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-
-  private final ConnectionConfigurationRepository connectionRepository;
-  private final SonarLintClient client;
+  private final ServerApiProvider serverApiProvider;
 
   private final Cache<String, TextSearchIndex<ServerProject>> textSearchIndexCache = CacheBuilder.newBuilder()
     .expireAfterWrite(1, TimeUnit.HOURS)
@@ -62,14 +56,6 @@ public class SonarProjectsCache {
     private SonarProjectKey(String connectionId, String projectKey) {
       this.connectionId = connectionId;
       this.projectKey = projectKey;
-    }
-
-    public String getConnectionId() {
-      return connectionId;
-    }
-
-    public String getProjectKey() {
-      return projectKey;
     }
 
     @Override
@@ -90,9 +76,25 @@ public class SonarProjectsCache {
     }
   }
 
-  public SonarProjectsCache(ConnectionConfigurationRepository connectionRepository, SonarLintClient client) {
-    this.connectionRepository = connectionRepository;
-    this.client = client;
+  public SonarProjectsCache(ServerApiProvider serverApiProvider) {
+    this.serverApiProvider = serverApiProvider;
+  }
+
+  @Subscribe
+  public void connectionRemoved(ConnectionConfigurationRemovedEvent e) {
+    evictAll(e.getRemovedConnectionId());
+  }
+
+  @Subscribe
+  public void connectionUpdated(ConnectionConfigurationUpdatedEvent e) {
+    // If connection config was modified (url, credentials, ...) then the projects the user might be able to "see" could be different
+    evictAll(e.getUpdatedConnectionId());
+  }
+
+  private void evictAll(String connectionId) {
+    textSearchIndexCache.invalidate(connectionId);
+    // Not possible to evict only entries of the given connection, so simply evict all
+    singleProjectsCache.invalidateAll();
   }
 
   public Optional<ServerProject> getSonarProject(String connectionId, String sonarProjectKey) {
@@ -100,7 +102,7 @@ public class SonarProjectsCache {
       return singleProjectsCache.get(new SonarProjectKey(connectionId, sonarProjectKey), () -> {
         LOG.debug("Query project '{}' on connection '{}'...", sonarProjectKey, connectionId);
         try {
-          return getServerApi(connectionId).flatMap(s -> s.component().getProject(sonarProjectKey));
+          return serverApiProvider.getServerApi(connectionId).flatMap(s -> s.component().getProject(sonarProjectKey));
         } catch (Exception e) {
           LOG.error("Error while querying project '{}' from connection '{}'", sonarProjectKey, connectionId, e);
           return Optional.empty();
@@ -117,7 +119,7 @@ public class SonarProjectsCache {
         LOG.debug("Load projects from connection '{}'...", connectionId);
         List<ServerProject> projects;
         try {
-          projects = getServerApi(connectionId).map(s -> s.component().getAllProjects(new ProgressMonitor(null))).orElse(List.of());
+          projects = serverApiProvider.getServerApi(connectionId).map(s -> s.component().getAllProjects(new ProgressMonitor(null))).orElse(List.of());
         } catch (Exception e) {
           LOG.error("Error while querying projects from connection '{}'", connectionId, e);
           return new TextSearchIndex<>();
@@ -134,25 +136,6 @@ public class SonarProjectsCache {
       });
     } catch (ExecutionException e) {
       throw new IllegalStateException(e.getCause());
-    }
-  }
-
-  private Optional<ServerApi> getServerApi(String connectionId) {
-    var connectionConfig = connectionRepository.getConnectionById(connectionId);
-    EndpointParams params;
-    if (connectionConfig instanceof SonarQubeConnectionConfiguration) {
-      params = new EndpointParams(((SonarQubeConnectionConfiguration) connectionConfig).getServerUrl(), false, null);
-    } else if (connectionConfig instanceof SonarCloudConnectionConfiguration) {
-      params = new EndpointParams(SONARCLOUD_URL, true, ((SonarCloudConnectionConfiguration) connectionConfig).getOrganization());
-    } else {
-      LOG.debug("Connection '{}' is gone", connectionId);
-      return Optional.empty();
-    }
-    var httpClient = client.getHttpClient(connectionId);
-    if (httpClient != null) {
-      return Optional.of(new ServerApi(params, httpClient));
-    } else {
-      return Optional.empty();
     }
   }
 
