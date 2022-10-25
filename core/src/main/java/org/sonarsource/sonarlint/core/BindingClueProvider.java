@@ -82,7 +82,7 @@ public class BindingClueProvider {
     private final BindingClue bindingClue;
     private final Set<String> connectionIds;
 
-    private BindingClueWithConnections(BindingClue bindingClue, Set<String> connectionIds) {
+    BindingClueWithConnections(BindingClue bindingClue, Set<String> connectionIds) {
       this.bindingClue = bindingClue;
       this.connectionIds = connectionIds;
     }
@@ -208,7 +208,7 @@ public class BindingClueProvider {
   public static class UnknownBindingClue implements BindingClue {
     private final String sonarProjectKey;
 
-    private UnknownBindingClue(String sonarProjectKey) {
+    UnknownBindingClue(String sonarProjectKey) {
       this.sonarProjectKey = sonarProjectKey;
     }
 
@@ -240,7 +240,7 @@ public class BindingClueProvider {
     private final String sonarProjectKey;
     private final String organization;
 
-    private SonarCloudBindingClue(@Nullable String sonarProjectKey, @Nullable String organization) {
+    SonarCloudBindingClue(@Nullable String sonarProjectKey, @Nullable String organization) {
       this.sonarProjectKey = sonarProjectKey;
       this.organization = organization;
     }

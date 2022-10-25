@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -173,7 +174,7 @@ public class BindingSuggestionProvider {
         bestScore = serverProjectScoreEntry.getValue();
         suggestions.add(new BindingSuggestionDto(connectionId, serverProjectScoreEntry.getKey().getKey(), serverProjectScoreEntry.getKey().getName()));
       }
-      LOG.debug("Best score = {}", bestScore);
+      LOG.debug("Best score = {}", String.format(Locale.ENGLISH, "%,.2f", bestScore));
     }
   }
 
