@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core;
 
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.util.concurrent.MoreExecutors;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -74,7 +75,7 @@ class BindingSuggestionProviderTests {
   private final BindingClueProvider bindingClueProvider = mock(BindingClueProvider.class);
   private final SonarProjectsCache sonarProjectsCache = mock(SonarProjectsCache.class);
 
-  private final BindingSuggestionProvider underTest = new BindingSuggestionProvider(configRepository, connectionRepository, client, bindingClueProvider, sonarProjectsCache);
+  private final BindingSuggestionProvider underTest = new BindingSuggestionProvider(configRepository, connectionRepository, client, bindingClueProvider, sonarProjectsCache, MoreExecutors.newDirectExecutorService());
 
   @BeforeEach
   public void setup() {
@@ -89,7 +90,7 @@ class BindingSuggestionProviderTests {
       new BindingConfigChangedEvent.BindingConfig(CONFIG_SCOPE_ID_1, null, null, true),
       new BindingConfigChangedEvent.BindingConfig(CONFIG_SCOPE_ID_1, null, null, false)));
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).contains("Binding suggestion computation started for config scopes '" + CONFIG_SCOPE_ID_1 + "'...");
+    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).contains("Binding suggestion computation queued for config scopes '" + CONFIG_SCOPE_ID_1 + "'...");
   }
 
   @Test
@@ -110,7 +111,7 @@ class BindingSuggestionProviderTests {
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(ImmutableSortedSet.of(CONFIG_SCOPE_ID_1, CONFIG_SCOPE_ID_2)));
 
     assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
-      .contains("Binding suggestion computation started for config scopes '" + CONFIG_SCOPE_ID_1 + "," + CONFIG_SCOPE_ID_2 + "'...");
+      .contains("Binding suggestion computation queued for config scopes '" + CONFIG_SCOPE_ID_1 + "," + CONFIG_SCOPE_ID_2 + "'...");
   }
 
   @Test
@@ -129,7 +130,7 @@ class BindingSuggestionProviderTests {
     when(configRepository.getConfigScopeIds()).thenReturn(Set.of("id1"));
     underTest.connectionAdded(new ConnectionConfigurationAddedEvent(SQ_1_ID));
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).contains("Binding suggestions computation started for connection '" + SQ_1_ID + "'...");
+    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).contains("Binding suggestions computation queued for connection '" + SQ_1_ID + "'...");
   }
 
   @Test
@@ -221,12 +222,12 @@ class BindingSuggestionProviderTests {
 
     assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
       .containsExactly(
-        "Binding suggestion computation started for config scopes '" + CONFIG_SCOPE_ID_1 + "'...",
+        "Binding suggestion computation queued for config scopes '" + CONFIG_SCOPE_ID_1 + "'...",
         "Found 1 suggestion for configuration scope '" + CONFIG_SCOPE_ID_1 + "'");
 
     verify(sonarProjectsCache, never()).getTextSearchIndex(anyString());
 
-    ArgumentCaptor<SuggestBindingParams> captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
+    var captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
     verify(client).suggestBinding(captor.capture());
 
     var params = captor.getValue();
@@ -258,13 +259,13 @@ class BindingSuggestionProviderTests {
 
     assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
       .containsExactlyInAnyOrder(
-        "Binding suggestion computation started for config scopes '" + CONFIG_SCOPE_ID_1 + "'...",
+        "Binding suggestion computation queued for config scopes '" + CONFIG_SCOPE_ID_1 + "'...",
         "Attempt to find a good match for 'KEYWORD' on connection '" + SQ_1_ID + "'...",
         "Attempt to find a good match for 'KEYWORD' on connection '" + SC_1_ID + "'...",
         "Best score = 0.33",
         "Found 1 suggestion for configuration scope '" + CONFIG_SCOPE_ID_1 + "'");
 
-    ArgumentCaptor<SuggestBindingParams> captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
+    var captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
     verify(client).suggestBinding(captor.capture());
 
     var params = captor.getValue();
@@ -296,13 +297,13 @@ class BindingSuggestionProviderTests {
 
     assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
       .containsExactlyInAnyOrder(
-        "Binding suggestion computation started for config scopes '" + CONFIG_SCOPE_ID_1 + "'...",
+        "Binding suggestion computation queued for config scopes '" + CONFIG_SCOPE_ID_1 + "'...",
         "Attempt to find a good match for 'KEYWORD' on connection '" + SQ_1_ID + "'...",
         "Attempt to find a good match for 'KEYWORD' on connection '" + SC_1_ID + "'...",
         "Best score = 0.33",
         "Found 1 suggestion for configuration scope '" + CONFIG_SCOPE_ID_1 + "'");
 
-    ArgumentCaptor<SuggestBindingParams> captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
+    var captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
     verify(client).suggestBinding(captor.capture());
 
     var params = captor.getValue();
@@ -338,12 +339,12 @@ class BindingSuggestionProviderTests {
 
     assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
       .containsExactly(
-        "Binding suggestion computation started for config scopes '" + CONFIG_SCOPE_ID_1 + "'...",
+        "Binding suggestion computation queued for config scopes '" + CONFIG_SCOPE_ID_1 + "'...",
         "Attempt to find a good match for 'foo-bar' on connection '" + SC_1_ID + "'...",
         "Best score = 0.67",
         "Found 2 suggestions for configuration scope '" + CONFIG_SCOPE_ID_1 + "'");
 
-    ArgumentCaptor<SuggestBindingParams> captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
+    var captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
     verify(client).suggestBinding(captor.capture());
 
     var params = captor.getValue();

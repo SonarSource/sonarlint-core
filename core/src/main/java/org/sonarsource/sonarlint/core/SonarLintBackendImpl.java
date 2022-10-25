@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core;
 
 import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.EventBus;
+import com.google.common.util.concurrent.MoreExecutors;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -45,6 +46,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   private final ConnectionConfigurationRepository connectionConfigurationRepository = new ConnectionConfigurationRepository();
   private final ConfigurationRepository configurationRepository = new ConfigurationRepository();
   private final SonarLintClient client;
+  private final BindingSuggestionProvider bindingSuggestionProvider;
 
   public SonarLintBackendImpl(SonarLintClient client) {
     this.client = client;
@@ -54,7 +56,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     var bindingClueProvider = new BindingClueProvider(connectionConfigurationRepository, client);
     var serverApiProvider = new ServerApiProvider(connectionConfigurationRepository, client);
     var sonarProjectCache = new SonarProjectsCache(serverApiProvider);
-    var bindingSuggestionProvider = new BindingSuggestionProvider(configurationRepository, connectionConfigurationRepository, client, bindingClueProvider, sonarProjectCache);
+    bindingSuggestionProvider = new BindingSuggestionProvider(configurationRepository, connectionConfigurationRepository, client, bindingClueProvider, sonarProjectCache);
     clientEventBus.register(bindingSuggestionProvider);
     clientEventBus.register(sonarProjectCache);
   }
@@ -72,16 +74,8 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   @Override
   public CompletableFuture<Void> shutdown() {
     return CompletableFuture.runAsync(() -> {
-      clientEventsExecutorService.shutdownNow();
-      try {
-        var success = clientEventsExecutorService.awaitTermination(10, TimeUnit.SECONDS);
-        if (!success) {
-          LOG.error("Unable to terminate clientEventsExecutorService in time");
-        }
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new IllegalStateException(e);
-      }
+      MoreExecutors.shutdownAndAwaitTermination(clientEventsExecutorService, 10, TimeUnit.SECONDS);
+      this.bindingSuggestionProvider.shutdown();
     });
   }
 }
