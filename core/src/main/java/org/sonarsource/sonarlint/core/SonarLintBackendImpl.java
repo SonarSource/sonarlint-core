@@ -74,7 +74,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     return CompletableFuture.runAsync(() -> {
       clientEventsExecutorService.shutdownNow();
       try {
-        boolean success = clientEventsExecutorService.awaitTermination(10, TimeUnit.SECONDS);
+        var success = clientEventsExecutorService.awaitTermination(10, TimeUnit.SECONDS);
         if (!success) {
           LOG.error("Unable to terminate clientEventsExecutorService in time");
         }
