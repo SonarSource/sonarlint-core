@@ -19,22 +19,18 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import java.util.Optional;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
-import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class ServerApiProviderTest {
+class ServerApiProviderTests {
 
 
   private final ConnectionConfigurationRepository connectionRepository = mock(ConnectionConfigurationRepository.class);

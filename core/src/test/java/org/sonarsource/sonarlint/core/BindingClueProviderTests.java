@@ -44,7 +44,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class BindingClueProviderTest {
+class BindingClueProviderTests {
 
   public static final String SQ_CONNECTION_ID_1 = "sq1";
   public static final String SQ_CONNECTION_ID_2 = "sq2";

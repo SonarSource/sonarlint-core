@@ -53,7 +53,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class BindingSuggestionProviderTest {
+class BindingSuggestionProviderTests {
 
   public static final String SQ_1_ID = "sq1";
   public static final String SC_1_ID = "sc1";
