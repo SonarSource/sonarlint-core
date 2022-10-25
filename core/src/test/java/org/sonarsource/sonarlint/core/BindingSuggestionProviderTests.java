@@ -124,12 +124,22 @@ class BindingSuggestionProviderTests {
   }
 
   @Test
-  void trigger_suggest_binding_if_connection_added() throws InterruptedException {
+  void trigger_suggest_binding_if_connection_added_and_at_least_one_config_scope() throws InterruptedException {
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
-
+    when(configRepository.getConfigScopeIds()).thenReturn(Set.of("id1"));
     underTest.connectionAdded(new ConnectionConfigurationAddedEvent(SQ_1_ID));
 
     assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).contains("Binding suggestions computation started for connection '" + SQ_1_ID + "'...");
+  }
+
+  @Test
+  void dont_trigger_suggest_binding_if_connection_added_but_no_config_scopes() throws InterruptedException {
+    when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
+    when(configRepository.getConfigScopeIds()).thenReturn(Set.of());
+
+    underTest.connectionAdded(new ConnectionConfigurationAddedEvent(SQ_1_ID));
+
+    assertThat(logTester.logs()).isEmpty();
   }
 
   @Test
