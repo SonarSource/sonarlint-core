@@ -96,9 +96,9 @@ public class BindingSuggestionProvider {
   public void connectionAdded(ConnectionConfigurationAddedEvent event) throws InterruptedException {
     // Double check if added connection has not been removed in the meantime
     var addedConnectionId = event.getAddedConnectionId();
-    if (connectionRepository.getConnectionById(addedConnectionId) != null) {
+    var allConfigScopeIds = configRepository.getConfigScopeIds();
+    if (connectionRepository.getConnectionById(addedConnectionId) != null && !allConfigScopeIds.isEmpty()) {
       LOG.debug("Binding suggestions computation started for connection '{}'...", addedConnectionId);
-      var allConfigScopeIds = configRepository.getConfigScopeIds();
       var eligibleConnectionIds = Set.of(addedConnectionId);
       suggestBindingForScopesAndConnections(allConfigScopeIds, eligibleConnectionIds);
     }
