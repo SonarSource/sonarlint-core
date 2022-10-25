@@ -66,7 +66,7 @@ public class BindingSuggestionProvider {
   }
 
   @Subscribe
-  public void bindingConfigChanged(BindingConfigChangedEvent event) {
+  public void bindingConfigChanged(BindingConfigChangedEvent event) throws InterruptedException {
     // Check if binding suggestion was switched on
     if (!event.getNewConfig().isBindingSuggestionDisabled() && event.getPreviousConfig().isBindingSuggestionDisabled()) {
       suggestBindingForGivenScopesAndAllConnections(Set.of(event.getNewConfig().getConfigScopeId()));
@@ -74,12 +74,12 @@ public class BindingSuggestionProvider {
   }
 
   @Subscribe
-  public void configurationScopesAdded(ConfigurationScopesAddedEvent event) {
+  public void configurationScopesAdded(ConfigurationScopesAddedEvent event) throws InterruptedException {
     var configScopeIds = event.getAddedConfigurationScopeIds();
     suggestBindingForGivenScopesAndAllConnections(configScopeIds);
   }
 
-  private void suggestBindingForGivenScopesAndAllConnections(Set<String> configScopeIdsToSuggest) {
+  private void suggestBindingForGivenScopesAndAllConnections(Set<String> configScopeIdsToSuggest) throws InterruptedException {
     if (!configScopeIdsToSuggest.isEmpty()) {
       var allConnectionIds = connectionRepository.getConnectionsById().keySet();
       if (allConnectionIds.isEmpty()) {
@@ -92,7 +92,7 @@ public class BindingSuggestionProvider {
   }
 
   @Subscribe
-  public void connectionAdded(ConnectionAddedEvent event) {
+  public void connectionAdded(ConnectionAddedEvent event) throws InterruptedException {
     // Double check if added connection has not been removed in the meantime
     var addedConnectionId = event.getAddedConnectionId();
     if (connectionRepository.getConnectionById(addedConnectionId) != null) {
@@ -103,7 +103,7 @@ public class BindingSuggestionProvider {
     }
   }
 
-  private void suggestBindingForScopesAndConnections(Set<String> configScopeIds, Set<String> eligibleConnectionIds) {
+  private void suggestBindingForScopesAndConnections(Set<String> configScopeIds, Set<String> eligibleConnectionIds) throws InterruptedException {
     var eligibleConfigScopesForBindingSuggestion = new HashSet<String>();
     for (String configScopeId : configScopeIds) {
       if (isScopeEligibleForBindingSuggestion(configScopeId)) {
@@ -117,16 +117,16 @@ public class BindingSuggestionProvider {
 
     Map<String, List<BindingSuggestionDto>> suggestions = new HashMap<>();
 
-    eligibleConfigScopesForBindingSuggestion.forEach(configScopeId -> {
+    for (String configScopeId : eligibleConfigScopesForBindingSuggestion) {
       var scopeSuggestions = suggestBindingForEligibleScope(configScopeId, eligibleConnectionIds);
       LOG.debug("Found {} {} for configuration scope '{}'", scopeSuggestions.size(), singlePlural(scopeSuggestions.size(), "suggestion", "suggestions"), configScopeId);
       suggestions.put(configScopeId, scopeSuggestions);
-    });
+    }
 
     client.suggestBinding(new SuggestBindingParams(suggestions));
   }
 
-  private List<BindingSuggestionDto> suggestBindingForEligibleScope(String checkedConfigScopeId, Set<String> eligibleConnectionIds) {
+  private List<BindingSuggestionDto> suggestBindingForEligibleScope(String checkedConfigScopeId, Set<String> eligibleConnectionIds) throws InterruptedException {
     var cluesAndConnections = bindingClueProvider.collectBindingCluesWithConnections(checkedConfigScopeId, eligibleConnectionIds);
 
     List<BindingSuggestionDto> suggestions = new ArrayList<>();
