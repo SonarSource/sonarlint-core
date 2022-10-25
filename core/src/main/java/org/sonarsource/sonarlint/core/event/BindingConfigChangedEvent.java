@@ -80,7 +80,7 @@ public class BindingConfigChangedEvent {
       if (o == null || getClass() != o.getClass()) {
         return false;
       }
-      BindingConfig that = (BindingConfig) o;
+      var that = (BindingConfig) o;
       return bindingSuggestionDisabled == that.bindingSuggestionDisabled
         && configScopeId.equals(that.configScopeId)
         && Objects.equals(connectionId, that.connectionId)

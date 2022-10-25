@@ -66,7 +66,7 @@ public class SonarProjectsCache {
       if (o == null || getClass() != o.getClass()) {
         return false;
       }
-      SonarProjectKey that = (SonarProjectKey) o;
+      var that = (SonarProjectKey) o;
       return connectionId.equals(that.connectionId) && projectKey.equals(that.projectKey);
     }
 

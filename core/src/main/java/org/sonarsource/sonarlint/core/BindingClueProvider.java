@@ -68,7 +68,7 @@ public class BindingClueProvider {
   private List<BindingClueWithConnections> matchConnections(List<BindingClue> bindingClues, Set<String> eligibleConnectionIds) {
     LOG.debug("Match connections...");
     List<BindingClueWithConnections> cluesAndConnections = new ArrayList<>();
-    for (BindingClue bindingClue : bindingClues) {
+    for (var bindingClue : bindingClues) {
       var connectionsIds = matchConnections(bindingClue, eligibleConnectionIds);
       if (!connectionsIds.isEmpty()) {
         cluesAndConnections.add(new BindingClueWithConnections(bindingClue, connectionsIds));
@@ -111,7 +111,7 @@ public class BindingClueProvider {
     }
 
     List<BindingClue> bindingClues = new ArrayList<>();
-    for (FoundFileDto foundFile : response.getFoundFiles()) {
+    for (var foundFile : response.getFoundFiles()) {
       var scannerProps = extractScannerProperties(foundFile);
       if (scannerProps == null) {
         continue;

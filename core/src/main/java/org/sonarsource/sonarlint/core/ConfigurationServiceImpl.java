@@ -52,8 +52,8 @@ public class ConfigurationServiceImpl implements ConfigurationService {
   public void didAddConfigurationScopes(DidAddConfigurationScopesParams params) {
     var addedDtos = params.getAddedScopes();
     Set<String> addedIds = new HashSet<>();
-    for (ConfigurationScopeDto addedDto : addedDtos) {
-      ConfigurationScope previous = addOrUpdateRepository(addedDto);
+    for (var addedDto : addedDtos) {
+      var previous = addOrUpdateRepository(addedDto);
       if (previous != null) {
         LOG.error("Duplicate configuration scope registered: {}", addedDto.getId());
       } else {

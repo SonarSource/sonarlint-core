@@ -96,8 +96,8 @@ public class ConnectionServiceImpl implements ConnectionService {
   }
 
   private void updateConnection(AbstractConnectionConfiguration connectionConfiguration) {
-    String connectionId = connectionConfiguration.getConnectionId();
-    AbstractConnectionConfiguration previous = repository.getConnectionById(connectionId);
+    var connectionId = connectionConfiguration.getConnectionId();
+    var previous = repository.getConnectionById(connectionId);
     repository.addOrReplace(connectionConfiguration);
     if (previous == null) {
       LOG.error("Attempt to update connection '{}' that was not registered", connectionId);
