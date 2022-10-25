@@ -29,7 +29,9 @@ import org.sonarsource.sonarlint.core.clientapi.connection.config.InitializePara
 import org.sonarsource.sonarlint.core.clientapi.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.event.ConnectionAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
+import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
@@ -65,7 +67,7 @@ public class ConnectionServiceImpl implements ConnectionService {
       LOG.error("Duplicate connection registered: {}", previous.getConnectionId());
     }
     repository.addOrReplace(connectionConfiguration);
-    clientEventBus.post(new ConnectionAddedEvent(connectionConfiguration.getConnectionId()));
+    clientEventBus.post(new ConnectionConfigurationAddedEvent(connectionConfiguration.getConnectionId()));
   }
 
   private static AbstractConnectionConfiguration adapt(SonarQubeConnectionConfigurationDto sqDto) {
@@ -82,6 +84,8 @@ public class ConnectionServiceImpl implements ConnectionService {
     var removed = repository.remove(idToRemove);
     if (removed == null) {
       LOG.error("Attempt to remove connection '{}' that was not registered", idToRemove);
+    } else {
+      clientEventBus.post(new ConnectionConfigurationRemovedEvent(idToRemove));
     }
   }
 
@@ -94,11 +98,14 @@ public class ConnectionServiceImpl implements ConnectionService {
   private void updateConnection(AbstractConnectionConfiguration connectionConfiguration) {
     String connectionId = connectionConfiguration.getConnectionId();
     AbstractConnectionConfiguration previous = repository.getConnectionById(connectionId);
+    repository.addOrReplace(connectionConfiguration);
     if (previous == null) {
       LOG.error("Attempt to update connection '{}' that was not registered", connectionId);
+      clientEventBus.post(new ConnectionConfigurationAddedEvent(connectionConfiguration.getConnectionId()));
+    } else {
+      clientEventBus.post(new ConnectionConfigurationUpdatedEvent(connectionConfiguration.getConnectionId()));
     }
 
-    repository.addOrReplace(connectionConfiguration);
   }
 
 }
