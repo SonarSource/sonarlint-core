@@ -70,7 +70,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   @Override
   public CompletableFuture<Void> shutdown() {
     return CompletableFuture.runAsync(() -> {
-      clientEventsExecutorService.shutdown();
+      clientEventsExecutorService.shutdownNow();
       try {
         boolean success = clientEventsExecutorService.awaitTermination(10, TimeUnit.SECONDS);
         if (!success) {

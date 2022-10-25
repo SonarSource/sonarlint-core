@@ -60,7 +60,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
         addedIds.add(addedDto.getId());
       }
     }
-      clientEventBus.post(new ConfigurationScopesAddedEvent(addedIds));
+    clientEventBus.post(new ConfigurationScopesAddedEvent(addedIds));
   }
 
   private ConfigurationScope addOrUpdateRepository(ConfigurationScopeDto dto) {

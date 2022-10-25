@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -61,9 +60,9 @@ public class BindingClueProvider {
     this.client = client;
   }
 
-  public List<BindingClueWithConnections> collectBindingCluesWithConnections(String checkedConfigScopeId, Set<String> eligibleConnectionIds) {
-    var bindingClues = collectBindingClues(checkedConfigScopeId);
-    return matchConnections(bindingClues, eligibleConnectionIds);
+  public List<BindingClueWithConnections> collectBindingCluesWithConnections(String configScopeId, Set<String> connectionIds) throws InterruptedException {
+    var bindingClues = collectBindingClues(configScopeId);
+    return matchConnections(bindingClues, connectionIds);
   }
 
   private List<BindingClueWithConnections> matchConnections(List<BindingClue> bindingClues, Set<String> eligibleConnectionIds) {
@@ -97,17 +96,14 @@ public class BindingClueProvider {
     }
   }
 
-  private List<BindingClue> collectBindingClues(String checkedConfigScopeId) {
+  private List<BindingClue> collectBindingClues(String checkedConfigScopeId) throws InterruptedException {
     LOG.debug("Query client for binding clues...");
     FindFileByNamesInScopeResponse response;
     try {
       response = client.findFileByNamesInScope(new FindFileByNamesInScopeParams(checkedConfigScopeId, List.of(SONAR_SCANNER_CONFIG_FILENAME, AUTOSCAN_CONFIG_FILENAME))).get(1,
         TimeUnit.MINUTES);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new IllegalStateException(e);
     } catch (ExecutionException e) {
-      LOG.error("Unable to search scanner clues", e.getCause());
+      LOG.error("Unable to search scanner clues: " + e.getCause().getMessage(), e.getCause());
       return List.of();
     } catch (TimeoutException e) {
       LOG.error("Unable to search scanner clues in time", e);
@@ -148,7 +144,7 @@ public class BindingClueProvider {
         .map(AbstractConnectionConfiguration::getConnectionId)
         .collect(toSet());
     }
-    return connectionRepository.getConnectionsById().keySet();
+    return eligibleConnectionIds;
   }
 
   @CheckForNull
@@ -157,7 +153,7 @@ public class BindingClueProvider {
     var properties = new Properties();
     try {
       properties.load(new StringReader(matchedFile.getContent()));
-    } catch (IOException e) {
+    } catch (Exception e) {
       LOG.error("Unable to parse content of file '{}'", matchedFile.getFilePath(), e);
       return null;
     }
@@ -236,6 +232,7 @@ public class BindingClueProvider {
     public String getSonarProjectKey() {
       return sonarProjectKey;
     }
+
   }
 
   public static class SonarCloudBindingClue implements BindingClue {
