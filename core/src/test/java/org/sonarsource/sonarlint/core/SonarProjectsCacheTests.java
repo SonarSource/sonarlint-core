@@ -36,7 +36,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class SonarProjectsCacheTest {
+class SonarProjectsCacheTests {
 
   public static final String SQ_1 = "sq1";
   public static final String PROJECT_KEY_1 = "projectKey1";

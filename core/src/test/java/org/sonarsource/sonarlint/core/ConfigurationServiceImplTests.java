@@ -42,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-class ConfigurationServiceImplTest {
+class ConfigurationServiceImplTests {
 
   public static final BindingConfigurationDto BINDING_DTO_1 = new BindingConfigurationDto("connection1", "projectKey1", false);
   public static final BindingConfigurationDto BINDING_DTO_2 = new BindingConfigurationDto("connection1", "projectKey2", true);

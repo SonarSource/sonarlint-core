@@ -42,7 +42,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-class ConnectionServiceImplTest {
+class ConnectionServiceImplTests {
 
   private final ConnectionConfigurationRepository repository = new ConnectionConfigurationRepository();
   @RegisterExtension
