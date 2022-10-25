@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core;
 
 import com.google.common.eventbus.Subscribe;
+import com.google.common.util.concurrent.MoreExecutors;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,6 +29,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.SuggestBindingParams;
@@ -54,18 +59,26 @@ public class BindingSuggestionProvider {
   private final SonarLintClient client;
   private final BindingClueProvider bindingClueProvider;
   private final SonarProjectsCache sonarProjectsCache;
+  private final ExecutorService executorService;
 
   public BindingSuggestionProvider(ConfigurationRepository configRepository, ConnectionConfigurationRepository connectionRepository, SonarLintClient client,
     BindingClueProvider bindingClueProvider, SonarProjectsCache sonarProjectsCache) {
+    this(configRepository, connectionRepository, client, bindingClueProvider, sonarProjectsCache, new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
+      new LinkedBlockingQueue<>(), r -> new Thread(r, "Binding Suggestion Provider")));
+  }
+
+  BindingSuggestionProvider(ConfigurationRepository configRepository, ConnectionConfigurationRepository connectionRepository, SonarLintClient client,
+    BindingClueProvider bindingClueProvider, SonarProjectsCache sonarProjectsCache, ExecutorService executorService) {
     this.configRepository = configRepository;
     this.connectionRepository = connectionRepository;
     this.client = client;
     this.bindingClueProvider = bindingClueProvider;
     this.sonarProjectsCache = sonarProjectsCache;
+    this.executorService = executorService;
   }
 
   @Subscribe
-  public void bindingConfigChanged(BindingConfigChangedEvent event) throws InterruptedException {
+  public void bindingConfigChanged(BindingConfigChangedEvent event) {
     // Check if binding suggestion was switched on
     if (!event.getNewConfig().isBindingSuggestionDisabled() && event.getPreviousConfig().isBindingSuggestionDisabled()) {
       suggestBindingForGivenScopesAndAllConnections(Set.of(event.getNewConfig().getConfigScopeId()));
@@ -73,36 +86,47 @@ public class BindingSuggestionProvider {
   }
 
   @Subscribe
-  public void configurationScopesAdded(ConfigurationScopesAddedEvent event) throws InterruptedException {
+  public void configurationScopesAdded(ConfigurationScopesAddedEvent event) {
     var configScopeIds = event.getAddedConfigurationScopeIds();
     suggestBindingForGivenScopesAndAllConnections(configScopeIds);
   }
 
-  private void suggestBindingForGivenScopesAndAllConnections(Set<String> configScopeIdsToSuggest) throws InterruptedException {
+  private void suggestBindingForGivenScopesAndAllConnections(Set<String> configScopeIdsToSuggest) {
     if (!configScopeIdsToSuggest.isEmpty()) {
       var allConnectionIds = connectionRepository.getConnectionsById().keySet();
       if (allConnectionIds.isEmpty()) {
         LOG.debug("No connections configured, skipping binding suggestions.");
         return;
       }
-      LOG.debug("Binding suggestion computation started for config scopes '{}'...", join(",", configScopeIdsToSuggest));
-      suggestBindingForScopesAndConnections(configScopeIdsToSuggest, allConnectionIds);
+      LOG.debug("Binding suggestion computation queued for config scopes '{}'...", join(",", configScopeIdsToSuggest));
+      queueBindingSuggestionComputation(configScopeIdsToSuggest, allConnectionIds);
     }
   }
 
   @Subscribe
-  public void connectionAdded(ConnectionConfigurationAddedEvent event) throws InterruptedException {
+  public void connectionAdded(ConnectionConfigurationAddedEvent event) {
     // Double check if added connection has not been removed in the meantime
     var addedConnectionId = event.getAddedConnectionId();
     var allConfigScopeIds = configRepository.getConfigScopeIds();
     if (connectionRepository.getConnectionById(addedConnectionId) != null && !allConfigScopeIds.isEmpty()) {
-      LOG.debug("Binding suggestions computation started for connection '{}'...", addedConnectionId);
+      LOG.debug("Binding suggestions computation queued for connection '{}'...", addedConnectionId);
       var eligibleConnectionIds = Set.of(addedConnectionId);
-      suggestBindingForScopesAndConnections(allConfigScopeIds, eligibleConnectionIds);
+      queueBindingSuggestionComputation(allConfigScopeIds, eligibleConnectionIds);
     }
   }
 
-  private void suggestBindingForScopesAndConnections(Set<String> configScopeIds, Set<String> eligibleConnectionIds) throws InterruptedException {
+  private void queueBindingSuggestionComputation(Set<String> configScopeIds, Set<String> eligibleConnectionIds) {
+    executorService.submit(() -> {
+      try {
+        bindingSuggestionComputation(configScopeIds, eligibleConnectionIds);
+      } catch (InterruptedException e) {
+        LOG.debug("Binding suggestion computation was interrupted", e);
+        Thread.currentThread().interrupt();
+      }
+    });
+  }
+
+  private void bindingSuggestionComputation(Set<String> configScopeIds, Set<String> eligibleConnectionIds) throws InterruptedException {
     var eligibleConfigScopesForBindingSuggestion = new HashSet<String>();
     for (var configScopeId : configScopeIds) {
       if (isScopeEligibleForBindingSuggestion(configScopeId)) {
@@ -202,6 +226,10 @@ public class BindingSuggestionProvider {
   private boolean isValidBinding(BindingConfiguration bindingConfiguration) {
     return bindingConfiguration.ifBound((connectionId, projectKey) -> connectionRepository.getConnectionById(connectionId) != null)
       .orElse(false);
+  }
+
+  public void shutdown() {
+    MoreExecutors.shutdownAndAwaitTermination(executorService, 1, TimeUnit.SECONDS);
   }
 
 }
