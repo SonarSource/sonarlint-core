@@ -137,7 +137,6 @@ stages:
         inputs:
           targetType: 'inline'
           script: |
-            Resolve-DnsName localhost
             Resolve-DnsName 127.0.0.1
 #      - task: Maven@3
 #        displayName: 'Run Maven verify'
