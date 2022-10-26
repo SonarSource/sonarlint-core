@@ -133,9 +133,11 @@ stages:
         name: mavenSettings
         inputs:
           secureFile: 'maven-settings.xml'
-      - task: Debug
-        displayName: debug
-        bash: host localhost ; host 127.0.0.1
+      - task: Bash@3
+        inputs:
+          targetType: 'inline'
+          script: |
+            host localhost ; host 127.0.0.1
 #      - task: Maven@3
 #        displayName: 'Run Maven verify'
 #        env:
