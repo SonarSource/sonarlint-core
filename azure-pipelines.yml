@@ -137,7 +137,8 @@ stages:
         inputs:
           targetType: 'inline'
           script: |
-            host localhost ; host 127.0.0.1
+            getent hosts localhost
+            getent hosts 127.0.0.1
 #      - task: Maven@3
 #        displayName: 'Run Maven verify'
 #        env:
