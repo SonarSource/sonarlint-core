@@ -137,7 +137,7 @@ stages:
         inputs:
           targetType: 'inline'
           script: |
-            Resolve-DnsName 127.0.0.1
+            gci env:* | select Name
 #      - task: Maven@3
 #        displayName: 'Run Maven verify'
 #        env:
