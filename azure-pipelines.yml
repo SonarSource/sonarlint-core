@@ -133,20 +133,23 @@ stages:
         name: mavenSettings
         inputs:
           secureFile: 'maven-settings.xml'
-      - task: Maven@3
-        displayName: 'Run Maven verify'
-        env:
-          ARTIFACTORY_PRIVATE_READER_USERNAME: $(ARTIFACTORY_PRIVATE_READER_USERNAME)
-          ARTIFACTORY_PRIVATE_READER_PASSWORD: $(ARTIFACTORY_PRIVATE_READER_PASSWORD)
-        inputs:
-          goals: 'verify'
-          options: '-B --settings $(mavenSettings.secureFilePath) -Dcommercial -Denable-repo=private'
-          publishJUnitResults: true
-          testResultsFiles: '**/surefire-reports/TEST-*.xml'
-          testRunTitle: 'UTs on Windows'
-          javaHomeOption: 'JDKVersion'
-          jdkVersionOption: '1.11'
-          mavenOptions: $(MAVEN_OPTS)
+      - task: Debug
+        displayName: debug
+        bash: host localhost ; host 127.0.0.1
+#      - task: Maven@3
+#        displayName: 'Run Maven verify'
+#        env:
+#          ARTIFACTORY_PRIVATE_READER_USERNAME: $(ARTIFACTORY_PRIVATE_READER_USERNAME)
+#          ARTIFACTORY_PRIVATE_READER_PASSWORD: $(ARTIFACTORY_PRIVATE_READER_PASSWORD)
+#        inputs:
+#          goals: 'verify'
+#          options: '-B --settings $(mavenSettings.secureFilePath) -Dcommercial -Denable-repo=private'
+#          publishJUnitResults: true
+#          testResultsFiles: '**/surefire-reports/TEST-*.xml'
+#          testRunTitle: 'UTs on Windows'
+#          javaHomeOption: 'JDKVersion'
+#          jdkVersionOption: '1.11'
+#          mavenOptions: $(MAVEN_OPTS)
     - job: test_linux
       displayName: 'Run unit tests on Linux'
       pool:
