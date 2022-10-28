@@ -223,6 +223,21 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
+  public List<ServerTaintIssue> loadTaint(String branchName) {
+    return loadIssue(branchName, FILE_TO_TAINT_ISSUES_LINK_NAME, XodusServerIssueStore::adaptTaint);
+  }
+
+  private <G> List<G> loadIssue(String branchName, String linkName, Function<Entity, G> adapter) {
+    return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
+      .map(branch -> StreamSupport.stream(branch.getLinks(BRANCH_TO_FILES_LINK_NAME).spliterator(), false)
+        .map(file -> file.getLinks(linkName))
+        .flatMap(issueEntities -> StreamSupport.stream(issueEntities.spliterator(), false).map(adapter))
+        .collect(Collectors.toList())
+      )
+      .orElseGet(Collections::emptyList));
+  }
+
+  @Override
   public void replaceAllIssuesOfFile(String branchName, String serverFilePath, List<ServerIssue> issues) {
     timed("Wrote " + issues.size() + " issues in store", () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
