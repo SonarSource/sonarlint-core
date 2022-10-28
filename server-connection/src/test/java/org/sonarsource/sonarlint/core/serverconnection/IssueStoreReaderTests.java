@@ -166,6 +166,31 @@ class IssueStoreReaderTests {
     assertThat(loadedIssue.getFlows().get(0).locations().get(2).getFilePath()).isEqualTo("src/path2");
   }
 
+  @Test
+  void canReadAllRawTaintIssuesFromStorage() {
+    var queriedBranch = "branch";
+
+    issueStore.replaceAllTaintOfFile(queriedBranch, "src/path1", List.of(aServerTaintIssue()
+      .setFilePath("src/path1")
+      .setMessage("Primary")
+      .setTextRange(new TextRangeWithHash(1, 2, 3, 4, "ab12"))));
+    issueStore.replaceAllTaintOfFile(queriedBranch, "src/path2", List.of(aServerTaintIssue()
+      .setFilePath("src/path2")
+      .setMessage("Primary")
+      .setTextRange(new TextRangeWithHash(1, 2, 3, 4, "bc23"))));
+    issueStore.replaceAllTaintOfFile("otherbranch", "src/path3", List.of(aServerTaintIssue()
+      .setFilePath("src/path3")
+      .setMessage("Primary")
+      .setTextRange(new TextRangeWithHash(1, 2, 3, 4, "cd34"))));
+
+    var issuesFromStorage = issueStoreReader.getRawServerTaintIssues(projectBinding, queriedBranch);
+
+    assertThat(issuesFromStorage)
+      .hasSize(2)
+      .extracting(ServerTaintIssue::getFilePath)
+      .containsOnly("src/path1", "src/path2");
+  }
+
   private final Comparator<ServerIssue> simpleComparator = (o1, o2) -> {
     if (Objects.equals(o1.getFilePath(), o2.getFilePath())) {
       return 0;

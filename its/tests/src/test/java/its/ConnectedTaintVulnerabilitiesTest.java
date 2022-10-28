@@ -50,9 +50,11 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -75,6 +77,7 @@ import org.sonarsource.sonarlint.core.serverapi.push.ServerEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.TaintVulnerabilityClosedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.TaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -171,6 +174,12 @@ public class ConnectedTaintVulnerabilitiesTest extends AbstractConnectedTest {
     assertThat(flow.locations()).isNotEmpty();
     assertThat(flow.locations().get(0).getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
     assertThat(flow.locations().get(flow.locations().size() - 1).getTextRange().getHash()).isIn(hash("request.getParameter(\"user\")"), hash("request.getParameter(\"pass\")"));
+
+    var allTaintIssues = engine.getAllServerTaintIssues(projectBinding, "master");
+    assertThat(allTaintIssues)
+      .hasSize(1)
+      .extracting(ServerTaintIssue::getFilePath)
+      .containsExactly("src/main/java/foo/DbHelper.java");
   }
 
   @Test

@@ -90,12 +90,21 @@ public interface ProjectServerIssueStore {
    * Load taint issues stored for specified file.
    *
    *
-   * @param projectKey
    * @param branchName
    * @param sqFilePath the relative path to the base of project, in SonarQube
    * @return issues, possibly empty
    */
   List<ServerTaintIssue> loadTaint(String branchName, String sqFilePath);
+
+  /**
+   * Load all taint issues stored for a branch.
+   *
+   *
+   * @param branchName
+   * @return issues, possibly empty
+   */
+  List<ServerTaintIssue> loadTaint(String branchName);
+
 
   /**
    * @param issueKey

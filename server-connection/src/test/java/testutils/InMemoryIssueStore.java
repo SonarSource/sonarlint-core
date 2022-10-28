@@ -21,12 +21,14 @@ package testutils;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
@@ -109,6 +111,15 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
     return taintIssuesByFileByBranch
       .getOrDefault(branchName, Map.of())
       .getOrDefault(sqFilePath, List.of());
+  }
+
+  public List<ServerTaintIssue> loadTaint(String branchName) {
+    return taintIssuesByFileByBranch
+      .getOrDefault(branchName, Map.of())
+      .values()
+      .stream()
+      .flatMap(Collection::stream)
+      .collect(Collectors.toList());
   }
 
   @Override

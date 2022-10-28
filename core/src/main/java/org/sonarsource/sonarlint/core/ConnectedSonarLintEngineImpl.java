@@ -379,6 +379,11 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
+  public List<ServerTaintIssue> getAllServerTaintIssues(ProjectBinding projectBinding, String branchName) {
+    return serverConnection.getServerTaintIssues(projectBinding, branchName);
+  }
+
+  @Override
   public <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> fileIdePathExtractor, Predicate<G> testFilePredicate) {
     AnalyzerConfiguration analyzerConfig;
     try {

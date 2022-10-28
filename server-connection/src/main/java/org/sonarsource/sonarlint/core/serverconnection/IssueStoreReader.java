@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStoresManager;
@@ -51,8 +52,18 @@ public class IssueStoreReader {
       return Collections.emptyList();
     }
     var loadedIssues = serverIssueStoresManager.get(projectBinding.projectKey()).loadTaint(branchName, sqPath);
-    loadedIssues = loadedIssues.stream().filter(not(ServerTaintIssue::isResolved)).collect(Collectors.toList());
+    loadedIssues = filterOutResolvedIssues(loadedIssues);
     loadedIssues.forEach(issue -> issue.setFilePath(ideFilePath));
     return loadedIssues;
+  }
+
+  public List<ServerTaintIssue> getRawServerTaintIssues(ProjectBinding projectBinding, String branchName) {
+    var loadedIssues = serverIssueStoresManager.get(projectBinding.projectKey()).loadTaint(branchName);
+    return filterOutResolvedIssues(loadedIssues);
+  }
+
+  @NotNull
+  private static List<ServerTaintIssue> filterOutResolvedIssues(List<ServerTaintIssue> loadedIssues) {
+    return loadedIssues.stream().filter(not(ServerTaintIssue::isResolved)).collect(Collectors.toList());
   }
 }

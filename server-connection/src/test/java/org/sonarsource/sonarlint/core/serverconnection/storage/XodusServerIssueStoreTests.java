@@ -205,6 +205,20 @@ class XodusServerIssueStoreTests {
   }
 
   @Test
+  void should_load_all_taint_issues_on_a_branch() {
+    var branchName = "branch1";
+
+    store.replaceAllTaintOfFile(branchName, "file/path1", List.of(aServerTaintIssue().setFilePath("file/path1").setKey("key1")));
+    store.replaceAllTaintOfFile(branchName, "file/path2", List.of(aServerTaintIssue().setFilePath("file/path2").setKey("key2")));
+
+    var issues = store.loadTaint(branchName);
+
+    assertThat(issues)
+      .extracting(ServerTaintIssue::getKey)
+      .containsOnly("key1", "key2");
+  }
+
+  @Test
   void should_load_issues_of_the_right_file() {
     store.replaceAllIssuesOfBranch("branch1", List.of(aServerIssue().setFilePath("file/path1").setKey("key1")));
     store.replaceAllIssuesOfBranch("branch2", List.of(aServerIssue().setFilePath("file/Path1").setKey("key2")));

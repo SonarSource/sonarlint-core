@@ -139,6 +139,11 @@ public class ServerConnection {
     return issueStoreReader.getServerTaintIssues(projectBinding, branchName, ideFilePath);
   }
 
+  public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName) {
+    return issueStoreReader.getRawServerTaintIssues(projectBinding, branchName);
+  }
+
+
   public void subscribeForEvents(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, Consumer<ServerEvent> clientEventConsumer, ClientLogOutput clientLogOutput) {
     serverEventsAutoSubscriber.subscribePermanently(new ServerApi(new ServerApiHelper(endpoint, client)), projectKeys, enabledLanguages,
       e -> notifyHandlers(e, clientEventConsumer), clientLogOutput);
