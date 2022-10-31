@@ -1,0 +1,116 @@
+[#binding_suggestion]
+= Binding Suggestion
+
+== Overview
+
+For xref:glossary.adoc#connected_mode[connected mode] to work, a xref:glossary.adoc#connection[connection] should be defined to allow SonarLint to communicate with the server. Then, SonarLint needs to know which xref:glossary.adoc#sonar_project[Sonar Project] should be considered. This is the xref:glossary.adoc#binding[_binding_]. Inside IDE, there could be different bindings, for different xref:glossary.adoc#configuration_scope[_configuration scopes_].
+
+For most users, there will be only one configured connection (to their corporate SonarQube server, or to SonarCloud). But every time they open a new project or solution, they will need to setup the binding. This process can be tedious, and easily forgotten.
+
+Binding suggestion is the feature where SonarLint assist users as much as possible to configure binding.
+
+== Triggers
+
+Binding suggestion is triggered:
+
+* when a xref:glossary.adoc#configuration_scope[configuration scope] is added (only for this _configuration scope_)
+* when a xref:glossary.adoc#connection_config[connection configuration] is added/updated (for all _configuration scopes_)
+
+== Conditions
+
+1. At least one xref:glossary.adoc#connection_config[connection configuration] is defined
+2. Only consider xref:glossary.adoc#configuration_scope[configuration scopes] that:
+** are not bound (or maybe if we know the binding is **invalid**? #TBD#)
+** have their _bindingSuggestionDisabled_ attribute set to `false`
+
+== Algorithm
+
+=== SonarQube/SonarCloud scanner configuration file auto-detection
+
+For each xref:glossary.adoc#configuration_scope[configuration scope]:
+
+1. Search for the presence of files `sonar-project.properties` or `.sonarcloud.properties`. This step should be under IDE responsibility, since the configuration scope layout and filesystem is very IDE specific. The IDE should provide the list of files (with filename) and their text content.
+
+2. Extract from each file content the following properties (all are optional):
+- `sonar.projectKey`
+- `sonar.host.url`
+- `sonar.organization`
+
+3. For each filename + tuple of properties, try to guess if we are looking for a SonarQube or SonarCloud connection, using the following heuristic:
+- if the file is `.sonarcloud.properties`, this is SonarCloud (AutoScan)
+- if there is a `sonar.organization`, this is SonarCloud
+- if the `sonar.host.url` is equal to `https://sonarcloud.io` or one of the aliases used for tests, this is SonarCloud, any other non-empty value means it is SonarQube
+- at this stage keep properties (normally only _projectKey_) as an unknown binding clue
+
+At the end of this step, we should have a possibly empty list of binding clues having one of those types and attributes:
+
+[%autowidth,options="header"]
+|=======
+|SonarQube Binding Clue
+|projectKey: string?
+|serverUrl: string
+|=======
+
+[%autowidth,options="header"]
+|=======
+|SonarCloud Binding Clue
+|projectKey: string?
+|organization: string?
+|=======
+
+[%autowidth,options="header"]
+|=======
+|Unknown Binding Clue
+|projectKey: string
+|=======
+
+=== Connection matching
+
+For each binding clue, find the matching connection(s) among configured ones in IDE settings.
+
+For a _SonarQube Binding Clue_, select all SonarQube connections having the samefootnote:[determining that two URLs are pointing to the same server is tricky, so here we do at best] url.
+
+For a _SonarCloud Binding Clue_, select all SonarCloud connections having the same _organization_. If we don't have an organization for this candidate binding, select all SonarCloud connections.
+
+For a generic Binding Clue, select all connections.
+
+At the end of this step, we should have each binding clue with a (possibly empty) list of matching connections.
+
+_Binding Clues_ having no matching connections should be discarded (example: the project has a `.sonarcloud.properties`, but there is no SonarCloud connection defined).
+
+=== Project matching
+
+We should favor binding clues with a non-empty _projectKey_.
+
+==== Exact matching on projectKey
+
+For each binding clue having a projectKey, search for a xref:glossary.adoc#sonar_project[Sonar project] having the exact same _projectKey_ among the matched connections. If there is at least one perfect match, return the match(es).
+
+==== Matching based on configuration scope _name_
+
+If no perfect matches were found in the previous step, then for each _binding clue_ with no _projectKey_, we should do a search among all _Sonar Projects_ of their matched connections.
+If there was no binding clues with no _projectKey_, then simply do a search for all connections.
+
+The matching is based on a scoring described in `TextSearchIndex`. If there is only one _Sonar Project_ with the highest score, then we will return this one, else if there are multiple with top score, then we will return all top candidates. Finally, if there are no matches (#FIXME# or score is too low?), then we should return `NO_MATCHES_FOUND`.
+
+
+== Outcome
+
+At the end of the binding suggestion computation, one single notification will be sent (1 trigger -> 1 notification maximum). The notification will contain the
+binding suggestion(s) for each configuration scopes where the computation was _executed_. For each configuration scope:
+
+1. if there is a single best suggestion:
+- the single Sonar Project suggestion + connectionId
+
+2. if there are multiple best suggestions (and less than a threshold #TBD#):
+- the list of (Sonar Project suggestions + connectionIds)
+
+3. if there are no suggestions
+- empty suggestion list (to indicate to clients that binding suggestion was attempted but could not find good results, and client should usually forward users to manual binding)
+
+Configuration scopes that have been skipped from binding suggestion at any time in the previously described algorithm will not be listed in the notification.
+
+[#do_not_ask_again]
+== Do not ask again
+
+It is the responsibility of the IDE to offer the "Do not ask again" option in the binding suggestion notification, and it should be remembered for this configuration scope in IDE settings. When the client synchronize _configuration scopes_ with the backend, the attribute _bindingSuggestionDisabled_ will be set accordingly.

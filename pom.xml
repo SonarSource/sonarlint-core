@@ -37,6 +37,7 @@
     <module>report-aggregate</module>
     <module>vcs</module>
     <module>server-connection</module>
+    <module>client-api</module>
   </modules>
 
   <properties>
@@ -45,7 +46,6 @@
     <sonar-markdown.version>9.4.0.54424</sonar-markdown.version>
     <sonar-scanner-protocol.version>7.9</sonar-scanner-protocol.version>
     <protobuf.version>3.21.7</protobuf.version>
-    <protobuf.compiler>${settings.localRepository}/com/google/protobuf/protoc/${protobuf.version}/protoc-${protobuf.version}-${os.detected.classifier}.exe</protobuf.compiler>
     <gitRepositoryName>sonarlint-core</gitRepositoryName>
     <okhttp.version>5.0.0-alpha.10</okhttp.version>
     <junit.jupiter.version>5.9.1</junit.jupiter.version>
@@ -110,6 +110,11 @@
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>
         <version>${gson.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>31.1-jre</version>
       </dependency>
       <dependency>
         <groupId>org.assertj</groupId>

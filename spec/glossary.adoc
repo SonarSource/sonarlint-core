@@ -1,0 +1,13 @@
+[glossary]
+= Glossary
+
+[glossary]
+[[binding]]Binding:: In <<connected_mode>>, this is the association between a <<configuration_scope,configuration scope>> and a <<sonar_project,Sonar project>>, for a given <<connection,connection>>.
+[[binding_clue]]Binding Clue:: For a <<configuration_scope,configuration scope>>, this is any element that could help to guess what should be the <<binding,binding>> in <<connected_mode,connected mode>>. A configuration scope can have multiple binding clues, partial, or even contradictory. They will be processed during xref:binding_suggestion.adoc#binding_suggestion[binding suggestion computation].
+[[configuration_scope]]Configuration Scope:: Represent an abstract IDE element that can be configured, and possibly <<binding,bound>>. Usually a project (Eclipse, IntelliJ), module (IntelliJ), solution (VS, Rider), or workspace folder (VSCode).
+[[connected_mode]]Connected Mode:: The use of SonarLint associated with a SonarQube server or SonarCloud. See also <<standalone_mode,standalone mode>>.
+[[connection]]Connection:: A channel of communication between SonarLint and a particular SonarQube server or SonarCloud. See also <<connected_mode,connected mode>>.
+[[connection_config]]Connection Configuration:: All attributes that will be used to instantiate and operate a <<connection,connection>>. Usually provided by the IDE settings. It includes credentials, endpoint URL, timeouts, proxy...
+[[project_key]]Project Key:: Unique identifier of a <<sonar_project,Sonar project>> in a given SonarQube or SonarCloud instance. Project key can be changed on server side (the server use uuid internally).
+[[sonar_project]]Sonar Project:: A project that exists on SonarQube or SonarCloud. Sonar Projects are identified by a <<project_key,projectKey>>.
+[[standalone_mode]]Standalone Mode:: The use of SonarLint without a SonarQube server or SonarCloud.  See also <<connected_mode,connected mode>>.
