@@ -20,7 +20,7 @@ resources:
     - repository: commonTemplates
       type: git
       name: pipelines-yaml-templates
-      ref:  refs/tags/v1.0.17
+      ref:  refs/tags/v2.0.0
 
 
 stages:
@@ -111,7 +111,7 @@ stages:
     burgrName: 'validate'
     burgrType: 'validate'
     stageName: 'validate'
-    stageDisplayName: Run UTs and trigger SonarQube and WhiteSource analysis
+    stageDisplayName: Run UTs and trigger SonarQube and Mend analysis
     jobs:
     - job: test_windows
       displayName: Run unit tests on Windows
@@ -181,8 +181,8 @@ stages:
           javaHomeOption: 'JDKVersion'
           jdkVersionOption: '1.11'
           mavenOptions: $(MAVEN_OPTS)
-    - job: sonarqubeAndWhiteSource
-      displayName: SonarQube analysis on Next and WhiteSource scan
+    - job: sonarqubeAndMend
+      displayName: SonarQube analysis on Next and Mend scan
       variables:
         MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
         MAVEN_OPTS: '-Xmx3072m -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
@@ -214,7 +214,7 @@ stages:
           mavenOptions: $(MAVEN_OPTS)
           sonarQubeRunAnalysis: true
           sqMavenPluginVersionChoice: 'latest'
-      - template: whitesource-with-maven-repox.yml@commonTemplates
+      - template: mend-with-maven-repox.yml@commonTemplates
         parameters:
           productName : 'SonarLint/Core'
           mavenRepositoryPath: '$(Pipeline.Workspace)/.m2/repository'
