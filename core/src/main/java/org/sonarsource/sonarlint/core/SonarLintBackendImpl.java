@@ -30,28 +30,23 @@ import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.connection.ConnectionService;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 
 public class SonarLintBackendImpl implements SonarLintBackend {
 
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
-
   private final ConfigurationServiceImpl configurationService;
   private final ConnectionServiceImpl connectionService;
 
-  private final EventBus clientEventBus;
   private final ExecutorService clientEventsExecutorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Client Events Processor"));
-  private final ConnectionConfigurationRepository connectionConfigurationRepository = new ConnectionConfigurationRepository();
-  private final ConfigurationRepository configurationRepository = new ConfigurationRepository();
-  private final SonarLintClient client;
+
   private final BindingSuggestionProvider bindingSuggestionProvider;
 
   public SonarLintBackendImpl(SonarLintClient client) {
-    this.client = client;
-    this.clientEventBus = new AsyncEventBus("clientEvents", clientEventsExecutorService);
+    EventBus clientEventBus = new AsyncEventBus("clientEvents", clientEventsExecutorService);
+    var configurationRepository = new ConfigurationRepository();
     this.configurationService = new ConfigurationServiceImpl(clientEventBus, configurationRepository);
+    var connectionConfigurationRepository = new ConnectionConfigurationRepository();
     this.connectionService = new ConnectionServiceImpl(clientEventBus, connectionConfigurationRepository);
     var bindingClueProvider = new BindingClueProvider(connectionConfigurationRepository, client);
     var serverApiProvider = new ServerApiProvider(connectionConfigurationRepository, client);

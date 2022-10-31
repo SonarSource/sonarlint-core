@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.repository.connection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Objects;
-import org.apache.commons.lang.StringUtils;
 
 import static org.apache.commons.lang.StringUtils.removeEnd;
 
