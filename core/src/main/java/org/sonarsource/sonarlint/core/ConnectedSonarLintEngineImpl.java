@@ -309,7 +309,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
         return CompletableFuture.completedFuture(
           new ConnectedRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(), ruleDefFromPlugin.getDefaultSeverity(),
             ruleDefFromPlugin.getType(),
-            ruleDefFromPlugin.getLanguage(), ""));
+            ruleDefFromPlugin.getLanguage(), "", endpoint.isSonarCloud()));
       }
     }
     if (projectKey != null) {
@@ -332,16 +332,16 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
                 serverSeverity,
                 templateRuleDefFromPlugin.getType(),
                 templateRuleDefFromPlugin.getLanguage(),
-                serverRule.getHtmlNote()));
+                serverRule.getHtmlNote(), endpoint.isSonarCloud()));
         } else {
           return new ServerApi(new ServerApiHelper(endpoint, client)).rules().getRule(activeRuleFromStorage.getRuleKey())
             .thenApply(serverRule -> ruleDefFromPluginOpt
               .map(ruleDefFromPlugin -> new ConnectedRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(),
                 Optional.ofNullable(serverSeverity).orElse(ruleDefFromPlugin.getDefaultSeverity()), ruleDefFromPlugin.getType(), ruleDefFromPlugin.getLanguage(),
-                serverRule.getHtmlNote()))
+                serverRule.getHtmlNote(), endpoint.isSonarCloud()))
               .orElse(new ConnectedRuleDetails(ruleKey, serverRule.getName(), serverRule.getHtmlDesc(),
                 Optional.ofNullable(serverSeverity).orElse(serverRule.getSeverity()),
-                serverRule.getType(), serverRule.getLanguage(), serverRule.getHtmlNote())));
+                serverRule.getType(), serverRule.getLanguage(), serverRule.getHtmlNote(), endpoint.isSonarCloud())));
         }
       }
     }

@@ -42,6 +42,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import testutils.PluginLocator;
 import testutils.TestUtils;
 
@@ -49,6 +50,7 @@ import static mediumtest.fixtures.StorageFixture.newStorage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static testutils.TestUtils.createNoOpLogOutput;
 
 class ConnectedExtraPluginMediumTests {
@@ -95,10 +97,12 @@ class ConnectedExtraPluginMediumTests {
 
   @Test
   void readRuleDescriptionFromExtraPlugin() throws Exception {
-    var ruleDetails = sonarlint.getActiveRuleDetails(null, null, "php:S3334", null).get();
+    var endpoint = mock(EndpointParams.class);
+    when(endpoint.isSonarCloud()).thenReturn(Boolean.FALSE);
+    var ruleDetails = sonarlint.getActiveRuleDetails(endpoint, null, "php:S3334", null).get();
     assertThat(ruleDetails.getDefaultSeverity()).isEqualTo(IssueSeverity.BLOCKER);
     assertThat(ruleDetails.getExtendedDescription()).isEmpty();
-    assertThat(sonarlint.getActiveRuleDetails(null, null, "php:S3334", JAVA_MODULE_KEY).get().getDefaultSeverity()).isEqualTo(IssueSeverity.BLOCKER);
+    assertThat(sonarlint.getActiveRuleDetails(endpoint, null, "php:S3334", JAVA_MODULE_KEY).get().getDefaultSeverity()).isEqualTo(IssueSeverity.BLOCKER);
   }
 
   @Test

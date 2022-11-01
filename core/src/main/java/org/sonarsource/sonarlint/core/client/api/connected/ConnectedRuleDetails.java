@@ -34,9 +34,10 @@ public class ConnectedRuleDetails implements RuleDetails {
   private final IssueSeverity defaultSeverity;
   private final RuleType type;
   private final String extendedDescription;
+  private final boolean isSonarCloud;
 
   public ConnectedRuleDetails(String key, String name, @Nullable String htmlDescription, IssueSeverity defaultSeverity, RuleType type, Language language,
-    String extendedDescription) {
+    String extendedDescription, boolean isSonarCloud) {
     this.key = key;
     this.name = name;
     this.htmlDescription = htmlDescription;
@@ -44,6 +45,7 @@ public class ConnectedRuleDetails implements RuleDetails {
     this.type = type;
     this.language = language;
     this.extendedDescription = extendedDescription;
+    this.isSonarCloud = isSonarCloud;
   }
 
   @Override
@@ -80,4 +82,7 @@ public class ConnectedRuleDetails implements RuleDetails {
     return extendedDescription;
   }
 
+  public boolean isSonarCloud() {
+    return isSonarCloud;
+  }
 }
