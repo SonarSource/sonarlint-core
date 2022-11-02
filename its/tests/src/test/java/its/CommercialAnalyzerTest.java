@@ -87,10 +87,10 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
 
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_C, "Sample C");
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_COBOL, "Sample Cobol");
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_TSQL, "Sample TSQL");
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_APEX, "Sample APEX");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_C, "Sample C");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_COBOL, "Sample Cobol");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_TSQL, "Sample TSQL");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_APEX, "Sample APEX");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_C, "c", "SonarLint IT C");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_COBOL, "cobol", "SonarLint IT Cobol");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_TSQL, "tsql", "SonarLint IT TSQL");

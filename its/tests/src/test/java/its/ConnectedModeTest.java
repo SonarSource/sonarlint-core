@@ -136,6 +136,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     .setServerProperty("sonar.pushevents.polling.initial.delay", "2")
     .setServerProperty("sonar.pushevents.polling.period", "1")
     .setServerProperty("sonar.pushevents.polling.last.timestamp", "1")
+    .setServerProperty("sonar.projectCreation.mainBranchName", MAIN_BRANCH_NAME)
     .build();
 
   @ClassRule
@@ -155,22 +156,22 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA, "Sample Java");
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_PACKAGE, "Sample Java Package");
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_HOTSPOT, "Sample Java Hotspot");
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_EMPTY, "Sample Java Empty");
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_MARKDOWN, "Sample Java Markdown");
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_PHP, "Sample PHP");
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVASCRIPT, "Sample Javascript");
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_CUSTOM, "Sample Java Custom");
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_PYTHON, "Sample Python");
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_WEB, "Sample Web");
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_CUSTOM_SENSOR, "Sample Java Custom");
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_GLOBAL_EXTENSION, "Sample Global Extension");
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_RUBY, "Sample Ruby");
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_KOTLIN, "Sample Kotlin");
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_SCALA, "Sample Scala");
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_XML, "Sample XML");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA, "Sample Java");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_PACKAGE, "Sample Java Package");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_HOTSPOT, "Sample Java Hotspot");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_EMPTY, "Sample Java Empty");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_MARKDOWN, "Sample Java Markdown");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_PHP, "Sample PHP");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVASCRIPT, "Sample Javascript");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_CUSTOM, "Sample Java Custom");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_PYTHON, "Sample Python");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_WEB, "Sample Web");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_CUSTOM_SENSOR, "Sample Java Custom");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_GLOBAL_EXTENSION, "Sample Global Extension");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_RUBY, "Sample Ruby");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_KOTLIN, "Sample Kotlin");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_SCALA, "Sample Scala");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_XML, "Sample XML");
 
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA, "java", "SonarLint IT Java");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_PACKAGE, "java", "SonarLint IT Java Package");
@@ -243,7 +244,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void downloadProjects() {
-    ORCHESTRATOR.getServer().provisionProject("foo-bar", "Foo");
+    provisionProject(ORCHESTRATOR, "foo-bar", "Foo");
     assertThat(engine.downloadAllProjects(endpointParams(ORCHESTRATOR), sqHttpClient(), null)).hasSize(17).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
   }
 
@@ -685,7 +686,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
         });
     });
 
-    var serverIssues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY_JAVA, "", ""), "master", "src/main/java/foo/Foo.java");
+    var serverIssues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY_JAVA, "", ""), MAIN_BRANCH_NAME, "src/main/java/foo/Foo.java");
 
     assertThat(serverIssues)
       .extracting(ServerIssue::getRuleKey, ServerIssue::isResolved)
@@ -702,7 +703,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   private void updateProject(String projectKey) {
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, null);
     engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(projectKey), null);
-    engine.syncServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, "master", null);
+    engine.syncServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, MAIN_BRANCH_NAME, null);
   }
 
   private static void analyzeMavenProject(String projectKey, String projectDirName) {

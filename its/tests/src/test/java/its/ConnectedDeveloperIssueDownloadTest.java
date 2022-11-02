@@ -97,7 +97,7 @@ public class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
       .setExtraProperties(new HashMap<>())
       .build());
 
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY, "Sample Xoo");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY, "Sample Xoo");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY, "xoo", "SonarLint IT Xoo");
 
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
@@ -150,11 +150,11 @@ public class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
 
     // Starting from SQ 8.1, concept of short vs long living branch has been removed
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 1)) {
-      assertThat(engine.getServerBranches(PROJECT_KEY).getBranchNames()).containsOnly("master", LONG_BRANCH, SHORT_BRANCH);
+      assertThat(engine.getServerBranches(PROJECT_KEY).getBranchNames()).containsOnly(MAIN_BRANCH_NAME, LONG_BRANCH, SHORT_BRANCH);
     } else {
-      assertThat(engine.getServerBranches(PROJECT_KEY).getBranchNames()).containsOnly("master", LONG_BRANCH);
+      assertThat(engine.getServerBranches(PROJECT_KEY).getBranchNames()).containsOnly(MAIN_BRANCH_NAME, LONG_BRANCH);
     }
-    assertThat(engine.getServerBranches(PROJECT_KEY).getMainBranchName()).isEqualTo("master");
+    assertThat(engine.getServerBranches(PROJECT_KEY).getMainBranchName()).isEqualTo(MAIN_BRANCH_NAME);
   }
 
   @Test

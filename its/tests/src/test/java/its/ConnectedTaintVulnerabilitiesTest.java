@@ -98,6 +98,7 @@ public class ConnectedTaintVulnerabilitiesTest extends AbstractConnectedTest {
     .setServerProperty("sonar.pushevents.polling.initial.delay", "2")
     .setServerProperty("sonar.pushevents.polling.period", "1")
     .setServerProperty("sonar.pushevents.polling.last.timestamp", "1")
+    .setServerProperty("sonar.projectCreation.mainBranchName", MAIN_BRANCH_NAME)
     .build();
 
   @Rule
@@ -115,7 +116,7 @@ public class ConnectedTaintVulnerabilitiesTest extends AbstractConnectedTest {
 
   @Before
   public void prepare() throws Exception {
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_TAINT, "Java With Taint Vulnerabilities");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_TAINT, "Java With Taint Vulnerabilities");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_TAINT, "java", "SonarLint Taint Java");
 
     Path sonarUserHome = temp.newFolder().toPath();
@@ -151,11 +152,11 @@ public class ConnectedTaintVulnerabilitiesTest extends AbstractConnectedTest {
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVA_TAINT, null);
 
     // For SQ 9.6+
-    engine.syncServerTaintIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVA_TAINT, "master", null);
+    engine.syncServerTaintIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVA_TAINT, MAIN_BRANCH_NAME, null);
     // For SQ < 9.6
-    engine.downloadAllServerTaintIssuesForFile(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding, "src/main/java/foo/DbHelper.java", "master", null);
+    engine.downloadAllServerTaintIssuesForFile(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding, "src/main/java/foo/DbHelper.java", MAIN_BRANCH_NAME, null);
 
-    var sinkIssues = engine.getServerTaintIssues(projectBinding, "master", "src/main/java/foo/DbHelper.java");
+    var sinkIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java");
 
     assertThat(sinkIssues).hasSize(1);
 
@@ -180,7 +181,7 @@ public class ConnectedTaintVulnerabilitiesTest extends AbstractConnectedTest {
     Deque<ServerEvent> events = new ConcurrentLinkedDeque<>();
     engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVA_TAINT), events::add, null);
     var projectBinding = new ProjectBinding(PROJECT_KEY_JAVA_TAINT, "", "");
-    assertThat(engine.getServerTaintIssues(projectBinding, "master", "src/main/java/foo/DbHelper.java")).isEmpty();
+    assertThat(engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java")).isEmpty();
 
     // check TaintVulnerabilityRaised is received
     analyzeMavenProject(ORCHESTRATOR, PROJECT_KEY_JAVA_TAINT, Map.of("sonar.projectKey", PROJECT_KEY_JAVA_TAINT));
@@ -198,7 +199,7 @@ public class ConnectedTaintVulnerabilitiesTest extends AbstractConnectedTest {
     assertThat(issues).isNotEmpty();
     var issueKey = issues.get(0);
 
-    var taintIssues = engine.getServerTaintIssues(projectBinding, "master", "src/main/java/foo/DbHelper.java");
+    var taintIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java");
     assertThat(taintIssues)
       .extracting("key", "resolved", "ruleKey", "message", "filePath", "severity", "type")
       .containsOnly(
@@ -246,7 +247,7 @@ public class ConnectedTaintVulnerabilitiesTest extends AbstractConnectedTest {
         });
     });
 
-    taintIssues = engine.getServerTaintIssues(projectBinding, "master", "src/main/java/foo/DbHelper.java");
+    taintIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java");
     assertThat(taintIssues).isEmpty();
 
     // check IssueChangedEvent is received
@@ -260,7 +261,7 @@ public class ConnectedTaintVulnerabilitiesTest extends AbstractConnectedTest {
           assertThat(e.getProjectKey()).isEqualTo(PROJECT_KEY_JAVA_TAINT);
         });
     });
-    taintIssues = engine.getServerTaintIssues(projectBinding, "master", "src/main/java/foo/DbHelper.java");
+    taintIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java");
     assertThat(taintIssues).isNotEmpty();
 
     // analyze another project under the same project key to close the taint issue
@@ -275,7 +276,7 @@ public class ConnectedTaintVulnerabilitiesTest extends AbstractConnectedTest {
           assertThat(e.getProjectKey()).isEqualTo(PROJECT_KEY_JAVA_TAINT);
         });
     });
-    taintIssues = engine.getServerTaintIssues(projectBinding, "master", "src/main/java/foo/DbHelper.java");
+    taintIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java");
     assertThat(taintIssues).isEmpty();
   }
 

@@ -85,7 +85,7 @@ public class ConnectedCommunityIssueDownloadTest extends AbstractConnectedTest {
     var adminWsClient = newAdminWsClient(ORCHESTRATOR);
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY, "Sample Xoo");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY, "Sample Xoo");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY, "xoo", "SonarLint IT Xoo");
 
     analyzeProject("sample-xoo-v1");
@@ -137,17 +137,17 @@ public class ConnectedCommunityIssueDownloadTest extends AbstractConnectedTest {
   public void download_all_issues_not_limited_to_10k() {
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
 
-    engine.downloadAllServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, "master", null);
+    engine.downloadAllServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, MAIN_BRANCH_NAME, null);
 
-    var file1Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "master", "src/500lines.xoo");
-    var file2Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "master", "src/10000lines.xoo");
+    var file1Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), MAIN_BRANCH_NAME, "src/500lines.xoo");
+    var file2Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), MAIN_BRANCH_NAME, "src/10000lines.xoo");
 
     // Number of issues is not limited to 10k
     assertThat(file1Issues.size() + file2Issues.size()).isEqualTo(10_500);
 
     Map<String, ServerIssue> allIssues = new HashMap<>();
-    engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "master", "src/500lines.xoo").forEach(i -> allIssues.put(i.getKey(), i));
-    engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), "master", "src/10000lines.xoo").forEach(i -> allIssues.put(i.getKey(), i));
+    engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), MAIN_BRANCH_NAME, "src/500lines.xoo").forEach(i -> allIssues.put(i.getKey(), i));
+    engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), MAIN_BRANCH_NAME, "src/10000lines.xoo").forEach(i -> allIssues.put(i.getKey(), i));
 
     assertThat(allIssues).hasSize(10_500);
     assertThat(allIssues.get(wfIssue.getKey()).isResolved()).isTrue();

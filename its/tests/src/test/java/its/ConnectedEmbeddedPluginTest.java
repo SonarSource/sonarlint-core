@@ -72,7 +72,7 @@ public class ConnectedEmbeddedPluginTest extends AbstractConnectedTest {
 
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_C, "Sample C");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_C, "Sample C");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_C, "c", "SonarLint IT C");
   }
 

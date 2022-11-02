@@ -64,7 +64,7 @@ public class ConnectedModeSynchronizationTest extends AbstractConnectedTest {
     var adminWsClient = newAdminWsClient(ORCHESTRATOR);
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
-    ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_LANGUAGE_MIX, "Sample Language Mix");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_LANGUAGE_MIX, "Sample Language Mix");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_LANGUAGE_MIX, "java", "SonarLint IT Java");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_LANGUAGE_MIX, "py", "SonarLint IT Python");
 
@@ -96,10 +96,10 @@ public class ConnectedModeSynchronizationTest extends AbstractConnectedTest {
     assumeTrue("SonarQube should support pulling issues",
       ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6));
 
-    engine.syncServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_LANGUAGE_MIX, "master", null);
+    engine.syncServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_LANGUAGE_MIX, MAIN_BRANCH_NAME, null);
 
-    var javaIssues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY_LANGUAGE_MIX, "", ""), "master", "src/main/java/foo/Foo.java");
-    var pythonIssues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY_LANGUAGE_MIX, "", ""), "master", "src/main/java/foo/main.py");
+    var javaIssues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY_LANGUAGE_MIX, "", ""), MAIN_BRANCH_NAME, "src/main/java/foo/Foo.java");
+    var pythonIssues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY_LANGUAGE_MIX, "", ""), MAIN_BRANCH_NAME, "src/main/java/foo/main.py");
 
     assertThat(javaIssues).hasSize(2);
     assertThat(pythonIssues).isEmpty();
