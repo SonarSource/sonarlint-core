@@ -266,8 +266,8 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
   @Test
   public void sync_all_project_branches() throws IOException {
-    assertThat(engine.getServerBranches(projectKey(PROJECT_KEY_JAVA)).getBranchNames()).containsOnly("master");
-    assertThat(engine.getServerBranches(projectKey(PROJECT_KEY_JAVA)).getMainBranchName()).contains("master");
+    assertThat(engine.getServerBranches(projectKey(PROJECT_KEY_JAVA)).getBranchNames()).containsOnly(MAIN_BRANCH_NAME);
+    assertThat(engine.getServerBranches(projectKey(PROJECT_KEY_JAVA)).getMainBranchName()).contains(MAIN_BRANCH_NAME);
   }
 
   @Test
@@ -492,10 +492,10 @@ public class SonarCloudTest extends AbstractConnectedTest {
 
     ProjectBinding projectBinding = new ProjectBinding(projectKey(PROJECT_KEY_JAVA_TAINT), "", "");
 
-    engine.downloadAllServerTaintIssuesForFile(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), projectBinding, "src/main/java/foo/DbHelper.java", "master",
+    engine.downloadAllServerTaintIssuesForFile(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), projectBinding, "src/main/java/foo/DbHelper.java", MAIN_BRANCH_NAME,
       null);
 
-    var sinkIssues = engine.getServerTaintIssues(projectBinding, "master", "src/main/java/foo/DbHelper.java");
+    var sinkIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java");
 
     assertThat(sinkIssues).hasSize(1);
 

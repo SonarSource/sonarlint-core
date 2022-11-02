@@ -23,6 +23,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.MavenBuild;
+import com.sonar.orchestrator.http.HttpMethod;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -67,6 +68,7 @@ import static org.junit.Assert.assertTrue;
 public abstract class AbstractConnectedTest {
   protected static final String SONARLINT_USER = "sonarlint";
   protected static final String SONARLINT_PWD = "sonarlintpwd";
+  protected static final String MAIN_BRANCH_NAME = "master";
 
   protected static final OkHttpClient CLIENT_NO_AUTH = new OkHttpClient.Builder()
     .addNetworkInterceptor(new UserAgentInterceptor("SonarLint ITs"))
@@ -384,6 +386,17 @@ public abstract class AbstractConnectedTest {
     try (var response = adminWsClient.wsConnector().call(request)) {
       assertTrue("Unable to resolve issue", response.isSuccessful());
     }
+  }
+
+  protected static void provisionProject(Orchestrator orchestrator, String projectKey, String projectName) {
+    orchestrator.getServer()
+      .newHttpCall("/api/projects/create")
+      .setMethod(HttpMethod.POST)
+      .setAdminCredentials()
+      .setParam("project", projectKey)
+      .setParam("name", projectName)
+      .setParam("mainBranch", MAIN_BRANCH_NAME)
+      .execute();
   }
 
 }

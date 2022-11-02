@@ -54,6 +54,7 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
     .defaultForceAuthentication()
     .setSonarVersion(SONAR_VERSION)
     .keepBundledPlugins()
+    .setServerProperty("sonar.projectCreation.mainBranchName", MAIN_BRANCH_NAME)
     .build();
 
   @Rule
@@ -108,19 +109,19 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
     assertThat(projectBinding.serverPathPrefix()).isEmpty();
     assertThat(projectBinding.idePathPrefix()).isEmpty();
     engine.downloadAllServerIssuesForFile(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding,
-      "module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java", "master", null);
-    var serverIssues = engine.getServerIssues(projectBinding, "master", "module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
+      "module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java", MAIN_BRANCH_NAME, null);
+    var serverIssues = engine.getServerIssues(projectBinding, MAIN_BRANCH_NAME, "module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6)) {
       assertThat(serverIssues).isEmpty();
       assertThat(logs).contains("Skip downloading file issues on SonarQube 9.6+");
     } else {
       assertThat(serverIssues).hasSize(2);
     }
-    engine.syncServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, "master", null);
+    engine.syncServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, MAIN_BRANCH_NAME, null);
     if (!ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6)) {
       assertThat(logs).contains("Incremental issue sync is not supported. Skipping.");
     }
-    serverIssues = engine.getServerIssues(projectBinding, "master", "module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
+    serverIssues = engine.getServerIssues(projectBinding, MAIN_BRANCH_NAME, "module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
     assertThat(serverIssues).hasSize(2);
   }
 
@@ -138,19 +139,19 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
     assertThat(projectBinding.serverPathPrefix()).isEqualTo("module_b/module_b1");
     assertThat(projectBinding.idePathPrefix()).isEmpty();
     engine.downloadAllServerIssuesForFile(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding,
-      "src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java", "master", null);
-    var serverIssues = engine.getServerIssues(projectBinding, "master", "src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
+      "src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java", MAIN_BRANCH_NAME, null);
+    var serverIssues = engine.getServerIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6)) {
       assertThat(serverIssues).isEmpty();
       assertThat(logs).contains("Skip downloading file issues on SonarQube 9.6+");
     } else {
       assertThat(serverIssues).hasSize(2);
     }
-    engine.syncServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, "master", null);
+    engine.syncServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, MAIN_BRANCH_NAME, null);
     if (!ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6)) {
       assertThat(logs).contains("Incremental issue sync is not supported. Skipping.");
     }
-    serverIssues = engine.getServerIssues(projectBinding, "master", "src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
+    serverIssues = engine.getServerIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
     assertThat(serverIssues).hasSize(2);
   }
 
