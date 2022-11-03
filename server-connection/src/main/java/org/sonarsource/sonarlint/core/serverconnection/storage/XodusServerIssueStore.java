@@ -42,6 +42,7 @@ import jetbrains.exodus.entitystore.EntityIterable;
 import jetbrains.exodus.entitystore.PersistentEntityStore;
 import jetbrains.exodus.entitystore.PersistentEntityStores;
 import jetbrains.exodus.entitystore.StoreTransaction;
+import jetbrains.exodus.entitystore.StoreTransactionalExecutable;
 import jetbrains.exodus.util.CompressBackupUtil;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
@@ -64,6 +65,9 @@ import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint.TextRange
 import static java.util.Objects.requireNonNull;
 
 public class XodusServerIssueStore implements ProjectServerIssueStore {
+
+  static final int CURRENT_SCHEMA_VERSION = 1;
+
   private static final String BACKUP_TAR_GZ = "backup.tar.gz";
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -72,8 +76,11 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private static final String FILE_ENTITY_TYPE = "File";
   private static final String ISSUE_ENTITY_TYPE = "Issue";
   private static final String TAINT_ISSUE_ENTITY_TYPE = "TaintIssue";
+  private static final String SCHEMA_ENTITY_TYPE = "Schema";
 
   private static final String BRANCH_TO_FILES_LINK_NAME = "files";
+  private static final String BRANCH_TO_TAINT_ISSUES_LINK_NAME = "taintIssues";
+  private static final String TAINT_ISSUE_TO_BRANCH_LINK_NAME = "branch";
   private static final String FILE_TO_ISSUES_LINK_NAME = "issues";
   private static final String FILE_TO_TAINT_ISSUES_LINK_NAME = "taintIssues";
   private static final String ISSUE_TO_FILE_LINK_NAME = "file";
@@ -95,6 +102,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private static final String NAME_PROPERTY_NAME = "name";
   private static final String LAST_ISSUE_SYNC_PROPERTY_NAME = "lastIssueSync";
   private static final String LAST_TAINT_SYNC_PROPERTY_NAME = "lastTaintSync";
+  private static final String VERSION_PROPERTY_NAME = "version";
 
   private static final String MESSAGE_BLOB_NAME = "message";
   private static final String FLOWS_BLOB_NAME = "flows";
@@ -106,6 +114,10 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private final Path xodusDbDir;
 
   public XodusServerIssueStore(Path backupDir, Path workDir) throws IOException {
+    this(backupDir, workDir, XodusServerIssueStore::checkCurrentSchemaVersion);
+  }
+
+  XodusServerIssueStore(Path backupDir, Path workDir, StoreTransactionalExecutable afterInit) throws IOException {
     xodusDbDir = Files.createTempDirectory(workDir, "xodus-issue-store");
     backupFile = backupDir.resolve(BACKUP_TAR_GZ);
     if (Files.isRegularFile(backupFile)) {
@@ -123,6 +135,8 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       entityStore.registerCustomPropertyType(txn, RuleType.class, new IssueTypeBinding());
       entityStore.registerCustomPropertyType(txn, Instant.class, new InstantBinding());
     });
+
+    entityStore.executeInExclusiveTransaction(afterInit);
   }
 
   private static ServerIssue adapt(Entity storedIssue) {
@@ -224,14 +238,9 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
 
   @Override
   public List<ServerTaintIssue> loadTaint(String branchName) {
-    return loadIssue(branchName, FILE_TO_TAINT_ISSUES_LINK_NAME, XodusServerIssueStore::adaptTaint);
-  }
-
-  private <G> List<G> loadIssue(String branchName, String linkName, Function<Entity, G> adapter) {
     return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
-      .map(branch -> StreamSupport.stream(branch.getLinks(BRANCH_TO_FILES_LINK_NAME).spliterator(), false)
-        .map(file -> file.getLinks(linkName))
-        .flatMap(issueEntities -> StreamSupport.stream(issueEntities.spliterator(), false).map(adapter))
+      .map(branch -> StreamSupport.stream(branch.getLinks(BRANCH_TO_TAINT_ISSUES_LINK_NAME).spliterator(), false)
+        .map(XodusServerIssueStore::adaptTaint)
         .collect(Collectors.toList())
       )
       .orElseGet(Collections::emptyList));
@@ -268,7 +277,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       var branch = getOrCreateBranch(branchName, txn);
       issuesByFilePath.forEach((filePath, issues) -> {
         var fileEntity = getOrCreateFile(branch, filePath, txn);
-        issues.forEach(issue -> updateOrCreateTaintIssue(fileEntity, issue, txn));
+        issues.forEach(issue -> updateOrCreateTaintIssue(branch, fileEntity, issue, txn));
         txn.flush();
       });
       closedIssueKeysToDelete.forEach(issueKey -> removeTaint(issueKey, txn));
@@ -335,7 +344,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       fileEntity.getLinks(FILE_TO_TAINT_ISSUES_LINK_NAME).forEach(Entity::delete);
       fileEntity.deleteLinks(FILE_TO_TAINT_ISSUES_LINK_NAME);
 
-      issues.forEach(issue -> updateOrCreateTaintIssue(fileEntity, issue, txn));
+      issues.forEach(issue -> updateOrCreateTaintIssue(branch, fileEntity, issue, txn));
     }));
   }
 
@@ -388,9 +397,11 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     }
   }
 
-  private static void updateOrCreateTaintIssue(Entity fileEntity, ServerTaintIssue issue, StoreTransaction transaction) {
+  private static void updateOrCreateTaintIssue(Entity branchEntity, Entity fileEntity, ServerTaintIssue issue, StoreTransaction transaction) {
     var issueEntity = updateOrCreateIssueCommon(fileEntity, issue.getKey(), transaction, TAINT_ISSUE_ENTITY_TYPE, FILE_TO_TAINT_ISSUES_LINK_NAME);
     updateTaintIssueEntity(issue, issueEntity);
+    branchEntity.addLink(BRANCH_TO_TAINT_ISSUES_LINK_NAME, issueEntity);
+    issueEntity.setLink(TAINT_ISSUE_TO_BRANCH_LINK_NAME, branchEntity);
   }
 
   private static void updateTaintIssueEntity(ServerTaintIssue issue, Entity issueEntity) {
@@ -463,6 +474,11 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
           fileEntity.deleteLink(FILE_TO_TAINT_ISSUES_LINK_NAME, issueEntity);
         }
         issueEntity.deleteLinks(ISSUE_TO_FILE_LINK_NAME);
+        var branchEntity = issueEntity.getLink(TAINT_ISSUE_TO_BRANCH_LINK_NAME);
+        if (branchEntity != null) {
+          branchEntity.deleteLink(BRANCH_TO_TAINT_ISSUES_LINK_NAME, issueEntity);
+        }
+        issueEntity.deleteLinks(TAINT_ISSUE_TO_BRANCH_LINK_NAME);
         issueEntity.delete();
       });
   }
@@ -498,7 +514,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       .ifPresentOrElse(issueEntity -> LOG.error("Trying to store a taint vulnerability that already exists"), () -> {
         var branch = getOrCreateBranch(branchName, txn);
         var fileEntity = getOrCreateFile(branch, taintIssue.getFilePath(), txn);
-        updateOrCreateTaintIssue(fileEntity, taintIssue, txn);
+        updateOrCreateTaintIssue(branch, fileEntity, taintIssue, txn);
       }));
   }
 
@@ -560,5 +576,40 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
         .setHash(textRange.getHash()));
     }
     return location.build();
+  }
+
+  static void checkCurrentSchemaVersion(StoreTransaction txn) {
+    var currentSchemaVersion = getCurrentSchemaVersion(txn);
+    if (currentSchemaVersion < CURRENT_SCHEMA_VERSION) {
+      // Migrate v0 to v1: force re-sync of taint vulnerabilities
+      txn.getAll(BRANCH_ENTITY_TYPE).forEach(b -> b.setProperty(LAST_TAINT_SYNC_PROPERTY_NAME, Instant.EPOCH));
+
+      // Set schema version to current after migration(s)
+      txn.getAll(SCHEMA_ENTITY_TYPE).forEach(Entity::delete);
+      var newSchema = txn.newEntity(SCHEMA_ENTITY_TYPE);
+      newSchema.setProperty(VERSION_PROPERTY_NAME, CURRENT_SCHEMA_VERSION);
+      txn.saveEntity(newSchema);
+      txn.flush();
+    }
+  }
+
+  static int getCurrentSchemaVersion(StoreTransaction txn) {
+    var schemaEntities = txn.getAll(SCHEMA_ENTITY_TYPE);
+    var schemaEntitiesCount = schemaEntities.size();
+    if (schemaEntitiesCount == 1) {
+      var schemaEntity = schemaEntities.getFirst();
+      var schemaVersion = schemaEntity.getProperty(VERSION_PROPERTY_NAME);
+      if (schemaVersion == null) {
+        return 0;
+      }
+      return (Integer) schemaVersion;
+    } else {
+      // If there are 0 or more than 1 entries, then we need to wipe
+      return 0;
+    }
+  }
+
+  int getCurrentSchemaVersion() {
+    return entityStore.computeInTransaction(XodusServerIssueStore::getCurrentSchemaVersion);
   }
 }
