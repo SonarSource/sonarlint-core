@@ -17,37 +17,39 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analysis.container.analysis.issue;
+package org.sonarsource.sonarlint.core.analysis.sonarapi;
 
-import org.sonarsource.sonarlint.core.analysis.api.TextEdit;
-import org.sonarsource.sonarlint.core.commons.TextRange;
-import org.sonarsource.sonarlint.plugin.api.issue.NewTextEdit;
+import java.util.List;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+import org.sonar.api.batch.sensor.issue.Issue;
+import org.sonar.api.batch.sensor.issue.IssueLocation;
+import org.sonar.api.batch.sensor.issue.NewIssue;
 
-public class DefaultTextEdit implements TextEdit, NewTextEdit {
+public class DefaultFlow implements Issue.Flow {
+  private final List<IssueLocation> locations;
+  private final String description;
+  private final NewIssue.FlowType type;
 
-  private TextRange range;
-
-  private String newText;
-
-  @Override
-  public NewTextEdit at(org.sonar.api.batch.fs.TextRange range) {
-    this.range = TextRangeUtils.convert(range);
-    return this;
+  public DefaultFlow(List<IssueLocation> locations, @Nullable String description, NewIssue.FlowType type) {
+    this.locations = locations;
+    this.description = description;
+    this.type = type;
   }
 
   @Override
-  public NewTextEdit withNewText(String newText) {
-    this.newText = newText;
-    return this;
+  public List<IssueLocation> locations() {
+    return locations;
+  }
+
+  @CheckForNull
+  @Override
+  public String description() {
+    return description;
   }
 
   @Override
-  public TextRange range() {
-    return range;
-  }
-
-  @Override
-  public String newText() {
-    return newText;
+  public NewIssue.FlowType type() {
+    return type;
   }
 }

@@ -27,10 +27,11 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.rule.Severity;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
+import org.sonar.api.batch.sensor.issue.fix.NewInputFileEdit;
+import org.sonar.api.batch.sensor.issue.fix.NewQuickFix;
+import org.sonar.api.batch.sensor.issue.fix.NewTextEdit;
 import org.sonar.api.rule.RuleKey;
-import org.sonarsource.sonarlint.core.analysis.api.QuickFixable;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputDir;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputFile;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputProject;
 import testutils.TestInputFileBuilder;
 
@@ -74,29 +75,29 @@ class DefaultSonarLintIssueTests {
     assertThat(issue.primaryLocation().message()).isEqualTo("Wrong way!");
 
     assertThatExceptionOfType(UnsupportedOperationException.class)
-      .isThrownBy(() -> issue.gap())
+      .isThrownBy(issue::gap)
       .withMessage("No gap in SonarLint");
 
     var newQuickFix = issue.newQuickFix().message("Fix this issue");
     var newInputFileEdit = newQuickFix.newInputFileEdit().on(inputFile);
-    newInputFileEdit.addTextEdit(newInputFileEdit.newTextEdit().at(range).withNewText("// Fixed!"));
-    newQuickFix.addInputFileEdit(newInputFileEdit);
-    issue.addQuickFix(newQuickFix);
+    newInputFileEdit.addTextEdit((NewTextEdit) newInputFileEdit.newTextEdit().at(range).withNewText("// Fixed!"));
+    newQuickFix.addInputFileEdit((NewInputFileEdit) newInputFileEdit);
+    issue.addQuickFix((NewQuickFix) newQuickFix);
 
-    var quickFixes = ((QuickFixable) issue).quickFixes();
+    var quickFixes = issue.quickFixes();
     assertThat(quickFixes).hasSize(1);
     var quickFix = quickFixes.get(0);
     assertThat(quickFix.message()).isEqualTo("Fix this issue");
     var inputFileEdits = quickFix.inputFileEdits();
     assertThat(inputFileEdits).hasSize(1);
     var inputFileEdit = inputFileEdits.get(0);
-    assertThat(inputFileEdit.target()).isEqualTo(((SonarLintInputFile) inputFile).getClientInputFile());
+    assertThat(inputFileEdit.target()).isEqualTo(inputFile);
     assertThat(inputFileEdit.textEdits()).hasSize(1);
     var textEdit = inputFileEdit.textEdits().get(0);
-    assertThat(textEdit.range().getStartLine()).isEqualTo(range.start().line());
-    assertThat(textEdit.range().getStartLineOffset()).isEqualTo(range.start().lineOffset());
-    assertThat(textEdit.range().getEndLine()).isEqualTo(range.end().line());
-    assertThat(textEdit.range().getEndLineOffset()).isEqualTo(range.end().lineOffset());
+    assertThat(textEdit.range().start().line()).isEqualTo(range.start().line());
+    assertThat(textEdit.range().start().lineOffset()).isEqualTo(range.start().lineOffset());
+    assertThat(textEdit.range().end().line()).isEqualTo(range.end().line());
+    assertThat(textEdit.range().end().lineOffset()).isEqualTo(range.end().lineOffset());
     assertThat(textEdit.newText()).isEqualTo("// Fixed!");
 
     issue.save();

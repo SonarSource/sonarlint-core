@@ -21,9 +21,21 @@ package org.sonarsource.sonarlint.core.analysis.api;
 
 import java.util.List;
 
-public interface QuickFix {
+public class QuickFix {
 
-  List<ClientInputFileEdit> inputFileEdits();
+  private final List<ClientInputFileEdit> inputFileEdits;
+  private final String message;
 
-  String message();
+  public QuickFix(List<ClientInputFileEdit> inputFileEdits, String message) {
+    this.inputFileEdits = inputFileEdits;
+    this.message = message;
+  }
+
+  public List<ClientInputFileEdit> inputFileEdits() {
+    return inputFileEdits;
+  }
+
+  public String message() {
+    return message;
+  }
 }

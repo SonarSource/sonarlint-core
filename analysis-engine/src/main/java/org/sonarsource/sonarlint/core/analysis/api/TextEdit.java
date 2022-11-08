@@ -21,9 +21,20 @@ package org.sonarsource.sonarlint.core.analysis.api;
 
 import org.sonarsource.sonarlint.core.commons.TextRange;
 
-public interface TextEdit {
+public class TextEdit {
+  private final TextRange range;
+  private final String newText;
 
-  TextRange range();
+  public TextEdit(TextRange range, String newText) {
+    this.range = range;
+    this.newText = newText;
+  }
 
-  String newText();
+  public TextRange range() {
+    return range;
+  }
+
+  public String newText() {
+    return newText;
+  }
 }

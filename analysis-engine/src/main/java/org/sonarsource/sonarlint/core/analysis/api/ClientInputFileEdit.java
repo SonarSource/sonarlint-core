@@ -21,9 +21,20 @@ package org.sonarsource.sonarlint.core.analysis.api;
 
 import java.util.List;
 
-public interface ClientInputFileEdit {
+public class ClientInputFileEdit {
+  private final ClientInputFile target;
+  private final List<TextEdit> textEdits;
 
-  ClientInputFile target();
+  public ClientInputFileEdit(ClientInputFile target, List<TextEdit> textEdits) {
+    this.target = target;
+    this.textEdits = textEdits;
+  }
 
-  List<TextEdit> textEdits();
+  public ClientInputFile target() {
+    return target;
+  }
+
+  public List<TextEdit> textEdits() {
+    return textEdits;
+  }
 }
