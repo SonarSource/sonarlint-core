@@ -172,6 +172,11 @@ public class DefaultSensorContext implements SensorContext {
   }
 
   @Override
+  public void markAsUnchanged(InputFile inputFile) {
+    // NO OP
+  }
+
+  @Override
   public NewExternalIssue newExternalIssue() {
     throw unsupported();
   }

@@ -33,13 +33,17 @@ import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.batch.sensor.issue.ExternalIssue;
 import org.sonar.api.batch.sensor.issue.Issue;
 import org.sonar.api.batch.sensor.issue.Issue.Flow;
+import org.sonar.api.batch.sensor.issue.fix.QuickFix;
 import org.sonar.api.batch.sensor.measure.Measure;
 import org.sonar.api.batch.sensor.rule.AdHocRule;
 import org.sonar.api.batch.sensor.symbol.NewSymbolTable;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFileEdit;
+import org.sonarsource.sonarlint.core.analysis.api.TextEdit;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.IssueListenerHolder;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputFile;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.IssueFilters;
+import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.TextRangeUtils;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultSonarLintIssue;
 
@@ -79,7 +83,7 @@ public class SonarLintSensorStorage implements SensorStorage {
 
     var primaryMessage = sonarLintIssue.primaryLocation().message();
     var flows = mapFlows(sonarLintIssue.flows());
-    var quickFixes = sonarLintIssue.quickFixes();
+    var quickFixes = transform(sonarLintIssue.quickFixes());
 
     var newIssue = new org.sonarsource.sonarlint.core.analysis.api.Issue(activeRule, primaryMessage,
       issue.primaryLocation().textRange(),
@@ -87,6 +91,18 @@ public class SonarLintSensorStorage implements SensorStorage {
     if (filters.accept(inputComponent, newIssue)) {
       issueListener.handle(newIssue);
     }
+  }
+
+  private static List<org.sonarsource.sonarlint.core.analysis.api.QuickFix> transform(List<QuickFix> quickFixes) {
+    return quickFixes.stream().map(SonarLintSensorStorage::transform).collect(toList());
+  }
+
+  private static org.sonarsource.sonarlint.core.analysis.api.QuickFix transform(QuickFix qf) {
+    return new org.sonarsource.sonarlint.core.analysis.api.QuickFix(
+      qf.inputFileEdits().stream().map(edit -> new ClientInputFileEdit(
+        ((SonarLintInputFile) edit.target()).getClientInputFile(),
+        edit.textEdits().stream().map(textEdit -> new TextEdit(TextRangeUtils.convert(textEdit.range()), textEdit.newText())).collect(toList()))).collect(toList()),
+      qf.message());
   }
 
   private static boolean noSonar(InputComponent inputComponent, Issue issue) {

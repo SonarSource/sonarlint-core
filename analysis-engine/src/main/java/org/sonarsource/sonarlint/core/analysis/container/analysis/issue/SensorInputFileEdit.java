@@ -23,38 +23,43 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.analysis.api.ClientInputFileEdit;
-import org.sonarsource.sonarlint.core.analysis.api.TextEdit;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputFile;
-import org.sonarsource.sonarlint.plugin.api.issue.NewInputFileEdit;
-import org.sonarsource.sonarlint.plugin.api.issue.NewTextEdit;
+import org.sonar.api.batch.sensor.issue.fix.InputFileEdit;
+import org.sonar.api.batch.sensor.issue.fix.NewInputFileEdit;
+import org.sonar.api.batch.sensor.issue.fix.NewTextEdit;
+import org.sonar.api.batch.sensor.issue.fix.TextEdit;
 
-public class DefaultClientInputFileEdit implements ClientInputFileEdit, NewInputFileEdit {
+public class SensorInputFileEdit implements InputFileEdit, NewInputFileEdit, org.sonarsource.sonarlint.plugin.api.issue.NewInputFileEdit {
 
   private final List<TextEdit> textEdits = new ArrayList<>();
 
-  private ClientInputFile inputFile;
+  private InputFile inputFile;
 
   @Override
-  public NewInputFileEdit on(InputFile inputFile) {
-    this.inputFile = ((SonarLintInputFile) inputFile).getClientInputFile();
+  public SensorInputFileEdit on(InputFile inputFile) {
+    this.inputFile = inputFile;
     return this;
   }
 
   @Override
-  public NewTextEdit newTextEdit() {
-    return new DefaultTextEdit();
+  public SensorTextEdit newTextEdit() {
+    return new SensorTextEdit();
   }
 
   @Override
   public NewInputFileEdit addTextEdit(NewTextEdit newTextEdit) {
-    textEdits.add((DefaultTextEdit) newTextEdit);
+    textEdits.add((SensorTextEdit) newTextEdit);
     return this;
   }
 
   @Override
-  public ClientInputFile target() {
+  public org.sonarsource.sonarlint.plugin.api.issue.NewInputFileEdit addTextEdit(org.sonarsource.sonarlint.plugin.api.issue.NewTextEdit newTextEdit) {
+    // legacy method from sonarlint-plugin-api, keep for backward compatibility and remove later
+    textEdits.add((SensorTextEdit) newTextEdit);
+    return this;
+  }
+
+  @Override
+  public InputFile target() {
     return inputFile;
   }
 

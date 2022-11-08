@@ -33,25 +33,22 @@ import org.sonar.api.batch.sensor.issue.Issue;
 import org.sonar.api.batch.sensor.issue.IssueLocation;
 import org.sonar.api.batch.sensor.issue.NewIssue;
 import org.sonar.api.batch.sensor.issue.NewIssueLocation;
+import org.sonar.api.batch.sensor.issue.fix.QuickFix;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.utils.PathUtils;
-import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
-import org.sonarsource.sonarlint.core.analysis.api.QuickFixable;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputProject;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.DefaultQuickFix;
+import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.SensorQuickFix;
 import org.sonarsource.sonarlint.plugin.api.issue.NewQuickFix;
 import org.sonarsource.sonarlint.plugin.api.issue.NewSonarLintIssue;
 
-import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toList;
 
-public class DefaultSonarLintIssue extends DefaultStorable implements Issue, NewIssue, NewSonarLintIssue, QuickFixable {
+public class DefaultSonarLintIssue extends DefaultStorable implements Issue, NewIssue, NewSonarLintIssue {
 
   private final SonarLintInputProject project;
   private final Path baseDir;
   protected DefaultSonarLintIssueLocation primaryLocation;
-  protected List<List<IssueLocation>> flows = new ArrayList<>();
+  protected List<Flow> flows = new ArrayList<>();
   private RuleKey ruleKey;
   private Severity overriddenSeverity;
   private final List<QuickFix> quickFixes;
@@ -115,9 +112,7 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
 
   @Override
   public List<Flow> flows() {
-    return this.flows.stream()
-      .<Flow>map(l -> () -> unmodifiableList(new ArrayList<>(l)))
-      .collect(toList());
+    return this.flows;
   }
 
   @Override
@@ -127,18 +122,22 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
   }
 
   @Override
-  public DefaultSonarLintIssue addLocation(NewIssueLocation secondaryLocation) {
-    flows.add(Collections.singletonList(rewriteLocation((DefaultSonarLintIssueLocation) secondaryLocation)));
-    return this;
+  public NewIssue addLocation(NewIssueLocation secondaryLocation) {
+    return addFlow(List.of(secondaryLocation));
   }
 
   @Override
-  public DefaultSonarLintIssue addFlow(Iterable<NewIssueLocation> locations) {
+  public NewIssue addFlow(Iterable<NewIssueLocation> locations) {
+    return addFlow(locations, FlowType.UNDEFINED, null);
+  }
+
+  @Override
+  public NewIssue addFlow(Iterable<NewIssueLocation> flowLocations, FlowType flowType, @Nullable String flowDescription) {
     List<IssueLocation> flowAsList = new ArrayList<>();
-    for (NewIssueLocation issueLocation : locations) {
+    for (NewIssueLocation issueLocation : flowLocations) {
       flowAsList.add(rewriteLocation((DefaultSonarLintIssueLocation) issueLocation));
     }
-    flows.add(flowAsList);
+    flows.add(new DefaultFlow(flowAsList, flowDescription, flowType));
     return this;
   }
 
@@ -174,13 +173,20 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
   }
 
   @Override
-  public NewQuickFix newQuickFix() {
-    return new DefaultQuickFix();
+  public SensorQuickFix newQuickFix() {
+    return new SensorQuickFix();
   }
 
   @Override
-  public NewSonarLintIssue addQuickFix(NewQuickFix newQuickFix) {
-    quickFixes.add((DefaultQuickFix) newQuickFix);
+  public DefaultSonarLintIssue addQuickFix(NewQuickFix newQuickFix) {
+    // legacy method from sonarlint-plugin-api, keep for backward compatibility and remove later
+    quickFixes.add((QuickFix) newQuickFix);
+    return this;
+  }
+
+  @Override
+  public DefaultSonarLintIssue addQuickFix(org.sonar.api.batch.sensor.issue.fix.NewQuickFix newQuickFix) {
+    quickFixes.add((QuickFix) newQuickFix);
     return this;
   }
 

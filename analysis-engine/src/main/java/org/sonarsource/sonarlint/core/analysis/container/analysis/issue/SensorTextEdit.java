@@ -19,43 +19,33 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.analysis.issue;
 
-import java.util.ArrayList;
-import java.util.List;
-import org.sonarsource.sonarlint.core.analysis.api.ClientInputFileEdit;
-import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
-import org.sonarsource.sonarlint.plugin.api.issue.NewInputFileEdit;
-import org.sonarsource.sonarlint.plugin.api.issue.NewQuickFix;
+import org.sonar.api.batch.fs.TextRange;
+import org.sonar.api.batch.sensor.issue.fix.NewTextEdit;
+import org.sonar.api.batch.sensor.issue.fix.TextEdit;
 
-public class DefaultQuickFix implements QuickFix, NewQuickFix {
-
-  private final List<ClientInputFileEdit> inputFileEdits = new ArrayList<>();
-
-  private String message;
+public class SensorTextEdit implements TextEdit, NewTextEdit, org.sonarsource.sonarlint.plugin.api.issue.NewTextEdit {
+  private TextRange range;
+  private String newText;
 
   @Override
-  public NewQuickFix message(String message) {
-    this.message = message;
+  public SensorTextEdit at(TextRange range) {
+    this.range = range;
     return this;
   }
 
   @Override
-  public NewInputFileEdit newInputFileEdit() {
-    return new DefaultClientInputFileEdit();
-  }
-
-  @Override
-  public NewQuickFix addInputFileEdit(NewInputFileEdit newInputFileEdit) {
-    inputFileEdits.add((DefaultClientInputFileEdit) newInputFileEdit);
+  public SensorTextEdit withNewText(String newText) {
+    this.newText = newText;
     return this;
   }
 
   @Override
-  public String message() {
-    return message;
+  public TextRange range() {
+    return range;
   }
 
   @Override
-  public List<ClientInputFileEdit> inputFileEdits() {
-    return inputFileEdits;
+  public String newText() {
+    return newText;
   }
 }
