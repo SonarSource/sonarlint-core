@@ -25,7 +25,9 @@ import org.sonar.api.batch.fs.InputFile;
  * Describe a file edit for a {@link NewQuickFix} as a collection of {@link NewTextEdit}s on a given {@link InputFile}.
  * Text edits are applied in the order they are added, insofar that their ranges do not overlap.
  * @since 6.3
+ * @deprecated use org.sonar.api.batch.sensor.issue.fix.NewInputFileEdit from the sonar-plugin-api instead
  */
+@Deprecated(since = "8.12")
 public interface NewInputFileEdit {
 
   /**

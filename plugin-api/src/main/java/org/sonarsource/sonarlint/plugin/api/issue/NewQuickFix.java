@@ -23,7 +23,9 @@ package org.sonarsource.sonarlint.plugin.api.issue;
  * Describe a quick fix for a {@link NewSonarLintIssue}, with a description and a collection of {@link NewInputFileEdit}.
  * Input file edits will be applied in the order they are added, insofar that they are compatible with one another.
  * @since 6.3
+ * @deprecated use org.sonar.api.batch.sensor.issue.fix.NewQuickFix from the sonar-plugin-api instead
  */
+@Deprecated(since = "8.12")
 public interface NewQuickFix {
 
   /**

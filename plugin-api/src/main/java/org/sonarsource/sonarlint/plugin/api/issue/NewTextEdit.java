@@ -24,7 +24,9 @@ import org.sonar.api.batch.fs.TextRange;
 /**
  * Describe a text edit for a {@link NewInputFileEdit} as a replacement text for a given {@link TextRange}
  * @since 6.3
+ * @deprecated use org.sonar.api.batch.sensor.issue.fix.NewTextEdit from the sonar-plugin-api instead
  */
+@Deprecated(since = "8.12")
 public interface NewTextEdit {
 
   /**

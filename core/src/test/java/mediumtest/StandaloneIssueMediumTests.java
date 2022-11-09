@@ -50,8 +50,10 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFileEdit;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
+import org.sonarsource.sonarlint.core.analysis.api.TextEdit;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.SonarLintModuleFileSystem;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
@@ -61,6 +63,7 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConf
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
+import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.progress.CanceledException;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import testutils.OnDiskTestClientInputFile;
@@ -450,6 +453,45 @@ class StandaloneIssueMediumTests {
         tuple("java:S1481", 3, 8, 3, 9, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
         tuple("java:S106", 4, 4, 4, 14, A_JAVA_FILE_PATH, IssueSeverity.MAJOR),
         tuple("java:S1135", 5, 0, 5, 27, A_JAVA_FILE_PATH, IssueSeverity.INFO));
+  }
+
+  @Test
+  void simpleJavaWithQuickFix() throws Exception {
+    var inputFile = prepareInputFile(A_JAVA_FILE_PATH,
+      "public class Foo {\n"
+        + "  public void foo() {\n"
+        +"     \n"
+        + "  }\n"
+        + "}",
+      false);
+
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(StandaloneAnalysisConfiguration.builder()
+        .setBaseDir(baseDir.toPath())
+        .addInputFile(inputFile)
+        .build(), issues::add,
+      null, null);
+
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, Issue::getEndLine, Issue::getEndLineOffset,
+      i -> i.getInputFile().relativePath(), Issue::getSeverity).contains(
+      tuple("java:S1186", 2, 14, 2, 17, A_JAVA_FILE_PATH, IssueSeverity.CRITICAL));
+
+    assertThat(issues)
+      .flatExtracting(Issue::quickFixes)
+      .extracting(QuickFix::message)
+      .containsOnly("Insert placeholder comment");
+    assertThat(issues)
+      .flatExtracting(Issue::quickFixes)
+      .flatExtracting(QuickFix::inputFileEdits)
+      .extracting(ClientInputFileEdit::target)
+      .containsOnly(inputFile);
+    assertThat(issues)
+      .flatExtracting(Issue::quickFixes)
+      .flatExtracting(QuickFix::inputFileEdits)
+      .flatExtracting(ClientInputFileEdit::textEdits)
+      .extracting(TextEdit::range, TextEdit::newText)
+      .containsOnly(
+        tuple(new TextRange(2, 21, 4, 2), "\n    // TODO document why this method is empty\n  "));
   }
 
   @Test
