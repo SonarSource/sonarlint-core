@@ -22,7 +22,9 @@ package org.sonarsource.sonarlint.plugin.api.issue;
 /**
  * Extension interface to add {@link NewQuickFix}es to a {@link org.sonar.api.batch.sensor.issue.NewIssue}
  * @since 6.3
+ * @deprecated use org.sonar.api.batch.sensor.issue.NewIssue from the sonar-plugin-api instead
  */
+@Deprecated(since = "8.12")
 public interface NewSonarLintIssue {
 
   /**
