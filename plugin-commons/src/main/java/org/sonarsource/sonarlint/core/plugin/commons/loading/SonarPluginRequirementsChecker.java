@@ -30,6 +30,7 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.PluginsMinVersions;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
 import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
 import org.sonarsource.sonarlint.core.plugin.commons.SkipReason.UnsatisfiedRuntimeRequirement.RuntimeRequirement;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.SonarPluginManifest.RequiredPlugin;
@@ -38,18 +39,18 @@ public class SonarPluginRequirementsChecker {
 
   private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
 
-  static final String IMPLEMENTED_PLUGIN_API = "9.6.1";
-
   private static final Logger LOG = Loggers.get(SonarPluginRequirementsChecker.class);
 
   private final PluginsMinVersions pluginMinVersions;
+  private final Version implementedPluginApiVersion;
 
   public SonarPluginRequirementsChecker() {
-    this(new PluginsMinVersions());
+    this(new PluginsMinVersions(), ApiVersions.loadSonarPluginApiVersion());
   }
 
-  SonarPluginRequirementsChecker(PluginsMinVersions pluginMinVersions) {
+  SonarPluginRequirementsChecker(PluginsMinVersions pluginMinVersions, org.sonar.api.utils.Version pluginApiVersion) {
     this.pluginMinVersions = pluginMinVersions;
+    this.implementedPluginApiVersion = Version.create(pluginApiVersion.toString());
   }
 
   /**
@@ -97,9 +98,10 @@ public class SonarPluginRequirementsChecker {
       }
       return new PluginRequirementsCheckResult(plugin, new SkipReason.LanguagesNotEnabled(languages));
     }
-    if (!isCompatibleWith(plugin, IMPLEMENTED_PLUGIN_API)) {
+
+    if (!isCompatibleWith(plugin, implementedPluginApiVersion)) {
       LOG.debug("Plugin '{}' requires plugin API {} while SonarLint supports only up to {}. Skip loading it.", plugin.getName(),
-        plugin.getMinimalSqVersion(), IMPLEMENTED_PLUGIN_API);
+        plugin.getMinimalSqVersion(), implementedPluginApiVersion.removeQualifier().toString());
       return new PluginRequirementsCheckResult(plugin, SkipReason.IncompatiblePluginApi.INSTANCE);
     }
     var pluginMinVersion = pluginMinVersions.getMinimumVersion(pluginKey);
@@ -131,11 +133,11 @@ public class SonarPluginRequirementsChecker {
   }
 
   /**
-   * Find out if this plugin is compatible with a given version of SonarQube.
-   * The version of SQ must be greater than or equal to the minimal version
+   * Find out if this plugin is compatible with a given version of the sonar-plugin-api.
+   * The version of the API must be greater than or equal to the minimal version
    * needed by the plugin.
    */
-  static boolean isCompatibleWith(PluginInfo plugin, String implementedApi) {
+  static boolean isCompatibleWith(PluginInfo plugin, Version implementedApiVersion) {
     var sonarMinVersion = plugin.getMinimalSqVersion();
     if (sonarMinVersion == null) {
       // no constraint defined on the plugin
@@ -144,8 +146,7 @@ public class SonarPluginRequirementsChecker {
 
     // Ignore patch and build numbers since this should not change API compatibility
     var requestedApi = Version.create(sonarMinVersion.getMajor() + "." + sonarMinVersion.getMinor());
-    var implementedApiVersion = Version.create(implementedApi);
-    return implementedApiVersion.compareToIgnoreQualifier(requestedApi) >= 0;
+    return implementedApiVersion.satisfiesMinRequirement(requestedApi);
   }
 
   private static PluginRequirementsCheckResult checkUnsatisfiedPluginDependency(PluginRequirementsCheckResult currentResult,
