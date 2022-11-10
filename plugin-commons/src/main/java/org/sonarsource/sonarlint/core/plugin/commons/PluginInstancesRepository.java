@@ -63,12 +63,8 @@ public class PluginInstancesRepository implements AutoCloseable {
   }
 
   public PluginInstancesRepository(Configuration configuration) {
-    this(configuration, new SonarPluginRequirementsChecker(), new PluginInstancesLoader(), System2.INSTANCE);
-  }
-
-  PluginInstancesRepository(Configuration configuration, SonarPluginRequirementsChecker pluginRequirementChecker, PluginInstancesLoader pluginInstancesLoader, System2 system2) {
-    this.pluginInstancesLoader = pluginInstancesLoader;
-    load(configuration, pluginRequirementChecker, system2);
+    this.pluginInstancesLoader = new PluginInstancesLoader();
+    load(configuration, new SonarPluginRequirementsChecker(), System2.INSTANCE);
   }
 
   private void load(Configuration configuration, SonarPluginRequirementsChecker pluginRequirementChecker, System2 system2) {

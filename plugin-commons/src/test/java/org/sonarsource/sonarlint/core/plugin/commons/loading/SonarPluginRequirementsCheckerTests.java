@@ -64,6 +64,7 @@ class SonarPluginRequirementsCheckerTests {
   private static final String V1_0 = "1.0";
 
   private static final String FAKE_PLUGIN_KEY = "pluginkey";
+  private static final org.sonar.api.utils.Version FAKE_PLUGIN_API_VERSION = org.sonar.api.utils.Version.parse("8.1.2");
 
   @RegisterExtension
   public SonarLintLogTester logTester = new SonarLintLogTester();
@@ -76,7 +77,7 @@ class SonarPluginRequirementsCheckerTests {
     pluginMinVersions = spy(new PluginsMinVersions());
     doReturn(V1_0).when(pluginMinVersions).getMinimumVersion(FAKE_PLUGIN_KEY);
 
-    underTest = new SonarPluginRequirementsChecker(pluginMinVersions);
+    underTest = new SonarPluginRequirementsChecker(pluginMinVersions, FAKE_PLUGIN_API_VERSION);
   }
 
   @Test
@@ -118,7 +119,7 @@ class SonarPluginRequirementsCheckerTests {
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, SkipReason.IncompatiblePluginApi.INSTANCE));
     assertThat(logsWithoutStartStop())
-      .contains("Plugin 'pluginkey' requires plugin API 99.9 while SonarLint supports only up to " + SonarPluginRequirementsChecker.IMPLEMENTED_PLUGIN_API + ". Skip loading it.");
+      .contains("Plugin 'pluginkey' requires plugin API 99.9 while SonarLint supports only up to " + FAKE_PLUGIN_API_VERSION + ". Skip loading it.");
   }
 
   @Test
@@ -379,35 +380,35 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void test_isCompatibleWith() throws IOException {
-    assertThat(isCompatibleWith(withMinSqVersion("1.1"), "1.1")).isTrue();
-    assertThat(isCompatibleWith(withMinSqVersion("1.1"), "1.1.0")).isTrue();
-    assertThat(isCompatibleWith(withMinSqVersion("1.0"), "1.0.0")).isTrue();
+    assertThat(isCompatibleWith(withMinSqVersion("1.1"), Version.create("1.1"))).isTrue();
+    assertThat(isCompatibleWith(withMinSqVersion("1.1"), Version.create("1.1.0"))).isTrue();
+    assertThat(isCompatibleWith(withMinSqVersion("1.0"), Version.create("1.0.0"))).isTrue();
 
-    assertThat(isCompatibleWith(withMinSqVersion("1.0"), "1.1")).isTrue();
-    assertThat(isCompatibleWith(withMinSqVersion("1.1.1"), "1.1.2")).isTrue();
-    assertThat(isCompatibleWith(withMinSqVersion("2.0"), "2.1.0")).isTrue();
-    assertThat(isCompatibleWith(withMinSqVersion("3.2"), "3.2-RC1")).isTrue();
-    assertThat(isCompatibleWith(withMinSqVersion("3.2"), "3.2-RC2")).isTrue();
-    assertThat(isCompatibleWith(withMinSqVersion("3.2"), "3.1-RC2")).isFalse();
+    assertThat(isCompatibleWith(withMinSqVersion("1.0"), Version.create("1.1"))).isTrue();
+    assertThat(isCompatibleWith(withMinSqVersion("1.1.1"), Version.create("1.1.2"))).isTrue();
+    assertThat(isCompatibleWith(withMinSqVersion("2.0"), Version.create("2.1.0"))).isTrue();
+    assertThat(isCompatibleWith(withMinSqVersion("3.2"), Version.create("3.2-RC1"))).isTrue();
+    assertThat(isCompatibleWith(withMinSqVersion("3.2"), Version.create("3.2-RC2"))).isTrue();
+    assertThat(isCompatibleWith(withMinSqVersion("3.2"), Version.create("3.1-RC2"))).isFalse();
 
-    assertThat(isCompatibleWith(withMinSqVersion("1.1"), "1.0")).isFalse();
-    assertThat(isCompatibleWith(withMinSqVersion("2.0.1"), "2.0.0")).isTrue();
-    assertThat(isCompatibleWith(withMinSqVersion("2.10"), "2.1")).isFalse();
-    assertThat(isCompatibleWith(withMinSqVersion("10.10"), "2.2")).isFalse();
+    assertThat(isCompatibleWith(withMinSqVersion("1.1"), Version.create("1.0"))).isFalse();
+    assertThat(isCompatibleWith(withMinSqVersion("2.0.1"), Version.create("2.0.0"))).isTrue();
+    assertThat(isCompatibleWith(withMinSqVersion("2.10"), Version.create("2.1"))).isFalse();
+    assertThat(isCompatibleWith(withMinSqVersion("10.10"), Version.create("2.2"))).isFalse();
 
-    assertThat(isCompatibleWith(withMinSqVersion("1.1-SNAPSHOT"), "1.0")).isFalse();
-    assertThat(isCompatibleWith(withMinSqVersion("1.1-SNAPSHOT"), "1.1")).isTrue();
-    assertThat(isCompatibleWith(withMinSqVersion("1.1-SNAPSHOT"), "1.2")).isTrue();
-    assertThat(isCompatibleWith(withMinSqVersion("1.0.1-SNAPSHOT"), "1.0")).isTrue();
+    assertThat(isCompatibleWith(withMinSqVersion("1.1-SNAPSHOT"), Version.create("1.0"))).isFalse();
+    assertThat(isCompatibleWith(withMinSqVersion("1.1-SNAPSHOT"), Version.create("1.1"))).isTrue();
+    assertThat(isCompatibleWith(withMinSqVersion("1.1-SNAPSHOT"), Version.create("1.2"))).isTrue();
+    assertThat(isCompatibleWith(withMinSqVersion("1.0.1-SNAPSHOT"), Version.create("1.0"))).isTrue();
 
-    assertThat(isCompatibleWith(withMinSqVersion("3.1-RC2"), "3.2-SNAPSHOT")).isTrue();
-    assertThat(isCompatibleWith(withMinSqVersion("3.1-RC1"), "3.2-RC2")).isTrue();
-    assertThat(isCompatibleWith(withMinSqVersion("3.1-RC1"), "3.1-RC2")).isTrue();
+    assertThat(isCompatibleWith(withMinSqVersion("3.1-RC2"), Version.create("3.2-SNAPSHOT"))).isTrue();
+    assertThat(isCompatibleWith(withMinSqVersion("3.1-RC1"), Version.create("3.2-RC2"))).isTrue();
+    assertThat(isCompatibleWith(withMinSqVersion("3.1-RC1"), Version.create("3.1-RC2"))).isTrue();
 
-    assertThat(isCompatibleWith(withMinSqVersion(null), "0")).isTrue();
-    assertThat(isCompatibleWith(withMinSqVersion(null), "3.1")).isTrue();
+    assertThat(isCompatibleWith(withMinSqVersion(null), Version.create("0"))).isTrue();
+    assertThat(isCompatibleWith(withMinSqVersion(null), Version.create("3.1"))).isTrue();
 
-    assertThat(isCompatibleWith(withMinSqVersion("7.0.0.12345"), "7.0")).isTrue();
+    assertThat(isCompatibleWith(withMinSqVersion("7.0.0.12345"), Version.create("7.0"))).isTrue();
   }
 
   PluginInfo withMinSqVersion(@Nullable String version) {
