@@ -115,7 +115,7 @@ class ConnectedStorageProblemsMediumTests {
       .addInputFile(inputFile).build(),
       issues::add, null, null);
 
-    assertThat(logs).contains("Execute Sensor: JavaSquidSensor");
+    assertThat(logs).contains("Execute Sensor: JavaSensor");
   }
 
   private ClientInputFile prepareJavaInputFile(Path baseDir) throws IOException {

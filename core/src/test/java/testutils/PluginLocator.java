@@ -25,12 +25,13 @@ import java.nio.file.Paths;
 
 public class PluginLocator {
 
-  public static final String SONAR_JAVA_PLUGIN_JAR = "sonar-java-plugin-6.0.0.20538.jar";
+  public static final String SONAR_JAVA_PLUGIN_JAR = "sonar-java-plugin-7.15.0.30507.jar";
   public static final String SONAR_JAVA_PLUGIN_JAR_HASH = "eb27aea472a0d7d91ed529086ce8ee1c";
   public static final String SONAR_JAVASCRIPT_PLUGIN_JAR = "sonar-javascript-plugin-9.6.0.18814.jar";
   public static final String SONAR_JAVASCRIPT_PLUGIN_JAR_HASH = "2fab92be44e07f1d367f891a55258736";
   public static final String SONAR_PHP_PLUGIN_JAR = "sonar-php-plugin-3.23.1.8766.jar";
   public static final String SONAR_PYTHON_PLUGIN_JAR = "sonar-python-plugin-1.14.0.3086.jar";
+  public static final String SONAR_XML_PLUGIN_JAR = "sonar-xml-plugin-2.6.1.3686.jar";
 
   public static Path getJavaPluginPath() {
     return getPluginPath(SONAR_JAVA_PLUGIN_JAR);
@@ -50,6 +51,10 @@ public class PluginLocator {
 
   public static Path getCppPluginPath() {
     return getPluginPath("sonar-cfamily-plugin-6.18.0.29274.jar");
+  }
+
+  public static Path getXmlPluginPath() {
+    return getPluginPath(SONAR_XML_PLUGIN_JAR);
   }
 
   private static Path getPluginPath(String file) {

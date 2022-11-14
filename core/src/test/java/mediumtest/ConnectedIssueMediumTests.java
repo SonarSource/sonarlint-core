@@ -157,7 +157,7 @@ class ConnectedIssueMediumTests {
         + "  <li> Logged data must actually be recorded </li>\n"
         + "  <li> Sensitive data must only be logged securely </li>\n"
         + "</ul>\n"
-        + "<p>If a program directly writes to the standard outputs, there is absolutely no way to comply with those requirements. That's why defining and using a\n"
+        + "<p>If a program directly writes to the standard outputs, there is absolutely no way to comply with those requirements. That’s why defining and using a\n"
         + "dedicated logger is highly recommended.</p>\n"
         + "<h2>Noncompliant Code Example</h2>\n"
         + "<pre>\n"
@@ -169,7 +169,11 @@ class ConnectedIssueMediumTests {
         + "</pre>\n"
         + "<h2>See</h2>\n"
         + "<ul>\n"
-        + "  <li> <a href=\"https://www.securecoding.cert.org/confluence/x/RoElAQ\">CERT, ERR02-J.</a> - Prevent exceptions while logging data </li>\n"
+        + "  <li> <a href=\"https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/\">OWASP Top 10 2021 Category A9</a> - Security Logging and\n"
+        + "  Monitoring Failures </li>\n"
+        + "  <li> <a href=\"https://www.owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure\">OWASP Top 10 2017 Category A3</a> - Sensitive Data\n"
+        + "  Exposure </li>\n"
+        + "  <li> <a href=\"https://wiki.sei.cmu.edu/confluence/x/nzdGBQ\">CERT, ERR02-J.</a> - Prevent exceptions while logging data </li>\n"
         + "</ul>");
   }
 
