@@ -119,7 +119,6 @@ class ConnectedExtraPluginMediumTests {
       tuple("java:S1220", null, inputFile.getPath(), IssueSeverity.MINOR),
       tuple("java:S1481", 3, inputFile.getPath(), IssueSeverity.MINOR),
       tuple("java:S113", null, inputFile.getPath(), IssueSeverity.MINOR),
-      tuple("java:S1228", null, null, IssueSeverity.MINOR),
       tuple("java:S1106", 1, inputFile.getPath(), IssueSeverity.MINOR),
       tuple("java:S1106", 2, inputFile.getPath(), IssueSeverity.MINOR),
       tuple("java:S1451", null, inputFile.getPath(), IssueSeverity.BLOCKER),

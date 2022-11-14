@@ -51,6 +51,7 @@ import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
+import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.SonarLintModuleFileSystem;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
@@ -120,7 +121,8 @@ class StandaloneIssueMediumTests {
       .addPlugin(PluginLocator.getJavaPluginPath())
       .addPlugin(PluginLocator.getPhpPluginPath())
       .addPlugin(PluginLocator.getPythonPluginPath())
-      .addEnabledLanguages(Language.JS, Language.JAVA, Language.PHP, Language.PYTHON, Language.TS, Language.C, Language.YAML)
+      .addPlugin(PluginLocator.getXmlPluginPath())
+      .addEnabledLanguages(Language.JS, Language.JAVA, Language.PHP, Language.PYTHON, Language.TS, Language.C, Language.YAML, Language.XML)
       .setSonarLintUserHome(sonarlintUserHome)
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
       .setExtraProperties(extraProperties);
@@ -450,8 +452,6 @@ class StandaloneIssueMediumTests {
         tuple("java:S1135", 5, 0, 5, 27, A_JAVA_FILE_PATH, IssueSeverity.INFO));
   }
 
-  // SLCORE-350
-  @Disabled("Can be enabled when sonar-java is fixed with https://github.com/SonarSource/sonar-java/pull/3886")
   @Test
   void simpleJavaWithCommaInClasspath() throws Exception {
     ClientInputFile inputFile = prepareInputFile(A_JAVA_FILE_PATH,
@@ -484,13 +484,14 @@ class StandaloneIssueMediumTests {
   }
 
   @Test
-  void onlyLoadRulesOfEnabledLanguages() throws Exception {
+  void onlyLoadRulesOfEnabledLanguages() {
     Set<Language> enabledLanguages = EnumSet.of(
       Language.JAVA,
       Language.JS,
       Language.PHP,
       Language.PYTHON,
-      Language.TS);
+      Language.TS,
+      Language.XML);
 
     if (COMMERCIAL_ENABLED) {
       enabledLanguages.add(Language.C);
@@ -544,7 +545,7 @@ class StandaloneIssueMediumTests {
       null, null);
 
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S3421", 6, "pom.xml", IssueSeverity.MINOR));
+      tuple("xml:S3421", 6, "pom.xml", IssueSeverity.MINOR));
   }
 
   @Test
