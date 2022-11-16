@@ -21,6 +21,7 @@ package its;
 
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.locator.MavenLocation;
+import its.tools.OrchestratorUtils;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,9 +61,7 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
   }
 
   @Rule
-  public Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
-    .defaultForceAuthentication()
-    .setSonarVersion(SONAR_VERSION)
+  public Orchestrator ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
     .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", "1.13.0.2922")).build();
 
   @ClassRule

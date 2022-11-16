@@ -22,6 +22,7 @@ package its;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.locator.FileLocation;
+import its.tools.OrchestratorUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -38,7 +39,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEng
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 
-import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assume.assumeTrue;
 
@@ -46,9 +46,7 @@ public class ConnectedModeSynchronizationTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_LANGUAGE_MIX = "sample-language-mix";
 
   @ClassRule
-  public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
-    .defaultForceAuthentication()
-    .setSonarVersion(SONAR_VERSION)
+  public static Orchestrator ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
     .keepBundledPlugins()
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/python-sonarlint.xml"))

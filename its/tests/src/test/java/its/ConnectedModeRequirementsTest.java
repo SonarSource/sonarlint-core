@@ -21,6 +21,7 @@ package its;
 
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.locator.FileLocation;
+import its.tools.OrchestratorUtils;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -48,7 +49,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEng
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
 
-import static its.tools.ItUtils.SONAR_VERSION;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,8 +63,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_TYPESCRIPT = "sample-typescript";
 
   @ClassRule
-  public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv().setSonarVersion(SONAR_VERSION)
-    .defaultForceAuthentication()
+  public static Orchestrator ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
     .keepBundledPlugins()
     .addPlugin(FileLocation.of("../plugins/java-custom-rules/target/java-custom-rules-plugin.jar"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-sonarlint.xml"))
