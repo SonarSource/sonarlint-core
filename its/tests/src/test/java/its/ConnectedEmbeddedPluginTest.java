@@ -22,6 +22,7 @@ package its;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
+import its.tools.OrchestratorUtils;
 import its.tools.PluginLocator;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -41,16 +42,13 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.commons.Language;
 
-import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ConnectedEmbeddedPluginTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_C = "sample-c";
 
   @ClassRule
-  public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
-    .defaultForceAuthentication()
-    .setSonarVersion(SONAR_VERSION)
+  public static Orchestrator ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
     .setEdition(Edition.ENTERPRISE)
     .activateLicense()
     .keepBundledPlugins()

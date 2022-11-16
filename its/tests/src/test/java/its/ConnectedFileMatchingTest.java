@@ -20,6 +20,7 @@
 package its;
 
 import com.sonar.orchestrator.Orchestrator;
+import its.tools.OrchestratorUtils;
 import its.tools.SonarlintProject;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -43,16 +44,13 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 
-import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ConnectedFileMatchingTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY = "com.sonarsource.it.samples:multi-modules-sample";
 
   @ClassRule
-  public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
-    .defaultForceAuthentication()
-    .setSonarVersion(SONAR_VERSION)
+  public static Orchestrator ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
     .keepBundledPlugins()
     .setServerProperty("sonar.projectCreation.mainBranchName", MAIN_BRANCH_NAME)
     .build();

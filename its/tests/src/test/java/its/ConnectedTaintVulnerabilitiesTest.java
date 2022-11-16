@@ -45,16 +45,15 @@ package its;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
+import its.tools.OrchestratorUtils;
 import java.nio.file.Path;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -79,7 +78,6 @@ import org.sonarsource.sonarlint.core.serverapi.push.TaintVulnerabilityRaisedEve
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
-import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.waitAtMost;
@@ -90,9 +88,7 @@ public class ConnectedTaintVulnerabilitiesTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_JAVA_TAINT = "sample-java-taint";
 
   @ClassRule
-  public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
-    .defaultForceAuthentication()
-    .setSonarVersion(SONAR_VERSION)
+  public static Orchestrator ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
     .setEdition(Edition.DEVELOPER)
     .activateLicense()
     .keepBundledPlugins()

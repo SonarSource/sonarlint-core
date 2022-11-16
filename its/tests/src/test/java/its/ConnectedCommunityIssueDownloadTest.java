@@ -23,6 +23,7 @@ import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.SonarScanner;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
+import its.tools.OrchestratorUtils;
 import its.tools.SonarlintProject;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -59,9 +60,7 @@ public class ConnectedCommunityIssueDownloadTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY = "sample-xoo";
 
   @ClassRule
-  public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
-    .defaultForceAuthentication()
-    .setSonarVersion(SONAR_VERSION)
+  public static Orchestrator ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
     .addPlugin(MavenLocation.of("org.sonarsource.sonarqube", "sonar-xoo-plugin", SONAR_VERSION))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/xoo-sonarlint.xml"))
     .build();
