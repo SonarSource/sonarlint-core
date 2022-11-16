@@ -28,6 +28,7 @@ public class OrchestratorUtils {
   public static OrchestratorBuilder defaultEnvBuilder() {
     return Orchestrator.builderEnv()
       .defaultForceAuthentication()
+      .useDefaultAdminCredentialsForBuilds(true)
       .setSonarVersion(SONAR_VERSION);
   }
 }
