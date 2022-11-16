@@ -32,7 +32,6 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamDefinition;
 
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 public class StandaloneRuleDetails implements RuleDetails {
@@ -68,7 +67,7 @@ public class StandaloneRuleDetails implements RuleDetails {
   }
 
   public Collection<StandaloneRuleParam> paramDetails() {
-    return params.values().stream().map(StandaloneRuleParam.class::cast).collect(toList());
+    return params.values();
   }
 
   public boolean isActiveByDefault() {

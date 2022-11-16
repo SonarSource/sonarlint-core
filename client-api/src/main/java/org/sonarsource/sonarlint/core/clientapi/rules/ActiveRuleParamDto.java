@@ -17,25 +17,32 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.connection.config;
+package org.sonarsource.sonarlint.core.clientapi.rules;
 
-import java.util.List;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
-public class InitializeParams {
-  private final List<SonarQubeConnectionConfigurationDto> sonarQubeConnections;
-  private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections;
+public class ActiveRuleParamDto {
+  private final String name;
+  private final String description;
+  private final String defaultValue;
 
-
-  public InitializeParams(List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections) {
-    this.sonarQubeConnections = sonarQubeConnections;
-    this.sonarCloudConnections = sonarCloudConnections;
+  public ActiveRuleParamDto(String name, String description, @Nullable String defaultValue) {
+    this.name = name;
+    this.description = description;
+    this.defaultValue = defaultValue;
   }
 
-  public List<SonarQubeConnectionConfigurationDto> getSonarQubeConnections() {
-    return sonarQubeConnections;
+  public String getName() {
+    return name;
   }
 
-  public List<SonarCloudConnectionConfigurationDto> getSonarCloudConnections() {
-    return sonarCloudConnections;
+  public String getDescription() {
+    return description;
+  }
+
+  @CheckForNull
+  public String getDefaultValue() {
+    return defaultValue;
   }
 }

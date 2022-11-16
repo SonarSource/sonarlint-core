@@ -45,31 +45,29 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintE
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
-import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
-import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository.Configuration;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoadResult;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader.Configuration;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
 public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine implements StandaloneSonarLintEngine {
-
-  private final StandaloneGlobalConfiguration globalConfig;
   private final Collection<PluginDetails> pluginDetails;
   private final Map<String, SonarLintRuleDefinition> allRulesDefinitionsByKey;
   private final AnalysisEngine analysisEngine;
 
   public StandaloneSonarLintEngineImpl(StandaloneGlobalConfiguration globalConfig) {
     super(globalConfig.getLogOutput());
-    this.globalConfig = globalConfig;
     setLogging(null);
 
-    var pluginInstancesRepository = createPluginInstancesRepository();
-    pluginDetails = pluginInstancesRepository.getPluginCheckResultByKeys().values().stream()
+    var loadingResult = loadPlugins(globalConfig);
+    pluginDetails = loadingResult.getPluginCheckResultByKeys().values().stream()
       .map(c -> new PluginDetails(c.getPlugin().getKey(), c.getPlugin().getName(), c.getPlugin().getVersion().toString(), c.getSkipReason().orElse(null)))
       .collect(Collectors.toList());
 
-    allRulesDefinitionsByKey = loadPluginMetadata(pluginInstancesRepository, globalConfig.getEnabledLanguages(), false);
+    allRulesDefinitionsByKey = loadPluginMetadata(loadingResult.getLoadedPlugins(), globalConfig.getEnabledLanguages(), false);
 
     var analysisGlobalConfig = AnalysisEngineConfiguration.builder()
       .addEnabledLanguages(globalConfig.getEnabledLanguages())
@@ -79,7 +77,7 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
       .setWorkDir(globalConfig.getWorkDir())
       .setModulesProvider(globalConfig.getModulesProvider())
       .build();
-    this.analysisEngine = new AnalysisEngine(analysisGlobalConfig, pluginInstancesRepository, logOutput);
+    this.analysisEngine = new AnalysisEngine(analysisGlobalConfig, loadingResult.getLoadedPlugins(), logOutput);
   }
 
   @Override
@@ -87,9 +85,9 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
     return analysisEngine;
   }
 
-  private PluginInstancesRepository createPluginInstancesRepository() {
+  private static PluginsLoadResult loadPlugins(StandaloneGlobalConfiguration globalConfig) {
     var config = new Configuration(globalConfig.getPluginPaths(), globalConfig.getEnabledLanguages(), Optional.ofNullable(globalConfig.getNodeJsVersion()));
-    return new PluginInstancesRepository(config);
+    return new PluginsLoader().load(config);
   }
 
   @Override

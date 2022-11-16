@@ -70,7 +70,7 @@ class BindingSuggestionsMediumTests {
   private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
 
   private SonarLintClient fakeClient;
-  private SonarLintBackend backend;
+  private SonarLintBackendImpl backend;
 
   @BeforeEach
   void setup() {

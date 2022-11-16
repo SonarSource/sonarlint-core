@@ -21,8 +21,11 @@ package org.sonarsource.sonarlint.core.repository.config;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import javax.annotation.CheckForNull;
+
+import static java.util.Objects.requireNonNull;
 
 public class ConfigurationRepository {
 
@@ -53,6 +56,14 @@ public class ConfigurationRepository {
   @CheckForNull
   public BindingConfiguration getBindingConfiguration(String configScopeId) {
     return bindingPerConfigScopeId.get(configScopeId);
+  }
+
+  public Optional<Binding> getBinding(String configScopeId) {
+    var bindingConfiguration = bindingPerConfigScopeId.get(configScopeId);
+    if (bindingConfiguration != null && bindingConfiguration.isBound()) {
+      return Optional.of(new Binding(requireNonNull(bindingConfiguration.getConnectionId()), requireNonNull(bindingConfiguration.getSonarProjectKey())));
+    }
+    return Optional.empty();
   }
 
   @CheckForNull

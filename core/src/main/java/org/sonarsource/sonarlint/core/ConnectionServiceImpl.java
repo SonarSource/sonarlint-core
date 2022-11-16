@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core;
 
 import com.google.common.eventbus.EventBus;
-import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.clientapi.connection.ConnectionService;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.DidAddConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.DidRemoveConnectionParams;
@@ -49,11 +48,9 @@ public class ConnectionServiceImpl implements ConnectionService {
     this.repository = repository;
   }
 
-  @Override
-  public CompletableFuture<Void> initialize(InitializeParams params) {
+  public void initialize(InitializeParams params) {
     params.getSonarQubeConnections().forEach(c -> repository.addOrReplace(adapt(c)));
     params.getSonarCloudConnections().forEach(c -> repository.addOrReplace(adapt(c)));
-    return CompletableFuture.completedFuture(null);
   }
 
   @Override
@@ -107,5 +104,4 @@ public class ConnectionServiceImpl implements ConnectionService {
     }
 
   }
-
 }

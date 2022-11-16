@@ -40,7 +40,7 @@ import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
+import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 
@@ -71,10 +71,10 @@ public abstract class AbstractSonarLintEngine implements SonarLintEngine {
     return getAnalysisEngine().post(new NotifyModuleEventCommand(moduleKey, event), new ProgressMonitor(null));
   }
 
-  protected static Map<String, SonarLintRuleDefinition> loadPluginMetadata(PluginInstancesRepository pluginInstancesRepository, Set<Language> enabledLanguages,
+  protected static Map<String, SonarLintRuleDefinition> loadPluginMetadata(LoadedPlugins loadedPlugins, Set<Language> enabledLanguages,
     boolean includeTemplateRules) {
     var ruleExtractor = new RulesDefinitionExtractor();
-    return ruleExtractor.extractRules(pluginInstancesRepository, enabledLanguages, includeTemplateRules).stream()
+    return ruleExtractor.extractRules(loadedPlugins.getPluginInstancesByKeys(), enabledLanguages, includeTemplateRules).stream()
       .collect(Collectors.toMap(SonarLintRuleDefinition::getKey, r -> r));
   }
 

@@ -26,21 +26,29 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import org.sonarsource.sonarlint.core.clientapi.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.config.ConfigurationService;
-import org.sonarsource.sonarlint.core.clientapi.connection.ConnectionService;
+import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
+import org.sonarsource.sonarlint.core.plugin.PluginsServiceImpl;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
+import org.sonarsource.sonarlint.core.rules.ActiveRulesServiceImpl;
+import org.sonarsource.sonarlint.core.rules.RulesServiceImpl;
 
 public class SonarLintBackendImpl implements SonarLintBackend {
 
   private final ConfigurationServiceImpl configurationService;
   private final ConnectionServiceImpl connectionService;
+  private final RulesServiceImpl rulesService;
+  private final ActiveRulesServiceImpl activeRulesService;
 
   private final ExecutorService clientEventsExecutorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Client Events Processor"));
 
   private final BindingSuggestionProvider bindingSuggestionProvider;
+  private final PluginsServiceImpl pluginsService;
 
   public SonarLintBackendImpl(SonarLintClient client) {
     EventBus clientEventBus = new AsyncEventBus("clientEvents", clientEventsExecutorService);
@@ -48,8 +56,13 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     this.configurationService = new ConfigurationServiceImpl(clientEventBus, configurationRepository);
     var connectionConfigurationRepository = new ConnectionConfigurationRepository();
     this.connectionService = new ConnectionServiceImpl(clientEventBus, connectionConfigurationRepository);
-    var bindingClueProvider = new BindingClueProvider(connectionConfigurationRepository, client);
+    var pluginRepository = new PluginsRepository();
+    pluginsService = new PluginsServiceImpl(pluginRepository);
+    var rulesRepository = new RulesRepository();
     var serverApiProvider = new ServerApiProvider(connectionConfigurationRepository, client);
+    rulesService = new RulesServiceImpl(pluginsService, rulesRepository);
+    activeRulesService = new ActiveRulesServiceImpl(serverApiProvider, rulesService, configurationRepository);
+    var bindingClueProvider = new BindingClueProvider(connectionConfigurationRepository, client);
     var sonarProjectCache = new SonarProjectsCache(serverApiProvider);
     bindingSuggestionProvider = new BindingSuggestionProvider(configurationRepository, connectionConfigurationRepository, client, bindingClueProvider, sonarProjectCache);
     clientEventBus.register(bindingSuggestionProvider);
@@ -57,7 +70,18 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   }
 
   @Override
-  public ConnectionService getConnectionService() {
+  public CompletableFuture<Void> initialize(InitializeParams params) {
+    connectionService
+      .initialize(new org.sonarsource.sonarlint.core.clientapi.connection.config.InitializeParams(params.getSonarQubeConnections(), params.getSonarCloudConnections()));
+    pluginsService.initialize(params.getStorageRoot(), params.getEmbeddedPluginPaths(), params.getConnectedModeEmbeddedPluginPathsByKey(),
+      params.getConnectedModeExtraPluginPathsByKey(), params.getEnabledLanguages(), params.getNodeJsVersion());
+    rulesService.initialize(params.getEnabledLanguages());
+    activeRulesService.initialize(params.getStorageRoot());
+    return CompletableFuture.completedFuture(null);
+  }
+
+  @Override
+  public ConnectionServiceImpl getConnectionService() {
     return connectionService;
   }
 
@@ -67,9 +91,15 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   }
 
   @Override
+  public ActiveRulesServiceImpl getActiveRulesService() {
+    return activeRulesService;
+  }
+
+  @Override
   public CompletableFuture<Void> shutdown() {
     return CompletableFuture.runAsync(() -> {
       MoreExecutors.shutdownAndAwaitTermination(clientEventsExecutorService, 10, TimeUnit.SECONDS);
+      this.pluginsService.shutdown();
       this.bindingSuggestionProvider.shutdown();
     });
   }

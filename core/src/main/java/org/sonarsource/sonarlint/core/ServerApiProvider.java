@@ -52,7 +52,8 @@ public class ServerApiProvider {
       LOG.debug("Connection '{}' is gone", connectionId);
       return Optional.empty();
     }
-    var httpClient = client.getHttpClient(connectionId);
+    var httpClient = client.
+      getHttpClient(connectionId);
     if (httpClient != null) {
       return Optional.of(new ServerApi(params, httpClient));
     } else {

@@ -33,7 +33,7 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
 import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamType;
@@ -66,75 +66,73 @@ class RuleExtractorMediumTests {
   }
 
   @Test
-  void extractAllRules() throws Exception {
+  void extractAllRules() {
     Set<Language> enabledLanguages = Set.of(Language.values());
-    var config = new PluginInstancesRepository.Configuration(allJars, enabledLanguages, empty());
-    try (var pluginInstancesRepository = new PluginInstancesRepository(config)) {
+    var config = new PluginsLoader.Configuration(allJars, enabledLanguages, empty());
+    var result = new PluginsLoader().load(config);
 
-      var allRules = new RulesDefinitionExtractor().extractRules(pluginInstancesRepository, enabledLanguages, false);
-      if (COMMERCIAL_ENABLED) {
-        assertThat(allJars).hasSize(19);
-        assertThat(allRules).hasSize(ALL_RULES_COUNT_WITH_COMMERCIAL);
-        assertThat(logTester.logs(ClientLogOutput.Level.WARN)).containsExactlyInAnyOrder(
-          "Plugin 'rpg' embeds dependencies. This will be deprecated soon. Plugin should be updated.",
-          "Plugin 'cobol' embeds dependencies. This will be deprecated soon. Plugin should be updated.",
-          "Plugin 'swift' embeds dependencies. This will be deprecated soon. Plugin should be updated.");
-      } else {
-        assertThat(allJars).hasSize(10);
-        assertThat(allRules).hasSize(ALL_RULES_COUNT_WITHOUT_COMMERCIAL);
-      }
-
-      var pythonRule = allRules.stream().filter(r -> r.getKey().equals("python:S139")).findFirst();
-      assertThat(pythonRule).hasValueSatisfying(rule -> {
-        assertThat(rule.getKey()).isEqualTo("python:S139");
-        assertThat(rule.getType()).isEqualTo(RuleType.CODE_SMELL);
-        assertThat(rule.getDefaultSeverity()).isEqualTo(IssueSeverity.MINOR);
-        assertThat(rule.getLanguage()).isEqualTo(Language.PYTHON);
-        assertThat(rule.getName()).isEqualTo("Comments should not be located at the end of lines of code");
-        assertThat(rule.isActiveByDefault()).isFalse();
-        assertThat(rule.getParams())
-          .hasSize(1)
-          .hasEntrySatisfying("legalTrailingCommentPattern", param -> {
-            assertThat(param.defaultValue()).isEqualTo("^#\\s*+[^\\s]++$");
-            assertThat(param.description()).isNull();
-            assertThat(param.key()).isEqualTo("legalTrailingCommentPattern");
-            assertThat(param.multiple()).isFalse();
-            assertThat(param.name()).isEqualTo("legalTrailingCommentPattern");
-            assertThat(param.possibleValues()).isEmpty();
-            assertThat(param.type()).isEqualTo(SonarLintRuleParamType.STRING);
-          });
-        assertThat(rule.getDefaultParams()).containsOnly(entry("legalTrailingCommentPattern", "^#\\s*+[^\\s]++$"));
-        assertThat(rule.getDeprecatedKeys()).isEmpty();
-        assertThat(rule.getHtmlDescription()).contains("<p>This rule verifies that single-line comments are not located");
-        assertThat(rule.getTags()).containsOnly("convention");
-
-      });
+    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, false);
+    if (COMMERCIAL_ENABLED) {
+      assertThat(allJars).hasSize(19);
+      assertThat(allRules).hasSize(ALL_RULES_COUNT_WITH_COMMERCIAL);
+      assertThat(logTester.logs(ClientLogOutput.Level.WARN)).containsExactlyInAnyOrder(
+        "Plugin 'rpg' embeds dependencies. This will be deprecated soon. Plugin should be updated.",
+        "Plugin 'cobol' embeds dependencies. This will be deprecated soon. Plugin should be updated.",
+        "Plugin 'swift' embeds dependencies. This will be deprecated soon. Plugin should be updated.");
+    } else {
+      assertThat(allJars).hasSize(10);
+      assertThat(allRules).hasSize(ALL_RULES_COUNT_WITHOUT_COMMERCIAL);
     }
+
+    var pythonRule = allRules.stream().filter(r -> r.getKey().equals("python:S139")).findFirst();
+    assertThat(pythonRule).hasValueSatisfying(rule -> {
+      assertThat(rule.getKey()).isEqualTo("python:S139");
+      assertThat(rule.getType()).isEqualTo(RuleType.CODE_SMELL);
+      assertThat(rule.getDefaultSeverity()).isEqualTo(IssueSeverity.MINOR);
+      assertThat(rule.getLanguage()).isEqualTo(Language.PYTHON);
+      assertThat(rule.getName()).isEqualTo("Comments should not be located at the end of lines of code");
+      assertThat(rule.isActiveByDefault()).isFalse();
+      assertThat(rule.getParams())
+        .hasSize(1)
+        .hasEntrySatisfying("legalTrailingCommentPattern", param -> {
+          assertThat(param.defaultValue()).isEqualTo("^#\\s*+[^\\s]++$");
+          assertThat(param.description()).isNull();
+          assertThat(param.key()).isEqualTo("legalTrailingCommentPattern");
+          assertThat(param.multiple()).isFalse();
+          assertThat(param.name()).isEqualTo("legalTrailingCommentPattern");
+          assertThat(param.possibleValues()).isEmpty();
+          assertThat(param.type()).isEqualTo(SonarLintRuleParamType.STRING);
+        });
+      assertThat(rule.getDefaultParams()).containsOnly(entry("legalTrailingCommentPattern", "^#\\s*+[^\\s]++$"));
+      assertThat(rule.getDeprecatedKeys()).isEmpty();
+      assertThat(rule.getHtmlDescription()).contains("<p>This rule verifies that single-line comments are not located");
+      assertThat(rule.getTags()).containsOnly("convention");
+
+    });
   }
 
   @Test
   void extractAllRules_include_rule_templates() throws Exception {
     Set<Language> enabledLanguages = Set.of(Language.values());
-    var config = new PluginInstancesRepository.Configuration(allJars, enabledLanguages, empty());
-    try (var pluginInstancesRepository = new PluginInstancesRepository(config)) {
+    var config = new PluginsLoader.Configuration(allJars, enabledLanguages, empty());
+    var result = new PluginsLoader().load(config);
 
-      var allRules = new RulesDefinitionExtractor().extractRules(pluginInstancesRepository, enabledLanguages, true);
-      if (COMMERCIAL_ENABLED) {
-        assertThat(allJars).hasSize(19);
-        assertThat(allRules).hasSize(ALL_RULES_COUNT_WITH_COMMERCIAL + NON_COMMERCIAL_RULE_TEMPLATES_COUNT + COMMERCIAL_RULE_TEMPLATES_COUNT);
-        assertThat(logTester.logs(ClientLogOutput.Level.WARN)).containsExactlyInAnyOrder(
-          "Plugin 'rpg' embeds dependencies. This will be deprecated soon. Plugin should be updated.",
-          "Plugin 'cobol' embeds dependencies. This will be deprecated soon. Plugin should be updated.",
-          "Plugin 'swift' embeds dependencies. This will be deprecated soon. Plugin should be updated.");
-      } else {
-        assertThat(allJars).hasSize(10);
-        assertThat(allRules).hasSize(ALL_RULES_COUNT_WITHOUT_COMMERCIAL + NON_COMMERCIAL_RULE_TEMPLATES_COUNT);
-      }
+    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, true);
+    if (COMMERCIAL_ENABLED) {
+      assertThat(allJars).hasSize(19);
+      assertThat(allRules).hasSize(ALL_RULES_COUNT_WITH_COMMERCIAL + NON_COMMERCIAL_RULE_TEMPLATES_COUNT + COMMERCIAL_RULE_TEMPLATES_COUNT);
+      assertThat(logTester.logs(ClientLogOutput.Level.WARN)).containsExactlyInAnyOrder(
+        "Plugin 'rpg' embeds dependencies. This will be deprecated soon. Plugin should be updated.",
+        "Plugin 'cobol' embeds dependencies. This will be deprecated soon. Plugin should be updated.",
+        "Plugin 'swift' embeds dependencies. This will be deprecated soon. Plugin should be updated.");
+    } else {
+      assertThat(allJars).hasSize(10);
+      assertThat(allRules).hasSize(ALL_RULES_COUNT_WITHOUT_COMMERCIAL + NON_COMMERCIAL_RULE_TEMPLATES_COUNT);
     }
   }
 
   @Test
-  void onlyLoadRulesOfEnabledLanguages() throws Exception {
+  void onlyLoadRulesOfEnabledLanguages() {
     Set<Language> enabledLanguages = EnumSet.of(
       Language.JAVA,
       // Enable JS but not TS
@@ -146,24 +144,23 @@ class RuleExtractorMediumTests {
       // Enable C but not C++
       enabledLanguages.add(Language.C);
     }
-    var config = new PluginInstancesRepository.Configuration(allJars, enabledLanguages, empty());
-    try (var pluginInstancesRepository = new PluginInstancesRepository(config)) {
+    var config = new PluginsLoader.Configuration(allJars, enabledLanguages, empty());
+    var result = new PluginsLoader().load(config);
 
-      var allRules = new RulesDefinitionExtractor().extractRules(pluginInstancesRepository, enabledLanguages, false);
+    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, false);
 
-      assertThat(allRules.stream().map(SonarLintRuleDefinition::getLanguage)).hasSameElementsAs(enabledLanguages);
-    }
+    assertThat(allRules.stream().map(SonarLintRuleDefinition::getLanguage)).hasSameElementsAs(enabledLanguages);
+
   }
 
   @Test
-  void loadNoRuleIfThereIsNoPlugin() throws Exception {
+  void loadNoRuleIfThereIsNoPlugin() {
     Set<Language> enabledLanguages = Set.of(Language.values());
-    var config = new PluginInstancesRepository.Configuration(Set.of(), enabledLanguages, empty());
-    try (var pluginInstancesRepository = new PluginInstancesRepository(config)) {
-      var allRules = new RulesDefinitionExtractor().extractRules(pluginInstancesRepository, enabledLanguages, false);
+    var config = new PluginsLoader.Configuration(Set.of(), enabledLanguages, empty());
+    var result = new PluginsLoader().load(config);
+    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, false);
 
-      assertThat(allRules).isEmpty();
-    }
+    assertThat(allRules).isEmpty();
   }
 
 }
