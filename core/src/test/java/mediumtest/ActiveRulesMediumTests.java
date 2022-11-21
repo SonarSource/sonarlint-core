@@ -20,50 +20,28 @@
 package mediumtest;
 
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import mediumtest.fixtures.StorageFixture;
+import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
-import org.sonarsource.sonarlint.core.clientapi.InitializeParams;
-import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.config.binding.BindingConfigurationDto;
-import org.sonarsource.sonarlint.core.clientapi.config.scope.ConfigurationScopeDto;
-import org.sonarsource.sonarlint.core.clientapi.config.scope.DidAddConfigurationScopesParams;
-import org.sonarsource.sonarlint.core.clientapi.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import testutils.MockWebServerExtensionWithProtobuf;
-import testutils.PluginLocator;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.emptySet;
+import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class ActiveRulesMediumTests {
-
-  @BeforeEach
-  void prepare() {
-    fakeClient = mock(SonarLintClient.class);
-    when(fakeClient.getHttpClient("connectionId")).thenReturn(MockWebServerExtensionWithProtobuf.httpClient());
-
-    backend = new SonarLintBackendImpl(fakeClient);
-  }
 
   @AfterEach
   void tearDown() {
@@ -72,12 +50,13 @@ class ActiveRulesMediumTests {
 
   @Test
   void it_should_return_embedded_rule_when_project_is_not_bound(@TempDir Path tempDir) throws ExecutionException, InterruptedException {
-    backend.initialize(new InitializeParams(tempDir, Set.of(PluginLocator.getPythonPluginPath()), emptyMap(), emptyMap(), Set.of(Language.PYTHON), null,
-      Collections.emptyList(), Collections.emptyList()));
-    backend.getConfigurationService().didAddConfigurationScopes(
-      new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto("scopeId", null, true, "Scope", new BindingConfigurationDto(null, null, false)))));
+    backend = newBackend()
+      .withUnboundConfigScope("scopeId")
+      .withStorageRoot(tempDir)
+      .withEmbeddedPlugin(TestPlugin.PYTHON)
+      .build();
 
-    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails("scopeId", "python:S139").get();
+    var activeRuleDetailsResponse = this.backend.getActiveRulesService().getActiveRuleDetails("scopeId", "python:S139").get();
 
     var details = activeRuleDetailsResponse.details();
     assertThat(details).isNotNull();
@@ -92,10 +71,11 @@ class ActiveRulesMediumTests {
 
   @Test
   void it_should_fail_when_rule_key_unknown_and_project_is_not_bound(@TempDir Path tempDir) {
-    backend.initialize(new InitializeParams(tempDir, Set.of(PluginLocator.getPythonPluginPath()), emptyMap(), emptyMap(), Set.of(Language.PYTHON), null,
-      Collections.emptyList(), Collections.emptyList()));
-    backend.getConfigurationService().didAddConfigurationScopes(
-      new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto("scopeId", null, true, "Scope", new BindingConfigurationDto(null, null, false)))));
+    backend = newBackend()
+      .withUnboundConfigScope("scopeId")
+      .withStorageRoot(tempDir)
+      .withEmbeddedPlugin(TestPlugin.PYTHON)
+      .build();
 
     var futureResponse = backend.getActiveRulesService().getActiveRuleDetails("scopeId", "python:SXXXX");
 
@@ -111,10 +91,11 @@ class ActiveRulesMediumTests {
     StorageFixture.newStorage("connectionId")
       .withJavaPlugin()
       .create(tempDir);
-    backend.initialize(new InitializeParams(tempDir.resolve("storage"), emptySet(), emptyMap(), emptyMap(), Set.of(Language.JAVA), null,
-      Collections.emptyList(), Collections.emptyList()));
-    backend.getConfigurationService().didAddConfigurationScopes(
-      new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto("scopeId", null, true, "Scope", new BindingConfigurationDto("connectionId", "projectKey", false)))));
+    backend = newBackend()
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withStorageRoot(tempDir.resolve("storage"))
+      .withEnabledLanguage(Language.JAVA)
+      .build();
 
     var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails("scopeId", "java:S106").get();
 
@@ -133,12 +114,11 @@ class ActiveRulesMediumTests {
     StorageFixture.newStorage("connectionId")
       .withProject("projectKey")
       .create(tempDir);
-    backend
-      .initialize(new InitializeParams(tempDir.resolve("storage"), emptySet(), Map.of(Language.PYTHON.getPluginKey(), PluginLocator.getPythonPluginPath()), emptyMap(),
-        Set.of(Language.PYTHON), null,
-        Collections.emptyList(), Collections.emptyList()));
-    backend.getConfigurationService().didAddConfigurationScopes(
-      new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto("scopeId", null, true, "Scope", new BindingConfigurationDto("connectionId", "projectKey", false)))));
+    backend = newBackend()
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withStorageRoot(tempDir.resolve("storage"))
+      .withExtraPlugin(TestPlugin.PYTHON)
+      .build();
 
     var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails("scopeId", "python:S139").get();
 
@@ -161,14 +141,12 @@ class ActiveRulesMediumTests {
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah"))))
       .create(tempDir);
-    backend
-      .initialize(new InitializeParams(tempDir.resolve("storage"), emptySet(), Map.of(Language.PYTHON.getPluginKey(), PluginLocator.getPythonPluginPath()), emptyMap(),
-        Set.of(Language.PYTHON), null,
-        Collections.emptyList(), Collections.emptyList()));
-    backend.getConnectionService().initialize(new org.sonarsource.sonarlint.core.clientapi.connection.config.InitializeParams(
-      List.of(new SonarQubeConnectionConfigurationDto("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())), emptyList()));
-    backend.getConfigurationService().didAddConfigurationScopes(
-      new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto("scopeId", null, true, "Scope", new BindingConfigurationDto("connectionId", "projectKey", false)))));
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withStorageRoot(tempDir.resolve("storage"))
+      .withExtraPlugin(TestPlugin.PYTHON)
+      .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
       .build());
@@ -192,12 +170,11 @@ class ActiveRulesMediumTests {
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah"))))
       .create(tempDir);
-    backend
-      .initialize(new InitializeParams(tempDir.resolve("storage"), emptySet(), Map.of(Language.PYTHON.getPluginKey(), PluginLocator.getPythonPluginPath()), emptyMap(),
-        Set.of(Language.PYTHON), null,
-        Collections.emptyList(), Collections.emptyList()));
-    backend.getConfigurationService().didAddConfigurationScopes(
-      new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto("scopeId", null, true, "Scope", new BindingConfigurationDto("connectionId", "projectKey", false)))));
+    backend = newBackend()
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withStorageRoot(tempDir.resolve("storage"))
+      .withExtraPlugin(TestPlugin.PYTHON)
+      .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
       .build());
@@ -217,14 +194,12 @@ class ActiveRulesMediumTests {
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah"))))
       .create(tempDir);
-    backend
-      .initialize(new InitializeParams(tempDir.resolve("storage"), emptySet(), Map.of(Language.PYTHON.getPluginKey(), PluginLocator.getPythonPluginPath()), emptyMap(),
-        Set.of(Language.PYTHON), null,
-        Collections.emptyList(), Collections.emptyList()));
-    backend.getConnectionService().initialize(new org.sonarsource.sonarlint.core.clientapi.connection.config.InitializeParams(
-      List.of(new SonarQubeConnectionConfigurationDto("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())), emptyList()));
-    backend.getConfigurationService().didAddConfigurationScopes(
-      new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto("scopeId", null, true, "Scope", new BindingConfigurationDto("connectionId", "projectKey", false)))));
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withStorageRoot(tempDir.resolve("storage"))
+      .withExtraPlugin(TestPlugin.PYTHON)
+      .build();
 
     var futureResponse = backend.getActiveRulesService().getActiveRuleDetails("scopeId", "python:S139");
 
@@ -241,14 +216,12 @@ class ActiveRulesMediumTests {
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
           ruleSet -> ruleSet.withCustomActiveRule("python:custom", "python:CommentRegularExpression", "INFO", Map.of("message", "msg", "regularExpression", "regExp"))))
       .create(tempDir);
-    backend
-      .initialize(new InitializeParams(tempDir.resolve("storage"), emptySet(), Map.of(Language.PYTHON.getPluginKey(), PluginLocator.getPythonPluginPath()), emptyMap(),
-        Set.of(Language.PYTHON), null,
-        Collections.emptyList(), Collections.emptyList()));
-    backend.getConnectionService().initialize(new org.sonarsource.sonarlint.core.clientapi.connection.config.InitializeParams(
-      List.of(new SonarQubeConnectionConfigurationDto("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())), emptyList()));
-    backend.getConfigurationService().didAddConfigurationScopes(
-      new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto("scopeId", null, true, "Scope", new BindingConfigurationDto("connectionId", "projectKey", false)))));
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withStorageRoot(tempDir.resolve("storage"))
+      .withExtraPlugin(TestPlugin.PYTHON)
+      .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:custom", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
       .build());
@@ -271,14 +244,12 @@ class ActiveRulesMediumTests {
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah"))))
       .create(tempDir);
-    backend
-      .initialize(new InitializeParams(tempDir.resolve("storage"), emptySet(), emptyMap(), emptyMap(),
-        Set.of(Language.PYTHON), null,
-        Collections.emptyList(), Collections.emptyList()));
-    backend.getConnectionService().initialize(new org.sonarsource.sonarlint.core.clientapi.connection.config.InitializeParams(
-      List.of(new SonarQubeConnectionConfigurationDto("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())), emptyList()));
-    backend.getConfigurationService().didAddConfigurationScopes(
-      new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto("scopeId", null, true, "Scope", new BindingConfigurationDto("connectionId", "projectKey", false)))));
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withStorageRoot(tempDir.resolve("storage"))
+      .withEnabledLanguage(Language.PYTHON)
+      .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
       .build());
@@ -293,7 +264,6 @@ class ActiveRulesMediumTests {
     assertThat(details.getParams()).isEmpty();
   }
 
-  private SonarLintClient fakeClient;
   private SonarLintBackendImpl backend;
   @RegisterExtension
   private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
