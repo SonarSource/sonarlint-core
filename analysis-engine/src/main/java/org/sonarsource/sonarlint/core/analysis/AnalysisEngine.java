@@ -33,7 +33,7 @@ import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
+import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 
 public class AnalysisEngine {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -47,8 +47,8 @@ public class AnalysisEngine {
   private final AtomicReference<Runnable> termination = new AtomicReference<>();
   private final AtomicReference<AsyncCommand<?>> executingCommand = new AtomicReference<>();
 
-  public AnalysisEngine(AnalysisEngineConfiguration analysisGlobalConfig, PluginInstancesRepository pluginInstancesRepository, @Nullable ClientLogOutput logOutput) {
-    globalAnalysisContainer = new GlobalAnalysisContainer(analysisGlobalConfig, pluginInstancesRepository);
+  public AnalysisEngine(AnalysisEngineConfiguration analysisGlobalConfig, LoadedPlugins loadedPlugins, @Nullable ClientLogOutput logOutput) {
+    globalAnalysisContainer = new GlobalAnalysisContainer(analysisGlobalConfig, loadedPlugins);
     this.logOutput = logOutput;
     start();
   }

@@ -21,19 +21,20 @@ package org.sonarsource.sonarlint.core.rule.extractor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import org.sonar.api.Plugin;
 import org.sonar.api.rules.RuleType;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.api.server.rule.RulesDefinition.Context;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 
 public class RulesDefinitionExtractor {
 
-  public List<SonarLintRuleDefinition> extractRules(PluginInstancesRepository pluginInstancesRepository, Set<Language> enabledLanguages, boolean includeTemplateRules) {
+  public List<SonarLintRuleDefinition> extractRules(Map<String, Plugin> pluginInstancesByKeys, Set<Language> enabledLanguages, boolean includeTemplateRules) {
     Context context;
     try {
-      var container = new RulesDefinitionExtractorContainer(pluginInstancesRepository);
+      var container = new RulesDefinitionExtractorContainer(pluginInstancesByKeys);
       container.execute();
       context = container.getRulesDefinitionContext();
     } catch (Exception e) {

@@ -17,33 +17,10 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi;
+package org.sonarsource.sonarlint.core.clientapi.rules;
 
 import java.util.concurrent.CompletableFuture;
-import org.eclipse.lsp4j.jsonrpc.services.JsonDelegate;
-import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
-import org.sonarsource.sonarlint.core.clientapi.config.ConfigurationService;
-import org.sonarsource.sonarlint.core.clientapi.connection.ConnectionService;
-import org.sonarsource.sonarlint.core.clientapi.rules.ActiveRulesService;
 
-public interface SonarLintBackend {
-
-  /**
-   * Called by client once at startup, in order to initialize the backend
-   */
-  @JsonRequest
-  CompletableFuture<Void> initialize(InitializeParams params);
-
-  @JsonDelegate
-  ConnectionService getConnectionService();
-
-  @JsonDelegate
-  ConfigurationService getConfigurationService();
-
-  @JsonDelegate
-  ActiveRulesService getActiveRulesService();
-
-  @JsonRequest
-  CompletableFuture<Void> shutdown();
-
+public interface ActiveRulesService {
+  CompletableFuture<GetActiveRuleDetailsResponse> getActiveRuleDetails(String configurationScopeId, String ruleKey);
 }

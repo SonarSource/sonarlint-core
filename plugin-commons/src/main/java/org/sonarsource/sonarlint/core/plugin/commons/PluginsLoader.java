@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import org.sonar.api.Plugin;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
@@ -42,13 +41,9 @@ import static java.util.stream.Collectors.toList;
 /**
  * Orchestrates the loading and instantiation of plugins
  */
-public class PluginInstancesRepository implements AutoCloseable {
-  private static final Logger LOG = Loggers.get(PluginInstancesRepository.class);
-
-  private final PluginInstancesLoader pluginInstancesLoader;
-
-  private Map<String, Plugin> pluginInstancesByKeys;
-  private Map<String, PluginRequirementsCheckResult> pluginCheckResultByKeys;
+public class PluginsLoader {
+  private static final Logger LOG = Loggers.get(PluginsLoader.class);
+  private final SonarPluginRequirementsChecker requirementsChecker = new SonarPluginRequirementsChecker();
 
   public static class Configuration {
     private final Set<Path> pluginJarLocations;
@@ -62,19 +57,18 @@ public class PluginInstancesRepository implements AutoCloseable {
     }
   }
 
-  public PluginInstancesRepository(Configuration configuration) {
-    this.pluginInstancesLoader = new PluginInstancesLoader();
-    load(configuration, new SonarPluginRequirementsChecker(), System2.INSTANCE);
-  }
-
-  private void load(Configuration configuration, SonarPluginRequirementsChecker pluginRequirementChecker, System2 system2) {
-    var javaSpecVersion = Objects.requireNonNull(system2.property("java.specification.version"), "Missing Java property 'java.specification.version'");
-    pluginCheckResultByKeys = pluginRequirementChecker.checkRequirements(configuration.pluginJarLocations, configuration.enabledLanguages, Version.create(javaSpecVersion),
+  public PluginsLoadResult load(Configuration configuration) {
+    var javaSpecVersion = Objects.requireNonNull(System2.INSTANCE.property("java.specification.version"), "Missing Java property 'java.specification.version'");
+    var pluginCheckResultByKeys = requirementsChecker.checkRequirements(configuration.pluginJarLocations, configuration.enabledLanguages, Version.create(javaSpecVersion),
       configuration.nodeCurrentVersion);
-    var nonSkippedPlugins = getNonSkippedPlugins();
-    pluginInstancesByKeys = pluginInstancesLoader.instantiatePluginClasses(nonSkippedPlugins);
 
+    var nonSkippedPlugins = getNonSkippedPlugins(pluginCheckResultByKeys);
     logPlugins(nonSkippedPlugins);
+
+    var instancesLoader = new PluginInstancesLoader();
+    var pluginInstancesByKeys = instancesLoader.instantiatePluginClasses(nonSkippedPlugins);
+
+    return new PluginsLoadResult(new LoadedPlugins(pluginInstancesByKeys, instancesLoader), pluginCheckResultByKeys);
   }
 
   private static void logPlugins(Collection<PluginInfo> nonSkippedPlugins) {
@@ -84,31 +78,10 @@ public class PluginInstancesRepository implements AutoCloseable {
     }
   }
 
-  @Override
-  public void close() throws Exception {
-    if (pluginInstancesByKeys != null && !pluginInstancesByKeys.isEmpty()) {
-      LOG.debug("Unloading plugins");
-      // close plugins classloaders
-      pluginInstancesLoader.unload();
-
-      pluginInstancesByKeys.clear();
-      pluginCheckResultByKeys.clear();
-    }
-  }
-
-  private Collection<PluginInfo> getNonSkippedPlugins() {
+  private static Collection<PluginInfo> getNonSkippedPlugins(Map<String, PluginRequirementsCheckResult> pluginCheckResultByKeys) {
     return pluginCheckResultByKeys.values().stream()
       .filter(not(PluginRequirementsCheckResult::isSkipped))
       .map(PluginRequirementsCheckResult::getPlugin)
       .collect(toList());
   }
-
-  public Map<String, PluginRequirementsCheckResult> getPluginCheckResultByKeys() {
-    return Map.copyOf(pluginCheckResultByKeys);
-  }
-
-  public Map<String, Plugin> getPluginInstancesByKeys() {
-    return Map.copyOf(pluginInstancesByKeys);
-  }
-
 }

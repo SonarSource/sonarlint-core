@@ -31,6 +31,7 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.clientapi.rules.ActiveRulesService;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
@@ -52,7 +53,9 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
   /**
    * Return rule details in the context of a given project (severity may have been overridden in the quality profile).
    * @param projectKey if null, the default QP will be considered
+   * @deprecated use {@link ActiveRulesService#getActiveRuleDetails(String, String)} instead
    */
+  @Deprecated(since = "8.12")
   CompletableFuture<ConnectedRuleDetails> getActiveRuleDetails(EndpointParams endpoint, HttpClient client, String ruleKey, @Nullable String projectKey);
 
   /**

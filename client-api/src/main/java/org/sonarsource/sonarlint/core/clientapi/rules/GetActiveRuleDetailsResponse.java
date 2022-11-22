@@ -17,25 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.connection.config;
+package org.sonarsource.sonarlint.core.clientapi.rules;
 
-import java.util.List;
+public class GetActiveRuleDetailsResponse {
+  private final ActiveRuleDetailsDto details;
 
-public class InitializeParams {
-  private final List<SonarQubeConnectionConfigurationDto> sonarQubeConnections;
-  private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections;
-
-
-  public InitializeParams(List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections) {
-    this.sonarQubeConnections = sonarQubeConnections;
-    this.sonarCloudConnections = sonarCloudConnections;
+  public GetActiveRuleDetailsResponse(ActiveRuleDetailsDto details) {
+    this.details = details;
   }
 
-  public List<SonarQubeConnectionConfigurationDto> getSonarQubeConnections() {
-    return sonarQubeConnections;
-  }
-
-  public List<SonarCloudConnectionConfigurationDto> getSonarCloudConnections() {
-    return sonarCloudConnections;
+  public ActiveRuleDetailsDto details() {
+    return details;
   }
 }

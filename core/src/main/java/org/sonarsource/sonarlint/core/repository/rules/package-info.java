@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,25 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.connection.config;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.repository.rules;
 
-import java.util.List;
-
-public class InitializeParams {
-  private final List<SonarQubeConnectionConfigurationDto> sonarQubeConnections;
-  private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections;
-
-
-  public InitializeParams(List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections) {
-    this.sonarQubeConnections = sonarQubeConnections;
-    this.sonarCloudConnections = sonarCloudConnections;
-  }
-
-  public List<SonarQubeConnectionConfigurationDto> getSonarQubeConnections() {
-    return sonarQubeConnections;
-  }
-
-  public List<SonarCloudConnectionConfigurationDto> getSonarCloudConnections() {
-    return sonarCloudConnections;
-  }
-}
+import javax.annotation.ParametersAreNonnullByDefault;
