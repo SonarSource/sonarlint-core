@@ -22,12 +22,23 @@ package org.sonarsource.sonarlint.core.rules;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.clientapi.rules.ActiveRuleContextualSectionDto;
+import org.sonarsource.sonarlint.core.clientapi.rules.ActiveRuleDescriptionTabDto;
 import org.sonarsource.sonarlint.core.clientapi.rules.ActiveRuleDetailsDto;
+import org.sonarsource.sonarlint.core.clientapi.rules.ActiveRuleMonolithicDescriptionDto;
+import org.sonarsource.sonarlint.core.clientapi.rules.ActiveRuleNonContextualSectionDto;
 import org.sonarsource.sonarlint.core.clientapi.rules.ActiveRuleParamDto;
+import org.sonarsource.sonarlint.core.clientapi.rules.ActiveRuleSplitDescriptionDto;
 import org.sonarsource.sonarlint.core.clientapi.rules.ActiveRulesService;
 import org.sonarsource.sonarlint.core.clientapi.rules.GetActiveRuleDetailsResponse;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
@@ -44,6 +55,16 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 
 public class ActiveRulesServiceImpl implements ActiveRulesService {
+  public static final String INTRODUCTION_SECTION_KEY = "introduction";
+  public static final String RESOURCES_SECTION_KEY = "resources";
+  private static final Map<String, String> SECTION_KEYS_TO_TAB_TITLE_ORDERED = new LinkedHashMap<>();
+
+  static {
+    SECTION_KEYS_TO_TAB_TITLE_ORDERED.put("root_cause", "Why is this an issue?");
+    SECTION_KEYS_TO_TAB_TITLE_ORDERED.put("how_to_fix", "How can I fix it?");
+    SECTION_KEYS_TO_TAB_TITLE_ORDERED.put(RESOURCES_SECTION_KEY, "More Info");
+  }
+
   private final ServerApiProvider serverApiProvider;
   private final ConfigurationRepository configurationRepository;
   private final RulesServiceImpl rulesService;
@@ -166,10 +187,66 @@ public class ActiveRulesServiceImpl implements ActiveRulesService {
       ruleDetails.getName(),
       ruleDetails.getDefaultSeverity(),
       ruleDetails.getType(),
-      ruleDetails.getHtmlDescription(),
-      ruleDetails.getExtendedDescription(),
+      transformDescriptions(ruleDetails),
       transform(ruleDetails.getParams()),
       ruleDetails.getLanguage());
+  }
+
+  private static Either<ActiveRuleMonolithicDescriptionDto, ActiveRuleSplitDescriptionDto> transformDescriptions(ActiveRuleDetails ruleDetails) {
+    if (ruleDetails.hasMonolithicDescription()) {
+      return Either.forLeft(transformMonolithicDescription(ruleDetails));
+    }
+    return Either.forRight(transformSplitDescription(ruleDetails));
+  }
+
+  private static ActiveRuleMonolithicDescriptionDto transformMonolithicDescription(ActiveRuleDetails ruleDetails) {
+    return new ActiveRuleMonolithicDescriptionDto(concat(ruleDetails.getHtmlDescription(), ruleDetails.getExtendedDescription()));
+  }
+
+  private static ActiveRuleSplitDescriptionDto transformSplitDescription(ActiveRuleDetails ruleDetails) {
+    var sectionsByKey = new HashMap<>(ruleDetails.getDescriptionSectionsByKey());
+
+    var tabbedSections = new ArrayList<ActiveRuleDescriptionTabDto>();
+    SECTION_KEYS_TO_TAB_TITLE_ORDERED.keySet().forEach(sectionKey -> {
+      if (sectionsByKey.containsKey(sectionKey)) {
+        var sections = sectionsByKey.get(sectionKey);
+        var title = SECTION_KEYS_TO_TAB_TITLE_ORDERED.get(sectionKey);
+        Either<ActiveRuleNonContextualSectionDto, Collection<ActiveRuleContextualSectionDto>> content;
+        if (sections.size() == 1 && sections.get(0).getContext().isEmpty()) {
+          content = Either.forLeft(new ActiveRuleNonContextualSectionDto(getTabContent(sections.get(0), ruleDetails.getExtendedDescription())));
+        } else {
+          // if there is more than one section, they should all have a context (verified in sonar-plugin-api)
+          content = Either.forRight(sections.stream().map(s -> {
+            var context = s.getContext().get();
+            return new ActiveRuleContextualSectionDto(getTabContent(s, ruleDetails.getExtendedDescription()), context.getKey(), context.getDisplayName());
+          }).collect(Collectors.toList()));
+        }
+        tabbedSections.add(new ActiveRuleDescriptionTabDto(title, content));
+      }
+    });
+    var introductionSections = sectionsByKey.get(INTRODUCTION_SECTION_KEY);
+    String introductionHtmlContent = null;
+    if (introductionSections != null && !introductionSections.isEmpty()) {
+      // assume there is only one introduction section
+      introductionHtmlContent = introductionSections.get(0).getHtmlContent();
+    }
+    return new ActiveRuleSplitDescriptionDto(introductionHtmlContent, tabbedSections);
+  }
+
+  private static String concat(String htmlDescription, @Nullable String extendedDescription) {
+    var result = htmlDescription;
+    if (StringUtils.isNotBlank(extendedDescription)) {
+      result += "<br/><br/>" + extendedDescription;
+    }
+    return result;
+  }
+
+  private static String getTabContent(ActiveRuleDetails.DescriptionSection section, @Nullable String extendedDescription) {
+    var result = section.getHtmlContent();
+    if (RESOURCES_SECTION_KEY.equals(section.getKey()) && StringUtils.isNotBlank(extendedDescription)) {
+      result += "<br/><br/>" + extendedDescription;
+    }
+    return result;
   }
 
   private static Collection<ActiveRuleParamDto> transform(Collection<ActiveRuleDetails.ActiveRuleParam> params) {

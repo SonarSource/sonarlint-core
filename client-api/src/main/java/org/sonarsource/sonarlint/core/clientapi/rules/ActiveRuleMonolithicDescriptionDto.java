@@ -19,15 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.rules;
 
-import java.util.concurrent.CompletableFuture;
+public class ActiveRuleMonolithicDescriptionDto {
+  private final String htmlContent;
 
-public interface ActiveRulesService {
+  public ActiveRuleMonolithicDescriptionDto(String htmlContent) {
+    this.htmlContent = htmlContent;
+  }
+
   /**
-   * Returns the details about the rule key passed in parameters.
-   * This method can access missing details on the server when the configuration scope is bound.
-   * @param configurationScopeId the configuration scope id (see spec/glossary.adoc for more details)
-   * @param ruleKey the key of the rule
-   * @return a completed future if the rule was found, else a failed future
+   * @return the rule description content + the extended description if any
    */
-  CompletableFuture<GetActiveRuleDetailsResponse> getActiveRuleDetails(String configurationScopeId, String ruleKey);
+  public String getHtmlContent() {
+    return htmlContent;
+  }
 }

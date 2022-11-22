@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core.rules;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
@@ -40,6 +42,9 @@ public class ActiveRuleDetails {
       ruleDefinition.getLanguage(),
       ruleDefinition.getName(),
       ruleDefinition.getHtmlDescription(),
+      ruleDefinition.getDescriptionSections().stream()
+        .map(s -> new DescriptionSection(s.getKey(), s.getHtmlContent(), s.getContext().map(c -> new DescriptionSection.Context(c.getKey(), c.getDisplayName()))))
+        .collect(Collectors.groupingBy(DescriptionSection::getKey)),
       ruleDefinition.getDefaultSeverity(),
       ruleDefinition.getType(),
       null,
@@ -48,12 +53,18 @@ public class ActiveRuleDetails {
 
   public static ActiveRuleDetails merging(ServerActiveRule activeRuleFromStorage, ServerRule serverRule) {
     return new ActiveRuleDetails(activeRuleFromStorage.getRuleKey(), serverRule.getLanguage(), serverRule.getName(), serverRule.getHtmlDesc(),
+      serverRule.getDescriptionSections().stream()
+        .map(s -> new DescriptionSection(s.getKey(), s.getHtmlContent(), s.getContext().map(c -> new DescriptionSection.Context(c.getKey(), c.getDisplayName()))))
+        .collect(Collectors.groupingBy(DescriptionSection::getKey)),
       Optional.ofNullable(activeRuleFromStorage.getSeverity()).orElse(serverRule.getSeverity()),
       serverRule.getType(), serverRule.getHtmlNote(), Collections.emptyList());
   }
 
   public static ActiveRuleDetails merging(ServerRule activeRuleFromServer, SonarLintRuleDefinition ruleDefFromPlugin) {
     return new ActiveRuleDetails(ruleDefFromPlugin.getKey(), ruleDefFromPlugin.getLanguage(), ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(),
+      ruleDefFromPlugin.getDescriptionSections().stream()
+        .map(s -> new DescriptionSection(s.getKey(), s.getHtmlContent(), s.getContext().map(c -> new DescriptionSection.Context(c.getKey(), c.getDisplayName()))))
+        .collect(Collectors.groupingBy(DescriptionSection::getKey)),
       Optional.ofNullable(activeRuleFromServer.getSeverity()).orElse(ruleDefFromPlugin.getDefaultSeverity()), ruleDefFromPlugin.getType(),
       activeRuleFromServer.getHtmlNote(), Collections.emptyList());
   }
@@ -64,6 +75,9 @@ public class ActiveRuleDetails {
       templateRuleDefFromPlugin.getLanguage(),
       serverRule.getName(),
       serverRule.getHtmlDesc(),
+      serverRule.getDescriptionSections().stream()
+        .map(s -> new DescriptionSection(s.getKey(), s.getHtmlContent(), s.getContext().map(c -> new DescriptionSection.Context(c.getKey(), c.getDisplayName()))))
+        .collect(Collectors.groupingBy(DescriptionSection::getKey)),
       serverRule.getSeverity(),
       templateRuleDefFromPlugin.getType(),
       serverRule.getHtmlNote(),
@@ -74,17 +88,19 @@ public class ActiveRuleDetails {
   private final Language language;
   private final String name;
   private final String htmlDescription;
+  private final Map<String, List<DescriptionSection>> descriptionSectionsByKey;
   private final IssueSeverity defaultSeverity;
   private final RuleType type;
   private final Collection<ActiveRuleParam> params;
   private final String extendedDescription;
 
-  public ActiveRuleDetails(String key, Language language, String name, String htmlDescription, IssueSeverity defaultSeverity, RuleType type, @Nullable String extendedDescription,
-    Collection<ActiveRuleParam> params) {
+  public ActiveRuleDetails(String key, Language language, String name, String htmlDescription, Map<String, List<DescriptionSection>> descriptionSectionsByKey,
+    IssueSeverity defaultSeverity, RuleType type, @Nullable String extendedDescription, Collection<ActiveRuleParam> params) {
     this.key = key;
     this.language = language;
     this.name = name;
     this.htmlDescription = htmlDescription;
+    this.descriptionSectionsByKey = descriptionSectionsByKey;
     this.defaultSeverity = defaultSeverity;
     this.type = type;
     this.params = params;
@@ -105,6 +121,14 @@ public class ActiveRuleDetails {
 
   public String getHtmlDescription() {
     return htmlDescription;
+  }
+
+  public boolean hasMonolithicDescription() {
+    return descriptionSectionsByKey.isEmpty();
+  }
+
+  public Map<String, List<DescriptionSection>> getDescriptionSectionsByKey() {
+    return descriptionSectionsByKey;
   }
 
   public IssueSeverity getDefaultSeverity() {
@@ -147,5 +171,48 @@ public class ActiveRuleDetails {
     public String getDefaultValue() {
       return defaultValue;
     }
+  }
+
+  public static class DescriptionSection {
+    private final String key;
+    private final String htmlContent;
+    private final Optional<Context> context;
+
+    public DescriptionSection(String key, String htmlContent, Optional<Context> context) {
+      this.key = key;
+      this.htmlContent = htmlContent;
+      this.context = context;
+    }
+
+    public String getKey() {
+      return key;
+    }
+
+    public String getHtmlContent() {
+      return htmlContent;
+    }
+
+    public Optional<Context> getContext() {
+      return context;
+    }
+
+    public static class Context {
+      private final String key;
+      private final String displayName;
+
+      public Context(String key, String displayName) {
+        this.key = key;
+        this.displayName = displayName;
+      }
+
+      public String getKey() {
+        return key;
+      }
+
+      public String getDisplayName() {
+        return displayName;
+      }
+    }
+
   }
 }

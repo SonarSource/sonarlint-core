@@ -35,20 +35,21 @@ public class InitializeParams {
   private final Set<Path> embeddedPluginPaths;
   private final Map<String, Path> connectedModeExtraPluginPathsByKey;
   private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
-  private final Set<Language> enabledLanguages;
+  private final Set<Language> enabledLanguagesInStandaloneMode;
+  private final Set<Language> extraEnabledLanguagesInConnectedMode;
   private final Version nodeJsVersion;
   private final List<SonarQubeConnectionConfigurationDto> sonarQubeConnections;
   private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections;
 
   public InitializeParams(Path storageRoot, Set<Path> embeddedPluginPaths, Map<String, Path> connectedModeExtraPluginPathsByKey,
-    Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> enabledLanguages, @Nullable Version nodeJsVersion,
-    List<SonarQubeConnectionConfigurationDto> sonarQubeConnections,
-    List<SonarCloudConnectionConfigurationDto> sonarCloudConnections) {
+    Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> extraEnabledLanguagesInConnectedMode,
+    @Nullable Version nodeJsVersion, List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections) {
     this.storageRoot = storageRoot;
     this.embeddedPluginPaths = embeddedPluginPaths;
     this.connectedModeExtraPluginPathsByKey = connectedModeExtraPluginPathsByKey;
     this.connectedModeEmbeddedPluginPathsByKey = connectedModeEmbeddedPluginPathsByKey;
-    this.enabledLanguages = enabledLanguages;
+    this.enabledLanguagesInStandaloneMode = enabledLanguagesInStandaloneMode;
+    this.extraEnabledLanguagesInConnectedMode = extraEnabledLanguagesInConnectedMode;
     this.nodeJsVersion = nodeJsVersion;
     this.sonarQubeConnections = sonarQubeConnections;
     this.sonarCloudConnections = sonarCloudConnections;
@@ -70,8 +71,12 @@ public class InitializeParams {
     return connectedModeEmbeddedPluginPathsByKey;
   }
 
-  public Set<Language> getEnabledLanguages() {
-    return enabledLanguages;
+  public Set<Language> getEnabledLanguagesInStandaloneMode() {
+    return enabledLanguagesInStandaloneMode;
+  }
+
+  public Set<Language> getExtraEnabledLanguagesInConnectedMode() {
+    return extraEnabledLanguagesInConnectedMode;
   }
 
   @CheckForNull
