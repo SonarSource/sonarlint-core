@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.rule.extractor;
 
+import java.util.Map;
+import org.sonar.api.Plugin;
 import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.server.rule.RulesDefinition.Context;
@@ -28,17 +30,15 @@ import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
 import org.sonarsource.sonarlint.core.plugin.commons.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.plugin.commons.ExtensionUtils;
-import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentContainer;
 import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.SonarLintRuntimeImpl;
 
 public class RulesDefinitionExtractorContainer extends SpringComponentContainer {
-
-  private final PluginInstancesRepository pluginInstancesRepository;
   private Context rulesDefinitionContext;
+  private final Map<String, Plugin> pluginInstancesByKeys;
 
-  public RulesDefinitionExtractorContainer(PluginInstancesRepository pluginInstancesRepository) {
-    this.pluginInstancesRepository = pluginInstancesRepository;
+  public RulesDefinitionExtractorContainer(Map<String, Plugin> pluginInstancesByKeys) {
+    this.pluginInstancesByKeys = pluginInstancesByKeys;
   }
 
   @Override
@@ -51,7 +51,7 @@ public class RulesDefinitionExtractorContainer extends SpringComponentContainer 
     var config = new EmptyConfiguration();
 
     var extensionInstaller = new ExtensionInstaller(sonarLintRuntime, config);
-    extensionInstaller.install(this, pluginInstancesRepository.getPluginInstancesByKeys(), (key, ext) -> {
+    extensionInstaller.install(this, pluginInstancesByKeys, (key, ext) -> {
       if (ExtensionUtils.isType(ext, Sensor.class)) {
         // Optimization, and allows to run with the Xoo plugin
         return false;

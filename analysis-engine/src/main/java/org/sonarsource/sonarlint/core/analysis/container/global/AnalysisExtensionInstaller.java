@@ -31,7 +31,7 @@ import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.plugin.commons.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.plugin.commons.ExtensionUtils;
-import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
+import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.commons.container.ExtensionContainer;
 import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
 
@@ -41,17 +41,17 @@ public class AnalysisExtensionInstaller extends ExtensionInstaller {
 
   private final Set<Language> enabledLanguages;
 
-  private final PluginInstancesRepository pluginRepository;
+  private final LoadedPlugins loadedPlugins;
 
-  public AnalysisExtensionInstaller(SonarLintRuntime sonarRuntime, PluginInstancesRepository pluginRepository, Configuration bootConfiguration,
-    AnalysisEngineConfiguration analysisEngineConfig) {
+  public AnalysisExtensionInstaller(SonarLintRuntime sonarRuntime, LoadedPlugins loadedPlugins, Configuration bootConfiguration,
+                                    AnalysisEngineConfiguration analysisEngineConfig) {
     super(sonarRuntime, bootConfiguration);
-    this.pluginRepository = pluginRepository;
+    this.loadedPlugins = loadedPlugins;
     enabledLanguages = analysisEngineConfig.getEnabledLanguages();
   }
 
   public AnalysisExtensionInstaller install(ExtensionContainer container, ContainerLifespan lifespan) {
-    super.install(container, pluginRepository.getPluginInstancesByKeys(),
+    super.install(container, loadedPlugins.getPluginInstancesByKeys(),
       (pluginKey, extension) -> lifespan.equals(getSonarLintSideLifespan(extension)) && onlySonarSourceSensor(pluginKey, extension));
     return this;
   }

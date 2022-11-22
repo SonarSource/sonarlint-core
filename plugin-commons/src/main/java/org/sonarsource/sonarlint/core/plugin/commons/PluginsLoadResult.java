@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Plugin Commons
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,25 +17,25 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.connection.config;
+package org.sonarsource.sonarlint.core.plugin.commons;
 
-import java.util.List;
+import java.util.Map;
+import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginRequirementsCheckResult;
 
-public class InitializeParams {
-  private final List<SonarQubeConnectionConfigurationDto> sonarQubeConnections;
-  private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections;
+public class PluginsLoadResult {
+  private final LoadedPlugins loadedPlugins;
+  private final Map<String, PluginRequirementsCheckResult> pluginCheckResultByKeys;
 
-
-  public InitializeParams(List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections) {
-    this.sonarQubeConnections = sonarQubeConnections;
-    this.sonarCloudConnections = sonarCloudConnections;
+  PluginsLoadResult(LoadedPlugins loadedPlugins, Map<String, PluginRequirementsCheckResult> pluginCheckResultByKeys) {
+    this.loadedPlugins = loadedPlugins;
+    this.pluginCheckResultByKeys = pluginCheckResultByKeys;
   }
 
-  public List<SonarQubeConnectionConfigurationDto> getSonarQubeConnections() {
-    return sonarQubeConnections;
+  public LoadedPlugins getLoadedPlugins() {
+    return loadedPlugins;
   }
 
-  public List<SonarCloudConnectionConfigurationDto> getSonarCloudConnections() {
-    return sonarCloudConnections;
+  public Map<String, PluginRequirementsCheckResult> getPluginCheckResultByKeys() {
+    return pluginCheckResultByKeys;
   }
 }

@@ -64,8 +64,9 @@ import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
-import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository.Configuration;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoadResult;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader.Configuration;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -111,11 +112,11 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   private AnalysisContext loadAnalysisContext() {
-    var pluginInstancesRepository = createPluginInstanceRepository();
-    var pluginDetails = pluginInstancesRepository.getPluginCheckResultByKeys().values().stream().map(p -> new PluginDetails(p.getPlugin().getKey(), p.getPlugin().getName(),
+    var loadingResult = loadPlugins();
+    var pluginDetails = loadingResult.getPluginCheckResultByKeys().values().stream().map(p -> new PluginDetails(p.getPlugin().getKey(), p.getPlugin().getName(),
       Optional.ofNullable(p.getPlugin().getVersion()).map(Version::toString).orElse(null), p.getSkipReason().orElse(null))).collect(Collectors.toList());
 
-    var allRulesDefinitionsByKey = loadPluginMetadata(pluginInstancesRepository, globalConfig.getEnabledLanguages(), true);
+    var allRulesDefinitionsByKey = loadPluginMetadata(loadingResult.getLoadedPlugins(), globalConfig.getEnabledLanguages(), true);
 
     var analysisGlobalConfig = AnalysisEngineConfiguration.builder()
       .addEnabledLanguages(globalConfig.getEnabledLanguages())
@@ -125,11 +126,11 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
       .setWorkDir(globalConfig.getWorkDir())
       .setModulesProvider(globalConfig.getModulesProvider())
       .build();
-    var analysisEngine = new AnalysisEngine(analysisGlobalConfig, pluginInstancesRepository, logOutput);
+    var analysisEngine = new AnalysisEngine(analysisGlobalConfig, loadingResult.getLoadedPlugins(), logOutput);
     return new AnalysisContext(pluginDetails, allRulesDefinitionsByKey, analysisEngine);
   }
 
-  private PluginInstancesRepository createPluginInstanceRepository() {
+  private PluginsLoadResult loadPlugins() {
     Map<String, Path> pluginsToLoadByKey = new HashMap<>();
     // order is important as e.g. embedded takes precedence over stored
     pluginsToLoadByKey.putAll(globalConfig.getExtraPluginsPathsByKey());
@@ -138,7 +139,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     Set<Path> plugins = new HashSet<>(pluginsToLoadByKey.values());
 
     var config = new Configuration(plugins, globalConfig.getEnabledLanguages(), Optional.ofNullable(globalConfig.getNodeJsVersion()));
-    return new PluginInstancesRepository(config);
+    return new PluginsLoader().load(config);
   }
 
   private static class ActiveRulesContext {

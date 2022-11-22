@@ -26,7 +26,7 @@ import org.sonar.api.utils.UriReader;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
-import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
+import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentContainer;
 import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.SonarLintRuntimeImpl;
 
@@ -36,11 +36,11 @@ public class GlobalAnalysisContainer extends SpringComponentContainer {
   private GlobalExtensionContainer globalExtensionContainer;
   private ModuleRegistry moduleRegistry;
   private final AnalysisEngineConfiguration analysisGlobalConfig;
-  private final PluginInstancesRepository pluginInstancesRepository;
+  private final LoadedPlugins loadedPlugins;
 
-  public GlobalAnalysisContainer(AnalysisEngineConfiguration analysisGlobalConfig, PluginInstancesRepository pluginInstancesRepository) {
+  public GlobalAnalysisContainer(AnalysisEngineConfiguration analysisGlobalConfig, LoadedPlugins loadedPlugins) {
     this.analysisGlobalConfig = analysisGlobalConfig;
-    this.pluginInstancesRepository = pluginInstancesRepository;
+    this.loadedPlugins = loadedPlugins;
   }
 
   @Override
@@ -50,7 +50,7 @@ public class GlobalAnalysisContainer extends SpringComponentContainer {
 
     add(
       analysisGlobalConfig,
-      pluginInstancesRepository,
+      loadedPlugins,
       GlobalSettings.class,
       new GlobalConfigurationProvider(),
       AnalysisExtensionInstaller.class,
@@ -80,7 +80,7 @@ public class GlobalAnalysisContainer extends SpringComponentContainer {
       if (globalExtensionContainer != null) {
         globalExtensionContainer.stopComponents();
       }
-      pluginInstancesRepository.close();
+      loadedPlugins.unload();
     } catch (Exception e) {
       LOG.error("Cannot close analysis engine", e);
     } finally {
@@ -90,8 +90,7 @@ public class GlobalAnalysisContainer extends SpringComponentContainer {
   }
 
   private void declarePluginProperties() {
-    var pluginRepository = getComponentByType(PluginInstancesRepository.class);
-    pluginRepository.getPluginInstancesByKeys().values().forEach(this::declareProperties);
+    loadedPlugins.getPluginInstancesByKeys().values().forEach(this::declareProperties);
   }
 
   // Visible for medium tests

@@ -19,13 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.connection;
 
-import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
-import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.DidAddConnectionParams;
-import org.sonarsource.sonarlint.core.clientapi.connection.config.DidUpdateConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.DidRemoveConnectionParams;
-import org.sonarsource.sonarlint.core.clientapi.connection.config.InitializeParams;
+import org.sonarsource.sonarlint.core.clientapi.connection.config.DidUpdateConnectionParams;
 
 /**
  * The client is the source of truth for connection configuration, but the backend also need to be kept in sync.
@@ -39,12 +36,6 @@ import org.sonarsource.sonarlint.core.clientapi.connection.config.InitializePara
  *
  */
 public interface ConnectionService {
-
-  /**
-   * Called by client once at startup, in order to initialize the service and register existing connections to the backend.
-   */
-  @JsonRequest
-  CompletableFuture<Void> initialize(InitializeParams params);
 
   /**
    * Called by the client when a new connection has been added.

@@ -54,7 +54,7 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
 import testutils.OnDiskTestClientInputFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -77,8 +77,8 @@ class AnalysisEngineMediumTests {
       .setClientPid(1234L)
       .setWorkDir(workDir)
       .build();
-    var pluginInstancesRepository = new PluginInstancesRepository(new PluginInstancesRepository.Configuration(Set.of(findPythonJarPath()), enabledLanguages, Optional.empty()));
-    this.analysisEngine = new AnalysisEngine(analysisGlobalConfig, pluginInstancesRepository, logTester.getLogOutput());
+    var result = new PluginsLoader().load(new PluginsLoader.Configuration(Set.of(findPythonJarPath()), enabledLanguages, Optional.empty()));
+    this.analysisEngine = new AnalysisEngine(analysisGlobalConfig, result.getLoadedPlugins(), logTester.getLogOutput());
     engineStopped = false;
   }
 

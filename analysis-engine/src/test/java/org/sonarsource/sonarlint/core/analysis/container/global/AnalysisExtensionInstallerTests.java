@@ -36,7 +36,7 @@ import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.plugin.commons.PluginInstancesRepository;
+import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentContainer;
 import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.SonarLintRuntimeImpl;
 import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
@@ -62,19 +62,19 @@ class AnalysisExtensionInstallerTests {
   private static final long FAKE_PID = 123L;
   private static final SonarLintRuntime RUNTIME = new SonarLintRuntimeImpl(Version.create(8, 0), PLUGIN_API_VERSION, FAKE_PID);
   private AnalysisExtensionInstaller underTest;
-  private PluginInstancesRepository pluginRepository;
+  private LoadedPlugins loadedPlugins;
   private SpringComponentContainer container;
 
   @BeforeEach
   void prepare() {
-    pluginRepository = mock(PluginInstancesRepository.class);
+    loadedPlugins = mock(LoadedPlugins.class);
     container = mock(SpringComponentContainer.class);
-    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, EMPTY_CONFIG, AnalysisEngineConfiguration.builder().build());
+    underTest = new AnalysisExtensionInstaller(RUNTIME, loadedPlugins, EMPTY_CONFIG, AnalysisEngineConfiguration.builder().build());
   }
 
   @Test
   void install_sonarlintside_extensions_with_default_lifespan_in_analysis_container_for_compatible_plugins() {
-    when(pluginRepository.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin()));
+    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin()));
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
 
@@ -83,7 +83,7 @@ class AnalysisExtensionInstallerTests {
 
   @Test
   void install_sonarlintside_extensions_with_single_analysis_lifespan_in_analysis_container_for_compatible_plugins() {
-    when(pluginRepository.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin(FakeSonarLintSingleAnalysisLifespanComponent.class)));
+    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin(FakeSonarLintSingleAnalysisLifespanComponent.class)));
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
 
@@ -92,7 +92,7 @@ class AnalysisExtensionInstallerTests {
 
   @Test
   void install_sonarlintside_extensions_with_multiple_analysis_lifespan_in_global_container_for_compatible_plugins() {
-    when(pluginRepository.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin(FakeSonarLintMultipleAnalysisLifespanComponent.class)));
+    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin(FakeSonarLintMultipleAnalysisLifespanComponent.class)));
 
     underTest.install(container, ContainerLifespan.INSTANCE);
 
@@ -101,7 +101,7 @@ class AnalysisExtensionInstallerTests {
 
   @Test
   void install_sonarlintside_extensions_with_instance_lifespan_in_global_container_for_compatible_plugins() {
-    when(pluginRepository.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin(FakeSonarLintInstanceLifespanComponent.class)));
+    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin(FakeSonarLintInstanceLifespanComponent.class)));
 
     underTest.install(container, ContainerLifespan.INSTANCE);
 
@@ -110,7 +110,7 @@ class AnalysisExtensionInstallerTests {
 
   @Test
   void dont_install_sonarlintside_extensions_with_multiple_analysis_lifespan_in_analysis_container_for_compatible_plugins() {
-    when(pluginRepository.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin(FakeSonarLintMultipleAnalysisLifespanComponent.class)));
+    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin(FakeSonarLintMultipleAnalysisLifespanComponent.class)));
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
 
@@ -119,7 +119,7 @@ class AnalysisExtensionInstallerTests {
 
   @Test
   void dont_install_sonarlintside_extensions_with_single_analysis_lifespan_in_global_container_for_compatible_plugins() {
-    when(pluginRepository.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin(FakeSonarLintSingleAnalysisLifespanComponent.class)));
+    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin(FakeSonarLintSingleAnalysisLifespanComponent.class)));
 
     underTest.install(container, ContainerLifespan.INSTANCE);
 
@@ -128,7 +128,7 @@ class AnalysisExtensionInstallerTests {
 
   @Test
   void install_sonarlintside_extensions_with_module_lifespan_in_module_container_for_compatible_plugins() {
-    when(pluginRepository.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin(FakeSonarLintModuleLifespanComponent.class)));
+    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin(FakeSonarLintModuleLifespanComponent.class)));
 
     underTest.install(container, ContainerLifespan.MODULE);
 
@@ -137,7 +137,7 @@ class AnalysisExtensionInstallerTests {
 
   @Test
   void install_sensors_for_sonarsource_plugins() {
-    when(pluginRepository.getPluginInstancesByKeys()).thenReturn(Map.of(JAVA_PLUGIN_KEY, new FakePlugin()));
+    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(JAVA_PLUGIN_KEY, new FakePlugin()));
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
 
@@ -146,7 +146,7 @@ class AnalysisExtensionInstallerTests {
 
   @Test
   void dont_install_sensors_for_non_sonarsource_plugins() {
-    when(pluginRepository.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin()));
+    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin()));
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
 
@@ -155,9 +155,9 @@ class AnalysisExtensionInstallerTests {
 
   @Test
   void install_typescript_sensor_if_typescript_language_enabled_in_connected_mode() {
-    when(pluginRepository.getPluginInstancesByKeys()).thenReturn(Map.of(JAVASCRIPT_PLUGIN_KEY, new FakePlugin()));
+    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(JAVASCRIPT_PLUGIN_KEY, new FakePlugin()));
 
-    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, EMPTY_CONFIG, AnalysisEngineConfiguration.builder()
+    underTest = new AnalysisExtensionInstaller(RUNTIME, loadedPlugins, EMPTY_CONFIG, AnalysisEngineConfiguration.builder()
       .addEnabledLanguage(Language.TS).build());
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
@@ -167,9 +167,9 @@ class AnalysisExtensionInstallerTests {
 
   @Test
   void dont_install_typescript_sensor_if_typescript_language_not_enabled_in_connected_mode() {
-    when(pluginRepository.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin()));
+    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin()));
 
-    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, EMPTY_CONFIG, AnalysisEngineConfiguration.builder()
+    underTest = new AnalysisExtensionInstaller(RUNTIME, loadedPlugins, EMPTY_CONFIG, AnalysisEngineConfiguration.builder()
       .addEnabledLanguage(Language.JS).build());
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
@@ -181,9 +181,9 @@ class AnalysisExtensionInstallerTests {
 
   @Test
   void install_typescript_sensor_if_typescript_language_enabled_in_standalone() {
-    when(pluginRepository.getPluginInstancesByKeys()).thenReturn(Map.of(JAVASCRIPT_PLUGIN_KEY, new FakePlugin()));
+    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(JAVASCRIPT_PLUGIN_KEY, new FakePlugin()));
 
-    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, EMPTY_CONFIG, AnalysisEngineConfiguration.builder()
+    underTest = new AnalysisExtensionInstaller(RUNTIME, loadedPlugins, EMPTY_CONFIG, AnalysisEngineConfiguration.builder()
       .addEnabledLanguage(Language.TS).build());
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
@@ -194,9 +194,9 @@ class AnalysisExtensionInstallerTests {
   @Test
   void provide_sonarlint_context_for_plugin_definition() {
     var pluginInstance = new PluginStoringSonarLintPluginApiVersion();
-    when(pluginRepository.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, pluginInstance));
+    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, pluginInstance));
 
-    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, EMPTY_CONFIG, AnalysisEngineConfiguration.builder().build());
+    underTest = new AnalysisExtensionInstaller(RUNTIME, loadedPlugins, EMPTY_CONFIG, AnalysisEngineConfiguration.builder().build());
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
 
@@ -206,9 +206,9 @@ class AnalysisExtensionInstallerTests {
 
   @Test
   void log_when_plugin_throws() {
-    when(pluginRepository.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new ThrowingPlugin()));
+    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new ThrowingPlugin()));
 
-    underTest = new AnalysisExtensionInstaller(RUNTIME, pluginRepository, EMPTY_CONFIG, AnalysisEngineConfiguration.builder().build());
+    underTest = new AnalysisExtensionInstaller(RUNTIME, loadedPlugins, EMPTY_CONFIG, AnalysisEngineConfiguration.builder().build());
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
 
