@@ -49,10 +49,10 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-  void it_should_return_embedded_rule_when_project_is_not_bound(@TempDir Path tempDir) throws ExecutionException, InterruptedException {
+  void it_should_return_embedded_rule_when_project_is_not_bound() throws ExecutionException, InterruptedException {
     backend = newBackend()
       .withUnboundConfigScope("scopeId")
-      .withStorageRoot(tempDir)
+      .withStorageRoot(storageDir)
       .withEmbeddedPlugin(TestPlugin.PYTHON)
       .build();
 
@@ -70,10 +70,10 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-  void it_should_fail_when_rule_key_unknown_and_project_is_not_bound(@TempDir Path tempDir) {
+  void it_should_fail_when_rule_key_unknown_and_project_is_not_bound() {
     backend = newBackend()
       .withUnboundConfigScope("scopeId")
-      .withStorageRoot(tempDir)
+      .withStorageRoot(storageDir)
       .withEmbeddedPlugin(TestPlugin.PYTHON)
       .build();
 
@@ -86,14 +86,14 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-  void it_should_return_rule_loaded_from_server_plugin_when_project_is_bound_and_project_storage_does_not_exist(@TempDir Path tempDir)
+  void it_should_return_rule_loaded_from_server_plugin_when_project_is_bound_and_project_storage_does_not_exist()
     throws ExecutionException, InterruptedException {
     StorageFixture.newStorage("connectionId")
       .withJavaPlugin()
-      .create(tempDir);
+      .create(storageDir);
     backend = newBackend()
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withStorageRoot(tempDir.resolve("storage"))
+      .withStorageRoot(storageDir.resolve("storage"))
       .withEnabledLanguage(Language.JAVA)
       .build();
 
@@ -110,13 +110,13 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-  void it_should_return_embedded_rule_when_project_is_bound_and_rule_comes_from_extra_plugin(@TempDir Path tempDir) throws ExecutionException, InterruptedException {
+  void it_should_return_embedded_rule_when_project_is_bound_and_rule_comes_from_extra_plugin() throws ExecutionException, InterruptedException {
     StorageFixture.newStorage("connectionId")
       .withProject("projectKey")
-      .create(tempDir);
+      .create(storageDir);
     backend = newBackend()
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withStorageRoot(tempDir.resolve("storage"))
+      .withStorageRoot(storageDir.resolve("storage"))
       .withExtraPlugin(TestPlugin.PYTHON)
       .build();
 
@@ -135,16 +135,16 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-  void it_should_merge_rule_from_storage_and_server_when_project_is_bound(@TempDir Path tempDir) throws ExecutionException, InterruptedException {
+  void it_should_merge_rule_from_storage_and_server_when_project_is_bound() throws ExecutionException, InterruptedException {
     StorageFixture.newStorage("connectionId")
       .withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah"))))
-      .create(tempDir);
+      .create(storageDir);
     backend = newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withStorageRoot(tempDir.resolve("storage"))
+      .withStorageRoot(storageDir.resolve("storage"))
       .withExtraPlugin(TestPlugin.PYTHON)
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
@@ -164,15 +164,15 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-  void it_should_fail_to_merge_rule_from_storage_and_server_when_connection_is_unknown(@TempDir Path tempDir) throws ExecutionException, InterruptedException {
+  void it_should_fail_to_merge_rule_from_storage_and_server_when_connection_is_unknown() {
     StorageFixture.newStorage("connectionId")
       .withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah"))))
-      .create(tempDir);
+      .create(storageDir);
     backend = newBackend()
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withStorageRoot(tempDir.resolve("storage"))
+      .withStorageRoot(storageDir.resolve("storage"))
       .withExtraPlugin(TestPlugin.PYTHON)
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
@@ -188,16 +188,16 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-  void it_should_fail_to_merge_rule_from_storage_and_server_when_rule_does_not_exist_on_server(@TempDir Path tempDir) {
+  void it_should_fail_to_merge_rule_from_storage_and_server_when_rule_does_not_exist_on_server() {
     StorageFixture.newStorage("connectionId")
       .withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah"))))
-      .create(tempDir);
+      .create(storageDir);
     backend = newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withStorageRoot(tempDir.resolve("storage"))
+      .withStorageRoot(storageDir.resolve("storage"))
       .withExtraPlugin(TestPlugin.PYTHON)
       .build();
 
@@ -210,16 +210,16 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-  void it_should_merge_template_rule_from_storage_and_server_when_project_is_bound(@TempDir Path tempDir) throws ExecutionException, InterruptedException {
+  void it_should_merge_template_rule_from_storage_and_server_when_project_is_bound() throws ExecutionException, InterruptedException {
     StorageFixture.newStorage("connectionId")
       .withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
           ruleSet -> ruleSet.withCustomActiveRule("python:custom", "python:CommentRegularExpression", "INFO", Map.of("message", "msg", "regularExpression", "regExp"))))
-      .create(tempDir);
+      .create(storageDir);
     backend = newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withStorageRoot(tempDir.resolve("storage"))
+      .withStorageRoot(storageDir.resolve("storage"))
       .withExtraPlugin(TestPlugin.PYTHON)
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:custom", Rules.ShowResponse.newBuilder()
@@ -237,17 +237,17 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-  void it_should_merge_rule_from_storage_and_server_rule_when_rule_is_unknown_in_loaded_plugins(@TempDir Path tempDir)
+  void it_should_merge_rule_from_storage_and_server_rule_when_rule_is_unknown_in_loaded_plugins()
     throws ExecutionException, InterruptedException {
     StorageFixture.newStorage("connectionId")
       .withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah"))))
-      .create(tempDir);
+      .create(storageDir);
     backend = newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withStorageRoot(tempDir.resolve("storage"))
+      .withStorageRoot(storageDir.resolve("storage"))
       .withEnabledLanguage(Language.PYTHON)
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
@@ -264,6 +264,9 @@ class ActiveRulesMediumTests {
     assertThat(details.getParams()).isEmpty();
   }
 
+
+  @TempDir
+  Path storageDir;
   private SonarLintBackendImpl backend;
   @RegisterExtension
   private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
