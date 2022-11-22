@@ -42,7 +42,8 @@ public class PluginsServiceImpl implements PluginsService {
   private Set<Path> embeddedPluginPaths;
   private Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
   private Map<String, Path> connectedModeExtraPluginPathsByKey;
-  private Set<Language> enabledLanguages;
+  private Set<Language> enabledLanguagesInStandaloneMode;
+  private Set<Language> enabledLanguagesInConnectedMode;
   private Version nodeJsVersion;
 
   public PluginsServiceImpl(PluginsRepository pluginsRepository) {
@@ -50,22 +51,23 @@ public class PluginsServiceImpl implements PluginsService {
   }
 
   public void initialize(Path storageRoot, Set<Path> embeddedPluginPaths, Map<String, Path> connectedModeEmbeddedPluginPathsByKey,
-    Map<String, Path> connectedModeExtraPluginPathsByKey, Set<Language> enabledLanguages, @Nullable Version nodeJsVersion) {
+    Map<String, Path> connectedModeExtraPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> enabledLanguagesInConnectedMode,
+    @Nullable Version nodeJsVersion) {
     this.storageRoot = storageRoot;
     this.embeddedPluginPaths = embeddedPluginPaths;
     this.connectedModeEmbeddedPluginPathsByKey = connectedModeEmbeddedPluginPathsByKey;
     this.connectedModeExtraPluginPathsByKey = connectedModeExtraPluginPathsByKey;
-    this.enabledLanguages = enabledLanguages;
+    this.enabledLanguagesInStandaloneMode = enabledLanguagesInStandaloneMode;
+    this.enabledLanguagesInConnectedMode = enabledLanguagesInConnectedMode;
     this.nodeJsVersion = nodeJsVersion;
   }
 
   public LoadedPlugins getEmbeddedPlugins() {
     var loadedEmbeddedPlugins = pluginsRepository.getLoadedEmbeddedPlugins();
     if (loadedEmbeddedPlugins == null) {
-      var result = loadPlugins(embeddedPluginPaths);
+      var result = loadPlugins(enabledLanguagesInStandaloneMode, embeddedPluginPaths);
       loadedEmbeddedPlugins = result.getLoadedPlugins();
       pluginsRepository.setLoadedEmbeddedPlugins(loadedEmbeddedPlugins);
-      // TODO notify about skipped plugins ?
     }
     return loadedEmbeddedPlugins;
   }
@@ -76,7 +78,6 @@ public class PluginsServiceImpl implements PluginsService {
       var result = loadPlugins(connectionId);
       loadedPlugins = result.getLoadedPlugins();
       pluginsRepository.setLoadedPlugins(connectionId, loadedPlugins);
-      // TODO notify about skipped plugins ?
     }
     return loadedPlugins;
   }
@@ -92,10 +93,10 @@ public class PluginsServiceImpl implements PluginsService {
     pluginsToLoadByKey.putAll(connectedModeEmbeddedPluginPathsByKey);
     Set<Path> pluginPaths = new HashSet<>(pluginsToLoadByKey.values());
 
-    return loadPlugins(pluginPaths);
+    return loadPlugins(enabledLanguagesInConnectedMode, pluginPaths);
   }
 
-  private PluginsLoadResult loadPlugins(Set<Path> pluginPaths) {
+  private PluginsLoadResult loadPlugins(Set<Language> enabledLanguages, Set<Path> pluginPaths) {
     var config = new PluginsLoader.Configuration(pluginPaths, enabledLanguages, Optional.ofNullable(nodeJsVersion));
     return new PluginsLoader().load(config);
   }

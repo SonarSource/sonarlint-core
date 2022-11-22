@@ -32,7 +32,7 @@ message SearchResponse {
   optional int32 p = 2;
   optional int64 ps = 3;
   repeated Rule rules = 4;
-  optional Actives actives = 5; 
+  optional Actives actives = 5;
 }
 
 //WS api/rules/show
@@ -51,6 +51,22 @@ message Rule {
   optional string lang = 19;
 
   optional sonarqube.ws.commons.RuleType type = 37;
+  optional DescriptionSections descriptionSections = 49;
+
+  message DescriptionSections {
+    repeated DescriptionSection descriptionSections = 1;
+  }
+
+  message DescriptionSection {
+    required string key = 1;
+    required string content = 2;
+    optional Context context = 3;
+
+    message Context {
+      required string displayName = 1;
+      required string key = 2;
+    }
+  }
 
 }
 

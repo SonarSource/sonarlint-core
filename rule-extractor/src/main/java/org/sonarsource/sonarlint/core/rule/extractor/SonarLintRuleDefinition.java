@@ -21,8 +21,10 @@ package org.sonarsource.sonarlint.core.rule.extractor;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.api.server.rule.RulesDefinition.Param;
@@ -40,6 +42,7 @@ public class SonarLintRuleDefinition {
   private final IssueSeverity defaultSeverity;
   private final RuleType type;
   private final String description;
+  private final List<SonarLintRuleDescriptionSection> descriptionSections;
   private final Map<String, SonarLintRuleParamDefinition> params;
   private final Map<String, String> defaultParams = new HashMap<>();
   private final boolean isActiveByDefault;
@@ -53,6 +56,8 @@ public class SonarLintRuleDefinition {
     this.defaultSeverity = IssueSeverity.valueOf(rule.severity());
     this.type = RuleType.valueOf(rule.type().name());
     this.description = rule.htmlDescription() != null ? rule.htmlDescription() : Markdown.convertToHtml(rule.markdownDescription());
+    this.descriptionSections = rule.ruleDescriptionSections().stream().map(s -> new SonarLintRuleDescriptionSection(s.getKey(), s.getHtmlContent(),
+      s.getContext().map(c -> new SonarLintRuleDescriptionSection.Context(c.getKey(), c.getDisplayName())))).collect(Collectors.toList());
     this.isActiveByDefault = rule.activatedByDefault();
     this.language = Language.forKey(rule.repository().language()).orElseThrow(() -> new IllegalStateException("Unknown language with key: " + rule.repository().language()));
     this.tags = rule.tags().toArray(new String[0]);
@@ -100,6 +105,10 @@ public class SonarLintRuleDefinition {
 
   public String getHtmlDescription() {
     return description;
+  }
+
+  public List<SonarLintRuleDescriptionSection> getDescriptionSections() {
+    return descriptionSections;
   }
 
   public Language getLanguage() {

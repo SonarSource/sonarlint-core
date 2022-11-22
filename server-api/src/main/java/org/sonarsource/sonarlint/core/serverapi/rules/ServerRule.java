@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.rules;
 
+import java.util.List;
+import java.util.Optional;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -26,17 +28,19 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 public class ServerRule {
   private final String name;
   private final String htmlDesc;
+  private final List<DescriptionSection> descriptionSections;
   private final String htmlNote;
   private final IssueSeverity severity;
   private final RuleType type;
   private final Language language;
 
-  public ServerRule(String name, IssueSeverity severity, RuleType type, String language, String htmlDesc, String htmlNote) {
+  public ServerRule(String name, IssueSeverity severity, RuleType type, String language, String htmlDesc, List<DescriptionSection> descriptionSections, String htmlNote) {
     this.name = name;
     this.severity = severity;
     this.type = type;
     this.language = Language.forKey(language).orElseThrow(() -> new IllegalArgumentException("Unknown language with key: " + language));
     this.htmlDesc = htmlDesc;
+    this.descriptionSections = descriptionSections;
     this.htmlNote = htmlNote;
   }
 
@@ -46,6 +50,10 @@ public class ServerRule {
 
   public String getHtmlDesc() {
     return htmlDesc;
+  }
+
+  public List<DescriptionSection> getDescriptionSections() {
+    return descriptionSections;
   }
 
   public String getHtmlNote() {
@@ -62,5 +70,47 @@ public class ServerRule {
 
   public Language getLanguage() {
     return language;
+  }
+
+  public static class DescriptionSection {
+    private final String key;
+    private final String htmlContent;
+    private final Optional<Context> context;
+
+    public DescriptionSection(String key, String htmlContent, Optional<Context> context) {
+      this.key = key;
+      this.htmlContent = htmlContent;
+      this.context = context;
+    }
+
+    public String getKey() {
+      return key;
+    }
+
+    public String getHtmlContent() {
+      return htmlContent;
+    }
+
+    public Optional<Context> getContext() {
+      return context;
+    }
+
+    public static class Context {
+      private final String key;
+      private final String displayName;
+
+      public Context(String key, String displayName) {
+        this.key = key;
+        this.displayName = displayName;
+      }
+
+      public String getKey() {
+        return key;
+      }
+
+      public String getDisplayName() {
+        return displayName;
+      }
+    }
   }
 }

@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.serverapi.rules;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -74,6 +75,46 @@ class RulesApiTests {
 
     assertThat(rule).extracting("name", "severity", "type", "language", "htmlDesc", "htmlNote")
       .contains("name", IssueSeverity.MINOR, RuleType.VULNERABILITY, Language.PYTHON, "htmlDesc", "htmlNote");
+  }
+
+  @Test
+  void should_get_rule_with_description_sections() throws ExecutionException, InterruptedException {
+    mockServer.addProtobufResponse("/api/rules/show.protobuf?key=java:S1234",
+      Rules.ShowResponse.newBuilder().setRule(
+        Rules.Rule.newBuilder()
+          .setName("name")
+          .setSeverity("MINOR")
+          .setType(Common.RuleType.VULNERABILITY)
+          .setLang(Language.PYTHON.getLanguageKey())
+          .setHtmlDesc("htmlDesc")
+          .setDescriptionSections(Rules.Rule.DescriptionSections.newBuilder()
+            .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder().setKey("sectionKey").setContent("htmlContent").build())
+            .addDescriptionSections(
+              Rules.Rule.DescriptionSection.newBuilder().setKey("sectionKey2").setContent("htmlContent2").setContext(Rules.Rule.DescriptionSection.Context.newBuilder()
+                .setKey("contextKey").setDisplayName("displayName").build()).build())
+            .build())
+          .setHtmlNote("htmlNote")
+          .build())
+        .build());
+
+    var rulesApi = new RulesApi(mockServer.serverApiHelper());
+
+    var rule = rulesApi.getRule("java:S1234").get();
+
+    assertThat(rule).extracting("name", "severity", "type", "language", "htmlDesc", "htmlNote")
+      .contains("name", IssueSeverity.MINOR, RuleType.VULNERABILITY, Language.PYTHON, "htmlDesc", "htmlNote");
+
+    var sections = rule.getDescriptionSections();
+    assertThat(sections).hasSize(2);
+    assertThat(sections.get(0)).extracting("key", "htmlContent", "context")
+      .containsExactly("sectionKey", "htmlContent", Optional.empty());
+    assertThat(sections.get(1)).extracting("key", "htmlContent")
+      .containsExactly("sectionKey2", "htmlContent2");
+    assertThat(sections.get(1).getContext()).hasValueSatisfying(context -> {
+      assertThat(context.getKey()).isEqualTo("contextKey");
+      assertThat(context.getDisplayName()).isEqualTo("displayName");
+    });
+
   }
 
   @Test

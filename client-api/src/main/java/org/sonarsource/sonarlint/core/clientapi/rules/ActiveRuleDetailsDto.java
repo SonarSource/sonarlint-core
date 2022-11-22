@@ -20,8 +20,7 @@
 package org.sonarsource.sonarlint.core.clientapi.rules;
 
 import java.util.Collection;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -31,19 +30,17 @@ public class ActiveRuleDetailsDto {
   private final String name;
   private final IssueSeverity severity;
   private final RuleType type;
-  private final String description;
-  private final String extendedDescription;
+  private final Either<ActiveRuleMonolithicDescriptionDto, ActiveRuleSplitDescriptionDto> description;
   private final Collection<ActiveRuleParamDto> params;
   private final Language language;
 
-  public ActiveRuleDetailsDto(String key, String name, IssueSeverity severity, RuleType type, String description, @Nullable String extendedDescription,
-    Collection<ActiveRuleParamDto> params, Language language) {
+  public ActiveRuleDetailsDto(String key, String name, IssueSeverity severity, RuleType type, Either<ActiveRuleMonolithicDescriptionDto, ActiveRuleSplitDescriptionDto> description, Collection<ActiveRuleParamDto> params,
+    Language language) {
     this.key = key;
     this.name = name;
     this.severity = severity;
     this.type = type;
     this.description = description;
-    this.extendedDescription = extendedDescription;
     this.params = params;
     this.language = language;
   }
@@ -64,13 +61,8 @@ public class ActiveRuleDetailsDto {
     return type;
   }
 
-  public String getDescription() {
+  public Either<ActiveRuleMonolithicDescriptionDto, ActiveRuleSplitDescriptionDto> getDescription() {
     return description;
-  }
-
-  @CheckForNull
-  public String getExtendedDescription() {
-    return extendedDescription;
   }
 
   public Collection<ActiveRuleParamDto> getParams() {

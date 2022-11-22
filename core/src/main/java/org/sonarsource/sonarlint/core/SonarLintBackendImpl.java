@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core;
 import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.MoreExecutors;
+import java.util.HashSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -71,11 +72,13 @@ public class SonarLintBackendImpl implements SonarLintBackend {
 
   @Override
   public CompletableFuture<Void> initialize(InitializeParams params) {
+    var enabledLanguagesInConnectedMode = new HashSet<>(params.getEnabledLanguagesInStandaloneMode());
+    enabledLanguagesInConnectedMode.addAll(params.getExtraEnabledLanguagesInConnectedMode());
     connectionService
-      .initialize(new org.sonarsource.sonarlint.core.clientapi.connection.config.InitializeParams(params.getSonarQubeConnections(), params.getSonarCloudConnections()));
+      .initialize(params.getSonarQubeConnections(), params.getSonarCloudConnections());
     pluginsService.initialize(params.getStorageRoot(), params.getEmbeddedPluginPaths(), params.getConnectedModeEmbeddedPluginPathsByKey(),
-      params.getConnectedModeExtraPluginPathsByKey(), params.getEnabledLanguages(), params.getNodeJsVersion());
-    rulesService.initialize(params.getEnabledLanguages());
+      params.getConnectedModeExtraPluginPathsByKey(), params.getEnabledLanguagesInStandaloneMode(), enabledLanguagesInConnectedMode, params.getNodeJsVersion());
+    rulesService.initialize(params.getEnabledLanguagesInStandaloneMode(), enabledLanguagesInConnectedMode);
     activeRulesService.initialize(params.getStorageRoot());
     return CompletableFuture.completedFuture(null);
   }

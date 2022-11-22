@@ -20,11 +20,11 @@
 package org.sonarsource.sonarlint.core;
 
 import com.google.common.eventbus.EventBus;
+import java.util.List;
 import org.sonarsource.sonarlint.core.clientapi.connection.ConnectionService;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.DidAddConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.DidRemoveConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.DidUpdateConnectionParams;
-import org.sonarsource.sonarlint.core.clientapi.connection.config.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -48,9 +48,9 @@ public class ConnectionServiceImpl implements ConnectionService {
     this.repository = repository;
   }
 
-  public void initialize(InitializeParams params) {
-    params.getSonarQubeConnections().forEach(c -> repository.addOrReplace(adapt(c)));
-    params.getSonarCloudConnections().forEach(c -> repository.addOrReplace(adapt(c)));
+  public void initialize(List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections) {
+    sonarQubeConnections.forEach(c -> repository.addOrReplace(adapt(c)));
+    sonarCloudConnections.forEach(c -> repository.addOrReplace(adapt(c)));
   }
 
   @Override
