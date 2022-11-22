@@ -33,14 +33,16 @@ public class RulesServiceImpl {
   private final RulesRepository rulesRepository;
   private final RulesDefinitionExtractor ruleExtractor = new RulesDefinitionExtractor();
   private Set<Language> enabledLanguages;
+  private Set<Language> enabledLanguagesInConnectedMode;
 
   public RulesServiceImpl(PluginsServiceImpl pluginsService, RulesRepository rulesRepository) {
     this.pluginsService = pluginsService;
     this.rulesRepository = rulesRepository;
   }
 
-  public void initialize(Set<Language> enabledLanguages) {
+  public void initialize(Set<Language> enabledLanguages, Set<Language> enabledLanguagesInConnectedMode) {
     this.enabledLanguages = enabledLanguages;
+    this.enabledLanguagesInConnectedMode = enabledLanguagesInConnectedMode;
   }
 
   public Collection<SonarLintRuleDefinition> getEmbeddedRules() {
@@ -69,7 +71,7 @@ public class RulesServiceImpl {
   private void ensureRulesExtracted(String connectionId) {
     var rules = rulesRepository.getRules(connectionId);
     if (rules == null) {
-      rules = ruleExtractor.extractRules(pluginsService.getPlugins(connectionId).getPluginInstancesByKeys(), enabledLanguages, true);
+      rules = ruleExtractor.extractRules(pluginsService.getPlugins(connectionId).getPluginInstancesByKeys(), enabledLanguagesInConnectedMode, true);
       rulesRepository.setRules(connectionId, rules);
     }
   }

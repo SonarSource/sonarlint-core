@@ -20,9 +20,12 @@
 package mediumtest;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import mediumtest.fixtures.StorageFixture;
 import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
@@ -30,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
+import org.sonarsource.sonarlint.core.clientapi.rules.ActiveRuleDescriptionTabDto;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -38,14 +42,16 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.assertj.core.api.InstanceOfAssertFactories.list;
 
 class ActiveRulesMediumTests {
 
   @AfterEach
-  void tearDown() {
-    backend.shutdown();
+  void tearDown() throws ExecutionException, InterruptedException {
+    backend.shutdown().get();
   }
 
   @Test
@@ -59,11 +65,10 @@ class ActiveRulesMediumTests {
     var activeRuleDetailsResponse = this.backend.getActiveRulesService().getActiveRuleDetails("scopeId", "python:S139").get();
 
     var details = activeRuleDetailsResponse.details();
-    assertThat(details).isNotNull();
     assertThat(details)
-      .extracting("key", "name", "type", "language", "severity", "description", "extendedDescription")
+      .extracting("key", "name", "type", "language", "severity", "description.left.htmlContent")
       .containsExactly("python:S139", "Comments should not be located at the end of lines of code", RuleType.CODE_SMELL, Language.PYTHON, IssueSeverity.MINOR,
-        PYTHON_S139_DESCRIPTION, null);
+        PYTHON_S139_DESCRIPTION);
     assertThat(details.getParams())
       .extracting("name", "description", "defaultValue")
       .containsExactly(tuple("legalTrailingCommentPattern", null, "^#\\s*+[^\\s]++$"));
@@ -100,12 +105,10 @@ class ActiveRulesMediumTests {
     var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails("scopeId", "java:S106").get();
 
     var details = activeRuleDetailsResponse.details();
-    assertThat(details).isNotNull();
     assertThat(details)
-      .extracting("key", "name", "type", "language", "severity", "description", "extendedDescription")
+      .extracting("key", "name", "type", "language", "severity", "description.left.htmlContent")
       .containsExactly("java:S106", "Standard outputs should not be used directly to log anything", RuleType.CODE_SMELL, Language.JAVA, IssueSeverity.MAJOR,
-        JAVA_S106_DESCRIPTION,
-        null);
+        JAVA_S106_DESCRIPTION);
     assertThat(details.getParams()).isEmpty();
   }
 
@@ -123,12 +126,10 @@ class ActiveRulesMediumTests {
     var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails("scopeId", "python:S139").get();
 
     var details = activeRuleDetailsResponse.details();
-    assertThat(details).isNotNull();
     assertThat(details)
-      .extracting("key", "name", "type", "language", "severity", "description", "extendedDescription")
+      .extracting("key", "name", "type", "language", "severity", "description.left.htmlContent")
       .containsExactly("python:S139", "Comments should not be located at the end of lines of code", RuleType.CODE_SMELL, Language.PYTHON, IssueSeverity.MINOR,
-        PYTHON_S139_DESCRIPTION,
-        null);
+        PYTHON_S139_DESCRIPTION);
     assertThat(details.getParams())
       .extracting("name", "description", "defaultValue")
       .containsExactly(tuple("legalTrailingCommentPattern", null, "^#\\s*+[^\\s]++$"));
@@ -154,12 +155,10 @@ class ActiveRulesMediumTests {
     var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails("scopeId", "python:S139").get();
 
     var details = activeRuleDetailsResponse.details();
-    assertThat(details).isNotNull();
     assertThat(details)
-      .extracting("key", "name", "type", "language", "severity", "description", "extendedDescription")
+      .extracting("key", "name", "type", "language", "severity", "description.left.htmlContent")
       .containsExactly("python:S139", "Comments should not be located at the end of lines of code", RuleType.CODE_SMELL, Language.PYTHON, IssueSeverity.INFO,
-        PYTHON_S139_DESCRIPTION,
-        "extendedDesc");
+        PYTHON_S139_DESCRIPTION + "<br/><br/>extendedDesc");
     assertThat(details.getParams()).isEmpty();
   }
 
@@ -229,10 +228,9 @@ class ActiveRulesMediumTests {
     var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails("scopeId", "python:custom").get();
 
     var details = activeRuleDetailsResponse.details();
-    assertThat(details).isNotNull();
     assertThat(details)
-      .extracting("key", "name", "type", "language", "severity", "description", "extendedDescription")
-      .containsExactly("python:custom", "newName", RuleType.CODE_SMELL, Language.PYTHON, IssueSeverity.INFO, "desc", "extendedDesc");
+      .extracting("key", "name", "type", "language", "severity", "description.left.htmlContent")
+      .containsExactly("python:custom", "newName", RuleType.CODE_SMELL, Language.PYTHON, IssueSeverity.INFO, "desc<br/><br/>extendedDesc");
     assertThat(details.getParams()).isEmpty();
   }
 
@@ -257,13 +255,64 @@ class ActiveRulesMediumTests {
     var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails("scopeId", "python:S139").get();
 
     var details = activeRuleDetailsResponse.details();
-    assertThat(details).isNotNull();
     assertThat(details)
-      .extracting("key", "name", "type", "language", "severity", "description", "extendedDescription")
-      .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO, "desc", "extendedDesc");
+      .extracting("key", "name", "type", "language", "severity", "description.left.htmlContent")
+      .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO, "desc<br/><br/>extendedDesc");
     assertThat(details.getParams()).isEmpty();
   }
 
+  @Test
+  void it_should_merge_rule_from_storage_and_server_with_description_sections_when_project_is_bound()
+    throws ExecutionException, InterruptedException {
+    StorageFixture.newStorage("connectionId")
+      .withProject("projectKey",
+        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah"))))
+      .create(storageDir);
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withStorageRoot(storageDir.resolve("storage"))
+      .withEnabledLanguage(Language.PYTHON)
+      .build();
+    mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
+      .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc")
+        .setDescriptionSections(Rules.Rule.DescriptionSections.newBuilder()
+          .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
+            .setKey("introduction").setContent("htmlContent")
+            .setContext(Rules.Rule.DescriptionSection.Context.newBuilder().setKey("contextKey").setDisplayName("displayName").build()).build())
+          .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
+            .setKey("how_to_fix").setContent("htmlContent2")
+            .setContext(Rules.Rule.DescriptionSection.Context.newBuilder().setKey("contextKey2").setDisplayName("displayName2").build()).build())
+          .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
+            .setKey("resources").setContent("htmlContent3").build()))
+        .build())
+      .build());
+
+    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails("scopeId", "python:S139").get();
+
+    var details = activeRuleDetailsResponse.details();
+    assertThat(details)
+      .extracting("key", "name", "type", "language", "severity")
+      .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO);
+    assertThat(details.getParams()).isEmpty();
+    assertThat(details.getDescription())
+      .extracting("right.introductionHtmlContent")
+        .isEqualTo("htmlContent");
+    assertThat(details.getDescription())
+      .extracting("right.tabs", as(list(ActiveRuleDescriptionTabDto.class)))
+      .flatExtracting(ActiveRulesMediumTests::flattenTabContent)
+      .containsExactly(
+        "How can I fix it?", "htmlContent2", "contextKey2", "displayName2",
+        "More Info", "htmlContent3<br/><br/>extendedDesc");
+  }
+
+  private static List<Object> flattenTabContent(ActiveRuleDescriptionTabDto tab) {
+    if (tab.getContent().isLeft()) {
+      return List.of(tab.getTitle(), tab.getContent().getLeft().getHtmlContent());
+    }
+    return tab.getContent().getRight().stream().flatMap(s -> Stream.of(tab.getTitle(), s.getHtmlContent(), s.getContextKey(), s.getDisplayName())).collect(Collectors.toList());
+  }
 
   @TempDir
   Path storageDir;

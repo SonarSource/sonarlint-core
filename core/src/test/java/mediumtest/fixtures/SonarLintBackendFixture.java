@@ -110,7 +110,7 @@ public class SonarLintBackendFixture {
     public SonarLintBackendImpl build(SonarLintClient client) {
       var sonarLintBackend = new SonarLintBackendImpl(client);
       sonarLintBackend.initialize(new org.sonarsource.sonarlint.core.clientapi.InitializeParams(storageRoot, embeddedPluginPaths, extraPluginPathsByKey, Collections.emptyMap(),
-        enabledLanguages, null, sonarQubeConnections, sonarCloudConnections));
+        enabledLanguages, Collections.emptySet(), null, sonarQubeConnections, sonarCloudConnections));
       sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
       return sonarLintBackend;
     }

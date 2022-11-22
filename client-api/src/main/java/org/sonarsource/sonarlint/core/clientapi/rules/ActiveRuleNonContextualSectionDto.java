@@ -19,15 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.rules;
 
-import java.util.concurrent.CompletableFuture;
+import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
-public interface ActiveRulesService {
-  /**
-   * Returns the details about the rule key passed in parameters.
-   * This method can access missing details on the server when the configuration scope is bound.
-   * @param configurationScopeId the configuration scope id (see spec/glossary.adoc for more details)
-   * @param ruleKey the key of the rule
-   * @return a completed future if the rule was found, else a failed future
-   */
-  CompletableFuture<GetActiveRuleDetailsResponse> getActiveRuleDetails(String configurationScopeId, String ruleKey);
+public class ActiveRuleNonContextualSectionDto {
+  private final String htmlContent;
+
+  public ActiveRuleNonContextualSectionDto(@NonNull String htmlContent) {
+    this.htmlContent = htmlContent;
+  }
+
+  @NonNull
+  public String getHtmlContent() {
+    return htmlContent;
+  }
 }

@@ -20,11 +20,13 @@
 package org.sonarsource.sonarlint.core.serverapi.rules;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -71,12 +73,28 @@ public class RulesApi {
         try (response) {
           var rule = Rules.ShowResponse.parseFrom(response.bodyAsStream()).getRule();
           return new ServerRule(rule.getName(), IssueSeverity.valueOf(rule.getSeverity()), RuleType.valueOf(rule.getType().name()), rule.getLang(), rule.getHtmlDesc(),
+            convertDescriptionSections(rule),
             rule.getHtmlNote());
         } catch (Exception e) {
           LOG.error("Error when fetching rule + '" + ruleKey + "'", e);
           throw new UnexpectedBodyException(e);
         }
       });
+  }
+
+  private static List<ServerRule.DescriptionSection> convertDescriptionSections(Rules.Rule rule) {
+    if (rule.hasDescriptionSections()) {
+      return rule.getDescriptionSections().getDescriptionSectionsList().stream()
+        .map(s -> {
+          ServerRule.DescriptionSection.Context context = null;
+          if (s.hasContext()) {
+            var contextFromServer = s.getContext();
+            context = new ServerRule.DescriptionSection.Context(contextFromServer.getKey(), contextFromServer.getDisplayName());
+          }
+          return new ServerRule.DescriptionSection(s.getKey(), s.getContent(), Optional.ofNullable(context));
+        }).collect(toList());
+    }
+    return Collections.emptyList();
   }
 
   public Collection<ServerActiveRule> getAllActiveRules(String qualityProfileKey, ProgressMonitor progress) {

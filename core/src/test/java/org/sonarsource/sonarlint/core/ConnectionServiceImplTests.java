@@ -28,7 +28,6 @@ import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.DidAddConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.DidRemoveConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.DidUpdateConnectionParams;
-import org.sonarsource.sonarlint.core.clientapi.connection.config.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
@@ -64,14 +63,14 @@ class ConnectionServiceImplTests {
 
   @Test
   void initialize_provide_connections() {
-    underTest.initialize(new InitializeParams(List.of(SQ_DTO_1, SQ_DTO_2), List.of(SC_DTO_1, SC_DTO_2)));
+    underTest.initialize(List.of(SQ_DTO_1, SQ_DTO_2), List.of(SC_DTO_1, SC_DTO_2));
 
     assertThat(repository.getConnectionsById()).containsOnlyKeys("sq1", "sq2", "sc1", "sc2");
   }
 
   @Test
   void add_new_connection_and_post_event() {
-    underTest.initialize(new InitializeParams(List.of(), List.of()));
+    underTest.initialize(List.of(), List.of());
 
     underTest.didAddConnection(new DidAddConnectionParams(SQ_DTO_1));
     assertThat(repository.getConnectionsById()).containsOnlyKeys("sq1");
@@ -93,7 +92,7 @@ class ConnectionServiceImplTests {
 
   @Test
   void add_duplicate_connection_should_log_and_update() {
-    underTest.initialize(new InitializeParams(List.of(), List.of()));
+    underTest.initialize(List.of(), List.of());
 
     underTest.didAddConnection(new DidAddConnectionParams(SQ_DTO_1));
 
@@ -105,7 +104,7 @@ class ConnectionServiceImplTests {
 
   @Test
   void remove_connection() {
-    underTest.initialize(new InitializeParams(List.of(SQ_DTO_1), List.of()));
+    underTest.initialize(List.of(SQ_DTO_1), List.of());
 
     underTest.didAddConnection(new DidAddConnectionParams(SC_DTO_1));
     assertThat(repository.getConnectionsById()).containsKeys("sq1", "sc1");
@@ -119,7 +118,7 @@ class ConnectionServiceImplTests {
 
   @Test
   void remove_connection_should_log_if_unknown_connection_and_ignore() {
-    underTest.initialize(new InitializeParams(List.of(SQ_DTO_1), List.of()));
+    underTest.initialize(List.of(SQ_DTO_1), List.of());
 
     underTest.didRemoveConnection(new DidRemoveConnectionParams("sc1"));
 
@@ -129,7 +128,7 @@ class ConnectionServiceImplTests {
 
   @Test
   void update_connection() {
-    underTest.initialize(new InitializeParams(List.of(SQ_DTO_1), List.of()));
+    underTest.initialize(List.of(SQ_DTO_1), List.of());
 
     underTest.didUpdateConnection(new DidUpdateConnectionParams(SQ_DTO_1_DUP));
 
@@ -138,7 +137,7 @@ class ConnectionServiceImplTests {
 
   @Test
   void update_connection_should_log_if_unknown_connection_and_add() {
-    underTest.initialize(new InitializeParams(List.of(SQ_DTO_1), List.of()));
+    underTest.initialize(List.of(SQ_DTO_1), List.of());
 
     underTest.didUpdateConnection(new DidUpdateConnectionParams(SQ_DTO_2));
 

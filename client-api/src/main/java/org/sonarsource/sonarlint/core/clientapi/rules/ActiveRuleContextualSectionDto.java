@@ -17,25 +17,33 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.connection.config;
+package org.sonarsource.sonarlint.core.clientapi.rules;
 
-import java.util.List;
+import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
-public class InitializeParams {
-  private final List<SonarQubeConnectionConfigurationDto> sonarQubeConnections;
-  private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections;
+public class ActiveRuleContextualSectionDto {
+  private final String htmlContent;
+  private final String contextKey;
+  private final String displayName;
 
-
-  public InitializeParams(List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections) {
-    this.sonarQubeConnections = sonarQubeConnections;
-    this.sonarCloudConnections = sonarCloudConnections;
+  public ActiveRuleContextualSectionDto(@NonNull String htmlContent, @NonNull String contextKey, @NonNull String displayName) {
+    this.htmlContent = htmlContent;
+    this.contextKey = contextKey;
+    this.displayName = displayName;
   }
 
-  public List<SonarQubeConnectionConfigurationDto> getSonarQubeConnections() {
-    return sonarQubeConnections;
+  @NonNull
+  public String getHtmlContent() {
+    return htmlContent;
   }
 
-  public List<SonarCloudConnectionConfigurationDto> getSonarCloudConnections() {
-    return sonarCloudConnections;
+  @NonNull
+  public String getContextKey() {
+    return contextKey;
+  }
+
+  @NonNull
+  public String getDisplayName() {
+    return displayName;
   }
 }
