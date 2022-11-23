@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.analysis.sonarapi;
 
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.TextRange;
@@ -39,7 +40,7 @@ class DefaultFilterableIssueTests {
     TextRange textRange = new DefaultTextRange(new DefaultTextPointer(0, 1), new DefaultTextPointer(2, 3));
     var activeRule = mock(ActiveRuleAdapter.class);
     when(activeRule.ruleKey()).thenReturn(RuleKey.of("foo", "S123"));
-    var rawIssue = new Issue(activeRule, null, textRange, null, null, null);
+    var rawIssue = new Issue(activeRule, null, textRange, null, null, null, Optional.empty());
     FilterableIssue underTest = new DefaultFilterableIssue(rawIssue, mock(InputComponent.class));
     assertThat(underTest.textRange()).usingRecursiveComparison().isEqualTo(textRange);
   }

@@ -87,7 +87,7 @@ public class SonarLintSensorStorage implements SensorStorage {
 
     var newIssue = new org.sonarsource.sonarlint.core.analysis.api.Issue(activeRule, primaryMessage,
       issue.primaryLocation().textRange(),
-      inputComponent.isFile() ? ((SonarLintInputFile) inputComponent).getClientInputFile() : null, flows, quickFixes);
+      inputComponent.isFile() ? ((SonarLintInputFile) inputComponent).getClientInputFile() : null, flows, quickFixes, sonarLintIssue.ruleDescriptionContextKey());
     if (filters.accept(inputComponent, newIssue)) {
       issueListener.handle(newIssue);
     }

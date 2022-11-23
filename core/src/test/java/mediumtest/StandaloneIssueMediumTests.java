@@ -33,6 +33,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
@@ -170,8 +171,8 @@ class StandaloneIssueMediumTests {
         .build(),
       issues::add, null,
       null);
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
-      tuple("javascript:S1481", 2, "foo.js"));
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getRuleDescriptionContextKey).containsOnly(
+      tuple("javascript:S1481", 2, "foo.js", Optional.empty()));
 
     // SLCORE-160
     inputFile = prepareInputFile("node_modules/foo.js", content, false);

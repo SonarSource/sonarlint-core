@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.client.api.common.analysis;
 
 import java.util.List;
+import java.util.Optional;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.Flow;
@@ -37,6 +38,7 @@ public final class DefaultClientIssue implements Issue {
   private final List<Flow> flows;
   private final List<QuickFix> quickFixes;
   private final org.sonarsource.sonarlint.core.commons.TextRange textRange;
+  private final Optional<String> ruleDescriptionContextKey;
 
   public DefaultClientIssue(org.sonarsource.sonarlint.core.analysis.api.Issue i, SonarLintRuleDefinition sonarLintRuleDefinition) {
     this.textRange = i.getTextRange() != null ? i.getTextRange() : null;
@@ -44,6 +46,7 @@ public final class DefaultClientIssue implements Issue {
     this.clientInputFile = i.getInputFile();
     this.flows = i.flows();
     this.quickFixes = i.quickFixes();
+    this.ruleDescriptionContextKey = i.getRuleDescriptionContextKey();
     this.severity = sonarLintRuleDefinition.getDefaultSeverity();
     this.type = sonarLintRuleDefinition.getType();
     this.ruleKey = sonarLintRuleDefinition.getKey();
@@ -58,6 +61,7 @@ public final class DefaultClientIssue implements Issue {
     this.severity = severity;
     this.type = type;
     this.ruleKey = i.getRuleKey();
+    this.ruleDescriptionContextKey = i.getRuleDescriptionContextKey();
   }
 
   @Override
@@ -95,6 +99,11 @@ public final class DefaultClientIssue implements Issue {
   @Override
   public List<QuickFix> quickFixes() {
     return quickFixes;
+  }
+
+  @Override
+  public Optional<String> getRuleDescriptionContextKey() {
+    return ruleDescriptionContextKey;
   }
 
   @CheckForNull
