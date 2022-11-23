@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common.analysis;
 
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -62,7 +63,7 @@ class DefaultClientIssueTests {
     when(rule.getType()).thenReturn(RuleType.BUG);
     when(rule.getDefaultSeverity()).thenReturn(IssueSeverity.MAJOR);
 
-    var issue = new Issue("rule:S123", "msg", textRange, clientInputFile, null, null);
+    var issue = new Issue("rule:S123", "msg", textRange, clientInputFile, null, null, Optional.empty());
 
     var underTest = new DefaultClientIssue(issue, rule);
 
