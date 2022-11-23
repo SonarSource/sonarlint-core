@@ -142,7 +142,7 @@ class RulesApiTests {
   @Test
   void should_get_active_rules_of_a_given_quality_profile() {
     mockServer.addProtobufResponse(
-      "/api/rules/search.protobuf?qprofile=QPKEY%2B&organization=orgKey&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY&s=key&ps=500&p=1",
+      "/api/rules/search.protobuf?qprofile=QPKEY%2B&organization=orgKey&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY,SECURITY_HOTSPOT&s=key&ps=500&p=1",
       Rules.SearchResponse.newBuilder()
         .setTotal(2)
         .setPs(1)

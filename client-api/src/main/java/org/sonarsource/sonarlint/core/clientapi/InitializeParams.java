@@ -38,12 +38,14 @@ public class InitializeParams {
   private final Set<Language> enabledLanguagesInStandaloneMode;
   private final Set<Language> extraEnabledLanguagesInConnectedMode;
   private final Version nodeJsVersion;
+  private final boolean enableSecurityHotspots;
   private final List<SonarQubeConnectionConfigurationDto> sonarQubeConnections;
   private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections;
 
   public InitializeParams(Path storageRoot, Set<Path> embeddedPluginPaths, Map<String, Path> connectedModeExtraPluginPathsByKey,
     Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> extraEnabledLanguagesInConnectedMode,
-    @Nullable Version nodeJsVersion, List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections) {
+    @Nullable Version nodeJsVersion, boolean enableSecurityHotspots,
+    List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections) {
     this.storageRoot = storageRoot;
     this.embeddedPluginPaths = embeddedPluginPaths;
     this.connectedModeExtraPluginPathsByKey = connectedModeExtraPluginPathsByKey;
@@ -51,6 +53,7 @@ public class InitializeParams {
     this.enabledLanguagesInStandaloneMode = enabledLanguagesInStandaloneMode;
     this.extraEnabledLanguagesInConnectedMode = extraEnabledLanguagesInConnectedMode;
     this.nodeJsVersion = nodeJsVersion;
+    this.enableSecurityHotspots = enableSecurityHotspots;
     this.sonarQubeConnections = sonarQubeConnections;
     this.sonarCloudConnections = sonarCloudConnections;
   }
@@ -82,6 +85,10 @@ public class InitializeParams {
   @CheckForNull
   public Version getNodeJsVersion() {
     return nodeJsVersion;
+  }
+
+  public boolean isEnableSecurityHotspots() {
+    return enableSecurityHotspots;
   }
 
   public List<SonarQubeConnectionConfigurationDto> getSonarQubeConnections() {

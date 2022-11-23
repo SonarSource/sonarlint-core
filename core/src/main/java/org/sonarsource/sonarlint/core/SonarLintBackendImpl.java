@@ -78,7 +78,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
       .initialize(params.getSonarQubeConnections(), params.getSonarCloudConnections());
     pluginsService.initialize(params.getStorageRoot(), params.getEmbeddedPluginPaths(), params.getConnectedModeEmbeddedPluginPathsByKey(),
       params.getConnectedModeExtraPluginPathsByKey(), params.getEnabledLanguagesInStandaloneMode(), enabledLanguagesInConnectedMode, params.getNodeJsVersion());
-    rulesService.initialize(params.getEnabledLanguagesInStandaloneMode(), enabledLanguagesInConnectedMode);
+    rulesService.initialize(params.getEnabledLanguagesInStandaloneMode(), enabledLanguagesInConnectedMode, params.isEnableSecurityHotspots());
     activeRulesService.initialize(params.getStorageRoot());
     return CompletableFuture.completedFuture(null);
   }

@@ -37,6 +37,7 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
   private final Map<String, Path> overriddenPluginsPathsByKey;
   private final Map<String, Path> extraPluginsPathsByKey;
   private final boolean isSonarCloud;
+  private final boolean isHotspotsEnabled;
 
   private ConnectedGlobalConfiguration(Builder builder) {
     super(builder);
@@ -45,6 +46,7 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
     this.overriddenPluginsPathsByKey = new HashMap<>(builder.overriddenPluginsPathsByKey);
     this.extraPluginsPathsByKey = new HashMap<>(builder.extraPluginsPathsByKey);
     this.isSonarCloud = builder.isSonarCloud;
+    this.isHotspotsEnabled = builder.isHotspotsEnabled;
   }
 
   public static Builder sonarQubeBuilder() {
@@ -57,6 +59,10 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
 
   public boolean isSonarCloud() {
     return isSonarCloud;
+  }
+
+  public boolean isHotspotsEnabled() {
+    return isHotspotsEnabled;
   }
 
   public Path getStorageRoot() {
@@ -81,6 +87,7 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
     private final Map<String, Path> overriddenPluginsPathsByKey = new HashMap<>();
     private final Map<String, Path> extraPluginsPathsByKey = new HashMap<>();
     private final boolean isSonarCloud;
+    private boolean isHotspotsEnabled;
 
     private Builder(boolean isSonarCloud) {
       this.isSonarCloud = isSonarCloud;
@@ -122,6 +129,11 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
      */
     public Builder useEmbeddedPlugin(String pluginKey, Path pluginPath) {
       overriddenPluginsPathsByKey.put(pluginKey, pluginPath);
+      return this;
+    }
+
+    public Builder enableHotspots() {
+      this.isHotspotsEnabled = true;
       return this;
     }
 
