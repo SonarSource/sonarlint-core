@@ -72,9 +72,9 @@ public abstract class AbstractSonarLintEngine implements SonarLintEngine {
   }
 
   protected static Map<String, SonarLintRuleDefinition> loadPluginMetadata(LoadedPlugins loadedPlugins, Set<Language> enabledLanguages,
-    boolean includeTemplateRules) {
+    boolean includeTemplateRules, boolean hotspotsEnabled) {
     var ruleExtractor = new RulesDefinitionExtractor();
-    return ruleExtractor.extractRules(loadedPlugins.getPluginInstancesByKeys(), enabledLanguages, includeTemplateRules).stream()
+    return ruleExtractor.extractRules(loadedPlugins.getPluginInstancesByKeys(), enabledLanguages, includeTemplateRules, hotspotsEnabled).stream()
       .collect(Collectors.toMap(SonarLintRuleDefinition::getKey, r -> r));
   }
 

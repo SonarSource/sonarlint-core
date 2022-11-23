@@ -129,7 +129,7 @@ public class RulesApi {
     builder.append("/api/rules/search.protobuf?qprofile=");
     builder.append(UrlUtils.urlEncode(qualityProfileKey));
     serverApiHelper.getOrganizationKey().ifPresent(org -> builder.append("&organization=").append(UrlUtils.urlEncode(org)));
-    builder.append("&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY&s=key");
+    builder.append("&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY,SECURITY_HOTSPOT&s=key");
     return builder.toString();
   }
 

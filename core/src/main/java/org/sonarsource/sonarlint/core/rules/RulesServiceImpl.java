@@ -34,15 +34,17 @@ public class RulesServiceImpl {
   private final RulesDefinitionExtractor ruleExtractor = new RulesDefinitionExtractor();
   private Set<Language> enabledLanguages;
   private Set<Language> enabledLanguagesInConnectedMode;
+  private boolean enableSecurityHotspots;
 
   public RulesServiceImpl(PluginsServiceImpl pluginsService, RulesRepository rulesRepository) {
     this.pluginsService = pluginsService;
     this.rulesRepository = rulesRepository;
   }
 
-  public void initialize(Set<Language> enabledLanguages, Set<Language> enabledLanguagesInConnectedMode) {
+  public void initialize(Set<Language> enabledLanguages, Set<Language> enabledLanguagesInConnectedMode, boolean enableSecurityHotspots) {
     this.enabledLanguages = enabledLanguages;
     this.enabledLanguagesInConnectedMode = enabledLanguagesInConnectedMode;
+    this.enableSecurityHotspots = enableSecurityHotspots;
   }
 
   public Collection<SonarLintRuleDefinition> getEmbeddedRules() {
@@ -62,7 +64,7 @@ public class RulesServiceImpl {
   private Collection<SonarLintRuleDefinition> ensureEmbeddedRulesExtracted() {
     var embeddedRules = rulesRepository.getEmbeddedRules();
     if (embeddedRules == null) {
-      embeddedRules = ruleExtractor.extractRules(pluginsService.getEmbeddedPlugins().getPluginInstancesByKeys(), enabledLanguages, false);
+      embeddedRules = ruleExtractor.extractRules(pluginsService.getEmbeddedPlugins().getPluginInstancesByKeys(), enabledLanguages, false, false);
       rulesRepository.setEmbeddedRules(embeddedRules);
     }
     return embeddedRules;
@@ -71,7 +73,7 @@ public class RulesServiceImpl {
   private void ensureRulesExtracted(String connectionId) {
     var rules = rulesRepository.getRules(connectionId);
     if (rules == null) {
-      rules = ruleExtractor.extractRules(pluginsService.getPlugins(connectionId).getPluginInstancesByKeys(), enabledLanguagesInConnectedMode, true);
+      rules = ruleExtractor.extractRules(pluginsService.getPlugins(connectionId).getPluginInstancesByKeys(), enabledLanguagesInConnectedMode, true, enableSecurityHotspots);
       rulesRepository.setRules(connectionId, rules);
     }
   }

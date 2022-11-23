@@ -100,7 +100,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   private static String javaRuleKey(String key) {
     // Starting from SonarJava 6.0 (embedded in SQ 8.2), rule repository has been changed
-    return ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 2) ? ("java:" + key) : ("squid:" + key);
+    return javaRuleKey(ORCHESTRATOR, key);
   }
 
   @ClassRule
@@ -383,7 +383,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void dontReportHotspots() throws Exception {
+  public void dontReportHotspotsIfNotEnabled() throws Exception {
     updateProject(PROJECT_KEY_JAVA_HOTSPOT);
 
     var issueListener = new SaveIssueListener();

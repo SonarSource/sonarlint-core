@@ -399,4 +399,8 @@ public abstract class AbstractConnectedTest {
       .execute();
   }
 
+  protected static String javaRuleKey(Orchestrator orchestrator, String key) {
+    // Starting from SonarJava 6.0 (embedded in SQ 8.2), rule repository has been changed
+    return orchestrator.getServer().version().isGreaterThanOrEquals(8, 2) ? ("java:" + key) : ("squid:" + key);
+  }
 }

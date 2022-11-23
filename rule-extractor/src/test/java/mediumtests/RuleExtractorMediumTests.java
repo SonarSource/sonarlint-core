@@ -47,6 +47,8 @@ class RuleExtractorMediumTests {
 
   private static final int COMMERCIAL_RULE_TEMPLATES_COUNT = 11;
   private static final int NON_COMMERCIAL_RULE_TEMPLATES_COUNT = 16;
+  private static final int COMMERCIAL_SECURITY_HOTSPOTS_COUNT = 9;
+  private static final int NON_COMMERCIAL_SECURITY_HOTSPOTS_COUNT = 79;
   private static final int ALL_RULES_COUNT_WITHOUT_COMMERCIAL = 1199;
   private static final int ALL_RULES_COUNT_WITH_COMMERCIAL = 2863;
   // commercial plugins might not be available
@@ -71,7 +73,7 @@ class RuleExtractorMediumTests {
     var config = new PluginsLoader.Configuration(allJars, enabledLanguages, empty());
     var result = new PluginsLoader().load(config);
 
-    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, false);
+    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, false, false);
     if (COMMERCIAL_ENABLED) {
       assertThat(allJars).hasSize(19);
       assertThat(allRules).hasSize(ALL_RULES_COUNT_WITH_COMMERCIAL);
@@ -117,7 +119,7 @@ class RuleExtractorMediumTests {
     var config = new PluginsLoader.Configuration(allJars, enabledLanguages, empty());
     var result = new PluginsLoader().load(config);
 
-    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, true);
+    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, true, false);
     if (COMMERCIAL_ENABLED) {
       assertThat(allJars).hasSize(19);
       assertThat(allRules).hasSize(ALL_RULES_COUNT_WITH_COMMERCIAL + NON_COMMERCIAL_RULE_TEMPLATES_COUNT + COMMERCIAL_RULE_TEMPLATES_COUNT);
@@ -132,7 +134,27 @@ class RuleExtractorMediumTests {
   }
 
   @Test
-  void onlyLoadRulesOfEnabledLanguages() {
+  void extractAllRules_include_security_hotspots() throws Exception {
+    Set<Language> enabledLanguages = Set.of(Language.values());
+    var config = new PluginsLoader.Configuration(allJars, enabledLanguages, empty());
+    var result = new PluginsLoader().load(config);
+
+    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, false, true);
+    if (COMMERCIAL_ENABLED) {
+      assertThat(allJars).hasSize(19);
+      assertThat(allRules).hasSize(ALL_RULES_COUNT_WITH_COMMERCIAL + NON_COMMERCIAL_SECURITY_HOTSPOTS_COUNT + COMMERCIAL_SECURITY_HOTSPOTS_COUNT);
+      assertThat(logTester.logs(ClientLogOutput.Level.WARN)).containsExactlyInAnyOrder(
+        "Plugin 'rpg' embeds dependencies. This will be deprecated soon. Plugin should be updated.",
+        "Plugin 'cobol' embeds dependencies. This will be deprecated soon. Plugin should be updated.",
+        "Plugin 'swift' embeds dependencies. This will be deprecated soon. Plugin should be updated.");
+    } else {
+      assertThat(allJars).hasSize(10);
+      assertThat(allRules).hasSize(ALL_RULES_COUNT_WITHOUT_COMMERCIAL + NON_COMMERCIAL_SECURITY_HOTSPOTS_COUNT);
+    }
+  }
+
+  @Test
+  void onlyLoadRulesOfEnabledLanguages() throws Exception {
     Set<Language> enabledLanguages = EnumSet.of(
       Language.JAVA,
       // Enable JS but not TS
@@ -147,7 +169,7 @@ class RuleExtractorMediumTests {
     var config = new PluginsLoader.Configuration(allJars, enabledLanguages, empty());
     var result = new PluginsLoader().load(config);
 
-    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, false);
+    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, false, false);
 
     assertThat(allRules.stream().map(SonarLintRuleDefinition::getLanguage)).hasSameElementsAs(enabledLanguages);
 
@@ -158,7 +180,7 @@ class RuleExtractorMediumTests {
     Set<Language> enabledLanguages = Set.of(Language.values());
     var config = new PluginsLoader.Configuration(Set.of(), enabledLanguages, empty());
     var result = new PluginsLoader().load(config);
-    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, false);
+    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, false, false);
 
     assertThat(allRules).isEmpty();
   }

@@ -31,7 +31,8 @@ import org.sonarsource.sonarlint.core.commons.Language;
 
 public class RulesDefinitionExtractor {
 
-  public List<SonarLintRuleDefinition> extractRules(Map<String, Plugin> pluginInstancesByKeys, Set<Language> enabledLanguages, boolean includeTemplateRules) {
+  public List<SonarLintRuleDefinition> extractRules(Map<String, Plugin> pluginInstancesByKeys, Set<Language> enabledLanguages,
+    boolean includeTemplateRules, boolean includeSecurityHotspots) {
     Context context;
     try {
       var container = new RulesDefinitionExtractorContainer(pluginInstancesByKeys);
@@ -52,7 +53,7 @@ public class RulesDefinitionExtractor {
         continue;
       }
       for (RulesDefinition.Rule ruleDef : repoDef.rules()) {
-        if (ruleDef.type() == RuleType.SECURITY_HOTSPOT || (ruleDef.template() && !includeTemplateRules)) {
+        if (shouldIgnoreAsHotspot(includeSecurityHotspots, ruleDef) || shouldIgnoreAsTemplate(includeTemplateRules, ruleDef)) {
           continue;
         }
         rules.add(new SonarLintRuleDefinition(ruleDef));
@@ -61,6 +62,14 @@ public class RulesDefinitionExtractor {
 
     return rules;
 
+  }
+
+  private static boolean shouldIgnoreAsTemplate(boolean includeTemplateRules, RulesDefinition.Rule ruleDef) {
+    return ruleDef.template() && !includeTemplateRules;
+  }
+
+  private static boolean shouldIgnoreAsHotspot(boolean hotspotsEnabled, RulesDefinition.Rule ruleDef) {
+    return ruleDef.type() == RuleType.SECURITY_HOTSPOT && !hotspotsEnabled;
   }
 
 }

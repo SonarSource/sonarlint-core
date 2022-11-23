@@ -100,7 +100,7 @@ public class ConnectedModeBackendTest extends AbstractConnectedTest {
 
     backend = new SonarLintBackendImpl(newDummySonarLintClient());
     backend.initialize(new InitializeParams(sonarUserHome.resolve("storage"), Collections.emptySet(), Collections.emptyMap(), Collections.emptyMap(), Set.of(Language.JAVA),
-      Collections.emptySet(), null, List.of(new SonarQubeConnectionConfigurationDto("ORCHESTRATOR", ORCHESTRATOR.getServer().getUrl())), Collections.emptyList()));
+      Collections.emptySet(), null, false, List.of(new SonarQubeConnectionConfigurationDto("ORCHESTRATOR", ORCHESTRATOR.getServer().getUrl())), Collections.emptyList()));
 
     var globalConfig = ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId("ORCHESTRATOR")
