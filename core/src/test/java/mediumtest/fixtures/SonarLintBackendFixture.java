@@ -75,15 +75,19 @@ public class SonarLintBackendFixture {
     }
 
     public SonarLintBackendBuilder withUnboundConfigScope(String configurationScopeId, String name) {
-      return withConfigScope(configurationScopeId, name, new BindingConfigurationDto(null, null, false));
+      return withConfigScope(configurationScopeId, name, null, new BindingConfigurationDto(null, null, false));
     }
 
     public SonarLintBackendBuilder withBoundConfigScope(String configurationScopeId, String connectionId, String projectKey) {
-      return withConfigScope(configurationScopeId, configurationScopeId, new BindingConfigurationDto(connectionId, projectKey, false));
+      return withConfigScope(configurationScopeId, configurationScopeId, null, new BindingConfigurationDto(connectionId, projectKey, false));
     }
 
-    public SonarLintBackendBuilder withConfigScope(String configurationScopeId, String name, BindingConfigurationDto bindingConfiguration) {
-      configurationScopes.add(new ConfigurationScopeDto(configurationScopeId, null, true, name, bindingConfiguration));
+    public SonarLintBackendBuilder withChildConfigScope(String configurationScopeId, String parentScopeId) {
+      return withConfigScope(configurationScopeId, configurationScopeId, parentScopeId, new BindingConfigurationDto(null, null, false));
+    }
+
+    public SonarLintBackendBuilder withConfigScope(String configurationScopeId, String name, String parentScopeId, BindingConfigurationDto bindingConfiguration) {
+      configurationScopes.add(new ConfigurationScopeDto(configurationScopeId, parentScopeId, true, name, bindingConfiguration));
       return this;
     }
 

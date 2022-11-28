@@ -82,7 +82,7 @@ public class ActiveRulesServiceImpl implements ActiveRulesService {
 
   @Override
   public CompletableFuture<GetActiveRuleDetailsResponse> getActiveRuleDetails(String configurationScopeId, String ruleKey) {
-    return configurationRepository.getBinding(configurationScopeId)
+    return configurationRepository.getEffectiveBinding(configurationScopeId)
       .map(binding -> getActiveRuleForBinding(ruleKey, binding))
       .orElseGet(() -> getActiveEmbeddedRule(ruleKey))
       .thenApply(ActiveRulesServiceImpl::response);

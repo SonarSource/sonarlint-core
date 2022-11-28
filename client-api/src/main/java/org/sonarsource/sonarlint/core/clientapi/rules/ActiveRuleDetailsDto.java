@@ -34,8 +34,8 @@ public class ActiveRuleDetailsDto {
   private final Collection<ActiveRuleParamDto> params;
   private final Language language;
 
-  public ActiveRuleDetailsDto(String key, String name, IssueSeverity severity, RuleType type, Either<ActiveRuleMonolithicDescriptionDto, ActiveRuleSplitDescriptionDto> description, Collection<ActiveRuleParamDto> params,
-    Language language) {
+  public ActiveRuleDetailsDto(String key, String name, IssueSeverity severity, RuleType type, Either<ActiveRuleMonolithicDescriptionDto, ActiveRuleSplitDescriptionDto> description,
+    Collection<ActiveRuleParamDto> params, Language language) {
     this.key = key;
     this.name = name;
     this.severity = severity;

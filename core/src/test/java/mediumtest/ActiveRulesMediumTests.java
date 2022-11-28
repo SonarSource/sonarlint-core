@@ -163,6 +163,34 @@ class ActiveRulesMediumTests {
   }
 
   @Test
+  void it_should_merge_rule_from_storage_and_server_when_parent_project_is_bound() throws ExecutionException, InterruptedException {
+    StorageFixture.newStorage("connectionId")
+      .withProject("projectKey",
+        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah"))))
+      .create(storageDir);
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withChildConfigScope("childScopeId", "scopeId")
+      .withStorageRoot(storageDir.resolve("storage"))
+      .withExtraPlugin(TestPlugin.PYTHON)
+      .build();
+    mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
+      .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
+      .build());
+
+    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails("childScopeId", "python:S139").get();
+
+    var details = activeRuleDetailsResponse.details();
+    assertThat(details)
+      .extracting("key", "name", "type", "language", "severity", "description.left.htmlContent")
+      .containsExactly("python:S139", "Comments should not be located at the end of lines of code", RuleType.CODE_SMELL, Language.PYTHON, IssueSeverity.INFO,
+        PYTHON_S139_DESCRIPTION + "<br/><br/>extendedDesc");
+    assertThat(details.getParams()).isEmpty();
+  }
+
+  @Test
   void it_should_fail_to_merge_rule_from_storage_and_server_when_connection_is_unknown() {
     StorageFixture.newStorage("connectionId")
       .withProject("projectKey",
