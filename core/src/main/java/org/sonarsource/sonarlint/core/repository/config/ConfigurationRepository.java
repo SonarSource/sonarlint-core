@@ -58,10 +58,33 @@ public class ConfigurationRepository {
     return bindingPerConfigScopeId.get(configScopeId);
   }
 
-  public Optional<Binding> getBinding(String configScopeId) {
+  public Optional<Binding> getEffectiveBinding(String configScopeId) {
+    var configScopeIdToSearchIn = configScopeId;
+    while (true) {
+      var binding = getConfiguredBinding(configScopeIdToSearchIn);
+      if (binding.isPresent()) {
+        return binding;
+      }
+      var parentId = getParentId(configScopeIdToSearchIn);
+      if (parentId.isEmpty()) {
+        return Optional.empty();
+      }
+      configScopeIdToSearchIn = parentId.get();
+    }
+  }
+
+  private Optional<Binding> getConfiguredBinding(String configScopeId) {
     var bindingConfiguration = bindingPerConfigScopeId.get(configScopeId);
     if (bindingConfiguration != null && bindingConfiguration.isBound()) {
       return Optional.of(new Binding(requireNonNull(bindingConfiguration.getConnectionId()), requireNonNull(bindingConfiguration.getSonarProjectKey())));
+    }
+    return Optional.empty();
+  }
+
+  private Optional<String> getParentId(String configScopeId) {
+    var configurationScope = configScopePerId.get(configScopeId);
+    if (configurationScope != null) {
+      return Optional.ofNullable(configurationScope.getParentId());
     }
     return Optional.empty();
   }
