@@ -37,6 +37,7 @@ import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverapi.push.ServerEvent;
 import org.sonarsource.sonarlint.core.serverconnection.DownloadException;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
@@ -171,6 +172,24 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @param projectKey   key of the project
    */
   void syncServerTaintIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor);
+
+  /**
+   * Download all hotspots, regardless of their status, from a project.
+   * Download will be made only for servers that return enough data to achieve local hotspot tracking.
+   */
+  void downloadAllServerHotspots(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor);
+
+  /**
+   * Fetch all hotspots, regardless of their status, from a project on the server, and store them in local storage.
+   * Download will be made only for servers that return enough data to achieve local hotspot tracking.
+   */
+  void downloadAllServerHotspotsForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
+    @Nullable ClientProgressMonitor monitor);
+
+  /**
+   * Returns locally stored hotspots that were previously downloaded from the server.
+   */
+  Collection<ServerHotspot> getServerHotspots(ProjectBinding projectBinding, String branchName, String ideFilePath);
 
   /**
    * Get a list of files that are excluded from analysis, out of the provided files.

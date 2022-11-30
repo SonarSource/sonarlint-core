@@ -19,10 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStoresManager;
@@ -60,6 +62,16 @@ public class IssueStoreReader {
   public List<ServerTaintIssue> getRawServerTaintIssues(ProjectBinding projectBinding, String branchName) {
     var loadedIssues = serverIssueStoresManager.get(projectBinding.projectKey()).loadTaint(branchName);
     return filterOutResolvedIssues(loadedIssues);
+  }
+
+  public Collection<ServerHotspot> getServerHotspots(ProjectBinding projectBinding, String branchName, String ideFilePath) {
+    var serverFilePath = IssueStorePaths.idePathToServerPath(projectBinding, ideFilePath);
+    if (serverFilePath == null) {
+      return Collections.emptyList();
+    }
+    var loadedHotspots = serverIssueStoresManager.get(projectBinding.projectKey()).loadHotspots(branchName, serverFilePath);
+    loadedHotspots.forEach(hotspot -> hotspot.setFilePath(ideFilePath));
+    return loadedHotspots;
   }
 
   @NotNull

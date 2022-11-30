@@ -72,6 +72,7 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverapi.push.ServerEvent;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
@@ -453,6 +454,22 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   @Override
   public void syncServerTaintIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor) {
     serverConnection.syncServerTaintIssuesForProject(endpoint, client, projectKey, branchName);
+  }
+
+  @Override
+  public void downloadAllServerHotspots(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor) {
+    serverConnection.downloadAllServerHotspots(endpoint, client, projectKey, branchName, new ProgressMonitor(monitor));
+  }
+
+  @Override
+  public void downloadAllServerHotspotsForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
+    @Nullable ClientProgressMonitor monitor) {
+    serverConnection.downloadAllServerHotspotsForFile(endpoint, client, projectBinding, ideFilePath, branchName);
+  }
+
+  @Override
+  public Collection<ServerHotspot> getServerHotspots(ProjectBinding projectBinding, String branchName, String ideFilePath) {
+    return serverConnection.getServerHotspots(projectBinding, branchName, ideFilePath);
   }
 
   @Override

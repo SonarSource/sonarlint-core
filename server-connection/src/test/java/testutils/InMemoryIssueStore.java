@@ -28,8 +28,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
@@ -38,6 +38,7 @@ import static java.util.Optional.ofNullable;
 
 public class InMemoryIssueStore implements ProjectServerIssueStore {
   private final Map<String, Map<String, List<ServerIssue>>> issuesByFileByBranch = new HashMap<>();
+  private final Map<String, Map<String, Collection<ServerHotspot>>> hotspotsByFileByBranch = new HashMap<>();
   private final Map<String, Instant> lastIssueSyncByBranch = new HashMap<>();
   private final Map<String, ServerIssue> issuesByKey = new HashMap<>();
   private final Map<String, Map<String, List<ServerTaintIssue>>> taintIssuesByFileByBranch = new HashMap<>();
@@ -93,6 +94,18 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
+  public void replaceAllHotspotsOfBranch(String branchName, Collection<ServerHotspot> serverHotspots) {
+    hotspotsByFileByBranch.put(branchName, serverHotspots.stream().collect(Collectors.groupingBy(ServerHotspot::getFilePath, Collectors.toCollection(ArrayList::new))));
+  }
+
+  @Override
+  public void replaceAllHotspotsOfFile(String branchName, String serverFilePath, Collection<ServerHotspot> serverHotspots) {
+    hotspotsByFileByBranch
+      .computeIfAbsent(branchName, __ -> new HashMap<>())
+      .put(serverFilePath, serverHotspots);
+  }
+
+  @Override
   public List<ServerIssue> load(String branchName, String sqFilePath) {
     return issuesByFileByBranch
       .getOrDefault(branchName, Map.of())
@@ -111,6 +124,13 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
     return taintIssuesByFileByBranch
       .getOrDefault(branchName, Map.of())
       .getOrDefault(sqFilePath, List.of());
+  }
+
+  @Override
+  public Collection<ServerHotspot> loadHotspots(String branchName, String serverFilePath) {
+    return hotspotsByFileByBranch
+      .getOrDefault(branchName, Map.of())
+      .getOrDefault(serverFilePath, List.of());
   }
 
   public List<ServerTaintIssue> loadTaint(String branchName) {

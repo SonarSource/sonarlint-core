@@ -26,7 +26,7 @@ public class ServerHotspot {
   private final String key;
   private final String ruleKey;
   private final String message;
-  private final String filePath;
+  private String filePath;
   private final TextRange textRange;
   private final Instant creationDate;
   private final boolean resolved;
@@ -45,6 +45,10 @@ public class ServerHotspot {
     this.textRange = textRange;
     this.creationDate = creationDate;
     this.resolved = resolved;
+  }
+
+  public void setFilePath(String filePath) {
+    this.filePath = filePath;
   }
 
   public String getKey() {

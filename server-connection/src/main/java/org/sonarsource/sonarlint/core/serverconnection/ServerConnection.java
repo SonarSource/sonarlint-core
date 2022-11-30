@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
@@ -73,6 +74,7 @@ public class ServerConnection {
   private final ProjectStorageUpdateExecutor projectStorageUpdateExecutor;
   private final ServerEventsAutoSubscriber serverEventsAutoSubscriber;
   private final ServerIssueUpdater issuesUpdater;
+  private final ServerHotspotUpdater hotspotsUpdater;
   private final ServerIssueStoresManager serverIssueStoresManager;
   private final boolean isSonarCloud;
 
@@ -93,6 +95,7 @@ public class ServerConnection {
     this.serverIssueStoresManager = new ServerIssueStoresManager(projectsStorageRoot, workDir);
     this.issueStoreReader = new IssueStoreReader(serverIssueStoresManager);
     this.issuesUpdater = new ServerIssueUpdater(serverIssueStoresManager, new IssueDownloader(enabledLanguages), new TaintIssueDownloader(enabledLanguages));
+    this.hotspotsUpdater = new ServerHotspotUpdater(serverIssueStoresManager);
     this.pluginsStorage = new PluginsStorage(connectionStorageRoot.resolve("plugins"));
     this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguages, embeddedPluginKeys, pluginsStorage, projectStorage);
     this.projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(projectStoragePaths);
@@ -143,7 +146,6 @@ public class ServerConnection {
     return issueStoreReader.getRawServerTaintIssues(projectBinding, branchName);
   }
 
-
   public void subscribeForEvents(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, Consumer<ServerEvent> clientEventConsumer, ClientLogOutput clientLogOutput) {
     serverEventsAutoSubscriber.subscribePermanently(new ServerApi(new ServerApiHelper(endpoint, client)), projectKeys, enabledLanguages,
       e -> notifyHandlers(e, clientEventConsumer), clientLogOutput);
@@ -192,6 +194,20 @@ public class ServerConnection {
     issuesUpdater.update(serverApi, projectKey, branchName, isSonarCloud, serverVersion);
   }
 
+  public void downloadAllServerHotspots(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, ProgressMonitor progress) {
+    var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
+    hotspotsUpdater.updateAll(serverApi, projectKey, branchName, () -> checkStatusAndGetServerVersion(serverApi), progress);
+  }
+
+  public void downloadAllServerHotspotsForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName) {
+    var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
+    hotspotsUpdater.updateForFile(serverApi, projectBinding, ideFilePath, branchName, () -> checkStatusAndGetServerVersion(serverApi));
+  }
+
+  public Collection<ServerHotspot> getServerHotspots(ProjectBinding projectBinding, String branchName, String ideFilePath) {
+    return issueStoreReader.getServerHotspots(projectBinding, branchName, ideFilePath);
+  }
+
   public void syncServerIssuesForProject(EndpointParams endpoint, HttpClient client, String projectKey, String branchName) {
     var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
     var serverVersion = checkStatusAndGetServerVersion(serverApi);
@@ -225,5 +241,4 @@ public class ServerConnection {
       FileUtils.deleteRecursively(connectionStorageRoot);
     }
   }
-
 }

@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -51,6 +52,7 @@ import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
@@ -76,6 +78,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private static final String FILE_ENTITY_TYPE = "File";
   private static final String ISSUE_ENTITY_TYPE = "Issue";
   private static final String TAINT_ISSUE_ENTITY_TYPE = "TaintIssue";
+  private static final String HOTSPOT_ENTITY_TYPE = "Hotspot";
   private static final String SCHEMA_ENTITY_TYPE = "Schema";
 
   private static final String BRANCH_TO_FILES_LINK_NAME = "files";
@@ -83,6 +86,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private static final String TAINT_ISSUE_TO_BRANCH_LINK_NAME = "branch";
   private static final String FILE_TO_ISSUES_LINK_NAME = "issues";
   private static final String FILE_TO_TAINT_ISSUES_LINK_NAME = "taintIssues";
+  private static final String FILE_TO_HOTSPOTS_LINK_NAME = "hotspots";
   private static final String ISSUE_TO_FILE_LINK_NAME = "file";
 
   private static final String START_LINE_PROPERTY_NAME = "startLine";
@@ -208,6 +212,23 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
         .setFlows(readFlows(storedIssue.getBlob(FLOWS_BLOB_NAME)));
   }
 
+  private static ServerHotspot adaptHotspot(Entity storedHotspot) {
+    var filePath = (String) requireNonNull(storedHotspot.getLink(ISSUE_TO_FILE_LINK_NAME).getProperty(PATH_PROPERTY_NAME));
+    var startLine = (Integer) storedHotspot.getProperty(START_LINE_PROPERTY_NAME);
+    var startLineOffset = (Integer) storedHotspot.getProperty(START_LINE_OFFSET_PROPERTY_NAME);
+    var endLine = (Integer) storedHotspot.getProperty(END_LINE_PROPERTY_NAME);
+    var endLineOffset = (Integer) storedHotspot.getProperty(END_LINE_OFFSET_PROPERTY_NAME);
+    var textRange = new org.sonarsource.sonarlint.core.commons.TextRange(startLine, startLineOffset, endLine, endLineOffset);
+    return new ServerHotspot(
+      (String) requireNonNull(storedHotspot.getProperty(KEY_PROPERTY_NAME)),
+      (String) requireNonNull(storedHotspot.getProperty(RULE_KEY_PROPERTY_NAME)),
+      requireNonNull(storedHotspot.getBlobString(MESSAGE_BLOB_NAME)),
+      filePath,
+      textRange,
+      (Instant) requireNonNull(storedHotspot.getProperty(CREATION_DATE_PROPERTY_NAME)),
+      Boolean.TRUE.equals(storedHotspot.getProperty(RESOLVED_PROPERTY_NAME)));
+  }
+
   private static List<Flow> readFlows(@Nullable InputStream blob) {
     if (blob == null) {
       return List.of();
@@ -223,6 +244,11 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   @Override
   public List<ServerTaintIssue> loadTaint(String branchName, String filePath) {
     return loadIssue(branchName, filePath, FILE_TO_TAINT_ISSUES_LINK_NAME, XodusServerIssueStore::adaptTaint);
+  }
+
+  @Override
+  public Collection<ServerHotspot> loadHotspots(String branchName, String serverFilePath) {
+    return loadIssue(branchName, serverFilePath, FILE_TO_HOTSPOTS_LINK_NAME, XodusServerIssueStore::adaptHotspot);
   }
 
   private <G> List<G> loadIssue(String branchName, String filePath, String linkName, Function<Entity, G> adapter) {
@@ -241,8 +267,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
       .map(branch -> StreamSupport.stream(branch.getLinks(BRANCH_TO_TAINT_ISSUES_LINK_NAME).spliterator(), false)
         .map(XodusServerIssueStore::adaptTaint)
-        .collect(Collectors.toList())
-      )
+        .collect(Collectors.toList()))
       .orElseGet(Collections::emptyList));
   }
 
@@ -315,6 +340,63 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
         txn.flush();
       });
     }));
+  }
+
+  @Override
+  public void replaceAllHotspotsOfBranch(String branchName, Collection<ServerHotspot> serverHotspots) {
+    var hotspotsByFile = serverHotspots.stream().collect(Collectors.groupingBy(ServerHotspot::getFilePath));
+    timed("Wrote " + serverHotspots.size() + " hotspots in store", () -> entityStore.executeInTransaction(txn -> {
+      var branch = getOrCreateBranch(branchName, txn);
+      branch.getLinks(BRANCH_TO_FILES_LINK_NAME).forEach(fileEntity -> {
+        var entityFilePath = fileEntity.getProperty(PATH_PROPERTY_NAME);
+        if (!hotspotsByFile.containsKey(entityFilePath)) {
+          deleteAllHotspotsOfFile(txn, fileEntity);
+        }
+      });
+      txn.flush();
+      hotspotsByFile.forEach((filePath, fileIssues) -> {
+        var fileEntity = getOrCreateFile(branch, filePath, txn);
+        replaceAllHotspotsOfFile(fileIssues, txn, fileEntity);
+        txn.flush();
+      });
+    }));
+  }
+
+  @Override
+  public void replaceAllHotspotsOfFile(String branchName, String serverFilePath, Collection<ServerHotspot> serverHotspots) {
+    timed("Wrote " + serverHotspots.size() + " hotspots in store", () -> entityStore.executeInTransaction(txn -> {
+      var branch = getOrCreateBranch(branchName, txn);
+      var fileEntity = getOrCreateFile(branch, serverFilePath, txn);
+      replaceAllHotspotsOfFile(serverHotspots, txn, fileEntity);
+    }));
+  }
+
+  private static void replaceAllHotspotsOfFile(Collection<ServerHotspot> hotspots, @NotNull StoreTransaction txn, Entity fileEntity) {
+    fileEntity.getLinks(FILE_TO_HOTSPOTS_LINK_NAME).forEach(Entity::delete);
+    fileEntity.deleteLinks(FILE_TO_HOTSPOTS_LINK_NAME);
+
+    hotspots.forEach(hotspot -> updateOrCreateHotspot(fileEntity, hotspot, txn));
+  }
+
+  private static void updateOrCreateHotspot(Entity fileEntity, ServerHotspot hotspot, StoreTransaction transaction) {
+    var hotspotEntity = updateOrCreateIssueCommon(fileEntity, hotspot.getKey(), transaction, HOTSPOT_ENTITY_TYPE, FILE_TO_HOTSPOTS_LINK_NAME);
+    updateHotspotEntity(hotspotEntity, hotspot);
+  }
+
+  private static void updateHotspotEntity(Entity issueEntity, ServerHotspot hotspot) {
+    issueEntity.setProperty(RULE_KEY_PROPERTY_NAME, hotspot.getRuleKey());
+    issueEntity.setBlobString(MESSAGE_BLOB_NAME, hotspot.getMessage());
+    var textRange = hotspot.getTextRange();
+    issueEntity.setProperty(START_LINE_PROPERTY_NAME, textRange.getStartLine());
+    issueEntity.setProperty(START_LINE_OFFSET_PROPERTY_NAME, textRange.getStartLineOffset());
+    issueEntity.setProperty(END_LINE_PROPERTY_NAME, textRange.getEndLine());
+    issueEntity.setProperty(END_LINE_OFFSET_PROPERTY_NAME, textRange.getEndLineOffset());
+    issueEntity.setProperty(CREATION_DATE_PROPERTY_NAME, hotspot.getCreationDate());
+    issueEntity.setProperty(RESOLVED_PROPERTY_NAME, hotspot.isResolved());
+  }
+
+  private static void deleteAllHotspotsOfFile(@NotNull StoreTransaction txn, Entity fileEntity) {
+    replaceAllHotspotsOfFile(List.of(), txn, fileEntity);
   }
 
   private static void deleteAllIssuesOfFile(@NotNull StoreTransaction txn, Entity fileEntity) {

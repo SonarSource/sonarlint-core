@@ -20,10 +20,12 @@
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
@@ -33,6 +35,10 @@ public interface ProjectServerIssueStore {
    * Store issues for a branch by replacing existing ones.
    */
   void replaceAllIssuesOfBranch(String branchName, List<ServerIssue> issues);
+
+  void replaceAllHotspotsOfBranch(String branchName, Collection<ServerHotspot> serverHotspots);
+
+  void replaceAllHotspotsOfFile(String branchName, String serverFilePath, Collection<ServerHotspot> serverHotspots);
 
   /**
    * Store issues for a single file by replacing existing ones and moving issues if necessary.
@@ -97,6 +103,14 @@ public interface ProjectServerIssueStore {
   List<ServerTaintIssue> loadTaint(String branchName, String sqFilePath);
 
   /**
+   * Load hotspots stored for specified file.
+   *
+   * @param serverFilePath the relative path to the base of project, from the server point of view
+   * @return issues, possibly empty
+   */
+  Collection<ServerHotspot> loadHotspots(String branchName, String serverFilePath);
+
+  /**
    * Load all taint issues stored for a branch.
    *
    *
@@ -104,7 +118,6 @@ public interface ProjectServerIssueStore {
    * @return issues, possibly empty
    */
   List<ServerTaintIssue> loadTaint(String branchName);
-
 
   /**
    * @param issueKey
