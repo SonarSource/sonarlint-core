@@ -64,6 +64,10 @@ public class ServerApiHelper {
     this.client = client;
   }
 
+  public boolean isSonarCloud() {
+    return endpointParams.isSonarCloud();
+  }
+
   public HttpClient.Response get(String path) {
     var response = rawGet(path);
     if (!response.isSuccessful()) {

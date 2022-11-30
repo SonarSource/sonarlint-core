@@ -20,22 +20,23 @@
 package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.commons.TextRange;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class ServerHotspotTests {
+class ServerHotspotDetailsTests {
   @Test
   void it_should_populate_fields_with_constructor_parameters() {
-    var hotspot = new ServerHotspot("message",
+    var hotspot = new ServerHotspotDetails("message",
       "path",
-      new ServerHotspot.TextRange(0, 1, 2, 3),
+      new TextRange(0, 1, 2, 3),
       "author",
-      ServerHotspot.Status.TO_REVIEW,
-      ServerHotspot.Resolution.FIXED, new ServerHotspot.Rule(
+      ServerHotspotDetails.Status.TO_REVIEW,
+      ServerHotspotDetails.Resolution.FIXED, new ServerHotspotDetails.Rule(
         "key",
         "name",
         "category",
-        ServerHotspot.Rule.Probability.HIGH,
+        ServerHotspotDetails.Rule.Probability.HIGH,
         "risk",
         "vulnerability",
         "fix"),
@@ -48,12 +49,12 @@ class ServerHotspotTests {
     assertThat(hotspot.textRange.getEndLine()).isEqualTo(2);
     assertThat(hotspot.textRange.getEndLineOffset()).isEqualTo(3);
     assertThat(hotspot.author).isEqualTo("author");
-    assertThat(hotspot.status).isEqualTo(ServerHotspot.Status.TO_REVIEW);
-    assertThat(hotspot.resolution).isEqualTo(ServerHotspot.Resolution.FIXED);
+    assertThat(hotspot.status).isEqualTo(ServerHotspotDetails.Status.TO_REVIEW);
+    assertThat(hotspot.resolution).isEqualTo(ServerHotspotDetails.Resolution.FIXED);
     assertThat(hotspot.rule.key).isEqualTo("key");
     assertThat(hotspot.rule.name).isEqualTo("name");
     assertThat(hotspot.rule.securityCategory).isEqualTo("category");
-    assertThat(hotspot.rule.vulnerabilityProbability).isEqualTo(ServerHotspot.Rule.Probability.HIGH);
+    assertThat(hotspot.rule.vulnerabilityProbability).isEqualTo(ServerHotspotDetails.Rule.Probability.HIGH);
     assertThat(hotspot.rule.riskDescription).isEqualTo("risk");
     assertThat(hotspot.rule.vulnerabilityDescription).isEqualTo("vulnerability");
     assertThat(hotspot.rule.fixRecommendations).isEqualTo("fix");

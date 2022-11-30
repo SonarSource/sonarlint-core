@@ -26,6 +26,32 @@ option java_package = "org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.
 option java_outer_classname = "Hotspots";
 option optimize_for = SPEED;
 
+// Response of GET api/hotspots/search
+message SearchWsResponse {
+    optional sonarqube.ws.commons.Paging paging = 1;
+    repeated Hotspot hotspots = 2;
+    repeated Component components = 3;
+
+    message Hotspot {
+        optional string key = 1;
+        optional string component = 2;
+        optional string project = 3;
+        optional string securityCategory = 4;
+        optional string vulnerabilityProbability = 5;
+        optional string status = 6;
+        optional string resolution = 7;
+        optional int32 line = 8;
+        optional string message = 9;
+        optional string assignee = 10;
+        optional string author = 11;
+        optional string creationDate = 12;
+        optional string updateDate = 13;
+        optional sonarqube.ws.commons.TextRange textRange = 14;
+        repeated sonarqube.ws.commons.Flow flows = 15;
+        optional string ruleKey = 16;
+    }
+}
+
 // Response of GET api/hotspots/show
 message ShowWsResponse {
   optional string key = 1;
