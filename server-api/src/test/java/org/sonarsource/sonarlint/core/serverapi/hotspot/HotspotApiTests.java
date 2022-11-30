@@ -19,24 +19,38 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class HotspotApiTests {
 
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
+
+  @RegisterExtension
+  public SonarLintLogTester logTester = new SonarLintLogTester();
 
   private HotspotApi underTest;
 
@@ -62,7 +76,7 @@ class HotspotApiTests {
   }
 
   @Test
-  void it_should_adapt_and_return_the_hotspot() {
+  void it_should_adapt_and_return_the_hotspot_details() {
     mockServer.addProtobufResponse("/api/hotspots/show.protobuf?projectKey=p&hotspot=h", Hotspots.ShowWsResponse.newBuilder()
       .setMessage("message")
       .setComponent(Hotspots.Component.newBuilder().setPath("path").setKey("myproject:path"))
@@ -87,14 +101,14 @@ class HotspotApiTests {
     var hotspot = remoteHotspot.get();
     assertThat(hotspot.message).isEqualTo("message");
     assertThat(hotspot.filePath).isEqualTo("path");
-    assertThat(hotspot.textRange).usingRecursiveComparison().isEqualTo(new ServerHotspot.TextRange(2, 7, 4, 9));
+    assertThat(hotspot.textRange).usingRecursiveComparison().isEqualTo(new TextRange(2, 7, 4, 9));
     assertThat(hotspot.author).isEqualTo("author");
-    assertThat(hotspot.status).isEqualTo(ServerHotspot.Status.REVIEWED);
-    assertThat(hotspot.resolution).isEqualTo(ServerHotspot.Resolution.SAFE);
+    assertThat(hotspot.status).isEqualTo(ServerHotspotDetails.Status.REVIEWED);
+    assertThat(hotspot.resolution).isEqualTo(ServerHotspotDetails.Resolution.SAFE);
     assertThat(hotspot.rule.key).isEqualTo("key");
     assertThat(hotspot.rule.name).isEqualTo("name");
     assertThat(hotspot.rule.securityCategory).isEqualTo("category");
-    assertThat(hotspot.rule.vulnerabilityProbability).isEqualTo(ServerHotspot.Rule.Probability.HIGH);
+    assertThat(hotspot.rule.vulnerabilityProbability).isEqualTo(ServerHotspotDetails.Rule.Probability.HIGH);
     assertThat(hotspot.rule.riskDescription).isEqualTo("risk");
     assertThat(hotspot.rule.vulnerabilityDescription).isEqualTo("vulnerability");
     assertThat(hotspot.rule.fixRecommendations).isEqualTo("fix");
@@ -163,5 +177,144 @@ class HotspotApiTests {
     assertThat(remoteHotspot).isNotEmpty();
     var hotspot = remoteHotspot.get();
     assertThat(hotspot.resolution).isNull();
+  }
+
+  @Test
+  void it_should_fetch_project_hotspots() {
+    mockServer.addProtobufResponse("/api/hotspots/search.protobuf?projectKey=p&branch=branch&ps=500&p=1", Hotspots.SearchWsResponse.newBuilder()
+      .setPaging(Common.Paging.newBuilder().setTotal(1).build())
+      .addHotspots(Hotspots.SearchWsResponse.Hotspot.newBuilder()
+        .setComponent("component:path1")
+        .setTextRange(Common.TextRange.newBuilder().setStartLine(1).setStartOffset(2).setEndLine(3).setEndOffset(4).build())
+        .setStatus("TO_REVIEW")
+        .setKey("hotspotKey1")
+        .setCreationDate("2020-09-21T12:46:39+0000")
+        .setRuleKey("ruleKey1")
+        .setMessage("message1")
+        .build())
+      .addHotspots(Hotspots.SearchWsResponse.Hotspot.newBuilder()
+        .setComponent("component:path2")
+        .setTextRange(Common.TextRange.newBuilder().setStartLine(5).setStartOffset(6).setEndLine(7).setEndOffset(8).build())
+        .setStatus("REVIEWED")
+        .setResolution("SAFE")
+        .setKey("hotspotKey2")
+        .setCreationDate("2020-09-22T12:46:39+0000")
+        .setRuleKey("ruleKey2")
+        .setMessage("message2")
+        .build())
+      .addHotspots(Hotspots.SearchWsResponse.Hotspot.newBuilder()
+        .setComponent("component:path3")
+        .setTextRange(Common.TextRange.newBuilder().setStartLine(9).setStartOffset(10).setEndLine(11).setEndOffset(12).build())
+        .setStatus("REVIEWED")
+        .setResolution("ACKNOWLEDGED")
+        .setKey("hotspotKey3")
+        .setCreationDate("2020-09-23T12:46:39+0000")
+        .setRuleKey("ruleKey3")
+        .setMessage("message3")
+        .build())
+      .addHotspots(Hotspots.SearchWsResponse.Hotspot.newBuilder()
+        .setComponent("component:path4")
+        .setTextRange(Common.TextRange.newBuilder().setStartLine(13).setStartOffset(14).setEndLine(15).setEndOffset(16).build())
+        .setStatus("REVIEWED")
+        .setResolution("FIXED")
+        .setKey("hotspotKey4")
+        .setCreationDate("2020-09-24T12:46:39+0000")
+        .setRuleKey("ruleKey4")
+        .setMessage("message4")
+        .build())
+      .addHotspots(Hotspots.SearchWsResponse.Hotspot.newBuilder()
+        .setComponent("component:path5")
+        .setTextRange(Common.TextRange.newBuilder().setStartLine(17).setStartOffset(18).setEndLine(19).setEndOffset(20).build())
+        .setStatus("REVIEWED")
+        .setKey("hotspotKey5")
+        .setCreationDate("2020-09-25T12:46:39+0000")
+        .setRuleKey("ruleKey5")
+        .setMessage("message5")
+        .build())
+      .addComponents(Hotspots.Component.newBuilder().setKey("component:path1").setPath("path1").build())
+      .addComponents(Hotspots.Component.newBuilder().setKey("component:path2").setPath("path2").build())
+      .addComponents(Hotspots.Component.newBuilder().setKey("component:path3").setPath("path3").build())
+      .addComponents(Hotspots.Component.newBuilder().setKey("component:path4").setPath("path4").build())
+      .addComponents(Hotspots.Component.newBuilder().setKey("component:path5").setPath("path5").build())
+      .build());
+
+    var hotspots = underTest.getAll("p", "branch", new ProgressMonitor(null));
+
+    assertThat(hotspots)
+      .extracting("key", "ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "creationDate",
+        "resolved")
+      .containsExactly(
+        tuple("hotspotKey1", "ruleKey1", "message1", "path1", 1, 2, 3, 4, LocalDateTime.of(2020, 9, 21, 12, 46, 39).toInstant(ZoneOffset.UTC), false),
+        tuple("hotspotKey2", "ruleKey2", "message2", "path2", 5, 6, 7, 8, LocalDateTime.of(2020, 9, 22, 12, 46, 39).toInstant(ZoneOffset.UTC), true),
+        tuple("hotspotKey3", "ruleKey3", "message3", "path3", 9, 10, 11, 12, LocalDateTime.of(2020, 9, 23, 12, 46, 39).toInstant(ZoneOffset.UTC), false),
+        tuple("hotspotKey4", "ruleKey4", "message4", "path4", 13, 14, 15, 16, LocalDateTime.of(2020, 9, 24, 12, 46, 39).toInstant(ZoneOffset.UTC), true),
+        tuple("hotspotKey5", "ruleKey5", "message5", "path5", 17, 18, 19, 20, LocalDateTime.of(2020, 9, 25, 12, 46, 39).toInstant(ZoneOffset.UTC), false));
+  }
+
+  @Test
+  void it_should_fetch_file_hotspots() {
+    mockServer.addProtobufResponse("/api/hotspots/search.protobuf?projectKey=p&files=path%2Fto%2Ffile.ext&branch=branch&ps=500&p=1", Hotspots.SearchWsResponse.newBuilder()
+      .setPaging(Common.Paging.newBuilder().setTotal(1).build())
+      .addHotspots(Hotspots.SearchWsResponse.Hotspot.newBuilder()
+        .setComponent("component:path/to/file.ext")
+        .setTextRange(Common.TextRange.newBuilder().setStartLine(1).setStartOffset(2).setEndLine(3).setEndOffset(4).build())
+        .setStatus("TO_REVIEW")
+        .setKey("hotspotKey1")
+        .setCreationDate("2020-09-21T12:46:39+0000")
+        .setRuleKey("ruleKey1")
+        .setMessage("message1")
+        .build())
+      .addComponents(Hotspots.Component.newBuilder().setKey("component:path/to/file.ext").setPath("path/to/file.ext").build())
+      .build());
+
+    var hotspots = underTest.getFromFile("p", "path/to/file.ext", "branch");
+
+    assertThat(hotspots)
+      .extracting("key", "ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "creationDate",
+        "resolved")
+      .containsExactly(
+        tuple("hotspotKey1", "ruleKey1", "message1", "path/to/file.ext", 1, 2, 3, 4, ZonedDateTime.of(2020, 9, 21, 12, 46, 39, 0, ZoneId.of("UTC")).toInstant(), false));
+  }
+
+  @Test
+  void it_should_log_when_hotspot_component_is_missing() {
+    mockServer.addProtobufResponse("/api/hotspots/search.protobuf?projectKey=p&branch=branch&ps=500&p=1", Hotspots.SearchWsResponse.newBuilder()
+      .setPaging(Common.Paging.newBuilder().setTotal(1).build())
+      .addHotspots(Hotspots.SearchWsResponse.Hotspot.newBuilder()
+        .setComponent("component:path")
+        .build())
+      .build());
+
+    var hotspots = underTest.getAll("p", "branch", new ProgressMonitor(null));
+
+    assertThat(logTester.logs())
+      .contains("Error while fetching security hotspots, the component 'component:path' is missing");
+  }
+
+  @Test
+  void sonar_cloud_should_not_permit_tracking_hotspots() {
+    var hotspotApi = new HotspotApi(new ServerApiHelper(new EndpointParams("https://sonarcloud.io", true, "org"), MockWebServerExtension.httpClient()));
+
+    var permitsTracking = hotspotApi.permitsTracking(null);
+
+    assertThat(permitsTracking).isFalse();
+  }
+
+  @Test
+  void sonar_qube_prior_to_9_7_should_not_permit_tracking_hotspots() {
+    var hotspotApi = new HotspotApi(new ServerApiHelper(new EndpointParams("http://my.sonar.qube", false, null), MockWebServerExtension.httpClient()));
+
+    var permitsTracking = hotspotApi.permitsTracking(() -> Version.create("9.6.0"));
+
+    assertThat(permitsTracking).isFalse();
+  }
+
+  @Test
+  void sonar_qube_9_7_plus_should_permit_tracking_hotspots() {
+    var hotspotApi = new HotspotApi(new ServerApiHelper(new EndpointParams("http://my.sonar.qube", false, null), MockWebServerExtension.httpClient()));
+
+    var permitsTracking = hotspotApi.permitsTracking(() -> Version.create("9.7.0"));
+
+    assertThat(permitsTracking).isTrue();
   }
 }

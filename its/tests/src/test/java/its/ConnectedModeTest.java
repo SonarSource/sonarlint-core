@@ -63,7 +63,7 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.GetSecurityHotspotRequestParams;
-import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspotDetails;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.ServerEvent;
@@ -412,7 +412,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     assertThat(actualHotspot.filePath).isEqualTo("src/main/java/foo/Foo.java");
     assertThat(actualHotspot.textRange).usingRecursiveComparison().isEqualTo(new TextRange(5, 14, 5, 29));
     assertThat(actualHotspot.author).isEmpty();
-    assertThat(actualHotspot.status).isEqualTo(ServerHotspot.Status.TO_REVIEW);
+    assertThat(actualHotspot.status).isEqualTo(ServerHotspotDetails.Status.TO_REVIEW);
     assertThat(actualHotspot.resolution).isNull();
     assertThat(actualHotspot.rule.key).isEqualTo("java:S1313");
 
