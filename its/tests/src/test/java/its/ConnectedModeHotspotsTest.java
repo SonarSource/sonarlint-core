@@ -46,6 +46,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -149,6 +150,39 @@ public class ConnectedModeHotspotsTest extends AbstractConnectedTest {
       .startsWith("<p>Hardcoding IP addresses is security-sensitive. It has led in the past to the following vulnerabilities:</p>")
       .contains("<h2>Recommended Secure Coding Practices</h2>")
       .contains("<h2>Exceptions</h2>");
+  }
+
+  @Test
+  public void downloadsServerHotspotsForProject() {
+    updateProject();
+
+    engine.downloadAllServerHotspots(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVA_HOTSPOT, "master", null);
+
+    var serverHotspots = engine.getServerHotspots(new ProjectBinding(PROJECT_KEY_JAVA_HOTSPOT, "", "ide"), "master", "ide/src/main/java/foo/Foo.java");
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
+      assertThat(serverHotspots)
+        .extracting("ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "resolved")
+        .containsExactly(tuple("java:S1313", "Make sure using this hardcoded IP address is safe here.", "ide/src/main/java/foo/Foo.java", 5, 14, 5, 29, false));
+    } else {
+      assertThat(serverHotspots).isEmpty();
+    }
+  }
+
+  @Test
+  public void downloadsServerHotspotsForFile() {
+    updateProject();
+    var projectBinding = new ProjectBinding(PROJECT_KEY_JAVA_HOTSPOT, "", "ide");
+
+    engine.downloadAllServerHotspotsForFile(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding, "ide/src/main/java/foo/Foo.java", "master", null);
+
+    var serverHotspots = engine.getServerHotspots(projectBinding, "master", "ide/src/main/java/foo/Foo.java");
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
+      assertThat(serverHotspots)
+        .extracting("ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "resolved")
+        .containsExactly(tuple("java:S1313", "Make sure using this hardcoded IP address is safe here.", "ide/src/main/java/foo/Foo.java", 5, 14, 5, 29, false));
+    } else {
+      assertThat(serverHotspots).isEmpty();
+    }
   }
 
   private void updateProject() {
