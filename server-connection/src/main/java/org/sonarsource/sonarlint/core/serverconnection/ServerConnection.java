@@ -196,12 +196,12 @@ public class ServerConnection {
 
   public void downloadAllServerHotspots(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, ProgressMonitor progress) {
     var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
-    hotspotsUpdater.updateAll(serverApi, projectKey, branchName, () -> checkStatusAndGetServerVersion(serverApi), progress);
+    hotspotsUpdater.updateAll(serverApi.hotspot(), projectKey, branchName, () -> checkStatusAndGetServerVersion(serverApi), progress);
   }
 
   public void downloadAllServerHotspotsForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName) {
     var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
-    hotspotsUpdater.updateForFile(serverApi, projectBinding, ideFilePath, branchName, () -> checkStatusAndGetServerVersion(serverApi));
+    hotspotsUpdater.updateForFile(serverApi.hotspot(), projectBinding, ideFilePath, branchName, () -> checkStatusAndGetServerVersion(serverApi));
   }
 
   public Collection<ServerHotspot> getServerHotspots(ProjectBinding projectBinding, String branchName, String ideFilePath) {

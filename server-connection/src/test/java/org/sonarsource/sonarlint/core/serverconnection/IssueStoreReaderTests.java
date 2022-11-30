@@ -26,6 +26,7 @@ import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
@@ -35,6 +36,7 @@ import testutils.InMemoryIssueStore;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerHotspotFixtures.aServerHotspot;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerIssue;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerTaintIssue;
 
@@ -189,6 +191,30 @@ class IssueStoreReaderTests {
       .hasSize(2)
       .extracting(ServerTaintIssue::getFilePath)
       .containsOnly("src/path1", "src/path2");
+  }
+
+  @Test
+  void canReadAllHotspotsFromStorage() {
+    var queriedBranch = "branch";
+
+    issueStore.replaceAllHotspotsOfFile(queriedBranch, "file/path", List.of(aServerHotspot("key", "file/path")));
+
+    var hotspotsFromStorage = issueStoreReader.getServerHotspots(projectBinding, queriedBranch, "file/path");
+
+    assertThat(hotspotsFromStorage)
+      .extracting(ServerHotspot::getKey)
+      .containsOnly("key");
+  }
+
+  @Test
+  void cannotReadHotspotFromStorageWhenPathInconsistent() {
+    var queriedBranch = "branch";
+
+    issueStore.replaceAllHotspotsOfFile(queriedBranch, "file/path", List.of(aServerHotspot("key", "file/path")));
+
+    var hotspotsFromStorage = issueStoreReader.getServerHotspots(new ProjectBinding(PROJECT_KEY, "", "client"), queriedBranch, "ide/file/path");
+
+    assertThat(hotspotsFromStorage).isEmpty();
   }
 
   private final Comparator<ServerIssue> simpleComparator = (o1, o2) -> {

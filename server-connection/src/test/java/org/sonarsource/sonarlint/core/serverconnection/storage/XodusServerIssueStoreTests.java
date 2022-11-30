@@ -49,6 +49,7 @@ import static java.time.temporal.ChronoUnit.MILLIS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.api.Assertions.within;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerHotspotFixtures.aServerHotspot;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aBatchServerIssue;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aFileLevelServerIssue;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerIssue;
@@ -565,6 +566,62 @@ class XodusServerIssueStoreTests {
     assertThat(taintIssues)
       .extracting("resolved")
       .containsOnly(true);
+  }
+
+  @Test
+  void should_save_branch_hotspots_when_replacing_them_on_an_empty_store() {
+    store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot()));
+
+    var hotspots = store.loadHotspots("branch", "file/path");
+    assertThat(hotspots)
+      .extracting("key", "ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "resolved")
+      .containsOnly(tuple("key", "repo:key", "message", "file/path", 1, 2, 3, 4, true));
+  }
+
+  @Test
+  void should_save_file_hotspots_when_replacing_them_on_an_empty_store() {
+    store.replaceAllHotspotsOfFile("branch", "file/path", List.of(aServerHotspot()));
+
+    var hotspots = store.loadHotspots("branch", "file/path");
+    assertThat(hotspots)
+      .extracting("key", "ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "resolved")
+      .containsOnly(tuple("key", "repo:key", "message", "file/path", 1, 2, 3, 4, true));
+  }
+
+  @Test
+  void should_replace_file_hotspots_when_replacing_an_already_existing_file() {
+    store.replaceAllHotspotsOfFile("branch", "file/path", List.of(aServerHotspot("previousHotspot")));
+
+    store.replaceAllHotspotsOfFile("branch", "file/path", List.of(aServerHotspot("newHotspot")));
+
+    var hotspots = store.loadHotspots("branch", "file/path");
+    assertThat(hotspots)
+      .extracting("key")
+      .containsOnly("newHotspot");
+  }
+
+  @Test
+  void should_replace_branch_hotspots_of_an_existing_file() {
+    store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot("previousHotspot")));
+
+    store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot("newHotspot")));
+
+    var hotspots = store.loadHotspots("branch", "file/path");
+    assertThat(hotspots)
+      .extracting("key")
+      .containsOnly("newHotspot");
+  }
+
+  @Test
+  void should_replace_branch_hotspots_for_a_new_file() {
+    store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot("previousHotspot", "old/path")));
+
+    store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot("newHotspot", "new/path")));
+
+    var hotspots = store.loadHotspots("branch", "new/path");
+    assertThat(hotspots)
+      .extracting("key", "filePath")
+      .containsOnly(tuple("newHotspot", "new/path"));
   }
 
   @Test
