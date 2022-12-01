@@ -134,9 +134,14 @@ public class ConnectedModeHotspotsTest extends AbstractConnectedTest {
       "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath()),
       issueListener, null, null);
 
-    assertThat(issueListener.getIssues()).hasSize(1)
-      .extracting(Issue::getRuleKey, Issue::getType)
-      .containsExactly(tuple(javaRuleKey(ORCHESTRATOR, "S1313"), RuleType.SECURITY_HOTSPOT));
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
+      assertThat(issueListener.getIssues()).hasSize(1)
+        .extracting(Issue::getRuleKey, Issue::getType)
+        .containsExactly(tuple(javaRuleKey(ORCHESTRATOR, "S1313"), RuleType.SECURITY_HOTSPOT));
+    } else {
+      // no hotspot detection when connected to SQ < 9.7
+      assertThat(issueListener.getIssues()).isEmpty();
+    }
   }
 
   @Test
