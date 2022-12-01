@@ -21,8 +21,8 @@ package org.sonarsource.sonarlint.core.hotspot;
 
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
-import org.sonarsource.sonarlint.core.clientapi.hotspot.HotspotService;
-import org.sonarsource.sonarlint.core.clientapi.hotspot.OpenHotspotInBrowserParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
+import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.OpenHotspotInBrowserParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;

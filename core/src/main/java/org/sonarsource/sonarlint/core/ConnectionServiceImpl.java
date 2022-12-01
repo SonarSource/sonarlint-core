@@ -21,12 +21,12 @@ package org.sonarsource.sonarlint.core;
 
 import com.google.common.eventbus.EventBus;
 import java.util.List;
-import org.sonarsource.sonarlint.core.clientapi.connection.ConnectionService;
-import org.sonarsource.sonarlint.core.clientapi.connection.config.DidAddConnectionParams;
-import org.sonarsource.sonarlint.core.clientapi.connection.config.DidRemoveConnectionParams;
-import org.sonarsource.sonarlint.core.clientapi.connection.config.DidUpdateConnectionParams;
-import org.sonarsource.sonarlint.core.clientapi.connection.config.SonarCloudConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.clientapi.connection.config.SonarQubeConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.ConnectionService;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidAddConnectionParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidRemoveConnectionParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
