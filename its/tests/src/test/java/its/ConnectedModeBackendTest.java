@@ -46,6 +46,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEng
 import org.sonarsource.sonarlint.core.clientapi.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
+import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.config.scope.ConfigurationScopeDto;
@@ -272,6 +273,11 @@ public class ConnectedModeBackendTest extends AbstractConnectedTest {
       @Override
       public CompletableFuture<FindFileByNamesInScopeResponse> findFileByNamesInScope(FindFileByNamesInScopeParams params) {
         return CompletableFuture.completedFuture(new FindFileByNamesInScopeResponse(Collections.emptyList()));
+      }
+
+      @Override
+      public void openUrlInBrowser(OpenUrlInBrowserParams params) {
+
       }
 
       @Override

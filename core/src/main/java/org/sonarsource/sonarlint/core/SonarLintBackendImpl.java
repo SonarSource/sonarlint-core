@@ -31,6 +31,8 @@ import org.sonarsource.sonarlint.core.clientapi.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.config.ConfigurationService;
+import org.sonarsource.sonarlint.core.clientapi.hotspot.HotspotService;
+import org.sonarsource.sonarlint.core.hotspot.HotspotServiceImpl;
 import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsServiceImpl;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -45,6 +47,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   private final ConnectionServiceImpl connectionService;
   private final RulesServiceImpl rulesService;
   private final ActiveRulesServiceImpl activeRulesService;
+  private final HotspotServiceImpl hotspotService;
 
   private final ExecutorService clientEventsExecutorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Client Events Processor"));
 
@@ -63,6 +66,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     var serverApiProvider = new ServerApiProvider(connectionConfigurationRepository, client);
     rulesService = new RulesServiceImpl(pluginsService, rulesRepository);
     activeRulesService = new ActiveRulesServiceImpl(serverApiProvider, rulesService, configurationRepository);
+    this.hotspotService = new HotspotServiceImpl(client, configurationRepository, connectionConfigurationRepository);
     var bindingClueProvider = new BindingClueProvider(connectionConfigurationRepository, client);
     var sonarProjectCache = new SonarProjectsCache(serverApiProvider);
     bindingSuggestionProvider = new BindingSuggestionProvider(configurationRepository, connectionConfigurationRepository, client, bindingClueProvider, sonarProjectCache);
@@ -96,6 +100,11 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   @Override
   public ActiveRulesServiceImpl getActiveRulesService() {
     return activeRulesService;
+  }
+
+  @Override
+  public HotspotService getHotspotService() {
+    return hotspotService;
   }
 
   @Override

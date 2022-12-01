@@ -23,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import javax.annotation.CheckForNull;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
+import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.fs.FindFileByNamesInScopeResponse;
@@ -43,4 +44,7 @@ public interface SonarLintClient {
   @Deprecated(forRemoval = true)
   @CheckForNull
   HttpClient getHttpClient(String connectionId);
+
+  @JsonNotification
+  void openUrlInBrowser(OpenUrlInBrowserParams params);
 }

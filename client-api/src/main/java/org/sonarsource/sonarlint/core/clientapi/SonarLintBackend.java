@@ -24,6 +24,7 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonDelegate;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.sonarsource.sonarlint.core.clientapi.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.connection.ConnectionService;
+import org.sonarsource.sonarlint.core.clientapi.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.clientapi.rules.ActiveRulesService;
 
 public interface SonarLintBackend {
@@ -42,6 +43,9 @@ public interface SonarLintBackend {
 
   @JsonDelegate
   ActiveRulesService getActiveRulesService();
+
+  @JsonDelegate
+  HotspotService getHotspotService();
 
   @JsonRequest
   CompletableFuture<Void> shutdown();
