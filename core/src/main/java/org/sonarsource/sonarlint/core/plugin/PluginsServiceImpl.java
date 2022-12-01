@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.clientapi.plugin.PluginsService;
+import org.sonarsource.sonarlint.core.clientapi.backend.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;

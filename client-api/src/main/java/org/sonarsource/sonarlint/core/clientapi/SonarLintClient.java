@@ -24,9 +24,9 @@ import javax.annotation.CheckForNull;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
-import org.sonarsource.sonarlint.core.clientapi.config.binding.SuggestBindingParams;
-import org.sonarsource.sonarlint.core.clientapi.fs.FindFileByNamesInScopeParams;
-import org.sonarsource.sonarlint.core.clientapi.fs.FindFileByNamesInScopeResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.SuggestBindingParams;
+import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
+import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 
 public interface SonarLintClient {

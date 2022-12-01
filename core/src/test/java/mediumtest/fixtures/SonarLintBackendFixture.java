@@ -32,17 +32,18 @@ import java.util.concurrent.CompletableFuture;
 import org.jetbrains.annotations.Nullable;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
+import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
-import org.sonarsource.sonarlint.core.clientapi.config.binding.BindingConfigurationDto;
-import org.sonarsource.sonarlint.core.clientapi.config.binding.BindingSuggestionDto;
-import org.sonarsource.sonarlint.core.clientapi.config.binding.SuggestBindingParams;
-import org.sonarsource.sonarlint.core.clientapi.config.scope.ConfigurationScopeDto;
-import org.sonarsource.sonarlint.core.clientapi.config.scope.DidAddConfigurationScopesParams;
-import org.sonarsource.sonarlint.core.clientapi.connection.config.SonarCloudConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.clientapi.connection.config.SonarQubeConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.clientapi.fs.FindFileByNamesInScopeParams;
-import org.sonarsource.sonarlint.core.clientapi.fs.FindFileByNamesInScopeResponse;
-import org.sonarsource.sonarlint.core.clientapi.fs.FoundFileDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingConfigurationDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingSuggestionDto;
+import org.sonarsource.sonarlint.core.clientapi.client.SuggestBindingParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.ConfigurationScopeDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.DidAddConfigurationScopesParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
+import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.fs.FoundFileDto;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import testutils.MockWebServerExtensionWithProtobuf;
@@ -114,7 +115,7 @@ public class SonarLintBackendFixture {
 
     public SonarLintBackendImpl build(SonarLintClient client) {
       var sonarLintBackend = new SonarLintBackendImpl(client);
-      sonarLintBackend.initialize(new org.sonarsource.sonarlint.core.clientapi.InitializeParams(storageRoot, embeddedPluginPaths, extraPluginPathsByKey, Collections.emptyMap(),
+      sonarLintBackend.initialize(new InitializeParams(storageRoot, embeddedPluginPaths, extraPluginPathsByKey, Collections.emptyMap(),
         enabledLanguages, Collections.emptySet(), null, false, sonarQubeConnections, sonarCloudConnections));
       sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
       return sonarLintBackend;
