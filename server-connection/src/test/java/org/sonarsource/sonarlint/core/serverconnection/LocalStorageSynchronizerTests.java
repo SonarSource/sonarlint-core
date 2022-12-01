@@ -38,10 +38,12 @@ import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ServerInfoStorage;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 class LocalStorageSynchronizerTests {
 
@@ -93,7 +95,8 @@ class LocalStorageSynchronizerTests {
         .addBranches(ProjectBranches.Branch.newBuilder().setName("master").setIsMain(true).setType(BranchType.BRANCH))
         .addBranches(ProjectBranches.Branch.newBuilder().setName("feature/foo").setIsMain(false).setType(BranchType.BRANCH)).build());
 
-    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new PluginsStorage(tmpDir), new ProjectStorage(tmpDir));
+    final ServerInfoStorage serverInfoStorage = new ServerInfoStorage(tmpDir);
+    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new ServerInfoSynchronizer(serverInfoStorage), new PluginsStorage(tmpDir), new ProjectStorage(tmpDir));
 
     synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor);
 
@@ -147,7 +150,8 @@ class LocalStorageSynchronizerTests {
       ProjectBranches.ListWsResponse.newBuilder()
         .addBranches(ProjectBranches.Branch.newBuilder().setName("master").setIsMain(true).setType(BranchType.BRANCH))
         .addBranches(ProjectBranches.Branch.newBuilder().setName("feature/foo").setIsMain(false).setType(BranchType.BRANCH)).build());
-    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new PluginsStorage(tmpDir), new ProjectStorage(tmpDir));
+    final ServerInfoStorage serverInfoStorage = new ServerInfoStorage(tmpDir);
+    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new ServerInfoSynchronizer(serverInfoStorage), new PluginsStorage(tmpDir), new ProjectStorage(tmpDir));
 
     synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor);
 
@@ -157,12 +161,16 @@ class LocalStorageSynchronizerTests {
   }
 
   @Test
-  void should_not_synchronize_when_server_is_down(@TempDir Path tmpDir) {
+  void should_fail_synchronization_when_server_is_down(@TempDir Path tmpDir) {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"1\", \"status\": \"DOWN\", \"version\": \"1\"}");
-    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new PluginsStorage(tmpDir), new ProjectStorage(tmpDir));
+    final ServerInfoStorage serverInfoStorage = new ServerInfoStorage(tmpDir);
+    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new ServerInfoSynchronizer(serverInfoStorage), new PluginsStorage(tmpDir), new ProjectStorage(tmpDir));
 
-    synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor);
+    var throwable = catchThrowable(() -> synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor));
 
+    assertThat(throwable)
+      .isInstanceOf(IllegalStateException.class)
+      .hasMessage("Server not ready (DOWN)");
     var storageFile = tmpDir.resolve("70726f6a6563744b6579/analyzer_config.pb");
     assertThat(storageFile).doesNotExist();
   }
