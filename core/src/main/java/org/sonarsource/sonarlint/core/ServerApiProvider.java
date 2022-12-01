@@ -23,12 +23,7 @@ import java.util.Optional;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
-import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
-import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
-import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-
-import static org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration.SONARCLOUD_URL;
 
 public class ServerApiProvider {
 
@@ -42,20 +37,14 @@ public class ServerApiProvider {
   }
 
   public Optional<ServerApi> getServerApi(String connectionId) {
-    var connectionConfig = connectionRepository.getConnectionById(connectionId);
-    EndpointParams params;
-    if (connectionConfig instanceof SonarQubeConnectionConfiguration) {
-      params = new EndpointParams(((SonarQubeConnectionConfiguration) connectionConfig).getServerUrl(), false, null);
-    } else if (connectionConfig instanceof SonarCloudConnectionConfiguration) {
-      params = new EndpointParams(SONARCLOUD_URL, true, ((SonarCloudConnectionConfiguration) connectionConfig).getOrganization());
-    } else {
+    var params = connectionRepository.getEndpointParams(connectionId);
+    if (params.isEmpty()) {
       LOG.debug("Connection '{}' is gone", connectionId);
       return Optional.empty();
     }
-    var httpClient = client.
-      getHttpClient(connectionId);
+    var httpClient = client.getHttpClient(connectionId);
     if (httpClient != null) {
-      return Optional.of(new ServerApi(params, httpClient));
+      return Optional.of(new ServerApi(params.get(), httpClient));
     } else {
       return Optional.empty();
     }

@@ -56,7 +56,7 @@ public class ServerPathProvider {
     if (isSonarCloud || !serverVersion.satisfiesMinRequirement(minVersion)) {
       relativePath.append("/account/security");
     } else {
-      relativePath.append("/sonarlint/auth").append("?ideName=").append(UrlUtils.urlEncode(ideName)).append(portParameter);
+      relativePath.append("/sonarlint/auth?ideName=").append(UrlUtils.urlEncode(ideName)).append(portParameter);
     }
     return ServerApiHelper.concat(baseUrl, relativePath.toString());
   }

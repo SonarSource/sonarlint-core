@@ -19,12 +19,14 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -39,7 +41,8 @@ class ServerApiProviderTests {
 
   @Test
   void getServerApi_for_sonarqube() {
-    when(connectionRepository.getConnectionById("sq1")).thenReturn(new SonarQubeConnectionConfiguration("sq1", "http://mysonarqube.org"));
+    var endpointParams = mock(EndpointParams.class);
+    when(connectionRepository.getEndpointParams("sq1")).thenReturn(Optional.of(endpointParams));
     var httpClient = mock(HttpClient.class);
     when(client.getHttpClient("sq1")).thenReturn(httpClient);
 
@@ -50,7 +53,8 @@ class ServerApiProviderTests {
 
   @Test
   void getServerApi_for_sonarcloud() {
-    when(connectionRepository.getConnectionById("sc1")).thenReturn(new SonarCloudConnectionConfiguration("sc1", "myorg"));
+    var endpointParams = mock(EndpointParams.class);
+    when(connectionRepository.getEndpointParams("sc1")).thenReturn(Optional.of(endpointParams));
     var httpClient = mock(HttpClient.class);
     when(client.getHttpClient("sc1")).thenReturn(httpClient);
 

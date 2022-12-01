@@ -21,7 +21,11 @@ package org.sonarsource.sonarlint.core.repository.connection;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.CheckForNull;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+
+import static org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration.SONARCLOUD_URL;
 
 public class ConnectionConfigurationRepository {
 
@@ -52,5 +56,16 @@ public class ConnectionConfigurationRepository {
   @CheckForNull
   public AbstractConnectionConfiguration getConnectionById(String id) {
     return connectionsById.get(id);
+  }
+
+  public Optional<EndpointParams> getEndpointParams(String connectionId) {
+    var connectionConfig = getConnectionById(connectionId);
+    if (connectionConfig instanceof SonarQubeConnectionConfiguration) {
+      return Optional.of(new EndpointParams(((SonarQubeConnectionConfiguration) connectionConfig).getServerUrl(), false, null));
+    } else if (connectionConfig instanceof SonarCloudConnectionConfiguration) {
+      return Optional.of(new EndpointParams(SONARCLOUD_URL, true, ((SonarCloudConnectionConfiguration) connectionConfig).getOrganization()));
+    } else {
+      return Optional.empty();
+    }
   }
 }

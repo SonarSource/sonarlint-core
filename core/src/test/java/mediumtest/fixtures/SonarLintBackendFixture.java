@@ -32,6 +32,7 @@ import java.util.concurrent.CompletableFuture;
 import org.jetbrains.annotations.Nullable;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
+import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.clientapi.config.binding.SuggestBindingParams;
@@ -140,6 +141,8 @@ public class SonarLintBackendFixture {
   public static class FakeSonarLintClient implements SonarLintClient {
     private static final HttpClient httpClient = MockWebServerExtensionWithProtobuf.httpClient();
     private final Map<String, List<BindingSuggestionDto>> bindingSuggestions = new HashMap<>();
+
+    private List<String> urlsToOpen = new ArrayList<>();
     private final List<FoundFileDto> foundFiles;
 
     public FakeSonarLintClient(List<FoundFileDto> foundFiles) {
@@ -162,12 +165,21 @@ public class SonarLintBackendFixture {
       return httpClient;
     }
 
+    @Override
+    public void openUrlInBrowser(OpenUrlInBrowserParams params) {
+      urlsToOpen.add(params.getUrl());
+    }
+
     public boolean hasReceivedSuggestions() {
       return !bindingSuggestions.isEmpty();
     }
 
     public Map<String, List<BindingSuggestionDto>> getBindingSuggestions() {
       return bindingSuggestions;
+    }
+
+    public List<String> getUrlsToOpen() {
+      return urlsToOpen;
     }
   }
 }
