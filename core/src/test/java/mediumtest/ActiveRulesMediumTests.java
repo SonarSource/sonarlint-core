@@ -34,6 +34,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleDescriptionTabDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetActiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -62,7 +63,7 @@ class ActiveRulesMediumTests {
       .withEmbeddedPlugin(TestPlugin.PYTHON)
       .build();
 
-    var activeRuleDetailsResponse = this.backend.getActiveRulesService().getActiveRuleDetails("scopeId", "python:S139").get();
+    var activeRuleDetailsResponse = this.backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139")).get();
 
     var details = activeRuleDetailsResponse.details();
     assertThat(details)
@@ -82,7 +83,7 @@ class ActiveRulesMediumTests {
       .withEmbeddedPlugin(TestPlugin.PYTHON)
       .build();
 
-    var futureResponse = backend.getActiveRulesService().getActiveRuleDetails("scopeId", "python:SXXXX");
+    var futureResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:SXXXX"));
 
     assertThat(futureResponse).failsWithin(1, TimeUnit.SECONDS)
       .withThrowableOfType(ExecutionException.class)
@@ -102,7 +103,7 @@ class ActiveRulesMediumTests {
       .withEnabledLanguage(Language.JAVA)
       .build();
 
-    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails("scopeId", "java:S106").get();
+    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "java:S106")).get();
 
     var details = activeRuleDetailsResponse.details();
     assertThat(details)
@@ -123,7 +124,7 @@ class ActiveRulesMediumTests {
       .withExtraPlugin(TestPlugin.PYTHON)
       .build();
 
-    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails("scopeId", "python:S139").get();
+    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139")).get();
 
     var details = activeRuleDetailsResponse.details();
     assertThat(details)
@@ -152,7 +153,7 @@ class ActiveRulesMediumTests {
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
       .build());
 
-    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails("scopeId", "python:S139").get();
+    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139")).get();
 
     var details = activeRuleDetailsResponse.details();
     assertThat(details)
@@ -180,7 +181,7 @@ class ActiveRulesMediumTests {
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
       .build());
 
-    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails("childScopeId", "python:S139").get();
+    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("childScopeId", "python:S139")).get();
 
     var details = activeRuleDetailsResponse.details();
     assertThat(details)
@@ -206,7 +207,7 @@ class ActiveRulesMediumTests {
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
       .build());
 
-    var futureResponse = backend.getActiveRulesService().getActiveRuleDetails("scopeId", "python:S139");
+    var futureResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139"));
 
     assertThat(futureResponse).failsWithin(1, TimeUnit.SECONDS)
       .withThrowableOfType(ExecutionException.class)
@@ -228,7 +229,7 @@ class ActiveRulesMediumTests {
       .withExtraPlugin(TestPlugin.PYTHON)
       .build();
 
-    var futureResponse = backend.getActiveRulesService().getActiveRuleDetails("scopeId", "python:S139");
+    var futureResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139"));
 
     assertThat(futureResponse).failsWithin(3, TimeUnit.SECONDS)
       .withThrowableOfType(ExecutionException.class)
@@ -253,7 +254,7 @@ class ActiveRulesMediumTests {
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
       .build());
 
-    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails("scopeId", "python:custom").get();
+    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:custom")).get();
 
     var details = activeRuleDetailsResponse.details();
     assertThat(details)
@@ -280,7 +281,7 @@ class ActiveRulesMediumTests {
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
       .build());
 
-    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails("scopeId", "python:S139").get();
+    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139")).get();
 
     var details = activeRuleDetailsResponse.details();
     assertThat(details)
@@ -317,7 +318,7 @@ class ActiveRulesMediumTests {
         .build())
       .build());
 
-    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails("scopeId", "python:S139").get();
+    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139")).get();
 
     var details = activeRuleDetailsResponse.details();
     assertThat(details)

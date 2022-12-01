@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleNonConte
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleParamDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleSplitDescriptionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRulesService;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetActiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetActiveRuleDetailsResponse;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.repository.config.Binding;
@@ -81,10 +82,10 @@ public class ActiveRulesServiceImpl implements ActiveRulesService {
   }
 
   @Override
-  public CompletableFuture<GetActiveRuleDetailsResponse> getActiveRuleDetails(String configurationScopeId, String ruleKey) {
-    return configurationRepository.getEffectiveBinding(configurationScopeId)
-      .map(binding -> getActiveRuleForBinding(ruleKey, binding))
-      .orElseGet(() -> getActiveEmbeddedRule(ruleKey))
+  public CompletableFuture<GetActiveRuleDetailsResponse> getActiveRuleDetails(GetActiveRuleDetailsParams params) {
+    return configurationRepository.getEffectiveBinding(params.getConfigurationScopeId())
+      .map(binding -> getActiveRuleForBinding(params.getRuleKey(), binding))
+      .orElseGet(() -> getActiveEmbeddedRule(params.getRuleKey()))
       .thenApply(ActiveRulesServiceImpl::response);
   }
 
