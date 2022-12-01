@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
@@ -82,6 +83,7 @@ public class ServerConnection {
   private final Path connectionStorageRoot;
   private final EventDispatcher coreEventRouter;
   private final ServerInfoSynchronizer serverInfoSynchronizer;
+  private final ServerInfoStorage serverInfoStorage;
 
   public ServerConnection(Path globalStorageRoot, String connectionId, boolean isSonarCloud, Set<Language> enabledLanguages, Set<String> embeddedPluginKeys, Path workDir) {
     this.isSonarCloud = isSonarCloud;
@@ -98,7 +100,7 @@ public class ServerConnection {
     this.issueStoreReader = new IssueStoreReader(serverIssueStoresManager);
     this.issuesUpdater = new ServerIssueUpdater(serverIssueStoresManager, new IssueDownloader(enabledLanguages), new TaintIssueDownloader(enabledLanguages));
     this.hotspotsUpdater = new ServerHotspotUpdater(serverIssueStoresManager);
-    var serverInfoStorage = new ServerInfoStorage(connectionStorageRoot);
+    serverInfoStorage = new ServerInfoStorage(connectionStorageRoot);
     this.pluginsStorage = new PluginsStorage(connectionStorageRoot.resolve("plugins"));
     serverInfoSynchronizer = new ServerInfoSynchronizer(serverInfoStorage);
     this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguages, embeddedPluginKeys, serverInfoSynchronizer, pluginsStorage, projectStorage);
@@ -209,6 +211,13 @@ public class ServerConnection {
 
   public Collection<ServerHotspot> getServerHotspots(ProjectBinding projectBinding, String branchName, String ideFilePath) {
     return issueStoreReader.getServerHotspots(projectBinding, branchName, ideFilePath);
+  }
+
+  public boolean permitsHotspotTracking() {
+    // when storage is not present, consider hotspots should not be detected
+    return serverInfoStorage.getServerInfo()
+      .map(serverInfo -> HotspotApi.permitsTracking(isSonarCloud, serverInfo::getVersion))
+      .orElse(false);
   }
 
   public void syncServerIssuesForProject(EndpointParams endpoint, HttpClient client, String projectKey, String branchName) {

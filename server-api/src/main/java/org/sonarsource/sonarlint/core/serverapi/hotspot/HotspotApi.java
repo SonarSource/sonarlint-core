@@ -55,7 +55,11 @@ public class HotspotApi {
   }
 
   public boolean permitsTracking(Supplier<Version> serverVersion) {
-    return !helper.isSonarCloud() && serverVersion.get().compareToIgnoreQualifier(TRACKING_COMPATIBLE_MIN_SQ_VERSION) >= 0;
+    return permitsTracking(helper.isSonarCloud(), serverVersion);
+  }
+
+  public static boolean permitsTracking(boolean isSonarCloud, Supplier<Version> serverVersion) {
+    return !isSonarCloud && serverVersion.get().compareToIgnoreQualifier(TRACKING_COMPATIBLE_MIN_SQ_VERSION) >= 0;
   }
 
   public Collection<ServerHotspot> getAll(String projectKey, String branchName, ProgressMonitor progress) {

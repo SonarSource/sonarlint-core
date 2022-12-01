@@ -247,16 +247,22 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
               continue;
             }
           }
-          analysisRulesContext.includeRule(ruleOrTemplateDefinition, activeRuleFromStorage);
+          if (shouldIncludeRuleForAnalysis(ruleOrTemplateDefinition)) {
+            analysisRulesContext.includeRule(ruleOrTemplateDefinition, activeRuleFromStorage);
+          }
         }
       });
 
     analysisContext.get().allRulesDefinitionsByKey.values().stream()
       .filter(ruleDefinition -> isRuleFromExtraPlugin(ruleDefinition.getLanguage(), globalConfig))
+      .filter(this::shouldIncludeRuleForAnalysis)
       .forEach(analysisRulesContext::includeRule);
 
     return analysisRulesContext;
+  }
 
+  private boolean shouldIncludeRuleForAnalysis(SonarLintRuleDefinition ruleDefinition) {
+    return !ruleDefinition.getType().equals(RuleType.SECURITY_HOTSPOT) || serverConnection.permitsHotspotTracking();
   }
 
   private ServerActiveRule tryConvertDeprecatedKeys(ServerActiveRule possiblyDeprecatedActiveRuleFromStorage) {
