@@ -26,6 +26,10 @@ package sonarlint;
 option java_package = "org.sonarsource.sonarlint.core.serverconnection.proto";
 option optimize_for = SPEED;
 
+message ServerInfo {
+    string version = 1;
+}
+
 message PluginReferences {
     map<string, PluginReference> plugins_by_key = 1;
   

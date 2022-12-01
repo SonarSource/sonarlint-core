@@ -39,23 +39,20 @@ public class LocalStorageSynchronizer {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final Set<String> enabledLanguageKeys;
+  private final ServerInfoSynchronizer serverInfoSynchronizer;
   private final PluginsSynchronizer pluginsSynchronizer;
   private final ProjectStorage projectStorage;
 
-  public LocalStorageSynchronizer(Set<Language> enabledLanguages, Set<String> embeddedPluginKeys, PluginsStorage pluginsStorage, ProjectStorage projectStorage) {
+  public LocalStorageSynchronizer(Set<Language> enabledLanguages, Set<String> embeddedPluginKeys, ServerInfoSynchronizer serverInfoSynchronizer, PluginsStorage pluginsStorage,
+    ProjectStorage projectStorage) {
     this.enabledLanguageKeys = enabledLanguages.stream().map(Language::getLanguageKey).collect(toSet());
     this.projectStorage = projectStorage;
     this.pluginsSynchronizer = new PluginsSynchronizer(enabledLanguages, pluginsStorage, embeddedPluginKeys);
+    this.serverInfoSynchronizer = serverInfoSynchronizer;
   }
 
   public SynchronizationResult synchronize(ServerApi serverApi, Set<String> projectKeys, ProgressMonitor progressMonitor) {
-    var serverStatus = serverApi.system().getStatusSync();
-    if (!serverStatus.isUp()) {
-      LOG.info("[SYNC] Cannot synchronize with server as it is not UP ({})", serverStatus.getStatus());
-      return new SynchronizationResult(false);
-    }
-
-    new ServerVersionAndStatusChecker(serverApi).checkVersionAndStatus();
+    serverInfoSynchronizer.synchronize(serverApi);
 
     var anyPluginUpdated = pluginsSynchronizer.synchronize(serverApi, progressMonitor);
     projectKeys.stream()

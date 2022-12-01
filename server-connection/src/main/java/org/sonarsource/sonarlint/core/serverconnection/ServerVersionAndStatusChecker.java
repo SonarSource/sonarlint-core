@@ -59,27 +59,21 @@ public class ServerVersionAndStatusChecker {
    * @throws IllegalStateException If server is not ready
    */
   public CompletableFuture<ServerInfo> checkVersionAndStatusAsync() {
-    return checkVersionAndStatusAsync(MIN_SQ_VERSION);
-  }
-
-  /**
-   * Checks SonarQube version against a provided minimum version
-   * @return ServerInfos
-   * @throws UnsupportedServerException if version &lt; minimum supported version
-   * @throws IllegalStateException If server is not ready
-   */
-  public CompletableFuture<ServerInfo> checkVersionAndStatusAsync(String minVersion) {
     return systemApi.getStatus()
       .thenApply(serverStatus -> {
-        if (!serverStatus.isUp()) {
-          throw new IllegalStateException(serverNotReady(serverStatus));
-        }
-        var serverVersion = Version.create(serverStatus.getVersion());
-        if (serverVersion.compareToIgnoreQualifier(Version.create(minVersion)) < 0) {
-          throw new UnsupportedServerException(unsupportedVersion(serverStatus, minVersion));
-        }
+        checkServerUpAndSupported(serverStatus);
         return serverStatus;
       });
+  }
+
+  public static void checkServerUpAndSupported(ServerInfo serverInfo) {
+    if (!serverInfo.isUp()) {
+      throw new IllegalStateException(serverNotReady(serverInfo));
+    }
+    var serverVersion = Version.create(serverInfo.getVersion());
+    if (serverVersion.compareToIgnoreQualifier(Version.create(MIN_SQ_VERSION)) < 0) {
+      throw new UnsupportedServerException(unsupportedVersion(serverInfo, MIN_SQ_VERSION));
+    }
   }
 
   private static String unsupportedVersion(ServerInfo serverStatus, String minVersion) {

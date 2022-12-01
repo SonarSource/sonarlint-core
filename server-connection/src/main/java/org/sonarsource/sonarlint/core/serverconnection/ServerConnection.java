@@ -57,6 +57,7 @@ import org.sonarsource.sonarlint.core.serverconnection.prefix.FileTreeMatcher;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ServerInfoStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStoresManager;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageReader;
 
@@ -80,6 +81,7 @@ public class ServerConnection {
 
   private final Path connectionStorageRoot;
   private final EventDispatcher coreEventRouter;
+  private final ServerInfoSynchronizer serverInfoSynchronizer;
 
   public ServerConnection(Path globalStorageRoot, String connectionId, boolean isSonarCloud, Set<Language> enabledLanguages, Set<String> embeddedPluginKeys, Path workDir) {
     this.isSonarCloud = isSonarCloud;
@@ -96,8 +98,10 @@ public class ServerConnection {
     this.issueStoreReader = new IssueStoreReader(serverIssueStoresManager);
     this.issuesUpdater = new ServerIssueUpdater(serverIssueStoresManager, new IssueDownloader(enabledLanguages), new TaintIssueDownloader(enabledLanguages));
     this.hotspotsUpdater = new ServerHotspotUpdater(serverIssueStoresManager);
+    var serverInfoStorage = new ServerInfoStorage(connectionStorageRoot);
     this.pluginsStorage = new PluginsStorage(connectionStorageRoot.resolve("plugins"));
-    this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguages, embeddedPluginKeys, pluginsStorage, projectStorage);
+    serverInfoSynchronizer = new ServerInfoSynchronizer(serverInfoStorage);
+    this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguages, embeddedPluginKeys, serverInfoSynchronizer, pluginsStorage, projectStorage);
     this.projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(projectStoragePaths);
     pluginsStorage.cleanUp();
     coreEventRouter = new EventDispatcher()
@@ -172,36 +176,35 @@ public class ServerConnection {
 
   public void downloadServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName) {
     var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
-    var serverVersion = checkStatusAndGetServerVersion(serverApi);
+    var serverVersion = readOrSynchronizeServerVersion(serverApi);
     issuesUpdater.updateFileIssues(serverApi, projectBinding, ideFilePath, branchName, isSonarCloud, serverVersion);
   }
 
   public void downloadServerTaintIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
     ProgressMonitor progress) {
     var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
-    var serverVersion = checkStatusAndGetServerVersion(serverApi);
+    var serverVersion = readOrSynchronizeServerVersion(serverApi);
     issuesUpdater.updateFileTaints(serverApi, projectBinding, ideFilePath, branchName, isSonarCloud, serverVersion, progress);
   }
 
-  private static Version checkStatusAndGetServerVersion(ServerApi serverApi) {
-    var status = new ServerVersionAndStatusChecker(serverApi).checkVersionAndStatus();
-    return Version.create(status.getVersion());
+  private Version readOrSynchronizeServerVersion(ServerApi serverApi) {
+    return serverInfoSynchronizer.readOrSynchronizeServerInfo(serverApi).getVersion();
   }
 
   public void downloadServerIssuesForProject(EndpointParams endpoint, HttpClient client, String projectKey, String branchName) {
     var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
-    var serverVersion = checkStatusAndGetServerVersion(serverApi);
+    var serverVersion = readOrSynchronizeServerVersion(serverApi);
     issuesUpdater.update(serverApi, projectKey, branchName, isSonarCloud, serverVersion);
   }
 
   public void downloadAllServerHotspots(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, ProgressMonitor progress) {
     var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
-    hotspotsUpdater.updateAll(serverApi.hotspot(), projectKey, branchName, () -> checkStatusAndGetServerVersion(serverApi), progress);
+    hotspotsUpdater.updateAll(serverApi.hotspot(), projectKey, branchName, () -> readOrSynchronizeServerVersion(serverApi), progress);
   }
 
   public void downloadAllServerHotspotsForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName) {
     var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
-    hotspotsUpdater.updateForFile(serverApi.hotspot(), projectBinding, ideFilePath, branchName, () -> checkStatusAndGetServerVersion(serverApi));
+    hotspotsUpdater.updateForFile(serverApi.hotspot(), projectBinding, ideFilePath, branchName, () -> readOrSynchronizeServerVersion(serverApi));
   }
 
   public Collection<ServerHotspot> getServerHotspots(ProjectBinding projectBinding, String branchName, String ideFilePath) {
@@ -210,7 +213,7 @@ public class ServerConnection {
 
   public void syncServerIssuesForProject(EndpointParams endpoint, HttpClient client, String projectKey, String branchName) {
     var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
-    var serverVersion = checkStatusAndGetServerVersion(serverApi);
+    var serverVersion = readOrSynchronizeServerVersion(serverApi);
     if (IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
       LOG.info("[SYNC] Synchronizing issues for project '{}' on branch '{}'", projectKey, branchName);
       issuesUpdater.sync(serverApi, projectKey, branchName);
@@ -221,7 +224,7 @@ public class ServerConnection {
 
   public void syncServerTaintIssuesForProject(EndpointParams endpoint, HttpClient client, String projectKey, String branchName) {
     var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
-    var serverVersion = checkStatusAndGetServerVersion(serverApi);
+    var serverVersion = readOrSynchronizeServerVersion(serverApi);
     if (IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
       LOG.info("[SYNC] Synchronizing taint issues for project '{}' on branch '{}'", projectKey, branchName);
       issuesUpdater.syncTaints(serverApi, projectKey, branchName);
