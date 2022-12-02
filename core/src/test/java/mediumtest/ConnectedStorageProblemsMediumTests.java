@@ -86,10 +86,13 @@ class ConnectedStorageProblemsMediumTests {
     var storage = newStorage(storageId)
       .withJSPlugin()
       .withJavaPlugin()
-      .withProject("myProject")
+      .withProject("myProject",
+        project -> project.withRuleSet(Language.JS.getLanguageKey(),
+          ruleSet -> ruleSet.withActiveRule("java:S106", "BLOCKER")))
       .create(slHome);
 
-    var cachedJSPlugin = storage.getPluginPaths().get(0);
+    var cachedJSPlugin = storage.getPluginPaths().stream().filter(pluginPath -> pluginPath.getFileName().toString().contains("javascript")).findFirst().get();
+
     FileUtils.write(cachedJSPlugin.toFile(), "corrupted jar", StandardCharsets.UTF_8);
 
     List<String> logs = new CopyOnWriteArrayList<>();

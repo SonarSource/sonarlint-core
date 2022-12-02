@@ -61,11 +61,14 @@ class ConnectedExtraPluginMediumTests {
   private static File baseDir;
 
   @BeforeAll
-  static void prepare(@TempDir Path slHome) throws Exception {
+  static void prepare(@TempDir Path slHome) {
     var storage = newStorage(SERVER_ID)
       .withJSPlugin()
       .withProject("test-project")
-      .withProject(JAVA_MODULE_KEY)
+      .withProject(JAVA_MODULE_KEY,
+        project -> project.withRuleSet(Language.JS.getLanguageKey(),
+          // at least one active rule for extra plugin rules to be executed
+          ruleSet -> ruleSet.withActiveRule("javascript:S1481", "BLOCKER")))
       .create(slHome);
 
     var nodeJsHelper = new NodeJsHelper();
