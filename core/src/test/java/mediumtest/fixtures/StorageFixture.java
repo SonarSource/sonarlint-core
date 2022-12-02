@@ -70,9 +70,15 @@ public class StorageFixture {
     private final String connectionId;
     private final List<Plugin> plugins = new ArrayList<>();
     private final List<ProjectStorageFixture.ProjectStorageBuilder> projectBuilders = new ArrayList<>();
+    private String serverVersion;
 
     private StorageBuilder(String connectionId) {
       this.connectionId = connectionId;
+    }
+
+    public StorageBuilder withServerVersion(String serverVersion) {
+      this.serverVersion = serverVersion;
+      return this;
     }
 
     public StorageBuilder withJSPlugin() {
@@ -111,12 +117,20 @@ public class StorageFixture {
         throw new IllegalStateException(e);
       }
 
+      createServerInfo(connectionStorage);
+
       var pluginPaths = createPlugins(pluginsFolderPath);
       createPluginReferences(pluginsFolderPath);
 
       List<ProjectStorageFixture.ProjectStorage> projectStorages = new ArrayList<>();
       projectBuilders.forEach(project -> projectStorages.add(project.create(projectsFolderPath)));
       return new Storage(storagePath, pluginPaths, projectStorages);
+    }
+
+    private void createServerInfo(Path connectionStorage) {
+      if (serverVersion != null) {
+        ProtobufUtil.writeToFile(Sonarlint.ServerInfo.newBuilder().setVersion(serverVersion).build(), connectionStorage.resolve("server_info.pb"));
+      }
     }
 
     private List<Path> createPlugins(Path pluginsFolderPath) {
