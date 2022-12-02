@@ -44,6 +44,7 @@ class TelemetryLocalStorage {
   private final Map<String, TelemetryAnalyzerPerformance> analyzers;
   private final Map<String, TelemetryNotificationsCounter> notificationsCountersByEventType;
   private int showHotspotRequestsCount;
+  private int openHotspotInBrowserCount;
   private int taintVulnerabilitiesInvestigatedLocallyCount;
   private int taintVulnerabilitiesInvestigatedRemotelyCount;
   private final Set<String> raisedIssuesRules;
@@ -130,6 +131,7 @@ class TelemetryLocalStorage {
     this.analyzers.clear();
     this.notificationsCountersByEventType.clear();
     showHotspotRequestsCount = 0;
+    openHotspotInBrowserCount = 0;
     taintVulnerabilitiesInvestigatedLocallyCount = 0;
     taintVulnerabilitiesInvestigatedRemotelyCount = 0;
     raisedIssuesRules.clear();
@@ -235,6 +237,15 @@ class TelemetryLocalStorage {
 
   public int showHotspotRequestsCount() {
     return showHotspotRequestsCount;
+  }
+
+  public void incrementOpenHotspotInBrowserCount() {
+    markSonarLintAsUsedToday();
+    openHotspotInBrowserCount++;
+  }
+
+  public int openHotspotInBrowserCount() {
+    return openHotspotInBrowserCount;
   }
 
   public void incrementTaintVulnerabilitiesInvestigatedLocallyCount() {

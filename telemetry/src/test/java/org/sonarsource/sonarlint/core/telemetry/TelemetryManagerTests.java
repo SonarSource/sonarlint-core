@@ -336,6 +336,19 @@ class TelemetryManagerTests {
   }
 
   @Test
+  void accumulate_open_hotspot_in_browser() {
+    createAndSaveSampleData(storage);
+
+    // note: the manager hasn't seen the saved data
+    manager.showHotspotRequestReceived();
+    manager.showHotspotRequestReceived();
+
+    var reloaded = storage.tryRead();
+
+    assertThat(reloaded.showHotspotRequestsCount()).isEqualTo(2);
+  }
+
+  @Test
   void accumulate_investigated_taint_vulnerabilities() {
     createAndSaveSampleData(storage);
 

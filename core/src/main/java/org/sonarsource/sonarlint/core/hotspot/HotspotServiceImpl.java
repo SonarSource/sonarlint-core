@@ -29,6 +29,7 @@ import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurat
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
 public class HotspotServiceImpl implements HotspotService {
 
@@ -38,10 +39,13 @@ public class HotspotServiceImpl implements HotspotService {
   private final ConfigurationRepository configurationRepository;
   private final ConnectionConfigurationRepository connectionRepository;
 
-  public HotspotServiceImpl(SonarLintClient client, ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository) {
+  private final TelemetryServiceImpl telemetryService;
+
+  public HotspotServiceImpl(SonarLintClient client, ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository, TelemetryServiceImpl telemetryService) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
+    this.telemetryService = telemetryService;
   }
 
   @Override
@@ -56,6 +60,8 @@ public class HotspotServiceImpl implements HotspotService {
     var url = buildHotspotUrl(effectiveBinding.get().getSonarProjectKey(), params.getBranch(), params.getHotspotKey(), endpointParams.get());
 
     client.openUrlInBrowser(new OpenUrlInBrowserParams(url));
+
+    telemetryService.hotspotOpenedInBrowser();
   }
 
   static String buildHotspotUrl(String projectKey, String branch, String hotspotKey, EndpointParams endpointParams) {

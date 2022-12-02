@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
 
 public class InitializeParams {
+  private final String productKey;
   private final Path storageRoot;
   private final Set<Path> embeddedPluginPaths;
   private final Map<String, Path> connectedModeExtraPluginPathsByKey;
@@ -42,10 +43,16 @@ public class InitializeParams {
   private final List<SonarQubeConnectionConfigurationDto> sonarQubeConnections;
   private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections;
 
-  public InitializeParams(Path storageRoot, Set<Path> embeddedPluginPaths, Map<String, Path> connectedModeExtraPluginPathsByKey,
+  /**
+   *
+   * @param productKey SonarLint product key (vscode, idea, eclipse, ...)
+   */
+  public InitializeParams(String productKey,
+    Path storageRoot, Set<Path> embeddedPluginPaths, Map<String, Path> connectedModeExtraPluginPathsByKey,
     Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> extraEnabledLanguagesInConnectedMode,
     @Nullable Version nodeJsVersion, boolean enableSecurityHotspots,
     List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections) {
+    this.productKey = productKey;
     this.storageRoot = storageRoot;
     this.embeddedPluginPaths = embeddedPluginPaths;
     this.connectedModeExtraPluginPathsByKey = connectedModeExtraPluginPathsByKey;
@@ -56,6 +63,10 @@ public class InitializeParams {
     this.enableSecurityHotspots = enableSecurityHotspots;
     this.sonarQubeConnections = sonarQubeConnections;
     this.sonarCloudConnections = sonarCloudConnections;
+  }
+
+  public String getProductKey() {
+    return productKey;
   }
 
   public Path getStorageRoot() {

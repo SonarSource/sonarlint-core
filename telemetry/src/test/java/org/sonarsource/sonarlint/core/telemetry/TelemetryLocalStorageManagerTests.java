@@ -184,4 +184,15 @@ class TelemetryLocalStorageManagerTests {
     });
     assertThat(storage.tryRead().numUseDays()).isEqualTo(nThreads);
   }
+
+  @Test
+  void should_increment_open_hotspot_in_browser() {
+    var storage = new TelemetryLocalStorageManager(filePath);
+
+    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementOpenHotspotInBrowserCount);
+    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementOpenHotspotInBrowserCount);
+
+    var data2 = storage.tryRead();
+    assertThat(data2.openHotspotInBrowserCount()).isEqualTo(2);
+  }
 }

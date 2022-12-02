@@ -27,9 +27,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
+import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.hotspot.HotspotServiceImpl;
@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurat
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rules.ActiveRulesServiceImpl;
 import org.sonarsource.sonarlint.core.rules.RulesServiceImpl;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
 public class SonarLintBackendImpl implements SonarLintBackend {
 
@@ -48,6 +49,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   private final RulesServiceImpl rulesService;
   private final ActiveRulesServiceImpl activeRulesService;
   private final HotspotServiceImpl hotspotService;
+  private final TelemetryServiceImpl telemetryService;
 
   private final ExecutorService clientEventsExecutorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Client Events Processor"));
 
@@ -66,7 +68,8 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     var serverApiProvider = new ServerApiProvider(connectionConfigurationRepository, client);
     rulesService = new RulesServiceImpl(pluginsService, rulesRepository);
     activeRulesService = new ActiveRulesServiceImpl(serverApiProvider, rulesService, configurationRepository);
-    this.hotspotService = new HotspotServiceImpl(client, configurationRepository, connectionConfigurationRepository);
+    this.telemetryService = new TelemetryServiceImpl();
+    this.hotspotService = new HotspotServiceImpl(client, configurationRepository, connectionConfigurationRepository, telemetryService);
     var bindingClueProvider = new BindingClueProvider(connectionConfigurationRepository, client);
     var sonarProjectCache = new SonarProjectsCache(serverApiProvider);
     bindingSuggestionProvider = new BindingSuggestionProvider(configurationRepository, connectionConfigurationRepository, client, bindingClueProvider, sonarProjectCache);
@@ -84,6 +87,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
       params.getConnectedModeExtraPluginPathsByKey(), params.getEnabledLanguagesInStandaloneMode(), enabledLanguagesInConnectedMode, params.getNodeJsVersion());
     rulesService.initialize(params.getEnabledLanguagesInStandaloneMode(), enabledLanguagesInConnectedMode, params.isEnableSecurityHotspots());
     activeRulesService.initialize(params.getStorageRoot());
+    telemetryService.initialize(params.getProductKey());
     return CompletableFuture.completedFuture(null);
   }
 
@@ -105,6 +109,11 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   @Override
   public HotspotService getHotspotService() {
     return hotspotService;
+  }
+
+  @Override
+  public TelemetryServiceImpl getTelemetryService() {
+    return telemetryService;
   }
 
   @Override
