@@ -203,6 +203,10 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     analysisConfigBuilder.putAllExtraProperties(serverConnection.getAnalyzerConfiguration(projectKey).getSettings().getAll());
     analysisConfigBuilder.putAllExtraProperties(globalConfig.extraProperties());
     var activeRulesContext = buildActiveRulesContext(configuration);
+    if (activeRulesContext.activeRules.isEmpty()) {
+      LOG.info("Skipping analysis, no synchronization has been made with the server");
+      return new AnalysisResults();
+    }
     analysisConfigBuilder.putAllExtraProperties(configuration.extraProperties())
       .addActiveRules(activeRulesContext.activeRules)
       .setBaseDir(configuration.baseDir())
@@ -222,8 +226,12 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   private ActiveRulesContext buildActiveRulesContext(ConnectedAnalysisConfiguration configuration) {
     var analysisRulesContext = new ActiveRulesContext();
     var projectKey = configuration.getProjectKey();
-    // could be empty before the first sync
-    serverConnection.getAnalyzerConfiguration(projectKey).getRuleSetByLanguageKey().entrySet()
+    var ruleSetByLanguageKey = serverConnection.getAnalyzerConfiguration(projectKey).getRuleSetByLanguageKey();
+    if (ruleSetByLanguageKey.isEmpty()) {
+      // could be the case before the first sync
+      return analysisRulesContext;
+    }
+    ruleSetByLanguageKey.entrySet()
       .stream().filter(e -> Language.forKey(e.getKey()).filter(l -> globalConfig.getEnabledLanguages().contains(l)).isPresent())
       .forEach(e -> {
         var languageKey = e.getKey();
