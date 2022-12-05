@@ -32,7 +32,6 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorageManager;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
-import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class TelemetryMediumTests {
@@ -49,7 +48,7 @@ class TelemetryMediumTests {
   void tearDown() throws ExecutionException, InterruptedException {
     backend.shutdown().get();
 
-    if (oldValue ==null) {
+    if (oldValue == null) {
       System.clearProperty("sonarlint.telemetry.disabled");
     } else {
       System.setProperty("sonarlint.telemetry.disabled", oldValue);
@@ -59,12 +58,11 @@ class TelemetryMediumTests {
   @Test
   void it_should_not_create_telemetry_file_if_telemetry_disabled_by_system_property(@TempDir Path sonarlintUserHome) throws ExecutionException, InterruptedException {
     System.setProperty("sonarlint.telemetry.disabled", "true");
-    var fakeClient = newFakeClient().build();
     backend = newBackend()
       .withSonarLintUserHome(sonarlintUserHome)
       .withSonarQubeConnection("connectionId", "http://localhost:12345")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .build(fakeClient);
+      .build();
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isFalse();
 
@@ -75,12 +73,11 @@ class TelemetryMediumTests {
   @Test
   void it_should_create_telemetry_file_if_telemetry_enabled(@TempDir Path sonarlintUserHome) throws ExecutionException, InterruptedException {
     System.clearProperty("sonarlint.telemetry.disabled");
-    var fakeClient = newFakeClient().build();
     backend = newBackend()
       .withSonarLintUserHome(sonarlintUserHome)
       .withSonarQubeConnection("connectionId", "http://localhost:12345")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .build(fakeClient);
+      .build();
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isTrue();
 
@@ -91,12 +88,11 @@ class TelemetryMediumTests {
   @Test
   void it_should_consider_telemetry_status_in_file(@TempDir Path sonarlintUserHome) throws ExecutionException, InterruptedException {
     System.clearProperty("sonarlint.telemetry.disabled");
-    var fakeClient = newFakeClient().build();
     backend = newBackend()
       .withSonarLintUserHome(sonarlintUserHome)
       .withSonarQubeConnection("connectionId", "http://localhost:12345")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .build(fakeClient);
+      .build();
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isTrue();
 
@@ -112,6 +108,5 @@ class TelemetryMediumTests {
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isFalse();
   }
-
 
 }

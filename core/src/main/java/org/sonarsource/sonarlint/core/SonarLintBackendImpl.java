@@ -91,7 +91,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     rulesService.initialize(params.getEnabledLanguagesInStandaloneMode(), enabledLanguagesInConnectedMode, params.isEnableSecurityHotspots());
     activeRulesService.initialize(params.getStorageRoot());
     var sonarlintUserHome = Optional.ofNullable(params.getSonarlintUserHome()).map(Paths::get).orElse(SonarLintUserHome.get());
-    telemetryService.initialize(params.getProductKey(), sonarlintUserHome);
+    telemetryService.initialize(params.getTelemetryProductKey(), sonarlintUserHome);
     return CompletableFuture.completedFuture(null);
   }
 

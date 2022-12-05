@@ -31,7 +31,7 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
 
 public class InitializeParams {
-  private final String productKey;
+  private final String telemetryProductKey;
   private final Path storageRoot;
   private final Set<Path> embeddedPluginPaths;
   private final Map<String, Path> connectedModeExtraPluginPathsByKey;
@@ -45,15 +45,15 @@ public class InitializeParams {
   private final String sonarlintUserHome;
 
   /**
-   * @param productKey        SonarLint product key (vscode, idea, eclipse, ...)
+   * @param telemetryProductKey SonarLint product key (vscode, idea, eclipse, ...)
    * @param sonarlintUserHome Path to SonarLint user home directory. If null, will default to ~/.sonarlint
    */
-  public InitializeParams(String productKey,
+  public InitializeParams(String telemetryProductKey,
     Path storageRoot, Set<Path> embeddedPluginPaths, Map<String, Path> connectedModeExtraPluginPathsByKey,
     Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> extraEnabledLanguagesInConnectedMode,
     @Nullable Version nodeJsVersion, boolean enableSecurityHotspots,
     List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections, @Nullable String sonarlintUserHome) {
-    this.productKey = productKey;
+    this.telemetryProductKey = telemetryProductKey;
     this.storageRoot = storageRoot;
     this.embeddedPluginPaths = embeddedPluginPaths;
     this.connectedModeExtraPluginPathsByKey = connectedModeExtraPluginPathsByKey;
@@ -67,8 +67,8 @@ public class InitializeParams {
     this.sonarlintUserHome = sonarlintUserHome;
   }
 
-  public String getProductKey() {
-    return productKey;
+  public String getTelemetryProductKey() {
+    return telemetryProductKey;
   }
 
   public Path getStorageRoot() {
