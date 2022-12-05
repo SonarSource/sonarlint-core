@@ -38,12 +38,12 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 /**
  * Serialize and deserialize telemetry data to persistent storage.
  */
-class TelemetryLocalStorageManager {
+public class TelemetryLocalStorageManager {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final Path path;
   private final Gson gson;
 
-  TelemetryLocalStorageManager(Path path) {
+  public TelemetryLocalStorageManager(Path path) {
     this.path = path;
     this.gson = new GsonBuilder()
       .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter().nullSafe())
@@ -52,7 +52,7 @@ class TelemetryLocalStorageManager {
       .create();
   }
 
-  void tryUpdateAtomically(Consumer<TelemetryLocalStorage> updater) {
+  public void tryUpdateAtomically(Consumer<TelemetryLocalStorage> updater) {
     try {
       updateAtomically(updater);
     } catch (Exception e) {
@@ -105,7 +105,7 @@ class TelemetryLocalStorageManager {
     fileChannel.write(ByteBuffer.wrap(encoded));
   }
 
-  TelemetryLocalStorage tryRead() {
+  public TelemetryLocalStorage tryRead() {
     try {
       if (!Files.exists(path)) {
         return new TelemetryLocalStorage();

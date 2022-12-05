@@ -48,6 +48,7 @@ class TelemetryPayloadTests {
     counters.put("NEW_ISSUES", new TelemetryNotificationsCounterPayload(10, 1));
     var notifPayload = new TelemetryNotificationsPayload(true, counters);
     var showHotspotPayload = new ShowHotspotPayload(4);
+    var hotspotPayload = new HotspotPayload(5);
     var taintVulnerabilitiesPayload = new TaintVulnerabilitiesPayload(6, 7);
     var rulesPayload = new TelemetryRulesPayload(Arrays.asList("enabledRuleKey1", "enabledRuleKey2"), Arrays.asList("disabledRuleKey1", "disabledRuleKey2"),
       Arrays.asList("reportedRuleKey1", "reportedRuleKey2"), Arrays.asList("quickFixedRuleKey1", "quickFixedRuleKey2"));
@@ -59,7 +60,7 @@ class TelemetryPayloadTests {
     additionalPropsSub.put("aSubNumber", 2);
     additionalProps.put("sub", additionalPropsSub);
     var m = new TelemetryPayload(4, 15, "SLI", "2.4", "Pycharm 3.2", "platform", "architecture",
-      true, true, systemTime, installTime, "Windows 10", "1.8.0", "10.5.2", perf, notifPayload, showHotspotPayload, taintVulnerabilitiesPayload, rulesPayload, additionalProps);
+      true, true, systemTime, installTime, "Windows 10", "1.8.0", "10.5.2", perf, notifPayload, showHotspotPayload, taintVulnerabilitiesPayload, rulesPayload, hotspotPayload, additionalProps);
     var s = m.toJson();
 
     assertThat(s).isEqualTo("{\"days_since_installation\":4,"
@@ -81,6 +82,7 @@ class TelemetryPayloadTests {
       + "\"show_hotspot\":{\"requests_count\":4},"
       + "\"taint_vulnerabilities\":{\"investigated_locally_count\":6,\"investigated_remotely_count\":7},"
       + "\"rules\":{\"non_default_enabled\":[\"enabledRuleKey1\",\"enabledRuleKey2\"],\"default_disabled\":[\"disabledRuleKey1\",\"disabledRuleKey2\"],\"raised_issues\":[\"reportedRuleKey1\",\"reportedRuleKey2\"],\"quick_fix_applied\":[\"quickFixedRuleKey1\",\"quickFixedRuleKey2\"]},"
+      + "\"hotspot\":{\"open_in_browser_count\":5},"
       + "\"aString\":\"stringValue\","
       + "\"aBool\":false,"
       + "\"aNumber\":1.5,"

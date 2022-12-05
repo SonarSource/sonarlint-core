@@ -40,7 +40,11 @@ public class TelemetryPathManager {
    * @return path to telemetry storage
    */
   public static Path getPath(String productKey) {
-    return SonarLintUserHome.get().resolve("telemetry").resolve(productKey).resolve("usage");
+    return getPath(SonarLintUserHome.get(), productKey);
+  }
+
+  public static Path getPath(Path sonarlintUserHome, String productKey) {
+    return sonarlintUserHome.resolve("telemetry").resolve(productKey).resolve("usage");
   }
 
   /**

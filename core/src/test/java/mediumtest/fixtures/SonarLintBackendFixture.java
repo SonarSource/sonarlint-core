@@ -50,6 +50,8 @@ import testutils.MockWebServerExtensionWithProtobuf;
 
 public class SonarLintBackendFixture {
 
+  public static final String MEDIUM_TESTS_PRODUCT_KEY = "mediumTests";
+
   public static SonarLintBackendBuilder newBackend() {
     return new SonarLintBackendBuilder();
   }
@@ -66,6 +68,7 @@ public class SonarLintBackendFixture {
     private final Map<String, Path> extraPluginPathsByKey = new HashMap<>();
     private final Set<Language> enabledLanguages = new HashSet<>();
     private Path storageRoot = Paths.get(".");
+    private Path sonarlintUserHome = Paths.get(".");
 
     public SonarLintBackendBuilder withSonarQubeConnection(String connectionId, String serverUrl) {
       sonarQubeConnections.add(new SonarQubeConnectionConfigurationDto(connectionId, serverUrl));
@@ -98,6 +101,11 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintBackendBuilder withSonarLintUserHome(Path sonarlintUserHome) {
+      this.sonarlintUserHome = sonarlintUserHome;
+      return this;
+    }
+
     public SonarLintBackendBuilder withEmbeddedPlugin(TestPlugin plugin) {
       this.embeddedPluginPaths.add(plugin.getPath());
       return withEnabledLanguage(plugin.getLanguage());
@@ -115,8 +123,8 @@ public class SonarLintBackendFixture {
 
     public SonarLintBackendImpl build(SonarLintClient client) {
       var sonarLintBackend = new SonarLintBackendImpl(client);
-      sonarLintBackend.initialize(new InitializeParams(storageRoot, embeddedPluginPaths, extraPluginPathsByKey, Collections.emptyMap(),
-        enabledLanguages, Collections.emptySet(), null, false, sonarQubeConnections, sonarCloudConnections));
+      sonarLintBackend.initialize(new InitializeParams(MEDIUM_TESTS_PRODUCT_KEY, storageRoot, embeddedPluginPaths, extraPluginPathsByKey, Collections.emptyMap(),
+        enabledLanguages, Collections.emptySet(), null, false, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString()));
       sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
       return sonarLintBackend;
     }

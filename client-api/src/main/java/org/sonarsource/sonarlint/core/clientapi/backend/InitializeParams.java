@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
 
 public class InitializeParams {
+  private final String telemetryProductKey;
   private final Path storageRoot;
   private final Set<Path> embeddedPluginPaths;
   private final Map<String, Path> connectedModeExtraPluginPathsByKey;
@@ -41,11 +42,18 @@ public class InitializeParams {
   private final boolean enableSecurityHotspots;
   private final List<SonarQubeConnectionConfigurationDto> sonarQubeConnections;
   private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections;
+  private final String sonarlintUserHome;
 
-  public InitializeParams(Path storageRoot, Set<Path> embeddedPluginPaths, Map<String, Path> connectedModeExtraPluginPathsByKey,
+  /**
+   * @param telemetryProductKey SonarLint product key (vscode, idea, eclipse, ...)
+   * @param sonarlintUserHome Path to SonarLint user home directory. If null, will default to ~/.sonarlint
+   */
+  public InitializeParams(String telemetryProductKey,
+    Path storageRoot, Set<Path> embeddedPluginPaths, Map<String, Path> connectedModeExtraPluginPathsByKey,
     Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> extraEnabledLanguagesInConnectedMode,
     @Nullable Version nodeJsVersion, boolean enableSecurityHotspots,
-    List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections) {
+    List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections, @Nullable String sonarlintUserHome) {
+    this.telemetryProductKey = telemetryProductKey;
     this.storageRoot = storageRoot;
     this.embeddedPluginPaths = embeddedPluginPaths;
     this.connectedModeExtraPluginPathsByKey = connectedModeExtraPluginPathsByKey;
@@ -56,6 +64,11 @@ public class InitializeParams {
     this.enableSecurityHotspots = enableSecurityHotspots;
     this.sonarQubeConnections = sonarQubeConnections;
     this.sonarCloudConnections = sonarCloudConnections;
+    this.sonarlintUserHome = sonarlintUserHome;
+  }
+
+  public String getTelemetryProductKey() {
+    return telemetryProductKey;
   }
 
   public Path getStorageRoot() {
@@ -97,5 +110,10 @@ public class InitializeParams {
 
   public List<SonarCloudConnectionConfigurationDto> getSonarCloudConnections() {
     return sonarCloudConnections;
+  }
+
+  @CheckForNull
+  public String getSonarlintUserHome() {
+    return sonarlintUserHome;
   }
 }
