@@ -33,7 +33,7 @@ import javax.annotation.Nullable;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 
-class TelemetryLocalStorage {
+public class TelemetryLocalStorage {
   @Deprecated
   private LocalDate installDate;
   private LocalDate lastUseDate;
@@ -142,7 +142,7 @@ class TelemetryLocalStorage {
     return numUseDays;
   }
 
-  void setEnabled(boolean enabled) {
+  public void setEnabled(boolean enabled) {
     this.enabled = enabled;
   }
 

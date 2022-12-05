@@ -42,16 +42,17 @@ public class InitializeParams {
   private final boolean enableSecurityHotspots;
   private final List<SonarQubeConnectionConfigurationDto> sonarQubeConnections;
   private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections;
+  private final String sonarlintUserHome;
 
   /**
-   *
-   * @param productKey SonarLint product key (vscode, idea, eclipse, ...)
+   * @param productKey        SonarLint product key (vscode, idea, eclipse, ...)
+   * @param sonarlintUserHome Path to SonarLint user home directory. If null, will default to ~/.sonarlint
    */
   public InitializeParams(String productKey,
     Path storageRoot, Set<Path> embeddedPluginPaths, Map<String, Path> connectedModeExtraPluginPathsByKey,
     Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> extraEnabledLanguagesInConnectedMode,
     @Nullable Version nodeJsVersion, boolean enableSecurityHotspots,
-    List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections) {
+    List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections, @Nullable String sonarlintUserHome) {
     this.productKey = productKey;
     this.storageRoot = storageRoot;
     this.embeddedPluginPaths = embeddedPluginPaths;
@@ -63,6 +64,7 @@ public class InitializeParams {
     this.enableSecurityHotspots = enableSecurityHotspots;
     this.sonarQubeConnections = sonarQubeConnections;
     this.sonarCloudConnections = sonarCloudConnections;
+    this.sonarlintUserHome = sonarlintUserHome;
   }
 
   public String getProductKey() {
@@ -108,5 +110,10 @@ public class InitializeParams {
 
   public List<SonarCloudConnectionConfigurationDto> getSonarCloudConnections() {
     return sonarCloudConnections;
+  }
+
+  @CheckForNull
+  public String getSonarlintUserHome() {
+    return sonarlintUserHome;
   }
 }

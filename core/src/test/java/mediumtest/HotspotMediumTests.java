@@ -19,11 +19,16 @@
  */
 package mediumtest;
 
+import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
+import mediumtest.fixtures.SonarLintBackendFixture;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.OpenHotspotInBrowserParams;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorageManager;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
@@ -39,16 +44,21 @@ class HotspotMediumTests {
   }
 
   @Test
-  void it_should_open_hotspot_in_sonarqube() {
+  void it_should_open_hotspot_in_sonarqube(@TempDir Path sonarlintUserHome) {
     var fakeClient = newFakeClient().build();
     backend = newBackend()
+      .withSonarLintUserHome(sonarlintUserHome)
       .withSonarQubeConnection("connectionId", "http://localhost:12345")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .build(fakeClient);
+    var telemetryLocalStorageManager = new TelemetryLocalStorageManager(TelemetryPathManager.getPath(sonarlintUserHome, SonarLintBackendFixture.MEDIUM_TESTS_PRODUCT_KEY));
+    assertThat(telemetryLocalStorageManager.tryRead().openHotspotInBrowserCount()).isZero();
 
     this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "master", "ab12ef45"));
 
     assertThat(fakeClient.getUrlsToOpen()).containsExactly("http://localhost:12345/security_hotspots?id=projectKey&branch=master&hotspots=ab12ef45");
+
+    assertThat(telemetryLocalStorageManager.tryRead().openHotspotInBrowserCount()).isEqualTo(1);
   }
 
   @Test

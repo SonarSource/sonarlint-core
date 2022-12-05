@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.clientapi.backend.telemetry.GetStatusResponse;
@@ -33,12 +35,12 @@ public class TelemetryServiceImpl implements TelemetryService {
   @CheckForNull
   private TelemetryLocalStorageManager telemetryLocalStorageManager;
 
-  public void initialize(String productKey) {
+  public void initialize(String productKey, Path sonarlintUserHome) {
     if (isDisabledBySystemProperty()) {
       LOG.info("Telemetry disabled by system property");
       return;
     }
-    this.telemetryLocalStorageManager = new TelemetryLocalStorageManager(TelemetryPathManager.getPath(productKey));
+    this.telemetryLocalStorageManager = new TelemetryLocalStorageManager(TelemetryPathManager.getPath(sonarlintUserHome, productKey));
   }
 
   private static boolean isDisabledBySystemProperty() {

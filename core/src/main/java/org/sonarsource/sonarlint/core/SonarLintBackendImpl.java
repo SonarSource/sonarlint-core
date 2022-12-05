@@ -22,7 +22,9 @@ package org.sonarsource.sonarlint.core;
 import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.MoreExecutors;
+import java.nio.file.Paths;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -32,6 +34,7 @@ import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
+import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
 import org.sonarsource.sonarlint.core.hotspot.HotspotServiceImpl;
 import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsServiceImpl;
@@ -87,7 +90,8 @@ public class SonarLintBackendImpl implements SonarLintBackend {
       params.getConnectedModeExtraPluginPathsByKey(), params.getEnabledLanguagesInStandaloneMode(), enabledLanguagesInConnectedMode, params.getNodeJsVersion());
     rulesService.initialize(params.getEnabledLanguagesInStandaloneMode(), enabledLanguagesInConnectedMode, params.isEnableSecurityHotspots());
     activeRulesService.initialize(params.getStorageRoot());
-    telemetryService.initialize(params.getProductKey());
+    var sonarlintUserHome = Optional.ofNullable(params.getSonarlintUserHome()).map(Paths::get).orElse(SonarLintUserHome.get());
+    telemetryService.initialize(params.getProductKey(), sonarlintUserHome);
     return CompletableFuture.completedFuture(null);
   }
 
