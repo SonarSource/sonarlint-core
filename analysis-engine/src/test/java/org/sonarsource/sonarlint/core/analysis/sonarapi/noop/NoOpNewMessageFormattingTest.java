@@ -19,27 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.analysis.sonarapi.noop;
 
-import org.sonar.api.batch.fs.InputComponent;
-import org.sonar.api.batch.fs.TextRange;
-import org.sonar.api.batch.sensor.issue.NewIssueLocation;
+import org.junit.jupiter.api.Test;
+import org.sonar.api.batch.sensor.issue.MessageFormatting;
 
-public class NoOpNewIssueLocation implements NewIssueLocation {
+import static org.assertj.core.api.Assertions.assertThat;
 
-  @Override
-  public NewIssueLocation on(InputComponent component) {
-    // Do nothing
-    return this;
+class NoOpNewMessageFormattingTest {
+  @Test
+  void should_do_nothing_and_return_same_instance() {
+    var originalMessageFormatting = new NoOpNewMessageFormatting();
+    var messageFormatting = originalMessageFormatting
+      .start(1)
+      .end(4)
+      .type(MessageFormatting.Type.CODE);
+
+    assertThat(messageFormatting).isEqualTo(originalMessageFormatting);
   }
 
-  @Override
-  public NewIssueLocation at(TextRange location) {
-    // Do nothing
-    return this;
-  }
-
-  @Override
-  public NewIssueLocation message(String message) {
-    // Do nothing
-    return this;
-  }
 }

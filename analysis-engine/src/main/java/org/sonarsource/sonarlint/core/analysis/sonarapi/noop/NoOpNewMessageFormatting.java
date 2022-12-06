@@ -19,14 +19,23 @@
  */
 package org.sonarsource.sonarlint.core.analysis.sonarapi.noop;
 
-import org.junit.jupiter.api.Test;
+import org.sonar.api.batch.sensor.issue.MessageFormatting;
+import org.sonar.api.batch.sensor.issue.NewMessageFormatting;
 
-class NoOpNewIssueLocationTests {
-  @Test
-  void visit_all_builder_fields() {
-    new NoOpNewIssueLocation()
-      .on(null)
-      .at(null)
-      .message(null);
+public class NoOpNewMessageFormatting implements NewMessageFormatting {
+
+  @Override
+  public NoOpNewMessageFormatting start(int start) {
+    return this;
+  }
+
+  @Override
+  public NoOpNewMessageFormatting end(int end) {
+    return this;
+  }
+
+  @Override
+  public NoOpNewMessageFormatting type(MessageFormatting.Type type) {
+    return this;
   }
 }
