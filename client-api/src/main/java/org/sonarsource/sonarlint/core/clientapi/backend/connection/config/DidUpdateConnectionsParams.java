@@ -19,25 +19,23 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.connection.config;
 
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import java.util.List;
 
-public class DidUpdateConnectionParams {
+public class DidUpdateConnectionsParams {
 
-  private final Either<SonarQubeConnectionConfigurationDto, SonarCloudConnectionConfigurationDto> updatedConnection;
+  private final List<SonarQubeConnectionConfigurationDto> sonarQubeConnections;
+  private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections;
 
-  public DidUpdateConnectionParams(Either<SonarQubeConnectionConfigurationDto, SonarCloudConnectionConfigurationDto> updatedConnection) {
-    this.updatedConnection = updatedConnection;
+  public DidUpdateConnectionsParams(List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections) {
+    this.sonarQubeConnections = sonarQubeConnections;
+    this.sonarCloudConnections = sonarCloudConnections;
   }
 
-  public DidUpdateConnectionParams(SonarQubeConnectionConfigurationDto updatedConnection) {
-    this.updatedConnection = Either.forLeft(updatedConnection);
+  public List<SonarQubeConnectionConfigurationDto> getSonarQubeConnections() {
+    return sonarQubeConnections;
   }
 
-  public DidUpdateConnectionParams(SonarCloudConnectionConfigurationDto updatedConnection) {
-    this.updatedConnection = Either.forRight(updatedConnection);
-  }
-
-  public Either<SonarQubeConnectionConfigurationDto, SonarCloudConnectionConfigurationDto> getUpdatedConnection() {
-    return updatedConnection;
+  public List<SonarCloudConnectionConfigurationDto> getSonarCloudConnections() {
+    return sonarCloudConnections;
   }
 }

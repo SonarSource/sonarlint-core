@@ -19,9 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.repository.connection;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
@@ -29,10 +29,10 @@ import static org.sonarsource.sonarlint.core.repository.connection.SonarCloudCon
 
 public class ConnectionConfigurationRepository {
 
-  private final Map<String, AbstractConnectionConfiguration> connectionsById = new HashMap<>();
+  private final Map<String, AbstractConnectionConfiguration> connectionsById = new ConcurrentHashMap<>();
 
   /**
-   * Add a replace connection configuration.
+   * Add or replace connection configuration.
    * @return the previous configuration with the same id, if any
    */
   @CheckForNull
