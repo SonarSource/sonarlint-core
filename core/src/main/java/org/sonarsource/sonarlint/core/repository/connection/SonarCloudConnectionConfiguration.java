@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.repository.connection;
 
+import java.util.Objects;
+
 public class SonarCloudConnectionConfiguration extends AbstractConnectionConfiguration {
 
   public static final String SONARCLOUD_URL = System.getProperty("sonarlint.internal.sonarcloud.url", "https://sonarcloud.io");
@@ -32,5 +34,19 @@ public class SonarCloudConnectionConfiguration extends AbstractConnectionConfigu
 
   public String getOrganization() {
     return organization;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
+    var that = (SonarCloudConnectionConfiguration) o;
+    return Objects.equals(organization, that.organization);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), organization);
   }
 }

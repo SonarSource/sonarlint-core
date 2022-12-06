@@ -34,7 +34,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingCo
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.DidAddConfigurationScopesParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidAddConnectionParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -81,7 +81,7 @@ class BindingSuggestionsMediumTests {
     await().until(() -> logTester.logs(), logs -> logs.contains("No connections configured, skipping binding suggestions."));
 
     backend.getConnectionService()
-      .didAddConnection(new DidAddConnectionParams(new SonarQubeConnectionConfigurationDto(MYSONAR, mockWebServerExtension.endpointParams().getBaseUrl())));
+      .didUpdateConnections(new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto(MYSONAR, mockWebServerExtension.endpointParams().getBaseUrl())), List.of()));
 
     await().atMost(Duration.of(5, ChronoUnit.SECONDS)).until(fakeClient::hasReceivedSuggestions);
     var bindingSuggestions = fakeClient.getBindingSuggestions();
@@ -106,7 +106,7 @@ class BindingSuggestionsMediumTests {
       .build());
 
     backend.getConnectionService()
-      .didAddConnection(new DidAddConnectionParams(new SonarQubeConnectionConfigurationDto(MYSONAR, mockWebServerExtension.endpointParams().getBaseUrl())));
+      .didUpdateConnections(new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto(MYSONAR, mockWebServerExtension.endpointParams().getBaseUrl())), List.of()));
 
     await().atMost(Duration.of(5, ChronoUnit.SECONDS)).until(fakeClient::hasReceivedSuggestions);
     var bindingSuggestions = fakeClient.getBindingSuggestions();

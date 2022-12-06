@@ -20,14 +20,15 @@
 package org.sonarsource.sonarlint.core.clientapi.backend.connection;
 
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
+import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidAddConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidRemoveConnectionParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
 
 /**
  * The client is the source of truth for connection configuration, but the backend also need to be kept in sync.
- * The client will use methods of this service to register existing connection configuration at startup, and then
- * update the service as needed, when a connection configuration is added/removed/updated.
+ * The client will use {@link org.sonarsource.sonarlint.core.clientapi.SonarLintBackend#initialize(InitializeParams)} to register existing connection configurations at startup, and then
+ * update the service as needed using {@link #didUpdateConnections(DidUpdateConnectionsParams)}, when a connection configuration is added/removed/updated.
  *
  * One source of complexity for connection configuration is that some attributes (like credentials) should be stored in
  * the IDE secure storage. Accessing secure storage may be delayed after IDE startup, request manual user
@@ -38,21 +39,9 @@ import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpd
 public interface ConnectionService {
 
   /**
-   * Called by the client when a new connection has been added.
+   * Called by the client when connection configurations have been changed.
    */
   @JsonNotification
-  void didAddConnection(DidAddConnectionParams params);
-
-  /**
-   * Called by the client when a connection has been removed.
-   */
-  @JsonNotification
-  void didRemoveConnection(DidRemoveConnectionParams params);
-
-  /**
-   * Called by the client when a connection has been updated.
-   */
-  @JsonNotification
-  void didUpdateConnection(DidUpdateConnectionParams params);
+  void didUpdateConnections(DidUpdateConnectionsParams params);
 
 }
