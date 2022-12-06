@@ -41,7 +41,7 @@
   </modules>
 
   <properties>
-    <sonar-plugin-api.version>9.13.0.327</sonar-plugin-api.version>
+    <sonar-plugin-api.version>9.13.0.360</sonar-plugin-api.version>
     <sonar-markdown.version>9.4.0.54424</sonar-markdown.version>
     <sonar-scanner-protocol.version>7.9</sonar-scanner-protocol.version>
     <protobuf.version>3.21.9</protobuf.version>

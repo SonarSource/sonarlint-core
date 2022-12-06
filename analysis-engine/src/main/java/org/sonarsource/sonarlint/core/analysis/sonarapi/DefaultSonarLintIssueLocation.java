@@ -19,10 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.analysis.sonarapi;
 
+import java.util.Collections;
+import java.util.List;
 import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.batch.sensor.issue.IssueLocation;
+import org.sonar.api.batch.sensor.issue.MessageFormatting;
 import org.sonar.api.batch.sensor.issue.NewIssueLocation;
+import org.sonar.api.batch.sensor.issue.NewMessageFormatting;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewMessageFormatting;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.StringUtils.abbreviate;
@@ -54,6 +59,17 @@ public class DefaultSonarLintIssueLocation implements NewIssueLocation, IssueLoc
     return this;
   }
 
+  @Override
+  public NewIssueLocation message(String message, List<NewMessageFormatting> newMessageFormattings) {
+    // ignore formatting for now
+    return message(message);
+  }
+
+  @Override
+  public NewMessageFormatting newMessageFormatting() {
+    return new NoOpNewMessageFormatting();
+  }
+
   private static String sanitizeNulls(String message) {
     return replace(message, "\u0000", "[NULL]");
   }
@@ -71,6 +87,11 @@ public class DefaultSonarLintIssueLocation implements NewIssueLocation, IssueLoc
   @Override
   public String message() {
     return this.message;
+  }
+
+  @Override
+  public List<MessageFormatting> messageFormattings() {
+    return Collections.emptyList();
   }
 
 }

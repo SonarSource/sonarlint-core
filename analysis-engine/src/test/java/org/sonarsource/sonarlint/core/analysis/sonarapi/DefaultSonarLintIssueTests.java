@@ -21,12 +21,14 @@ package org.sonarsource.sonarlint.core.analysis.sonarapi;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.rule.Severity;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
+import org.sonar.api.batch.sensor.issue.MessageFormatting;
 import org.sonar.api.batch.sensor.issue.fix.NewInputFileEdit;
 import org.sonar.api.batch.sensor.issue.fix.NewQuickFix;
 import org.sonar.api.batch.sensor.issue.fix.NewTextEdit;
@@ -137,6 +139,23 @@ class DefaultSonarLintIssueTests {
     issue.save();
 
     verify(storage).store(issue);
+  }
+
+  @Test
+  void ignore_formatting_and_keep_unformatted_message() {
+    var storage = mock(SensorStorage.class);
+    var location = new DefaultSonarLintIssueLocation();
+    var issue = new DefaultSonarLintIssue(project, baseDir, storage)
+      .at(location
+        .on(inputFile)
+        .message("formattedMessage", List.of(location.newMessageFormatting()
+          .start(1)
+          .end(2)
+          .type(MessageFormatting.Type.CODE))))
+      .forRule(RuleKey.of("repo", "rule"));
+
+    assertThat(issue.primaryLocation().message()).isEqualTo("formattedMessage");
+    assertThat(issue.primaryLocation().messageFormattings()).isEmpty();
   }
 
   @Test
