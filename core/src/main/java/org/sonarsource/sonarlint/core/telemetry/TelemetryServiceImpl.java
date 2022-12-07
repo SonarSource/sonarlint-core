@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.clientapi.backend.telemetry.GetStatusResponse;

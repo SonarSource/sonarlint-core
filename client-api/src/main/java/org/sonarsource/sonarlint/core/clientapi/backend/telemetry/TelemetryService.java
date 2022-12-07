@@ -20,8 +20,6 @@
 package org.sonarsource.sonarlint.core.clientapi.backend.telemetry;
 
 import java.util.concurrent.CompletableFuture;
-import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
-import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.OpenHotspotInBrowserParams;
 
 public interface TelemetryService {
 

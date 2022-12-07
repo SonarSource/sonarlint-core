@@ -20,8 +20,6 @@
 package org.sonarsource.sonarlint.core.serverapi.organization;
 
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.serverapi.organization.DefaultRemoteOrganization;
-import org.sonarsource.sonarlint.core.serverapi.organization.ServerOrganization;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations.Organization;
 
 import static org.assertj.core.api.Assertions.assertThat;

@@ -21,8 +21,6 @@ package org.sonarsource.sonarlint.core.clientapi.backend.connection;
 
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidAddConnectionParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidRemoveConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
 
 /**

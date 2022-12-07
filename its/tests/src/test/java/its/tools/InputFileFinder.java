@@ -19,10 +19,7 @@
  */
 package its.tools;
 
-import javax.annotation.Nullable;
-
 import java.io.IOException;
-import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -32,6 +29,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 
 public class InputFileFinder {
   private final PathMatcher srcMatcher;
