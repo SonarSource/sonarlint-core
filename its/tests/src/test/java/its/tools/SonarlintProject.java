@@ -19,11 +19,10 @@
  */
 package its.tools;
 
-import org.junit.rules.ExternalResource;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import org.junit.rules.ExternalResource;
 
 public class SonarlintProject extends ExternalResource {
 
