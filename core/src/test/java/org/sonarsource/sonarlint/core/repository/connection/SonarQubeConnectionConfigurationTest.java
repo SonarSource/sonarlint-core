@@ -28,7 +28,7 @@ class SonarQubeConnectionConfigurationTest {
 
   @Test
   void test_isSameServerUrl() {
-    SonarQubeConnectionConfiguration underTest = new SonarQubeConnectionConfiguration("id", "https://mycompany.org");
+    var underTest = new SonarQubeConnectionConfiguration("id", "https://mycompany.org");
     assertThat(underTest.isSameServerUrl("https://mycompany.org")).isTrue();
     // URL are case insensitive
     assertThat(underTest.isSameServerUrl("https://Mycompany.Org")).isTrue();
@@ -41,4 +41,18 @@ class SonarQubeConnectionConfigurationTest {
     // Different domain
     assertThat(underTest.isSameServerUrl("https://sq.mycompany.org")).isFalse();
   }
+
+  @Test
+  void testEqualsAndHashCode() {
+    var underTest = new SonarQubeConnectionConfiguration("id1", "http://server1");
+
+    assertThat(underTest)
+      .isEqualTo(new SonarQubeConnectionConfiguration("id1", "http://server1"))
+      .isNotEqualTo(new SonarQubeConnectionConfiguration("id2", "http://server1"))
+      .isNotEqualTo(new SonarQubeConnectionConfiguration("id1", "http://server2"))
+      .isNotEqualTo(new SonarCloudConnectionConfiguration("id1", "org1"))
+      .hasSameHashCodeAs(new SonarQubeConnectionConfiguration("id1", "http://server1"));
+  }
+
+
 }

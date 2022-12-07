@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.repository.connection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Objects;
+import javax.annotation.Nullable;
 
 import static org.apache.commons.lang.StringUtils.removeEnd;
 
@@ -51,7 +52,7 @@ public class SonarQubeConnectionConfiguration extends AbstractConnectionConfigur
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(@Nullable Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     if (!super.equals(o)) return false;
