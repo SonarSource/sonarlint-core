@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.repository.connection;
 
 import java.util.Objects;
+import javax.annotation.Nullable;
 
 public class SonarCloudConnectionConfiguration extends AbstractConnectionConfiguration {
 
@@ -37,7 +38,7 @@ public class SonarCloudConnectionConfiguration extends AbstractConnectionConfigu
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(@Nullable Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     if (!super.equals(o)) return false;
