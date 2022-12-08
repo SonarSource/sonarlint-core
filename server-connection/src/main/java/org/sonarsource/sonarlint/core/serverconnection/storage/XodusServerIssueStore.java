@@ -44,6 +44,8 @@ import jetbrains.exodus.entitystore.PersistentEntityStore;
 import jetbrains.exodus.entitystore.PersistentEntityStores;
 import jetbrains.exodus.entitystore.StoreTransaction;
 import jetbrains.exodus.entitystore.StoreTransactionalExecutable;
+import jetbrains.exodus.env.EnvironmentConfig;
+import jetbrains.exodus.env.Environments;
 import jetbrains.exodus.util.CompressBackupUtil;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
@@ -133,7 +135,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       }
     }
     LOG.debug("Starting server issue database from {}", xodusDbDir);
-    entityStore = PersistentEntityStores.newInstance(xodusDbDir.toAbsolutePath().toString());
+    this.entityStore = buildEntityStore();
     entityStore.executeInTransaction(txn -> {
       entityStore.registerCustomPropertyType(txn, IssueSeverity.class, new IssueSeverityBinding());
       entityStore.registerCustomPropertyType(txn, RuleType.class, new IssueTypeBinding());
@@ -141,6 +143,16 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     });
 
     entityStore.executeInExclusiveTransaction(afterInit);
+  }
+
+  private PersistentEntityStore buildEntityStore() {
+    var environment = Environments.newInstance(xodusDbDir.toAbsolutePath().toFile(), new EnvironmentConfig()
+      .setLogAllowRemote(true)
+      .setLogAllowRemovable(true)
+      .setLogAllowRamDisk(true));
+    var entityStoreImpl = PersistentEntityStores.newInstance(environment);
+    entityStoreImpl.setCloseEnvironment(true);
+    return entityStoreImpl;
   }
 
   private static ServerIssue adapt(Entity storedIssue) {
