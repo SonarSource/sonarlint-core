@@ -90,6 +90,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -1466,6 +1467,11 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
         @Override
         public void openUrlInBrowser(OpenUrlInBrowserParams params) {
+
+        }
+
+        @Override
+        public void showMessage(ShowMessageParams params) {
 
         }
 

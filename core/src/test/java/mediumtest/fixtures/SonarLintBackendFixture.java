@@ -25,8 +25,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.jetbrains.annotations.Nullable;
@@ -44,6 +46,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FoundFileDto;
+import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import testutils.MockWebServerExtensionWithProtobuf;
@@ -136,14 +139,20 @@ public class SonarLintBackendFixture {
 
   public static class SonarLintClientBuilder {
     private final List<FoundFileDto> foundFiles = new ArrayList<>();
+    private final List<String> textsOfActionsToApply = new ArrayList<>();
 
     public SonarLintClientBuilder withFoundFile(String name, String path, String content) {
       foundFiles.add(new FoundFileDto(name, path, content));
       return this;
     }
 
+    public SonarLintClientBuilder applyingAction(String actionText) {
+      textsOfActionsToApply.add(actionText);
+      return this;
+    }
+
     public FakeSonarLintClient build() {
-      return new FakeSonarLintClient(foundFiles);
+      return new FakeSonarLintClient(foundFiles, textsOfActionsToApply);
     }
   }
 
@@ -152,10 +161,13 @@ public class SonarLintBackendFixture {
     private final Map<String, List<BindingSuggestionDto>> bindingSuggestions = new HashMap<>();
 
     private final List<String> urlsToOpen = new ArrayList<>();
+    private final List<ShowMessageParams> messagesToShow = new ArrayList<>();
     private final List<FoundFileDto> foundFiles;
+    private final Queue<String> textsOfActionsToApply;
 
-    public FakeSonarLintClient(List<FoundFileDto> foundFiles) {
+    public FakeSonarLintClient(List<FoundFileDto> foundFiles, List<String> textsOfActionsToApply) {
       this.foundFiles = foundFiles;
+      this.textsOfActionsToApply = new LinkedList<>(textsOfActionsToApply);
     }
 
     @Override
@@ -179,6 +191,11 @@ public class SonarLintBackendFixture {
       urlsToOpen.add(params.getUrl());
     }
 
+    @Override
+    public void showMessage(ShowMessageParams params) {
+      messagesToShow.add(params);
+    }
+
     public boolean hasReceivedSuggestions() {
       return !bindingSuggestions.isEmpty();
     }
@@ -189,6 +206,10 @@ public class SonarLintBackendFixture {
 
     public List<String> getUrlsToOpen() {
       return urlsToOpen;
+    }
+
+    public List<ShowMessageParams> getMessagesToShow() {
+      return messagesToShow;
     }
   }
 }

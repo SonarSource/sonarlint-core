@@ -27,6 +27,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 
 public interface SonarLintClient {
@@ -47,4 +48,11 @@ public interface SonarLintClient {
 
   @JsonNotification
   void openUrlInBrowser(OpenUrlInBrowserParams params);
+
+  /**
+   * Display a message to the user, usually in a small notification.
+   * The message is informative and does not imply applying an action.
+   */
+  @JsonNotification
+  void showMessage(ShowMessageParams params);
 }
