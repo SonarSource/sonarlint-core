@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationServ
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
 import org.sonarsource.sonarlint.core.hotspot.HotspotServiceImpl;
+import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsServiceImpl;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -53,6 +54,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   private final ActiveRulesServiceImpl activeRulesService;
   private final HotspotServiceImpl hotspotService;
   private final TelemetryServiceImpl telemetryService;
+  private final EmbeddedServer embeddedServer;
 
   private final ExecutorService clientEventsExecutorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Client Events Processor"));
 
@@ -72,6 +74,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     rulesService = new RulesServiceImpl(pluginsService, rulesRepository);
     activeRulesService = new ActiveRulesServiceImpl(serverApiProvider, rulesService, configurationRepository);
     this.telemetryService = new TelemetryServiceImpl();
+    this.embeddedServer = new EmbeddedServer();
     this.hotspotService = new HotspotServiceImpl(client, configurationRepository, connectionConfigurationRepository, telemetryService);
     var bindingClueProvider = new BindingClueProvider(connectionConfigurationRepository, client);
     var sonarProjectCache = new SonarProjectsCache(serverApiProvider);
@@ -92,6 +95,9 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     activeRulesService.initialize(params.getStorageRoot());
     var sonarlintUserHome = Optional.ofNullable(params.getSonarlintUserHome()).map(Paths::get).orElse(SonarLintUserHome.get());
     telemetryService.initialize(params.getTelemetryProductKey(), sonarlintUserHome);
+    if (params.shouldManageLocalServer()) {
+      embeddedServer.initialize();
+    }
     return CompletableFuture.completedFuture(null);
   }
 
@@ -126,6 +132,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
       MoreExecutors.shutdownAndAwaitTermination(clientEventsExecutorService, 10, TimeUnit.SECONDS);
       this.pluginsService.shutdown();
       this.bindingSuggestionProvider.shutdown();
+      this.embeddedServer.shutdown();
     });
   }
 }
