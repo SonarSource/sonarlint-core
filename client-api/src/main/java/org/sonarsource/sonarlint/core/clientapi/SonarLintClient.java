@@ -46,6 +46,15 @@ public interface SonarLintClient {
   @CheckForNull
   HttpClient getHttpClient(String connectionId);
 
+  /**
+   * Temporary workaround until we decide what to do regarding HTTP requests
+   * @param forUrl The URL can be useful to set up the http client (e.g. for proxy)
+   * @deprecated will be removed
+   */
+  @Deprecated(forRemoval = true)
+  @CheckForNull
+  HttpClient getHttpClientNoAuth(String forUrl);
+
   @JsonNotification
   void openUrlInBrowser(OpenUrlInBrowserParams params);
 

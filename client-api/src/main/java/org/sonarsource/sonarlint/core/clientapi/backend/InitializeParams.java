@@ -42,15 +42,17 @@ public class InitializeParams {
   private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections;
   private final String sonarlintUserHome;
   private final boolean shouldManageLocalServer;
+  private final String ideName;
 
   /**
    * @param telemetryProductKey SonarLint product key (vscode, idea, eclipse, ...)
    * @param sonarlintUserHome Path to SonarLint user home directory. If null, will default to ~/.sonarlint
    */
-  public InitializeParams(String telemetryProductKey, Path storageRoot, Set<Path> embeddedPluginPaths, Map<String, Path> connectedModeExtraPluginPathsByKey,
+  public InitializeParams(String ideName, String telemetryProductKey, Path storageRoot, Set<Path> embeddedPluginPaths, Map<String, Path> connectedModeExtraPluginPathsByKey,
     Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> extraEnabledLanguagesInConnectedMode,
     boolean enableSecurityHotspots, List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections,
     @Nullable String sonarlintUserHome, boolean shouldManageLocalServer) {
+    this.ideName = ideName;
     this.telemetryProductKey = telemetryProductKey;
     this.storageRoot = storageRoot;
     this.embeddedPluginPaths = embeddedPluginPaths;
@@ -112,5 +114,9 @@ public class InitializeParams {
 
   public boolean shouldManageLocalServer() {
     return shouldManageLocalServer;
+  }
+
+  public String getIdeName() {
+    return ideName;
   }
 }

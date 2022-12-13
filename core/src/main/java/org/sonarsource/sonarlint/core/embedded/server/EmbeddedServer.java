@@ -42,6 +42,12 @@ public class EmbeddedServer {
   private HttpServer server;
   private int port;
 
+  private final AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository;
+
+  public EmbeddedServer(AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository) {
+    this.awaitingUserTokenFutureRepository = awaitingUserTokenFutureRepository;
+  }
+
   public void initialize() {
     final var socketConfig = SocketConfig.custom()
       .setSoTimeout(15, TimeUnit.SECONDS)
@@ -61,6 +67,7 @@ public class EmbeddedServer {
           .setListenerPort(triedPort)
           .setSocketConfig(socketConfig)
           .addFilterFirst("CORS", new CorsFilter())
+          .register("/sonarlint/api/token", new GeneratedUserTokenHandler(awaitingUserTokenFutureRepository))
           .create();
         startedServer.start();
         port = triedPort;
@@ -73,7 +80,7 @@ public class EmbeddedServer {
       }
     }
     if (port > 0) {
-      LOG.info("Started request handler on port " + port);
+      LOG.info("Started embedded server on port " + port);
       server = startedServer;
     } else {
       LOG.error("Unable to start request handler");
@@ -85,7 +92,7 @@ public class EmbeddedServer {
     return port;
   }
 
-  boolean isStarted() {
+  public boolean isStarted() {
     return server != null;
   }
 
