@@ -1153,7 +1153,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       backend = new SonarLintBackendImpl(newDummySonarLintClient());
       backend.initialize(
-        new InitializeParams("integrationTests", sonarUserHome.resolve("storage"), Collections.emptySet(), Collections.emptyMap(), Collections.emptyMap(), Set.of(Language.JAVA),
+        new InitializeParams("clientName", "integrationTests", sonarUserHome.resolve("storage"), Collections.emptySet(), Collections.emptyMap(), Collections.emptyMap(), Set.of(Language.JAVA),
           Collections.emptySet(), false, List.of(new SonarQubeConnectionConfigurationDto("ORCHESTRATOR", ORCHESTRATOR.getServer().getUrl())), Collections.emptyList(),
           sonarUserHome.toString(), false));
 
@@ -1477,6 +1477,11 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
         @Override
         public HttpClient getHttpClient(String connectionId) {
+          return sqHttpClient();
+        }
+
+        @Override
+        public HttpClient getHttpClientNoAuth(String forUrl) {
           return sqHttpClient();
         }
       };

@@ -54,7 +54,11 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
   protected final Map<String, MockResponse> responsesByPath = new HashMap<>();
 
   @Override
-  public void beforeEach(ExtensionContext context) throws Exception {
+  public void beforeEach(ExtensionContext context) {
+    start();
+  }
+
+  public void start() {
     server = new MockWebServer();
     responsesByPath.clear();
     final Dispatcher dispatcher = new Dispatcher() {
@@ -67,12 +71,24 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
       }
     };
     server.setDispatcher(dispatcher);
-    server.start();
+    try {
+      server.start();
+    } catch (IOException e) {
+      throw new IllegalStateException("Cannot start the mock web server", e);
+    }
   }
 
   @Override
-  public void afterEach(ExtensionContext context) throws Exception {
-    server.shutdown();
+  public void afterEach(ExtensionContext context) {
+    shutdown();
+  }
+
+  public void shutdown() {
+    try {
+      server.shutdown();
+    } catch (IOException e) {
+      throw new IllegalStateException("Cannot stop the mock web server", e);
+    }
   }
 
   public void addStringResponse(String path, String body) {

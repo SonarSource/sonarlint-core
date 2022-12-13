@@ -54,6 +54,7 @@ import testutils.MockWebServerExtensionWithProtobuf;
 public class SonarLintBackendFixture {
 
   public static final String MEDIUM_TESTS_PRODUCT_KEY = "mediumTests";
+  public static final String MEDIUM_TESTS_IDE_NAME = "CLIENT";
 
   public static SonarLintBackendBuilder newBackend() {
     return new SonarLintBackendBuilder();
@@ -72,6 +73,7 @@ public class SonarLintBackendFixture {
     private final Set<Language> enabledLanguages = new HashSet<>();
     private Path storageRoot = Paths.get(".");
     private Path sonarlintUserHome = Paths.get(".");
+    private boolean startEmbeddedServer;
 
     public SonarLintBackendBuilder withSonarQubeConnection(String connectionId, String serverUrl) {
       sonarQubeConnections.add(new SonarQubeConnectionConfigurationDto(connectionId, serverUrl));
@@ -126,14 +128,20 @@ public class SonarLintBackendFixture {
 
     public SonarLintBackendImpl build(SonarLintClient client) {
       var sonarLintBackend = new SonarLintBackendImpl(client);
-      sonarLintBackend.initialize(new InitializeParams(MEDIUM_TESTS_PRODUCT_KEY, storageRoot, embeddedPluginPaths, extraPluginPathsByKey, Collections.emptyMap(),
-        enabledLanguages, Collections.emptySet(), false, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(), false));
+      sonarLintBackend
+        .initialize(new InitializeParams(MEDIUM_TESTS_IDE_NAME, MEDIUM_TESTS_PRODUCT_KEY, storageRoot, embeddedPluginPaths, extraPluginPathsByKey, Collections.emptyMap(),
+          enabledLanguages, Collections.emptySet(), false, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(), startEmbeddedServer));
       sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
       return sonarLintBackend;
     }
 
     public SonarLintBackendImpl build() {
       return build(newFakeClient().build());
+    }
+
+    public SonarLintBackendBuilder withEmbeddedServer() {
+      startEmbeddedServer = true;
+      return this;
     }
   }
 
@@ -183,6 +191,12 @@ public class SonarLintBackendFixture {
     @Nullable
     @Override
     public HttpClient getHttpClient(String connectionId) {
+      return httpClient;
+    }
+
+    @Nullable
+    @Override
+    public HttpClient getHttpClientNoAuth(String forUrl) {
       return httpClient;
     }
 

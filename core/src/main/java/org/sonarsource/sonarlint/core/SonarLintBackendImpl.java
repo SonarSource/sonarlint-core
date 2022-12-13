@@ -31,10 +31,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
+import org.sonarsource.sonarlint.core.clientapi.authentication.AuthenticationHelperService;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
+import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.hotspot.HotspotServiceImpl;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
@@ -60,12 +62,14 @@ public class SonarLintBackendImpl implements SonarLintBackend {
 
   private final BindingSuggestionProvider bindingSuggestionProvider;
   private final PluginsServiceImpl pluginsService;
+  private final AuthenticationHelperServiceImpl authenticationHelperService;
 
   public SonarLintBackendImpl(SonarLintClient client) {
     EventBus clientEventBus = new AsyncEventBus("clientEvents", clientEventsExecutorService);
     var configurationRepository = new ConfigurationRepository();
     this.configurationService = new ConfigurationServiceImpl(clientEventBus, configurationRepository);
     var connectionConfigurationRepository = new ConnectionConfigurationRepository();
+    var awaitingUserTokenFutureRepository = new AwaitingUserTokenFutureRepository();
     this.connectionService = new ConnectionServiceImpl(clientEventBus, connectionConfigurationRepository);
     var pluginRepository = new PluginsRepository();
     pluginsService = new PluginsServiceImpl(pluginRepository);
@@ -74,7 +78,8 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     rulesService = new RulesServiceImpl(pluginsService, rulesRepository);
     activeRulesService = new ActiveRulesServiceImpl(serverApiProvider, rulesService, configurationRepository);
     this.telemetryService = new TelemetryServiceImpl();
-    this.embeddedServer = new EmbeddedServer();
+    this.embeddedServer = new EmbeddedServer(awaitingUserTokenFutureRepository);
+    this.authenticationHelperService = new AuthenticationHelperServiceImpl(client, embeddedServer, awaitingUserTokenFutureRepository);
     this.hotspotService = new HotspotServiceImpl(client, configurationRepository, connectionConfigurationRepository, telemetryService);
     var bindingClueProvider = new BindingClueProvider(connectionConfigurationRepository, client);
     var sonarProjectCache = new SonarProjectsCache(serverApiProvider);
@@ -98,12 +103,18 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     if (params.shouldManageLocalServer()) {
       embeddedServer.initialize();
     }
+    authenticationHelperService.initialize(params.getIdeName());
     return CompletableFuture.completedFuture(null);
   }
 
   @Override
   public ConnectionServiceImpl getConnectionService() {
     return connectionService;
+  }
+
+  @Override
+  public AuthenticationHelperService getAuthenticationHelperService() {
+    return authenticationHelperService;
   }
 
   @Override
