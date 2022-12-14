@@ -34,7 +34,6 @@ import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
-import static mediumtest.fixtures.SonarLintBackendFixture.MEDIUM_TESTS_IDE_NAME;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -82,7 +81,7 @@ class AuthenticationHelperMediumTests {
 
   @Test
   void it_should_open_the_sonarlint_auth_url_for_sonarqube_9_7_plus() {
-    var fakeClient = newFakeClient().build();
+    var fakeClient = newFakeClient().withName("ClientName").build();
     backend = newBackend().withEmbeddedServer().build(fakeClient);
     server = newSonarQubeServer("9.7").start();
     var embeddedServerPort = getEmbeddedServerPort();
@@ -91,7 +90,7 @@ class AuthenticationHelperMediumTests {
 
     await().atMost(Duration.ofSeconds(3)).until(() -> !fakeClient.getUrlsToOpen().isEmpty());
     assertThat(fakeClient.getUrlsToOpen())
-      .containsExactly(server.url("/sonarlint/auth?ideName=" + MEDIUM_TESTS_IDE_NAME + "&port=" + embeddedServerPort));
+      .containsExactly(server.url("/sonarlint/auth?ideName=ClientName&port=" + embeddedServerPort));
     httpClient().post("http://localhost:" + embeddedServerPort + "/sonarlint/api/token", HttpClient.JSON_CONTENT_TYPE, "{\"token\": \"value\"}");
     assertThat(futureResponse)
       .succeedsWithin(Duration.ofSeconds(3))
@@ -101,7 +100,7 @@ class AuthenticationHelperMediumTests {
 
   @Test
   void it_should_open_the_sonarlint_auth_url_without_port_for_sonarqube_9_7_plus_when_server_is_not_started() {
-    var fakeClient = newFakeClient().build();
+    var fakeClient = newFakeClient().withName("ClientName").build();
     backend = newBackend().build(fakeClient);
     server = newSonarQubeServer("9.7").start();
 
@@ -111,7 +110,7 @@ class AuthenticationHelperMediumTests {
       .succeedsWithin(Duration.ofSeconds(3))
       .extracting(HelpGenerateUserTokenResponse::getToken)
       .isNull();
-    assertThat(fakeClient.getUrlsToOpen()).containsExactly(server.url("/sonarlint/auth?ideName=" + MEDIUM_TESTS_IDE_NAME));
+    assertThat(fakeClient.getUrlsToOpen()).containsExactly(server.url("/sonarlint/auth?ideName=ClientName"));
   }
 
   @Test

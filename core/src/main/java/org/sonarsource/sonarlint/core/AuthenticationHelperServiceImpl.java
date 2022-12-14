@@ -40,7 +40,7 @@ public class AuthenticationHelperServiceImpl implements AuthenticationHelperServ
   private final SonarLintClient client;
   private final EmbeddedServer embeddedServer;
   private final AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository;
-  private String ideName;
+  private String clientName;
 
   public AuthenticationHelperServiceImpl(SonarLintClient client, EmbeddedServer embeddedServer, AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository) {
     this.client = client;
@@ -48,8 +48,8 @@ public class AuthenticationHelperServiceImpl implements AuthenticationHelperServ
     this.awaitingUserTokenFutureRepository = awaitingUserTokenFutureRepository;
   }
 
-  public void initialize(String ideName) {
-    this.ideName = ideName;
+  public void initialize(String clientName) {
+    this.clientName = clientName;
   }
 
   @Override
@@ -82,7 +82,7 @@ public class AuthenticationHelperServiceImpl implements AuthenticationHelperServ
 
   private String getUserTokenGenerationRelativeUrlToOpen(boolean automaticTokenGenerationSupported) {
     if (automaticTokenGenerationSupported) {
-      return "/sonarlint/auth?ideName=" + urlEncode(ideName) + (embeddedServer.isStarted() ? ("&port=" + embeddedServer.getPort()) : "");
+      return "/sonarlint/auth?ideName=" + urlEncode(clientName) + (embeddedServer.isStarted() ? ("&port=" + embeddedServer.getPort()) : "");
     }
     return "/account/security";
   }

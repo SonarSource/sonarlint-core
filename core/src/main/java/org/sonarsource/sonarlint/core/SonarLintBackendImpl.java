@@ -78,7 +78,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     rulesService = new RulesServiceImpl(pluginsService, rulesRepository);
     activeRulesService = new ActiveRulesServiceImpl(serverApiProvider, rulesService, configurationRepository);
     this.telemetryService = new TelemetryServiceImpl();
-    this.embeddedServer = new EmbeddedServer(awaitingUserTokenFutureRepository);
+    this.embeddedServer = new EmbeddedServer(client, connectionConfigurationRepository, awaitingUserTokenFutureRepository);
     this.authenticationHelperService = new AuthenticationHelperServiceImpl(client, embeddedServer, awaitingUserTokenFutureRepository);
     this.hotspotService = new HotspotServiceImpl(client, configurationRepository, connectionConfigurationRepository, telemetryService);
     var bindingClueProvider = new BindingClueProvider(connectionConfigurationRepository, client);
@@ -101,9 +101,9 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     var sonarlintUserHome = Optional.ofNullable(params.getSonarlintUserHome()).map(Paths::get).orElse(SonarLintUserHome.get());
     telemetryService.initialize(params.getTelemetryProductKey(), sonarlintUserHome);
     if (params.shouldManageLocalServer()) {
-      embeddedServer.initialize();
+      embeddedServer.initialize(params.getClientInfo());
     }
-    authenticationHelperService.initialize(params.getIdeName());
+    authenticationHelperService.initialize(params.getClientInfo().getName());
     return CompletableFuture.completedFuture(null);
   }
 
