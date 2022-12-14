@@ -25,6 +25,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDescriptionSection.Context;
 
 import static org.apache.commons.lang3.StringUtils.trimToNull;
 import static org.sonar.api.server.rule.RuleDescriptionSection.RuleDescriptionSectionKeys.ASSESS_THE_PROBLEM_SECTION_KEY;
@@ -108,7 +109,10 @@ public class LegacyHotspotRuleDescriptionSectionsGenerator {
     if (content == null) {
       return Optional.empty();
     }
-    // TODO Context?
-    return Optional.of(new SonarLintRuleDescriptionSection(sectionKey, content, Optional.empty()));
+    return Optional.of(new SonarLintRuleDescriptionSection(sectionKey, content, emptyContextForConvertedHotspotSection()));
+  }
+
+  private static Optional<Context> emptyContextForConvertedHotspotSection() {
+    return Optional.empty();
   }
 }

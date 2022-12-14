@@ -41,6 +41,7 @@ import org.junit.rules.TemporaryFolder;
 import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
@@ -57,15 +58,18 @@ import org.sonarsource.sonarlint.core.clientapi.client.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 
 import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.api.InstanceOfAssertFactories.list;
 
 public class ConnectedModeBackendTest extends AbstractConnectedTest {
 
   private static final String PROJECT_KEY_JAVA_TAINT = "sample-java-taint";
+  private static final String PROJECT_KEY_JAVA_HOTSPOT = "sample-java-hotspot";
 
   @ClassRule
   public static Orchestrator ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
@@ -91,9 +95,11 @@ public class ConnectedModeBackendTest extends AbstractConnectedTest {
 
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
     provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_TAINT, "Java With Taint Vulnerabilities");
+    provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_HOTSPOT, "Java With Security Hotspots");
 
     // Build project to have bytecode and analyze
     analyzeMavenProject(ORCHESTRATOR, PROJECT_KEY_JAVA_TAINT, Map.of("sonar.projectKey", PROJECT_KEY_JAVA_TAINT));
+    analyzeMavenProject(ORCHESTRATOR, PROJECT_KEY_JAVA_HOTSPOT, Map.of("sonar.projectKey", PROJECT_KEY_JAVA_HOTSPOT));
   }
 
   @Before
@@ -118,6 +124,7 @@ public class ConnectedModeBackendTest extends AbstractConnectedTest {
 
     // sync is still done by the engine for now
     updateProject(PROJECT_KEY_JAVA_TAINT);
+    updateProject(PROJECT_KEY_JAVA_HOTSPOT);
   }
 
   @After
@@ -178,6 +185,72 @@ public class ConnectedModeBackendTest extends AbstractConnectedTest {
             "  <li> <a href=\"https://cwe.mitre.org/data/definitions/22\">MITRE, CWE-22</a> - Improper Limitation of a Pathname to a Restricted Directory ('Path\n" +
             "  Traversal') </li>\n" +
             "</ul>");
+    }
+  }
+
+  @Test
+  public void returnConvertedDescriptionSectionsForHotspotRules() throws ExecutionException, InterruptedException {
+    backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+      List.of(new ConfigurationScopeDto("project", null, true, "Project", new BindingConfigurationDto("ORCHESTRATOR", PROJECT_KEY_JAVA_HOTSPOT, false)))));
+
+    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("project", "java:S1313")).get();
+
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
+      var description = activeRuleDetailsResponse.details().getDescription();
+      assertThat(description)
+        .extracting("right.introductionHtmlContent")
+        .isNull();
+      assertThat(description)
+        .extracting("right.tabs", as(list(ActiveRuleDescriptionTabDto.class)))
+        .flatExtracting(ConnectedModeBackendTest::extractTabContent)
+        .containsOnly(
+          "Why is this an issue?",
+          "<p>Hardcoding IP addresses is security-sensitive. It has led in the past to the following vulnerabilities:</p>\n" +
+            "<ul>\n" +
+            "  <li> <a href=\"http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2006-5901\">CVE-2006-5901</a> </li>\n" +
+            "  <li> <a href=\"http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2005-3725\">CVE-2005-3725</a> </li>\n" +
+            "</ul>\n" +
+            "<p>Today’s services have an ever-changing architecture due to their scaling and redundancy needs. It is a mistake to think that a service will always\n" +
+            "have the same IP address. When it does change, the hardcoded IP will have to be modified too. This will have an impact on the product development,\n" +
+            "delivery, and deployment:</p>\n" +
+            "<ul>\n" +
+            "  <li> The developers will have to do a rapid fix every time this happens, instead of having an operation team change a configuration file. </li>\n" +
+            "  <li> It misleads to use the same address in every environment (dev, sys, qa, prod). </li>\n" +
+            "</ul>\n" +
+            "<p>Last but not least it has an effect on application security. Attackers might be able to decompile the code and thereby discover a potentially\n" +
+            "sensitive address. They can perform a Denial of Service attack on the service, try to get access to the system, or try to spoof the IP address to\n" +
+            "bypass security checks. Such attacks can always be possible, but in the case of a hardcoded IP address solving the issue will take more time, which\n" +
+            "will increase an attack’s impact.</p>\n" +
+            "<h2>Exceptions</h2>\n" +
+            "<p>No issue is reported for the following cases because they are not considered sensitive:</p>\n" +
+            "<ul>\n" +
+            "  <li> Loopback addresses 127.0.0.0/8 in CIDR notation (from 127.0.0.0 to 127.255.255.255) </li>\n" +
+            "  <li> Broadcast address 255.255.255.255 </li>\n" +
+            "  <li> Non routable address 0.0.0.0 </li>\n" +
+            "  <li> Strings of the form <code>2.5.&lt;number&gt;.&lt;number&gt;</code> as they <a href=\"http://www.oid-info.com/introduction.htm\">often match\n" +
+            "  Object Identifiers</a> (OID). </li>\n" +
+            "</ul>\n",
+          "How can I fix it?",
+          "<h2>Recommended Secure Coding Practices</h2>\n" +
+            "<p>Don’t hard-code the IP address in the source code, instead make it configurable with environment variables, configuration files, or a similar\n" +
+            "approach. Alternatively, if confidentially is not required a domain name can be used since it allows to change the destination quickly without having\n" +
+            "to rebuild the software.</p>\n" +
+            "<h2>Compliant Solution</h2>\n" +
+            "<pre>\n" +
+            "String ip = System.getenv(\"IP_ADDRESS\"); // Compliant\n" +
+            "Socket socket = new Socket(ip, 6667);\n" +
+            "</pre>\n" +
+            "<h2>See</h2>\n" +
+            "<ul>\n" +
+            "  <li> <a href=\"https://owasp.org/Top10/A01_2021-Broken_Access_Control/\">OWASP Top 10 2021 Category A1</a> - Broken Access Control </li>\n" +
+            "  <li> <a href=\"https://www.owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure\">OWASP Top 10 2017 Category A3</a> - Sensitive Data\n" +
+            "  Exposure </li>\n" +
+            "  <li> <a href=\"https://wiki.sei.cmu.edu/confluence/x/OjdGBQ\">CERT, MSC03-J.</a> - Never hard code sensitive information </li>\n" +
+            "</ul>"
+      );
+    } else {
+      // hotspots are not loaded when connected to SQ < 9.7
+      assertThat(activeRuleDetailsResponse).isNull();
     }
   }
 
