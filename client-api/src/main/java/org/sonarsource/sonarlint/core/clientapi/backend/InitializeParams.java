@@ -28,7 +28,6 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.Version;
 
 public class InitializeParams {
   private final String telemetryProductKey;
@@ -38,7 +37,6 @@ public class InitializeParams {
   private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
   private final Set<Language> enabledLanguagesInStandaloneMode;
   private final Set<Language> extraEnabledLanguagesInConnectedMode;
-  private final Version nodeJsVersion;
   private final boolean enableSecurityHotspots;
   private final List<SonarQubeConnectionConfigurationDto> sonarQubeConnections;
   private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections;
@@ -48,11 +46,10 @@ public class InitializeParams {
    * @param telemetryProductKey SonarLint product key (vscode, idea, eclipse, ...)
    * @param sonarlintUserHome Path to SonarLint user home directory. If null, will default to ~/.sonarlint
    */
-  public InitializeParams(String telemetryProductKey,
-    Path storageRoot, Set<Path> embeddedPluginPaths, Map<String, Path> connectedModeExtraPluginPathsByKey,
+  public InitializeParams(String telemetryProductKey, Path storageRoot, Set<Path> embeddedPluginPaths, Map<String, Path> connectedModeExtraPluginPathsByKey,
     Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> extraEnabledLanguagesInConnectedMode,
-    @Nullable Version nodeJsVersion, boolean enableSecurityHotspots,
-    List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections, @Nullable String sonarlintUserHome) {
+    boolean enableSecurityHotspots, List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections,
+    @Nullable String sonarlintUserHome) {
     this.telemetryProductKey = telemetryProductKey;
     this.storageRoot = storageRoot;
     this.embeddedPluginPaths = embeddedPluginPaths;
@@ -60,7 +57,6 @@ public class InitializeParams {
     this.connectedModeEmbeddedPluginPathsByKey = connectedModeEmbeddedPluginPathsByKey;
     this.enabledLanguagesInStandaloneMode = enabledLanguagesInStandaloneMode;
     this.extraEnabledLanguagesInConnectedMode = extraEnabledLanguagesInConnectedMode;
-    this.nodeJsVersion = nodeJsVersion;
     this.enableSecurityHotspots = enableSecurityHotspots;
     this.sonarQubeConnections = sonarQubeConnections;
     this.sonarCloudConnections = sonarCloudConnections;
@@ -93,11 +89,6 @@ public class InitializeParams {
 
   public Set<Language> getExtraEnabledLanguagesInConnectedMode() {
     return extraEnabledLanguagesInConnectedMode;
-  }
-
-  @CheckForNull
-  public Version getNodeJsVersion() {
-    return nodeJsVersion;
   }
 
   public boolean isEnableSecurityHotspots() {

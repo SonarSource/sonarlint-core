@@ -48,19 +48,28 @@ public class PluginsLoader {
   public static class Configuration {
     private final Set<Path> pluginJarLocations;
     private final Set<Language> enabledLanguages;
+    private final boolean shouldCheckNodeVersion;
     private final Optional<Version> nodeCurrentVersion;
+
+    public Configuration(Set<Path> pluginJarLocations, Set<Language> enabledLanguages) {
+      this.pluginJarLocations = pluginJarLocations;
+      this.enabledLanguages = enabledLanguages;
+      this.nodeCurrentVersion = Optional.empty();
+      this.shouldCheckNodeVersion = false;
+    }
 
     public Configuration(Set<Path> pluginJarLocations, Set<Language> enabledLanguages, Optional<Version> nodeCurrentVersion) {
       this.pluginJarLocations = pluginJarLocations;
       this.enabledLanguages = enabledLanguages;
       this.nodeCurrentVersion = nodeCurrentVersion;
+      this.shouldCheckNodeVersion = true;
     }
   }
 
   public PluginsLoadResult load(Configuration configuration) {
     var javaSpecVersion = Objects.requireNonNull(System2.INSTANCE.property("java.specification.version"), "Missing Java property 'java.specification.version'");
     var pluginCheckResultByKeys = requirementsChecker.checkRequirements(configuration.pluginJarLocations, configuration.enabledLanguages, Version.create(javaSpecVersion),
-      configuration.nodeCurrentVersion);
+      configuration.shouldCheckNodeVersion, configuration.nodeCurrentVersion);
 
     var nonSkippedPlugins = getNonSkippedPlugins(pluginCheckResultByKeys);
     logPlugins(nonSkippedPlugins);

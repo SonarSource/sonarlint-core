@@ -23,12 +23,9 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.clientapi.backend.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoadResult;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
@@ -44,22 +41,19 @@ public class PluginsServiceImpl implements PluginsService {
   private Map<String, Path> connectedModeExtraPluginPathsByKey;
   private Set<Language> enabledLanguagesInStandaloneMode;
   private Set<Language> enabledLanguagesInConnectedMode;
-  private Version nodeJsVersion;
 
   public PluginsServiceImpl(PluginsRepository pluginsRepository) {
     this.pluginsRepository = pluginsRepository;
   }
 
   public void initialize(Path storageRoot, Set<Path> embeddedPluginPaths, Map<String, Path> connectedModeEmbeddedPluginPathsByKey,
-    Map<String, Path> connectedModeExtraPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> enabledLanguagesInConnectedMode,
-    @Nullable Version nodeJsVersion) {
+    Map<String, Path> connectedModeExtraPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> enabledLanguagesInConnectedMode) {
     this.storageRoot = storageRoot;
     this.embeddedPluginPaths = embeddedPluginPaths;
     this.connectedModeEmbeddedPluginPathsByKey = connectedModeEmbeddedPluginPathsByKey;
     this.connectedModeExtraPluginPathsByKey = connectedModeExtraPluginPathsByKey;
     this.enabledLanguagesInStandaloneMode = enabledLanguagesInStandaloneMode;
     this.enabledLanguagesInConnectedMode = enabledLanguagesInConnectedMode;
-    this.nodeJsVersion = nodeJsVersion;
   }
 
   public LoadedPlugins getEmbeddedPlugins() {
@@ -96,8 +90,9 @@ public class PluginsServiceImpl implements PluginsService {
     return loadPlugins(enabledLanguagesInConnectedMode, pluginPaths);
   }
 
-  private PluginsLoadResult loadPlugins(Set<Language> enabledLanguages, Set<Path> pluginPaths) {
-    var config = new PluginsLoader.Configuration(pluginPaths, enabledLanguages, Optional.ofNullable(nodeJsVersion));
+  private static PluginsLoadResult loadPlugins(Set<Language> enabledLanguages, Set<Path> pluginPaths) {
+    // not interested in the Node.js path at the moment
+    var config = new PluginsLoader.Configuration(pluginPaths, enabledLanguages);
     return new PluginsLoader().load(config);
   }
 

@@ -124,7 +124,7 @@ public class SonarLintBackendFixture {
     public SonarLintBackendImpl build(SonarLintClient client) {
       var sonarLintBackend = new SonarLintBackendImpl(client);
       sonarLintBackend.initialize(new InitializeParams(MEDIUM_TESTS_PRODUCT_KEY, storageRoot, embeddedPluginPaths, extraPluginPathsByKey, Collections.emptyMap(),
-        enabledLanguages, Collections.emptySet(), null, false, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString()));
+        enabledLanguages, Collections.emptySet(), false, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString()));
       sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
       return sonarLintBackend;
     }
@@ -151,7 +151,7 @@ public class SonarLintBackendFixture {
     private static final HttpClient httpClient = MockWebServerExtensionWithProtobuf.httpClient();
     private final Map<String, List<BindingSuggestionDto>> bindingSuggestions = new HashMap<>();
 
-    private List<String> urlsToOpen = new ArrayList<>();
+    private final List<String> urlsToOpen = new ArrayList<>();
     private final List<FoundFileDto> foundFiles;
 
     public FakeSonarLintClient(List<FoundFileDto> foundFiles) {
