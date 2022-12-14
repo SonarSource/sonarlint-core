@@ -147,7 +147,7 @@ public class ConnectedModeBackendTest extends AbstractConnectedTest {
       assertThat(description)
         .extracting("right.tabs", as(list(ActiveRuleDescriptionTabDto.class)))
         .flatExtracting(ConnectedModeBackendTest::extractTabContent)
-        .containsOnly(
+        .contains(
           "Why is this an issue?",
           "<p>Path injections occur when an application uses untrusted data to construct a file path and access this file without validating its path first.</p>\n" +
             "<p>A user with malicious intent would inject specially crafted values, such as <code>../</code>, to change the initial intended path. The resulting\n" +
@@ -165,79 +165,7 @@ public class ConnectedModeBackendTest extends AbstractConnectedTest {
             "<p>The injected path component tampers with the location of a file the application is supposed to read and output. The vulnerability is exploited to\n" +
             "leak the content of arbitrary files from the file system, including sensitive files like SSH private keys.</p>",
           "How can I fix it?",
-          "<p>The following code is vulnerable to path injection as it is constructing a path using untrusted data. This path is then used to delete a file\n" +
-            "without being validated first. Therefore, it can be leveraged by an attacker to delete arbitrary files.</p>\n" +
-            "<h4>Non-compliant code example</h4>\n" +
-            "<pre data-diff-id=\"1\" data-diff-type=\"noncompliant\">\n" +
-            "@Controller\n" +
-            "public class ExampleController\n" +
-            "{\n" +
-            "    static private String targetDirectory = \"/path/to/target/directory/\";\n" +
-            "\n" +
-            "    @GetMapping(value = \"/delete\")\n" +
-            "    public void delete(@RequestParam(\"filename\") String filename) throws IOException {\n" +
-            "\n" +
-            "        File file = new File(targetDirectory + filename);\n" +
-            "        file.delete();\n" +
-            "    }\n" +
-            "}\n" +
-            "</pre>\n" +
-            "<h4>Compliant solution</h4>\n" +
-            "<pre data-diff-id=\"1\" data-diff-type=\"compliant\">\n" +
-            "@Controller\n" +
-            "public class ExampleController\n" +
-            "{\n" +
-            "    static private String targetDirectory = \"/path/to/target/directory/\";\n" +
-            "\n" +
-            "    @GetMapping(value = \"/delete\")\n" +
-            "    public void delete(@RequestParam(\"filename\") String filename) throws IOException {\n" +
-            "\n" +
-            "        File file = new File(targetDirectory + filename);\n" +
-            "        String canonicalDestinationPath = file.getCanonicalPath();\n" +
-            "\n" +
-            "        if (!canonicalDestinationPath.startsWith(targetDirectory)) {\n" +
-            "            throw new IOException(\"Entry is outside of the target directory\");\n" +
-            "        }\n" +
-            "\n" +
-            "        file.delete();\n" +
-            "    }\n" +
-            "}\n" +
-            "</pre>\n" +
-            "<h3>How does this work?</h3>\n" +
-            "<p>The universal way to prevent path injection is to validate paths constructed from untrusted data.</p>\n" +
-            "<p>The validation should be done as follow:</p>\n" +
-            "<ol>\n" +
-            "  <li> Resolve the canonical path of the file by using methods like <code>java.io.File.getCanonicalPath</code>. This will resolve relative path or\n" +
-            "  path components like <code>../</code> and removes any ambiguity regarding the file’s location. </li>\n" +
-            "  <li> Check that the canonical path is within the directory where the file should be located. </li>\n" +
-            "  <li> Ensure the target directory path ends with a forward slash to prevent partial path traversal, for example, <strong>/base/dirmalicious</strong>\n" +
-            "  starts with <strong>/base/dir</strong> but does not start with <strong>/base/dir/</strong>. </li>\n" +
-            "</ol>\n" +
-            "<h3>Pitfalls</h3>\n" +
-            "<h4>Partial Path Traversal</h4>\n" +
-            "<p>When validating untrusted paths by checking if they start with a trusted folder name, <strong>ensure the validation string contains a path\n" +
-            "separator as the last character</strong>.<br> A partial path traversal vulnerability can be unintentionally introduced into the application without a\n" +
-            "path separator as the last character of the validation strings.</p>\n" +
-            "<p>For example, the following code is vulnerable to partial path injection. Note that the string <code>targetDirectory</code> does not end with a path\n" +
-            "separator:</p>\n" +
-            "<pre>\n" +
-            "static private String targetDirectory = \"/Users/John\";\n" +
-            "\n" +
-            "@GetMapping(value = \"/endpoint\")\n" +
-            "public void endpoint(@RequestParam(\"folder\") fileName) throws IOException {\n" +
-            "\n" +
-            "    String canonicalizedFileName = fileName.getCanonicalPath();\n" +
-            "\n" +
-            "    if (!canonicalizedFileName .startsWith(targetDirectory)) {\n" +
-            "        throw new IOException(\"Entry is outside of the target directory\");\n" +
-            "    }\n" +
-            "}\n" +
-            "</pre>\n" +
-            "<p>This check can be bypassed because <code>\"/Users/Johnny\".startsWith(\"/Users/John\")</code> returns <code>true</code>. Thus, for validation,\n" +
-            "<code>\"/Users/John\"</code> should actually be <code>\"/Users/John/\"</code>.</p>\n" +
-            "<p><strong>Warning</strong>: Some functions, such as <code>.getCanonicalPath</code>, remove the terminating path separator in their return value.<br>\n" +
-            "The validation code should be tested to ensure that it cannot be impacted by this issue.</p>\n" +
-            "<p><a href=\"https://github.com/aws/aws-sdk-java/security/advisories/GHSA-c28r-hw5m-5gv3\">Here is a real-life example of this vulnerability.</a></p>",
+          // actual description not checked because it changes frequently between versions
           "java_se", "Java SE",
           "More Info",
           "<h3>Standards</h3>\n" +

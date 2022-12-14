@@ -179,7 +179,7 @@ public class ConnectedTaintVulnerabilitiesTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void updatesStorageTaintVulnerabilityEvents() throws InterruptedException {
+  public void updatesStorageTaintVulnerabilityEvents() {
     assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6));
 
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVA_TAINT, null);
@@ -218,26 +218,12 @@ public class ConnectedTaintVulnerabilitiesTest extends AbstractConnectedTest {
       .flatExtracting("flows")
       .flatExtracting("locations")
       .extracting("message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "textRange.hash")
-      .containsOnly(
-        // flow 1
+      .contains(
+        // flow 1 (don't assert intermediate locations as they change frequently between versions)
         tuple("Sink: this invocation is not safe; a malicious value can be used as argument", "src/main/java/foo/DbHelper.java", 11, 35, 11, 64, "d123d615e9ea7cc7e78c784c768f2941"),
-        tuple("A malicious value can be assigned to variable ‘query’", "src/main/java/foo/DbHelper.java", 8, 4, 8, 95, "4562fd67c1d6bb2a7316aa9937b9e571"),
-        tuple("This concatenation can propagate malicious content to the newly created string", "src/main/java/foo/DbHelper.java", 8, 19, 8, 94, "83939dd74b004980ab22c04bc7b92374"),
-        tuple("This instruction can propagate malicious content", "src/main/java/foo/DbHelper.java", 7, 17, 7, 29, "66b4779468e4e855e187452d513b5fb6"),
-        tuple("This instruction can propagate malicious content", "src/main/java/foo/Endpoint.java", 11, 11, 11, 56, "902ee03726924c32da971ce91d64a16d"),
-        tuple("A malicious value can be assigned to variable ‘pass’", "src/main/java/foo/Endpoint.java", 9, 4, 9, 47, "1ec8a3fab79983f35c841547397cecd3"),
-        tuple("A malicious value can be assigned to variable ‘user’", "src/main/java/foo/Endpoint.java", 8, 4, 8, 47, "1408257f72430dde2f97a32065230e2f"),
-        tuple("This invocation can propagate malicious content to its return value", "src/main/java/foo/Endpoint.java", 8, 18, 8, 46, "2ef54227b849e317e7104dc550be8146"),
         tuple("Source: a user can craft an HTTP request with malicious content", "src/main/java/foo/Endpoint.java", 9, 18, 9, 46, "a2b69949119440a24e900f15c0939c30"),
-        // flow 2
+        // flow 2 (don't assert intermediate locations as they change frequently between versions)
         tuple("Sink: this invocation is not safe; a malicious value can be used as argument", "src/main/java/foo/DbHelper.java", 11, 35, 11, 64, "d123d615e9ea7cc7e78c784c768f2941"),
-        tuple("A malicious value can be assigned to variable ‘query’", "src/main/java/foo/DbHelper.java", 8, 4, 8, 95, "4562fd67c1d6bb2a7316aa9937b9e571"),
-        tuple("This concatenation can propagate malicious content to the newly created string", "src/main/java/foo/DbHelper.java", 8, 19, 8, 94, "83939dd74b004980ab22c04bc7b92374"),
-        tuple("This instruction can propagate malicious content", "src/main/java/foo/DbHelper.java", 7, 17, 7, 29, "66b4779468e4e855e187452d513b5fb6"),
-        tuple("This instruction can propagate malicious content", "src/main/java/foo/Endpoint.java", 11, 11, 11, 56, "902ee03726924c32da971ce91d64a16d"),
-        tuple("A malicious value can be assigned to variable ‘pass’", "src/main/java/foo/Endpoint.java", 9, 4, 9, 47, "1ec8a3fab79983f35c841547397cecd3"),
-        tuple("This invocation can propagate malicious content to its return value", "src/main/java/foo/Endpoint.java", 9, 18, 9, 46, "a2b69949119440a24e900f15c0939c30"),
-        tuple("A malicious value can be assigned to variable ‘user’", "src/main/java/foo/Endpoint.java", 8, 4, 8, 47, "1408257f72430dde2f97a32065230e2f"),
         tuple("Source: a user can craft an HTTP request with malicious content", "src/main/java/foo/Endpoint.java", 8, 18, 8, 46, "2ef54227b849e317e7104dc550be8146"));
 
     // check IssueChangedEvent is received
