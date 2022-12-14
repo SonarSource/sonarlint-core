@@ -1,7 +1,11 @@
 package foo;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 public class Foo {
-  
-  String ip = "192.168.12.42";
-  
+
+  public static void configureLogging() {
+    Logger.getGlobal().setLevel(Level.FINEST);
+  }
 }

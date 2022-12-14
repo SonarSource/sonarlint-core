@@ -408,14 +408,13 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     assertThat(remoteHotspot).isNotEmpty();
     var actualHotspot = remoteHotspot.get();
-    assertThat(actualHotspot.message).isEqualTo("Make sure using this hardcoded IP address is safe here.");
+    assertThat(actualHotspot.message).isEqualTo("Make sure that this logger's configuration is safe.");
     assertThat(actualHotspot.filePath).isEqualTo("src/main/java/foo/Foo.java");
-    assertThat(actualHotspot.textRange).usingRecursiveComparison().isEqualTo(new TextRange(5, 14, 5, 29));
+    assertThat(actualHotspot.textRange).usingRecursiveComparison().isEqualTo(new TextRange(9, 4, 9, 45));
     assertThat(actualHotspot.author).isEmpty();
     assertThat(actualHotspot.status).isEqualTo(ServerHotspotDetails.Status.TO_REVIEW);
     assertThat(actualHotspot.resolution).isNull();
-    assertThat(actualHotspot.rule.key).isEqualTo("java:S1313");
-
+    assertThat(actualHotspot.rule.key).isEqualTo("java:S4792");
   }
 
   private String getFirstHotspotKey(String projectKey) throws InvalidProtocolBufferException {

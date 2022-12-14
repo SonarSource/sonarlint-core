@@ -21,6 +21,7 @@ package its;
 
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.container.Edition;
+import com.sonar.orchestrator.version.Version;
 import its.tools.OrchestratorUtils;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -41,7 +42,6 @@ import org.junit.rules.TemporaryFolder;
 import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
@@ -58,12 +58,11 @@ import org.sonarsource.sonarlint.core.clientapi.client.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 
 import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.list;
 
 public class ConnectedModeBackendTest extends AbstractConnectedTest {
@@ -190,68 +189,170 @@ public class ConnectedModeBackendTest extends AbstractConnectedTest {
 
   @Test
   public void returnConvertedDescriptionSectionsForHotspotRules() throws ExecutionException, InterruptedException {
+    assumeThat(ORCHESTRATOR.getServer().version()).isGreaterThanOrEqualTo(Version.create("9.7"));
+
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
       List.of(new ConfigurationScopeDto("project", null, true, "Project", new BindingConfigurationDto("ORCHESTRATOR", PROJECT_KEY_JAVA_HOTSPOT, false)))));
 
-    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("project", "java:S1313")).get();
+    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("project", javaRuleKey(ORCHESTRATOR, "S4792"))).get();
 
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
-      var description = activeRuleDetailsResponse.details().getDescription();
-      assertThat(description)
-        .extracting("right.introductionHtmlContent")
-        .isNull();
-      assertThat(description)
-        .extracting("right.tabs", as(list(ActiveRuleDescriptionTabDto.class)))
-        .flatExtracting(ConnectedModeBackendTest::extractTabContent)
-        .containsOnly(
-          "Why is this an issue?",
-          "<p>Hardcoding IP addresses is security-sensitive. It has led in the past to the following vulnerabilities:</p>\n" +
-            "<ul>\n" +
-            "  <li> <a href=\"http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2006-5901\">CVE-2006-5901</a> </li>\n" +
-            "  <li> <a href=\"http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2005-3725\">CVE-2005-3725</a> </li>\n" +
-            "</ul>\n" +
-            "<p>Today’s services have an ever-changing architecture due to their scaling and redundancy needs. It is a mistake to think that a service will always\n" +
-            "have the same IP address. When it does change, the hardcoded IP will have to be modified too. This will have an impact on the product development,\n" +
-            "delivery, and deployment:</p>\n" +
-            "<ul>\n" +
-            "  <li> The developers will have to do a rapid fix every time this happens, instead of having an operation team change a configuration file. </li>\n" +
-            "  <li> It misleads to use the same address in every environment (dev, sys, qa, prod). </li>\n" +
-            "</ul>\n" +
-            "<p>Last but not least it has an effect on application security. Attackers might be able to decompile the code and thereby discover a potentially\n" +
-            "sensitive address. They can perform a Denial of Service attack on the service, try to get access to the system, or try to spoof the IP address to\n" +
-            "bypass security checks. Such attacks can always be possible, but in the case of a hardcoded IP address solving the issue will take more time, which\n" +
-            "will increase an attack’s impact.</p>\n" +
-            "<h2>Exceptions</h2>\n" +
-            "<p>No issue is reported for the following cases because they are not considered sensitive:</p>\n" +
-            "<ul>\n" +
-            "  <li> Loopback addresses 127.0.0.0/8 in CIDR notation (from 127.0.0.0 to 127.255.255.255) </li>\n" +
-            "  <li> Broadcast address 255.255.255.255 </li>\n" +
-            "  <li> Non routable address 0.0.0.0 </li>\n" +
-            "  <li> Strings of the form <code>2.5.&lt;number&gt;.&lt;number&gt;</code> as they <a href=\"http://www.oid-info.com/introduction.htm\">often match\n" +
-            "  Object Identifiers</a> (OID). </li>\n" +
-            "</ul>\n",
-          "How can I fix it?",
-          "<h2>Recommended Secure Coding Practices</h2>\n" +
-            "<p>Don’t hard-code the IP address in the source code, instead make it configurable with environment variables, configuration files, or a similar\n" +
-            "approach. Alternatively, if confidentially is not required a domain name can be used since it allows to change the destination quickly without having\n" +
-            "to rebuild the software.</p>\n" +
-            "<h2>Compliant Solution</h2>\n" +
-            "<pre>\n" +
-            "String ip = System.getenv(\"IP_ADDRESS\"); // Compliant\n" +
-            "Socket socket = new Socket(ip, 6667);\n" +
-            "</pre>\n" +
-            "<h2>See</h2>\n" +
-            "<ul>\n" +
-            "  <li> <a href=\"https://owasp.org/Top10/A01_2021-Broken_Access_Control/\">OWASP Top 10 2021 Category A1</a> - Broken Access Control </li>\n" +
-            "  <li> <a href=\"https://www.owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure\">OWASP Top 10 2017 Category A3</a> - Sensitive Data\n" +
-            "  Exposure </li>\n" +
-            "  <li> <a href=\"https://wiki.sei.cmu.edu/confluence/x/OjdGBQ\">CERT, MSC03-J.</a> - Never hard code sensitive information </li>\n" +
-            "</ul>"
-      );
-    } else {
-      // hotspots are not loaded when connected to SQ < 9.7
-      assertThat(activeRuleDetailsResponse).isNull();
-    }
+    var description = activeRuleDetailsResponse.details().getDescription();
+    assertThat(description)
+      .extracting("right.introductionHtmlContent")
+      .isNull();
+    assertThat(description)
+      .extracting("right.tabs", as(list(ActiveRuleDescriptionTabDto.class)))
+      .flatExtracting(ConnectedModeBackendTest::extractTabContent)
+      .containsOnly(
+        "Why is this an issue?",
+        "<p>Configuring loggers is security-sensitive. It has led in the past to the following vulnerabilities:</p>\n" +
+          "<ul>\n" +
+          "  <li> <a href=\"http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-0285\">CVE-2018-0285</a> </li>\n" +
+          "  <li> <a href=\"http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2000-1127\">CVE-2000-1127</a> </li>\n" +
+          "  <li> <a href=\"http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2017-15113\">CVE-2017-15113</a> </li>\n" +
+          "  <li> <a href=\"http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2015-5742\">CVE-2015-5742</a> </li>\n" +
+          "</ul>\n" +
+          "<p>Logs are useful before, during and after a security incident.</p>\n" +
+          "<ul>\n" +
+          "  <li> Attackers will most of the time start their nefarious work by probing the system for vulnerabilities. Monitoring this activity and stopping it\n" +
+          "  is the first step to prevent an attack from ever happening. </li>\n" +
+          "  <li> In case of a successful attack, logs should contain enough information to understand what damage an attacker may have inflicted. </li>\n" +
+          "</ul>\n" +
+          "<p>Logs are also a target for attackers because they might contain sensitive information. Configuring loggers has an impact on the type of information\n" +
+          "logged and how they are logged.</p>\n" +
+          "<p>This rule flags for review code that initiates loggers configuration. The goal is to guide security code reviews.</p>\n" +
+          "<h2>Exceptions</h2>\n" +
+          "<p>Log4J 1.x is not covered as it has reached <a href=\"https://blogs.apache.org/foundation/entry/apache_logging_services_project_announces\">end of\n" +
+          "life</a>.</p>\n",
+        "Assess the risk",
+        "<h2>Ask Yourself Whether</h2>\n" +
+          "<ul>\n" +
+          "  <li> unauthorized users might have access to the logs, either because they are stored in an insecure location or because the application gives\n" +
+          "  access to them. </li>\n" +
+          "  <li> the logs contain sensitive information on a production server. This can happen when the logger is in debug mode. </li>\n" +
+          "  <li> the log can grow without limit. This can happen when additional information is written into logs every time a user performs an action and the\n" +
+          "  user can perform the action as many times as he/she wants. </li>\n" +
+          "  <li> the logs do not contain enough information to understand the damage an attacker might have inflicted. The loggers mode (info, warn, error)\n" +
+          "  might filter out important information. They might not print contextual information like the precise time of events or the server hostname. </li>\n" +
+          "  <li> the logs are only stored locally instead of being backuped or replicated. </li>\n" +
+          "</ul>\n" +
+          "<p>There is a risk if you answered yes to any of those questions.</p>\n" +
+          "<h2>Sensitive Code Example</h2>\n" +
+          "<p>This rule supports the following libraries: Log4J, <code>java.util.logging</code> and Logback</p>\n" +
+          "<pre>\n" +
+          "// === Log4J 2 ===\n" +
+          "import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory;\n" +
+          "import org.apache.logging.log4j.Level;\n" +
+          "import org.apache.logging.log4j.core.*;\n" +
+          "import org.apache.logging.log4j.core.config.*;\n" +
+          "\n" +
+          "// Sensitive: creating a new custom configuration\n" +
+          "abstract class CustomConfigFactory extends ConfigurationFactory {\n" +
+          "    // ...\n" +
+          "}\n" +
+          "\n" +
+          "class A {\n" +
+          "    void foo(Configuration config, LoggerContext context, java.util.Map&lt;String, Level&gt; levelMap,\n" +
+          "            Appender appender, java.io.InputStream stream, java.net.URI uri,\n" +
+          "            java.io.File file, java.net.URL url, String source, ClassLoader loader, Level level, Filter filter)\n" +
+          "            throws java.io.IOException {\n" +
+          "        // Creating a new custom configuration\n" +
+          "        ConfigurationBuilderFactory.newConfigurationBuilder();  // Sensitive\n" +
+          "\n" +
+          "        // Setting loggers level can result in writing sensitive information in production\n" +
+          "        Configurator.setAllLevels(\"com.example\", Level.DEBUG);  // Sensitive\n" +
+          "        Configurator.setLevel(\"com.example\", Level.DEBUG);  // Sensitive\n" +
+          "        Configurator.setLevel(levelMap);  // Sensitive\n" +
+          "        Configurator.setRootLevel(Level.DEBUG);  // Sensitive\n" +
+          "\n" +
+          "        config.addAppender(appender); // Sensitive: this modifies the configuration\n" +
+          "\n" +
+          "        LoggerConfig loggerConfig = config.getRootLogger();\n" +
+          "        loggerConfig.addAppender(appender, level, filter); // Sensitive\n" +
+          "        loggerConfig.setLevel(level); // Sensitive\n" +
+          "\n" +
+          "        context.setConfigLocation(uri); // Sensitive\n" +
+          "\n" +
+          "        // Load the configuration from a stream or file\n" +
+          "        new ConfigurationSource(stream);  // Sensitive\n" +
+          "        new ConfigurationSource(stream, file);  // Sensitive\n" +
+          "        new ConfigurationSource(stream, url);  // Sensitive\n" +
+          "        ConfigurationSource.fromResource(source, loader);  // Sensitive\n" +
+          "        ConfigurationSource.fromUri(uri);  // Sensitive\n" +
+          "    }\n" +
+          "}\n" +
+          "</pre>\n" +
+          "<pre>\n" +
+          "// === java.util.logging ===\n" +
+          "import java.util.logging.*;\n" +
+          "\n" +
+          "class M {\n" +
+          "    void foo(LogManager logManager, Logger logger, java.io.InputStream is, Handler handler)\n" +
+          "            throws SecurityException, java.io.IOException {\n" +
+          "        logManager.readConfiguration(is); // Sensitive\n" +
+          "\n" +
+          "        logger.setLevel(Level.FINEST); // Sensitive\n" +
+          "        logger.addHandler(handler); // Sensitive\n" +
+          "    }\n" +
+          "}\n" +
+          "</pre>\n" +
+          "<pre>\n" +
+          "// === Logback ===\n" +
+          "import ch.qos.logback.classic.util.ContextInitializer;\n" +
+          "import ch.qos.logback.core.Appender;\n" +
+          "import ch.qos.logback.classic.joran.JoranConfigurator;\n" +
+          "import ch.qos.logback.classic.spi.ILoggingEvent;\n" +
+          "import ch.qos.logback.classic.*;\n" +
+          "\n" +
+          "class M {\n" +
+          "    void foo(Logger logger, Appender&lt;ILoggingEvent&gt; fileAppender) {\n" +
+          "        System.setProperty(ContextInitializer.CONFIG_FILE_PROPERTY, \"config.xml\"); // Sensitive\n" +
+          "        JoranConfigurator configurator = new JoranConfigurator(); // Sensitive\n" +
+          "\n" +
+          "        logger.addAppender(fileAppender); // Sensitive\n" +
+          "        logger.setLevel(Level.DEBUG); // Sensitive\n" +
+          "    }\n" +
+          "}\n" +
+          "</pre>\n",
+        "How can I fix it?",
+        "<h2>Recommended Secure Coding Practices</h2>\n" +
+          "<ul>\n" +
+          "  <li> Check that your production deployment doesn’t have its loggers in \"debug\" mode as it might write sensitive information in logs. </li>\n" +
+          "  <li> Production logs should be stored in a secure location which is only accessible to system administrators. </li>\n" +
+          "  <li> Configure the loggers to display all warnings, info and error messages. Write relevant information such as the precise time of events and the\n" +
+          "  hostname. </li>\n" +
+          "  <li> Choose log format which is easy to parse and process automatically. It is important to process logs rapidly in case of an attack so that the\n" +
+          "  impact is known and limited. </li>\n" +
+          "  <li> Check that the permissions of the log files are correct. If you index the logs in some other service, make sure that the transfer and the\n" +
+          "  service are secure too. </li>\n" +
+          "  <li> Add limits to the size of the logs and make sure that no user can fill the disk with logs. This can happen even when the user does not control\n" +
+          "  the logged information. An attacker could just repeat a logged action many times. </li>\n" +
+          "</ul>\n" +
+          "<p>Remember that configuring loggers properly doesn’t make them bullet-proof. Here is a list of recommendations explaining on how to use your\n" +
+          "logs:</p>\n" +
+          "<ul>\n" +
+          "  <li> Don’t log any sensitive information. This obviously includes passwords and credit card numbers but also any personal information such as user\n" +
+          "  names, locations, etc…\u200B Usually any information which is protected by law is good candidate for removal. </li>\n" +
+          "  <li> Sanitize all user inputs before writing them in the logs. This includes checking its size, content, encoding, syntax, etc…\u200B As for any user\n" +
+          "  input, validate using whitelists whenever possible. Enabling users to write what they want in your logs can have many impacts. It could for example\n" +
+          "  use all your storage space or compromise your log indexing service. </li>\n" +
+          "  <li> Log enough information to monitor suspicious activities and evaluate the impact an attacker might have on your systems. Register events such as\n" +
+          "  failed logins, successful logins, server side input validation failures, access denials and any important transaction. </li>\n" +
+          "  <li> Monitor the logs for any suspicious activity. </li>\n" +
+          "</ul>\n" +
+          "<h2>See</h2>\n" +
+          "<ul>\n" +
+          "  <li> <a href=\"https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/\">OWASP Top 10 2021 Category A9</a> - Security Logging and\n" +
+          "  Monitoring Failures </li>\n" +
+          "  <li> <a href=\"https://www.owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure\">OWASP Top 10 2017 Category A3</a> - Sensitive Data\n" +
+          "  Exposure </li>\n" +
+          "  <li> <a href=\"https://owasp.org/www-project-top-ten/2017/A10_2017-Insufficient_Logging%2526Monitoring\">OWASP Top 10 2017 Category A10</a> -\n" +
+          "  Insufficient Logging &amp; Monitoring </li>\n" +
+          "  <li> <a href=\"https://cwe.mitre.org/data/definitions/117\">MITRE, CWE-117</a> - Improper Output Neutralization for Logs </li>\n" +
+          "  <li> <a href=\"https://cwe.mitre.org/data/definitions/532\">MITRE, CWE-532</a> - Information Exposure Through Log Files </li>\n" +
+          "  <li> <a href=\"https://www.sans.org/top25-software-errors/#cat3\">SANS Top 25</a> - Porous Defenses </li>\n" +
+          "</ul>"
+    );
   }
 
   private static List<Object> extractTabContent(ActiveRuleDescriptionTabDto tab) {
