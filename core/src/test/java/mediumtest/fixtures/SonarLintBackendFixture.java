@@ -34,6 +34,7 @@ import java.util.concurrent.CompletableFuture;
 import org.jetbrains.annotations.Nullable;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
+import org.sonarsource.sonarlint.core.clientapi.backend.ClientInfoDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingSuggestionDto;
@@ -47,6 +48,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScope
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FoundFileDto;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
+import org.sonarsource.sonarlint.core.clientapi.workspace.GetWorkspaceInfoResponse;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import testutils.MockWebServerExtensionWithProtobuf;
@@ -54,7 +56,6 @@ import testutils.MockWebServerExtensionWithProtobuf;
 public class SonarLintBackendFixture {
 
   public static final String MEDIUM_TESTS_PRODUCT_KEY = "mediumTests";
-  public static final String MEDIUM_TESTS_IDE_NAME = "CLIENT";
 
   public static SonarLintBackendBuilder newBackend() {
     return new SonarLintBackendBuilder();
@@ -126,10 +127,10 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintBackendImpl build(SonarLintClient client) {
+    public SonarLintBackendImpl build(FakeSonarLintClient client) {
       var sonarLintBackend = new SonarLintBackendImpl(client);
       sonarLintBackend
-        .initialize(new InitializeParams(MEDIUM_TESTS_IDE_NAME, MEDIUM_TESTS_PRODUCT_KEY, storageRoot, embeddedPluginPaths, extraPluginPathsByKey, Collections.emptyMap(),
+        .initialize(new InitializeParams(client.getClientInfo(), MEDIUM_TESTS_PRODUCT_KEY, storageRoot, embeddedPluginPaths, extraPluginPathsByKey, Collections.emptyMap(),
           enabledLanguages, Collections.emptySet(), false, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(), startEmbeddedServer));
       sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
       return sonarLintBackend;
@@ -148,6 +149,10 @@ public class SonarLintBackendFixture {
   public static class SonarLintClientBuilder {
     private final List<FoundFileDto> foundFiles = new ArrayList<>();
     private final List<String> textsOfActionsToApply = new ArrayList<>();
+    private String workspaceTitle = "";
+    private String clientName = "";
+    private String clientVersion = "";
+    private String clientEdition;
 
     public SonarLintClientBuilder withFoundFile(String name, String path, String content) {
       foundFiles.add(new FoundFileDto(name, path, content));
@@ -159,8 +164,28 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintClientBuilder withWorkspaceTitle(String title) {
+      this.workspaceTitle = title;
+      return this;
+    }
+
+    public SonarLintClientBuilder withName(String clientName) {
+      this.clientName = clientName;
+      return this;
+    }
+
+    public SonarLintClientBuilder withVersion(String version) {
+      this.clientVersion = version;
+      return this;
+    }
+
+    public SonarLintClientBuilder withEdition(String edition) {
+      this.clientEdition = edition;
+      return this;
+    }
+
     public FakeSonarLintClient build() {
-      return new FakeSonarLintClient(foundFiles, textsOfActionsToApply);
+      return new FakeSonarLintClient(new ClientInfoDto(clientName, clientVersion, clientEdition), foundFiles, textsOfActionsToApply, workspaceTitle);
     }
   }
 
@@ -170,12 +195,20 @@ public class SonarLintBackendFixture {
 
     private final List<String> urlsToOpen = new ArrayList<>();
     private final List<ShowMessageParams> messagesToShow = new ArrayList<>();
+    private final ClientInfoDto clientInfo;
     private final List<FoundFileDto> foundFiles;
     private final Queue<String> textsOfActionsToApply;
+    private final String workspaceTitle;
 
-    public FakeSonarLintClient(List<FoundFileDto> foundFiles, List<String> textsOfActionsToApply) {
+    public FakeSonarLintClient(ClientInfoDto clientInfo, List<FoundFileDto> foundFiles, List<String> textsOfActionsToApply, String workspaceTitle) {
+      this.clientInfo = clientInfo;
       this.foundFiles = foundFiles;
       this.textsOfActionsToApply = new LinkedList<>(textsOfActionsToApply);
+      this.workspaceTitle = workspaceTitle;
+    }
+
+    public ClientInfoDto getClientInfo() {
+      return clientInfo;
     }
 
     @Override
@@ -208,6 +241,11 @@ public class SonarLintBackendFixture {
     @Override
     public void showMessage(ShowMessageParams params) {
       messagesToShow.add(params);
+    }
+
+    @Override
+    public CompletableFuture<GetWorkspaceInfoResponse> getWorkspaceInfo() {
+      return CompletableFuture.completedFuture(new GetWorkspaceInfoResponse(workspaceTitle));
     }
 
     public boolean hasReceivedSuggestions() {

@@ -28,6 +28,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
+import org.sonarsource.sonarlint.core.clientapi.workspace.GetWorkspaceInfoResponse;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 
 public interface SonarLintClient {
@@ -64,4 +65,7 @@ public interface SonarLintClient {
    */
   @JsonNotification
   void showMessage(ShowMessageParams params);
+
+  @JsonRequest
+  CompletableFuture<GetWorkspaceInfoResponse> getWorkspaceInfo();
 }

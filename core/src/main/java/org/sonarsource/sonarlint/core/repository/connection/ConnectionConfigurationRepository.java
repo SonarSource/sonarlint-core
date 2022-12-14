@@ -68,4 +68,20 @@ public class ConnectionConfigurationRepository {
       return Optional.empty();
     }
   }
+
+  public boolean hasConnectionWithOrigin(String serverOrigin) {
+    // The Origin header has the following format: <scheme>://<host>(:<port>)
+    // Since servers can have an optional "context path" after this, we consider a valid match when the server's configured URL begins with the
+    // passed Origin
+    // See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Origin
+    return connectionsById.values().stream()
+      .anyMatch(connection -> getUrl(connection).startsWith(serverOrigin));
+  }
+
+  private static String getUrl(AbstractConnectionConfiguration connectionConfig) {
+    if (connectionConfig instanceof SonarQubeConnectionConfiguration) {
+      return ((SonarQubeConnectionConfiguration) connectionConfig).getServerUrl();
+    }
+    return SONARCLOUD_URL;
+  }
 }

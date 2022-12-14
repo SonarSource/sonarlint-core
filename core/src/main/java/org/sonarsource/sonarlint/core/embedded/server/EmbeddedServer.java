@@ -29,7 +29,10 @@ import org.apache.hc.core5.http.impl.bootstrap.ServerBootstrap;
 import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.io.CloseMode;
+import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
+import org.sonarsource.sonarlint.core.clientapi.backend.ClientInfoDto;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 
 public class EmbeddedServer {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -42,13 +45,17 @@ public class EmbeddedServer {
   private HttpServer server;
   private int port;
 
+  private final SonarLintClient client;
+  private final ConnectionConfigurationRepository connectionRepository;
   private final AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository;
 
-  public EmbeddedServer(AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository) {
+  public EmbeddedServer(SonarLintClient client, ConnectionConfigurationRepository connectionRepository, AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository) {
+    this.client = client;
+    this.connectionRepository = connectionRepository;
     this.awaitingUserTokenFutureRepository = awaitingUserTokenFutureRepository;
   }
 
-  public void initialize() {
+  public void initialize(ClientInfoDto clientInfo) {
     final var socketConfig = SocketConfig.custom()
       .setSoTimeout(15, TimeUnit.SECONDS)
       // let the port be bindable again immediately
@@ -67,6 +74,7 @@ public class EmbeddedServer {
           .setListenerPort(triedPort)
           .setSocketConfig(socketConfig)
           .addFilterFirst("CORS", new CorsFilter())
+          .register("/sonarlint/api/status", new StatusRequestHandler(client, connectionRepository, clientInfo))
           .register("/sonarlint/api/token", new GeneratedUserTokenHandler(awaitingUserTokenFutureRepository))
           .create();
         startedServer.start();

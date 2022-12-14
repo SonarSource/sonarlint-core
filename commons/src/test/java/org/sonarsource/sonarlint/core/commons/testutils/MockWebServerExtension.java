@@ -20,35 +20,21 @@
 package org.sonarsource.sonarlint.core.commons.testutils;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 import mockwebserver3.Dispatcher;
 import mockwebserver3.MockResponse;
 import mockwebserver3.MockWebServer;
 import mockwebserver3.RecordedRequest;
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
 import okio.Buffer;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.sonarsource.sonarlint.core.commons.http.HttpClient;
-import org.sonarsource.sonarlint.core.commons.http.HttpConnectionListener;
 
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class MockWebServerExtension implements BeforeEachCallback, AfterEachCallback {
-
-  private static final OkHttpClient SHARED_CLIENT = new OkHttpClient();
 
   private MockWebServer server;
   protected final Map<String, MockResponse> responsesByPath = new HashMap<>();
@@ -128,162 +114,7 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
     }
   }
 
-  public static HttpClient httpClient() {
-    return new HttpClient() {
-
-      private final OkHttpClient okClient = SHARED_CLIENT.newBuilder().build();
-
-      @Override
-      public Response post(String url, String contentType, String bodyContent) {
-        var body = RequestBody.create(MediaType.get(contentType), bodyContent);
-        var request = new Request.Builder()
-          .url(url)
-          .post(body)
-          .build();
-        return executeRequest(request);
-      }
-
-      @Override
-      public Response get(String url) {
-        var request = new Request.Builder()
-          .url(url)
-          .build();
-        return executeRequest(request);
-      }
-
-      @Override
-      public CompletableFuture<Response> getAsync(String url) {
-        var request = new Request.Builder()
-          .url(url)
-          .build();
-        return executeRequestAsync(request);
-      }
-
-      @Override
-      public AsyncRequest getEventStream(String url, HttpConnectionListener connectionListener, Consumer<String> messageConsumer) {
-        var request = new Request.Builder()
-          .url(url)
-          .build();
-        var call = okClient.newCall(request);
-        var asyncRequest = new OkHttpAsyncRequest(call);
-        try {
-          // use a sync approach to ease testing
-          var response = call.execute();
-          if (response.isSuccessful()) {
-            connectionListener.onConnected();
-            // simplified reading, for tests we assume the event comes full, never chunked
-            messageConsumer.accept(wrap(response).bodyAsString());
-          } else {
-            connectionListener.onError(response.code());
-          }
-        } catch (IOException e) {
-          connectionListener.onError(null);
-        }
-        return asyncRequest;
-      }
-
-      @Override
-      public Response delete(String url, String contentType, String bodyContent) {
-        var body = RequestBody.create(MediaType.get(contentType), bodyContent);
-        var request = new Request.Builder()
-          .url(url)
-          .delete(body)
-          .build();
-        return executeRequest(request);
-      }
-
-      private Response executeRequest(Request request) {
-        try {
-          return wrap(okClient.newCall(request).execute());
-        } catch (IOException e) {
-          throw new IllegalStateException("Unable to execute request: " + e.getMessage(), e);
-        }
-      }
-
-      private CompletableFuture<Response> executeRequestAsync(Request request) {
-        var call = okClient.newCall(request);
-        var futureResponse = new CompletableFuture<Response>()
-          .whenComplete((response, error) -> {
-            if (error instanceof CancellationException) {
-              call.cancel();
-            }
-          });
-        call.enqueue(new Callback() {
-          @Override
-          public void onFailure(Call call, IOException e) {
-            futureResponse.completeExceptionally(e);
-          }
-
-          @Override
-          public void onResponse(Call call, okhttp3.Response response) {
-            futureResponse.complete(wrap(response));
-          }
-        });
-        return futureResponse;
-      }
-
-      private Response wrap(okhttp3.Response wrapped) {
-        return new Response() {
-
-          @Override
-          public String url() {
-            return wrapped.request().url().toString();
-          }
-
-          @Override
-          public int code() {
-            return wrapped.code();
-          }
-
-          @Override
-          public void close() {
-            wrapped.close();
-          }
-
-          @Override
-          public String bodyAsString() {
-            try (var body = wrapped.body()) {
-              return body.string();
-            } catch (IOException e) {
-              throw new IllegalStateException("Unable to read response body: " + e.getMessage(), e);
-            }
-          }
-
-          @Override
-          public InputStream bodyAsStream() {
-            return wrapped.body().byteStream();
-          }
-
-          @Override
-          public String toString() {
-            return wrapped.toString();
-          }
-        };
-      }
-
-    };
+  public static TestHttpClient httpClient() {
+    return new TestHttpClient();
   }
-
-  public interface TestAsyncRequest {
-    void await();
-  }
-
-  public static class OkHttpAsyncRequest implements HttpClient.AsyncRequest, TestAsyncRequest {
-    private final Call call;
-
-    private OkHttpAsyncRequest(Call call) {
-      this.call = call;
-    }
-
-    @Override
-    public void cancel() {
-      call.cancel();
-    }
-
-    public void await() {
-      var beginTime = System.currentTimeMillis();
-      while (!call.isExecuted() || beginTime > System.currentTimeMillis() - 5000L);
-    }
-  }
-
 }
