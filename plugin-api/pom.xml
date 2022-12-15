@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-parent</artifactId>
-    <version>8.12-SNAPSHOT</version>
+    <version>8.13-SNAPSHOT</version>
   </parent>
   <artifactId>sonarlint-plugin-api</artifactId>
   <packaging>jar</packaging>
