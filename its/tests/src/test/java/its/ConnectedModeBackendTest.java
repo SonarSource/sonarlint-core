@@ -60,10 +60,8 @@ import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScope
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 
-import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
-import static org.assertj.core.api.InstanceOfAssertFactories.list;
 
 public class ConnectedModeBackendTest extends AbstractConnectedTest {
 
@@ -147,11 +145,9 @@ public class ConnectedModeBackendTest extends AbstractConnectedTest {
       // no description sections at that time
       assertThat(description.isRight()).isFalse();
     } else {
-      assertThat(description)
-        .extracting("right.introductionHtmlContent")
-        .isNull();
-      assertThat(description)
-        .extracting("right.tabs", as(list(ActiveRuleDescriptionTabDto.class)))
+      var extendedDescription = description.getRight();
+      assertThat(extendedDescription.getIntroductionHtmlContent()).isNull();
+      assertThat(extendedDescription.getTabs())
         .flatExtracting(ConnectedModeBackendTest::extractTabContent)
         .contains(
           "Why is this an issue?",
@@ -196,12 +192,9 @@ public class ConnectedModeBackendTest extends AbstractConnectedTest {
 
     var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("project", javaRuleKey(ORCHESTRATOR, "S4792"))).get();
 
-    var description = activeRuleDetailsResponse.details().getDescription();
-    assertThat(description)
-      .extracting("right.introductionHtmlContent")
-      .isNull();
-    assertThat(description)
-      .extracting("right.tabs", as(list(ActiveRuleDescriptionTabDto.class)))
+    var extendedDescription = activeRuleDetailsResponse.details().getDescription().getRight();
+    assertThat(extendedDescription.getIntroductionHtmlContent()).isNull();
+    assertThat(extendedDescription.getTabs())
       .flatExtracting(ConnectedModeBackendTest::extractTabContent)
       .containsOnly(
         "Why is this an issue?",
