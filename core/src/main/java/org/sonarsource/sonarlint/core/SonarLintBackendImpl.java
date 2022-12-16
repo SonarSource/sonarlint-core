@@ -78,7 +78,8 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     rulesService = new RulesServiceImpl(pluginsService, rulesRepository);
     activeRulesService = new ActiveRulesServiceImpl(serverApiProvider, rulesService, configurationRepository);
     this.telemetryService = new TelemetryServiceImpl();
-    this.embeddedServer = new EmbeddedServer(client, connectionConfigurationRepository, awaitingUserTokenFutureRepository);
+    this.embeddedServer = new EmbeddedServer(client, connectionService, awaitingUserTokenFutureRepository, configurationService, clientEventBus, serverApiProvider,
+      telemetryService);
     this.authenticationHelperService = new AuthenticationHelperServiceImpl(client, embeddedServer, awaitingUserTokenFutureRepository);
     this.hotspotService = new HotspotServiceImpl(client, configurationRepository, connectionConfigurationRepository, telemetryService);
     var bindingClueProvider = new BindingClueProvider(connectionConfigurationRepository, client);

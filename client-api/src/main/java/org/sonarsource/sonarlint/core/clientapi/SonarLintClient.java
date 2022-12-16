@@ -25,8 +25,11 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.SuggestBindingParams;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.clientapi.workspace.GetWorkspaceInfoResponse;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
@@ -68,4 +71,15 @@ public interface SonarLintClient {
 
   @JsonRequest
   CompletableFuture<GetWorkspaceInfoResponse> getWorkspaceInfo();
+
+  @JsonNotification
+  void showHotspot(ShowHotspotParams params);
+
+  /**
+   * Can be triggered by the backend when trying to handle a feature that needs a bound project, e.g. open hotspot.
+   * @param params
+   * @return the response to this binding assist request, that can contain a new connection and/or a bound project
+   */
+  @JsonRequest
+  CompletableFuture<AssistBindingResponse> assistBinding(AssistBindingParams params);
 }

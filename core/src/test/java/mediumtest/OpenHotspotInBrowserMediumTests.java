@@ -34,7 +34,7 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 
-class HotspotMediumTests {
+class OpenHotspotInBrowserMediumTests {
 
   private SonarLintBackendImpl backend;
 

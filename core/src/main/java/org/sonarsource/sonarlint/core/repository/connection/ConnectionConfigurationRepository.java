@@ -19,9 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.repository.connection;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
@@ -78,10 +80,27 @@ public class ConnectionConfigurationRepository {
       .anyMatch(connection -> getUrl(connection).startsWith(serverOrigin));
   }
 
+  public List<AbstractConnectionConfiguration> findByUrl(String serverUrl) {
+    return connectionsById.values().stream()
+      .filter(connection -> equalsIgnoringTrailingSlash(getUrl(connection), serverUrl))
+      .collect(Collectors.toList());
+  }
+
   private static String getUrl(AbstractConnectionConfiguration connectionConfig) {
     if (connectionConfig instanceof SonarQubeConnectionConfiguration) {
       return ((SonarQubeConnectionConfiguration) connectionConfig).getServerUrl();
     }
     return SONARCLOUD_URL;
+  }
+
+  private static boolean equalsIgnoringTrailingSlash(String aString, String anotherString) {
+    return withTrailingSlash(aString).equals(withTrailingSlash(anotherString));
+  }
+
+  private static String withTrailingSlash(String str) {
+    if (!str.endsWith("/")) {
+      return str + '/';
+    }
+    return str;
   }
 }

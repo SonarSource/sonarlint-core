@@ -32,19 +32,19 @@ import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.io.HttpRequestHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
+import org.sonarsource.sonarlint.core.ConnectionServiceImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.ClientInfoDto;
-import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 
 public class StatusRequestHandler implements HttpRequestHandler {
 
   private final SonarLintClient client;
-  private final ConnectionConfigurationRepository connectionRepository;
+  private final ConnectionServiceImpl connectionService;
   private final ClientInfoDto clientInfo;
 
-  public StatusRequestHandler(SonarLintClient client, ConnectionConfigurationRepository connectionRepository, ClientInfoDto clientInfo) {
+  public StatusRequestHandler(SonarLintClient client, ConnectionServiceImpl connectionService, ClientInfoDto clientInfo) {
     this.client = client;
-    this.connectionRepository = connectionRepository;
+    this.connectionService = connectionService;
     this.clientInfo = clientInfo;
   }
 
@@ -69,7 +69,7 @@ public class StatusRequestHandler implements HttpRequestHandler {
   }
 
   private boolean isTrustedServer(String serverOrigin) {
-    return connectionRepository.hasConnectionWithOrigin(serverOrigin);
+    return connectionService.hasConnectionWithOrigin(serverOrigin);
   }
 
   private static class StatusResponse {

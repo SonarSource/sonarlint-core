@@ -47,6 +47,7 @@ public class ServerHotspotDetails {
   public final TextRange textRange;
   public final String author;
   public final Status status;
+  @CheckForNull
   public final Resolution resolution;
   public final Rule rule;
   @CheckForNull
