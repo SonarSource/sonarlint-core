@@ -20,9 +20,11 @@
 package org.sonarsource.sonarlint.core.repository.config;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 
 import static java.util.Objects.requireNonNull;
@@ -92,5 +94,12 @@ public class ConfigurationRepository {
   @CheckForNull
   public ConfigurationScope getConfigurationScope(String configScopeId) {
     return configScopePerId.get(configScopeId);
+  }
+
+  public List<ConfigurationScope> getConfigScopesWithBindingConfiguredTo(String connectionId, String projectKey) {
+    return bindingPerConfigScopeId.entrySet().stream()
+      .filter(e -> e.getValue().isBoundTo(connectionId, projectKey))
+      .map(e -> configScopePerId.get(e.getKey()))
+      .collect(Collectors.toList());
   }
 }

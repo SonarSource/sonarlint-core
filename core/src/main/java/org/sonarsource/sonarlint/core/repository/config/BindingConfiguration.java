@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.repository.config;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import javax.annotation.CheckForNull;
@@ -52,6 +53,10 @@ public class BindingConfiguration {
 
   public boolean isBound() {
     return connectionId != null && sonarProjectKey != null;
+  }
+
+  public boolean isBoundTo(String connectionId, String projectKey) {
+    return Objects.equals(connectionId, this.connectionId) && Objects.equals(projectKey, this.sonarProjectKey);
   }
 
   public <G> Optional<G> ifBound(BiFunction<String, String, G> calledIfBound) {

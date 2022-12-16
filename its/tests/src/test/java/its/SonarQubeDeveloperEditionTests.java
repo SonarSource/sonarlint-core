@@ -89,8 +89,11 @@ import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleDescript
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetActiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.SuggestBindingParams;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.clientapi.workspace.GetWorkspaceInfoResponse;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
@@ -1480,6 +1483,16 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         @Override
         public CompletableFuture<GetWorkspaceInfoResponse> getWorkspaceInfo() {
           return CompletableFuture.completedFuture(new GetWorkspaceInfoResponse(""));
+        }
+
+        @Override
+        public void showHotspot(ShowHotspotParams params) {
+
+        }
+
+        @Override
+        public CompletableFuture<AssistBindingResponse> assistBinding(AssistBindingParams params) {
+          return null;
         }
 
         @Override

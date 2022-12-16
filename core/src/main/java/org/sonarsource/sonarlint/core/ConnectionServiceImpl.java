@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.ConnectionService;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
@@ -89,13 +90,19 @@ public class ConnectionServiceImpl implements ConnectionService {
     removedConnectionIds.removeAll(newConnectionsById.keySet());
 
     updatedConnections.values().forEach(this::updateConnection);
-    addedConnections.values().forEach(this::addConnection);
+    addedConnections.values().forEach(this::addConnectionAndNotify);
     removedConnectionIds.forEach(this::removeConnection);
   }
 
-  private void addConnection(AbstractConnectionConfiguration connectionConfiguration) {
+  private void addConnectionAndNotify(AbstractConnectionConfiguration connectionConfiguration) {
     repository.addOrReplace(connectionConfiguration);
     clientEventBus.post(new ConnectionConfigurationAddedEvent(connectionConfiguration.getConnectionId()));
+  }
+
+  public ConnectionConfigurationAddedEvent addConnection(Either<SonarQubeConnectionConfigurationDto, SonarCloudConnectionConfigurationDto> newConnection) {
+    var connectionConfiguration = newConnection.isLeft() ? adapt(newConnection.getLeft()) : adapt(newConnection.getRight());
+    repository.addOrReplace(connectionConfiguration);
+    return new ConnectionConfigurationAddedEvent(connectionConfiguration.getConnectionId());
   }
 
   private void removeConnection(String removedConnectionId) {
@@ -117,5 +124,13 @@ public class ConnectionServiceImpl implements ConnectionService {
       clientEventBus.post(new ConnectionConfigurationUpdatedEvent(connectionConfiguration.getConnectionId()));
     }
 
+  }
+
+  public List<AbstractConnectionConfiguration> findByUrl(String serverUrl) {
+    return repository.findByUrl(serverUrl);
+  }
+
+  public boolean hasConnectionWithOrigin(String serverOrigin) {
+    return repository.hasConnectionWithOrigin(serverOrigin);
   }
 }

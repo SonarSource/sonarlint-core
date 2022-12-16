@@ -21,7 +21,9 @@ package org.sonarsource.sonarlint.core;
 
 import com.google.common.eventbus.EventBus;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import javax.annotation.CheckForNull;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingConfigurationDto;
@@ -91,27 +93,39 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 
   @Override
   public void didUpdateBinding(DidUpdateBindingParams params) {
-    var configScopeId = params.getConfigScopeId();
-    var previousBindingConfig = repository.getBindingConfiguration(configScopeId);
-    if (previousBindingConfig == null) {
-      LOG.error("Attempt to update binding in configuration scope '{}' that was not registered", configScopeId);
-      return;
+    var boundEvent = bind(params.getConfigScopeId(), params.getUpdatedBinding());
+    if (boundEvent != null) {
+      clientEventBus.post(boundEvent);
     }
-    var newBindingConfig = adapt(params.getUpdatedBinding());
-    repository.updateBinding(configScopeId, newBindingConfig);
-
-    postChangedEventIfNeeded(configScopeId, previousBindingConfig, newBindingConfig);
   }
 
-  private void postChangedEventIfNeeded(String configScopeId, BindingConfiguration previousBindingConfig, BindingConfiguration newBindingConfig) {
+  @CheckForNull
+  public BindingConfigChangedEvent bind(String configurationScopeId, BindingConfigurationDto bindingConfiguration) {
+    var previousBindingConfig = repository.getBindingConfiguration(configurationScopeId);
+    if (previousBindingConfig == null) {
+      LOG.error("Attempt to update binding in configuration scope '{}' that was not registered", configurationScopeId);
+      return null;
+    }
+    var newBindingConfig = adapt(bindingConfiguration);
+    repository.updateBinding(configurationScopeId, newBindingConfig);
+
+    return createChangedEventIfNeeded(configurationScopeId, previousBindingConfig, newBindingConfig);
+  }
+
+  @CheckForNull
+  private static BindingConfigChangedEvent createChangedEventIfNeeded(String configScopeId, BindingConfiguration previousBindingConfig, BindingConfiguration newBindingConfig) {
     var previousConfigForEvent = new BindingConfigChangedEvent.BindingConfig(configScopeId, previousBindingConfig.getConnectionId(),
       previousBindingConfig.getSonarProjectKey(), previousBindingConfig.isBindingSuggestionDisabled());
     var newConfigForEvent = new BindingConfigChangedEvent.BindingConfig(configScopeId, newBindingConfig.getConnectionId(),
       newBindingConfig.getSonarProjectKey(), newBindingConfig.isBindingSuggestionDisabled());
 
     if (!previousConfigForEvent.equals(newConfigForEvent)) {
-      clientEventBus.post(new BindingConfigChangedEvent(previousConfigForEvent, newConfigForEvent));
+      return new BindingConfigChangedEvent(previousConfigForEvent, newConfigForEvent);
     }
+    return null;
   }
 
+  public List<ConfigurationScope> getConfigScopesWithBindingConfiguredTo(String connectionId, String projectKey) {
+    return repository.getConfigScopesWithBindingConfiguredTo(connectionId, projectKey);
+  }
 }
