@@ -147,4 +147,8 @@ public class SonarLintBackendImpl implements SonarLintBackend {
       this.embeddedServer.shutdown();
     });
   }
+
+  public int getEmbeddedServerPort() {
+    return embeddedServer.getPort();
+  }
 }

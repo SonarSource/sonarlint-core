@@ -21,17 +21,13 @@ package mediumtest;
 
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import mediumtest.fixtures.ServerFixture;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.authentication.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.clientapi.authentication.HelpGenerateUserTokenResponse;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
@@ -84,14 +80,13 @@ class AuthenticationHelperMediumTests {
     var fakeClient = newFakeClient().withName("ClientName").build();
     backend = newBackend().withEmbeddedServer().build(fakeClient);
     server = newSonarQubeServer("9.7").start();
-    var embeddedServerPort = getEmbeddedServerPort();
 
     var futureResponse = backend.getAuthenticationHelperService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
 
     await().atMost(Duration.ofSeconds(3)).until(() -> !fakeClient.getUrlsToOpen().isEmpty());
     assertThat(fakeClient.getUrlsToOpen())
-      .containsExactly(server.url("/sonarlint/auth?ideName=ClientName&port=" + embeddedServerPort));
-    httpClient().post("http://localhost:" + embeddedServerPort + "/sonarlint/api/token", HttpClient.JSON_CONTENT_TYPE, "{\"token\": \"value\"}");
+      .containsExactly(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort()));
+    httpClient().post("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token", HttpClient.JSON_CONTENT_TYPE, "{\"token\": \"value\"}");
     assertThat(futureResponse)
       .succeedsWithin(Duration.ofSeconds(3))
       .extracting(HelpGenerateUserTokenResponse::getToken)
@@ -117,9 +112,8 @@ class AuthenticationHelperMediumTests {
   void it_should_reject_incoming_user_token_with_wrong_http_method() {
     var fakeClient = newFakeClient().build();
     backend = newBackend().withEmbeddedServer().build(fakeClient);
-    var embeddedServerPort = getEmbeddedServerPort();
 
-    var response = httpClient().get("http://localhost:" + embeddedServerPort + "/sonarlint/api/token");
+    var response = httpClient().get("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token");
 
     assertThat(response.code()).isEqualTo(400);
   }
@@ -128,25 +122,11 @@ class AuthenticationHelperMediumTests {
   void it_should_reject_incoming_user_token_with_wrong_body() {
     var fakeClient = newFakeClient().build();
     backend = newBackend().withEmbeddedServer().build(fakeClient);
-    var embeddedServerPort = getEmbeddedServerPort();
 
-    var response = httpClient().post("http://localhost:" + embeddedServerPort + "/sonarlint/api/token", HttpClient.JSON_CONTENT_TYPE, "{\"token\":");
+    var response = httpClient().post("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token", HttpClient.JSON_CONTENT_TYPE, "{\"token\":");
 
     assertThat(response.code()).isEqualTo(400);
   }
-
-  private int getEmbeddedServerPort() {
-    var embeddedServerStartupLogRegex = Pattern.compile("Started embedded server on port ([0-9]+)");
-    return logTester.logs().stream()
-      .map(embeddedServerStartupLogRegex::matcher)
-      .filter(Matcher::matches)
-      .findFirst()
-      .map(matcher -> Integer.parseInt(matcher.group(1)))
-      .orElseThrow(() -> new IllegalStateException("Embedded server is not started"));
-  }
-
-  @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester();
 
   private SonarLintBackendImpl backend;
   private ServerFixture.Server server;
