@@ -21,8 +21,6 @@ package mediumtest;
 
 import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import mediumtest.fixtures.ServerFixture;
 import mediumtest.fixtures.SonarLintBackendFixture;
 import org.junit.jupiter.api.AfterAll;
@@ -198,21 +196,11 @@ class OpenHotspotInIdeMediumTests {
   }
 
   private int requestOpenHotspotWithParams(String query) {
-    var embeddedServerPort = getEmbeddedServerPort();
+    var embeddedServerPort = backend.getEmbeddedServerPort();
     var response = httpClient().get("http://localhost:" + embeddedServerPort + "/sonarlint/api/hotspots/show?" + query);
     var statusCode = response.code();
     response.close();
     return statusCode;
-  }
-
-  private int getEmbeddedServerPort() {
-    var embeddedServerStartupLogRegex = Pattern.compile("Started embedded server on port ([0-9]+)");
-    return logTester.logs().stream()
-      .map(embeddedServerStartupLogRegex::matcher)
-      .filter(Matcher::matches)
-      .findFirst()
-      .map(matcher -> Integer.parseInt(matcher.group(1)))
-      .orElseThrow(() -> new IllegalStateException("Embedded server is not started, logs are: " + logTester.logs()));
   }
 
 }
