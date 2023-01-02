@@ -34,15 +34,16 @@ import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.sonarsource.sonarlint.core.ConnectionServiceImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.backend.ClientInfoDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.HostInfoDto;
+import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
 
 public class StatusRequestHandler implements HttpRequestHandler {
 
   private final SonarLintClient client;
   private final ConnectionServiceImpl connectionService;
-  private final ClientInfoDto clientInfo;
+  private final HostInfoDto clientInfo;
 
-  public StatusRequestHandler(SonarLintClient client, ConnectionServiceImpl connectionService, ClientInfoDto clientInfo) {
+  public StatusRequestHandler(SonarLintClient client, ConnectionServiceImpl connectionService, HostInfoDto clientInfo) {
     this.client = client;
     this.connectionService = connectionService;
     this.clientInfo = clientInfo;
@@ -61,9 +62,7 @@ public class StatusRequestHandler implements HttpRequestHandler {
 
   private CompletableFuture<String> getDescription(boolean trustedServer) {
     if (trustedServer) {
-      var edition = clientInfo.getEdition();
-      var editionString = edition == null ? "" : (" (" + edition + ")");
-      return client.getWorkspaceInfo().thenApply(workspaceInfo -> clientInfo.getVersion() + " - " + workspaceInfo.getTitle() + editionString);
+      return client.getHostInfo().thenApply(GetHostInfoResponse::getDescription);
     }
     return CompletableFuture.completedFuture("");
   }

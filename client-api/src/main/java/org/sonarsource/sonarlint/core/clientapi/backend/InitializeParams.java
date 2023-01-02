@@ -30,7 +30,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQ
 import org.sonarsource.sonarlint.core.commons.Language;
 
 public class InitializeParams {
-  private final ClientInfoDto clientInfo;
+  private final HostInfoDto hostInfo;
   private final String telemetryProductKey;
   private final Path storageRoot;
   private final Set<Path> embeddedPluginPaths;
@@ -48,11 +48,11 @@ public class InitializeParams {
    * @param telemetryProductKey SonarLint product key (vscode, idea, eclipse, ...)
    * @param sonarlintUserHome Path to SonarLint user home directory. If null, will default to ~/.sonarlint
    */
-  public InitializeParams(ClientInfoDto clientInfo, String telemetryProductKey, Path storageRoot, Set<Path> embeddedPluginPaths,
+  public InitializeParams(HostInfoDto hostInfo, String telemetryProductKey, Path storageRoot, Set<Path> embeddedPluginPaths,
     Map<String, Path> connectedModeExtraPluginPathsByKey, Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode,
     Set<Language> extraEnabledLanguagesInConnectedMode, boolean enableSecurityHotspots, List<SonarQubeConnectionConfigurationDto> sonarQubeConnections,
     List<SonarCloudConnectionConfigurationDto> sonarCloudConnections, @Nullable String sonarlintUserHome, boolean shouldManageLocalServer) {
-    this.clientInfo = clientInfo;
+    this.hostInfo = hostInfo;
     this.telemetryProductKey = telemetryProductKey;
     this.storageRoot = storageRoot;
     this.embeddedPluginPaths = embeddedPluginPaths;
@@ -67,8 +67,8 @@ public class InitializeParams {
     this.shouldManageLocalServer = shouldManageLocalServer;
   }
 
-  public ClientInfoDto getClientInfo() {
-    return clientInfo;
+  public HostInfoDto getHostInfo() {
+    return hostInfo;
   }
 
   public String getTelemetryProductKey() {

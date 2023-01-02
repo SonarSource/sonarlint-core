@@ -31,7 +31,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.authentication.AuthenticationHelperService;
+import org.sonarsource.sonarlint.core.clientapi.backend.authentication.AuthenticationHelperService;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
@@ -102,9 +102,9 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     var sonarlintUserHome = Optional.ofNullable(params.getSonarlintUserHome()).map(Paths::get).orElse(SonarLintUserHome.get());
     telemetryService.initialize(params.getTelemetryProductKey(), sonarlintUserHome);
     if (params.shouldManageLocalServer()) {
-      embeddedServer.initialize(params.getClientInfo());
+      embeddedServer.initialize(params.getHostInfo());
     }
-    authenticationHelperService.initialize(params.getClientInfo().getName());
+    authenticationHelperService.initialize(params.getHostInfo().getName());
     return CompletableFuture.completedFuture(null);
   }
 

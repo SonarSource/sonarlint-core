@@ -25,8 +25,8 @@ import mediumtest.fixtures.ServerFixture;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
-import org.sonarsource.sonarlint.core.clientapi.authentication.HelpGenerateUserTokenParams;
-import org.sonarsource.sonarlint.core.clientapi.authentication.HelpGenerateUserTokenResponse;
+import org.sonarsource.sonarlint.core.clientapi.backend.authentication.HelpGenerateUserTokenParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.authentication.HelpGenerateUserTokenResponse;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
@@ -77,7 +77,7 @@ class AuthenticationHelperMediumTests {
 
   @Test
   void it_should_open_the_sonarlint_auth_url_for_sonarqube_9_7_plus() {
-    var fakeClient = newFakeClient().withName("ClientName").build();
+    var fakeClient = newFakeClient().withHostName("ClientName").build();
     backend = newBackend().withEmbeddedServer().build(fakeClient);
     server = newSonarQubeServer("9.7").start();
 
@@ -95,7 +95,7 @@ class AuthenticationHelperMediumTests {
 
   @Test
   void it_should_open_the_sonarlint_auth_url_without_port_for_sonarqube_9_7_plus_when_server_is_not_started() {
-    var fakeClient = newFakeClient().withName("ClientName").build();
+    var fakeClient = newFakeClient().withHostName("ClientName").build();
     backend = newBackend().build(fakeClient);
     server = newSonarQubeServer("9.7").start();
 

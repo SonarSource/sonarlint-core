@@ -21,9 +21,9 @@ package org.sonarsource.sonarlint.core;
 
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.authentication.AuthenticationHelperService;
-import org.sonarsource.sonarlint.core.clientapi.authentication.HelpGenerateUserTokenParams;
-import org.sonarsource.sonarlint.core.clientapi.authentication.HelpGenerateUserTokenResponse;
+import org.sonarsource.sonarlint.core.clientapi.backend.authentication.AuthenticationHelperService;
+import org.sonarsource.sonarlint.core.clientapi.backend.authentication.HelpGenerateUserTokenParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.authentication.HelpGenerateUserTokenResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;

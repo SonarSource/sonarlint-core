@@ -36,7 +36,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.jetbrains.annotations.Nullable;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.backend.ClientInfoDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.HostInfoDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingSuggestionDto;
@@ -54,7 +54,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.fs.FoundFileDto;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
-import org.sonarsource.sonarlint.core.clientapi.workspace.GetWorkspaceInfoResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import testutils.MockWebServerExtensionWithProtobuf;
@@ -155,10 +155,8 @@ public class SonarLintBackendFixture {
   public static class SonarLintClientBuilder {
     private final List<FoundFileDto> foundFiles = new ArrayList<>();
     private final List<String> textsOfActionsToApply = new ArrayList<>();
-    private String workspaceTitle = "";
-    private String clientName = "";
-    private String clientVersion = "";
-    private String clientEdition;
+    private String hostDescription = "";
+    private String hostName = "";
     private AssistBindingResponse bindingAssistResponse;
 
     public SonarLintClientBuilder withFoundFile(String name, String path, String content) {
@@ -171,23 +169,13 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintClientBuilder withWorkspaceTitle(String title) {
-      this.workspaceTitle = title;
+    public SonarLintClientBuilder withHostDescription(String hostDescription) {
+      this.hostDescription = hostDescription;
       return this;
     }
 
-    public SonarLintClientBuilder withName(String clientName) {
-      this.clientName = clientName;
-      return this;
-    }
-
-    public SonarLintClientBuilder withVersion(String version) {
-      this.clientVersion = version;
-      return this;
-    }
-
-    public SonarLintClientBuilder withEdition(String edition) {
-      this.clientEdition = edition;
+    public SonarLintClientBuilder withHostName(String hostName) {
+      this.hostName = hostName;
       return this;
     }
 
@@ -198,7 +186,7 @@ public class SonarLintBackendFixture {
     }
 
     public FakeSonarLintClient build() {
-      return new FakeSonarLintClient(new ClientInfoDto(clientName, clientVersion, clientEdition), foundFiles, textsOfActionsToApply, workspaceTitle, bindingAssistResponse);
+      return new FakeSonarLintClient(new HostInfoDto(hostName), foundFiles, textsOfActionsToApply, hostDescription, bindingAssistResponse);
     }
   }
 
@@ -208,14 +196,14 @@ public class SonarLintBackendFixture {
 
     private final List<String> urlsToOpen = new ArrayList<>();
     private final List<ShowMessageParams> messagesToShow = new ArrayList<>();
-    private final ClientInfoDto clientInfo;
+    private final HostInfoDto clientInfo;
     private final List<FoundFileDto> foundFiles;
     private final Queue<String> textsOfActionsToApply;
     private final String workspaceTitle;
     private final AssistBindingResponse bindingAssistResponse;
     private final Map<String, Collection<HotspotDetailsDto>> hotspotToShowByConfigScopeId = new HashMap<>();
 
-    public FakeSonarLintClient(ClientInfoDto clientInfo, List<FoundFileDto> foundFiles, List<String> textsOfActionsToApply, String workspaceTitle, AssistBindingResponse bindingAssistResponse) {
+    public FakeSonarLintClient(HostInfoDto clientInfo, List<FoundFileDto> foundFiles, List<String> textsOfActionsToApply, String workspaceTitle, AssistBindingResponse bindingAssistResponse) {
       this.clientInfo = clientInfo;
       this.foundFiles = foundFiles;
       this.textsOfActionsToApply = new LinkedList<>(textsOfActionsToApply);
@@ -223,7 +211,7 @@ public class SonarLintBackendFixture {
       this.bindingAssistResponse = bindingAssistResponse;
     }
 
-    public ClientInfoDto getClientInfo() {
+    public HostInfoDto getClientInfo() {
       return clientInfo;
     }
 
@@ -260,8 +248,8 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public CompletableFuture<GetWorkspaceInfoResponse> getWorkspaceInfo() {
-      return CompletableFuture.completedFuture(new GetWorkspaceInfoResponse(workspaceTitle));
+    public CompletableFuture<GetHostInfoResponse> getHostInfo() {
+      return CompletableFuture.completedFuture(new GetHostInfoResponse(workspaceTitle));
     }
 
     @Override

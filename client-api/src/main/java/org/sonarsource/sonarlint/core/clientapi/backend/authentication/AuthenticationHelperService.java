@@ -17,38 +17,17 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.backend;
+package org.sonarsource.sonarlint.core.clientapi.backend.authentication;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
+import java.util.concurrent.CompletableFuture;
+import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 
-/**
- * The data from this class will be used outside the IDE, e.g. for the sonarlint/api/status endpoint or when opening the page to generate the user token
- */
-public class ClientInfoDto {
-  private final String name;
-  private final String version;
-  private final String edition;
-
-  public ClientInfoDto(@NonNull String name, @NonNull String version, @Nullable String edition) {
-    this.name = name;
-    this.version = version;
-    this.edition = edition;
-  }
-
-  @NonNull
-  public String getName() {
-    return name;
-  }
-
-  @NonNull
-  public String getVersion() {
-    return version;
-  }
-
-  @CheckForNull
-  public String getEdition() {
-    return edition;
-  }
+public interface AuthenticationHelperService {
+  /**
+   * @param params url of the server on which to create the token
+   * @return For servers that support automatic token generation, will return the token in the response. Else no token will be returned.
+   * If the local server is not started or the server URL can not be reached, the future will fail
+   */
+  @JsonRequest
+  CompletableFuture<HelpGenerateUserTokenResponse> helpGenerateUserToken(HelpGenerateUserTokenParams params);
 }

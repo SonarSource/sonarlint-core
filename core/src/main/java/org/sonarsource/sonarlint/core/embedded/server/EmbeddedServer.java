@@ -34,7 +34,7 @@ import org.sonarsource.sonarlint.core.ConfigurationServiceImpl;
 import org.sonarsource.sonarlint.core.ConnectionServiceImpl;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.backend.ClientInfoDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.HostInfoDto;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
@@ -68,7 +68,7 @@ public class EmbeddedServer {
     this.telemetryService = telemetryService;
   }
 
-  public void initialize(ClientInfoDto clientInfo) {
+  public void initialize(HostInfoDto clientInfo) {
     final var socketConfig = SocketConfig.custom()
       .setSoTimeout(15, TimeUnit.SECONDS)
       // let the port be bindable again immediately

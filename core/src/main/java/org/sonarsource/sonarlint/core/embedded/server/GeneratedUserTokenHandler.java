@@ -32,7 +32,7 @@ import org.apache.hc.core5.http.io.HttpRequestHandler;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
-import org.sonarsource.sonarlint.core.clientapi.authentication.HelpGenerateUserTokenResponse;
+import org.sonarsource.sonarlint.core.clientapi.backend.authentication.HelpGenerateUserTokenResponse;
 
 import static java.util.function.Predicate.not;
 
