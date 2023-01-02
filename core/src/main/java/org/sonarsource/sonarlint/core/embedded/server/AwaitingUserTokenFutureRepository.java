@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.embedded.server;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
-import org.sonarsource.sonarlint.core.clientapi.authentication.HelpGenerateUserTokenResponse;
+import org.sonarsource.sonarlint.core.clientapi.backend.authentication.HelpGenerateUserTokenResponse;
 
 public class AwaitingUserTokenFutureRepository {
   private final AtomicReference<CompletableFuture<HelpGenerateUserTokenResponse>> futureResponse = new AtomicReference<>();

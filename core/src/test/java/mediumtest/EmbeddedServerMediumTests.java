@@ -39,7 +39,7 @@ class EmbeddedServerMediumTests {
 
   @Test
   void it_should_return_the_ide_name_and_empty_description_if_the_origin_is_not_trusted() {
-    var fakeClient = newFakeClient().withName("ClientName").build();
+    var fakeClient = newFakeClient().withHostName("ClientName").build();
     backend = newBackend().withEmbeddedServer().build(fakeClient);
 
     var response = httpClient().get("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/status");
@@ -51,7 +51,7 @@ class EmbeddedServerMediumTests {
 
   @Test
   void it_should_return_the_ide_name_and_full_description_if_the_origin_is_trusted() {
-    var fakeClient = newFakeClient().withName("ClientName").withVersion("1.2.3").withEdition("Edition").withWorkspaceTitle("WorkspaceTitle").build();
+    var fakeClient = newFakeClient().withHostName("ClientName").withHostDescription("WorkspaceTitle").build();
     backend = newBackend().withEmbeddedServer().withSonarQubeConnection("connectionId", "https://sonar.my").build(fakeClient);
 
     var response = httpClient().withHeader("Origin","https://sonar.my")
@@ -59,20 +59,7 @@ class EmbeddedServerMediumTests {
 
     assertThat(response)
       .extracting(HttpClient.Response::isSuccessful, HttpClient.Response::code, HttpClient.Response::bodyAsString)
-      .containsExactly(true, 200, "{\"ideName\":\"ClientName\",\"description\":\"1.2.3 - WorkspaceTitle (Edition)\"}");
-  }
-
-  @Test
-  void it_should_return_the_ide_name_and_partial_description_if_the_origin_is_trusted_and_no_edition() {
-    var fakeClient = newFakeClient().withName("ClientName").withVersion("1.2.3").withWorkspaceTitle("WorkspaceTitle").build();
-    backend = newBackend().withEmbeddedServer().withSonarQubeConnection("connectionId", "https://sonar.my").build(fakeClient);
-
-    var response = httpClient().withHeader("Origin","https://sonar.my")
-      .get("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/status");
-
-    assertThat(response)
-      .extracting(HttpClient.Response::isSuccessful, HttpClient.Response::code, HttpClient.Response::bodyAsString)
-      .containsExactly(true, 200, "{\"ideName\":\"ClientName\",\"description\":\"1.2.3 - WorkspaceTitle\"}");
+      .containsExactly(true, 200, "{\"ideName\":\"ClientName\",\"description\":\"WorkspaceTitle\"}");
   }
 
   private SonarLintBackendImpl backend;

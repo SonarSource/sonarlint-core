@@ -17,23 +17,22 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.authentication;
+package org.sonarsource.sonarlint.core.clientapi.backend;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
+import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
 /**
- * For older SQ servers or SC, automatic token generation is not supported. In this case a null token will be returned.
+ * The data from this class will be used outside the IDE, e.g. for the sonarlint/api/status endpoint or when opening the page to generate the user token
  */
-public class HelpGenerateUserTokenResponse {
-  private final String token;
+public class HostInfoDto {
+  private final String name;
 
-  public HelpGenerateUserTokenResponse(@Nullable String token) {
-    this.token = token;
+  public HostInfoDto(@NonNull String name) {
+    this.name = name;
   }
 
-  @CheckForNull
-  public String getToken() {
-    return token;
+  @NonNull
+  public String getName() {
+    return name;
   }
 }

@@ -31,7 +31,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScope
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
-import org.sonarsource.sonarlint.core.clientapi.workspace.GetWorkspaceInfoResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 
 public interface SonarLintClient {
@@ -70,7 +70,7 @@ public interface SonarLintClient {
   void showMessage(ShowMessageParams params);
 
   @JsonRequest
-  CompletableFuture<GetWorkspaceInfoResponse> getWorkspaceInfo();
+  CompletableFuture<GetHostInfoResponse> getHostInfo();
 
   @JsonNotification
   void showHotspot(ShowHotspotParams params);

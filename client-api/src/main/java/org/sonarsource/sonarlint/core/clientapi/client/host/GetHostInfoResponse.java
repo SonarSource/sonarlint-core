@@ -17,17 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.authentication;
+package org.sonarsource.sonarlint.core.clientapi.client.host;
 
-import java.util.concurrent.CompletableFuture;
-import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
+public class GetHostInfoResponse {
+  private final String description;
 
-public interface AuthenticationHelperService {
-  /**
-   * @param params url of the server on which to create the token
-   * @return For servers that support automatic token generation, will return the token in the response. Else no token will be returned.
-   * If the local server is not started or the server URL can not be reached, the future will fail
-   */
-  @JsonRequest
-  CompletableFuture<HelpGenerateUserTokenResponse> helpGenerateUserToken(HelpGenerateUserTokenParams params);
+  public GetHostInfoResponse(String description) {
+    this.description = description;
+  }
+
+  public String getDescription() {
+    return description;
+  }
 }

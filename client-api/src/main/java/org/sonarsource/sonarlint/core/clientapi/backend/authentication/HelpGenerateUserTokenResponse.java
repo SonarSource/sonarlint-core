@@ -17,24 +17,23 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.authentication;
+package org.sonarsource.sonarlint.core.clientapi.backend.authentication;
 
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
-public class HelpGenerateUserTokenParams {
-  private final String serverUrl;
-  private final boolean isSonarCloud;
+/**
+ * For older SQ servers or SC, automatic token generation is not supported. In this case a null token will be returned.
+ */
+public class HelpGenerateUserTokenResponse {
+  private final String token;
 
-  public HelpGenerateUserTokenParams(@NonNull String serverUrl, boolean isSonarCloud) {
-    this.serverUrl = serverUrl;
-    this.isSonarCloud = isSonarCloud;
+  public HelpGenerateUserTokenResponse(@Nullable String token) {
+    this.token = token;
   }
 
-  public String getServerUrl() {
-    return serverUrl;
-  }
-
-  public boolean isSonarCloud() {
-    return isSonarCloud;
+  @CheckForNull
+  public String getToken() {
+    return token;
   }
 }

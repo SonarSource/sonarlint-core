@@ -17,16 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.workspace;
+package org.sonarsource.sonarlint.core.clientapi.backend.authentication;
 
-public class GetWorkspaceInfoResponse {
-  private final String title;
+import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
-  public GetWorkspaceInfoResponse(String title) {
-    this.title = title;
+public class HelpGenerateUserTokenParams {
+  private final String serverUrl;
+  private final boolean isSonarCloud;
+
+  public HelpGenerateUserTokenParams(@NonNull String serverUrl, boolean isSonarCloud) {
+    this.serverUrl = serverUrl;
+    this.isSonarCloud = isSonarCloud;
   }
 
-  public String getTitle() {
-    return title;
+  public String getServerUrl() {
+    return serverUrl;
+  }
+
+  public boolean isSonarCloud() {
+    return isSonarCloud;
   }
 }
