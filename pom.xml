@@ -54,6 +54,7 @@
     <gson.version>2.10</gson.version>
     <mockito.version>4.9.0</mockito.version>
     <kotlin.version>1.6.21</kotlin.version>
+    <lsp4j.version>0.19.0</lsp4j.version>
   </properties>
 
   <dependencyManagement>
