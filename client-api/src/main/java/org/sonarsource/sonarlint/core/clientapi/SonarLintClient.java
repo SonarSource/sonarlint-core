@@ -27,6 +27,8 @@ import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionParams;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
@@ -76,9 +78,14 @@ public interface SonarLintClient {
   void showHotspot(ShowHotspotParams params);
 
   /**
+   * Can be triggered by the backend when trying to handle a feature that needs a connection, e.g. open hotspot.
+   * @return the response to this connection creation assist request, that contains the new connection. The future can be canceled if the user stops the creation process
+   */
+  CompletableFuture<AssistCreatingConnectionResponse> assistCreatingConnection(AssistCreatingConnectionParams params);
+
+  /**
    * Can be triggered by the backend when trying to handle a feature that needs a bound project, e.g. open hotspot.
-   * @param params
-   * @return the response to this binding assist request, that can contain a new connection and/or a bound project
+   * @return the response to this binding assist request, that contains the bound project. The future can be canceled if the user stops the binding process
    */
   @JsonRequest
   CompletableFuture<AssistBindingResponse> assistBinding(AssistBindingParams params);

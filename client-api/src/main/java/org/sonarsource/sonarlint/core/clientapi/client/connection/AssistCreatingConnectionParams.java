@@ -17,22 +17,17 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.client.binding;
+package org.sonarsource.sonarlint.core.clientapi.client.connection;
 
-public class AssistBindingParams {
-  private final String connectionId;
-  private final String projectKey;
+public class AssistCreatingConnectionParams {
+  private final String serverUrl;
 
-  public AssistBindingParams(String connectionId, String projectKey) {
-    this.connectionId = connectionId;
-    this.projectKey = projectKey;
+  public AssistCreatingConnectionParams(String serverUrl) {
+    this.serverUrl = serverUrl;
   }
 
-  public String getConnectionId() {
-    return connectionId;
+  public String getServerUrl() {
+    return serverUrl;
   }
 
-  public String getProjectKey() {
-    return projectKey;
-  }
 }

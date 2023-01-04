@@ -48,13 +48,15 @@ import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionParams;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FoundFileDto;
+import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
-import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import testutils.MockWebServerExtensionWithProtobuf;
@@ -157,6 +159,7 @@ public class SonarLintBackendFixture {
     private final List<String> textsOfActionsToApply = new ArrayList<>();
     private String hostDescription = "";
     private String hostName = "";
+    private AssistCreatingConnectionResponse connectionCreationAssistResponse;
     private AssistBindingResponse bindingAssistResponse;
 
     public SonarLintClientBuilder withFoundFile(String name, String path, String content) {
@@ -179,14 +182,14 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintClientBuilder assistBindingToSonarQube(String scopeId, String connectionId, String baseUrl, String projectKey) {
-      this.bindingAssistResponse = new AssistBindingResponse(Either.forLeft(new SonarQubeConnectionConfigurationDto(connectionId, baseUrl)),
-          new BindingConfigurationDto(connectionId, projectKey, true), scopeId);
+    public SonarLintClientBuilder assistingConnectingAndBindingToSonarQube(String scopeId, String connectionId, String baseUrl, String projectKey) {
+      this.connectionCreationAssistResponse = new AssistCreatingConnectionResponse(Either.forLeft(new SonarQubeConnectionConfigurationDto(connectionId, baseUrl)));
+      this.bindingAssistResponse = new AssistBindingResponse(new BindingConfigurationDto(connectionId, projectKey, true), scopeId);
       return this;
     }
 
     public FakeSonarLintClient build() {
-      return new FakeSonarLintClient(new HostInfoDto(hostName), foundFiles, textsOfActionsToApply, hostDescription, bindingAssistResponse);
+      return new FakeSonarLintClient(new HostInfoDto(hostName), foundFiles, textsOfActionsToApply, hostDescription, connectionCreationAssistResponse, bindingAssistResponse);
     }
   }
 
@@ -200,14 +203,17 @@ public class SonarLintBackendFixture {
     private final List<FoundFileDto> foundFiles;
     private final Queue<String> textsOfActionsToApply;
     private final String workspaceTitle;
+    private final AssistCreatingConnectionResponse assistCreatingConnectionResponse;
     private final AssistBindingResponse bindingAssistResponse;
     private final Map<String, Collection<HotspotDetailsDto>> hotspotToShowByConfigScopeId = new HashMap<>();
 
-    public FakeSonarLintClient(HostInfoDto clientInfo, List<FoundFileDto> foundFiles, List<String> textsOfActionsToApply, String workspaceTitle, AssistBindingResponse bindingAssistResponse) {
+    public FakeSonarLintClient(HostInfoDto clientInfo, List<FoundFileDto> foundFiles, List<String> textsOfActionsToApply, String workspaceTitle,
+      AssistCreatingConnectionResponse assistCreatingConnectionResponse, AssistBindingResponse bindingAssistResponse) {
       this.clientInfo = clientInfo;
       this.foundFiles = foundFiles;
       this.textsOfActionsToApply = new LinkedList<>(textsOfActionsToApply);
       this.workspaceTitle = workspaceTitle;
+      this.assistCreatingConnectionResponse = assistCreatingConnectionResponse;
       this.bindingAssistResponse = bindingAssistResponse;
     }
 
@@ -255,6 +261,16 @@ public class SonarLintBackendFixture {
     @Override
     public void showHotspot(ShowHotspotParams params) {
       hotspotToShowByConfigScopeId.computeIfAbsent(params.getConfigurationScopeId(), k -> new ArrayList<>()).add(params.getHotspotDetails());
+    }
+
+    @Override
+    public CompletableFuture<AssistCreatingConnectionResponse> assistCreatingConnection(AssistCreatingConnectionParams params) {
+      if (assistCreatingConnectionResponse == null) {
+        var completableFuture = new CompletableFuture<AssistCreatingConnectionResponse>();
+        completableFuture.cancel(false);
+        return completableFuture;
+      }
+      return CompletableFuture.completedFuture(assistCreatingConnectionResponse);
     }
 
     @Override

@@ -17,27 +17,22 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.client.binding;
+package org.sonarsource.sonarlint.core.clientapi.client.connection;
 
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
-import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingConfigurationDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
 
-public class AssistBindingResponse {
-  private final BindingConfigurationDto bindingConfiguration;
-  private final String configurationScopeId;
+public class AssistCreatingConnectionResponse {
+  private final Either<SonarQubeConnectionConfigurationDto, SonarCloudConnectionConfigurationDto> newConnection;
 
-  public AssistBindingResponse(@NonNull BindingConfigurationDto bindingConfiguration, @NonNull String configurationScopeId) {
-    this.bindingConfiguration = bindingConfiguration;
-    this.configurationScopeId = configurationScopeId;
+  public AssistCreatingConnectionResponse(@NonNull Either<SonarQubeConnectionConfigurationDto, SonarCloudConnectionConfigurationDto> newConnection) {
+    this.newConnection = newConnection;
   }
 
   @NonNull
-  public BindingConfigurationDto getBindingConfiguration() {
-    return bindingConfiguration;
-  }
-
-  @NonNull
-  public String getConfigurationScopeId() {
-    return configurationScopeId;
+  public Either<SonarQubeConnectionConfigurationDto, SonarCloudConnectionConfigurationDto> getNewConnection() {
+    return newConnection;
   }
 }

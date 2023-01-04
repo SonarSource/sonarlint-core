@@ -139,7 +139,7 @@ class OpenHotspotInIdeMediumTests {
 
   @Test
   void it_should_assist_creating_the_connection_when_server_url_unknown(@TempDir Path sonarlintUserHome) {
-    var fakeClient = newFakeClient().assistBindingToSonarQube("scopeId", "connectionId", serverWithHotspot.baseUrl(), "projectKey").build();
+    var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", "connectionId", serverWithHotspot.baseUrl(), "projectKey").build();
     backend = newBackend()
       .withUnboundConfigScope("scopeId")
       .withEmbeddedServer()
@@ -158,7 +158,7 @@ class OpenHotspotInIdeMediumTests {
 
   @Test
   void it_should_assist_creating_the_binding_if_scope_not_bound(@TempDir Path sonarlintUserHome) {
-    var fakeClient = newFakeClient().assistBindingToSonarQube("scopeId", "connectionId", serverWithHotspot.baseUrl(), "projectKey").build();
+    var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", "connectionId", serverWithHotspot.baseUrl(), "projectKey").build();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", serverWithHotspot.baseUrl())
       .withUnboundConfigScope("scopeId")
