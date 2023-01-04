@@ -127,8 +127,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
   private static final String PROJECT_KEY_JAVA = "sample-java";
 
-
-
   @RegisterExtension
   static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
     .setEdition(Edition.DEVELOPER)
@@ -387,8 +385,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_CUSTOM, PROJECT_KEY_JAVA_CUSTOM,
-          "src/main/java/foo/Foo.java",
-          "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+        "src/main/java/foo/Foo.java",
+        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
         issueListener, null, null);
       assertThat(issueListener.getIssues()).extracting("ruleKey", "startLine").containsOnly(
         tuple("mycompany-java:AvoidAnnotation", 12));
@@ -427,8 +425,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
-          "src/main/java/foo/Foo.java",
-          "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+        "src/main/java/foo/Foo.java",
+        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
         issueListener, null, null);
 
       assertThat(issueListener.getIssues()).hasSize(2);
@@ -440,8 +438,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_PACKAGE, PROJECT_KEY_JAVA,
-          "src/main/java/foo/Foo.java",
-          "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+        "src/main/java/foo/Foo.java",
+        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
         issueListener, null, null);
 
       assertThat(issueListener.getIssues()).extracting("ruleKey", "inputFile.path").containsOnly(
@@ -455,8 +453,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_CUSTOM_SENSOR, PROJECT_KEY_JAVA,
-          "src/main/java/foo/Foo.java",
-          "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+        "src/main/java/foo/Foo.java",
+        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
         issueListener, null, null);
 
       assertThat(issueListener.getIssues()).isEmpty();
@@ -470,8 +468,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_GLOBAL_EXTENSION, PROJECT_KEY_GLOBAL_EXTENSION,
-          "src/foo.glob",
-          "sonar.cobol.file.suffixes", "glob"),
+        "src/foo.glob",
+        "sonar.cobol.file.suffixes", "glob"),
         issueListener, null, null);
 
       assertThat(issueListener.getIssues()).extracting("ruleKey", "message").containsOnly(
@@ -479,8 +477,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_GLOBAL_EXTENSION, PROJECT_KEY_GLOBAL_EXTENSION,
-          "src/foo.glob",
-          "sonar.cobol.file.suffixes", "glob"),
+        "src/foo.glob",
+        "sonar.cobol.file.suffixes", "glob"),
         issueListener, null, null);
 
       assertThat(issueListener.getIssues()).extracting("ruleKey", "message").containsOnly(
@@ -517,8 +515,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
         var issueListener = new SaveIssueListener();
         engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
-            "src/main/java/foo/Foo.java",
-            "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+          "src/main/java/foo/Foo.java",
+          "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
           issueListener, null, null);
 
         assertThat(issueListener.getIssues()).hasSize(3);
@@ -542,8 +540,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_EMPTY, PROJECT_KEY_JAVA,
-          "src/main/java/foo/Foo.java",
-          "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+        "src/main/java/foo/Foo.java",
+        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
         issueListener, null, null);
 
       assertThat(issueListener.getIssues()).isEmpty();
@@ -555,8 +553,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
-          "src/main/java/foo/Foo.java",
-          "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+        "src/main/java/foo/Foo.java",
+        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
         issueListener, null, null);
       assertThat(issueListener.getIssues()).hasSize(2);
 
@@ -566,8 +564,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       issueListener.clear();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
-          "src/main/java/foo/Foo.java",
-          "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+        "src/main/java/foo/Foo.java",
+        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
         issueListener, null, null);
       assertThat(issueListener.getIssues()).isEmpty();
 
@@ -577,8 +575,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       issueListener.clear();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
-          "src/main/java/foo/Foo.java",
-          "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+        "src/main/java/foo/Foo.java",
+        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
         issueListener, null, null);
       assertThat(issueListener.getIssues()).hasSize(2);
 
@@ -748,7 +746,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       } else {
         assertThat(
           adminWsClient.issues().search(new SearchRequest().setTypes(List.of("SECURITY_HOTSPOT")).setComponentKeys(List.of(PROJECT_KEY))).getIssuesList())
-          .isNotEmpty();
+            .isNotEmpty();
       }
     }
 
@@ -906,10 +904,12 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         .extracting("message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "textRange.hash")
         .contains(
           // flow 1 (don't assert intermediate locations as they change frequently between versions)
-          tuple("Sink: this invocation is not safe; a malicious value can be used as argument", "src/main/java/foo/DbHelper.java", 11, 35, 11, 64, "d123d615e9ea7cc7e78c784c768f2941"),
+          tuple("Sink: this invocation is not safe; a malicious value can be used as argument", "src/main/java/foo/DbHelper.java", 11, 35, 11, 64,
+            "d123d615e9ea7cc7e78c784c768f2941"),
           tuple("Source: a user can craft an HTTP request with malicious content", "src/main/java/foo/Endpoint.java", 9, 18, 9, 46, "a2b69949119440a24e900f15c0939c30"),
           // flow 2 (don't assert intermediate locations as they change frequently between versions)
-          tuple("Sink: this invocation is not safe; a malicious value can be used as argument", "src/main/java/foo/DbHelper.java", 11, 35, 11, 64, "d123d615e9ea7cc7e78c784c768f2941"),
+          tuple("Sink: this invocation is not safe; a malicious value can be used as argument", "src/main/java/foo/DbHelper.java", 11, 35, 11, 64,
+            "d123d615e9ea7cc7e78c784c768f2941"),
           tuple("Source: a user can craft an HTTP request with malicious content", "src/main/java/foo/Endpoint.java", 8, 18, 8, 46, "2ef54227b849e317e7104dc550be8146"));
 
       // check IssueChangedEvent is received
@@ -1014,8 +1014,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_HOTSPOT, PROJECT_KEY_JAVA_HOTSPOT,
-          "src/main/java/foo/Foo.java",
-          "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+        "src/main/java/foo/Foo.java",
+        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
         issueListener, null, null);
 
       assertThat(issueListener.getIssues()).isEmpty();
@@ -1059,8 +1059,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_HOTSPOT, PROJECT_KEY_JAVA_HOTSPOT,
-          "src/main/java/foo/Foo.java",
-          "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath()),
+        "src/main/java/foo/Foo.java",
+        "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath()),
         issueListener, null, null);
 
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
@@ -1226,7 +1226,52 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
               "  <li> <a href=\"https://cwe.mitre.org/data/definitions/20\">MITRE, CWE-20</a> - Improper Input Validation </li>\n" +
               "  <li> <a href=\"https://cwe.mitre.org/data/definitions/22\">MITRE, CWE-22</a> - Improper Limitation of a Pathname to a Restricted Directory ('Path\n" +
               "  Traversal') </li>\n" +
-              "</ul>");
+              "</ul><br/><br/><h3>Clean Code Principles</h3>\n" +
+              "<h4>Defense-In-Depth</h4>\n" +
+              "<p>\n" +
+              "    Applications and infrastructure benefit greatly from relying on multiple security mechanisms\n" +
+              "    layered on top of each other. If one security mechanism fails, there is a high probability\n" +
+              "    that the subsequent layers of security will successfully defend against the attack.\n" +
+              "</p>\n" +
+              "<p>A non-exhaustive list of these code protection ramparts includes the following:</p>\n" +
+              "<ul>\n" +
+              "    <li>Minimizing the attack surface of the code</li>\n" +
+              "    <li>Application of the principle of least privilege</li>\n" +
+              "    <li>Validation and sanitization of data</li>\n" +
+              "    <li>Encrypting incoming, outgoing, or stored data with secure cryptography</li>\n" +
+              "    <li>Ensuring that internal errors cannot disrupt the overall runtime</li>\n" +
+              "    <li>Separation of tasks and access to information</li>\n" +
+              "</ul>\n" +
+              "\n" +
+              "<p>\n" +
+              "    Note that these layers must be simple enough to use in an everyday workflow. Security\n" +
+              "    measures should not break usability.\n" +
+              "</p><br/><br/><h4>Never Trust User Input</h4>\n" +
+              "<p>\n" +
+              "    Applications must treat all user input and, more generally, all third-party data as\n" +
+              "    attacker-controlled data.\n" +
+              "</p>\n" +
+              "<p>\n" +
+              "    The application must determine where the third-party data comes from and treat that data\n" +
+              "    source as an attack vector. Two rules apply:\n" +
+              "</p>\n" +
+              "\n" +
+              "<p>\n" +
+              "    First, before using it in the application&apos;s business logic, the application must\n" +
+              "    validate the attacker-controlled data against predefined formats, such as:\n" +
+              "</p>\n" +
+              "<ul>\n" +
+              "    <li>Character sets</li>\n" +
+              "    <li>Sizes</li>\n" +
+              "    <li>Types</li>\n" +
+              "    <li>Or any strict schema</li>\n" +
+              "</ul>\n" +
+              "\n" +
+              "<p>\n" +
+              "    Second, the application must sanitize string data before inserting it into interpreted\n" +
+              "    contexts (client-side code, file paths, SQL queries). Unsanitized code can corrupt the\n" +
+              "    application&apos;s logic.\n" +
+              "</p>");
       }
     }
 
@@ -1391,8 +1436,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
             "  <li> <a href=\"https://cwe.mitre.org/data/definitions/117\">MITRE, CWE-117</a> - Improper Output Neutralization for Logs </li>\n" +
             "  <li> <a href=\"https://cwe.mitre.org/data/definitions/532\">MITRE, CWE-532</a> - Information Exposure Through Log Files </li>\n" +
             "  <li> <a href=\"https://www.sans.org/top25-software-errors/#cat3\">SANS Top 25</a> - Porous Defenses </li>\n" +
-            "</ul>"
-        );
+            "</ul>");
     }
 
     private List<Object> extractTabContent(ActiveRuleDescriptionTabDto tab) {

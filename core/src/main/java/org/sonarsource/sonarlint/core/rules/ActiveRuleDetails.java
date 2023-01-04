@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -48,7 +49,8 @@ public class ActiveRuleDetails {
       ruleDefinition.getDefaultSeverity(),
       ruleDefinition.getType(),
       null,
-      ruleDefinition.getParams().values().stream().map(p -> new ActiveRuleParam(p.name(), p.description(), p.defaultValue())).collect(Collectors.toList()));
+      ruleDefinition.getParams().values().stream().map(p -> new ActiveRuleParam(p.name(), p.description(), p.defaultValue())).collect(Collectors.toList()),
+      ruleDefinition.getEducationPrincipleKeys());
   }
 
   public static ActiveRuleDetails merging(ServerActiveRule activeRuleFromStorage, ServerRule serverRule) {
@@ -57,7 +59,8 @@ public class ActiveRuleDetails {
         .map(s -> new DescriptionSection(s.getKey(), s.getHtmlContent(), s.getContext().map(c -> new DescriptionSection.Context(c.getKey(), c.getDisplayName()))))
         .collect(Collectors.groupingBy(DescriptionSection::getKey)),
       Optional.ofNullable(activeRuleFromStorage.getSeverity()).orElse(serverRule.getSeverity()),
-      serverRule.getType(), serverRule.getHtmlNote(), Collections.emptyList());
+      serverRule.getType(), serverRule.getHtmlNote(), Collections.emptyList(),
+      serverRule.getEducationPrincipleKeys());
   }
 
   public static ActiveRuleDetails merging(ServerRule activeRuleFromServer, SonarLintRuleDefinition ruleDefFromPlugin) {
@@ -66,7 +69,7 @@ public class ActiveRuleDetails {
         .map(s -> new DescriptionSection(s.getKey(), s.getHtmlContent(), s.getContext().map(c -> new DescriptionSection.Context(c.getKey(), c.getDisplayName()))))
         .collect(Collectors.groupingBy(DescriptionSection::getKey)),
       Optional.ofNullable(activeRuleFromServer.getSeverity()).orElse(ruleDefFromPlugin.getDefaultSeverity()), ruleDefFromPlugin.getType(),
-      activeRuleFromServer.getHtmlNote(), Collections.emptyList());
+      activeRuleFromServer.getHtmlNote(), Collections.emptyList(), ruleDefFromPlugin.getEducationPrincipleKeys());
   }
 
   public static ActiveRuleDetails merging(ServerActiveRule activeRuleFromStorage, ServerRule serverRule, SonarLintRuleDefinition templateRuleDefFromPlugin) {
@@ -81,7 +84,7 @@ public class ActiveRuleDetails {
       serverRule.getSeverity(),
       templateRuleDefFromPlugin.getType(),
       serverRule.getHtmlNote(),
-      Collections.emptyList());
+      Collections.emptyList(), templateRuleDefFromPlugin.getEducationPrincipleKeys());
   }
 
   private final String key;
@@ -93,9 +96,10 @@ public class ActiveRuleDetails {
   private final RuleType type;
   private final Collection<ActiveRuleParam> params;
   private final String extendedDescription;
+  private final Set<String> educationPrincipleKeys;
 
   public ActiveRuleDetails(String key, Language language, String name, String htmlDescription, Map<String, List<DescriptionSection>> descriptionSectionsByKey,
-    IssueSeverity defaultSeverity, RuleType type, @Nullable String extendedDescription, Collection<ActiveRuleParam> params) {
+    IssueSeverity defaultSeverity, RuleType type, @Nullable String extendedDescription, Collection<ActiveRuleParam> params, Set<String> educationPrincipleKeys) {
     this.key = key;
     this.language = language;
     this.name = name;
@@ -105,6 +109,7 @@ public class ActiveRuleDetails {
     this.type = type;
     this.params = params;
     this.extendedDescription = extendedDescription;
+    this.educationPrincipleKeys = educationPrincipleKeys;
   }
 
   public String getKey() {
@@ -141,6 +146,10 @@ public class ActiveRuleDetails {
 
   public Collection<ActiveRuleParam> getParams() {
     return params;
+  }
+
+  public Set<String> getCleanCodePrincipleKeys() {
+    return educationPrincipleKeys;
   }
 
   @CheckForNull
