@@ -28,12 +28,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import mediumtest.fixtures.StorageFixture;
 import mediumtest.fixtures.TestPlugin;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleDescriptionTabDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleNonContextualSectionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetActiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
@@ -43,10 +45,8 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
-import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.assertj.core.api.InstanceOfAssertFactories.list;
 
 class ActiveRulesMediumTests {
 
@@ -306,6 +306,7 @@ class ActiveRulesMediumTests {
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc")
+        .setEducationPrinciples(Rules.Rule.EducationPrinciples.newBuilder().addEducationPrinciples("never_trust_user_input").build())
         .setDescriptionSections(Rules.Rule.DescriptionSections.newBuilder()
           .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
             .setKey("introduction").setContent("htmlContent")
@@ -327,13 +328,103 @@ class ActiveRulesMediumTests {
     assertThat(details.getParams()).isEmpty();
     assertThat(details.getDescription())
       .extracting("right.introductionHtmlContent")
-        .isEqualTo("htmlContent");
-    assertThat(details.getDescription())
-      .extracting("right.tabs", as(list(ActiveRuleDescriptionTabDto.class)))
+      .isEqualTo("htmlContent");
+    assertThat(details.getDescription().getRight().getTabs())
       .flatExtracting(ActiveRulesMediumTests::flattenTabContent)
       .containsExactly(
         "How can I fix it?", "htmlContent2", "contextKey2", "displayName2",
-        "More Info", "htmlContent3<br/><br/>extendedDesc");
+        "More Info", "htmlContent3<br/><br/>extendedDesc<br/><br/><h3>Clean Code Principles</h3>\n" +
+          "<h4>Never Trust User Input</h4>\n" +
+          "<p>\n" +
+          "    Applications must treat all user input and, more generally, all third-party data as\n" +
+          "    attacker-controlled data.\n" +
+          "</p>\n" +
+          "<p>\n" +
+          "    The application must determine where the third-party data comes from and treat that data\n" +
+          "    source as an attack vector. Two rules apply:\n" +
+          "</p>\n" +
+          "\n" +
+          "<p>\n" +
+          "    First, before using it in the application&apos;s business logic, the application must\n" +
+          "    validate the attacker-controlled data against predefined formats, such as:\n" +
+          "</p>\n" +
+          "<ul>\n" +
+          "    <li>Character sets</li>\n" +
+          "    <li>Sizes</li>\n" +
+          "    <li>Types</li>\n" +
+          "    <li>Or any strict schema</li>\n" +
+          "</ul>\n" +
+          "\n" +
+          "<p>\n" +
+          "    Second, the application must sanitize string data before inserting it into interpreted\n" +
+          "    contexts (client-side code, file paths, SQL queries). Unsanitized code can corrupt the\n" +
+          "    application&apos;s logic.\n" +
+          "</p>");
+  }
+
+  @Test
+  void it_should_add_a_more_info_tab_if_no_resource_section_exists_and_extended_description_exists()
+    throws ExecutionException, InterruptedException {
+    StorageFixture.newStorage("connectionId")
+      .withProject("projectKey",
+        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah"))))
+      .create(storageDir);
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withStorageRoot(storageDir.resolve("storage"))
+      .withEnabledLanguage(Language.PYTHON)
+      .build();
+    mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
+      .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc")
+        .setEducationPrinciples(Rules.Rule.EducationPrinciples.newBuilder().addEducationPrinciples("never_trust_user_input").build())
+        .setDescriptionSections(Rules.Rule.DescriptionSections.newBuilder()
+          .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
+            .setKey("introduction").setContent("htmlContent")
+            .setContext(Rules.Rule.DescriptionSection.Context.newBuilder().setKey("contextKey").setDisplayName("displayName").build()).build())
+          .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
+            .setKey("how_to_fix").setContent("htmlContent2")
+            .setContext(Rules.Rule.DescriptionSection.Context.newBuilder().setKey("contextKey2").setDisplayName("displayName2").build()).build())
+          .build())
+        .build())
+      .build());
+
+    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139")).get();
+
+    var details = activeRuleDetailsResponse.details();
+    assertThat(details.getDescription().getRight().getTabs())
+      .filteredOn(ActiveRuleDescriptionTabDto::getTitle, "More Info")
+      .extracting(ActiveRuleDescriptionTabDto::getContent)
+      .extracting(Either::getLeft)
+      .extracting(ActiveRuleNonContextualSectionDto::getHtmlContent)
+      .containsExactly("extendedDesc<br/><br/><h3>Clean Code Principles</h3>\n" +
+        "<h4>Never Trust User Input</h4>\n" +
+        "<p>\n" +
+        "    Applications must treat all user input and, more generally, all third-party data as\n" +
+        "    attacker-controlled data.\n" +
+        "</p>\n" +
+        "<p>\n" +
+        "    The application must determine where the third-party data comes from and treat that data\n" +
+        "    source as an attack vector. Two rules apply:\n" +
+        "</p>\n" +
+        "\n" +
+        "<p>\n" +
+        "    First, before using it in the application&apos;s business logic, the application must\n" +
+        "    validate the attacker-controlled data against predefined formats, such as:\n" +
+        "</p>\n" +
+        "<ul>\n" +
+        "    <li>Character sets</li>\n" +
+        "    <li>Sizes</li>\n" +
+        "    <li>Types</li>\n" +
+        "    <li>Or any strict schema</li>\n" +
+        "</ul>\n" +
+        "\n" +
+        "<p>\n" +
+        "    Second, the application must sanitize string data before inserting it into interpreted\n" +
+        "    contexts (client-side code, file paths, SQL queries). Unsanitized code can corrupt the\n" +
+        "    application&apos;s logic.\n" +
+        "</p>");
   }
 
   private static List<Object> flattenTabContent(ActiveRuleDescriptionTabDto tab) {

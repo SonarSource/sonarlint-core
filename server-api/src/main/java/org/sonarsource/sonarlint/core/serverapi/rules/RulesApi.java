@@ -74,7 +74,7 @@ public class RulesApi {
           var rule = Rules.ShowResponse.parseFrom(response.bodyAsStream()).getRule();
           return new ServerRule(rule.getName(), IssueSeverity.valueOf(rule.getSeverity()), RuleType.valueOf(rule.getType().name()), rule.getLang(), rule.getHtmlDesc(),
             convertDescriptionSections(rule),
-            rule.getHtmlNote());
+            rule.getHtmlNote(), Set.copyOf(rule.getEducationPrinciples().getEducationPrinciplesList()));
         } catch (Exception e) {
           LOG.error("Error when fetching rule + '" + ruleKey + "'", e);
           throw new UnexpectedBodyException(e);

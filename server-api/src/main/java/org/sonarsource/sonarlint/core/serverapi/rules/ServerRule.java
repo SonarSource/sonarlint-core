@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.serverapi.rules;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -33,8 +34,10 @@ public class ServerRule {
   private final IssueSeverity severity;
   private final RuleType type;
   private final Language language;
+  private final Set<String> educationPrincipleKeys;
 
-  public ServerRule(String name, IssueSeverity severity, RuleType type, String language, String htmlDesc, List<DescriptionSection> descriptionSections, String htmlNote) {
+  public ServerRule(String name, IssueSeverity severity, RuleType type, String language, String htmlDesc, List<DescriptionSection> descriptionSections, String htmlNote,
+    Set<String> educationPrincipleKeys) {
     this.name = name;
     this.severity = severity;
     this.type = type;
@@ -42,6 +45,7 @@ public class ServerRule {
     this.htmlDesc = htmlDesc;
     this.descriptionSections = descriptionSections;
     this.htmlNote = htmlNote;
+    this.educationPrincipleKeys = educationPrincipleKeys;
   }
 
   public String getName() {
@@ -70,6 +74,10 @@ public class ServerRule {
 
   public Language getLanguage() {
     return language;
+  }
+
+  public Set<String> getEducationPrincipleKeys() {
+    return educationPrincipleKeys;
   }
 
   public static class DescriptionSection {

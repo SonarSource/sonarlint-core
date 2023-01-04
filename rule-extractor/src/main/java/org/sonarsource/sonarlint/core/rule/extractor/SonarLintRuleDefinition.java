@@ -49,6 +49,7 @@ public class SonarLintRuleDefinition {
   private final Language language;
   private final String[] tags;
   private final Set<String> deprecatedKeys;
+  private final Set<String> educationPrincipleKeys;
 
   public SonarLintRuleDefinition(RulesDefinition.Rule rule) {
     this.key = RuleKey.of(rule.repository().key(), rule.key()).toString();
@@ -69,6 +70,7 @@ public class SonarLintRuleDefinition {
     this.language = Language.forKey(rule.repository().language()).orElseThrow(() -> new IllegalStateException("Unknown language with key: " + rule.repository().language()));
     this.tags = rule.tags().toArray(new String[0]);
     this.deprecatedKeys = rule.deprecatedRuleKeys().stream().map(RuleKey::toString).collect(toSet());
+    this.educationPrincipleKeys = rule.educationPrincipleKeys();
 
     Map<String, SonarLintRuleParamDefinition> builder = new HashMap<>();
     for (Param param : rule.params()) {
@@ -130,4 +132,7 @@ public class SonarLintRuleDefinition {
     return deprecatedKeys;
   }
 
+  public Set<String> getEducationPrincipleKeys() {
+    return educationPrincipleKeys;
+  }
 }

@@ -52,6 +52,7 @@ message Rule {
 
   optional sonarqube.ws.commons.RuleType type = 37;
   optional DescriptionSections descriptionSections = 49;
+  optional EducationPrinciples educationPrinciples = 50;
 
   message DescriptionSections {
     repeated DescriptionSection descriptionSections = 1;
@@ -66,6 +67,10 @@ message Rule {
       required string displayName = 1;
       required string key = 2;
     }
+  }
+
+  message EducationPrinciples {
+    repeated string educationPrinciples = 1;
   }
 
 }
