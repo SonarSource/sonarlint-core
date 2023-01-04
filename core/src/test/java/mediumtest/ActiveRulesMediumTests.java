@@ -45,10 +45,8 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
-import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.assertj.core.api.InstanceOfAssertFactories.list;
 
 class ActiveRulesMediumTests {
 
@@ -304,25 +302,25 @@ class ActiveRulesMediumTests {
       .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO);
     assertThat(details.getParams()).isEmpty();
     assertThat(details.getDescription().getRight().getIntroductionHtmlContent())
-        .isEqualTo("htmlContent");
+      .isEqualTo("htmlContent");
     assertThat(details.getDescription().getRight().getTabs())
       .flatExtracting(ActiveRulesMediumTests::flattenTabContent)
       .containsExactly(
-              "How can I fix it?", "htmlContent2", "contextKey2", "displayName2",
+        "How can I fix it?", "htmlContent2", "contextKey2", "displayName2",
         "How can I fix it?",
         "<h4>How can I fix it in another component or framework?</h4>\n"+
           "<p>Although the main framework or component you use in your project is not listed, you may find helpful content in the instructions we provide.</p>\n"+
-        "<p>Caution: The libraries mentioned in these instructions may not be appropriate for your code.</p>\n"+
-    "<p>\n"+
-    "<ul>\n"+
-    "    <li>Do use libraries that are compatible with the frameworks you are using.</li>\n"+
-    "    <li>Don't blindly copy and paste the fix-ups into your code.</li>\n"+
-    "</ul>\n"+
-    "<h4>Help us improve</h4>\n"+
-    "<p>Let us know if the instructions we provide do not work for you.\n"+
-    "    Tell us which framework you use and why our solution does not work by submitting an idea on the SonarLint product-board.</p>\n"+
-    "<a href=\"https://portal.productboard.com/sonarsource/4-sonarlint/submit-idea\">Submit an idea</a>\n"+
-    "<p>We will do our best to provide you with more relevant instructions in the future.</p>", "others", "Others",
+          "<p>Caution: The libraries mentioned in these instructions may not be appropriate for your code.</p>\n"+
+          "<p>\n"+
+          "<ul>\n"+
+          "    <li>Do use libraries that are compatible with the frameworks you are using.</li>\n"+
+          "    <li>Don't blindly copy and paste the fix-ups into your code.</li>\n"+
+          "</ul>\n"+
+          "<h4>Help us improve</h4>\n"+
+          "<p>Let us know if the instructions we provide do not work for you.\n"+
+          "    Tell us which framework you use and why our solution does not work by submitting an idea on the SonarLint product-board.</p>\n"+
+          "<a href=\"https://portal.productboard.com/sonarsource/4-sonarlint/submit-idea\">Submit an idea</a>\n"+
+          "<p>We will do our best to provide you with more relevant instructions in the future.</p>", "others", "Others",
         "More Info", "htmlContent3<br/><br/>extendedDesc<br/><br/><h3>Clean Code Principles</h3>\n" +
           "<h4>Never Trust User Input</h4>\n" +
           "<p>\n" +
@@ -458,7 +456,7 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-    void it_should_return_only_tab_content_for_the_provided_context()
+  void it_should_return_only_tab_content_for_the_provided_context()
     throws ExecutionException, InterruptedException {
     prepareForRuleDescriptionSectionsAndContext();
 

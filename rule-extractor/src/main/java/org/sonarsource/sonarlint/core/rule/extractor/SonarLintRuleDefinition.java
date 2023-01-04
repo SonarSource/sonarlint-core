@@ -78,7 +78,6 @@ public class SonarLintRuleDefinition {
     this.deprecatedKeys = rule.deprecatedRuleKeys().stream().map(RuleKey::toString).collect(toSet());
     this.educationPrincipleKeys = rule.educationPrincipleKeys();
     this.vulnerabilityProbability = rule.type() == org.sonar.api.rules.RuleType.SECURITY_HOTSPOT ? Optional.of(fromSecurityStandards(rule.securityStandards()).getSlCategory().getVulnerability()) : Optional.empty();
-
     Map<String, SonarLintRuleParamDefinition> builder = new HashMap<>();
     for (Param param : rule.params()) {
       var paramDefinition = new SonarLintRuleParamDefinition(param);
@@ -147,6 +146,7 @@ public class SonarLintRuleDefinition {
   public Optional<String> getInternalKey() {
     return internalKey;
   }
+
   public Optional<VulnerabilityProbability> getVulnerabilityProbability() {
     return vulnerabilityProbability;
   }
