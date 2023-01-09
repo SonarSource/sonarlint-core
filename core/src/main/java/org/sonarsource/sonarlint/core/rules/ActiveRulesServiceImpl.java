@@ -62,6 +62,7 @@ public class ActiveRulesServiceImpl implements ActiveRulesService {
 
   static {
     SECTION_KEYS_TO_TAB_TITLE_ORDERED.put("root_cause", "Why is this an issue?");
+    SECTION_KEYS_TO_TAB_TITLE_ORDERED.put("assess_the_problem", "Assess the risk");
     SECTION_KEYS_TO_TAB_TITLE_ORDERED.put("how_to_fix", "How can I fix it?");
     SECTION_KEYS_TO_TAB_TITLE_ORDERED.put(RESOURCES_SECTION_KEY, "More Info");
   }

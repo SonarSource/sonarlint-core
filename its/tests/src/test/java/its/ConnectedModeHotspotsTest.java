@@ -22,6 +22,7 @@ package its;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
+import com.sonar.orchestrator.version.Version;
 import its.tools.OrchestratorUtils;
 import java.io.File;
 import java.nio.file.Path;
@@ -51,6 +52,7 @@ import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.assertj.core.api.Assumptions.assumeThat;
 
 public class ConnectedModeHotspotsTest extends AbstractConnectedTest {
 
@@ -137,7 +139,7 @@ public class ConnectedModeHotspotsTest extends AbstractConnectedTest {
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
       assertThat(issueListener.getIssues()).hasSize(1)
         .extracting(Issue::getRuleKey, Issue::getType)
-        .containsExactly(tuple(javaRuleKey(ORCHESTRATOR, "S1313"), RuleType.SECURITY_HOTSPOT));
+        .containsExactly(tuple(javaRuleKey(ORCHESTRATOR, "S4792"), RuleType.SECURITY_HOTSPOT));
     } else {
       // no hotspot detection when connected to SQ < 9.7
       assertThat(issueListener.getIssues()).isEmpty();
@@ -146,15 +148,17 @@ public class ConnectedModeHotspotsTest extends AbstractConnectedTest {
 
   @Test
   public void loadHotspotRuleDescription() throws Exception {
+    assumeThat(ORCHESTRATOR.getServer().version()).isGreaterThanOrEqualTo(Version.create("9.7"));
+
     updateProject();
 
-    var ruleDetails = engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey(ORCHESTRATOR, "S1313"), PROJECT_KEY_JAVA_HOTSPOT).get();
+    var ruleDetails = engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey(ORCHESTRATOR, "S4792"), PROJECT_KEY_JAVA_HOTSPOT).get();
 
-    assertThat(ruleDetails.getName()).isEqualTo("Using hardcoded IP addresses is security-sensitive");
-    assertThat(ruleDetails.getHtmlDescription())
-      .startsWith("<p>Hardcoding IP addresses is security-sensitive. It has led in the past to the following vulnerabilities:</p>")
-      .contains("<h2>Recommended Secure Coding Practices</h2>")
-      .contains("<h2>Exceptions</h2>");
+    assertThat(ruleDetails.getName()).isEqualTo("Configuring loggers is security-sensitive");
+    // HTML description is null for security hotspots when accessed through the deprecated engine API
+    // When accessed through the backend service, the rule descriptions are split into sections
+    // see its.ConnectedModeBackendTest.returnConvertedDescriptionSectionsForHotspotRules
+    assertThat(ruleDetails.getHtmlDescription()).isNull();
   }
 
   @Test
@@ -167,7 +171,7 @@ public class ConnectedModeHotspotsTest extends AbstractConnectedTest {
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
       assertThat(serverHotspots)
         .extracting("ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "resolved")
-        .containsExactly(tuple("java:S1313", "Make sure using this hardcoded IP address is safe here.", "ide/src/main/java/foo/Foo.java", 5, 14, 5, 29, false));
+        .containsExactly(tuple("java:S4792", "Make sure that this logger's configuration is safe.", "ide/src/main/java/foo/Foo.java", 9, 4, 9, 45, false));
     } else {
       assertThat(serverHotspots).isEmpty();
     }
@@ -184,7 +188,7 @@ public class ConnectedModeHotspotsTest extends AbstractConnectedTest {
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
       assertThat(serverHotspots)
         .extracting("ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "resolved")
-        .containsExactly(tuple("java:S1313", "Make sure using this hardcoded IP address is safe here.", "ide/src/main/java/foo/Foo.java", 5, 14, 5, 29, false));
+        .containsExactly(tuple("java:S4792", "Make sure that this logger's configuration is safe.", "ide/src/main/java/foo/Foo.java", 9, 4, 9, 45, false));
     } else {
       assertThat(serverHotspots).isEmpty();
     }

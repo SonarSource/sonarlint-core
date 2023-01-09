@@ -55,9 +55,16 @@ public class SonarLintRuleDefinition {
     this.name = rule.name();
     this.defaultSeverity = IssueSeverity.valueOf(rule.severity());
     this.type = RuleType.valueOf(rule.type().name());
-    this.description = rule.htmlDescription() != null ? rule.htmlDescription() : Markdown.convertToHtml(rule.markdownDescription());
-    this.descriptionSections = rule.ruleDescriptionSections().stream().map(s -> new SonarLintRuleDescriptionSection(s.getKey(), s.getHtmlContent(),
-      s.getContext().map(c -> new SonarLintRuleDescriptionSection.Context(c.getKey(), c.getDisplayName())))).collect(Collectors.toList());
+    var htmlDescription = rule.htmlDescription() != null ? rule.htmlDescription() : Markdown.convertToHtml(rule.markdownDescription());
+    if (rule.type() == org.sonar.api.rules.RuleType.SECURITY_HOTSPOT) {
+      this.description = null;
+      this.descriptionSections = LegacyHotspotRuleDescriptionSectionsGenerator.extractDescriptionSectionsFromHtml(htmlDescription);
+    } else {
+      this.description = htmlDescription;
+      this.descriptionSections = rule.ruleDescriptionSections().stream().map(s -> new SonarLintRuleDescriptionSection(s.getKey(), s.getHtmlContent(),
+        s.getContext().map(c -> new SonarLintRuleDescriptionSection.Context(c.getKey(), c.getDisplayName())))).collect(Collectors.toList());
+    }
+
     this.isActiveByDefault = rule.activatedByDefault();
     this.language = Language.forKey(rule.repository().language()).orElseThrow(() -> new IllegalStateException("Unknown language with key: " + rule.repository().language()));
     this.tags = rule.tags().toArray(new String[0]);
