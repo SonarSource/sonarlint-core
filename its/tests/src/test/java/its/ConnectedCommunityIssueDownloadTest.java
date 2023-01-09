@@ -24,7 +24,6 @@ import com.sonar.orchestrator.build.SonarScanner;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
 import its.tools.OrchestratorUtils;
-import its.tools.SonarlintProject;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -64,9 +63,6 @@ public class ConnectedCommunityIssueDownloadTest extends AbstractConnectedTest {
     .addPlugin(MavenLocation.of("org.sonarsource.sonarqube", "sonar-xoo-plugin", SONAR_VERSION))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/xoo-sonarlint.xml"))
     .build();
-
-  @Rule
-  public SonarlintProject clientTools = new SonarlintProject();
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();

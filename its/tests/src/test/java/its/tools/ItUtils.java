@@ -19,6 +19,10 @@
  */
 package its.tools;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+
 public class ItUtils {
 
   public static final String LATEST_RELEASE = "LATEST_RELEASE";
@@ -31,6 +35,11 @@ public class ItUtils {
   private static String getSonarVersion() {
     var versionProperty = System.getProperty("sonar.runtimeVersion");
     return versionProperty != null ? versionProperty : LATEST_RELEASE;
+  }
+
+  public static List<Path> collectAllFiles(Path path) throws IOException {
+    var fileFinder = new InputFileFinder(null);
+    return fileFinder.collect(path);
   }
 
 }
