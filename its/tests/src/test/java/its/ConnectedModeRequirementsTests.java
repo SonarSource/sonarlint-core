@@ -53,7 +53,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.fail;
 
-class ConnectedModeRequirementsTest extends AbstractConnectedTest {
+class ConnectedModeRequirementsTests extends AbstractConnectedTests {
 
   private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
   private static final String CUSTOM_JAVA_PLUGIN_KEY = "custom";

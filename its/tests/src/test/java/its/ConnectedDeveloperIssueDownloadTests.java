@@ -54,7 +54,7 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import static its.utils.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 
-class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
+class ConnectedDeveloperIssueDownloadTests extends AbstractConnectedTests {
   // Use the pattern of long living branches in SQ 7.9, else we only have issues on changed files
   private static final String SHORT_BRANCH = "feature/short_living";
   private static final String LONG_BRANCH = "branch-1.x";

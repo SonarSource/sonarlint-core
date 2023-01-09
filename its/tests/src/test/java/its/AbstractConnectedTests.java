@@ -68,7 +68,7 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public abstract class AbstractConnectedTest {
+public abstract class AbstractConnectedTests {
   protected static final String SONARLINT_USER = "sonarlint";
   protected static final String SONARLINT_PWD = "sonarlintpwd";
   protected static final String MAIN_BRANCH_NAME = "master";

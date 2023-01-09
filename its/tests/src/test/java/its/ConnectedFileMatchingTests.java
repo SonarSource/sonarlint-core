@@ -46,7 +46,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEng
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class ConnectedFileMatchingTest extends AbstractConnectedTest {
+class ConnectedFileMatchingTests extends AbstractConnectedTests {
   private static final String PROJECT_KEY = "com.sonarsource.it.samples:multi-modules-sample";
 
   @RegisterExtension

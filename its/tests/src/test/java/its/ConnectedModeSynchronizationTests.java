@@ -42,7 +42,7 @@ import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-class ConnectedModeSynchronizationTest extends AbstractConnectedTest {
+class ConnectedModeSynchronizationTests extends AbstractConnectedTests {
   private static final String PROJECT_KEY_LANGUAGE_MIX = "sample-language-mix";
 
   @RegisterExtension
