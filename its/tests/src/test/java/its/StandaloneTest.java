@@ -19,10 +19,12 @@
  */
 package its;
 
+import its.utils.TestClientInputFile;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,12 +32,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
@@ -50,17 +50,15 @@ import org.sonarsource.sonarlint.core.commons.RuleKey;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-public class StandaloneTest {
+class StandaloneTest {
 
-  @ClassRule
-  public static TemporaryFolder temp = new TemporaryFolder();
   private static StandaloneSonarLintEngineImpl sonarlint;
   private static List<String> logs;
+  @TempDir
   private File baseDir;
 
-  @BeforeClass
-  public static void prepare() throws Exception {
-    var sonarlintUserHome = temp.newFolder().toPath();
+  @BeforeAll
+  static void prepare(@TempDir Path sonarlintUserHome) throws Exception {
     logs = new ArrayList<>();
     Map<String, String> globalProps = new HashMap<>();
     globalProps.put("sonar.global.label", "It works");
@@ -76,19 +74,14 @@ public class StandaloneTest {
     assertThat(logs).containsOnlyOnce("Start Global Extension It works");
   }
 
-  @AfterClass
-  public static void stop() {
+  @AfterAll
+  static void stop() {
     sonarlint.stop();
     assertThat(logs).containsOnlyOnce("Stop Global Extension");
   }
 
-  @Before
-  public void prepareBasedir() throws Exception {
-    baseDir = temp.newFolder();
-  }
-
   @Test
-  public void checkRuleParameterDeclarations() {
+  void checkRuleParameterDeclarations() {
     var ruleDetails = sonarlint.getAllRuleDetails();
     assertThat(ruleDetails).hasSize(1);
     var incRule = ruleDetails.iterator().next();
@@ -113,7 +106,7 @@ public class StandaloneTest {
   }
 
   @Test
-  public void globalExtension() throws Exception {
+  void globalExtension() throws Exception {
     var inputFile = prepareInputFile("foo.glob", "foo", false);
 
     final List<Issue> issues = new ArrayList<>();

@@ -42,10 +42,10 @@ Optimisations:
  */
 package its;
 
-import com.sonar.orchestrator.Orchestrator;
+import com.sonar.orchestrator.OrchestratorExtension;
 import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
-import its.tools.OrchestratorUtils;
+import its.utils.OrchestratorUtils;
 import java.nio.file.Path;
 import java.util.Deque;
 import java.util.HashMap;
@@ -54,13 +54,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.issues.SearchRequest;
@@ -81,14 +80,14 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.waitAtMost;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-public class ConnectedTaintVulnerabilitiesTest extends AbstractConnectedTest {
+class ConnectedTaintVulnerabilitiesTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_JAVA = "sample-java";
   private static final String PROJECT_KEY_JAVA_TAINT = "sample-java-taint";
 
-  @ClassRule
-  public static Orchestrator ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
+  @RegisterExtension
+  static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
     .setEdition(Edition.DEVELOPER)
     .activateLicense()
     .keepBundledPlugins()
@@ -100,25 +99,21 @@ public class ConnectedTaintVulnerabilitiesTest extends AbstractConnectedTest {
     .setServerProperty("sonar.projectCreation.mainBranchName", MAIN_BRANCH_NAME)
     .build();
 
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
-
   private ConnectedSonarLintEngine engine;
 
   private static WsClient adminWsClient;
 
-  @BeforeClass
-  public static void prepareProject() throws Exception {
+  @BeforeAll
+  static void prepareProject() throws Exception {
     adminWsClient = newAdminWsClient(ORCHESTRATOR);
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
   }
 
-  @Before
-  public void prepare() throws Exception {
+  @BeforeEach
+  void prepare(@TempDir Path sonarUserHome) throws Exception {
     provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_TAINT, "Java With Taint Vulnerabilities");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_TAINT, "java", "SonarLint Taint Java");
 
-    Path sonarUserHome = temp.newFolder().toPath();
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId("orchestrator")
       .addEnabledLanguage(Language.JAVA)
@@ -128,8 +123,8 @@ public class ConnectedTaintVulnerabilitiesTest extends AbstractConnectedTest {
       .build());
   }
 
-  @After
-  public void stop() {
+  @AfterEach
+  void stop() {
     engine.stop(true);
     var request = new PostRequest("api/projects/bulk_delete");
     request.setParam("projects", PROJECT_KEY_JAVA_TAINT);
@@ -139,7 +134,7 @@ public class ConnectedTaintVulnerabilitiesTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void download_taint_vulnerabilities() {
+  void download_taint_vulnerabilities() {
     analyzeMavenProject(ORCHESTRATOR, PROJECT_KEY_JAVA_TAINT, Map.of("sonar.projectKey", PROJECT_KEY_JAVA_TAINT));
 
     // Ensure a vulnerability has been reported on server side
@@ -179,7 +174,7 @@ public class ConnectedTaintVulnerabilitiesTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void updatesStorageTaintVulnerabilityEvents() {
+  void updatesStorageTaintVulnerabilityEvents() {
     assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6));
 
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVA_TAINT, null);

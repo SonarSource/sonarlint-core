@@ -19,11 +19,11 @@
  */
 package its;
 
-import com.sonar.orchestrator.Orchestrator;
+import com.sonar.orchestrator.OrchestratorExtension;
 import com.sonar.orchestrator.build.SonarScanner;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
-import its.tools.OrchestratorUtils;
+import its.utils.OrchestratorUtils;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,13 +31,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarqube.ws.Issues.Issue;
 import org.sonarqube.ws.client.issues.DoTransitionRequest;
 import org.sonarqube.ws.client.issues.SearchRequest;
@@ -52,20 +51,17 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 
-import static its.tools.ItUtils.SONAR_VERSION;
+import static its.utils.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ConnectedCommunityIssueDownloadTest extends AbstractConnectedTest {
+class ConnectedCommunityIssueDownloadTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY = "sample-xoo";
 
-  @ClassRule
-  public static Orchestrator ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
+  @RegisterExtension
+  static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
     .addPlugin(MavenLocation.of("org.sonarsource.sonarqube", "sonar-xoo-plugin", SONAR_VERSION))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/xoo-sonarlint.xml"))
     .build();
-
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
 
   private ConnectedSonarLintEngine engine;
   private final List<String> logs = new ArrayList<>();
@@ -75,8 +71,8 @@ public class ConnectedCommunityIssueDownloadTest extends AbstractConnectedTest {
   private static Issue overridenSeverityIssue;
   private static Issue overridenTypeIssue;
 
-  @BeforeClass
-  public static void prepare() {
+  @BeforeAll
+  static void prepare() {
     var adminWsClient = newAdminWsClient(ORCHESTRATOR);
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
@@ -112,9 +108,8 @@ public class ConnectedCommunityIssueDownloadTest extends AbstractConnectedTest {
     }
   }
 
-  @Before
-  public void start() throws IOException {
-    Path sonarUserHome = temp.newFolder().toPath();
+  @BeforeEach
+  public void start(@TempDir Path sonarUserHome) throws IOException {
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
@@ -123,13 +118,13 @@ public class ConnectedCommunityIssueDownloadTest extends AbstractConnectedTest {
       .build());
   }
 
-  @After
+  @AfterEach
   public void stop() {
     engine.stop(true);
   }
 
   @Test
-  public void download_all_issues_not_limited_to_10k() {
+  void download_all_issues_not_limited_to_10k() {
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
 
     engine.downloadAllServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, MAIN_BRANCH_NAME, null);

@@ -19,10 +19,10 @@
  */
 package its;
 
-import com.sonar.orchestrator.Orchestrator;
+import com.sonar.orchestrator.OrchestratorExtension;
 import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.version.Version;
-import its.tools.OrchestratorUtils;
+import its.utils.OrchestratorUtils;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
@@ -33,12 +33,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
@@ -63,32 +63,29 @@ import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
-public class ConnectedModeBackendTest extends AbstractConnectedTest {
+class ConnectedModeBackendTest extends AbstractConnectedTest {
 
   private static final String PROJECT_KEY_JAVA_TAINT = "sample-java-taint";
   private static final String PROJECT_KEY_JAVA_HOTSPOT = "sample-java-hotspot";
 
-  @ClassRule
-  public static Orchestrator ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
+  @RegisterExtension
+  static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
     .setEdition(Edition.DEVELOPER)
     .activateLicense()
     .keepBundledPlugins()
     .setServerProperty("sonar.projectCreation.mainBranchName", MAIN_BRANCH_NAME)
     .build();
 
-  @ClassRule
-  public static TemporaryFolder temp = new TemporaryFolder();
-
+  @TempDir
   private static Path sonarUserHome;
 
   private SonarLintBackend backend;
   // still needed for the sync
   private ConnectedSonarLintEngine engine;
 
-  @BeforeClass
-  public static void prepare() throws Exception {
+  @BeforeAll
+  static void prepare() throws Exception {
     var adminWsClient = newAdminWsClient(ORCHESTRATOR);
-    sonarUserHome = temp.newFolder().toPath();
 
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
     provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_TAINT, "Java With Taint Vulnerabilities");
@@ -99,8 +96,8 @@ public class ConnectedModeBackendTest extends AbstractConnectedTest {
     analyzeMavenProject(ORCHESTRATOR, PROJECT_KEY_JAVA_HOTSPOT, Map.of("sonar.projectKey", PROJECT_KEY_JAVA_HOTSPOT));
   }
 
-  @Before
-  public void start() {
+  @BeforeEach
+  void start() {
     FileUtils.deleteQuietly(sonarUserHome.toFile());
 
     backend = new SonarLintBackendImpl(newDummySonarLintClient());
@@ -124,14 +121,14 @@ public class ConnectedModeBackendTest extends AbstractConnectedTest {
     updateProject(PROJECT_KEY_JAVA_HOTSPOT);
   }
 
-  @After
-  public void stop() {
+  @AfterEach
+  void stop() {
     backend.shutdown();
     engine.stop(true);
   }
 
   @Test
-  public void returnDescriptionSectionsForTaintRules() throws ExecutionException, InterruptedException {
+  void returnDescriptionSectionsForTaintRules() throws ExecutionException, InterruptedException {
     // sync is still done by the engine for now
     updateProject(PROJECT_KEY_JAVA_TAINT);
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(

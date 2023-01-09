@@ -19,10 +19,10 @@
  */
 package its;
 
-import com.sonar.orchestrator.Orchestrator;
+import com.sonar.orchestrator.OrchestratorExtension;
 import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
-import its.tools.OrchestratorUtils;
+import its.utils.OrchestratorUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -30,12 +30,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Set;
 import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.permissions.RemoveGroupRequest;
 import org.sonarqube.ws.client.settings.SetRequest;
@@ -47,16 +47,16 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEng
 import org.sonarsource.sonarlint.core.commons.Language;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-public class CommercialAnalyzerTest extends AbstractConnectedTest {
+class CommercialAnalyzerTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_COBOL = "sample-cobol";
   private static final String PROJECT_KEY_C = "sample-c";
   private static final String PROJECT_KEY_TSQL = "sample-tsql";
   private static final String PROJECT_KEY_APEX = "sample-apex";
 
-  @ClassRule
-  public static Orchestrator ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
+  @RegisterExtension
+  static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
     .setEdition(Edition.ENTERPRISE)
     .activateLicense()
     .keepBundledPlugins()
@@ -66,20 +66,18 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
     .restoreProfileAtStartup(FileLocation.ofClasspath("/apex-sonarlint.xml"))
     .build();
 
-  @ClassRule
-  public static TemporaryFolder temp = new TemporaryFolder();
-
   private static WsClient adminWsClient;
+
+  @TempDir
   private static Path sonarUserHome;
 
   private ConnectedSonarLintEngine engine;
   private static String singlePointOfExitRuleKey;
 
-  @BeforeClass
-  public static void prepare() throws Exception {
+  @BeforeAll
+  static void prepare() throws Exception {
     adminWsClient = newAdminWsClient(ORCHESTRATOR);
     adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("true"));
-    sonarUserHome = temp.newFolder().toPath();
 
     removeGroupPermission("anyone", "scan");
 
@@ -101,8 +99,8 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
     }
   }
 
-  @Before
-  public void start() {
+  @BeforeEach
+  void start() {
     FileUtils.deleteQuietly(sonarUserHome.toFile());
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId("orchestrator")
@@ -115,8 +113,8 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
       .build());
   }
 
-  @After
-  public void stop() {
+  @AfterEach
+  void stop() {
     try {
       engine.stop(true);
     } catch (Exception e) {
@@ -125,7 +123,7 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisC_old_build_wrapper_prop() throws Exception {
+  void analysisC_old_build_wrapper_prop(@TempDir File buildWrapperOutput) throws Exception {
     updateProject(PROJECT_KEY_C);
     var issueListener = new SaveIssueListener();
 
@@ -146,7 +144,6 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
       Paths.get("projects/" + PROJECT_KEY_C).toAbsolutePath().toString().replace("\\", "\\\\") +
       "\",\"executable\":\"compiler\",\"cmd\":[\"cc\",\"src/file.c\"]}]}";
 
-    var buildWrapperOutput = temp.newFolder();
     FileUtils.write(new File(buildWrapperOutput, "build-wrapper-dump.json"), buildWrapperContent, StandardCharsets.UTF_8);
     var analysisConfiguration = createAnalysisConfiguration(PROJECT_KEY_C, PROJECT_KEY_C, "src/file.c", "sonar.cfamily.build-wrapper-output",
       buildWrapperOutput.getAbsolutePath());
@@ -157,7 +154,7 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisC_new_prop() throws Exception {
+  void analysisC_new_prop() throws Exception {
     // New property was introduced in SonarCFamily 6.18 part of SQ 8.8
     assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 8));
 
@@ -190,7 +187,7 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisCobol() throws Exception {
+  void analysisCobol() throws Exception {
     updateProject(PROJECT_KEY_COBOL);
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_COBOL, PROJECT_KEY_COBOL, "src/Custmnt2.cbl",
@@ -199,7 +196,7 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisTsql() throws IOException {
+  void analysisTsql() throws IOException {
     updateProject(PROJECT_KEY_TSQL);
 
     var issueListener = new SaveIssueListener();
@@ -208,7 +205,7 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisApex() throws IOException {
+  void analysisApex() throws IOException {
     updateProject(PROJECT_KEY_APEX);
 
     var issueListener = new SaveIssueListener();

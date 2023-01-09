@@ -19,22 +19,21 @@
  */
 package its;
 
-import com.sonar.orchestrator.Orchestrator;
+import com.sonar.orchestrator.OrchestratorExtension;
 import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
-import its.tools.OrchestratorUtils;
-import its.tools.PluginLocator;
+import its.utils.OrchestratorUtils;
+import its.utils.PluginLocator;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Set;
 import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.sonarqube.ws.client.WsClient;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
@@ -44,29 +43,25 @@ import org.sonarsource.sonarlint.core.commons.Language;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ConnectedEmbeddedPluginTest extends AbstractConnectedTest {
+class ConnectedEmbeddedPluginTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_C = "sample-c";
 
-  @ClassRule
-  public static Orchestrator ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
+  @RegisterExtension
+  static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
     .setEdition(Edition.ENTERPRISE)
     .activateLicense()
     .keepBundledPlugins()
     .restoreProfileAtStartup(FileLocation.ofClasspath("/c-sonarlint.xml"))
     .build();
 
-  @ClassRule
-  public static TemporaryFolder temp = new TemporaryFolder();
-
-  private static WsClient adminWsClient;
+  @TempDir
   private static Path sonarUserHome;
 
   private ConnectedSonarLintEngine engine;
 
-  @BeforeClass
-  public static void prepare() throws Exception {
-    adminWsClient = newAdminWsClient(ORCHESTRATOR);
-    sonarUserHome = temp.newFolder().toPath();
+  @BeforeAll
+  static void prepare() throws Exception {
+    var adminWsClient = newAdminWsClient(ORCHESTRATOR);
 
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
@@ -74,8 +69,8 @@ public class ConnectedEmbeddedPluginTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_C, "c", "SonarLint IT C");
   }
 
-  @Before
-  public void start() {
+  @BeforeEach
+  void start() {
     FileUtils.deleteQuietly(sonarUserHome.toFile());
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId("orchestrator")
@@ -86,8 +81,8 @@ public class ConnectedEmbeddedPluginTest extends AbstractConnectedTest {
       .build());
   }
 
-  @After
-  public void stop() {
+  @AfterEach
+  void stop() {
     try {
       engine.stop(true);
     } catch (Exception e) {
@@ -100,7 +95,7 @@ public class ConnectedEmbeddedPluginTest extends AbstractConnectedTest {
    * while embedded analyzer contains the new rule key. So SLCORE should do the translation.
    */
   @Test
-  public void analysisWithDeprecatedRuleKey() throws Exception {
+  void analysisWithDeprecatedRuleKey() throws Exception {
     updateProject(PROJECT_KEY_C);
     var issueListener = new SaveIssueListener();
 

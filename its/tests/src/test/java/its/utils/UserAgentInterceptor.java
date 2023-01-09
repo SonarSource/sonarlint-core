@@ -17,18 +17,29 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package its.tools;
+package its.utils;
 
-import com.sonar.orchestrator.Orchestrator;
-import com.sonar.orchestrator.OrchestratorBuilder;
+import java.io.IOException;
+import okhttp3.Interceptor;
+import okhttp3.Response;
 
-import static its.tools.ItUtils.SONAR_VERSION;
+/**
+ * Adds a custom {@code User-Agent} header to OkHttp requests.
+ */
+public class UserAgentInterceptor implements Interceptor {
 
-public class OrchestratorUtils {
-  public static OrchestratorBuilder defaultEnvBuilder() {
-    return Orchestrator.builderEnv()
-      .defaultForceAuthentication()
-      .useDefaultAdminCredentialsForBuilds(true)
-      .setSonarVersion(SONAR_VERSION);
+  public final String userAgent;
+
+  public UserAgentInterceptor(String userAgent) {
+    this.userAgent = userAgent;
+  }
+
+  @Override
+  public Response intercept(Chain chain) throws IOException {
+    var userAgentRequest = chain.request()
+      .newBuilder()
+      .header("User-Agent", userAgent)
+      .build();
+    return chain.proceed(userAgentRequest);
   }
 }

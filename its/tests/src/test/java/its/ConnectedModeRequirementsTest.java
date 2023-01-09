@@ -19,9 +19,9 @@
  */
 package its;
 
-import com.sonar.orchestrator.Orchestrator;
+import com.sonar.orchestrator.OrchestratorExtension;
 import com.sonar.orchestrator.locator.FileLocation;
-import its.tools.OrchestratorUtils;
+import its.utils.OrchestratorUtils;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,14 +32,12 @@ import java.util.Set;
 import java.util.function.Consumer;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.SystemUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
@@ -53,37 +51,31 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
+class ConnectedModeRequirementsTest extends AbstractConnectedTest {
 
   private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
   private static final String CUSTOM_JAVA_PLUGIN_KEY = "custom";
   private static final String PROJECT_KEY_JAVASCRIPT = "sample-javascript";
   private static final String PROJECT_KEY_TYPESCRIPT = "sample-typescript";
 
-  @ClassRule
-  public static Orchestrator ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
+  @RegisterExtension
+  static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
     .keepBundledPlugins()
     .addPlugin(FileLocation.of("../plugins/java-custom-rules/target/java-custom-rules-plugin.jar"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/typescript-sonarlint.xml"))
     .build();
 
-  @ClassRule
-  public static TemporaryFolder temp = new TemporaryFolder();
-
-  @Rule
-  public ExpectedException exception = ExpectedException.none();
-
+  @TempDir
   private static Path sonarUserHome;
 
   private ConnectedSonarLintEngine engine;
   private final List<String> logs = new ArrayList<>();
 
-  @BeforeClass
-  public static void prepare() throws Exception {
-    sonarUserHome = temp.newFolder().toPath();
+  @BeforeAll
+  static void prepare() throws Exception {
 
     newAdminWsClient(ORCHESTRATOR).users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
@@ -93,8 +85,8 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_TYPESCRIPT, "ts", "SonarLint IT Typescript");
   }
 
-  @Before
-  public void start() {
+  @BeforeEach
+  void start() {
     FileUtils.deleteQuietly(sonarUserHome.toFile());
   }
 
@@ -113,8 +105,8 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     return new ConnectedSonarLintEngineImpl(builder.build());
   }
 
-  @After
-  public void stop() {
+  @AfterEach
+  void stop() {
     try {
       engine.stop(true);
     } catch (Exception e) {
@@ -123,7 +115,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void dontDownloadPluginIfNotEnabledLanguage() {
+  void dontDownloadPluginIfNotEnabledLanguage() {
     engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP, Language.TS));
     engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), emptySet(), null);
     assertThat(logs).contains("[SYNC] Code analyzer 'java' is disabled in SonarLint (language not enabled). Skip downloading it.");
@@ -138,7 +130,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void dontFailIfMissingDependentPlugin() {
+  void dontFailIfMissingDependentPlugin() {
     engine = createEngine(e -> e.addEnabledLanguages(Language.PHP));
     engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), emptySet(), null);
     assertThat(logs).contains("Plugin 'Java Custom Rules Plugin' dependency on 'java' is unsatisfied. Skip loading it.");
@@ -147,7 +139,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void dontLoadExcludedPlugin() {
+  void dontLoadExcludedPlugin() {
     engine = createEngine(e -> e.addEnabledLanguages(Language.JAVA, Language.JS, Language.PHP));
     engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), emptySet(), null);
     assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains(Language.JAVA.getPluginKey());
@@ -164,7 +156,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
 
   // SLCORE-259
   @Test
-  public void analysisJavascriptWithoutTypescript() throws Exception {
+  void analysisJavascriptWithoutTypescript() throws Exception {
     engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP));
     engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVASCRIPT), null);
     assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains("javascript");
@@ -183,7 +175,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   *  For backward compatibility, we "hacked" the core to prevent typescript analysis through SonarJS when typescript plugin is excluded.
   */
   @Test
-  public void dontAnalyzeTypescriptIfExcluded() throws Exception {
+  void dontAnalyzeTypescriptIfExcluded() throws Exception {
     var tsAnalysisConfig = createAnalysisConfiguration(PROJECT_KEY_TYPESCRIPT, PROJECT_KEY_TYPESCRIPT, "src/Person.ts");
 
     var pb = new ProcessBuilder("npm" + (SystemUtils.IS_OS_WINDOWS ? ".cmd" : ""), "install")

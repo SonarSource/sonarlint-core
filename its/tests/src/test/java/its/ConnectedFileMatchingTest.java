@@ -19,9 +19,10 @@
  */
 package its;
 
-import com.sonar.orchestrator.Orchestrator;
-import its.tools.ItUtils;
-import its.tools.OrchestratorUtils;
+import com.sonar.orchestrator.OrchestratorExtension;
+import its.utils.ItUtils;
+import its.utils.OrchestratorUtils;
+import its.utils.TestClientInputFile;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -30,13 +31,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
@@ -46,34 +46,31 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEng
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ConnectedFileMatchingTest extends AbstractConnectedTest {
+class ConnectedFileMatchingTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY = "com.sonarsource.it.samples:multi-modules-sample";
 
-  @ClassRule
-  public static Orchestrator ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
+  @RegisterExtension
+  static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
     .keepBundledPlugins()
     .setServerProperty("sonar.projectCreation.mainBranchName", MAIN_BRANCH_NAME)
     .build();
 
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
-
+  @TempDir
   private static Path sonarUserHome;
 
   private ConnectedSonarLintEngine engine;
   private final List<String> logs = new ArrayList<>();
 
-  @BeforeClass
-  public static void prepare() {
+  @BeforeAll
+  static void prepare() {
     newAdminWsClient(ORCHESTRATOR).users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
     // Project has 5 modules: B, B/B1, B/B2, A, A/A1 and A/A2
     analyzeMavenProject(ORCHESTRATOR, "multi-modules-sample");
   }
 
-  @Before
-  public void start() throws IOException {
-    sonarUserHome = temp.newFolder().toPath();
+  @BeforeEach
+  void start() throws IOException {
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
@@ -85,13 +82,13 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
       .build());
   }
 
-  @After
-  public void stop() {
+  @AfterEach
+  void stop() {
     engine.stop(true);
   }
 
   @Test
-  public void should_match_files_when_importing_entire_project() throws IOException {
+  void should_match_files_when_importing_entire_project() throws IOException {
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
 
     // entire project imported in IDE
@@ -121,7 +118,7 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void should_match_files_when_importing_module() throws IOException {
+  void should_match_files_when_importing_module() throws IOException {
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
 
     // only module B1 imported in IDE

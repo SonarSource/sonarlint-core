@@ -19,12 +19,12 @@
  */
 package its;
 
-import com.sonar.orchestrator.Orchestrator;
+import com.sonar.orchestrator.OrchestratorExtension;
 import com.sonar.orchestrator.build.SonarScanner;
 import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
-import its.tools.OrchestratorUtils;
+import its.utils.OrchestratorUtils;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -32,12 +32,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarqube.ws.Issues.Issue;
 import org.sonarqube.ws.client.issues.DoTransitionRequest;
 import org.sonarqube.ws.client.issues.SearchRequest;
@@ -52,26 +51,23 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 
-import static its.tools.ItUtils.SONAR_VERSION;
+import static its.utils.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
+class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
   // Use the pattern of long living branches in SQ 7.9, else we only have issues on changed files
   private static final String SHORT_BRANCH = "feature/short_living";
   private static final String LONG_BRANCH = "branch-1.x";
 
   private static final String PROJECT_KEY = "sample-xoo";
 
-  @ClassRule
-  public static Orchestrator ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
+  @RegisterExtension
+  static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
     .setEdition(Edition.DEVELOPER)
     .activateLicense()
     .addPlugin(MavenLocation.of("org.sonarsource.sonarqube", "sonar-xoo-plugin", SONAR_VERSION))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/xoo-sonarlint.xml"))
     .build();
-
-  @ClassRule
-  public static TemporaryFolder temp = new TemporaryFolder();
 
   private static ConnectedSonarLintEngine engine;
 
@@ -80,12 +76,14 @@ public class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
   private static Issue overridenSeverityIssue;
   private static Issue overridenTypeIssue;
 
-  @BeforeClass
+  @TempDir
+  private static Path sonarUserHome;
+
+  @BeforeAll
   public static void prepare() throws IOException {
     var adminWsClient = newAdminWsClient(ORCHESTRATOR);
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
-    Path sonarUserHome = temp.newFolder().toPath();
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
@@ -134,13 +132,13 @@ public class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
     }
   }
 
-  @AfterClass
+  @AfterAll
   public static void stop() {
     engine.stop(true);
   }
 
   @Test
-  public void sync_all_project_branches() {
+  void sync_all_project_branches() {
     engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY), null);
 
     // Starting from SQ 8.1, concept of short vs long living branch has been removed
@@ -153,7 +151,7 @@ public class ConnectedDeveloperIssueDownloadTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void download_all_issues_for_branch() {
+  void download_all_issues_for_branch() {
     engine.downloadAllServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, LONG_BRANCH, null);
 
     var file1Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), LONG_BRANCH, "src/500lines.xoo");

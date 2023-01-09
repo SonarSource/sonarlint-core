@@ -19,25 +19,23 @@
  */
 package its;
 
-import com.sonar.orchestrator.Orchestrator;
+import com.sonar.orchestrator.OrchestratorExtension;
 import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.version.Version;
-import its.tools.OrchestratorUtils;
+import its.utils.OrchestratorUtils;
 import java.io.File;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.settings.ResetRequest;
 import org.sonarqube.ws.client.users.CreateRequest;
@@ -54,12 +52,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
-public class ConnectedModeHotspotsTest extends AbstractConnectedTest {
+class ConnectedModeHotspotsTest extends AbstractConnectedTest {
 
   private static final String PROJECT_KEY_JAVA_HOTSPOT = "sample-java-hotspot";
 
-  @ClassRule
-  public static Orchestrator ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
+  @RegisterExtension
+  static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
     .setEdition(Edition.DEVELOPER)
     .activateLicense()
     .keepBundledPlugins()
@@ -71,19 +69,15 @@ public class ConnectedModeHotspotsTest extends AbstractConnectedTest {
     .setServerProperty("sonar.projectCreation.mainBranchName", MAIN_BRANCH_NAME)
     .build();
 
-  @ClassRule
-  public static TemporaryFolder temp = new TemporaryFolder();
-
   private static WsClient adminWsClient;
+  @TempDir
   private static Path sonarUserHome;
 
   private ConnectedSonarLintEngine engine;
-  private List<String> logs;
 
-  @BeforeClass
-  public static void prepare() throws Exception {
+  @BeforeAll
+  static void prepare() throws Exception {
     adminWsClient = newAdminWsClient(ORCHESTRATOR);
-    sonarUserHome = temp.newFolder().toPath();
 
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
@@ -95,19 +89,17 @@ public class ConnectedModeHotspotsTest extends AbstractConnectedTest {
     analyzeMavenProject(ORCHESTRATOR, PROJECT_KEY_JAVA_HOTSPOT, Map.of("sonar.projectKey", PROJECT_KEY_JAVA_HOTSPOT));
   }
 
-  @Before
-  public void start() {
+  @BeforeEach
+  void start() {
     FileUtils.deleteQuietly(sonarUserHome.toFile());
     var globalProps = new HashMap<String, String>();
     globalProps.put("sonar.global.label", "It works");
-    logs = new ArrayList<>();
 
     var globalConfig = ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
       .addEnabledLanguage(Language.JAVA)
       .setLogOutput((msg, level) -> {
-        logs.add(msg);
         System.out.println(msg);
       })
       .setExtraProperties(globalProps)
@@ -116,8 +108,8 @@ public class ConnectedModeHotspotsTest extends AbstractConnectedTest {
     engine = new ConnectedSonarLintEngineImpl(globalConfig);
   }
 
-  @After
-  public void stop() {
+  @AfterEach
+  void stop() {
     adminWsClient.settings().reset(new ResetRequest().setKeys(singletonList("sonar.java.file.suffixes")));
     try {
       engine.stop(true);
@@ -127,7 +119,7 @@ public class ConnectedModeHotspotsTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void reportHotspots() throws Exception {
+  void reportHotspots() throws Exception {
     updateProject();
 
     var issueListener = new SaveIssueListener();
@@ -147,9 +139,8 @@ public class ConnectedModeHotspotsTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void loadHotspotRuleDescription() throws Exception {
+  void loadHotspotRuleDescription() throws Exception {
     assumeThat(ORCHESTRATOR.getServer().version()).isGreaterThanOrEqualTo(Version.create("9.7"));
-
     updateProject();
 
     var ruleDetails = engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey(ORCHESTRATOR, "S4792"), PROJECT_KEY_JAVA_HOTSPOT).get();
@@ -162,7 +153,7 @@ public class ConnectedModeHotspotsTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void downloadsServerHotspotsForProject() {
+  void downloadsServerHotspotsForProject() {
     updateProject();
 
     engine.downloadAllServerHotspots(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVA_HOTSPOT, "master", null);
@@ -178,7 +169,7 @@ public class ConnectedModeHotspotsTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void downloadsServerHotspotsForFile() {
+  void downloadsServerHotspotsForFile() {
     updateProject();
     var projectBinding = new ProjectBinding(PROJECT_KEY_JAVA_HOTSPOT, "", "ide");
 

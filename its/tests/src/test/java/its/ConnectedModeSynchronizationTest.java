@@ -19,19 +19,19 @@
  */
 package its;
 
-import com.sonar.orchestrator.Orchestrator;
+import com.sonar.orchestrator.OrchestratorExtension;
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.locator.FileLocation;
-import its.tools.OrchestratorUtils;
+import its.utils.OrchestratorUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
@@ -40,25 +40,22 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-public class ConnectedModeSynchronizationTest extends AbstractConnectedTest {
+class ConnectedModeSynchronizationTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_LANGUAGE_MIX = "sample-language-mix";
 
-  @ClassRule
-  public static Orchestrator ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
+  @RegisterExtension
+  static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
     .keepBundledPlugins()
     .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/python-sonarlint.xml"))
     .build();
 
-  @ClassRule
-  public static TemporaryFolder temp = new TemporaryFolder();
-
   private static ConnectedSonarLintEngine engine;
 
-  @BeforeClass
-  public static void prepare() throws IOException {
+  @BeforeAll
+  static void prepare(@TempDir Path sonarUserHome) throws IOException {
     var adminWsClient = newAdminWsClient(ORCHESTRATOR);
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
@@ -73,7 +70,6 @@ public class ConnectedModeSynchronizationTest extends AbstractConnectedTest {
       .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
       .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
 
-    Path sonarUserHome = temp.newFolder().toPath();
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
@@ -84,15 +80,14 @@ public class ConnectedModeSynchronizationTest extends AbstractConnectedTest {
 
   }
 
-  @AfterClass
+  @AfterAll
   public static void stop() {
     engine.stop(true);
   }
 
   @Test
-  public void sync_all_issues_of_enabled_languages() {
-    assumeTrue("SonarQube should support pulling issues",
-      ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6));
+  void sync_all_issues_of_enabled_languages() {
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6), "SonarQube should support pulling issues");
 
     engine.syncServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_LANGUAGE_MIX, MAIN_BRANCH_NAME, null);
 
