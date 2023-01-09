@@ -54,7 +54,7 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import static its.utils.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 
-class ConnectedCommunityIssueDownloadTest extends AbstractConnectedTest {
+class ConnectedCommunityIssueDownloadTests extends AbstractConnectedTests {
   private static final String PROJECT_KEY = "sample-xoo";
 
   @RegisterExtension

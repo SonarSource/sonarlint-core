@@ -49,7 +49,7 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-class CommercialAnalyzerTest extends AbstractConnectedTest {
+class CommercialAnalyzerTests extends AbstractConnectedTests {
   private static final String PROJECT_KEY_COBOL = "sample-cobol";
   private static final String PROJECT_KEY_C = "sample-c";
   private static final String PROJECT_KEY_TSQL = "sample-tsql";

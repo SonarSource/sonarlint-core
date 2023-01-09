@@ -52,7 +52,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
-class ConnectedModeHotspotsTest extends AbstractConnectedTest {
+class ConnectedModeHotspotsTests extends AbstractConnectedTests {
 
   private static final String PROJECT_KEY_JAVA_HOTSPOT = "sample-java-hotspot";
 

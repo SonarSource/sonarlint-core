@@ -43,7 +43,7 @@ import org.sonarsource.sonarlint.core.commons.Language;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class ConnectedEmbeddedPluginTest extends AbstractConnectedTest {
+class ConnectedEmbeddedPluginTests extends AbstractConnectedTests {
   private static final String PROJECT_KEY_C = "sample-c";
 
   @RegisterExtension

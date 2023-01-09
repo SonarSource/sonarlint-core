@@ -50,7 +50,7 @@ import org.sonarsource.sonarlint.core.commons.RuleKey;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-class StandaloneTest {
+class StandaloneTests {
 
   private static StandaloneSonarLintEngineImpl sonarlint;
   private static List<String> logs;

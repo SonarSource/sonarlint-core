@@ -63,7 +63,7 @@ import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
-class ConnectedModeBackendTest extends AbstractConnectedTest {
+class ConnectedModeBackendTests extends AbstractConnectedTests {
 
   private static final String PROJECT_KEY_JAVA_TAINT = "sample-java-taint";
   private static final String PROJECT_KEY_JAVA_HOTSPOT = "sample-java-hotspot";
@@ -145,7 +145,7 @@ class ConnectedModeBackendTest extends AbstractConnectedTest {
       var extendedDescription = description.getRight();
       assertThat(extendedDescription.getIntroductionHtmlContent()).isNull();
       assertThat(extendedDescription.getTabs())
-        .flatExtracting(ConnectedModeBackendTest::extractTabContent)
+        .flatExtracting(ConnectedModeBackendTests::extractTabContent)
         .contains(
           "Why is this an issue?",
           "<p>Path injections occur when an application uses untrusted data to construct a file path and access this file without validating its path first.</p>\n" +
@@ -192,7 +192,7 @@ class ConnectedModeBackendTest extends AbstractConnectedTest {
     var extendedDescription = activeRuleDetailsResponse.details().getDescription().getRight();
     assertThat(extendedDescription.getIntroductionHtmlContent()).isNull();
     assertThat(extendedDescription.getTabs())
-      .flatExtracting(ConnectedModeBackendTest::extractTabContent)
+      .flatExtracting(ConnectedModeBackendTests::extractTabContent)
       .containsOnly(
         "Why is this an issue?",
         "<p>Configuring loggers is security-sensitive. It has led in the past to the following vulnerabilities:</p>\n" +

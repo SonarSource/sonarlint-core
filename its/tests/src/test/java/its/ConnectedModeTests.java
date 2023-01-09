@@ -79,7 +79,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 
-class ConnectedModeTest extends AbstractConnectedTest {
+class ConnectedModeTests extends AbstractConnectedTests {
 
   private static final String PROJECT_KEY_JAVA = "sample-java";
   private static final String PROJECT_KEY_JAVA_CUSTOM_SENSOR = "sample-java-custom-sensor";

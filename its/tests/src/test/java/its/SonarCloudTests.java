@@ -73,7 +73,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.waitAtMost;
 
 @Tag("SonarCloud")
-class SonarCloudTest extends AbstractConnectedTest {
+class SonarCloudTests extends AbstractConnectedTests {
   private static final String SONAR_JAVA_FILE_SUFFIXES = "sonar.java.file.suffixes";
   private static final String SONARCLOUD_STAGING_URL = "https://sc-staging.io";
   private static final String SONARCLOUD_ORGANIZATION = "sonarlint-it";

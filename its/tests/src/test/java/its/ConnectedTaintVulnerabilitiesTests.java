@@ -82,7 +82,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-class ConnectedTaintVulnerabilitiesTest extends AbstractConnectedTest {
+class ConnectedTaintVulnerabilitiesTests extends AbstractConnectedTests {
   private static final String PROJECT_KEY_JAVA = "sample-java";
   private static final String PROJECT_KEY_JAVA_TAINT = "sample-java-taint";
 
