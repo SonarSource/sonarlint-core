@@ -17,7 +17,19 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package its;
+package its.utils;
 
-public interface SonarCloud {
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+public class PluginLocator {
+
+  public static Path getCppPluginPath() {
+    return getPluginPath("sonar-cfamily-plugin-6.32.0.44918.jar");
+  }
+
+  private static Path getPluginPath(String file) {
+    return Paths.get("target/plugins/").resolve(file);
+  }
+
 }

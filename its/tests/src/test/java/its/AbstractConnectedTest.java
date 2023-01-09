@@ -24,6 +24,9 @@ import com.google.common.collect.Maps;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.http.HttpMethod;
+import its.utils.PreemptiveAuthenticatorInterceptor;
+import its.utils.TestClientInputFile;
+import its.utils.UserAgentInterceptor;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -63,7 +66,7 @@ import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.http.HttpConnectionListener;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class AbstractConnectedTest {
   protected static final String SONARLINT_USER = "sonarlint";
@@ -360,7 +363,7 @@ public abstract class AbstractConnectedTest {
       .setParam("key", qualityProfile.getKey())
       .setParam("rule", ruleKey);
     try (var response = adminWsClient.wsConnector().call(request)) {
-      assertTrue("Unable to deactivate rule", response.isSuccessful());
+      assertTrue(response.isSuccessful(), "Unable to deactivate rule");
     }
   }
 
@@ -384,7 +387,7 @@ public abstract class AbstractConnectedTest {
       .setParam("issue", issueKey)
       .setParam("transition", status);
     try (var response = adminWsClient.wsConnector().call(request)) {
-      assertTrue("Unable to resolve issue", response.isSuccessful());
+      assertTrue(response.isSuccessful(), "Unable to resolve issue");
     }
   }
 

@@ -19,6 +19,7 @@
  */
 package its;
 
+import its.utils.PreemptiveAuthenticatorInterceptor;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -38,13 +39,12 @@ import okhttp3.OkHttpClient;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteException;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarqube.ws.MediaTypes;
 import org.sonarqube.ws.client.GetRequest;
 import org.sonarqube.ws.client.HttpConnector;
@@ -72,8 +72,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.waitAtMost;
 
-@Category(SonarCloud.class)
-public class SonarCloudTest extends AbstractConnectedTest {
+@Tag("SonarCloud")
+class SonarCloudTest extends AbstractConnectedTest {
   private static final String SONAR_JAVA_FILE_SUFFIXES = "sonar.java.file.suffixes";
   private static final String SONARCLOUD_STAGING_URL = "https://sc-staging.io";
   private static final String SONARCLOUD_ORGANIZATION = "sonarlint-it";
@@ -98,23 +98,21 @@ public class SonarCloudTest extends AbstractConnectedTest {
     .addNetworkInterceptor(new PreemptiveAuthenticatorInterceptor(Credentials.basic(SONARCLOUD_USER, SONARCLOUD_PASSWORD)))
     .build();
 
-  @ClassRule
-  public static TemporaryFolder temp = new TemporaryFolder();
   private final ProgressMonitor progress = new ProgressMonitor(null);
 
   private static WsClient adminWsClient;
+  @TempDir
   private static Path sonarUserHome;
 
   private static ConnectedSonarLintEngine engine;
 
   private static int randomPositiveInt;
 
-  @BeforeClass
-  public static void prepare() throws Exception {
+  @BeforeAll
+  static void prepare() throws Exception {
     randomPositiveInt = new Random().nextInt() & Integer.MAX_VALUE;
 
     adminWsClient = newAdminWsClient();
-    sonarUserHome = temp.newFolder().toPath();
 
     restoreProfile("java-sonarlint.xml");
     restoreProfile("java-sonarlint-package.xml");
@@ -204,8 +202,8 @@ public class SonarCloudTest extends AbstractConnectedTest {
     engine.sync(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), ALL_PROJECTS, null);
   }
 
-  @AfterClass
-  public static void cleanup() {
+  @AfterAll
+  static void cleanup() {
     var request = new PostRequest("api/projects/bulk_delete");
     request.setParam("q", "-" + randomPositiveInt);
     request.setParam("organization", SONARCLOUD_ORGANIZATION);
@@ -252,8 +250,8 @@ public class SonarCloudTest extends AbstractConnectedTest {
     return "sonarlint-its-" + key + "-" + randomPositiveInt;
   }
 
-  @After
-  public void cleanup_after_each() {
+  @AfterEach
+  void cleanup_after_each() {
     // This property is altered in analysisUseConfiguration test
     adminWsClient.settings().reset(new ResetRequest()
       .setKeys(Collections.singletonList(SONAR_JAVA_FILE_SUFFIXES))
@@ -265,13 +263,13 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void sync_all_project_branches() throws IOException {
+  void sync_all_project_branches() throws IOException {
     assertThat(engine.getServerBranches(projectKey(PROJECT_KEY_JAVA)).getBranchNames()).containsOnly(MAIN_BRANCH_NAME);
     assertThat(engine.getServerBranches(projectKey(PROJECT_KEY_JAVA)).getMainBranchName()).contains(MAIN_BRANCH_NAME);
   }
 
   @Test
-  public void downloadProjects() {
+  void downloadProjects() {
     provisionProject("foo-bar", "Foo");
     assertThat(engine.downloadAllProjects(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), null)).containsKeys(projectKey("foo-bar"),
       projectKey(PROJECT_KEY_JAVA),
@@ -279,9 +277,9 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void parsingErrorJava() throws IOException {
+  void parsingErrorJava(@TempDir Path tempDir) throws IOException {
     var fileContent = "pac kage its; public class MyTest { }";
-    var testFile = temp.newFile("MyTestParseError.java").toPath();
+    var testFile = tempDir.resolve("MyTestParseError.java");
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
 
     var issueListener = new SaveIssueListener();
@@ -291,9 +289,9 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void parsingErrorJavascript() throws IOException {
+  void parsingErrorJavascript(@TempDir Path tempDir) throws IOException {
     var fileContent = "asd asd";
-    var testFile = temp.newFile("MyTest.js").toPath();
+    var testFile = tempDir.resolve("MyTest.js");
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
 
     var issueListener = new SaveIssueListener();
@@ -303,14 +301,14 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void testRuleDescription() throws Exception {
+  void testRuleDescription() throws Exception {
     assertThat(
       engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), "java:S106", projectKey(PROJECT_KEY_JAVA)).get().getHtmlDescription())
         .contains("When logging a message there are");
   }
 
   @Test
-  public void verifyExtendedDescription() throws Exception {
+  void verifyExtendedDescription() throws Exception {
     var ruleKey = "java:S106";
 
     var extendedDescription = "my dummy extended description";
@@ -329,35 +327,35 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisJavascript() throws Exception {
+  void analysisJavascript() throws Exception {
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVASCRIPT), PROJECT_KEY_JAVASCRIPT, "src/Person.js"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
 
   @Test
-  public void analysisPHP() throws Exception {
+  void analysisPHP() throws Exception {
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_PHP), PROJECT_KEY_PHP, "src/Math.php"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
 
   @Test
-  public void analysisPython() throws Exception {
+  void analysisPython() throws Exception {
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_PYTHON), PROJECT_KEY_PYTHON, "src/hello.py"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
 
   @Test
-  public void analysisWeb() throws IOException {
+  void analysisWeb() throws IOException {
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_WEB), PROJECT_KEY_WEB, "src/file.html"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
 
   @Test
-  public void analysisUseQualityProfile() throws Exception {
+  void analysisUseQualityProfile() throws Exception {
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA), PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
@@ -368,7 +366,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void dontReportHotspots() throws Exception {
+  void dontReportHotspots() throws Exception {
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT,
       "src/main/java/foo/Foo.java",
@@ -379,7 +377,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisIssueOnDirectory() throws Exception {
+  void analysisIssueOnDirectory() throws Exception {
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA_PACKAGE), PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
@@ -392,7 +390,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisUseEmptyQualityProfile() throws Exception {
+  void analysisUseEmptyQualityProfile() throws Exception {
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA_EMPTY), PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
@@ -403,7 +401,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisUseConfiguration() throws Exception {
+  void analysisUseConfiguration() throws Exception {
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA), PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
@@ -425,13 +423,13 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void downloadUserOrganizations() {
+  void downloadUserOrganizations() {
     var helper = new ServerApi(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT)).organization();
     assertThat(helper.listUserOrganizations(progress)).hasSize(1);
   }
 
   @Test
-  public void getOrganization() {
+  void getOrganization() {
     var helper = new ServerApi(sonarcloudEndpoint(null), new SonarLintHttpClientOkHttpImpl(SC_CLIENT)).organization();
     var org = helper.getOrganization(SONARCLOUD_ORGANIZATION, progress);
     assertThat(org).isPresent();
@@ -440,42 +438,42 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void getProject() {
+  void getProject() {
     var api = new ServerApi(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT)).component();
     assertThat(api.getProject(projectKey("foo"))).isNotPresent();
     assertThat(api.getProject(projectKey(PROJECT_KEY_RUBY))).isPresent();
   }
 
   @Test
-  public void analysisRuby() throws Exception {
+  void analysisRuby() throws Exception {
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_RUBY), PROJECT_KEY_RUBY, "src/hello.rb"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
 
   @Test
-  public void analysisKotlin() throws Exception {
+  void analysisKotlin() throws Exception {
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_KOTLIN), PROJECT_KEY_KOTLIN, "src/hello.kt"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
 
   @Test
-  public void analysisScala() throws Exception {
+  void analysisScala() throws Exception {
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_SCALA), PROJECT_KEY_SCALA, "src/Hello.scala"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
 
   @Test
-  public void analysisXml() throws Exception {
+  void analysisXml() throws Exception {
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_XML), PROJECT_KEY_XML, "src/foo.xml"), issueListener, (m, l) -> System.out.println(m), null);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
 
   @Test
-  public void testConnection() throws ExecutionException, InterruptedException {
+  void testConnection() throws ExecutionException, InterruptedException {
     assertThat(
       new ConnectionValidator(new ServerApiHelper(sonarcloudEndpoint(SONARCLOUD_ORGANIZATION), new SonarLintHttpClientOkHttpImpl(SC_CLIENT))).validateConnection().get().success())
         .isTrue();
@@ -488,7 +486,7 @@ public class SonarCloudTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void download_taint_vulnerabilities_for_file() throws Exception {
+  void download_taint_vulnerabilities_for_file() throws Exception {
 
     ProjectBinding projectBinding = new ProjectBinding(projectKey(PROJECT_KEY_JAVA_TAINT), "", "");
 

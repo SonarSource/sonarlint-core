@@ -17,19 +17,26 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package its.tools;
+package its.utils;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.IOException;
+import okhttp3.Interceptor;
+import okhttp3.Response;
 
-public class PluginLocator {
+public class PreemptiveAuthenticatorInterceptor implements Interceptor {
 
-  public static Path getCppPluginPath() {
-    return getPluginPath("sonar-cfamily-plugin-6.32.0.44918.jar");
+  public final String credentials;
+
+  public PreemptiveAuthenticatorInterceptor(String credentials) {
+    this.credentials = credentials;
   }
 
-  private static Path getPluginPath(String file) {
-    return Paths.get("target/plugins/").resolve(file);
+  @Override
+  public Response intercept(Chain chain) throws IOException {
+    var request = chain.request()
+      .newBuilder()
+      .header("Authorization", credentials)
+      .build();
+    return chain.proceed(request);
   }
-
 }

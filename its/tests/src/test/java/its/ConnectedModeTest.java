@@ -20,10 +20,10 @@
 package its;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.sonar.orchestrator.Orchestrator;
+import com.sonar.orchestrator.OrchestratorExtension;
 import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
-import its.tools.OrchestratorUtils;
+import its.utils.OrchestratorUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -40,12 +40,12 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarqube.ws.Hotspots;
 import org.sonarqube.ws.Qualityprofiles.SearchWsResponse.QualityProfile;
 import org.sonarqube.ws.client.PostRequest;
@@ -75,11 +75,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.waitAtMost;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 
-public class ConnectedModeTest extends AbstractConnectedTest {
+class ConnectedModeTest extends AbstractConnectedTest {
 
   private static final String PROJECT_KEY_JAVA = "sample-java";
   private static final String PROJECT_KEY_JAVA_CUSTOM_SENSOR = "sample-java-custom-sensor";
@@ -103,8 +103,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     return javaRuleKey(ORCHESTRATOR, key);
   }
 
-  @ClassRule
-  public static Orchestrator ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
+  @RegisterExtension
+  static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
     .setEdition(Edition.DEVELOPER)
     .activateLicense()
     .keepBundledPlugins()
@@ -135,20 +135,17 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     .setServerProperty("sonar.projectCreation.mainBranchName", MAIN_BRANCH_NAME)
     .build();
 
-  @ClassRule
-  public static TemporaryFolder temp = new TemporaryFolder();
-
   private static WsClient adminWsClient;
+  @TempDir
   private static Path sonarUserHome;
   private ConnectedGlobalConfiguration globalConfig;
 
   private ConnectedSonarLintEngine engine;
   private List<String> logs;
 
-  @BeforeClass
-  public static void prepare() throws Exception {
+  @BeforeAll
+  static void prepare() throws Exception {
     adminWsClient = newAdminWsClient(ORCHESTRATOR);
-    sonarUserHome = temp.newFolder().toPath();
 
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
@@ -190,8 +187,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     analyzeMavenProject(ORCHESTRATOR, PROJECT_KEY_JAVA, Map.of("sonar.projectKey", PROJECT_KEY_JAVA));
   }
 
-  @Before
-  public void start() {
+  @BeforeEach
+  void start() {
     FileUtils.deleteQuietly(sonarUserHome.toFile());
     Map<String, String> globalProps = new HashMap<>();
     globalProps.put("sonar.global.label", "It works");
@@ -227,8 +224,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint.xml"));
   }
 
-  @After
-  public void stop() {
+  @AfterEach
+  void stop() {
     adminWsClient.settings().reset(new ResetRequest().setKeys(singletonList("sonar.java.file.suffixes")));
     adminWsClient.settings().reset(new ResetRequest().setKeys(singletonList("sonar.java.file.suffixes")).setComponent(PROJECT_KEY_JAVA));
     try {
@@ -239,13 +236,13 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void downloadProjects() {
+  void downloadProjects() {
     provisionProject(ORCHESTRATOR, "foo-bar", "Foo");
     assertThat(engine.downloadAllProjects(endpointParams(ORCHESTRATOR), sqHttpClient(), null)).hasSize(17).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
   }
 
   @Test
-  public void updateNoAuth() {
+  void updateNoAuth() {
     adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("true"));
     try {
       engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClientNoAuth(), PROJECT_KEY_JAVA, null);
@@ -258,9 +255,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void parsingErrorJava() throws IOException {
+  void parsingErrorJava(@TempDir Path tempDir) throws IOException {
     var fileContent = "pac kage its; public class MyTest { }";
-    var testFile = temp.newFile("MyTestParseError.java").toPath();
+    var testFile = tempDir.resolve("MyTestParseError.java");
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
 
     updateProject(PROJECT_KEY_JAVA);
@@ -272,9 +269,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void parsingErrorJavascript() throws IOException {
+  void parsingErrorJavascript(@TempDir Path tempDir) throws IOException {
     var fileContent = "asd asd";
-    var testFile = temp.newFile("MyTest.js").toPath();
+    var testFile = tempDir.resolve("MyTest.js");
     Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
 
     updateProject(PROJECT_KEY_JAVASCRIPT);
@@ -286,7 +283,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void verifyExtendedDescription() throws Exception {
+  void verifyExtendedDescription() throws Exception {
     updateProject(PROJECT_KEY_JAVA);
 
     assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey("S106"), PROJECT_KEY_JAVA).get().getExtendedDescription()).isEmpty();
@@ -312,7 +309,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void verifyMarkdownDescription() throws Exception {
+  void verifyMarkdownDescription() throws Exception {
     updateProject(PROJECT_KEY_JAVA_MARKDOWN);
 
     assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), "mycompany-java:markdown", PROJECT_KEY_JAVA_MARKDOWN).get().getHtmlDescription())
@@ -321,7 +318,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisJavascript() throws Exception {
+  void analysisJavascript() throws Exception {
     updateProject(PROJECT_KEY_JAVASCRIPT);
 
     var issueListener = new SaveIssueListener();
@@ -330,7 +327,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisJavaWithCustomRules() throws Exception {
+  void analysisJavaWithCustomRules() throws Exception {
     updateProject(PROJECT_KEY_JAVA_CUSTOM);
 
     var issueListener = new SaveIssueListener();
@@ -343,7 +340,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisPHP() throws Exception {
+  void analysisPHP() throws Exception {
     updateProject(PROJECT_KEY_PHP);
 
     var issueListener = new SaveIssueListener();
@@ -352,7 +349,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisPython() throws Exception {
+  void analysisPython() throws Exception {
     updateProject(PROJECT_KEY_PYTHON);
 
     var issueListener = new SaveIssueListener();
@@ -361,7 +358,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisWeb() throws IOException {
+  void analysisWeb() throws IOException {
     updateProject(PROJECT_KEY_WEB);
 
     var issueListener = new SaveIssueListener();
@@ -370,7 +367,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisUseQualityProfile() throws Exception {
+  void analysisUseQualityProfile() throws Exception {
     updateProject(PROJECT_KEY_JAVA);
 
     var issueListener = new SaveIssueListener();
@@ -383,7 +380,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void dontReportHotspotsIfNotEnabled() throws Exception {
+  void dontReportHotspotsIfNotEnabled() throws Exception {
     updateProject(PROJECT_KEY_JAVA_HOTSPOT);
 
     var issueListener = new SaveIssueListener();
@@ -396,9 +393,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void canFetchHotspot() throws InvalidProtocolBufferException {
-    assumeTrue("SonarQube should support opening security hotspots",
-      ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 6));
+  void canFetchHotspot() throws InvalidProtocolBufferException {
+    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 6),
+      "SonarQube should support opening security hotspots");
 
     analyzeMavenProject(PROJECT_KEY_JAVA_HOTSPOT);
     var securityHotspotsService = new ServerApi(endpointParams(ORCHESTRATOR), sqHttpClient()).hotspot();
@@ -428,7 +425,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisIssueOnDirectory() throws Exception {
+  void analysisIssueOnDirectory() throws Exception {
     updateProject(PROJECT_KEY_JAVA_PACKAGE);
 
     var issueListener = new SaveIssueListener();
@@ -443,7 +440,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void customSensorsNotExecuted() throws Exception {
+  void customSensorsNotExecuted() throws Exception {
     updateProject(PROJECT_KEY_JAVA_CUSTOM_SENSOR);
 
     var issueListener = new SaveIssueListener();
@@ -456,7 +453,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void globalExtension() throws Exception {
+  void globalExtension() throws Exception {
     updateProject(PROJECT_KEY_GLOBAL_EXTENSION);
 
     assertThat(logs).contains("Start Global Extension It works");
@@ -484,7 +481,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisTemplateRule() throws Exception {
+  void analysisTemplateRule() throws Exception {
     QualityProfile qp = getQualityProfile(adminWsClient, "SonarLint IT Java");
 
     WsRequest request = new PostRequest("/api/rules/create")
@@ -502,7 +499,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       .setParam("key", qp.getKey())
       .setParam("rule", javaRuleKey("myrule"));
     try (var response = adminWsClient.wsConnector().call(request)) {
-      assertTrue("Unable to activate custom rule", response.isSuccessful());
+      assertTrue(response.isSuccessful(), "Unable to activate custom rule");
     }
 
     try {
@@ -524,13 +521,13 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       request = new PostRequest("/api/rules/delete")
         .setParam("key", javaRuleKey("myrule"));
       try (var response = adminWsClient.wsConnector().call(request)) {
-        assertTrue("Unable to delete custom rule", response.isSuccessful());
+        assertTrue(response.isSuccessful(), "Unable to delete custom rule");
       }
     }
   }
 
   @Test
-  public void analysisUseEmptyQualityProfile() throws Exception {
+  void analysisUseEmptyQualityProfile() throws Exception {
     updateProject(PROJECT_KEY_JAVA_EMPTY);
 
     var issueListener = new SaveIssueListener();
@@ -543,7 +540,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisUseConfiguration() throws Exception {
+  void analysisUseConfiguration() throws Exception {
     updateProject(PROJECT_KEY_JAVA);
 
     var issueListener = new SaveIssueListener();
@@ -578,14 +575,14 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void getProject() {
+  void getProject() {
     var api = new ServerApi(endpointParams(ORCHESTRATOR), sqHttpClient()).component();
     assertThat(api.getProject("foo")).isNotPresent();
     assertThat(api.getProject(PROJECT_KEY_RUBY)).isPresent();
   }
 
   @Test
-  public void analysisRuby() throws Exception {
+  void analysisRuby() throws Exception {
     updateProject(PROJECT_KEY_RUBY);
 
     var issueListener = new SaveIssueListener();
@@ -594,7 +591,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisKotlin() throws Exception {
+  void analysisKotlin() throws Exception {
     updateProject(PROJECT_KEY_KOTLIN);
 
     var issueListener = new SaveIssueListener();
@@ -603,7 +600,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisScala() throws Exception {
+  void analysisScala() throws Exception {
     updateProject(PROJECT_KEY_SCALA);
 
     var issueListener = new SaveIssueListener();
@@ -612,7 +609,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisXml() throws Exception {
+  void analysisXml() throws Exception {
     updateProject(PROJECT_KEY_XML);
 
     var issueListener = new SaveIssueListener();
@@ -621,7 +618,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void cleanOldPlugins() throws IOException {
+  void cleanOldPlugins() throws IOException {
     updateProject(PROJECT_KEY_JAVA);
     var pluginsFolderPath = globalConfig.getStorageRoot().resolve(encodeForFs("orchestrator")).resolve("plugins");
     var newFile = pluginsFolderPath.resolve("new_file");
@@ -634,7 +631,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void updatesStorageOnServerEvents() throws IOException, InterruptedException {
+  void updatesStorageOnServerEvents() throws IOException, InterruptedException {
     assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 4));
 
     updateProject(PROJECT_KEY_JAVA);
@@ -660,7 +657,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void updatesStorageWhenIssueResolvedOnServer() throws InterruptedException {
+  void updatesStorageWhenIssueResolvedOnServer() throws InterruptedException {
     assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6));
 
     updateProject(PROJECT_KEY_JAVA);
