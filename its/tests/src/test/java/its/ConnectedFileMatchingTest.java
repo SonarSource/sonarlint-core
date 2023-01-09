@@ -20,8 +20,8 @@
 package its;
 
 import com.sonar.orchestrator.Orchestrator;
+import its.tools.ItUtils;
 import its.tools.OrchestratorUtils;
-import its.tools.SonarlintProject;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -57,9 +57,6 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
-
-  @Rule
-  public SonarlintProject clientTools = new SonarlintProject();
 
   private static Path sonarUserHome;
 
@@ -99,7 +96,7 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
 
     // entire project imported in IDE
     var projectDir = Paths.get("projects/multi-modules-sample").toAbsolutePath();
-    List<String> ideFiles = clientTools.collectAllFiles(projectDir).stream()
+    List<String> ideFiles = ItUtils.collectAllFiles(projectDir).stream()
       .map(f -> projectDir.relativize(f).toString())
       .collect(Collectors.toList());
 
@@ -129,7 +126,7 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
 
     // only module B1 imported in IDE
     var projectDirB1 = Paths.get("projects/multi-modules-sample/module_b/module_b1").toAbsolutePath();
-    List<String> ideFiles = clientTools.collectAllFiles(projectDirB1).stream()
+    List<String> ideFiles = ItUtils.collectAllFiles(projectDirB1).stream()
       .map(f -> projectDirB1.relativize(f).toString())
       .collect(Collectors.toList());
 
@@ -156,7 +153,7 @@ public class ConnectedFileMatchingTest extends AbstractConnectedTest {
   @Override
   protected ConnectedAnalysisConfiguration createAnalysisConfiguration(String projectKey, String projectDirName, String filePath, String... properties) throws IOException {
     var projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
-    List<ClientInputFile> filesToAnalyze = clientTools.collectAllFiles(projectDir)
+    List<ClientInputFile> filesToAnalyze = ItUtils.collectAllFiles(projectDir)
       .stream()
       .map(f -> new TestClientInputFile(projectDir, f, false, StandardCharsets.UTF_8))
       .collect(Collectors.toList());
