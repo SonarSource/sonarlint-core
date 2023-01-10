@@ -24,7 +24,7 @@ public class OthersSectionHtmlContent {
   private OthersSectionHtmlContent() {}
 
   public static final String HTML_CONTENT =
-    "<h2>How can I fix it in another component or framework?</h2>\n" +
+    "<h4>How can I fix it in another component or framework?</h4>\n" +
     "<p>Although the main framework or component you use in your project is not listed, " +
       "you may find helpful content in the instructions we provide.</p>\n" +
     "<p>Caution: The libraries mentioned in these instructions may not be appropriate for your code.</p>\n" +
@@ -33,7 +33,7 @@ public class OthersSectionHtmlContent {
     "<li>Do use libraries that are compatible with the frameworks you are using.</li>\n" +
     "<li>Don't blindly copy and paste the fix ups into your code.</li>\n" +
     "</ul>\n" +
-    "<h2>Help us improve</h2>\n" +
+    "<h4>Help us improve</h4>\n" +
     "<p>Let us know if the instructions we provide do not work for you. " +
       "Tell us which framework you use and why our solution does not work by submitting an idea on the SonarLint product-board.</p>\n" +
     "<a href=\"https://portal.productboard.com/sonarsource/4-sonarlint/submit-idea\">Submit an idea</a>\n" +
