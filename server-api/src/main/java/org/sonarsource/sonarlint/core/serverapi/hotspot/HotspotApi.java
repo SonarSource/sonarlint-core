@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -140,7 +141,7 @@ public class HotspotApi {
 
   private static ServerHotspotDetails.Rule adapt(Hotspots.Rule rule) {
     return new ServerHotspotDetails.Rule(rule.getKey(), rule.getName(), rule.getSecurityCategory(),
-      ServerHotspotDetails.Rule.Probability.valueOf(rule.getVulnerabilityProbability()),
+      VulnerabilityProbability.valueOf(rule.getVulnerabilityProbability()),
       rule.getRiskDescription(), rule.getVulnerabilityDescription(), rule.getFixRecommendations());
   }
 
@@ -152,7 +153,7 @@ public class HotspotApi {
       filePath,
       convertTextRange(hotspot.getTextRange()),
       ServerApiUtils.parseOffsetDateTime(hotspot.getCreationDate()).toInstant(),
-      isResolved(hotspot));
+      isResolved(hotspot), VulnerabilityProbability.valueOf(hotspot.getVulnerabilityProbability()));
   }
 
   private static boolean isResolved(Hotspots.SearchWsResponse.Hotspot hotspot) {

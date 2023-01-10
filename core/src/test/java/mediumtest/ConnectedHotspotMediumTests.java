@@ -131,6 +131,7 @@ class ConnectedHotspotMediumTests {
         .setCreationDate("2020-09-21T12:46:39+0000")
         .setRuleKey("ruleKey1")
         .setMessage("message1")
+        .setVulnerabilityProbability("MEDIUM")
         .build())
       .addComponents(Hotspots.Component.newBuilder().setKey("component:file/path").setPath("file/path").build())
       .build());
@@ -158,6 +159,7 @@ class ConnectedHotspotMediumTests {
         .setCreationDate("2020-09-21T12:46:39+0000")
         .setRuleKey("ruleKey1")
         .setMessage("message1")
+        .setVulnerabilityProbability("LOW")
         .build())
       .addComponents(Hotspots.Component.newBuilder().setKey("component:file/path").setPath("file/path").build())
       .build());

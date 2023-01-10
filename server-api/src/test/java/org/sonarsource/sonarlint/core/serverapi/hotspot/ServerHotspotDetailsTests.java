@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,7 +37,7 @@ class ServerHotspotDetailsTests {
         "key",
         "name",
         "category",
-        ServerHotspotDetails.Rule.Probability.HIGH,
+        VulnerabilityProbability.HIGH,
         "risk",
         "vulnerability",
         "fix"),
@@ -54,7 +55,7 @@ class ServerHotspotDetailsTests {
     assertThat(hotspot.rule.key).isEqualTo("key");
     assertThat(hotspot.rule.name).isEqualTo("name");
     assertThat(hotspot.rule.securityCategory).isEqualTo("category");
-    assertThat(hotspot.rule.vulnerabilityProbability).isEqualTo(ServerHotspotDetails.Rule.Probability.HIGH);
+    assertThat(hotspot.rule.vulnerabilityProbability).isEqualTo(VulnerabilityProbability.HIGH);
     assertThat(hotspot.rule.riskDescription).isEqualTo("risk");
     assertThat(hotspot.rule.vulnerabilityDescription).isEqualTo("vulnerability");
     assertThat(hotspot.rule.fixRecommendations).isEqualTo("fix");

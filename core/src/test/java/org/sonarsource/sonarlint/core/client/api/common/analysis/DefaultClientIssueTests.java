@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
+import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -76,6 +77,7 @@ class DefaultClientIssueTests {
     assertThat(underTest.getSeverity()).isEqualTo(IssueSeverity.MAJOR);
     assertThat(underTest.getType()).isEqualTo(RuleType.BUG);
     assertThat(underTest.getInputFile()).isEqualTo(clientInputFile);
+    assertThat(underTest.getVulnerabilityProbability()).isNull();
   }
 
 }

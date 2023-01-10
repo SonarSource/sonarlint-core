@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.serverconnection.storage;
 import java.time.Instant;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
+import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 
 public class ServerHotspotFixtures {
 
@@ -41,6 +42,6 @@ public class ServerHotspotFixtures {
       filePath,
       new TextRange(1, 2, 3, 4),
       Instant.now(),
-      true);
+      true, VulnerabilityProbability.HIGH);
   }
 }

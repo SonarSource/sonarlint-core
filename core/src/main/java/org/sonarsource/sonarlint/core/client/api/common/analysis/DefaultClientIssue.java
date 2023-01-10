@@ -28,6 +28,7 @@ import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
+import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 
 public final class DefaultClientIssue implements Issue {
   private final IssueSeverity severity;
@@ -104,6 +105,12 @@ public final class DefaultClientIssue implements Issue {
   @Override
   public Optional<String> getRuleDescriptionContextKey() {
     return ruleDescriptionContextKey;
+  }
+
+  @Override
+  public VulnerabilityProbability getVulnerabilityProbability() {
+    // No vulnerabilityProbability for locally detected issues
+    return null;
   }
 
   @CheckForNull
