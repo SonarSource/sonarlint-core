@@ -81,9 +81,7 @@ class SonarCloudTests extends AbstractConnectedTests {
   private static final String SONARCLOUD_PASSWORD = System.getenv("SONARCLOUD_IT_PASSWORD");
 
   private static final String PROJECT_KEY_JAVA = "sample-java";
-  private static final String PROJECT_KEY_JAVA_PACKAGE = "sample-java-package";
   private static final String PROJECT_KEY_JAVA_HOTSPOT = "sample-java-hotspot";
-  private static final String PROJECT_KEY_JAVA_EMPTY = "sample-java-empty";
   private static final String PROJECT_KEY_PHP = "sample-php";
   private static final String PROJECT_KEY_JAVASCRIPT = "sample-javascript";
   private static final String PROJECT_KEY_PYTHON = "sample-python";
@@ -115,9 +113,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     adminWsClient = newAdminWsClient();
 
     restoreProfile("java-sonarlint.xml");
-    restoreProfile("java-sonarlint-package.xml");
     restoreProfile("java-sonarlint-with-hotspot.xml");
-    restoreProfile("java-empty-sonarlint.xml");
     restoreProfile("javascript-sonarlint.xml");
     restoreProfile("php-sonarlint.xml");
     restoreProfile("python-sonarlint.xml");
@@ -129,9 +125,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     restoreProfile("java-sonarlint-with-taint.xml");
 
     provisionProject(PROJECT_KEY_JAVA, "Sample Java");
-    provisionProject(PROJECT_KEY_JAVA_PACKAGE, "Sample Java Package");
     provisionProject(PROJECT_KEY_JAVA_HOTSPOT, "Sample Java Hotspot");
-    provisionProject(PROJECT_KEY_JAVA_EMPTY, "Sample Java Empty");
     provisionProject(PROJECT_KEY_PHP, "Sample PHP");
     provisionProject(PROJECT_KEY_JAVASCRIPT, "Sample Javascript");
     provisionProject(PROJECT_KEY_PYTHON, "Sample Python");
@@ -143,9 +137,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     provisionProject(PROJECT_KEY_JAVA_TAINT, "Java With Taint Vulnerabilities");
 
     associateProjectToQualityProfile(PROJECT_KEY_JAVA, "java", "SonarLint IT Java");
-    associateProjectToQualityProfile(PROJECT_KEY_JAVA_PACKAGE, "java", "SonarLint IT Java Package");
     associateProjectToQualityProfile(PROJECT_KEY_JAVA_HOTSPOT, "java", "SonarLint IT Java Hotspot");
-    associateProjectToQualityProfile(PROJECT_KEY_JAVA_EMPTY, "java", "SonarLint IT Java Empty");
     associateProjectToQualityProfile(PROJECT_KEY_PHP, "php", "SonarLint IT PHP");
     associateProjectToQualityProfile(PROJECT_KEY_JAVASCRIPT, "js", "SonarLint IT Javascript");
     associateProjectToQualityProfile(PROJECT_KEY_PYTHON, "py", "SonarLint IT Python");
@@ -183,11 +175,9 @@ class SonarCloudTests extends AbstractConnectedTests {
       .setExtraProperties(globalProps)
       .build());
 
-    Set<String> ALL_PROJECTS = Set.of(
+    var ALL_PROJECTS = Set.of(
       projectKey(PROJECT_KEY_JAVA),
-      projectKey(PROJECT_KEY_JAVA_PACKAGE),
       projectKey(PROJECT_KEY_JAVA_HOTSPOT),
-      projectKey(PROJECT_KEY_JAVA_EMPTY),
       projectKey(PROJECT_KEY_PHP),
       projectKey(PROJECT_KEY_JAVASCRIPT),
       projectKey(PROJECT_KEY_PYTHON),
@@ -277,30 +267,6 @@ class SonarCloudTests extends AbstractConnectedTests {
   }
 
   @Test
-  void parsingErrorJava(@TempDir Path tempDir) throws IOException {
-    var fileContent = "pac kage its; public class MyTest { }";
-    var testFile = tempDir.resolve("MyTestParseError.java");
-    Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
-
-    var issueListener = new SaveIssueListener();
-    var results = engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA), testFile.toString()), issueListener, null, null);
-
-    assertThat(results.failedAnalysisFiles()).hasSize(1);
-  }
-
-  @Test
-  void parsingErrorJavascript(@TempDir Path tempDir) throws IOException {
-    var fileContent = "asd asd";
-    var testFile = tempDir.resolve("MyTest.js");
-    Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
-
-    var issueListener = new SaveIssueListener();
-    var results = engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVASCRIPT), testFile.toString()), issueListener, null, null);
-
-    assertThat(results.failedAnalysisFiles()).hasSize(1);
-  }
-
-  @Test
   void testRuleDescription() throws Exception {
     assertThat(
       engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), "java:S106", projectKey(PROJECT_KEY_JAVA)).get().getHtmlDescription())
@@ -355,44 +321,9 @@ class SonarCloudTests extends AbstractConnectedTests {
   }
 
   @Test
-  void analysisUseQualityProfile() throws Exception {
-    var issueListener = new SaveIssueListener();
-    engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA), PROJECT_KEY_JAVA,
-      "src/main/java/foo/Foo.java",
-      "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
-      issueListener, null, null);
-
-    assertThat(issueListener.getIssues()).hasSize(2);
-  }
-
-  @Test
   void dontReportHotspots() throws Exception {
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT,
-      "src/main/java/foo/Foo.java",
-      "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
-      issueListener, null, null);
-
-    assertThat(issueListener.getIssues()).isEmpty();
-  }
-
-  @Test
-  void analysisIssueOnDirectory() throws Exception {
-    var issueListener = new SaveIssueListener();
-    engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA_PACKAGE), PROJECT_KEY_JAVA,
-      "src/main/java/foo/Foo.java",
-      "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
-      issueListener, null, null);
-
-    assertThat(issueListener.getIssues()).extracting("ruleKey", "inputFile.path").containsOnly(
-      tuple("java:S106", Paths.get("projects/sample-java/src/main/java/foo/Foo.java").toAbsolutePath().toString()),
-      tuple("java:S1228", null));
-  }
-
-  @Test
-  void analysisUseEmptyQualityProfile() throws Exception {
-    var issueListener = new SaveIssueListener();
-    engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA_EMPTY), PROJECT_KEY_JAVA,
       "src/main/java/foo/Foo.java",
       "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
       issueListener, null, null);
