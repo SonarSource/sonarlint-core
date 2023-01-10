@@ -98,7 +98,8 @@ class TaintIssueDownloaderTests {
           .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Location No Text Range").setComponent(FILE_3_KEY)))
         .addFlows(Flow.newBuilder()
           .addLocations(Common.Location.newBuilder().setMsg("Flow 2 - Location 1").setComponent(FILE_1_KEY)
-            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(5).setEndOffset(6)))))
+            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(5).setEndOffset(6))))
+        .setRuleDescriptionContextKey("context1"))
       .addIssues(Issues.Issue.newBuilder()
         .setKey("uuid2")
         .setRule("javasecurity:S789")
@@ -117,7 +118,8 @@ class TaintIssueDownloaderTests {
           .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Location No Text Range").setComponent(FILE_3_KEY)))
         .addFlows(Flow.newBuilder()
           .addLocations(Common.Location.newBuilder().setMsg("Flow 2 - Location 1").setComponent(FILE_1_KEY)
-            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(5).setEndOffset(6)))))
+            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(5).setEndOffset(6))))
+        .setRuleDescriptionContextKey("context2"))
       .addComponents(Issues.Component.newBuilder()
         .setKey(PROJECT_KEY))
       .addComponents(Issues.Component.newBuilder()
@@ -180,6 +182,7 @@ class TaintIssueDownloaderTests {
     assertThat(taintIssue.getFlows().get(0).locations().get(3).getTextRange()).isNull();
 
     assertThat(taintIssue.getFlows().get(1).locations()).hasSize(1);
+    assertThat(taintIssue.getRuleDescriptionContextKey()).isEqualTo("context1");
   }
 
   @Test
@@ -236,6 +239,7 @@ class TaintIssueDownloaderTests {
       .addFlows(Issues.Flow.newBuilder()
         .addLocations(Issues.Location.newBuilder().setMessage("Flow 2 - Location 1").setFilePath("foo/bar/Hello.java")
           .setTextRange(Issues.TextRange.newBuilder().setStartLine(5).setStartLineOffset(1).setEndLine(5).setEndLineOffset(6).setHash("hashLocation21"))))
+      .setRuleDescriptionContextKey("context")
       .build();
 
     var taintNoRange = TaintVulnerabilityLite.newBuilder()
@@ -288,6 +292,8 @@ class TaintIssueDownloaderTests {
     assertThat(taintIssueNoRange.getFilePath()).isEqualTo("foo/bar/Hello.java");
     assertThat(taintIssueNoRange.getTextRange()).isNull();
     assertThat(taintIssueNoRange.getTextRange()).isNull();
+
+    assertThat(serverTaintIssue.getRuleDescriptionContextKey()).isEqualTo("context");
   }
 
 }

@@ -79,7 +79,7 @@ public class ServerIssueFixtures {
       Instant.now(),
       IssueSeverity.MINOR,
       RuleType.VULNERABILITY,
-      new TextRangeWithHash(1, 2, 3, 4, "ab12"))
+      new TextRangeWithHash(1, 2, 3, 4, "ab12"), "context")
         .setFlows(List.of(aServerTaintIssueFlow()));
   }
 

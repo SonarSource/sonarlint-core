@@ -129,7 +129,7 @@ public class TaintIssueDownloader {
       ServerApiUtils.parseOffsetDateTime(taintVulnerabilityFromWs.getCreationDate()).toInstant(),
       IssueSeverity.valueOf(taintVulnerabilityFromWs.getSeverity().name()),
       RuleType.valueOf(taintVulnerabilityFromWs.getType().name()),
-      primaryLocation.getTextRange())
+      primaryLocation.getTextRange(), taintVulnerabilityFromWs.getRuleDescriptionContextKey())
         .setFlows(convertFlows(sourceApi, taintVulnerabilityFromWs.getFlowsList(), componentsByKey, sourceCodeByKey));
   }
 
@@ -169,10 +169,10 @@ public class TaintIssueDownloader {
     if (mainLocation.hasTextRange()) {
       taintIssue = new ServerTaintIssue(liteTaintIssueFromWs.getKey(), liteTaintIssueFromWs.getResolved(), liteTaintIssueFromWs.getRuleKey(), mainLocation.getMessage(),
         filePath, creationDate, severity,
-        type, toServerTaintIssueTextRange(mainLocation.getTextRange()));
+        type, toServerTaintIssueTextRange(mainLocation.getTextRange()),liteTaintIssueFromWs.getRuleDescriptionContextKey());
     } else {
       taintIssue = new ServerTaintIssue(liteTaintIssueFromWs.getKey(), liteTaintIssueFromWs.getResolved(), liteTaintIssueFromWs.getRuleKey(), mainLocation.getMessage(),
-        filePath, creationDate, severity, type, null);
+        filePath, creationDate, severity, type, null, liteTaintIssueFromWs.getRuleDescriptionContextKey());
     }
     taintIssue.setFlows(liteTaintIssueFromWs.getFlowsList().stream().map(TaintIssueDownloader::convertFlows).collect(Collectors.toList()));
     return taintIssue;

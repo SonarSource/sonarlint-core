@@ -118,6 +118,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private final Path backupFile;
 
   private final Path xodusDbDir;
+  private static final String RULE_DESCRIPTION_CONTEXT_KEY = "ruleDescriptionContextKey";
 
   public XodusServerIssueStore(Path backupDir, Path workDir) throws IOException {
     this(backupDir, workDir, XodusServerIssueStore::checkCurrentSchemaVersion);
@@ -220,7 +221,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       (Instant) requireNonNull(storedIssue.getProperty(CREATION_DATE_PROPERTY_NAME)),
       (IssueSeverity) requireNonNull(storedIssue.getProperty(SEVERITY_PROPERTY_NAME)),
       (RuleType) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME)),
-      textRange)
+      textRange, (String) storedIssue.getProperty(RULE_DESCRIPTION_CONTEXT_KEY))
         .setFlows(readFlows(storedIssue.getBlob(FLOWS_BLOB_NAME)));
   }
 
@@ -514,6 +515,9 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       issueEntity.setBlobString(RANGE_HASH_PROPERTY_NAME, textRange.getHash());
     }
     issueEntity.setBlob(FLOWS_BLOB_NAME, toProtoFlow(issue.getFlows()));
+    if (issue.getRuleDescriptionContextKey() != null) {
+      issueEntity.setProperty(RULE_DESCRIPTION_CONTEXT_KEY, issue.getRuleDescriptionContextKey());
+    }
   }
 
   private static InputStream toProtoFlow(List<Flow> flows) {
