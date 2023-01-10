@@ -25,6 +25,7 @@ import com.sonar.orchestrator.build.SonarScanner;
 import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
+import com.sonar.orchestrator.version.Version;
 import its.utils.OrchestratorUtils;
 import java.io.File;
 import java.io.IOException;
@@ -89,6 +90,7 @@ import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -978,6 +980,119 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       });
       taintIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java");
       assertThat(taintIssues).isEmpty();
+    }
+  }
+
+  @Nested
+  // TODO Can be removed when switching to Java 16+ and changing prepare() to static
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  class HotspotsTests {
+
+    private static final String PROJECT_KEY_JAVA_HOTSPOT = "sample-java-hotspot";
+
+    @BeforeAll
+    void prepare() throws Exception {
+      provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_HOTSPOT, "Sample Java Hotspot");
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_HOTSPOT, "java", "SonarLint IT Java Hotspot");
+
+      // Build project to have bytecode and analyze
+      analyzeMavenProject(ORCHESTRATOR, PROJECT_KEY_JAVA_HOTSPOT, Map.of("sonar.projectKey", PROJECT_KEY_JAVA_HOTSPOT));
+    }
+
+    @BeforeEach
+    void start() {
+      FileUtils.deleteQuietly(sonarUserHome.toFile());
+      var globalProps = new HashMap<String, String>();
+      globalProps.put("sonar.global.label", "It works");
+
+      var globalConfig = ConnectedGlobalConfiguration.sonarQubeBuilder()
+        .setConnectionId("orchestrator")
+        .setSonarLintUserHome(sonarUserHome)
+        .addEnabledLanguage(Language.JAVA)
+        .setLogOutput((msg, level) -> {
+          System.out.println(msg);
+        })
+        .setExtraProperties(globalProps)
+        .enableHotspots()
+        .build();
+      engine = new ConnectedSonarLintEngineImpl(globalConfig);
+    }
+
+    @AfterEach
+    void stop() {
+      adminWsClient.settings().reset(new ResetRequest().setKeys(singletonList("sonar.java.file.suffixes")));
+      try {
+        engine.stop(true);
+      } catch (Exception e) {
+        // Ignore
+      }
+    }
+
+    @Test
+    void reportHotspots() throws Exception {
+      updateProject(PROJECT_KEY_JAVA_HOTSPOT);
+
+      var issueListener = new SaveIssueListener();
+      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_HOTSPOT, PROJECT_KEY_JAVA_HOTSPOT,
+          "src/main/java/foo/Foo.java",
+          "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath()),
+        issueListener, null, null);
+
+      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
+        assertThat(issueListener.getIssues()).hasSize(1)
+          .extracting(org.sonarsource.sonarlint.core.client.api.common.analysis.Issue::getRuleKey, org.sonarsource.sonarlint.core.client.api.common.analysis.Issue::getType)
+          .containsExactly(tuple(javaRuleKey(ORCHESTRATOR, "S4792"), RuleType.SECURITY_HOTSPOT));
+      } else {
+        // no hotspot detection when connected to SQ < 9.7
+        assertThat(issueListener.getIssues()).isEmpty();
+      }
+    }
+
+    @Test
+    void loadHotspotRuleDescription() throws Exception {
+      assumeThat(ORCHESTRATOR.getServer().version()).isGreaterThanOrEqualTo(Version.create("9.7"));
+      updateProject(PROJECT_KEY_JAVA_HOTSPOT);
+
+      var ruleDetails = engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey(ORCHESTRATOR, "S4792"), PROJECT_KEY_JAVA_HOTSPOT).get();
+
+      assertThat(ruleDetails.getName()).isEqualTo("Configuring loggers is security-sensitive");
+      // HTML description is null for security hotspots when accessed through the deprecated engine API
+      // When accessed through the backend service, the rule descriptions are split into sections
+      // see its.ConnectedModeBackendTest.returnConvertedDescriptionSectionsForHotspotRules
+      assertThat(ruleDetails.getHtmlDescription()).isNull();
+    }
+
+    @Test
+    void downloadsServerHotspotsForProject() {
+      updateProject(PROJECT_KEY_JAVA_HOTSPOT);
+
+      engine.downloadAllServerHotspots(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVA_HOTSPOT, "master", null);
+
+      var serverHotspots = engine.getServerHotspots(new ProjectBinding(PROJECT_KEY_JAVA_HOTSPOT, "", "ide"), "master", "ide/src/main/java/foo/Foo.java");
+      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
+        assertThat(serverHotspots)
+          .extracting("ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "resolved")
+          .containsExactly(tuple("java:S4792", "Make sure that this logger's configuration is safe.", "ide/src/main/java/foo/Foo.java", 9, 4, 9, 45, false));
+      } else {
+        assertThat(serverHotspots).isEmpty();
+      }
+    }
+
+    @Test
+    void downloadsServerHotspotsForFile() {
+      updateProject(PROJECT_KEY_JAVA_HOTSPOT);
+      var projectBinding = new ProjectBinding(PROJECT_KEY_JAVA_HOTSPOT, "", "ide");
+
+      engine.downloadAllServerHotspotsForFile(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding, "ide/src/main/java/foo/Foo.java", "master", null);
+
+      var serverHotspots = engine.getServerHotspots(projectBinding, "master", "ide/src/main/java/foo/Foo.java");
+      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
+        assertThat(serverHotspots)
+          .extracting("ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "resolved")
+          .containsExactly(tuple("java:S4792", "Make sure that this logger's configuration is safe.", "ide/src/main/java/foo/Foo.java", 9, 4, 9, 45, false));
+      } else {
+        assertThat(serverHotspots).isEmpty();
+      }
     }
   }
 
