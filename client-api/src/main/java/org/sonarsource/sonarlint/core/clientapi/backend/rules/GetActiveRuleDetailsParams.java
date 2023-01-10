@@ -34,7 +34,7 @@ public class GetActiveRuleDetailsParams {
    * @param ruleKey the key of the rule
    * @deprecated use {@link GetActiveRuleDetailsParams}
    */
-  @Deprecated
+  @Deprecated(since = "8.13", forRemoval = true)
   public GetActiveRuleDetailsParams(String configurationScopeId, String ruleKey) {
     this(configurationScopeId, ruleKey, null);
   }
