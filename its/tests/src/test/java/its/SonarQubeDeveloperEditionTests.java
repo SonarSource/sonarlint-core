@@ -53,7 +53,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -124,7 +126,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   private static final String PROJECT_KEY = "sample-xoo";
 
   private static final String PROJECT_KEY_JAVA = "sample-java";
-  private static final String PROJECT_KEY_JAVA_TAINT = "sample-java-taint";
+
 
 
   @RegisterExtension
@@ -187,7 +189,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     private static final String PROJECT_KEY_JAVA_CUSTOM_SENSOR = "sample-java-custom-sensor";
     private static final String PROJECT_KEY_GLOBAL_EXTENSION = "sample-global-extension";
     private static final String PROJECT_KEY_JAVA_PACKAGE = "sample-java-package";
-    private static final String PROJECT_KEY_JAVA_HOTSPOT = "sample-java-hotspot";
     private static final String PROJECT_KEY_JAVA_EMPTY = "sample-java-empty";
     private static final String PROJECT_KEY_JAVA_MARKDOWN = "sample-java-markdown";
     private static final String PROJECT_KEY_JAVA_CUSTOM = "sample-java-custom";
@@ -207,7 +208,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     void prepare() throws Exception {
       provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA, "Sample Java");
       provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_PACKAGE, "Sample Java Package");
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_HOTSPOT, "Sample Java Hotspot");
       provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_EMPTY, "Sample Java Empty");
       provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_MARKDOWN, "Sample Java Markdown");
       provisionProject(ORCHESTRATOR, PROJECT_KEY_PHP, "Sample PHP");
@@ -224,7 +224,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA, "java", "SonarLint IT Java");
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_PACKAGE, "java", "SonarLint IT Java Package");
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_HOTSPOT, "java", "SonarLint IT Java Hotspot");
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_EMPTY, "java", "SonarLint IT Java Empty");
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_MARKDOWN, "java", "SonarLint IT Java Markdown");
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_PHP, "php", "SonarLint IT PHP");
@@ -294,7 +293,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     @Test
     void downloadProjects() {
       provisionProject(ORCHESTRATOR, "foo-bar", "Foo");
-      assertThat(engine.downloadAllProjects(endpointParams(ORCHESTRATOR), sqHttpClient(), null)).hasSize(18).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+      assertThat(engine.downloadAllProjects(endpointParams(ORCHESTRATOR), sqHttpClient(), null)).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
     }
 
     @Test
@@ -433,51 +432,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         issueListener, null, null);
 
       assertThat(issueListener.getIssues()).hasSize(2);
-    }
-
-    @Test
-    void dontReportHotspotsIfNotEnabled() throws Exception {
-      updateProject(PROJECT_KEY_JAVA_HOTSPOT);
-
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_HOTSPOT, PROJECT_KEY_JAVA_HOTSPOT,
-          "src/main/java/foo/Foo.java",
-          "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
-        issueListener, null, null);
-
-      assertThat(issueListener.getIssues()).isEmpty();
-    }
-
-    @Test
-    void canFetchHotspot() throws InvalidProtocolBufferException {
-      assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 6),
-        "SonarQube should support opening security hotspots");
-
-      analyzeMavenProject(PROJECT_KEY_JAVA_HOTSPOT);
-      var securityHotspotsService = new ServerApi(endpointParams(ORCHESTRATOR), sqHttpClient()).hotspot();
-
-      var remoteHotspot = securityHotspotsService
-        .fetch(new GetSecurityHotspotRequestParams(getFirstHotspotKey(PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT));
-
-      assertThat(remoteHotspot).isNotEmpty();
-      var actualHotspot = remoteHotspot.get();
-      assertThat(actualHotspot.message).isEqualTo("Make sure that this logger's configuration is safe.");
-      assertThat(actualHotspot.filePath).isEqualTo("src/main/java/foo/Foo.java");
-      assertThat(actualHotspot.textRange).usingRecursiveComparison().isEqualTo(new TextRange(9, 4, 9, 45));
-      assertThat(actualHotspot.author).isEmpty();
-      assertThat(actualHotspot.status).isEqualTo(ServerHotspotDetails.Status.TO_REVIEW);
-      assertThat(actualHotspot.resolution).isNull();
-      assertThat(actualHotspot.rule.key).isEqualTo("java:S4792");
-    }
-
-    private String getFirstHotspotKey(String projectKey) throws InvalidProtocolBufferException {
-      var response = ORCHESTRATOR.getServer()
-        .newHttpCall("/api/hotspots/search.protobuf")
-        .setParam("projectKey", projectKey)
-        .setAdminCredentials()
-        .execute();
-      var parser = Hotspots.SearchWsResponse.parser();
-      return parser.parseFrom(response.getBody()).getHotspots(0).getKey();
     }
 
     @Test
@@ -743,7 +697,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
   }
 
-
   @Nested
   // TODO Can be removed when switching to Java 16+ and changing prepare() to static
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -844,6 +797,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
   @Nested
   class TaintVulnerabilities {
+
+    private static final String PROJECT_KEY_JAVA_TAINT = "sample-java-taint";
 
     @BeforeEach
     void prepare(@TempDir Path sonarUserHome) throws Exception {
@@ -1008,6 +963,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   class HotspotsTests {
 
+    public static final String HOTSPOT_FEATURE_DISABLED = "hotspotFeatureDisabled";
+
     private static final String PROJECT_KEY_JAVA_HOTSPOT = "sample-java-hotspot";
 
     @BeforeAll
@@ -1020,21 +977,23 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @BeforeEach
-    void start() {
+    void start(TestInfo info) {
       FileUtils.deleteQuietly(sonarUserHome.toFile());
       var globalProps = new HashMap<String, String>();
       globalProps.put("sonar.global.label", "It works");
 
-      var globalConfig = ConnectedGlobalConfiguration.sonarQubeBuilder()
+      var globalConfigBuilder = ConnectedGlobalConfiguration.sonarQubeBuilder()
         .setConnectionId("orchestrator")
         .setSonarLintUserHome(sonarUserHome)
         .addEnabledLanguage(Language.JAVA)
         .setLogOutput((msg, level) -> {
           System.out.println(msg);
         })
-        .setExtraProperties(globalProps)
-        .enableHotspots()
-        .build();
+        .setExtraProperties(globalProps);
+      if (!info.getTags().contains(HOTSPOT_FEATURE_DISABLED)) {
+        globalConfigBuilder.enableHotspots();
+      }
+      var globalConfig = globalConfigBuilder.build();
       engine = new ConnectedSonarLintEngineImpl(globalConfig);
     }
 
@@ -1046,6 +1005,52 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       } catch (Exception e) {
         // Ignore
       }
+    }
+
+    @Test
+    @Tag(HOTSPOT_FEATURE_DISABLED)
+    void dontReportHotspotsIfNotEnabled() throws Exception {
+      updateProject(PROJECT_KEY_JAVA_HOTSPOT);
+
+      var issueListener = new SaveIssueListener();
+      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_HOTSPOT, PROJECT_KEY_JAVA_HOTSPOT,
+          "src/main/java/foo/Foo.java",
+          "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+        issueListener, null, null);
+
+      assertThat(issueListener.getIssues()).isEmpty();
+    }
+
+    @Test
+    void canFetchHotspot() throws InvalidProtocolBufferException {
+      assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 6),
+        "SonarQube should support opening security hotspots");
+
+      analyzeMavenProject(PROJECT_KEY_JAVA_HOTSPOT);
+      var securityHotspotsService = new ServerApi(endpointParams(ORCHESTRATOR), sqHttpClient()).hotspot();
+
+      var remoteHotspot = securityHotspotsService
+        .fetch(new GetSecurityHotspotRequestParams(getFirstHotspotKey(PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT));
+
+      assertThat(remoteHotspot).isNotEmpty();
+      var actualHotspot = remoteHotspot.get();
+      assertThat(actualHotspot.message).isEqualTo("Make sure that this logger's configuration is safe.");
+      assertThat(actualHotspot.filePath).isEqualTo("src/main/java/foo/Foo.java");
+      assertThat(actualHotspot.textRange).usingRecursiveComparison().isEqualTo(new TextRange(9, 4, 9, 45));
+      assertThat(actualHotspot.author).isEmpty();
+      assertThat(actualHotspot.status).isEqualTo(ServerHotspotDetails.Status.TO_REVIEW);
+      assertThat(actualHotspot.resolution).isNull();
+      assertThat(actualHotspot.rule.key).isEqualTo("java:S4792");
+    }
+
+    private String getFirstHotspotKey(String projectKey) throws InvalidProtocolBufferException {
+      var response = ORCHESTRATOR.getServer()
+        .newHttpCall("/api/hotspots/search.protobuf")
+        .setParam("projectKey", projectKey)
+        .setAdminCredentials()
+        .execute();
+      var parser = Hotspots.SearchWsResponse.parser();
+      return parser.parseFrom(response.getBody()).getHotspots(0).getKey();
     }
 
     @Test
@@ -1121,7 +1126,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   class WithNewBackendApi {
 
-    private static final String PROJECT_KEY_JAVA_HOTSPOT = "sample-java-hotspot";
+    private static final String PROJECT_KEY_JAVA_TAINT = "sample-java-taint-new-backend";
+    private static final String PROJECT_KEY_JAVA_HOTSPOT = "sample-java-hotspot-new-backend";
 
     @TempDir
     private Path sonarUserHome;
@@ -1136,8 +1142,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_HOTSPOT, "Java With Security Hotspots");
 
       // Build project to have bytecode and analyze
-      analyzeMavenProject(ORCHESTRATOR, PROJECT_KEY_JAVA_TAINT, Map.of("sonar.projectKey", PROJECT_KEY_JAVA_TAINT));
-      analyzeMavenProject(ORCHESTRATOR, PROJECT_KEY_JAVA_HOTSPOT, Map.of("sonar.projectKey", PROJECT_KEY_JAVA_HOTSPOT));
+      analyzeMavenProject(ORCHESTRATOR, "sample-java-taint", Map.of("sonar.projectKey", PROJECT_KEY_JAVA_TAINT));
+      analyzeMavenProject(ORCHESTRATOR, "sample-java-hotspot", Map.of("sonar.projectKey", PROJECT_KEY_JAVA_HOTSPOT));
     }
 
     @BeforeEach
