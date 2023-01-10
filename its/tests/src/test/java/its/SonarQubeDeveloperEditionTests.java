@@ -29,8 +29,6 @@ import com.sonar.orchestrator.version.Version;
 import its.utils.OrchestratorUtils;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -59,9 +57,7 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarqube.ws.Hotspots;
 import org.sonarqube.ws.Issues.Issue;
-import org.sonarqube.ws.Qualityprofiles;
 import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsRequest;
@@ -124,16 +120,10 @@ import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 
 class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
-  // Use the pattern of long living branches in SQ 7.9, else we only have issues on changed files
-  private static final String SHORT_BRANCH = "feature/short_living";
-  private static final String LONG_BRANCH = "branch-1.x";
 
-  private static final String PROJECT_KEY = "sample-xoo";
-
-  private static final String PROJECT_KEY_JAVA = "sample-java";
+  public static final String CONNECTION_ID = "orchestrator";
 
   @RegisterExtension
   static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
@@ -144,24 +134,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     .addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
     .addPlugin(FileLocation.of("../plugins/custom-sensor-plugin/target/custom-sensor-plugin.jar"))
     .addPlugin(FileLocation.of("../plugins/java-custom-rules/target/java-custom-rules-plugin.jar"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/xoo-sonarlint.xml"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/global-extension.xml"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint.xml"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-package.xml"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-with-hotspot.xml"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-with-markdown.xml"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/java-sonarlint-with-taint.xml"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/java-empty-sonarlint.xml"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-sonarlint.xml"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/java-custom.xml"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/php-sonarlint.xml"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/python-sonarlint.xml"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/custom-sensor.xml"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/web-sonarlint.xml"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/kotlin-sonarlint.xml"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/ruby-sonarlint.xml"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/scala-sonarlint.xml"))
-    .restoreProfileAtStartup(FileLocation.ofClasspath("/xml-sonarlint.xml"))
     // Ensure SSE are processed correctly just after SQ startup
     .setServerProperty("sonar.pushevents.polling.initial.delay", "2")
     .setServerProperty("sonar.pushevents.polling.period", "1")
@@ -169,88 +141,23 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     .setServerProperty("sonar.projectCreation.mainBranchName", MAIN_BRANCH_NAME)
     .build();
 
-  private static ConnectedSonarLintEngine engine;
-
-  private static Issue wfIssue;
-  private static Issue fpIssue;
-  private static Issue overridenSeverityIssue;
-  private static Issue overridenTypeIssue;
-
-  @TempDir
-  private static Path sonarUserHome;
-
   private static WsClient adminWsClient;
 
   @BeforeAll
-  static void prepareUser() throws Exception {
+  static void createSonarLintUser() {
     adminWsClient = newAdminWsClient(ORCHESTRATOR);
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
   }
 
   @Nested
-  // TODO Can be removed when switching to Java 16+ and changing prepare() to static
-  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   class AnalysisTests {
 
-    private static final String PROJECT_KEY_JAVA_CUSTOM_SENSOR = "sample-java-custom-sensor";
-    private static final String PROJECT_KEY_GLOBAL_EXTENSION = "sample-global-extension";
-    private static final String PROJECT_KEY_JAVA_PACKAGE = "sample-java-package";
-    private static final String PROJECT_KEY_JAVA_EMPTY = "sample-java-empty";
-    private static final String PROJECT_KEY_JAVA_MARKDOWN = "sample-java-markdown";
-    private static final String PROJECT_KEY_JAVA_CUSTOM = "sample-java-custom";
-    private static final String PROJECT_KEY_PHP = "sample-php";
-    private static final String PROJECT_KEY_JAVASCRIPT = "sample-javascript";
-    private static final String PROJECT_KEY_PYTHON = "sample-python";
-    private static final String PROJECT_KEY_WEB = "sample-web";
-    private static final String PROJECT_KEY_KOTLIN = "sample-kotlin";
-    private static final String PROJECT_KEY_RUBY = "sample-ruby";
-    private static final String PROJECT_KEY_SCALA = "sample-scala";
-    private static final String PROJECT_KEY_XML = "sample-xml";
-
-    private ConnectedGlobalConfiguration globalConfig;
     private List<String> logs;
 
-    @BeforeAll
-    void prepare() throws Exception {
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA, "Sample Java");
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_PACKAGE, "Sample Java Package");
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_EMPTY, "Sample Java Empty");
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_MARKDOWN, "Sample Java Markdown");
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_PHP, "Sample PHP");
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVASCRIPT, "Sample Javascript");
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_CUSTOM, "Sample Java Custom");
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_PYTHON, "Sample Python");
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_WEB, "Sample Web");
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_CUSTOM_SENSOR, "Sample Java Custom");
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_GLOBAL_EXTENSION, "Sample Global Extension");
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_RUBY, "Sample Ruby");
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_KOTLIN, "Sample Kotlin");
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_SCALA, "Sample Scala");
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_XML, "Sample XML");
-
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA, "java", "SonarLint IT Java");
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_PACKAGE, "java", "SonarLint IT Java Package");
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_EMPTY, "java", "SonarLint IT Java Empty");
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_MARKDOWN, "java", "SonarLint IT Java Markdown");
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_PHP, "php", "SonarLint IT PHP");
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVASCRIPT, "js", "SonarLint IT Javascript");
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_CUSTOM, "java", "SonarLint IT Java Custom");
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_PYTHON, "py", "SonarLint IT Python");
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_WEB, "web", "SonarLint IT Web");
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_CUSTOM_SENSOR, "java", "SonarLint IT Custom Sensor");
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_RUBY, "ruby", "SonarLint IT Ruby");
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_KOTLIN, "kotlin", "SonarLint IT Kotlin");
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_SCALA, "scala", "SonarLint IT Scala");
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_XML, "xml", "SonarLint IT XML");
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_GLOBAL_EXTENSION, "cobol", "SonarLint IT Global Extension");
-
-      // Build project to have bytecode and analyze
-      analyzeMavenProject(ORCHESTRATOR, PROJECT_KEY_JAVA, Map.of("sonar.projectKey", PROJECT_KEY_JAVA));
-    }
+    private ConnectedSonarLintEngine engine;
 
     @BeforeEach
-    void start() {
-      FileUtils.deleteQuietly(sonarUserHome.toFile());
+    void start(@TempDir Path sonarUserHome) {
       Map<String, String> globalProps = new HashMap<>();
       globalProps.put("sonar.global.label", "It works");
       logs = new CopyOnWriteArrayList<>();
@@ -258,8 +165,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var nodeJsHelper = new NodeJsHelper();
       nodeJsHelper.detect(null);
 
-      globalConfig = ConnectedGlobalConfiguration.sonarQubeBuilder()
-        .setConnectionId("orchestrator")
+      var globalConfig = ConnectedGlobalConfiguration.sonarQubeBuilder()
+        .setConnectionId(CONNECTION_ID)
         .setSonarLintUserHome(sonarUserHome)
         .addEnabledLanguage(Language.JAVA)
         .addEnabledLanguage(Language.PHP)
@@ -288,194 +195,126 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     @AfterEach
     void stop() {
       adminWsClient.settings().reset(new ResetRequest().setKeys(singletonList("sonar.java.file.suffixes")));
-      adminWsClient.settings().reset(new ResetRequest().setKeys(singletonList("sonar.java.file.suffixes")).setComponent(PROJECT_KEY_JAVA));
-      try {
-        engine.stop(true);
-      } catch (Exception e) {
-        // Ignore
-      }
+      engine.stop(true);
     }
 
-    @Test
-    void downloadProjects() {
-      provisionProject(ORCHESTRATOR, "foo-bar", "Foo");
-      assertThat(engine.downloadAllProjects(endpointParams(ORCHESTRATOR), sqHttpClient(), null)).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
-    }
-
+    // TODO should be moved to a separate class, not related to analysis
     @Test
     void updateNoAuth() {
+      var projectKey = "noAuth";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample Javascript");
+
       adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("true"));
       try {
-        engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClientNoAuth(), PROJECT_KEY_JAVA, null);
+        engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClientNoAuth(), projectKey, null);
         fail("Exception expected");
       } catch (Exception e) {
         assertThat(e).hasMessage("Not authorized. Please check server credentials.");
       } finally {
-        adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("false"));
+        adminWsClient.settings().reset(new ResetRequest().setKeys(List.of("sonar.forceAuthentication")));
       }
     }
 
     @Test
-    void parsingErrorJava(@TempDir Path tempDir) throws IOException {
-      var fileContent = "pac kage its; public class MyTest { }";
-      var testFile = tempDir.resolve("MyTestParseError.java");
-      Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
+    void shouldRaiseIssuesOnAJavaScriptProject() throws Exception {
+      var projectKey = "sample-javascript";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample Javascript");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/javascript-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "js", "SonarLint IT Javascript");
 
-      updateProject(PROJECT_KEY_JAVA);
-
-      var issueListener = new SaveIssueListener();
-      var results = engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, testFile.toString()), issueListener, null, null);
-
-      assertThat(results.failedAnalysisFiles()).hasSize(1);
-    }
-
-    @Test
-    void parsingErrorJavascript(@TempDir Path tempDir) throws IOException {
-      var fileContent = "asd asd";
-      var testFile = tempDir.resolve("MyTest.js");
-      Files.write(testFile, fileContent.getBytes(StandardCharsets.UTF_8));
-
-      updateProject(PROJECT_KEY_JAVASCRIPT);
+      updateProject(engine, projectKey);
 
       var issueListener = new SaveIssueListener();
-      var results = engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, testFile.toString()), issueListener, null, null);
-
-      assertThat(results.failedAnalysisFiles()).hasSize(1);
-    }
-
-    @Test
-    void verifyExtendedDescription() throws Exception {
-      updateProject(PROJECT_KEY_JAVA);
-
-      assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey("S106"), PROJECT_KEY_JAVA).get().getExtendedDescription()).isEmpty();
-
-      var extendedDescription = " = Title\n*my dummy extended description*";
-
-      WsRequest request = new PostRequest("/api/rules/update")
-        .setParam("key", javaRuleKey("S106"))
-        .setParam("markdown_note", extendedDescription);
-      try (var response = adminWsClient.wsConnector().call(request)) {
-        assertThat(response.code()).isEqualTo(200);
-      }
-
-      String expected;
-      if (ORCHESTRATOR.getServer().version().isGreaterThan(7, 9)) {
-        expected = "<h1>Title</h1><strong>my dummy extended description</strong>";
-      } else {
-        // For some reason, there is an extra line break in the generated HTML
-        expected = "<h1>Title\n</h1><strong>my dummy extended description</strong>";
-      }
-      assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey("S106"), PROJECT_KEY_JAVA).get().getExtendedDescription())
-        .isEqualTo(expected);
-    }
-
-    @Test
-    void verifyMarkdownDescription() throws Exception {
-      updateProject(PROJECT_KEY_JAVA_MARKDOWN);
-
-      assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), "mycompany-java:markdown", PROJECT_KEY_JAVA_MARKDOWN).get().getHtmlDescription())
-        .isEqualTo("<h1>Title</h1><ul><li>one</li>\n"
-          + "<li>two</li></ul>");
-    }
-
-    @Test
-    void analysisJavascript() throws Exception {
-      updateProject(PROJECT_KEY_JAVASCRIPT);
-
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, PROJECT_KEY_JAVASCRIPT, "src/Person.js"), issueListener, null, null);
+      engine.analyze(createAnalysisConfiguration(projectKey, "sample-javascript", "src/Person.js"), issueListener, null, null);
       assertThat(issueListener.getIssues()).hasSize(1);
     }
 
     @Test
-    void analysisJavaWithCustomRules() throws Exception {
-      updateProject(PROJECT_KEY_JAVA_CUSTOM);
+    void shouldRaiseIssuesFromACustomRule() throws Exception {
+      var projectKey = "sample-java-custom";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample Java Custom");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-custom.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Java Custom");
+      updateProject(engine, projectKey);
 
       var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_CUSTOM, PROJECT_KEY_JAVA_CUSTOM,
-        "src/main/java/foo/Foo.java",
-        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+      engine.analyze(createAnalysisConfiguration(projectKey, "sample-java-custom","src/main/java/foo/Foo.java"),
         issueListener, null, null);
       assertThat(issueListener.getIssues()).extracting("ruleKey", "startLine").containsOnly(
         tuple("mycompany-java:AvoidAnnotation", 12));
     }
 
     @Test
-    void analysisPHP() throws Exception {
-      updateProject(PROJECT_KEY_PHP);
+    void shouldRaiseIssuesOnAPhpProject() throws Exception {
+      var projectKey = "sample-php";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample PHP");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/php-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "php", "SonarLint IT PHP");
+      updateProject(engine, projectKey);
 
       var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_PHP, PROJECT_KEY_PHP, "src/Math.php"), issueListener, null, null);
+      engine.analyze(createAnalysisConfiguration(projectKey, "sample-php", "src/Math.php"), issueListener, null, null);
       assertThat(issueListener.getIssues()).hasSize(1);
     }
 
     @Test
-    void analysisPython() throws Exception {
-      updateProject(PROJECT_KEY_PYTHON);
+    void shouldRaiseIssuesOnAPythonProject() throws Exception {
+      var projectKey = "sample-python";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample Python");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/python-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "py", "SonarLint IT Python");
+
+      updateProject(engine, projectKey);
 
       var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_PYTHON, PROJECT_KEY_PYTHON, "src/hello.py"), issueListener, null, null);
+      engine.analyze(createAnalysisConfiguration(projectKey, "sample-python", "src/hello.py"), issueListener, null, null);
       assertThat(issueListener.getIssues()).hasSize(1);
     }
 
     @Test
-    void analysisWeb() throws IOException {
-      updateProject(PROJECT_KEY_WEB);
+    void shouldRaiseIssuesOnAHtmlProject() throws IOException {
+      var projectKey = "sample-web";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample Web");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/web-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "web", "SonarLint IT Web");
+
+      updateProject(engine, projectKey);
 
       var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_WEB, PROJECT_KEY_WEB, "src/file.html"), issueListener, null, null);
+      engine.analyze(createAnalysisConfiguration(projectKey, "sample-web", "src/file.html"), issueListener, null, null);
       assertThat(issueListener.getIssues()).hasSize(1);
     }
 
     @Test
-    void analysisUseQualityProfile() throws Exception {
-      updateProject(PROJECT_KEY_JAVA);
+    void customSensorsShouldNotBeExecuted() throws Exception {
+      var projectKey = "sample-java-custom-sensor";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample Java Custom");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/custom-sensor.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Custom Sensor");
+
+      updateProject(engine, projectKey);
 
       var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
-        "src/main/java/foo/Foo.java",
-        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
-        issueListener, null, null);
-
-      assertThat(issueListener.getIssues()).hasSize(2);
-    }
-
-    @Test
-    void analysisIssueOnDirectory() throws Exception {
-      updateProject(PROJECT_KEY_JAVA_PACKAGE);
-
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_PACKAGE, PROJECT_KEY_JAVA,
-        "src/main/java/foo/Foo.java",
-        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
-        issueListener, null, null);
-
-      assertThat(issueListener.getIssues()).extracting("ruleKey", "inputFile.path").containsOnly(
-        tuple(javaRuleKey("S106"), Paths.get("projects/sample-java/src/main/java/foo/Foo.java").toAbsolutePath().toString()),
-        tuple(javaRuleKey("S1228"), null));
-    }
-
-    @Test
-    void customSensorsNotExecuted() throws Exception {
-      updateProject(PROJECT_KEY_JAVA_CUSTOM_SENSOR);
-
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_CUSTOM_SENSOR, PROJECT_KEY_JAVA,
-        "src/main/java/foo/Foo.java",
-        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+      engine.analyze(createAnalysisConfiguration(projectKey, "sample-java", "src/main/java/foo/Foo.java"),
         issueListener, null, null);
 
       assertThat(issueListener.getIssues()).isEmpty();
     }
 
+    // TODO should be moved to a medium test
     @Test
     void globalExtension() throws Exception {
-      updateProject(PROJECT_KEY_GLOBAL_EXTENSION);
+      var projectKey = "sample-global-extension";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample Global Extension");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/global-extension.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "cobol", "SonarLint IT Global Extension");
+
+      updateProject(engine, projectKey);
 
       assertThat(logs).contains("Start Global Extension It works");
 
       var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_GLOBAL_EXTENSION, PROJECT_KEY_GLOBAL_EXTENSION,
+      engine.analyze(createAnalysisConfiguration(projectKey, "sample-global-extension",
         "src/foo.glob",
         "sonar.cobol.file.suffixes", "glob"),
         issueListener, null, null);
@@ -484,7 +323,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         tuple("global:inc", "Issue number 0"));
 
       issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_GLOBAL_EXTENSION, PROJECT_KEY_GLOBAL_EXTENSION,
+      engine.analyze(createAnalysisConfiguration(projectKey, "sample-global-extension",
         "src/foo.glob",
         "sonar.cobol.file.suffixes", "glob"),
         issueListener, null, null);
@@ -497,8 +336,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    void analysisTemplateRule() throws Exception {
-      Qualityprofiles.SearchWsResponse.QualityProfile qp = getQualityProfile(adminWsClient, "SonarLint IT Java");
+    void shouldRaiseIssuesFromATemplateRule() throws Exception {
+      var projectKey = "sample-java-template-rule";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample Java");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Java");
+
+      var qp = getQualityProfile(adminWsClient, "SonarLint IT Java");
 
       WsRequest request = new PostRequest("/api/rules/create")
         .setParam("custom_key", "myrule")
@@ -519,17 +363,15 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       }
 
       try {
-        updateProject(PROJECT_KEY_JAVA);
+        updateProject(engine, projectKey);
 
         var issueListener = new SaveIssueListener();
-        engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
-          "src/main/java/foo/Foo.java",
-          "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+        engine.analyze(createAnalysisConfiguration(projectKey, "sample-java", "src/main/java/foo/Foo.java"),
           issueListener, null, null);
 
         assertThat(issueListener.getIssues()).hasSize(3);
 
-        assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey("myrule"), PROJECT_KEY_JAVA).get().getHtmlDescription())
+        assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey("myrule"), projectKey).get().getHtmlDescription())
           .contains("my_rule_description");
 
       } finally {
@@ -543,116 +385,133 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    void analysisUseEmptyQualityProfile() throws Exception {
-      updateProject(PROJECT_KEY_JAVA_EMPTY);
+    void shouldHonorServerSideSettings() throws Exception {
+      var projectKey = "sample-java-configured";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample Java");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Java");
+
+      updateProject(engine, projectKey);
 
       var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_EMPTY, PROJECT_KEY_JAVA,
-        "src/main/java/foo/Foo.java",
-        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
-        issueListener, null, null);
-
-      assertThat(issueListener.getIssues()).isEmpty();
-    }
-
-    @Test
-    void analysisUseConfiguration() throws Exception {
-      updateProject(PROJECT_KEY_JAVA);
-
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
-        "src/main/java/foo/Foo.java",
-        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+      engine.analyze(createAnalysisConfiguration(projectKey, "sample-java","src/main/java/foo/Foo.java"),
         issueListener, null, null);
       assertThat(issueListener.getIssues()).hasSize(2);
 
       // Override default file suffixes in global props so that input file is not considered as a Java file
       setSettingsMultiValue(null, "sonar.java.file.suffixes", ".foo");
-      updateProject(PROJECT_KEY_JAVA);
+      updateProject(engine, projectKey);
 
       issueListener.clear();
-      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
-        "src/main/java/foo/Foo.java",
-        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+      engine.analyze(createAnalysisConfiguration(projectKey, "sample-java", "src/main/java/foo/Foo.java"),
         issueListener, null, null);
       assertThat(issueListener.getIssues()).isEmpty();
 
       // Override default file suffixes in project props so that input file is considered as a Java file again
-      setSettingsMultiValue(PROJECT_KEY_JAVA, "sonar.java.file.suffixes", ".java");
-      updateProject(PROJECT_KEY_JAVA);
+      setSettingsMultiValue(projectKey, "sonar.java.file.suffixes", ".java");
+      updateProject(engine, projectKey);
 
       issueListener.clear();
-      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA,
-        "src/main/java/foo/Foo.java",
-        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+      engine.analyze(createAnalysisConfiguration(projectKey, "sample-java", "src/main/java/foo/Foo.java"),
         issueListener, null, null);
       assertThat(issueListener.getIssues()).hasSize(2);
 
     }
 
     @Test
-    void getProject() {
-      var api = new ServerApi(endpointParams(ORCHESTRATOR), sqHttpClient()).component();
-      assertThat(api.getProject("foo")).isNotPresent();
-      assertThat(api.getProject(PROJECT_KEY_RUBY)).isPresent();
-    }
+    void shouldRaiseIssuesOnARubyProject() throws Exception {
+      var projectKey = "sample-ruby";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample Ruby");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/ruby-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "ruby", "SonarLint IT Ruby");
 
-    @Test
-    void analysisRuby() throws Exception {
-      updateProject(PROJECT_KEY_RUBY);
+      updateProject(engine, projectKey);
 
       var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_RUBY, PROJECT_KEY_RUBY, "src/hello.rb"), issueListener, null, null);
+      engine.analyze(createAnalysisConfiguration(projectKey, "sample-ruby", "src/hello.rb"), issueListener, null, null);
       assertThat(issueListener.getIssues()).hasSize(1);
     }
 
     @Test
-    void analysisKotlin() throws Exception {
-      updateProject(PROJECT_KEY_KOTLIN);
+    void shouldRaiseIssuesOnAKotlinProject() throws Exception {
+      var projectKey = "sample-kotlin";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample Kotlin");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/kotlin-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "kotlin", "SonarLint IT Kotlin");
+
+      updateProject(engine, projectKey);
 
       var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_KOTLIN, PROJECT_KEY_KOTLIN, "src/hello.kt"), issueListener, null, null);
+      engine.analyze(createAnalysisConfiguration(projectKey, "sample-kotlin", "src/hello.kt"), issueListener, null, null);
       assertThat(issueListener.getIssues()).hasSize(1);
     }
 
     @Test
-    void analysisScala() throws Exception {
-      updateProject(PROJECT_KEY_SCALA);
+    void shouldRaiseIssuesOnAScalaProject() throws Exception {
+      var projectKey = "sample-scala";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample Scala");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/scala-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "scala", "SonarLint IT Scala");
+
+      updateProject(engine, projectKey);
 
       var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_SCALA, PROJECT_KEY_SCALA, "src/Hello.scala"), issueListener, null, null);
+      engine.analyze(createAnalysisConfiguration(projectKey, "sample-scala", "src/Hello.scala"), issueListener, null, null);
       assertThat(issueListener.getIssues()).hasSize(1);
     }
 
     @Test
-    void analysisXml() throws Exception {
-      updateProject(PROJECT_KEY_XML);
+    void shouldRaiseIssuesOnAnXmlProject() throws Exception {
+      var projectKey = "sample-xml";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample XML");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/xml-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "xml", "SonarLint IT XML");
+
+      updateProject(engine, projectKey);
 
       var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_XML, PROJECT_KEY_XML, "src/foo.xml"), issueListener, (m, l) -> System.out.println(m), null);
+      engine.analyze(createAnalysisConfiguration(projectKey, "sample-xml", "src/foo.xml"), issueListener, (m, l) -> System.out.println(m), null);
       assertThat(issueListener.getIssues()).hasSize(1);
     }
 
-    @Test
-    void cleanOldPlugins() throws IOException {
-      updateProject(PROJECT_KEY_JAVA);
-      var pluginsFolderPath = globalConfig.getStorageRoot().resolve(encodeForFs("orchestrator")).resolve("plugins");
-      var newFile = pluginsFolderPath.resolve("new_file");
-      Files.createFile(newFile);
-      engine.stop(false);
+  }
 
+  @Nested
+  class ServerSentEvents {
+
+    private ConnectedSonarLintEngine engine;
+
+    @BeforeEach
+    void start(@TempDir Path sonarUserHome) {
+      var globalConfig = ConnectedGlobalConfiguration.sonarQubeBuilder()
+        .setConnectionId(CONNECTION_ID)
+        .setSonarLintUserHome(sonarUserHome)
+        .addEnabledLanguage(Language.JAVA)
+        .setLogOutput((msg, level) -> {
+          System.out.println(msg);
+        })
+        .build();
       engine = new ConnectedSonarLintEngineImpl(globalConfig);
 
-      assertThat(newFile).doesNotExist();
+    }
+
+    @AfterEach
+    void stop() {
+      engine.stop(true);
     }
 
     @Test
-    void updatesStorageOnServerEvents() throws IOException, InterruptedException {
+    void shouldUpdateQualityProfileInLocalStorageWhenProfileChangedOnServer() throws IOException {
       assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 4));
 
-      updateProject(PROJECT_KEY_JAVA);
+      var projectKey = "projectKey-sse";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample Java");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Java");
+
+      updateProject(engine, projectKey);
       Deque<ServerEvent> events = new ConcurrentLinkedDeque<>();
-      engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVA), events::add, null);
+      engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(projectKey), events::add, null);
       var qualityProfile = getQualityProfile(adminWsClient, "SonarLint IT Java");
       deactivateRule(adminWsClient, qualityProfile, "java:S106");
       waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
@@ -661,24 +520,30 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           .isInstanceOfSatisfying(RuleSetChangedEvent.class, e -> {
             assertThat(e.getDeactivatedRules()).containsOnly("java:S106");
             assertThat(e.getActivatedRules()).isEmpty();
-            assertThat(e.getProjectKeys()).containsOnly(PROJECT_KEY_JAVA);
+            assertThat(e.getProjectKeys()).containsOnly(projectKey);
           });
       });
 
       var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA, PROJECT_KEY_JAVA, "src/main/java/foo/Foo.java"), issueListener, null, null);
+      engine.analyze(createAnalysisConfiguration(projectKey, "sample-java", "src/main/java/foo/Foo.java"), issueListener, null, null);
       assertThat(issueListener.getIssues())
         .extracting(org.sonarsource.sonarlint.core.client.api.common.analysis.Issue::getRuleKey)
         .containsOnly("java:S2325");
     }
 
     @Test
-    void updatesStorageWhenIssueResolvedOnServer() throws InterruptedException {
+    void shouldUpdateIssueInLocalStorageWhenIssueResolvedOnServer() {
       assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6));
 
-      updateProject(PROJECT_KEY_JAVA);
+      var projectKey = "projectKey-sse2";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample Java");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Java");
+
+      analyzeMavenProject("sample-java", projectKey);
+      updateProject(engine, projectKey);
       Deque<ServerEvent> events = new ConcurrentLinkedDeque<>();
-      engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVA), events::add, null);
+      engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(projectKey), events::add, null);
       var issueKey = getIssueKeys(adminWsClient, "java:S106").get(0);
       resolveIssueAsWontFix(adminWsClient, issueKey);
 
@@ -690,33 +555,46 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
             assertThat(e.getResolved()).isTrue();
             assertThat(e.getUserSeverity()).isNull();
             assertThat(e.getUserType()).isNull();
-            assertThat(e.getProjectKey()).isEqualTo(PROJECT_KEY_JAVA);
+            assertThat(e.getProjectKey()).isEqualTo(projectKey);
           });
       });
 
-      var serverIssues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY_JAVA, "", ""), MAIN_BRANCH_NAME, "src/main/java/foo/Foo.java");
+      var serverIssues = engine.getServerIssues(new ProjectBinding(projectKey, "", ""), MAIN_BRANCH_NAME, "src/main/java/foo/Foo.java");
 
       assertThat(serverIssues)
         .extracting(ServerIssue::getRuleKey, ServerIssue::isResolved)
         .contains(tuple("java:S106", true));
     }
-
   }
 
   @Nested
   // TODO Can be removed when switching to Java 16+ and changing prepare() to static
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   class BranchTests {
+    // Use the pattern of long living branches in SQ 7.9, else we only have issues on changed files
+    private static final String SHORT_BRANCH = "feature/short_living";
+    private static final String LONG_BRANCH = "branch-1.x";
+    private static final String PROJECT_KEY = "sample-xoo";
+    private ConnectedSonarLintEngine engine;
+
+    private Issue wfIssue;
+    private Issue fpIssue;
+    private Issue overridenSeverityIssue;
+    private Issue overridenTypeIssue;
+
+    @TempDir
+    private Path sonarUserHome;
 
     @BeforeAll
-    void prepare() throws IOException {
+    void prepare() {
       engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
-        .setConnectionId("orchestrator")
+        .setConnectionId(CONNECTION_ID)
         .setSonarLintUserHome(sonarUserHome)
         .setExtraProperties(new HashMap<>())
         .build());
 
       provisionProject(ORCHESTRATOR, PROJECT_KEY, "Sample Xoo");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/xoo-sonarlint.xml"));
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY, "xoo", "SonarLint IT Xoo");
 
       engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
@@ -729,7 +607,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       // long living branch
       analyzeProject("sample-xoo-v1", "sonar.branch.name", LONG_BRANCH);
-      // Second analysis with less issues to have closed issues on the branch
+      // Second analysis with fewer issues to have some closed issues on the branch
       analyzeProject("sample-xoo-v2", "sonar.branch.name", LONG_BRANCH);
 
       // Mark a few issues as closed WF and closed FP on the branch
@@ -764,7 +642,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    void sync_all_project_branches() {
+    void shouldSyncBranchesFromServer() {
       engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY), null);
 
       // Starting from SQ 8.1, concept of short vs long living branch has been removed
@@ -777,7 +655,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    void download_all_issues_for_branch() {
+    void shouldSyncIssuesFromBranch() {
       engine.downloadAllServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, LONG_BRANCH, null);
 
       var file1Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), LONG_BRANCH, "src/500lines.xoo");
@@ -799,6 +677,16 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       // No hotspots
       assertThat(allIssues.values()).allSatisfy(i -> assertThat(i.getType()).isIn(RuleType.CODE_SMELL, RuleType.BUG, RuleType.VULNERABILITY));
     }
+
+    private void analyzeProject(String projectDirName, String... properties) {
+      var projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
+      ORCHESTRATOR.executeBuild(SonarScanner.create(projectDir.toFile())
+        .setProjectKey(PROJECT_KEY)
+        .setSourceDirs("src")
+        .setProperties(properties)
+        .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
+        .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
+    }
   }
 
   @Nested
@@ -806,13 +694,16 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     private static final String PROJECT_KEY_JAVA_TAINT = "sample-java-taint";
 
+    private ConnectedSonarLintEngine engine;
+
     @BeforeEach
-    void prepare(@TempDir Path sonarUserHome) throws Exception {
+    void prepare(@TempDir Path sonarUserHome) {
       provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_TAINT, "Java With Taint Vulnerabilities");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint-with-taint.xml"));
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_TAINT, "java", "SonarLint Taint Java");
 
       engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
-        .setConnectionId("orchestrator")
+        .setConnectionId(CONNECTION_ID)
         .addEnabledLanguage(Language.JAVA)
         .setSonarLintUserHome(sonarUserHome)
         .setLogOutput((msg, level) -> System.out.println(msg))
@@ -831,14 +722,14 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    void download_taint_vulnerabilities() {
-      analyzeMavenProject(ORCHESTRATOR, PROJECT_KEY_JAVA_TAINT, Map.of("sonar.projectKey", PROJECT_KEY_JAVA_TAINT));
+    void shouldSyncTaintVulnerabilities() {
+      analyzeMavenProject("sample-java-taint", PROJECT_KEY_JAVA_TAINT);
 
       // Ensure a vulnerability has been reported on server side
       var issuesList = adminWsClient.issues().search(new SearchRequest().setTypes(List.of("VULNERABILITY")).setComponentKeys(List.of(PROJECT_KEY_JAVA_TAINT))).getIssuesList();
       assertThat(issuesList).hasSize(1);
 
-      ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY_JAVA_TAINT, "", "");
+      var projectBinding = new ProjectBinding(PROJECT_KEY_JAVA_TAINT, "", "");
 
       engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVA_TAINT, null);
 
@@ -857,6 +748,11 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       assertThat(taintIssue.getSeverity()).isEqualTo(IssueSeverity.MAJOR);
 
       assertThat(taintIssue.getType()).isEqualTo(RuleType.VULNERABILITY);
+      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
+        assertThat(taintIssue.getRuleDescriptionContextKey()).isEqualTo("java_se");
+      } else {
+        assertThat(taintIssue.getRuleDescriptionContextKey()).isNull();
+      }
       assertThat(taintIssue.getFlows()).isNotEmpty();
       var flow = taintIssue.getFlows().get(0);
       assertThat(flow.locations()).isNotEmpty();
@@ -881,7 +777,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       assertThat(engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java")).isEmpty();
 
       // check TaintVulnerabilityRaised is received
-      analyzeMavenProject(ORCHESTRATOR, PROJECT_KEY_JAVA_TAINT, Map.of("sonar.projectKey", PROJECT_KEY_JAVA_TAINT));
+      analyzeMavenProject("sample-java-taint", PROJECT_KEY_JAVA_TAINT);
 
       waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
         assertThat(events).isNotEmpty();
@@ -950,7 +846,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       assertThat(taintIssues).isNotEmpty();
 
       // analyze another project under the same project key to close the taint issue
-      analyzeMavenProject(ORCHESTRATOR, PROJECT_KEY_JAVA, Map.of("sonar.projectKey", PROJECT_KEY_JAVA_TAINT));
+      analyzeMavenProject("sample-java", PROJECT_KEY_JAVA_TAINT);
 
       // check TaintVulnerabilityClosed is received
       waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
@@ -969,20 +865,26 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   @Nested
   // TODO Can be removed when switching to Java 16+ and changing prepare() to static
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-  class HotspotsTests {
+  class Hotspots {
 
     public static final String HOTSPOT_FEATURE_DISABLED = "hotspotFeatureDisabled";
 
     private static final String PROJECT_KEY_JAVA_HOTSPOT = "sample-java-hotspot";
 
     @BeforeAll
-    void prepare() throws Exception {
+    void prepare() {
       provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_HOTSPOT, "Sample Java Hotspot");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint-with-hotspot.xml"));
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_HOTSPOT, "java", "SonarLint IT Java Hotspot");
 
       // Build project to have bytecode and analyze
-      analyzeMavenProject(ORCHESTRATOR, PROJECT_KEY_JAVA_HOTSPOT, Map.of("sonar.projectKey", PROJECT_KEY_JAVA_HOTSPOT));
+      analyzeMavenProject("sample-java-hotspot", PROJECT_KEY_JAVA_HOTSPOT);
     }
+
+    private ConnectedSonarLintEngine engine;
+
+    @TempDir
+    private Path sonarUserHome;
 
     @BeforeEach
     void start(TestInfo info) {
@@ -991,7 +893,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       globalProps.put("sonar.global.label", "It works");
 
       var globalConfigBuilder = ConnectedGlobalConfiguration.sonarQubeBuilder()
-        .setConnectionId("orchestrator")
+        .setConnectionId(CONNECTION_ID)
         .setSonarLintUserHome(sonarUserHome)
         .addEnabledLanguage(Language.JAVA)
         .setLogOutput((msg, level) -> {
@@ -1018,7 +920,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     @Test
     @Tag(HOTSPOT_FEATURE_DISABLED)
     void dontReportHotspotsIfNotEnabled() throws Exception {
-      updateProject(PROJECT_KEY_JAVA_HOTSPOT);
+      updateProject(engine, PROJECT_KEY_JAVA_HOTSPOT);
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_HOTSPOT, PROJECT_KEY_JAVA_HOTSPOT,
@@ -1034,7 +936,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 6),
         "SonarQube should support opening security hotspots");
 
-      analyzeMavenProject(PROJECT_KEY_JAVA_HOTSPOT);
+      analyzeMavenProject("sample-java-hotspot", PROJECT_KEY_JAVA_HOTSPOT);
       var securityHotspotsService = new ServerApi(endpointParams(ORCHESTRATOR), sqHttpClient()).hotspot();
 
       var remoteHotspot = securityHotspotsService
@@ -1057,13 +959,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         .setParam("projectKey", projectKey)
         .setAdminCredentials()
         .execute();
-      var parser = Hotspots.SearchWsResponse.parser();
+      var parser = org.sonarqube.ws.Hotspots.SearchWsResponse.parser();
       return parser.parseFrom(response.getBody()).getHotspots(0).getKey();
     }
 
     @Test
     void reportHotspots() throws Exception {
-      updateProject(PROJECT_KEY_JAVA_HOTSPOT);
+      updateProject(engine, PROJECT_KEY_JAVA_HOTSPOT);
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_HOTSPOT, PROJECT_KEY_JAVA_HOTSPOT,
@@ -1084,7 +986,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     @Test
     void loadHotspotRuleDescription() throws Exception {
       assumeThat(ORCHESTRATOR.getServer().version()).isGreaterThanOrEqualTo(Version.create("9.7"));
-      updateProject(PROJECT_KEY_JAVA_HOTSPOT);
+      updateProject(engine, PROJECT_KEY_JAVA_HOTSPOT);
 
       var ruleDetails = engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey(ORCHESTRATOR, "S4792"), PROJECT_KEY_JAVA_HOTSPOT).get();
 
@@ -1097,7 +999,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     @Test
     void downloadsServerHotspotsForProject() {
-      updateProject(PROJECT_KEY_JAVA_HOTSPOT);
+      updateProject(engine, PROJECT_KEY_JAVA_HOTSPOT);
 
       engine.downloadAllServerHotspots(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVA_HOTSPOT, "master", null);
 
@@ -1113,7 +1015,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     @Test
     void downloadsServerHotspotsForFile() {
-      updateProject(PROJECT_KEY_JAVA_HOTSPOT);
+      updateProject(engine, PROJECT_KEY_JAVA_HOTSPOT);
       var projectBinding = new ProjectBinding(PROJECT_KEY_JAVA_HOTSPOT, "", "ide");
 
       engine.downloadAllServerHotspotsForFile(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding, "ide/src/main/java/foo/Foo.java", "master", null);
@@ -1130,42 +1032,19 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   }
 
   @Nested
-  // TODO Can be removed when switching to Java 16+ and changing prepare() to static
-  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-  class WithNewBackendApi {
+  class RuleDescription {
+    static final String USE_NEW_CLIENT_API = "use_new_client_api";
 
-    private static final String PROJECT_KEY_JAVA_TAINT = "sample-java-taint-new-backend";
-    private static final String PROJECT_KEY_JAVA_HOTSPOT = "sample-java-hotspot-new-backend";
+    private ConnectedSonarLintEngine engine;
+    private SonarLintBackend backend;
 
     @TempDir
     private Path sonarUserHome;
 
-    private SonarLintBackend backend;
-    // still needed for the sync
-    private ConnectedSonarLintEngine engine;
-
-    @BeforeAll
-    void prepare() throws Exception {
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_TAINT, "Java With Taint Vulnerabilities");
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_HOTSPOT, "Java With Security Hotspots");
-
-      // Build project to have bytecode and analyze
-      analyzeMavenProject(ORCHESTRATOR, "sample-java-taint", Map.of("sonar.projectKey", PROJECT_KEY_JAVA_TAINT));
-      analyzeMavenProject(ORCHESTRATOR, "sample-java-hotspot", Map.of("sonar.projectKey", PROJECT_KEY_JAVA_HOTSPOT));
-    }
-
     @BeforeEach
-    void start() {
-      FileUtils.deleteQuietly(sonarUserHome.toFile());
-
-      backend = new SonarLintBackendImpl(newDummySonarLintClient());
-      backend.initialize(
-        new InitializeParams(new HostInfoDto("clientName"), "integrationTests", sonarUserHome.resolve("storage"), Collections.emptySet(), Collections.emptyMap(), Collections.emptyMap(), Set.of(Language.JAVA),
-          Collections.emptySet(), false, List.of(new SonarQubeConnectionConfigurationDto("ORCHESTRATOR", ORCHESTRATOR.getServer().getUrl())), Collections.emptyList(),
-          sonarUserHome.toString(), false));
-
+    void start(TestInfo testInfo) {
       var globalConfig = ConnectedGlobalConfiguration.sonarQubeBuilder()
-        .setConnectionId("ORCHESTRATOR")
+        .setConnectionId(CONNECTION_ID)
         .setSonarLintUserHome(sonarUserHome)
         .addEnabledLanguage(Language.JAVA)
         .setLogOutput((msg, level) -> {
@@ -1174,23 +1053,78 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         .build();
       engine = new ConnectedSonarLintEngineImpl(globalConfig);
 
-      // sync is still done by the engine for now
-      updateProject(PROJECT_KEY_JAVA_TAINT);
-      updateProject(PROJECT_KEY_JAVA_HOTSPOT);
+      if (testInfo.getTags().contains(USE_NEW_CLIENT_API)) {
+        backend = new SonarLintBackendImpl(newDummySonarLintClient());
+        backend.initialize(
+          new InitializeParams(new HostInfoDto("clientName"),"integrationTests", sonarUserHome.resolve("storage"), Collections.emptySet(), Collections.emptyMap(), Collections.emptyMap(), Set.of(Language.JAVA),
+            Collections.emptySet(), false, List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl())), Collections.emptyList(),
+            sonarUserHome.toString(), false));
+      }
     }
 
     @AfterEach
-    void stop() {
-      backend.shutdown();
+    void stop(TestInfo testInfo) {
+      if (testInfo.getTags().contains(USE_NEW_CLIENT_API)) {
+        backend.shutdown();
+      }
       engine.stop(true);
     }
 
     @Test
-    void returnDescriptionSectionsForTaintRules() throws ExecutionException, InterruptedException {
+    void shouldContainExtendedDescription() throws Exception {
+      var projectKey = "project-with-extended-description";
+
+      provisionProject(ORCHESTRATOR, projectKey, "Project With Extended Description");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Java");
+      updateProject(engine, projectKey);
+
+      assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey("S106"), projectKey).get().getExtendedDescription()).isEmpty();
+
+      var extendedDescription = " = Title\n*my dummy extended description*";
+
+      WsRequest request = new PostRequest("/api/rules/update")
+        .setParam("key", javaRuleKey("S106"))
+        .setParam("markdown_note", extendedDescription);
+      try (var response = adminWsClient.wsConnector().call(request)) {
+        assertThat(response.code()).isEqualTo(200);
+      }
+
+      String expected;
+      if (ORCHESTRATOR.getServer().version().isGreaterThan(7, 9)) {
+        expected = "<h1>Title</h1><strong>my dummy extended description</strong>";
+      } else {
+        // For some reason, there is an extra line break in the generated HTML
+        expected = "<h1>Title\n</h1><strong>my dummy extended description</strong>";
+      }
+      assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey("S106"), projectKey).get().getExtendedDescription())
+        .isEqualTo(expected);
+    }
+
+    @Test
+    void shouldSupportsMarkdownDescription() throws Exception {
+      var projectKey = "project-with-markdown-description";
+
+      provisionProject(ORCHESTRATOR, projectKey, "Project With Markdown Description");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint-with-markdown.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Java Markdown");
+      updateProject(engine, projectKey);
+
+      assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), "mycompany-java:markdown", projectKey).get().getHtmlDescription())
+        .isEqualTo("<h1>Title</h1><ul><li>one</li>\n"
+          + "<li>two</li></ul>");
+    }
+
+    @Test
+    @Tag(USE_NEW_CLIENT_API)
+    void shouldContainAllContextsIfNoContextProvided() throws ExecutionException, InterruptedException {
+      var projectKey = "sample-java-taint-new-backend";
+
+      provisionProject(ORCHESTRATOR, projectKey, "Java With Taint Vulnerabilities");
       // sync is still done by the engine for now
-      updateProject(PROJECT_KEY_JAVA_TAINT);
+      updateProject(engine, projectKey);
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-        List.of(new ConfigurationScopeDto("project", null, true, "Project", new BindingConfigurationDto("ORCHESTRATOR", PROJECT_KEY_JAVA_TAINT, false)))));
+        List.of(new ConfigurationScopeDto("project", null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, projectKey, false)))));
 
       var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("project", "javasecurity:S2083", null)).get();
 
@@ -1224,6 +1158,20 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
             "How can I fix it?",
             // actual description not checked because it changes frequently between versions
             "java_se", "Java SE",
+            "<h4>How can I fix it in another component or framework?</h4>\n"
+              + "<p>Although the main framework or component you use in your project is not listed, you may find helpful content in the instructions we provide.</p>\n"
+              + "<p>Caution: The libraries mentioned in these instructions may not be appropriate for your code.</p>\n"
+              + "<p>\n"
+              + "<ul>\n"
+              + "    <li>Do use libraries that are compatible with the frameworks you are using.</li>\n"
+              + "    <li>Don't blindly copy and paste the fix-ups into your code.</li>\n"
+              + "</ul>\n"
+              + "<h4>Help us improve</h4>\n"
+              + "<p>Let us know if the instructions we provide do not work for you.\n"
+              + "    Tell us which framework you use and why our solution does not work by submitting an idea on the SonarLint product-board.</p>\n"
+              + "<a href=\"https://portal.productboard.com/sonarsource/4-sonarlint/submit-idea\">Submit an idea</a>\n"
+              + "<p>We will do our best to provide you with more relevant instructions in the future.</p>",
+            "others", "Others",
             "More Info",
             "<h3>Standards</h3>\n" +
               "<ul>\n" +
@@ -1284,13 +1232,217 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    void returnConvertedDescriptionSectionsForHotspotRules() throws ExecutionException, InterruptedException {
+    @Tag(USE_NEW_CLIENT_API)
+    void shouldContainsOnlyAppropriateContextIfContextProvided() throws ExecutionException, InterruptedException {
+      var projectKey = "sample-java-taint-rule-context-new-backend";
+
+      provisionProject(ORCHESTRATOR, projectKey, "Java With Taint Vulnerabilities And Multiple Contexts");
+      // sync is still done by the engine for now
+      updateProject(engine, projectKey);
+      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+        List.of(new ConfigurationScopeDto("project", null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, projectKey, false)))));
+
+      var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("project", "javasecurity:S5131", "spring")).get();
+
+      var description = activeRuleDetailsResponse.details().getDescription();
+
+      if (!ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
+        // no description sections at that time
+        assertThat(description.isRight()).isFalse();
+      } else {
+        var extendedDescription = description.getRight();
+        assertThat(extendedDescription.getIntroductionHtmlContent())
+          .isEqualTo("<p>This vulnerability makes it possible to temporarily execute JavaScript code in the context of the application, granting access to the session of\n"
+            + "the victim. This is possible because user-provided data, such as URL parameters, are copied into the HTML body of the HTTP response that is sent back\n"
+            + "to the user.</p>");
+        var iterator = extendedDescription.getTabs().iterator();
+        iterator.next();
+        assertThat(extendedDescription.getTabs())
+          .flatExtracting(this::extractTabContent)
+          .containsExactly(
+            "Why is this an issue?",
+            "<p>Reflected cross-site scripting (XSS) occurs in a web application when the application retrieves data like parameters or headers from an incoming\n"
+              + "HTTP request and inserts it into its HTTP response without first sanitizing it. The most common cause is the insertion of GET parameters.</p>\n"
+              + "<p>When well-intentioned users open a link to a page that is vulnerable to reflected XSS, they are exposed to attacks that target their own\n"
+              + "browser.</p>\n"
+              + "<p>A user with malicious intent carefully crafts the link beforehand.</p>\n"
+              + "<p>After creating this link, the attacker must use phishing techniques to ensure that his target users click on the link.</p>\n"
+              + "<h3>What is the potential impact?</h3>\n"
+              + "<p>A well-intentioned user opens a malicious link that injects data into the web application. This data can be text, but it can also be arbitrary code\n"
+              + "that can be interpreted by the target user’s browser, such as HTML, CSS, or JavaScript.</p>\n"
+              + "<p>Below are some real-world scenarios that illustrate some impacts of an attacker exploiting the vulnerability.</p>\n"
+              + "<h4>Vandalism on the front-end website</h4>\n"
+              + "<p>The malicious link defaces the target web application from the perspective of the user who is the victim. This may result in loss of integrity and\n"
+              + "theft of the benevolent user’s data.</p>\n"
+              + "<h4>Identity spoofing</h4>\n"
+              + "<p>The forged link injects malicious code into the web application. The code enables identity spoofing thanks to cookie theft.</p>\n"
+              + "<h4>Record user activity</h4>\n"
+              + "<p>The forged link injects malicious code into the web application. To leak confidential information, attackers can inject code that records keyboard\n"
+              + "activity (keylogger) and even requests access to other devices, such as the camera or microphone.</p>\n"
+              + "<h4>Chaining XSS with other vulnerabilities</h4>\n"
+              + "<p>In many cases, bug hunters and attackers chain cross-site scripting vulnerabilities with other vulnerabilities to maximize their impact.<br> For\n"
+              + "example, an XSS can be used as the first step to exploit more dangerous vulnerabilities or features that require higher privileges, such as a code\n"
+              + "injection vulnerability in the admin control panel of a web application.</p>",
+            "How can I fix it?",
+            "<p>The following code is vulnerable to cross-site scripting because it returns an HTML response that contains user input.</p>\n"
+              + "<p>If you do not intend to send HTML code to clients, the vulnerability can be fixed by specifying the type of data returned in the response. For\n"
+              + "example, you can use the <code>produces</code> property of the <code>GetMapping</code> annotation.</p>\n"
+              + "<h4>Noncompliant code example</h4>\n"
+              + "<pre data-diff-id=\"1\" data-diff-type=\"noncompliant\">\n"
+              + "@RestController\n"
+              + "public class ApiController\n"
+              + "{\n"
+              + "    @GetMapping(value = \"/endpoint\")\n"
+              + "    public String endpoint(@RequestParam(\"input\") input)\n"
+              + "    {\n"
+              + "        return input;\n"
+              + "    }\n"
+              + "}\n"
+              + "</pre>\n"
+              + "<h4>Compliant solution</h4>\n"
+              + "<pre data-diff-id=\"1\" data-diff-type=\"compliant\">\n"
+              + "@RestController\n"
+              + "public class ApiController\n"
+              + "{\n"
+              + "    @GetMapping(value = \"/endpoint\", produces = \"text/plain\")\n"
+              + "    public String endpoint(@RequestParam(\"input\") input)\n"
+              + "    {\n"
+              + "        return input;\n"
+              + "    }\n"
+              + "}\n"
+              + "</pre>\n"
+              + "<h3>How does this work?</h3>\n"
+              + "<p>If the HTTP response is HTML code, it is highly recommended to use a template engine like <a href=\"https://www.thymeleaf.org/\">Thymeleaf</a> to\n"
+              + "generate it. This template engine separates the view from the business logic and automatically encodes the output of variables, drastically reducing\n"
+              + "the risk of cross-site scripting vulnerabilities.</p>\n"
+              + "<p>If you do not intend to send HTML code to clients, the vulnerability can be fixed by specifying the type of data returned in the response with the\n"
+              + "<code>content-type</code> HTTP header. This header tells the browser that the response does not contain HTML code and should not be parsed and\n"
+              + "interpreted as HTML. Thus, the response is not vulnerable to reflected cross-site scripting.</p>\n"
+              + "<p>For example, setting the content-type to <code>text/plain</code> allows to safely reflect user input since browsers will not try to parse and\n"
+              + "execute the response.</p>\n"
+              + "<h3>Pitfalls</h3>\n"
+              + "<h4>Content-types</h4>\n"
+              + "<p>Be aware that there are more content-types than <code>text/html</code> that allow to execute JavaScript code in a browser and thus are prone to\n"
+              + "cross-site scripting vulnerabilities.<br> The following content-types are known to be affected:</p>\n"
+              + "<ul>\n"
+              + "  <li> application/mathml+xml </li>\n"
+              + "  <li> application/rdf+xml </li>\n"
+              + "  <li> application/vnd.wap.xhtml+xml </li>\n"
+              + "  <li> application/xhtml+xml </li>\n"
+              + "  <li> application/xml </li>\n"
+              + "  <li> image/svg+xml </li>\n"
+              + "  <li> multipart/x-mixed-replace </li>\n"
+              + "  <li> text/html </li>\n"
+              + "  <li> text/rdf </li>\n"
+              + "  <li> text/xml </li>\n"
+              + "  <li> text/xsl </li>\n"
+              + "</ul>\n"
+              + "<h4>The limits of validation</h4>\n"
+              + "<p>Validation of user inputs is a good practice to protect against various injection attacks. But for XSS, validation on its own is not the\n"
+              + "recommended approach.</p>\n"
+              + "<p>As an example, filtering out user inputs based on a deny-list will never fully prevent XSS vulnerability from being exploited. This practice is\n"
+              + "sometimes used by web application firewalls. It is only a matter of time for malicious users to find the exploitation payload that will defeat the\n"
+              + "filters.</p>\n"
+              + "<p>Another example is applications that allow users or third-party services to send HTML content to be used by the application. A common approach is\n"
+              + "trying to parse HTML and strip sensitive HTML tags. Again, this deny-list approach is vulnerable by design: maintaining a list of sensitive HTML tags,\n"
+              + "in the long run, is very difficult.</p>\n"
+              + "<p>A preferred option is to use Markdown in conjunction with a parser that removes embedded HTML and restricts the use of \"javascript:\" URI.</p>\n"
+              + "<h3>Going the extra mile</h3>\n"
+              + "<h4>Content Security Policy (CSP) Header</h4>\n"
+              + "<p>With a defense-in-depth security approach, the <strong>CSP</strong> response header can be added to instruct client browsers to\n"
+              + "<strong>block</strong> loading data that does not meet the application’s security requirements. If configured correctly, this can prevent any attempt\n"
+              + "to exploit XSS in the application.<br> <a href=\"https://web.dev/csp-xss/\">Learn more here.</a></p>",
+            "More Info",
+            "<h3>Documentation</h3>\n"
+              + "<ul>\n"
+              + "  <li> <a href=\"https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html\">OWASP Cheat Sheet</a> - XSS\n"
+              + "  Prevention Cheat Sheet </li>\n"
+              + "  <li> <a href=\"https://javadoc.io/doc/org.owasp.encoder/encoder/latest/index.html\">OWASP Encoder</a> </li>\n"
+              + "  <li> <a href=\"https://spring.io/guides/gs/securing-web/\">Spring.io, Securing a Web Application</a> </li>\n"
+              + "  <li> <a href=\"https://www.thymeleaf.org/doc/tutorials/2.1/usingthymeleaf.html\">Thymeleaf.org, Tutorial: Using Thymeleaf</a> </li>\n"
+              + "</ul>\n"
+              + "<h3>Articles &amp; Blog Posts</h3>\n"
+              + "<ul>\n"
+              + "  <li> <a href=\"https://blog.sonarsource.com/wordpress-stored-xss-vulnerability\">SonarSource, WordPress 5.8.2 Stored XSS Vulnerability</a> </li>\n"
+              + "  <li> <a href=\"https://blog.sonarsource.com/ghost-admin-takeover\">SonarSource, Ghost CMS 4.3.2 - Cross-Origin Admin Takeover</a> </li>\n"
+              + "  <li> <a href=\"https://samy.pl/myspace/\">Samy Kamkar, The MySpace Worm</a> </li>\n"
+              + "</ul>\n"
+              + "<h3>Conference Presentations</h3>\n"
+              + "<ul>\n"
+              + "  <li> <a href=\"https://www.youtube.com/watch?v=ksq7e6UUDag\">DEF CON Safe Mode Red Team Village, Ray Doyle, Weaponized XSS Moving Beyond Alert</a>\n"
+              + "  </li>\n"
+              + "</ul>\n"
+              + "<h3>Standards</h3>\n"
+              + "<ul>\n"
+              + "  <li> <a href=\"https://owasp.org/Top10/A03_2021-Injection/\">OWASP Top 10 2021 Category A3</a> - Injection </li>\n"
+              + "  <li> <a href=\"https://owasp.org/www-project-top-ten/2017/A7_2017-Cross-Site_Scripting_(XSS)\">OWASP Top 10 2017 Category A7</a> - Cross-Site\n"
+              + "  Scripting (XSS) </li>\n"
+              + "  <li> <a href=\"https://cwe.mitre.org/data/definitions/79.html\">MITRE, CWE-79</a> - Improper Neutralization of Input During Web Page Generation\n"
+              + "  ('Cross-site Scripting') </li>\n"
+              + "</ul><br/><br/><h3>Clean Code Principles</h3>\n"
+              + "<h4>Defense-In-Depth</h4>\n"
+              + "<p>\n"
+              + "    Applications and infrastructure benefit greatly from relying on multiple security mechanisms\n"
+              + "    layered on top of each other. If one security mechanism fails, there is a high probability\n"
+              + "    that the subsequent layers of security will successfully defend against the attack.\n"
+              + "</p>\n"
+              + "<p>A non-exhaustive list of these code protection ramparts includes the following:</p>\n"
+              + "<ul>\n"
+              + "    <li>Minimizing the attack surface of the code</li>\n"
+              + "    <li>Application of the principle of least privilege</li>\n"
+              + "    <li>Validation and sanitization of data</li>\n"
+              + "    <li>Encrypting incoming, outgoing, or stored data with secure cryptography</li>\n"
+              + "    <li>Ensuring that internal errors cannot disrupt the overall runtime</li>\n"
+              + "    <li>Separation of tasks and access to information</li>\n"
+              + "</ul>\n"
+              + "\n"
+              + "<p>\n"
+              + "    Note that these layers must be simple enough to use in an everyday workflow. Security\n"
+              + "    measures should not break usability.\n"
+              + "</p><br/><br/><h4>Never Trust User Input</h4>\n"
+              + "<p>\n"
+              + "    Applications must treat all user input and, more generally, all third-party data as\n"
+              + "    attacker-controlled data.\n"
+              + "</p>\n"
+              + "<p>\n"
+              + "    The application must determine where the third-party data comes from and treat that data\n"
+              + "    source as an attack vector. Two rules apply:\n"
+              + "</p>\n"
+              + "\n"
+              + "<p>\n"
+              + "    First, before using it in the application&apos;s business logic, the application must\n"
+              + "    validate the attacker-controlled data against predefined formats, such as:\n"
+              + "</p>\n"
+              + "<ul>\n"
+              + "    <li>Character sets</li>\n"
+              + "    <li>Sizes</li>\n"
+              + "    <li>Types</li>\n"
+              + "    <li>Or any strict schema</li>\n"
+              + "</ul>\n"
+              + "\n"
+              + "<p>\n"
+              + "    Second, the application must sanitize string data before inserting it into interpreted\n"
+              + "    contexts (client-side code, file paths, SQL queries). Unsanitized code can corrupt the\n"
+              + "    application&apos;s logic.\n"
+              + "</p>");
+      }
+    }
+
+    @Test
+    @Tag(USE_NEW_CLIENT_API)
+    void shouldEmulateDescriptionSectionsForHotspotRules() throws ExecutionException, InterruptedException {
       assumeThat(ORCHESTRATOR.getServer().version()).isGreaterThanOrEqualTo(Version.create("9.7"));
 
-      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-        List.of(new ConfigurationScopeDto("project", null, true, "Project", new BindingConfigurationDto("ORCHESTRATOR", PROJECT_KEY_JAVA_HOTSPOT, false)))));
+      var projectKey = "sample-java-hotspot-new-backend";
 
-      var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("project", javaRuleKey(ORCHESTRATOR, "S4792"), null)).get();
+      provisionProject(ORCHESTRATOR, projectKey, "Java With Security Hotspots");
+      updateProject(engine, projectKey);
+
+      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+        List.of(new ConfigurationScopeDto("project", null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, projectKey, false)))));
+
+      var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("project", javaRuleKey(ORCHESTRATOR, "S4792"), null))
+        .get();
 
       var extendedDescription = activeRuleDetailsResponse.details().getDescription().getRight();
       assertThat(extendedDescription.getIntroductionHtmlContent()).isNull();
@@ -1451,13 +1603,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       if (tab.getContent().isLeft()) {
         return List.of(tab.getTitle(), tab.getContent().getLeft().getHtmlContent());
       }
-      return tab.getContent().getRight().getContextualSections().stream().flatMap(s -> Stream.of(tab.getTitle(), s.getHtmlContent(), s.getContextKey(), s.getDisplayName())).collect(Collectors.toList());
-    }
-
-    private void updateProject(String projectKey) {
-      engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, null);
-      engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(projectKey), null);
-      engine.syncServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, MAIN_BRANCH_NAME, null);
+      return tab.getContent().getRight().getContextualSections().stream().flatMap(s -> Stream.of(tab.getTitle(), s.getHtmlContent(), s.getContextKey(), s.getDisplayName()))
+        .collect(Collectors.toList());
     }
 
     private SonarLintClient newDummySonarLintClient() {
@@ -1515,19 +1662,37 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
   }
 
+  @Nested
+  class SonarProjectService {
+
+    @Test
+    void getProject() {
+      var projectKey = "sample-project";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample Project");
+
+      var api = new ServerApi(endpointParams(ORCHESTRATOR), sqHttpClient()).component();
+      assertThat(api.getProject("non-existing")).isNotPresent();
+      assertThat(api.getProject(projectKey)).isPresent();
+    }
+
+    @Test
+    void downloadAllProjects(@TempDir Path sonarUserHome) {
+      provisionProject(ORCHESTRATOR, "foo-bar1", "Foo1");
+      provisionProject(ORCHESTRATOR, "foo-bar2", "Foo2");
+      provisionProject(ORCHESTRATOR, "foo-bar3", "Foo3");
+      var globalConfig = ConnectedGlobalConfiguration.sonarQubeBuilder()
+        .setConnectionId(CONNECTION_ID)
+        .setSonarLintUserHome(sonarUserHome)
+        .build();
+      var engine = new ConnectedSonarLintEngineImpl(globalConfig);
+      assertThat(engine.downloadAllProjects(endpointParams(ORCHESTRATOR), sqHttpClient(), null)).containsKeys("foo-bar1", "foo-bar2", "foo-bar3");
+    }
+
+  }
+
   private String javaRuleKey(String key) {
     // Starting from SonarJava 6.0 (embedded in SQ 8.2), rule repository has been changed
     return javaRuleKey(ORCHESTRATOR, key);
-  }
-
-  private static void analyzeProject(String projectDirName, String... properties) {
-    var projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
-    ORCHESTRATOR.executeBuild(SonarScanner.create(projectDir.toFile())
-      .setProjectKey(PROJECT_KEY)
-      .setSourceDirs("src")
-      .setProperties(properties)
-      .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
-      .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
   }
 
   private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {
@@ -1537,17 +1702,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       .setComponent(moduleKey));
   }
 
-  private void updateProject(String projectKey) {
+  private static void updateProject(ConnectedSonarLintEngine engine, String projectKey) {
     engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, null);
     engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(projectKey), null);
     engine.syncServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, MAIN_BRANCH_NAME, null);
   }
 
-  private static void analyzeMavenProject(String projectKey, String projectDirName) {
+  private static void analyzeMavenProject(String projectDirName, String projectKey) {
     analyzeMavenProject(ORCHESTRATOR, projectDirName, Map.of("sonar.projectKey", projectKey));
-  }
-
-  private static void analyzeMavenProject(String projectKey) {
-    analyzeMavenProject(projectKey, projectKey);
   }
 }
