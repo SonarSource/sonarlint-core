@@ -34,7 +34,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.SystemUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,32 +51,50 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarqube.ws.Issues.Issue;
+import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.issues.DoTransitionRequest;
 import org.sonarqube.ws.client.issues.SearchRequest;
 import org.sonarqube.ws.client.issues.SetSeverityRequest;
 import org.sonarqube.ws.client.issues.SetTypeRequest;
 import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.NodeJsHelper;
+import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 
 import static its.utils.ItUtils.SONAR_VERSION;
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
+  public static final String XOO_PLUGIN_KEY = "xoo";
   @RegisterExtension
   static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
-    .addPlugin(MavenLocation.of("org.sonarsource.sonarqube", "sonar-xoo-plugin", SONAR_VERSION))
-    .setServerProperty("sonar.projectCreation.mainBranchName", MAIN_BRANCH_NAME)
     .keepBundledPlugins()
+    .addPlugin(MavenLocation.of("org.sonarsource.sonarqube", "sonar-xoo-plugin", SONAR_VERSION))
+    .addPlugin(FileLocation.of("../plugins/java-custom-rules/target/java-custom-rules-plugin.jar"))
+    .setServerProperty("sonar.projectCreation.mainBranchName", MAIN_BRANCH_NAME)
     .build();
+
+  private static WsClient adminWsClient;
+
+  @BeforeAll
+  static void createSonarLintUser() {
+    adminWsClient = newAdminWsClient(ORCHESTRATOR);
+    adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
+  }
 
   @Nested
   // TODO Can be removed when switching to Java 16+ and changing prepare() to static
@@ -89,12 +113,9 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
     @BeforeAll
     void prepare() {
-      var adminWsClient = newAdminWsClient(ORCHESTRATOR);
-      adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
-
       provisionProject(ORCHESTRATOR, XOO_PROJECT_KEY, "Sample Xoo");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/xoo-sonarlint.xml"));
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(XOO_PROJECT_KEY, "xoo", "SonarLint IT Xoo");
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(XOO_PROJECT_KEY, XOO_PLUGIN_KEY, "SonarLint IT Xoo");
 
       analyzeProject("sample-xoo-v1", XOO_PROJECT_KEY);
       // Second analysis with less issues to have closed issues
@@ -288,6 +309,154 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
       assertThat(javaIssues).hasSize(2);
       assertThat(pythonIssues).isEmpty();
+    }
+  }
+
+  @Nested
+  // TODO Can be removed when switching to Java 16+ and changing prepare() to static
+  @TestInstance(Lifecycle.PER_CLASS)
+  class PluginRequirementsAndDependencies {
+
+    private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
+    private static final String CUSTOM_JAVA_PLUGIN_KEY = "custom";
+    private static final String PROJECT_KEY_JAVASCRIPT = "sample-javascript";
+    private static final String PROJECT_KEY_TYPESCRIPT = "sample-typescript";
+
+    @BeforeAll
+    void prepare() throws Exception {
+      provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVASCRIPT, "Sample Javascript");
+      provisionProject(ORCHESTRATOR, PROJECT_KEY_TYPESCRIPT, "Sample Typescript");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/javascript-sonarlint.xml"));
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/typescript-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVASCRIPT, "js", "SonarLint IT Javascript");
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_TYPESCRIPT, "ts", "SonarLint IT Typescript");
+    }
+
+    @TempDir
+    private Path sonarUserHome;
+
+    private ConnectedSonarLintEngine engine;
+    private final List<String> logs = new CopyOnWriteArrayList<>();
+
+    @BeforeEach
+    void start() {
+      FileUtils.deleteQuietly(sonarUserHome.toFile());
+    }
+
+    private ConnectedSonarLintEngine createEngine(Consumer<ConnectedGlobalConfiguration.Builder> configurator) {
+      var nodeJsHelper = new NodeJsHelper();
+      nodeJsHelper.detect(null);
+
+      var builder = ConnectedGlobalConfiguration.sonarQubeBuilder()
+        .setConnectionId("orchestrator")
+        .setSonarLintUserHome(sonarUserHome)
+        .setLogOutput((msg, level) -> {
+          logs.add(msg);
+        })
+        .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion());
+      configurator.accept(builder);
+      return new ConnectedSonarLintEngineImpl(builder.build());
+    }
+
+    @AfterEach
+    void stop() {
+      try {
+        engine.stop(true);
+      } catch (Exception e) {
+        // Ignore
+      }
+    }
+
+    @Test
+    void dontDownloadPluginIfNotEnabledLanguage() {
+      engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP, Language.TS));
+      engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), emptySet(), null);
+      assertThat(logs).contains("[SYNC] Code analyzer 'java' is disabled in SonarLint (language not enabled). Skip downloading it.");
+      // TypeScript plugin has been merged in SonarJS in SQ 8.5
+      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 5)) {
+        assertThat(engine.getPluginDetails().stream().map(PluginDetails::key))
+          .containsOnly(Language.JS.getPluginKey(), Language.PHP.getPluginKey(), CUSTOM_JAVA_PLUGIN_KEY, XOO_PLUGIN_KEY);
+      } else {
+        assertThat(engine.getPluginDetails().stream().map(PluginDetails::key))
+          .containsOnly(Language.JS.getPluginKey(), Language.PHP.getPluginKey(), OLD_SONARTS_PLUGIN_KEY, CUSTOM_JAVA_PLUGIN_KEY, XOO_PLUGIN_KEY);
+      }
+    }
+
+    @Test
+    void dontFailIfMissingDependentPlugin() {
+      engine = createEngine(e -> e.addEnabledLanguages(Language.PHP));
+      engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), emptySet(), null);
+      assertThat(logs).contains("Plugin 'Java Custom Rules Plugin' dependency on 'java' is unsatisfied. Skip loading it.");
+      assertThat(engine.getPluginDetails()).extracting(PluginDetails::key, PluginDetails::skipReason)
+        .contains(tuple(CUSTOM_JAVA_PLUGIN_KEY, Optional.of(new SkipReason.UnsatisfiedDependency("java"))));
+    }
+
+    @Test
+    void dontLoadExcludedPlugin() {
+      engine = createEngine(e -> e.addEnabledLanguages(Language.JAVA, Language.JS, Language.PHP));
+      engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), emptySet(), null);
+      assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains(Language.JAVA.getPluginKey());
+      engine.stop(false);
+
+      engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP));
+      // The description of SonarJava changed in 6.3, embedded in SQ 8.3
+      var javaDescription = ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 3) ? "Java Code Quality and Security" : "SonarJava";
+      var expectedLog = String.format("Plugin '%s' is excluded because language 'Java' is not enabled. Skip loading it.", javaDescription);
+      assertThat(logs).contains(expectedLog);
+      assertThat(engine.getPluginDetails()).extracting(PluginDetails::key, PluginDetails::skipReason)
+        .contains(tuple(Language.JAVA.getPluginKey(), Optional.of(new SkipReason.LanguagesNotEnabled(asList(Language.JAVA)))));
+    }
+
+    // SLCORE-259
+    @Test
+    void analysisJavascriptWithoutTypescript() throws Exception {
+      engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP));
+      engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVASCRIPT), null);
+      assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains("javascript");
+      assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).doesNotContain(OLD_SONARTS_PLUGIN_KEY);
+
+      engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVASCRIPT, null);
+      engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVASCRIPT), null);
+      var issueListener = new SaveIssueListener();
+      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, PROJECT_KEY_JAVASCRIPT, "src/Person.js"), issueListener, null, null);
+      assertThat(issueListener.getIssues()).hasSize(1);
+    }
+
+    /**
+     *  SLCORE-259
+     *  SonarTS has been merged into SonarJS. It means excluding the typescript plugin is not enough to prevent TS analysis.
+     *  For backward compatibility, we "hacked" the core to prevent typescript analysis through SonarJS when typescript language is not enabled.
+     */
+    @Test
+    void dontAnalyzeTypescriptIfExcluded() throws Exception {
+      var tsAnalysisConfig = createAnalysisConfiguration(PROJECT_KEY_TYPESCRIPT, PROJECT_KEY_TYPESCRIPT, "src/Person.ts");
+
+      var pb = new ProcessBuilder("npm" + (SystemUtils.IS_OS_WINDOWS ? ".cmd" : ""), "install")
+        .directory(tsAnalysisConfig.baseDir().toFile())
+        .inheritIO();
+      var process = pb.start();
+      if (process.waitFor() != 0) {
+        fail("Unable to run npm install");
+      }
+
+      Map<String, String> extraProperties = new HashMap<>();
+      extraProperties.put("sonar.typescript.internal.typescriptLocation", tsAnalysisConfig.baseDir().resolve("node_modules").toString());
+      engine = createEngine(e -> e
+        .setExtraProperties(extraProperties)
+        .addEnabledLanguages(Language.JS, Language.PHP));
+      engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVASCRIPT), null);
+      assertThat(logs).doesNotContain("Code analyzer 'SonarJS' is transitively excluded in this version of SonarLint. Skip loading it.");
+      assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains(Language.JS.getPluginKey());
+
+      engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_TYPESCRIPT, null);
+      engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_TYPESCRIPT), null);
+      var issueListenerTs = new SaveIssueListener();
+      engine.analyze(tsAnalysisConfig, issueListenerTs, null, null);
+      assertThat(issueListenerTs.getIssues()).hasSize(0);
+      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 0)) {
+        assertThat(logs).contains("TypeScript sensor excluded");
+      }
+      assertThat(logs).doesNotContain("Execute Sensor: ESLint-based TypeScript analysis");
     }
   }
 
