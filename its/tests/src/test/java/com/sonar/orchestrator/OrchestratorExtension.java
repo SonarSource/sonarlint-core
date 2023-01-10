@@ -23,6 +23,7 @@ import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.config.Configuration;
 import com.sonar.orchestrator.container.SonarDistribution;
 import com.sonar.orchestrator.server.StartupLogWatcher;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -30,17 +31,25 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 
 public class OrchestratorExtension extends Orchestrator implements BeforeAllCallback, AfterAllCallback {
 
+  private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(Orchestrator.class);
+
   OrchestratorExtension(Configuration config, SonarDistribution distribution, @Nullable StartupLogWatcher startupLogWatcher) {
     super(config, distribution, startupLogWatcher);
   }
 
   @Override
-  public void afterAll(ExtensionContext context) throws Exception {
-    stop();
+  public void beforeAll(ExtensionContext context) throws Exception {
+    // This is to avoid multiple starts when using nested tests
+    // See https://github.com/junit-team/junit5/issues/2421
+    if (context.getStore(NAMESPACE).getOrComputeIfAbsent(AtomicInteger.class).getAndIncrement() == 0) {
+      start();
+    }
+  }
+  @Override
+  public void afterAll(ExtensionContext context) {
+    if (context.getStore(NAMESPACE).getOrComputeIfAbsent(AtomicInteger.class).decrementAndGet() == 0) {
+      stop();
+    }
   }
 
-  @Override
-  public void beforeAll(ExtensionContext context) throws Exception {
-    start();
-  }
 }

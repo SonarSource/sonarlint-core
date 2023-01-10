@@ -24,6 +24,7 @@ import com.google.common.collect.Maps;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.http.HttpMethod;
+import its.utils.ItUtils;
 import its.utils.PreemptiveAuthenticatorInterceptor;
 import its.utils.TestClientInputFile;
 import its.utils.UserAgentInterceptor;
@@ -59,6 +60,7 @@ import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsClientFactories;
 import org.sonarqube.ws.client.qualityprofiles.SearchRequest;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
@@ -272,7 +274,7 @@ public abstract class AbstractConnectedTests {
       .build());
   }
 
-  protected ConnectedAnalysisConfiguration createAnalysisConfiguration(String projectKey, String projectDir, String filePath, String... properties) throws IOException {
+  protected static ConnectedAnalysisConfiguration createAnalysisConfiguration(String projectKey, String projectDir, String filePath, String... properties) throws IOException {
     final var baseDir = Paths.get("projects/" + projectDir).toAbsolutePath();
     final var path = baseDir.resolve(filePath);
     return ConnectedAnalysisConfiguration.builder()
@@ -283,7 +285,7 @@ public abstract class AbstractConnectedTests {
       .build();
   }
 
-  protected ConnectedAnalysisConfiguration createAnalysisConfiguration(String projectKey, String absoluteFilePath) throws IOException {
+  protected static ConnectedAnalysisConfiguration createAnalysisConfiguration(String projectKey, String absoluteFilePath) throws IOException {
     final var path = Paths.get(absoluteFilePath).toAbsolutePath();
     return ConnectedAnalysisConfiguration.builder()
       .setProjectKey(projectKey)
