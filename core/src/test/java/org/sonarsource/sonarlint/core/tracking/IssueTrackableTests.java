@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -64,9 +65,11 @@ class IssueTrackableTests {
   @Test
   void should_delegate_fields_to_issue() {
     when(issue.getSeverity()).thenReturn(IssueSeverity.BLOCKER);
+    when(issue.getVulnerabilityProbability()).thenReturn(VulnerabilityProbability.LOW);
 
     var trackable = new IssueTrackable(issue, null, null);
     assertThat(trackable.getClientObject()).isEqualTo(issue);
     assertThat(trackable.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
+    assertThat(trackable.getVulnerabilityProbability()).isEqualTo(VulnerabilityProbability.LOW);
   }
 }

@@ -55,6 +55,7 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
+import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
@@ -103,6 +104,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private static final String CREATION_DATE_PROPERTY_NAME = "creationDate";
   private static final String USER_SEVERITY_PROPERTY_NAME = "userSeverity";
   private static final String SEVERITY_PROPERTY_NAME = "severity";
+  private static final String VULNERABILITY_PROBABILITY_PROPERTY_NAME = "vulnerabilityProbability";
   private static final String TYPE_PROPERTY_NAME = "type";
   private static final String PATH_PROPERTY_NAME = "path";
   private static final String NAME_PROPERTY_NAME = "name";
@@ -231,6 +233,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     var endLine = (Integer) storedHotspot.getProperty(END_LINE_PROPERTY_NAME);
     var endLineOffset = (Integer) storedHotspot.getProperty(END_LINE_OFFSET_PROPERTY_NAME);
     var textRange = new org.sonarsource.sonarlint.core.commons.TextRange(startLine, startLineOffset, endLine, endLineOffset);
+    var vulnerabilityProbability = VulnerabilityProbability.valueOf((String) storedHotspot.getProperty(VULNERABILITY_PROBABILITY_PROPERTY_NAME));
     return new ServerHotspot(
       (String) requireNonNull(storedHotspot.getProperty(KEY_PROPERTY_NAME)),
       (String) requireNonNull(storedHotspot.getProperty(RULE_KEY_PROPERTY_NAME)),
@@ -238,7 +241,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       filePath,
       textRange,
       (Instant) requireNonNull(storedHotspot.getProperty(CREATION_DATE_PROPERTY_NAME)),
-      Boolean.TRUE.equals(storedHotspot.getProperty(RESOLVED_PROPERTY_NAME)));
+      Boolean.TRUE.equals(storedHotspot.getProperty(RESOLVED_PROPERTY_NAME)), vulnerabilityProbability);
   }
 
   private static List<Flow> readFlows(@Nullable InputStream blob) {
@@ -405,6 +408,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     issueEntity.setProperty(END_LINE_OFFSET_PROPERTY_NAME, textRange.getEndLineOffset());
     issueEntity.setProperty(CREATION_DATE_PROPERTY_NAME, hotspot.getCreationDate());
     issueEntity.setProperty(RESOLVED_PROPERTY_NAME, hotspot.isResolved());
+    issueEntity.setProperty(VULNERABILITY_PROBABILITY_PROPERTY_NAME, hotspot.getVulnerabilityProbability().toString());
   }
 
   private static void deleteAllHotspotsOfFile(@NotNull StoreTransaction txn, Entity fileEntity) {

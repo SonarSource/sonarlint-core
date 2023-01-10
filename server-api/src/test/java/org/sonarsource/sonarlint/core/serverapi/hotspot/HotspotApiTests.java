@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
@@ -108,7 +109,7 @@ class HotspotApiTests {
     assertThat(hotspot.rule.key).isEqualTo("key");
     assertThat(hotspot.rule.name).isEqualTo("name");
     assertThat(hotspot.rule.securityCategory).isEqualTo("category");
-    assertThat(hotspot.rule.vulnerabilityProbability).isEqualTo(ServerHotspotDetails.Rule.Probability.HIGH);
+    assertThat(hotspot.rule.vulnerabilityProbability).isEqualTo(VulnerabilityProbability.HIGH);
     assertThat(hotspot.rule.riskDescription).isEqualTo("risk");
     assertThat(hotspot.rule.vulnerabilityDescription).isEqualTo("vulnerability");
     assertThat(hotspot.rule.fixRecommendations).isEqualTo("fix");
@@ -191,6 +192,7 @@ class HotspotApiTests {
         .setCreationDate("2020-09-21T12:46:39+0000")
         .setRuleKey("ruleKey1")
         .setMessage("message1")
+        .setVulnerabilityProbability("HIGH")
         .build())
       .addHotspots(Hotspots.SearchWsResponse.Hotspot.newBuilder()
         .setComponent("component:path2")
@@ -201,6 +203,7 @@ class HotspotApiTests {
         .setCreationDate("2020-09-22T12:46:39+0000")
         .setRuleKey("ruleKey2")
         .setMessage("message2")
+        .setVulnerabilityProbability("LOW")
         .build())
       .addHotspots(Hotspots.SearchWsResponse.Hotspot.newBuilder()
         .setComponent("component:path3")
@@ -211,6 +214,7 @@ class HotspotApiTests {
         .setCreationDate("2020-09-23T12:46:39+0000")
         .setRuleKey("ruleKey3")
         .setMessage("message3")
+        .setVulnerabilityProbability("LOW")
         .build())
       .addHotspots(Hotspots.SearchWsResponse.Hotspot.newBuilder()
         .setComponent("component:path4")
@@ -221,6 +225,7 @@ class HotspotApiTests {
         .setCreationDate("2020-09-24T12:46:39+0000")
         .setRuleKey("ruleKey4")
         .setMessage("message4")
+        .setVulnerabilityProbability("MEDIUM")
         .build())
       .addHotspots(Hotspots.SearchWsResponse.Hotspot.newBuilder()
         .setComponent("component:path5")
@@ -230,6 +235,7 @@ class HotspotApiTests {
         .setCreationDate("2020-09-25T12:46:39+0000")
         .setRuleKey("ruleKey5")
         .setMessage("message5")
+        .setVulnerabilityProbability("LOW")
         .build())
       .addComponents(Hotspots.Component.newBuilder().setKey("component:path1").setPath("path1").build())
       .addComponents(Hotspots.Component.newBuilder().setKey("component:path2").setPath("path2").build())
@@ -263,6 +269,7 @@ class HotspotApiTests {
         .setCreationDate("2020-09-21T12:46:39+0000")
         .setRuleKey("ruleKey1")
         .setMessage("message1")
+        .setVulnerabilityProbability("HIGH")
         .build())
       .addComponents(Hotspots.Component.newBuilder().setKey("component:path/to/file.ext").setPath("path/to/file.ext").build())
       .build());

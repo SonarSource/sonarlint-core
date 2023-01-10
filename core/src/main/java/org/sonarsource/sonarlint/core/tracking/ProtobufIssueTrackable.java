@@ -25,6 +25,7 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Issues.Issue;
+import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 
 public class ProtobufIssueTrackable implements Trackable {
 
@@ -72,6 +73,11 @@ public class ProtobufIssueTrackable implements Trackable {
   @Override
   public boolean isResolved() {
     return issue.getResolved();
+  }
+
+  @Override
+  public VulnerabilityProbability getVulnerabilityProbability() {
+    return null;
   }
 
   @Override

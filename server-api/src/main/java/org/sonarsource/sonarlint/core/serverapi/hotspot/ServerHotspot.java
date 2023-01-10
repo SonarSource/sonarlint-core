@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
 import java.time.Instant;
 import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 
 public class ServerHotspot {
   private final String key;
@@ -31,13 +32,15 @@ public class ServerHotspot {
   private final Instant creationDate;
   private final boolean resolved;
 
+  private final VulnerabilityProbability vulnerabilityProbability;
+
   public ServerHotspot(String key,
     String ruleKey,
     String message,
     String filePath,
     TextRange textRange,
     Instant creationDate,
-    boolean resolved) {
+    boolean resolved, VulnerabilityProbability vulnerabilityProbability) {
     this.key = key;
     this.ruleKey = ruleKey;
     this.message = message;
@@ -45,6 +48,7 @@ public class ServerHotspot {
     this.textRange = textRange;
     this.creationDate = creationDate;
     this.resolved = resolved;
+    this.vulnerabilityProbability = vulnerabilityProbability;
   }
 
   public void setFilePath(String filePath) {
@@ -77,5 +81,9 @@ public class ServerHotspot {
 
   public boolean isResolved() {
     return resolved;
+  }
+
+  public VulnerabilityProbability getVulnerabilityProbability() {
+    return vulnerabilityProbability;
   }
 }
