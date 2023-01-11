@@ -310,19 +310,22 @@ class ActiveRulesMediumTests {
       .containsExactly(
               "How can I fix it?", "htmlContent for JSP", "jsp", "JSP",
         "How can I fix it?", "htmlContent for Spring", "spring", "Spring",
-        "How can I fix it?", "<h4>How can I fix it in another component or framework?</h4>\n" +
-          "<p>Although the main framework or component you use in your project is not listed, you may find helpful content in the instructions we provide.</p>\n" +
-          "<p>Caution: The libraries mentioned in these instructions may not be appropriate for your code.</p>\n" +
-          "<p>\n" +
-          "<ul>\n" +
-          "<li>Do use libraries that are compatible with the frameworks you are using.</li>\n" +
-          "<li>Don't blindly copy and paste the fix ups into your code.</li>\n" +
-          "</ul>\n" +
-          "<h4>Help us improve</h4>\n" +
-          "<p>Let us know if the instructions we provide do not work for you. Tell us which framework you use and why our solution does not work by submitting an idea on the SonarLint product-board.</p>\n" +
-          "<a href=\"https://portal.productboard.com/sonarsource/4-sonarlint/submit-idea\">Submit an idea</a>\n" +
-          "<p>We will do our best to provide you with more relevant instructions in the future.</p>", "others", "Others",
+        "How can I fix it?",
+        "<h4>How can I fix it in another component or framework?</h4>\n"+
+          "<p>Although the main framework or component you use in your project is not listed, you may find helpful content in the instructions we provide.</p>\n"+
+        "<p>Caution: The libraries mentioned in these instructions may not be appropriate for your code.</p>\n"+
+    "<p>\n"+
+    "<ul>\n"+
+    "    <li>Do use libraries that are compatible with the frameworks you are using.</li>\n"+
+    "    <li>Don't blindly copy and paste the fix-ups into your code.</li>\n"+
+    "</ul>\n"+
+    "<h4>Help us improve</h4>\n"+
+    "<p>Let us know if the instructions we provide do not work for you.\n"+
+    "    Tell us which framework you use and why our solution does not work by submitting an idea on the SonarLint product-board.</p>\n"+
+    "<a href=\"https://portal.productboard.com/sonarsource/4-sonarlint/submit-idea\">Submit an idea</a>\n"+
+    "<p>We will do our best to provide you with more relevant instructions in the future.</p>", "others", "Others",
         "More Info", "htmlContent3<br/><br/>extendedDesc");
+
   }
 
   @Test
@@ -343,17 +346,18 @@ class ActiveRulesMediumTests {
       .containsExactly(
         "How can I fix it?", "htmlContent for JSP", "jsp", "JSP",
         "How can I fix it?", "htmlContent for Spring", "spring", "Spring",
-        "How can I fix it?", "<h4>How can I fix it in another component or framework?</h4>\n" +
-          "<p>Although the main framework or component you use in your project is not listed, you may find helpful content in the instructions we provide.</p>\n" +
-          "<p>Caution: The libraries mentioned in these instructions may not be appropriate for your code.</p>\n" +
-          "<p>\n" +
-          "<ul>\n" +
-          "<li>Do use libraries that are compatible with the frameworks you are using.</li>\n" +
-          "<li>Don't blindly copy and paste the fix ups into your code.</li>\n" +
-          "</ul>\n" +
-          "<h4>Help us improve</h4>\n" +
-          "<p>Let us know if the instructions we provide do not work for you. Tell us which framework you use and why our solution does not work by submitting an idea on the SonarLint product-board.</p>\n" +
-          "<a href=\"https://portal.productboard.com/sonarsource/4-sonarlint/submit-idea\">Submit an idea</a>\n" +
+        "How can I fix it?", "<h4>How can I fix it in another component or framework?</h4>\n"+
+          "<p>Although the main framework or component you use in your project is not listed, you may find helpful content in the instructions we provide.</p>\n"+
+          "<p>Caution: The libraries mentioned in these instructions may not be appropriate for your code.</p>\n"+
+          "<p>\n"+
+          "<ul>\n"+
+          "    <li>Do use libraries that are compatible with the frameworks you are using.</li>\n"+
+          "    <li>Don't blindly copy and paste the fix-ups into your code.</li>\n"+
+          "</ul>\n"+
+          "<h4>Help us improve</h4>\n"+
+          "<p>Let us know if the instructions we provide do not work for you.\n"+
+          "    Tell us which framework you use and why our solution does not work by submitting an idea on the SonarLint product-board.</p>\n"+
+          "<a href=\"https://portal.productboard.com/sonarsource/4-sonarlint/submit-idea\">Submit an idea</a>\n"+
           "<p>We will do our best to provide you with more relevant instructions in the future.</p>", "others", "Others",
         "More Info", "htmlContent3<br/><br/>extendedDesc");
 

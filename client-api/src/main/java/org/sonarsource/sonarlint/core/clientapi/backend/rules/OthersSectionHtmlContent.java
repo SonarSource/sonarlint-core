@@ -19,24 +19,31 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import org.apache.commons.io.IOUtils;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+
 public class OthersSectionHtmlContent {
 
+  private static final String FOLDER_NAME = "/context-rule-description/";
+  private static final String FILE_EXTENSION = ".html";
+  private static final String UNSUPPORTED_RULE_DESCRIPTION_FOR_CONTEXT_KEY = "Unsupported rule description for context key: ";
+  private static final String ERROR_READING_FILE_CONTENT = "Could not read the content for rule description for context key: ";
   private OthersSectionHtmlContent() {}
 
-  public static final String HTML_CONTENT =
-    "<h4>How can I fix it in another component or framework?</h4>\n" +
-    "<p>Although the main framework or component you use in your project is not listed, " +
-      "you may find helpful content in the instructions we provide.</p>\n" +
-    "<p>Caution: The libraries mentioned in these instructions may not be appropriate for your code.</p>\n" +
-    "<p>\n" +
-    "<ul>\n" +
-    "<li>Do use libraries that are compatible with the frameworks you are using.</li>\n" +
-    "<li>Don't blindly copy and paste the fix ups into your code.</li>\n" +
-    "</ul>\n" +
-    "<h4>Help us improve</h4>\n" +
-    "<p>Let us know if the instructions we provide do not work for you. " +
-      "Tell us which framework you use and why our solution does not work by submitting an idea on the SonarLint product-board.</p>\n" +
-    "<a href=\"https://portal.productboard.com/sonarsource/4-sonarlint/submit-idea\">Submit an idea</a>\n" +
-    "<p>We will do our best to provide you with more relevant instructions in the future.</p>";
+  public static String getHtmlContent(String contextKey) {
+    try (var htmlContentFile = OthersSectionHtmlContent.class.getResourceAsStream(FOLDER_NAME + contextKey + FILE_EXTENSION)) {
+      if (htmlContentFile == null) {
+        SonarLintLogger.get().info(UNSUPPORTED_RULE_DESCRIPTION_FOR_CONTEXT_KEY + contextKey);
+        return "";
+      }
+
+      return IOUtils.toString(htmlContentFile, StandardCharsets.UTF_8).trim().replaceAll("\\r\\n?", "\n");
+    } catch (IOException ioException) {
+      SonarLintLogger.get().error(ERROR_READING_FILE_CONTENT + contextKey, ioException);
+      return "";
+    }
+  }
 
 }
