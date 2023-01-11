@@ -33,6 +33,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.clientapi.client.SuggestBindingParams;
@@ -60,6 +61,7 @@ public class BindingSuggestionProvider {
   private final BindingClueProvider bindingClueProvider;
   private final SonarProjectsCache sonarProjectsCache;
   private final ExecutorService executorService;
+  private final AtomicBoolean enabled = new AtomicBoolean(true);
 
   public BindingSuggestionProvider(ConfigurationRepository configRepository, ConnectionConfigurationRepository connectionRepository, SonarLintClient client,
     BindingClueProvider bindingClueProvider, SonarProjectsCache sonarProjectsCache) {
@@ -118,7 +120,11 @@ public class BindingSuggestionProvider {
   private void queueBindingSuggestionComputation(Set<String> configScopeIds, Set<String> eligibleConnectionIds) {
     executorService.submit(() -> {
       try {
-        bindingSuggestionComputation(configScopeIds, eligibleConnectionIds);
+        if (enabled.get()) {
+          bindingSuggestionComputation(configScopeIds, eligibleConnectionIds);
+        } else {
+          LOG.debug("Skipping binding suggestion computation as it is disabled");
+        }
       } catch (InterruptedException e) {
         LOG.debug("Binding suggestion computation was interrupted", e);
         Thread.currentThread().interrupt();
@@ -232,4 +238,11 @@ public class BindingSuggestionProvider {
     MoreExecutors.shutdownAndAwaitTermination(executorService, 1, TimeUnit.SECONDS);
   }
 
+  public void disable() {
+    this.enabled.set(false);
+  }
+
+  public void enable() {
+    this.enabled.set(true);
+  }
 }

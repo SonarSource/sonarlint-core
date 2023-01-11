@@ -33,10 +33,12 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.sonarsource.sonarlint.core.clientapi.backend.authentication.HelpGenerateUserTokenResponse;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 import static java.util.function.Predicate.not;
 
 public class GeneratedUserTokenHandler implements HttpRequestHandler {
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository;
 
@@ -71,6 +73,7 @@ public class GeneratedUserTokenHandler implements HttpRequestHandler {
       token = new Gson().fromJson(requestEntityString, TokenPayload.class).token;
     } catch (Exception e) {
       // will be converted to HTTP response later
+      LOG.error("Could not deserialize user token", e);
     }
     return token;
   }

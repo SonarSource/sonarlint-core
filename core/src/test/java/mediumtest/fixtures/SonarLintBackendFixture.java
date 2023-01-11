@@ -26,13 +26,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.jetbrains.annotations.Nullable;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
@@ -40,8 +38,10 @@ import org.sonarsource.sonarlint.core.clientapi.backend.HostInfoDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingSuggestionDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.DidAddConfigurationScopesParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
@@ -137,6 +137,7 @@ public class SonarLintBackendFixture {
 
     public SonarLintBackendImpl build(FakeSonarLintClient client) {
       var sonarLintBackend = new SonarLintBackendImpl(client);
+      client.setBackend(sonarLintBackend);
       sonarLintBackend
         .initialize(new InitializeParams(client.getClientInfo(), MEDIUM_TESTS_PRODUCT_KEY, storageRoot, embeddedPluginPaths, extraPluginPathsByKey, Collections.emptyMap(),
           enabledLanguages, Collections.emptySet(), false, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(), startEmbeddedServer));
@@ -156,19 +157,13 @@ public class SonarLintBackendFixture {
 
   public static class SonarLintClientBuilder {
     private final List<FoundFileDto> foundFiles = new ArrayList<>();
-    private final List<String> textsOfActionsToApply = new ArrayList<>();
     private String hostDescription = "";
     private String hostName = "";
-    private AssistCreatingConnectionResponse connectionCreationAssistResponse;
-    private AssistBindingResponse bindingAssistResponse;
+    private final LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl = new LinkedHashMap<>();
+    private final LinkedHashMap<String, ConfigurationScopeDto> cannedBindingAssistByProjectKey = new LinkedHashMap<>();
 
     public SonarLintClientBuilder withFoundFile(String name, String path, String content) {
       foundFiles.add(new FoundFileDto(name, path, content));
-      return this;
-    }
-
-    public SonarLintClientBuilder applyingAction(String actionText) {
-      textsOfActionsToApply.add(actionText);
       return this;
     }
 
@@ -183,13 +178,13 @@ public class SonarLintBackendFixture {
     }
 
     public SonarLintClientBuilder assistingConnectingAndBindingToSonarQube(String scopeId, String connectionId, String baseUrl, String projectKey) {
-      this.connectionCreationAssistResponse = new AssistCreatingConnectionResponse(Either.forLeft(new SonarQubeConnectionConfigurationDto(connectionId, baseUrl)));
-      this.bindingAssistResponse = new AssistBindingResponse(new BindingConfigurationDto(connectionId, projectKey, true), scopeId);
+      this.cannedAssistCreatingSonarQubeConnectionByBaseUrl.put(baseUrl, new SonarQubeConnectionConfigurationDto(connectionId, baseUrl));
+      this.cannedBindingAssistByProjectKey.put(projectKey, new ConfigurationScopeDto(scopeId, null, true, scopeId, new BindingConfigurationDto(connectionId, projectKey, false)));
       return this;
     }
 
     public FakeSonarLintClient build() {
-      return new FakeSonarLintClient(new HostInfoDto(hostName), foundFiles, textsOfActionsToApply, hostDescription, connectionCreationAssistResponse, bindingAssistResponse);
+      return new FakeSonarLintClient(new HostInfoDto(hostName), foundFiles, hostDescription, cannedAssistCreatingSonarQubeConnectionByBaseUrl, cannedBindingAssistByProjectKey);
     }
   }
 
@@ -201,20 +196,24 @@ public class SonarLintBackendFixture {
     private final List<ShowMessageParams> messagesToShow = new ArrayList<>();
     private final HostInfoDto clientInfo;
     private final List<FoundFileDto> foundFiles;
-    private final Queue<String> textsOfActionsToApply;
     private final String workspaceTitle;
-    private final AssistCreatingConnectionResponse assistCreatingConnectionResponse;
-    private final AssistBindingResponse bindingAssistResponse;
+    private final LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl;
+    private final LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey;
     private final Map<String, Collection<HotspotDetailsDto>> hotspotToShowByConfigScopeId = new HashMap<>();
+    private SonarLintBackendImpl backend;
 
-    public FakeSonarLintClient(HostInfoDto clientInfo, List<FoundFileDto> foundFiles, List<String> textsOfActionsToApply, String workspaceTitle,
-      AssistCreatingConnectionResponse assistCreatingConnectionResponse, AssistBindingResponse bindingAssistResponse) {
+    public FakeSonarLintClient(HostInfoDto clientInfo, List<FoundFileDto> foundFiles, String workspaceTitle,
+      LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
+      LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey) {
       this.clientInfo = clientInfo;
       this.foundFiles = foundFiles;
-      this.textsOfActionsToApply = new LinkedList<>(textsOfActionsToApply);
       this.workspaceTitle = workspaceTitle;
-      this.assistCreatingConnectionResponse = assistCreatingConnectionResponse;
-      this.bindingAssistResponse = bindingAssistResponse;
+      this.cannedAssistCreatingSonarQubeConnectionByBaseUrl = cannedAssistCreatingSonarQubeConnectionByBaseUrl;
+      this.bindingAssistResponseByProjectKey = bindingAssistResponseByProjectKey;
+    }
+
+    public void setBackend(SonarLintBackendImpl backend) {
+      this.backend = backend;
     }
 
     public HostInfoDto getClientInfo() {
@@ -265,22 +264,23 @@ public class SonarLintBackendFixture {
 
     @Override
     public CompletableFuture<AssistCreatingConnectionResponse> assistCreatingConnection(AssistCreatingConnectionParams params) {
-      if (assistCreatingConnectionResponse == null) {
-        var completableFuture = new CompletableFuture<AssistCreatingConnectionResponse>();
-        completableFuture.cancel(false);
-        return completableFuture;
+      var cannedSonarQubeConnection = cannedAssistCreatingSonarQubeConnectionByBaseUrl.remove(params.getServerUrl());
+      if (cannedSonarQubeConnection == null) {
+        return canceledFuture();
       }
-      return CompletableFuture.completedFuture(assistCreatingConnectionResponse);
+      backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(cannedSonarQubeConnection), Collections.emptyList()));
+      return CompletableFuture.completedFuture(new AssistCreatingConnectionResponse(cannedSonarQubeConnection.getConnectionId()));
     }
 
     @Override
     public CompletableFuture<AssistBindingResponse> assistBinding(AssistBindingParams params) {
-      if (bindingAssistResponse == null) {
-        var completableFuture = new CompletableFuture<AssistBindingResponse>();
-        completableFuture.cancel(false);
-        return completableFuture;
+      var cannedResponse = bindingAssistResponseByProjectKey.remove(params.getProjectKey());
+      if (cannedResponse == null) {
+        return canceledFuture();
       }
-      return CompletableFuture.completedFuture(bindingAssistResponse);
+      var scopeId = cannedResponse.getId();
+      backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(scopeId, cannedResponse.getBinding()));
+      return CompletableFuture.completedFuture(new AssistBindingResponse(scopeId));
     }
 
     public boolean hasReceivedSuggestions() {
@@ -301,6 +301,12 @@ public class SonarLintBackendFixture {
 
     public Map<String, Collection<HotspotDetailsDto>> getHotspotToShowByConfigScopeId() {
       return hotspotToShowByConfigScopeId;
+    }
+
+    private static <T> CompletableFuture<T> canceledFuture() {
+      var completableFuture = new CompletableFuture<T>();
+      completableFuture.cancel(false);
+      return completableFuture;
     }
   }
 }

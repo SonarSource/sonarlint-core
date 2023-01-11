@@ -21,6 +21,7 @@ package mediumtest;
 
 import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import mediumtest.fixtures.ServerFixture;
 import mediumtest.fixtures.SonarLintBackendFixture;
 import org.junit.jupiter.api.AfterAll;
@@ -41,6 +42,7 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.awaitility.Awaitility.await;
 import static org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension.httpClient;
 import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 
@@ -115,7 +117,7 @@ class OpenHotspotInIdeMediumTests {
 
     assertThat(statusCode).isEqualTo(200);
     assertThat(fakeClient.getMessagesToShow()).isEmpty();
-    assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys("scopeId");
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys("scopeId"));
     assertThat(fakeClient.getHotspotToShowByConfigScopeId().get("scopeId"))
       .extracting(HotspotDetailsDto::getMessage, HotspotDetailsDto::getAuthor, HotspotDetailsDto::getFilePath,
         HotspotDetailsDto::getStatus, HotspotDetailsDto::getResolution, HotspotDetailsDto::getCodeSnippet)
@@ -134,7 +136,7 @@ class OpenHotspotInIdeMediumTests {
     requestOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
 
     var telemetryLocalStorageManager = new TelemetryLocalStorageManager(TelemetryPathManager.getPath(sonarlintUserHome, SonarLintBackendFixture.MEDIUM_TESTS_PRODUCT_KEY));
-    assertThat(telemetryLocalStorageManager.tryRead().showHotspotRequestsCount()).isEqualTo(1);
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(telemetryLocalStorageManager.tryRead().showHotspotRequestsCount()).isEqualTo(1));
   }
 
   @Test
@@ -150,7 +152,7 @@ class OpenHotspotInIdeMediumTests {
 
     assertThat(statusCode).isEqualTo(200);
     assertThat(fakeClient.getMessagesToShow()).isEmpty();
-    assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys("scopeId");
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys("scopeId"));
     assertThat(fakeClient.getHotspotToShowByConfigScopeId().get("scopeId"))
       .extracting(HotspotDetailsDto::getMessage)
       .containsExactly("msg");
@@ -170,7 +172,7 @@ class OpenHotspotInIdeMediumTests {
 
     assertThat(statusCode).isEqualTo(200);
     assertThat(fakeClient.getMessagesToShow()).isEmpty();
-    assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys("scopeId");
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys("scopeId"));
     assertThat(fakeClient.getHotspotToShowByConfigScopeId().get("scopeId"))
       .extracting(HotspotDetailsDto::getMessage)
       .containsExactly("msg");
@@ -189,6 +191,7 @@ class OpenHotspotInIdeMediumTests {
     var statusCode = requestOpenHotspotWithParams("server=" + urlEncode(serverWithoutHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
 
     assertThat(statusCode).isEqualTo(200);
+    await().atMost(2, TimeUnit.SECONDS).until(() -> !fakeClient.getMessagesToShow().isEmpty());
     assertThat(fakeClient.getMessagesToShow())
       .extracting(ShowMessageParams::getType, ShowMessageParams::getText)
       .containsExactly(tuple("ERROR", "Could not show the hotspot. See logs for more details"));

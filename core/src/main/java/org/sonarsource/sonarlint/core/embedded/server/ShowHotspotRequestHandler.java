@@ -19,15 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.embedded.server;
 
-import com.google.common.eventbus.EventBus;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpException;
@@ -36,16 +33,12 @@ import org.apache.hc.core5.http.io.HttpRequestHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.net.URIBuilder;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
 import org.sonarsource.sonarlint.core.ConfigurationServiceImpl;
 import org.sonarsource.sonarlint.core.ConnectionServiceImpl;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingConfigurationDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
-import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.HotspotDetailsDto;
@@ -53,8 +46,6 @@ import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams
 import org.sonarsource.sonarlint.core.clientapi.client.message.MessageType;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.commons.TextRange;
-import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
-import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.GetSecurityHotspotRequestParams;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspotDetails;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
@@ -66,16 +57,16 @@ class ShowHotspotRequestHandler implements HttpRequestHandler {
   private final SonarLintClient client;
   private final ConnectionServiceImpl connectionService;
   private final ConfigurationServiceImpl configurationService;
-  private final EventBus eventBus;
+  private final BindingSuggestionProvider bindingSuggestionProvider;
   private final ServerApiProvider serverApiProvider;
   private final TelemetryServiceImpl telemetryService;
 
-  public ShowHotspotRequestHandler(SonarLintClient client, ConnectionServiceImpl connectionService, ConfigurationServiceImpl configurationService, EventBus eventBus,
-    ServerApiProvider serverApiProvider, TelemetryServiceImpl telemetryService) {
+  public ShowHotspotRequestHandler(SonarLintClient client, ConnectionServiceImpl connectionService, ConfigurationServiceImpl configurationService,
+    BindingSuggestionProvider bindingSuggestionProvider, ServerApiProvider serverApiProvider, TelemetryServiceImpl telemetryService) {
     this.client = client;
     this.connectionService = connectionService;
     this.configurationService = configurationService;
-    this.eventBus = eventBus;
+    this.bindingSuggestionProvider = bindingSuggestionProvider;
     this.serverApiProvider = serverApiProvider;
     this.telemetryService = telemetryService;
   }
@@ -88,7 +79,7 @@ class ShowHotspotRequestHandler implements HttpRequestHandler {
       return;
     }
 
-    showHotspot(showHotspotQuery);
+    CompletableFuture.runAsync(() -> showHotspot(showHotspotQuery));
 
     response.setCode(HttpStatus.SC_OK);
     response.setEntity(new StringEntity("OK"));
@@ -99,66 +90,32 @@ class ShowHotspotRequestHandler implements HttpRequestHandler {
 
     var connectionsMatchingOrigin = connectionService.findByUrl(query.serverUrl);
     if (connectionsMatchingOrigin.isEmpty()) {
+      startFullBindingProcess();
       assistCreatingConnection(query.serverUrl)
-        .thenAccept(assistCreatingConnectionResponse -> {
-          var newConnection = assistCreatingConnectionResponse.getNewConnection();
-          var connectionId = getId(newConnection);
-          assistBinding(connectionId, query.projectKey)
-            .whenComplete((assistBindingResponse, error) -> {
-              // also called when canceled by the user, finish creating the connection
-              finalizeConnectionAndBindingCreation(newConnection, assistBindingResponse);
-              if (assistBindingResponse != null) {
-                // null when canceled
-                showHotspotForScope(connectionId, assistBindingResponse.getConfigurationScopeId(), query.projectKey, query.hotspotKey);
-              }
-            });
-        });
+        .thenCompose(response -> assistBinding(response.getNewConnectionId(), query.projectKey))
+        .thenAccept(response -> showHotspotForScope(response.connectionId, response.configurationScopeId, query.projectKey, query.hotspotKey))
+        .whenComplete((v, e) -> endFullBindingProcess());
     } else {
       // we pick the first connection but this could lead to issues later if there were several matches (make the user select the right one?)
       showHotspotForConnection(connectionsMatchingOrigin.get(0).getConnectionId(), query.projectKey, query.hotspotKey);
     }
   }
 
-  private void finalizeConnectionAndBindingCreation(Either<SonarQubeConnectionConfigurationDto, SonarCloudConnectionConfigurationDto> newConnection,
-    @Nullable AssistBindingResponse assistBindingResponse) {
-    // finalization is done at the same time to avoid triggering binding suggestions after creating the connection
-    var connectionEvent = createConnection(newConnection);
-    BindingConfigChangedEvent bindingEvent = null;
-    if (assistBindingResponse != null) {
-      // it could have been canceled
-      var boundConfigurationScopeId = assistBindingResponse.getConfigurationScopeId();
-      bindingEvent = bindProject(boundConfigurationScopeId, assistBindingResponse.getBindingConfiguration());
-    }
-    eventBus.post(connectionEvent);
-    if (bindingEvent != null) {
-      eventBus.post(bindingEvent);
-    }
+  private void startFullBindingProcess() {
+    // we don't want binding suggestions to appear in the middle of a full binding creation process (connection + binding)
+    // the other possibility would be to still notify the client anyway and let it handle UI interactions one at a time (assists, messages, suggestions, ...)
+    bindingSuggestionProvider.disable();
   }
 
-  private static String getId(Either<SonarQubeConnectionConfigurationDto, SonarCloudConnectionConfigurationDto> newConnection) {
-    return newConnection.map(SonarQubeConnectionConfigurationDto::getConnectionId, SonarCloudConnectionConfigurationDto::getConnectionId);
-  }
-
-  private ConnectionConfigurationAddedEvent createConnection(Either<SonarQubeConnectionConfigurationDto, SonarCloudConnectionConfigurationDto> newConnection) {
-    return connectionService.addConnection(newConnection);
-  }
-
-  @CheckForNull
-  private BindingConfigChangedEvent bindProject(String configurationScopeId, BindingConfigurationDto bindingConfiguration) {
-    return configurationService.bind(configurationScopeId, bindingConfiguration);
+  private void endFullBindingProcess() {
+    bindingSuggestionProvider.enable();
   }
 
   private void showHotspotForConnection(String connectionId, String projectKey, String hotspotKey) {
     var scopes = configurationService.getConfigScopesWithBindingConfiguredTo(connectionId, projectKey);
     if (scopes.isEmpty()) {
       assistBinding(connectionId, projectKey)
-        .thenAccept(newBinding -> {
-          var bindingEvent = bindProject(newBinding.getConfigurationScopeId(), newBinding.getBindingConfiguration());
-          if (bindingEvent != null) {
-            eventBus.post(bindingEvent);
-          }
-          showHotspotForScope(connectionId, newBinding.getConfigurationScopeId(), projectKey, hotspotKey);
-        });
+        .thenAccept(newBinding -> showHotspotForScope(connectionId, newBinding.configurationScopeId, projectKey, hotspotKey));
     } else {
       // we pick the first bound scope but this could lead to issues later if there were several matches (make the user select the right one?)
       var firstBoundScope = scopes.get(0);
@@ -186,8 +143,19 @@ class ShowHotspotRequestHandler implements HttpRequestHandler {
     return client.assistCreatingConnection(new AssistCreatingConnectionParams(serverUrl));
   }
 
-  private CompletableFuture<AssistBindingResponse> assistBinding(String connectionId, String projectKey) {
-    return client.assistBinding(new AssistBindingParams(connectionId, projectKey));
+  private CompletableFuture<NewBinding> assistBinding(String connectionId, String projectKey) {
+    return client.assistBinding(new AssistBindingParams(connectionId, projectKey))
+      .thenApply(response -> new NewBinding(connectionId, response.getConfigurationScopeId()));
+  }
+
+  private static class NewBinding {
+    private final String connectionId;
+    private final String configurationScopeId;
+
+    private NewBinding(String connectionId, String configurationScopeId) {
+      this.connectionId = connectionId;
+      this.configurationScopeId = configurationScopeId;
+    }
   }
 
   private static HotspotDetailsDto adapt(ServerHotspotDetails hotspot) {
