@@ -303,20 +303,30 @@ class ActiveRulesMediumTests {
       .extracting("key", "name", "type", "language", "severity")
       .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO);
     assertThat(details.getParams()).isEmpty();
-    assertThat(details.getDescription())
-      .extracting("right.introductionHtmlContent")
+    assertThat(details.getDescription().getRight().getIntroductionHtmlContent())
         .isEqualTo("htmlContent");
-    assertThat(details.getDescription())
-      .extracting("right.tabs", as(list(ActiveRuleDescriptionTabDto.class)))
+    assertThat(details.getDescription().getRight().getTabs())
       .flatExtracting(ActiveRulesMediumTests::flattenTabContent)
       .containsExactly(
-              "How can I fix it?", "htmlContent for Spring", "spring", "Spring",
               "How can I fix it?", "htmlContent for JSP", "jsp", "JSP",
-              "More Info", "htmlContent3<br/><br/>extendedDesc");
+        "How can I fix it?", "htmlContent for Spring", "spring", "Spring",
+        "How can I fix it?", "<h2>How can I fix it in another component or framework?</h2>\n" +
+          "<p>Although the main framework or component you use in your project is not listed, you may find helpful content in the instructions we provide.</p>\n" +
+          "<p>Caution: The libraries mentioned in these instructions may not be appropriate for your code.</p>\n" +
+          "<p>\n" +
+          "<ul>\n" +
+          "<li>Do use libraries that are compatible with the frameworks you are using.</li>\n" +
+          "<li>Don't blindly copy and paste the fix ups into your code.</li>\n" +
+          "</ul>\n" +
+          "<h2>Help us improve</h2>\n" +
+          "<p>Let us know if the instructions we provide do not work for you. Tell us which framework you use and why our solution does not work by submitting an idea on the SonarLint product-board.</p>\n" +
+          "<a href=\"https://portal.productboard.com/sonarsource/4-sonarlint/submit-idea\">Submit an idea</a>\n" +
+          "<p>We will do our best to provide you with more relevant instructions in the future.</p>", "others", "Others",
+        "More Info", "htmlContent3<br/><br/>extendedDesc");
   }
 
   @Test
-  void it_should_ignore_provided_context_and_return_all_contexts_if_context_not_found()
+  void it_should_ignore_provided_context_and_return_all_contexts_in_alphabetical_order_with_default_if_context_not_found()
     throws ExecutionException, InterruptedException {
     prepareForRuleDescriptionSectionsAndContext();
 
@@ -326,16 +336,43 @@ class ActiveRulesMediumTests {
       .extracting("key", "name", "type", "language", "severity")
       .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO);
     assertThat(details.getParams()).isEmpty();
-    assertThat(details.getDescription())
-      .extracting("right.introductionHtmlContent")
+    assertThat(details.getDescription().getRight().getIntroductionHtmlContent())
       .isEqualTo("htmlContent");
-    assertThat(details.getDescription())
-      .extracting("right.tabs", as(list(ActiveRuleDescriptionTabDto.class)))
+    assertThat(details.getDescription().getRight().getTabs())
       .flatExtracting(ActiveRulesMediumTests::flattenTabContent)
       .containsExactly(
-        "How can I fix it?", "htmlContent for Spring", "spring", "Spring",
         "How can I fix it?", "htmlContent for JSP", "jsp", "JSP",
+        "How can I fix it?", "htmlContent for Spring", "spring", "Spring",
+        "How can I fix it?", "<h2>How can I fix it in another component or framework?</h2>\n" +
+          "<p>Although the main framework or component you use in your project is not listed, you may find helpful content in the instructions we provide.</p>\n" +
+          "<p>Caution: The libraries mentioned in these instructions may not be appropriate for your code.</p>\n" +
+          "<p>\n" +
+          "<ul>\n" +
+          "<li>Do use libraries that are compatible with the frameworks you are using.</li>\n" +
+          "<li>Don't blindly copy and paste the fix ups into your code.</li>\n" +
+          "</ul>\n" +
+          "<h2>Help us improve</h2>\n" +
+          "<p>Let us know if the instructions we provide do not work for you. Tell us which framework you use and why our solution does not work by submitting an idea on the SonarLint product-board.</p>\n" +
+          "<a href=\"https://portal.productboard.com/sonarsource/4-sonarlint/submit-idea\">Submit an idea</a>\n" +
+          "<p>We will do our best to provide you with more relevant instructions in the future.</p>", "others", "Others",
         "More Info", "htmlContent3<br/><br/>extendedDesc");
+
+  }
+
+  @Test
+  void it_should_return_default_context_key_if_multiple_contexts()
+    throws ExecutionException, InterruptedException {
+    prepareForRuleDescriptionSectionsAndContext();
+
+    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139", "not_found")).get();
+    var details = activeRuleDetailsResponse.details();
+
+    assertThat(details.getDescription().getRight().getTabs())
+      .extracting(ActiveRuleDescriptionTabDto::getTitle).containsExactly("How can I fix it?", "More Info");
+
+    assertThat(details.getDescription().getRight().getTabs().iterator().next().getContent().getRight().getDefaultContextKey())
+      .isEqualTo("others");
+
   }
 
   private void prepareForRuleDescriptionSectionsAndContext() {
@@ -486,7 +523,8 @@ class ActiveRulesMediumTests {
     if (tab.getContent().isLeft()) {
       return List.of(tab.getTitle(), tab.getContent().getLeft().getHtmlContent());
     }
-    return tab.getContent().getRight().stream().flatMap(s -> Stream.of(tab.getTitle(), s.getHtmlContent(), s.getContextKey(), s.getDisplayName())).collect(Collectors.toList());
+    List<Object> flattenTabContents = tab.getContent().getRight().getContextualSections().stream().flatMap(s -> Stream.of(tab.getTitle(), s.getHtmlContent(), s.getContextKey(), s.getDisplayName())).collect(Collectors.toList());
+    return flattenTabContents;
   }
 
   @TempDir
