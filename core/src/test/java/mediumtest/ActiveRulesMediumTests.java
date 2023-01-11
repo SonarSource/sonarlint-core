@@ -308,8 +308,7 @@ class ActiveRulesMediumTests {
     assertThat(details.getDescription().getRight().getTabs())
       .flatExtracting(ActiveRulesMediumTests::flattenTabContent)
       .containsExactly(
-              "How can I fix it?", "htmlContent for JSP", "jsp", "JSP",
-        "How can I fix it?", "htmlContent for Spring", "spring", "Spring",
+              "How can I fix it?", "htmlContent2", "contextKey2", "displayName2",
         "How can I fix it?",
         "<h4>How can I fix it in another component or framework?</h4>\n"+
           "<p>Although the main framework or component you use in your project is not listed, you may find helpful content in the instructions we provide.</p>\n"+
@@ -324,7 +323,33 @@ class ActiveRulesMediumTests {
     "    Tell us which framework you use and why our solution does not work by submitting an idea on the SonarLint product-board.</p>\n"+
     "<a href=\"https://portal.productboard.com/sonarsource/4-sonarlint/submit-idea\">Submit an idea</a>\n"+
     "<p>We will do our best to provide you with more relevant instructions in the future.</p>", "others", "Others",
-        "More Info", "htmlContent3<br/><br/>extendedDesc");
+        "More Info", "htmlContent3<br/><br/>extendedDesc<br/><br/><h3>Clean Code Principles</h3>\n" +
+          "<h4>Never Trust User Input</h4>\n" +
+          "<p>\n" +
+          "    Applications must treat all user input and, more generally, all third-party data as\n" +
+          "    attacker-controlled data.\n" +
+          "</p>\n" +
+          "<p>\n" +
+          "    The application must determine where the third-party data comes from and treat that data\n" +
+          "    source as an attack vector. Two rules apply:\n" +
+          "</p>\n" +
+          "\n" +
+          "<p>\n" +
+          "    First, before using it in the application&apos;s business logic, the application must\n" +
+          "    validate the attacker-controlled data against predefined formats, such as:\n" +
+          "</p>\n" +
+          "<ul>\n" +
+          "    <li>Character sets</li>\n" +
+          "    <li>Sizes</li>\n" +
+          "    <li>Types</li>\n" +
+          "    <li>Or any strict schema</li>\n" +
+          "</ul>\n" +
+          "\n" +
+          "<p>\n" +
+          "    Second, the application must sanitize string data before inserting it into interpreted\n" +
+          "    contexts (client-side code, file paths, SQL queries). Unsanitized code can corrupt the\n" +
+          "    application&apos;s logic.\n" +
+          "</p>");
 
   }
 
@@ -344,8 +369,7 @@ class ActiveRulesMediumTests {
     assertThat(details.getDescription().getRight().getTabs())
       .flatExtracting(ActiveRulesMediumTests::flattenTabContent)
       .containsExactly(
-        "How can I fix it?", "htmlContent for JSP", "jsp", "JSP",
-        "How can I fix it?", "htmlContent for Spring", "spring", "Spring",
+        "How can I fix it?", "htmlContent2", "contextKey2", "displayName2",
         "How can I fix it?", "<h4>How can I fix it in another component or framework?</h4>\n"+
           "<p>Although the main framework or component you use in your project is not listed, you may find helpful content in the instructions we provide.</p>\n"+
           "<p>Caution: The libraries mentioned in these instructions may not be appropriate for your code.</p>\n"+
@@ -359,7 +383,33 @@ class ActiveRulesMediumTests {
           "    Tell us which framework you use and why our solution does not work by submitting an idea on the SonarLint product-board.</p>\n"+
           "<a href=\"https://portal.productboard.com/sonarsource/4-sonarlint/submit-idea\">Submit an idea</a>\n"+
           "<p>We will do our best to provide you with more relevant instructions in the future.</p>", "others", "Others",
-        "More Info", "htmlContent3<br/><br/>extendedDesc");
+        "More Info", "htmlContent3<br/><br/>extendedDesc<br/><br/><h3>Clean Code Principles</h3>\n" +
+          "<h4>Never Trust User Input</h4>\n" +
+          "<p>\n" +
+          "    Applications must treat all user input and, more generally, all third-party data as\n" +
+          "    attacker-controlled data.\n" +
+          "</p>\n" +
+          "<p>\n" +
+          "    The application must determine where the third-party data comes from and treat that data\n" +
+          "    source as an attack vector. Two rules apply:\n" +
+          "</p>\n" +
+          "\n" +
+          "<p>\n" +
+          "    First, before using it in the application&apos;s business logic, the application must\n" +
+          "    validate the attacker-controlled data against predefined formats, such as:\n" +
+          "</p>\n" +
+          "<ul>\n" +
+          "    <li>Character sets</li>\n" +
+          "    <li>Sizes</li>\n" +
+          "    <li>Types</li>\n" +
+          "    <li>Or any strict schema</li>\n" +
+          "</ul>\n" +
+          "\n" +
+          "<p>\n" +
+          "    Second, the application must sanitize string data before inserting it into interpreted\n" +
+          "    contexts (client-side code, file paths, SQL queries). Unsanitized code can corrupt the\n" +
+          "    application&apos;s logic.\n" +
+          "</p>");
 
   }
 
@@ -397,13 +447,10 @@ class ActiveRulesMediumTests {
         .setDescriptionSections(Rules.Rule.DescriptionSections.newBuilder()
           .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
             .setKey("introduction").setContent("htmlContent")
-            .build())
+            .setContext(Rules.Rule.DescriptionSection.Context.newBuilder().setKey("contextKey").setDisplayName("displayName").build()).build())
           .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
-            .setKey("how_to_fix").setContent("htmlContent for Spring")
-            .setContext(Rules.Rule.DescriptionSection.Context.newBuilder().setKey("spring").setDisplayName("Spring").build()).build())
-          .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
-            .setKey("how_to_fix").setContent("htmlContent for JSP")
-            .setContext(Rules.Rule.DescriptionSection.Context.newBuilder().setKey("jsp").setDisplayName("JSP").build()).build())
+            .setKey("how_to_fix").setContent("htmlContent2")
+            .setContext(Rules.Rule.DescriptionSection.Context.newBuilder().setKey("contextKey2").setDisplayName("displayName2").build()).build())
           .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
             .setKey("resources").setContent("htmlContent3").build()))
         .build())
@@ -415,7 +462,7 @@ class ActiveRulesMediumTests {
     throws ExecutionException, InterruptedException {
     prepareForRuleDescriptionSectionsAndContext();
 
-    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139")).get();
+    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139", "contextKey2")).get();
 
     var details = activeRuleDetailsResponse.details();
     assertThat(details)
@@ -428,7 +475,7 @@ class ActiveRulesMediumTests {
     assertThat(details.getDescription().getRight().getTabs())
       .flatExtracting(ActiveRulesMediumTests::flattenTabContent)
       .containsExactly(
-        "How can I fix it?", "htmlContent2", "contextKey2", "displayName2",
+        "How can I fix it?", "htmlContent2",
         "More Info", "htmlContent3<br/><br/>extendedDesc<br/><br/><h3>Clean Code Principles</h3>\n" +
           "<h4>Never Trust User Input</h4>\n" +
           "<p>\n" +
