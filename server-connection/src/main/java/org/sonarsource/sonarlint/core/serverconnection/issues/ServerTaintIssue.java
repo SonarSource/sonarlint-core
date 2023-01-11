@@ -95,7 +95,7 @@ public class ServerTaintIssue {
 
   @CheckForNull
   public String getRuleDescriptionContextKey() {
-    return ruleDescriptionContextKey;
+    return  ruleDescriptionContextKey;
   }
 
   public List<Flow> getFlows() {
