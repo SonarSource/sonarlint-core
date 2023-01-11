@@ -32,6 +32,7 @@
     <module>issue-tracking</module>
     <module>plugin-commons</module>
     <module>rule-extractor</module>
+    <module>rule-extractor-cli</module>
     <module>analysis-engine</module>
     <module>osgi</module>
     <module>report-aggregate</module>
