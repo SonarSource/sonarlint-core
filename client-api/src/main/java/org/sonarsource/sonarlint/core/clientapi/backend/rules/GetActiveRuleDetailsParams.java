@@ -19,18 +19,30 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
+import javax.annotation.Nullable;
+
 public class GetActiveRuleDetailsParams {
 
   private final String configurationScopeId;
   private final String ruleKey;
 
+  @Nullable
+  private final String contextKey;
+
   /**
    * @param configurationScopeId the configuration scope id (see spec/glossary.adoc for more details)
    * @param ruleKey the key of the rule
+   * @deprecated use {@link GetActiveRuleDetailsParams}
    */
+  @Deprecated
   public GetActiveRuleDetailsParams(String configurationScopeId, String ruleKey) {
+    this(configurationScopeId, ruleKey, null);
+  }
+
+  public GetActiveRuleDetailsParams(String configurationScopeId, String ruleKey, @Nullable String contextKey) {
     this.configurationScopeId = configurationScopeId;
     this.ruleKey = ruleKey;
+    this.contextKey = contextKey;
   }
 
   public String getConfigurationScopeId() {
@@ -39,5 +51,10 @@ public class GetActiveRuleDetailsParams {
 
   public String getRuleKey() {
     return ruleKey;
+  }
+
+  @Nullable
+  public String getContextKey() {
+    return contextKey;
   }
 }

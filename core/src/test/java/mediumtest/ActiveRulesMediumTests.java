@@ -45,8 +45,10 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.assertj.core.api.InstanceOfAssertFactories.list;
 
 class ActiveRulesMediumTests {
 
@@ -291,8 +293,52 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-  void it_should_merge_rule_from_storage_and_server_with_description_sections_when_project_is_bound()
+  void it_should_merge_rule_from_storage_and_server_with_description_sections_when_project_is_bound_and_none_context()
     throws ExecutionException, InterruptedException {
+    prepareForRuleDescriptionSectionsAndContext();
+
+    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139", null)).get();
+    var details = activeRuleDetailsResponse.details();
+    assertThat(details)
+      .extracting("key", "name", "type", "language", "severity")
+      .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO);
+    assertThat(details.getParams()).isEmpty();
+    assertThat(details.getDescription())
+      .extracting("right.introductionHtmlContent")
+        .isEqualTo("htmlContent");
+    assertThat(details.getDescription())
+      .extracting("right.tabs", as(list(ActiveRuleDescriptionTabDto.class)))
+      .flatExtracting(ActiveRulesMediumTests::flattenTabContent)
+      .containsExactly(
+              "How can I fix it?", "htmlContent for Spring", "spring", "Spring",
+              "How can I fix it?", "htmlContent for JSP", "jsp", "JSP",
+              "More Info", "htmlContent3<br/><br/>extendedDesc");
+  }
+
+  @Test
+  void it_should_ignore_provided_context_and_return_all_contexts_if_context_not_found()
+    throws ExecutionException, InterruptedException {
+    prepareForRuleDescriptionSectionsAndContext();
+
+    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139", "not_found")).get();
+    var details = activeRuleDetailsResponse.details();
+    assertThat(details)
+      .extracting("key", "name", "type", "language", "severity")
+      .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO);
+    assertThat(details.getParams()).isEmpty();
+    assertThat(details.getDescription())
+      .extracting("right.introductionHtmlContent")
+      .isEqualTo("htmlContent");
+    assertThat(details.getDescription())
+      .extracting("right.tabs", as(list(ActiveRuleDescriptionTabDto.class)))
+      .flatExtracting(ActiveRulesMediumTests::flattenTabContent)
+      .containsExactly(
+        "How can I fix it?", "htmlContent for Spring", "spring", "Spring",
+        "How can I fix it?", "htmlContent for JSP", "jsp", "JSP",
+        "More Info", "htmlContent3<br/><br/>extendedDesc");
+  }
+
+  private void prepareForRuleDescriptionSectionsAndContext() {
     StorageFixture.newStorage("connectionId")
       .withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
@@ -310,14 +356,23 @@ class ActiveRulesMediumTests {
         .setDescriptionSections(Rules.Rule.DescriptionSections.newBuilder()
           .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
             .setKey("introduction").setContent("htmlContent")
-            .setContext(Rules.Rule.DescriptionSection.Context.newBuilder().setKey("contextKey").setDisplayName("displayName").build()).build())
+            .build())
           .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
-            .setKey("how_to_fix").setContent("htmlContent2")
-            .setContext(Rules.Rule.DescriptionSection.Context.newBuilder().setKey("contextKey2").setDisplayName("displayName2").build()).build())
+            .setKey("how_to_fix").setContent("htmlContent for Spring")
+            .setContext(Rules.Rule.DescriptionSection.Context.newBuilder().setKey("spring").setDisplayName("Spring").build()).build())
+          .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
+            .setKey("how_to_fix").setContent("htmlContent for JSP")
+            .setContext(Rules.Rule.DescriptionSection.Context.newBuilder().setKey("jsp").setDisplayName("JSP").build()).build())
           .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
             .setKey("resources").setContent("htmlContent3").build()))
         .build())
       .build());
+  }
+
+  @Test
+    void it_should_return_only_tab_content_for_the_provided_context()
+    throws ExecutionException, InterruptedException {
+    prepareForRuleDescriptionSectionsAndContext();
 
     var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139")).get();
 

@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.rules;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRulesService;
@@ -62,7 +63,7 @@ public class ActiveRulesServiceImpl implements ActiveRulesService {
     return configurationRepository.getEffectiveBinding(params.getConfigurationScopeId())
       .map(binding -> getActiveRuleForBinding(params.getRuleKey(), binding))
       .orElseGet(() -> getActiveEmbeddedRule(params.getRuleKey()))
-      .thenApply(ActiveRulesServiceImpl::response);
+      .thenApply(activeRuleDetails -> buildResponse(activeRuleDetails, params.getContextKey()));
   }
 
   private CompletableFuture<ActiveRuleDetails> getActiveEmbeddedRule(String ruleKey) {
@@ -154,7 +155,8 @@ public class ActiveRulesServiceImpl implements ActiveRulesService {
     }
   }
 
-  private static GetActiveRuleDetailsResponse response(ActiveRuleDetails activeRuleDetails) {
-    return new GetActiveRuleDetailsResponse(ActiveRuleDetailsAdapter.transform(activeRuleDetails));
+  private static GetActiveRuleDetailsResponse buildResponse(ActiveRuleDetails activeRuleDetails, @Nullable String contextKey) {
+    return new GetActiveRuleDetailsResponse(ActiveRuleDetailsAdapter.transform(activeRuleDetails, contextKey));
   }
+
 }
