@@ -19,20 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.client.connection;
 
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
 
 public class AssistCreatingConnectionResponse {
-  private final Either<SonarQubeConnectionConfigurationDto, SonarCloudConnectionConfigurationDto> newConnection;
+  private final String newConnectionId;
 
-  public AssistCreatingConnectionResponse(@NonNull Either<SonarQubeConnectionConfigurationDto, SonarCloudConnectionConfigurationDto> newConnection) {
-    this.newConnection = newConnection;
+  public AssistCreatingConnectionResponse(@NonNull String newConnectionId) {
+    this.newConnectionId = newConnectionId;
   }
 
   @NonNull
-  public Either<SonarQubeConnectionConfigurationDto, SonarCloudConnectionConfigurationDto> getNewConnection() {
-    return newConnection;
+  public String getNewConnectionId() {
+    return newConnectionId;
   }
 }

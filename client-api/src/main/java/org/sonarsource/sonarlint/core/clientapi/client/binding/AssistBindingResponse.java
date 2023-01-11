@@ -20,20 +20,12 @@
 package org.sonarsource.sonarlint.core.clientapi.client.binding;
 
 import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
-import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingConfigurationDto;
 
 public class AssistBindingResponse {
-  private final BindingConfigurationDto bindingConfiguration;
   private final String configurationScopeId;
 
-  public AssistBindingResponse(@NonNull BindingConfigurationDto bindingConfiguration, @NonNull String configurationScopeId) {
-    this.bindingConfiguration = bindingConfiguration;
+  public AssistBindingResponse(@NonNull String configurationScopeId) {
     this.configurationScopeId = configurationScopeId;
-  }
-
-  @NonNull
-  public BindingConfigurationDto getBindingConfiguration() {
-    return bindingConfiguration;
   }
 
   @NonNull

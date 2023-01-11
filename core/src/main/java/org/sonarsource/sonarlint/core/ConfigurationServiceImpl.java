@@ -100,7 +100,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
   }
 
   @CheckForNull
-  public BindingConfigChangedEvent bind(String configurationScopeId, BindingConfigurationDto bindingConfiguration) {
+  private BindingConfigChangedEvent bind(String configurationScopeId, BindingConfigurationDto bindingConfiguration) {
     var previousBindingConfig = repository.getBindingConfiguration(configurationScopeId);
     if (previousBindingConfig == null) {
       LOG.error("Attempt to update binding in configuration scope '{}' that was not registered", configurationScopeId);

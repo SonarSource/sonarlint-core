@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.embedded.server;
 
-import com.google.common.eventbus.EventBus;
 import java.net.InetAddress;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.core5.http.ConnectionReuseStrategy;
@@ -30,6 +29,7 @@ import org.apache.hc.core5.http.impl.bootstrap.ServerBootstrap;
 import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.io.CloseMode;
+import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
 import org.sonarsource.sonarlint.core.ConfigurationServiceImpl;
 import org.sonarsource.sonarlint.core.ConnectionServiceImpl;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
@@ -53,17 +53,18 @@ public class EmbeddedServer {
   private final ConnectionServiceImpl connectionService;
   private final AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository;
   private final ConfigurationServiceImpl configurationService;
-  private final EventBus eventBus;
+  private final BindingSuggestionProvider bindingSuggestionProvider;
   private final ServerApiProvider serverApiProvider;
   private final TelemetryServiceImpl telemetryService;
 
   public EmbeddedServer(SonarLintClient client, ConnectionServiceImpl connectionService, AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository,
-    ConfigurationServiceImpl configurationService, EventBus eventBus, ServerApiProvider serverApiProvider, TelemetryServiceImpl telemetryService) {
+    ConfigurationServiceImpl configurationService, BindingSuggestionProvider bindingSuggestionProvider, ServerApiProvider serverApiProvider,
+    TelemetryServiceImpl telemetryService) {
     this.client = client;
     this.connectionService = connectionService;
     this.awaitingUserTokenFutureRepository = awaitingUserTokenFutureRepository;
     this.configurationService = configurationService;
-    this.eventBus = eventBus;
+    this.bindingSuggestionProvider = bindingSuggestionProvider;
     this.serverApiProvider = serverApiProvider;
     this.telemetryService = telemetryService;
   }
@@ -89,7 +90,8 @@ public class EmbeddedServer {
           .addFilterFirst("CORS", new CorsFilter())
           .register("/sonarlint/api/status", new StatusRequestHandler(client, connectionService, clientInfo))
           .register("/sonarlint/api/token", new GeneratedUserTokenHandler(awaitingUserTokenFutureRepository))
-          .register("/sonarlint/api/hotspots/show", new ShowHotspotRequestHandler(client, connectionService, configurationService, eventBus, serverApiProvider, telemetryService))
+          .register("/sonarlint/api/hotspots/show",
+            new ShowHotspotRequestHandler(client, connectionService, configurationService, bindingSuggestionProvider, serverApiProvider, telemetryService))
           .create();
         startedServer.start();
         port = triedPort;
