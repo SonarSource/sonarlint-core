@@ -50,22 +50,23 @@ class ActiveRuleDetailsAdapter {
     SECTION_KEYS_TO_TAB_TITLE_ORDERED.put(RESOURCES_SECTION_KEY, "More Info");
   }
 
-  public static ActiveRuleDetailsDto transform(ActiveRuleDetails ruleDetails) {
+  public static ActiveRuleDetailsDto transform(ActiveRuleDetails ruleDetails, @Nullable String contextKey) {
     return new ActiveRuleDetailsDto(
       ruleDetails.getKey(),
       ruleDetails.getName(),
       ruleDetails.getDefaultSeverity(),
       ruleDetails.getType(),
-      transformDescriptions(ruleDetails),
+      transformDescriptions(ruleDetails, contextKey),
       transform(ruleDetails.getParams()),
       ruleDetails.getLanguage());
   }
 
-  private static Either<ActiveRuleMonolithicDescriptionDto, ActiveRuleSplitDescriptionDto> transformDescriptions(ActiveRuleDetails ruleDetails) {
+  private static Either<ActiveRuleMonolithicDescriptionDto, ActiveRuleSplitDescriptionDto> transformDescriptions(ActiveRuleDetails ruleDetails,
+    @Nullable String contextKey) {
     if (ruleDetails.hasMonolithicDescription()) {
       return Either.forLeft(transformMonolithicDescription(ruleDetails));
     }
-    return Either.forRight(transformSplitDescription(ruleDetails));
+    return Either.forRight(transformSplitDescription(ruleDetails, contextKey));
   }
 
   private static ActiveRuleMonolithicDescriptionDto transformMonolithicDescription(ActiveRuleDetails ruleDetails) {
@@ -81,7 +82,7 @@ class ActiveRuleDetailsAdapter {
     return (principles.stream().anyMatch(StringUtils::isNotBlank) ? "<h3>Clean Code Principles</h3>\n" : "") + concat(principles);
   }
 
-  private static ActiveRuleSplitDescriptionDto transformSplitDescription(ActiveRuleDetails ruleDetails) {
+  private static ActiveRuleSplitDescriptionDto transformSplitDescription(ActiveRuleDetails ruleDetails, @Nullable String contextKey) {
     var sectionsByKey = ruleDetails.getDescriptionSectionsByKey();
 
     var tabbedSections = new ArrayList<>(transformSectionsButIntroductionToTabs(ruleDetails));
@@ -168,4 +169,9 @@ class ActiveRuleDetailsAdapter {
   private ActiveRuleDetailsAdapter() {
     // utility class
   }
+
+  //  @NotNull
+//  private static Either<ActiveRuleNonContextualSectionDto, Collection<ActiveRuleContextualSectionDto>> buildNonContextualSectionDto(ActiveRuleDetails ruleDetails, ActiveRuleDetails.DescriptionSection matchingContext) {
+//    return Either.forLeft(new ActiveRuleNonContextualSectionDto(getTabContent(matchingContext, ruleDetails.getExtendedDescription())));
+//  }
 }
