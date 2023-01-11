@@ -69,7 +69,7 @@ class RuleExtractorMediumTests {
 
   @Test
   void extractAllRules() {
-    Set<Language> enabledLanguages = Set.of(Language.values());
+    var enabledLanguages = Set.of(Language.values());
     var config = new PluginsLoader.Configuration(allJars, enabledLanguages, empty());
     var result = new PluginsLoader().load(config);
 
@@ -109,13 +109,17 @@ class RuleExtractorMediumTests {
       assertThat(rule.getDeprecatedKeys()).isEmpty();
       assertThat(rule.getHtmlDescription()).contains("<p>This rule verifies that single-line comments are not located");
       assertThat(rule.getTags()).containsOnly("convention");
-
+      assertThat(rule.getInternalKey()).isEmpty();
     });
+
+    var ruleWithInternalKey = allRules.stream().filter(r -> r.getKey().equals("squid:ModifiersOrderCheck")).findFirst();
+    assertThat(ruleWithInternalKey).isNotEmpty();
+    assertThat(ruleWithInternalKey.get().getInternalKey()).contains("S1124");
   }
 
   @Test
   void extractAllRules_include_rule_templates() throws Exception {
-    Set<Language> enabledLanguages = Set.of(Language.values());
+    var enabledLanguages = Set.of(Language.values());
     var config = new PluginsLoader.Configuration(allJars, enabledLanguages, empty());
     var result = new PluginsLoader().load(config);
 
@@ -135,7 +139,7 @@ class RuleExtractorMediumTests {
 
   @Test
   void extractAllRules_include_security_hotspots() throws Exception {
-    Set<Language> enabledLanguages = Set.of(Language.values());
+    var enabledLanguages = Set.of(Language.values());
     var config = new PluginsLoader.Configuration(allJars, enabledLanguages, empty());
     var result = new PluginsLoader().load(config);
 
@@ -177,7 +181,7 @@ class RuleExtractorMediumTests {
 
   @Test
   void loadNoRuleIfThereIsNoPlugin() {
-    Set<Language> enabledLanguages = Set.of(Language.values());
+    var enabledLanguages = Set.of(Language.values());
     var config = new PluginsLoader.Configuration(Set.of(), enabledLanguages, empty());
     var result = new PluginsLoader().load(config);
     var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, false, false);

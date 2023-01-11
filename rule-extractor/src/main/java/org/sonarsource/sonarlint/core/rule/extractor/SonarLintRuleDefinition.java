@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.sonar.api.rule.RuleKey;
@@ -50,6 +51,7 @@ public class SonarLintRuleDefinition {
   private final String[] tags;
   private final Set<String> deprecatedKeys;
   private final Set<String> educationPrincipleKeys;
+  private final Optional<String> internalKey;
 
   public SonarLintRuleDefinition(RulesDefinition.Rule rule) {
     this.key = RuleKey.of(rule.repository().key(), rule.key()).toString();
@@ -82,6 +84,7 @@ public class SonarLintRuleDefinition {
       }
     }
     params = Collections.unmodifiableMap(builder);
+    this.internalKey = Optional.ofNullable(rule.internalKey());
   }
 
   public String getKey() {
@@ -134,5 +137,9 @@ public class SonarLintRuleDefinition {
 
   public Set<String> getEducationPrincipleKeys() {
     return educationPrincipleKeys;
+  }
+
+  public Optional<String> getInternalKey() {
+    return internalKey;
   }
 }
