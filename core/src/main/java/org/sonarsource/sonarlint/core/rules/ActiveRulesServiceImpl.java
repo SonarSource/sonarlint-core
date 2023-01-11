@@ -20,30 +20,16 @@
 package org.sonarsource.sonarlint.core.rules;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleContextualSectionWithDefaultContextKeyDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleContextualSectionDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleDescriptionTabDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleDetailsDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleMonolithicDescriptionDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleNonContextualSectionDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleParamDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleSplitDescriptionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRulesService;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetActiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetActiveRuleDetailsResponse;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.OthersSectionHtmlContent;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.repository.config.Binding;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -58,20 +44,6 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 
 public class ActiveRulesServiceImpl implements ActiveRulesService {
-  public static final String INTRODUCTION_SECTION_KEY = "introduction";
-  public static final String RESOURCES_SECTION_KEY = "resources";
-  private static final String DEFAULT_CONTEXT_KEY = "others";
-  private static final String DEFAULT_CONTEXT_DISPLAY_NAME = "Others";
-  private static final String OTHERS_SECTION_HTML_CONTENT_KEY = "others_section_html_content";
-  private static final Map<String, String> SECTION_KEYS_TO_TAB_TITLE_ORDERED = new LinkedHashMap<>();
-
-  static {
-    SECTION_KEYS_TO_TAB_TITLE_ORDERED.put("root_cause", "Why is this an issue?");
-    SECTION_KEYS_TO_TAB_TITLE_ORDERED.put("assess_the_problem", "Assess the risk");
-    SECTION_KEYS_TO_TAB_TITLE_ORDERED.put("how_to_fix", "How can I fix it?");
-    SECTION_KEYS_TO_TAB_TITLE_ORDERED.put(RESOURCES_SECTION_KEY, "More Info");
-  }
-
   private final ServerApiProvider serverApiProvider;
   private final ConfigurationRepository configurationRepository;
   private final RulesServiceImpl rulesService;

@@ -182,8 +182,9 @@ class ActiveRuleDetailsAdapter {
     // utility class
   }
 
-    @NotNull
-  private static Either<ActiveRuleNonContextualSectionDto, ActiveRuleContextualSectionWithDefaultContextKeyDto> buildNonContextualSectionDto(ActiveRuleDetails ruleDetails, ActiveRuleDetails.DescriptionSection matchingContext) {
+  @NotNull
+  private static Either<ActiveRuleNonContextualSectionDto, ActiveRuleContextualSectionWithDefaultContextKeyDto> buildNonContextualSectionDto(ActiveRuleDetails ruleDetails,
+    ActiveRuleDetails.DescriptionSection matchingContext) {
     return Either.forLeft(new ActiveRuleNonContextualSectionDto(getTabContent(matchingContext, ruleDetails.getExtendedDescription(), ruleDetails.getCleanCodePrincipleKeys())));
   }
 
