@@ -515,8 +515,9 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       issueEntity.setBlobString(RANGE_HASH_PROPERTY_NAME, textRange.getHash());
     }
     issueEntity.setBlob(FLOWS_BLOB_NAME, toProtoFlow(issue.getFlows()));
-    if (issue.getRuleDescriptionContextKey() != null) {
-      issueEntity.setProperty(RULE_DESCRIPTION_CONTEXT_KEY, issue.getRuleDescriptionContextKey());
+    var ruleDescriptionContextKey = issue.getRuleDescriptionContextKey();
+    if (ruleDescriptionContextKey != null) {
+      issueEntity.setProperty(RULE_DESCRIPTION_CONTEXT_KEY, ruleDescriptionContextKey);
     }
   }
 
