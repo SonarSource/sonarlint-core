@@ -159,7 +159,7 @@ class TaintIssueDownloaderTests {
     assertThat(taintIssue.getType()).isEqualTo(RuleType.VULNERABILITY);
     assertThat(taintIssue.getSeverity()).isEqualTo(IssueSeverity.INFO);
 
-    assertTextRange(taintIssue.getTextRange(), 2, 7,4, 9, "My\n\tCode\n  Snippet");
+    assertTextRange(taintIssue.getTextRange(), 2, 7,4, 9, hash("My\n\tCode\n  Snippet"));
 
     assertThat(taintIssue.getFlows()).hasSize(2);
     assertThat(taintIssue.getFlows().get(0).locations()).hasSize(4);
@@ -167,7 +167,7 @@ class TaintIssueDownloaderTests {
     var flowLocation11 = taintIssue.getFlows().get(0).locations().get(0);
     assertThat(flowLocation11.getFilePath()).isEqualTo("foo/bar/Hello.java");
 
-    assertTextRange(flowLocation11.getTextRange(), 5, 1, 5, 6, "After");
+    assertTextRange(flowLocation11.getTextRange(), 5, 1, 5, 6, hash("After"));
 
     // Invalid text range
     assertThat(taintIssue.getFlows().get(0).locations().get(1).getTextRange().getHash()).isEmpty();
