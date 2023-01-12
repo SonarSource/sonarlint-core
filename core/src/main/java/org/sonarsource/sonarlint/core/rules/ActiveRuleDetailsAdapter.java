@@ -45,7 +45,6 @@ class ActiveRuleDetailsAdapter {
   public static final String RESOURCES_SECTION_KEY = "resources";
   private static final String DEFAULT_CONTEXT_KEY = "others";
   private static final String DEFAULT_CONTEXT_DISPLAY_NAME = "Others";
-  private static final String OTHERS_SECTION_HTML_CONTENT_KEY = "others_section_html_content";
   private static final Map<String, String> SECTION_KEYS_TO_TAB_TITLE_ORDERED = new LinkedHashMap<>();
 
   static {
@@ -140,7 +139,7 @@ class ActiveRuleDetailsAdapter {
               context.getDisplayName());
           }).collect(Collectors.toList());
           contextualSectionContents.add(
-            new ActiveRuleContextualSectionDto(OthersSectionHtmlContent.getHtmlContent(OTHERS_SECTION_HTML_CONTENT_KEY),
+            new ActiveRuleContextualSectionDto(OthersSectionHtmlContent.getHtmlContent(),
               DEFAULT_CONTEXT_KEY, DEFAULT_CONTEXT_DISPLAY_NAME));
           content = Either.forRight(new ActiveRuleContextualSectionWithDefaultContextKeyDto(DEFAULT_CONTEXT_KEY, contextualSectionContents));
         }

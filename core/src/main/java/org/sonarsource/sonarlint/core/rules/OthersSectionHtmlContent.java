@@ -31,18 +31,21 @@ public class OthersSectionHtmlContent {
   private static final String FILE_EXTENSION = ".html";
   private static final String UNSUPPORTED_RULE_DESCRIPTION_FOR_CONTEXT_KEY = "Unsupported rule description for context key: ";
   private static final String ERROR_READING_FILE_CONTENT = "Could not read the content for rule description for context key: ";
+
+  private static final String OTHERS_SECTION_HTML_CONTENT_KEY = "others_section_html_content";
   private OthersSectionHtmlContent() {}
 
-  public static String getHtmlContent(String contextKey) {
-    try (var htmlContentFile = OthersSectionHtmlContent.class.getResourceAsStream(FOLDER_NAME + contextKey + FILE_EXTENSION)) {
+  public static String getHtmlContent() {
+    try (var htmlContentFile = OthersSectionHtmlContent.class.getResourceAsStream(FOLDER_NAME +
+      OTHERS_SECTION_HTML_CONTENT_KEY + FILE_EXTENSION)) {
       if (htmlContentFile == null) {
-        SonarLintLogger.get().info(UNSUPPORTED_RULE_DESCRIPTION_FOR_CONTEXT_KEY + contextKey);
+        SonarLintLogger.get().info(UNSUPPORTED_RULE_DESCRIPTION_FOR_CONTEXT_KEY + OTHERS_SECTION_HTML_CONTENT_KEY);
         return "";
       }
 
       return IOUtils.toString(htmlContentFile, StandardCharsets.UTF_8).trim().replaceAll("\\r\\n?", "\n");
     } catch (IOException ioException) {
-      SonarLintLogger.get().error(ERROR_READING_FILE_CONTENT + contextKey, ioException);
+      SonarLintLogger.get().error(ERROR_READING_FILE_CONTENT + OTHERS_SECTION_HTML_CONTENT_KEY, ioException);
       return "";
     }
   }
