@@ -20,8 +20,6 @@
 package org.sonarsource.sonarlint.core.rules;
 
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nullable;
