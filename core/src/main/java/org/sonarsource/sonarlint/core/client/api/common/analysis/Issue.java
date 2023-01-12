@@ -42,6 +42,6 @@ public interface Issue extends IssueLocation {
 
   Optional<String> getRuleDescriptionContextKey();
 
-  VulnerabilityProbability getVulnerabilityProbability();
+  Optional<VulnerabilityProbability> getVulnerabilityProbability();
 
 }

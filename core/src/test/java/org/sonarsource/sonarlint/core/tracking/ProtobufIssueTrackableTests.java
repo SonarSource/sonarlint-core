@@ -60,11 +60,6 @@ class ProtobufIssueTrackableTests {
   }
 
   @Test
-  void should_not_have_vulnerabilityProbability() {
-    assertThat(empty.getVulnerabilityProbability()).isNull();
-  }
-
-  @Test
   void should_not_have_textRange() {
     assertThrows(UnsupportedOperationException.class, () -> completeTrackable.getTextRange());
   }

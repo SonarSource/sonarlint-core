@@ -40,6 +40,7 @@ public final class DefaultClientIssue implements Issue {
   private final List<QuickFix> quickFixes;
   private final org.sonarsource.sonarlint.core.commons.TextRange textRange;
   private final Optional<String> ruleDescriptionContextKey;
+  private final Optional<VulnerabilityProbability> vulnerabilityProbability;
 
   public DefaultClientIssue(org.sonarsource.sonarlint.core.analysis.api.Issue i, SonarLintRuleDefinition sonarLintRuleDefinition) {
     this.textRange = i.getTextRange() != null ? i.getTextRange() : null;
@@ -51,9 +52,10 @@ public final class DefaultClientIssue implements Issue {
     this.severity = sonarLintRuleDefinition.getDefaultSeverity();
     this.type = sonarLintRuleDefinition.getType();
     this.ruleKey = sonarLintRuleDefinition.getKey();
+    this.vulnerabilityProbability = sonarLintRuleDefinition.getVulnerabilityProbability();
   }
 
-  public DefaultClientIssue(org.sonarsource.sonarlint.core.analysis.api.Issue i, IssueSeverity severity, RuleType type) {
+  public DefaultClientIssue(org.sonarsource.sonarlint.core.analysis.api.Issue i, IssueSeverity severity, RuleType type, Optional<VulnerabilityProbability> vulnerabilityProbability) {
     this.textRange = i.getTextRange() != null ? i.getTextRange() : null;
     this.primaryMessage = i.getMessage();
     this.clientInputFile = i.getInputFile();
@@ -63,6 +65,7 @@ public final class DefaultClientIssue implements Issue {
     this.type = type;
     this.ruleKey = i.getRuleKey();
     this.ruleDescriptionContextKey = i.getRuleDescriptionContextKey();
+    this.vulnerabilityProbability = vulnerabilityProbability;
   }
 
   @Override
@@ -108,9 +111,8 @@ public final class DefaultClientIssue implements Issue {
   }
 
   @Override
-  public VulnerabilityProbability getVulnerabilityProbability() {
-    // No vulnerabilityProbability for locally detected issues
-    return null;
+  public Optional<VulnerabilityProbability> getVulnerabilityProbability() {
+    return vulnerabilityProbability;
   }
 
   @CheckForNull

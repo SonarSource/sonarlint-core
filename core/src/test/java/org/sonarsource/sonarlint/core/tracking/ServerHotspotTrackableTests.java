@@ -45,6 +45,5 @@ class ServerHotspotTrackableTests {
     assertThat(trackable.getLine()).isEqualTo(1);
     assertThat(trackable.getType()).isEqualTo(RuleType.SECURITY_HOTSPOT);
     assertThat(trackable.getTextRange()).isNull();
-    assertThat(trackable.getVulnerabilityProbability()).isEqualTo(VulnerabilityProbability.LOW);
   }
 }

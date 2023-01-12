@@ -23,7 +23,6 @@ import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
-import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
@@ -104,8 +103,4 @@ public class ServerIssueTrackable implements Trackable {
     return serverIssue.isResolved();
   }
 
-  @Override
-  public VulnerabilityProbability getVulnerabilityProbability() {
-    return null;
-  }
 }

@@ -24,7 +24,6 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
-import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 
 public class ServerHotspotTrackable implements Trackable {
 
@@ -92,7 +91,4 @@ public class ServerHotspotTrackable implements Trackable {
     return serverHotspot.isResolved();
   }
 
-  public VulnerabilityProbability getVulnerabilityProbability() {
-    return serverHotspot.getVulnerabilityProbability();
-  }
 }

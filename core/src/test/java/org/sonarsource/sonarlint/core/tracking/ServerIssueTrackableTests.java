@@ -49,6 +49,5 @@ class ServerIssueTrackableTests {
     assertThat(trackable.isResolved()).isTrue();
     assertThat(trackable.getSeverity()).isEqualTo(serverIssue.getUserSeverity());
     assertThat(trackable.getLine()).isEqualTo(serverIssue.getLine());
-    assertThat(trackable.getVulnerabilityProbability()).isNull();
   }
 }

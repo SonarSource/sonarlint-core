@@ -218,9 +218,10 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     return postAnalysisCommandAndGetResult(analyzeCommand, monitor);
   }
 
-  private static void streamIssue(IssueListener issueListener, Issue newIssue, ActiveRulesContext activeRulesContext) {
+  private void streamIssue(IssueListener issueListener, Issue newIssue, ActiveRulesContext activeRulesContext) {
     var ruleMetadata = activeRulesContext.getRuleMetadata(newIssue.getRuleKey());
-    issueListener.handle(new DefaultClientIssue(newIssue, ruleMetadata.severity, ruleMetadata.type));
+    var vulnerabilityProbability = analysisContext.get().findRule(newIssue.getRuleKey()).flatMap(SonarLintRuleDefinition::getVulnerabilityProbability);
+    issueListener.handle(new DefaultClientIssue(newIssue, ruleMetadata.severity, ruleMetadata.type, vulnerabilityProbability));
   }
 
   private ActiveRulesContext buildActiveRulesContext(ConnectedAnalysisConfiguration configuration) {

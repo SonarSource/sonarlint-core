@@ -33,8 +33,10 @@ import org.sonar.markdown.Markdown;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 
 import static java.util.stream.Collectors.toSet;
+import static org.sonarsource.sonarlint.core.rule.extractor.SecurityStandards.fromSecurityStandards;
 
 public class SonarLintRuleDefinition {
 
@@ -52,6 +54,8 @@ public class SonarLintRuleDefinition {
   private final Set<String> deprecatedKeys;
   private final Set<String> educationPrincipleKeys;
   private final Optional<String> internalKey;
+  // Relevant for Hotspot rules only
+  private final Optional<VulnerabilityProbability> vulnerabilityProbability;
 
   public SonarLintRuleDefinition(RulesDefinition.Rule rule) {
     this.key = RuleKey.of(rule.repository().key(), rule.key()).toString();
@@ -73,6 +77,7 @@ public class SonarLintRuleDefinition {
     this.tags = rule.tags().toArray(new String[0]);
     this.deprecatedKeys = rule.deprecatedRuleKeys().stream().map(RuleKey::toString).collect(toSet());
     this.educationPrincipleKeys = rule.educationPrincipleKeys();
+    this.vulnerabilityProbability = rule.type() == org.sonar.api.rules.RuleType.SECURITY_HOTSPOT ? Optional.of(fromSecurityStandards(rule.securityStandards()).getSlCategory().getVulnerability()) : Optional.empty();
 
     Map<String, SonarLintRuleParamDefinition> builder = new HashMap<>();
     for (Param param : rule.params()) {
@@ -141,5 +146,8 @@ public class SonarLintRuleDefinition {
 
   public Optional<String> getInternalKey() {
     return internalKey;
+  }
+  public Optional<VulnerabilityProbability> getVulnerabilityProbability() {
+    return vulnerabilityProbability;
   }
 }

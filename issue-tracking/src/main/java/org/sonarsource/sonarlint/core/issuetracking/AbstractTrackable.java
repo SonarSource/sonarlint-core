@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.issuetracking;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
-import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 
 public class AbstractTrackable<G> implements Trackable<G> {
   private final G clientObject;
@@ -36,7 +35,6 @@ public class AbstractTrackable<G> implements Trackable<G> {
   protected Long creationDate;
   protected String serverIssueKey;
   protected boolean resolved;
-  protected VulnerabilityProbability vulnerabilityProbability;
 
   protected AbstractTrackable(Trackable<G> trackable) {
     this.clientObject = trackable.getClientObject();
@@ -51,7 +49,6 @@ public class AbstractTrackable<G> implements Trackable<G> {
     this.creationDate = trackable.getCreationDate();
     this.serverIssueKey = trackable.getServerIssueKey();
     this.resolved = trackable.isResolved();
-    this.vulnerabilityProbability = trackable.getVulnerabilityProbability();
   }
 
   @Override
@@ -109,8 +106,4 @@ public class AbstractTrackable<G> implements Trackable<G> {
     return resolved;
   }
 
-  @Override
-  public VulnerabilityProbability getVulnerabilityProbability() {
-    return vulnerabilityProbability;
-  }
 }

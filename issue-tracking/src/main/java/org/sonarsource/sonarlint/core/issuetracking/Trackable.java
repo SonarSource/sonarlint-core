@@ -23,7 +23,6 @@ import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
-import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 
 public interface Trackable<G> {
 
@@ -59,5 +58,4 @@ public interface Trackable<G> {
 
   boolean isResolved();
 
-  VulnerabilityProbability getVulnerabilityProbability();
 }
