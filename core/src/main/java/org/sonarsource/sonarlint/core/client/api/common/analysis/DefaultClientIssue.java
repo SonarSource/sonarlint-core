@@ -55,7 +55,8 @@ public final class DefaultClientIssue implements Issue {
     this.vulnerabilityProbability = sonarLintRuleDefinition.getVulnerabilityProbability();
   }
 
-  public DefaultClientIssue(org.sonarsource.sonarlint.core.analysis.api.Issue i, IssueSeverity severity, RuleType type, Optional<VulnerabilityProbability> vulnerabilityProbability) {
+  public DefaultClientIssue(org.sonarsource.sonarlint.core.analysis.api.Issue i, IssueSeverity severity,
+    RuleType type, Optional<VulnerabilityProbability> vulnerabilityProbability) {
     this.textRange = i.getTextRange() != null ? i.getTextRange() : null;
     this.primaryMessage = i.getMessage();
     this.clientInputFile = i.getInputFile();

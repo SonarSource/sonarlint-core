@@ -153,7 +153,7 @@ public final class SecurityStandards {
     Set<String> standards = securityStandards.stream().filter(Objects::nonNull).collect(toSet());
     Set<String> cwe = toCwes(standards);
     List<SLCategory> sl = toSortedSLCategories(cwe);
-    SLCategory slCategory = sl.iterator().next();
+    var slCategory = sl.iterator().next();
     Set<SLCategory> ignoredSLCategories = sl.stream().skip(1).collect(toSet());
     return new SecurityStandards(standards, cwe, slCategory, ignoredSLCategories);
   }
