@@ -39,7 +39,6 @@ import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleMonolith
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleNonContextualSectionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleParamDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleSplitDescriptionDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.OthersSectionHtmlContent;
 
 class ActiveRuleDetailsAdapter {
   public static final String INTRODUCTION_SECTION_KEY = "introduction";
