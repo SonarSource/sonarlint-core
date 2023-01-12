@@ -90,5 +90,4 @@ public class ServerHotspotTrackable implements Trackable {
   public boolean isResolved() {
     return serverHotspot.isResolved();
   }
-
 }

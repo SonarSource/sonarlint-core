@@ -111,5 +111,4 @@ public class IssueTrackable implements Trackable<Issue> {
   public boolean isResolved() {
     return false;
   }
-
 }

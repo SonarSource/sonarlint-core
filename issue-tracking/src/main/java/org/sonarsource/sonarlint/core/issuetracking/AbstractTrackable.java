@@ -105,5 +105,4 @@ public class AbstractTrackable<G> implements Trackable<G> {
   public boolean isResolved() {
     return resolved;
   }
-
 }

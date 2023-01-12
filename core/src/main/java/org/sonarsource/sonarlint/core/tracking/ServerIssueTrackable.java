@@ -102,5 +102,4 @@ public class ServerIssueTrackable implements Trackable {
   public boolean isResolved() {
     return serverIssue.isResolved();
   }
-
 }
