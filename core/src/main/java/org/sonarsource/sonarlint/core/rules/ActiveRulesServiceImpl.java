@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.rules;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRulesService;
@@ -41,10 +42,10 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 
 public class ActiveRulesServiceImpl implements ActiveRulesService {
-
   private final ServerApiProvider serverApiProvider;
   private final ConfigurationRepository configurationRepository;
   private final RulesServiceImpl rulesService;
+  private static final String COULD_NOT_FIND_RULE = "Could not find rule '";
   private Path storageRoot;
 
   public ActiveRulesServiceImpl(ServerApiProvider serverApiProvider, RulesServiceImpl rulesService, ConfigurationRepository configurationRepository) {
@@ -62,14 +63,14 @@ public class ActiveRulesServiceImpl implements ActiveRulesService {
     return configurationRepository.getEffectiveBinding(params.getConfigurationScopeId())
       .map(binding -> getActiveRuleForBinding(params.getRuleKey(), binding))
       .orElseGet(() -> getActiveEmbeddedRule(params.getRuleKey()))
-      .thenApply(ActiveRulesServiceImpl::response);
+      .thenApply(activeRuleDetails -> buildResponse(activeRuleDetails, params.getContextKey()));
   }
 
   private CompletableFuture<ActiveRuleDetails> getActiveEmbeddedRule(String ruleKey) {
     return rulesService.getEmbeddedRule(ruleKey)
       .map(ActiveRuleDetails::from)
       .map(CompletableFuture::completedFuture)
-      .orElseGet(() -> CompletableFuture.failedFuture(new IllegalArgumentException("Could not find rule '" + ruleKey + "' in embedded rules")));
+      .orElseGet(() -> CompletableFuture.failedFuture(new IllegalArgumentException(COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules")));
   }
 
   private CompletableFuture<ActiveRuleDetails> getActiveRuleForBinding(String ruleKey, Binding binding) {
@@ -81,7 +82,7 @@ public class ActiveRulesServiceImpl implements ActiveRulesService {
       .orElseGet(() -> rulesService.getRule(connectionId, ruleKey)
         .map(ActiveRuleDetails::from)
         .map(CompletableFuture::completedFuture)
-        .orElseGet(() -> CompletableFuture.failedFuture(new IllegalArgumentException("Could not find rule '" + ruleKey + "' in plugins loaded from '" + connectionId + "'"))));
+        .orElseGet(() -> CompletableFuture.failedFuture(new IllegalArgumentException(COULD_NOT_FIND_RULE + ruleKey + "' in plugins loaded from '" + connectionId + "'"))));
   }
 
   private Optional<ServerActiveRule> findServerActiveRuleInStorage(Binding binding, String ruleKey) {
@@ -123,7 +124,7 @@ public class ActiveRulesServiceImpl implements ActiveRulesService {
     return serverApi.rules().getRule(ruleKey)
       .handle((r, e) -> {
         if (e != null) {
-          throw new IllegalStateException("Could not find rule '" + ruleKey + "' on '" + connectionId + "'");
+          throw new IllegalStateException(COULD_NOT_FIND_RULE + ruleKey + "' on '" + connectionId + "'");
         }
         return r;
       });
@@ -154,7 +155,8 @@ public class ActiveRulesServiceImpl implements ActiveRulesService {
     }
   }
 
-  private static GetActiveRuleDetailsResponse response(ActiveRuleDetails activeRuleDetails) {
-    return new GetActiveRuleDetailsResponse(ActiveRuleDetailsAdapter.transform(activeRuleDetails));
+  private static GetActiveRuleDetailsResponse buildResponse(ActiveRuleDetails activeRuleDetails, @Nullable String contextKey) {
+    return new GetActiveRuleDetailsResponse(ActiveRuleDetailsAdapter.transform(activeRuleDetails, contextKey));
   }
+
 }

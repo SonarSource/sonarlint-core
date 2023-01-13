@@ -45,8 +45,10 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.assertj.core.api.InstanceOfAssertFactories.list;
 
 class ActiveRulesMediumTests {
 
@@ -291,8 +293,143 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-  void it_should_merge_rule_from_storage_and_server_with_description_sections_when_project_is_bound()
+  void it_should_merge_rule_from_storage_and_server_with_description_sections_when_project_is_bound_and_none_context()
     throws ExecutionException, InterruptedException {
+    prepareForRuleDescriptionSectionsAndContext();
+
+    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139", null)).get();
+    var details = activeRuleDetailsResponse.details();
+    assertThat(details)
+      .extracting("key", "name", "type", "language", "severity")
+      .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO);
+    assertThat(details.getParams()).isEmpty();
+    assertThat(details.getDescription().getRight().getIntroductionHtmlContent())
+        .isEqualTo("htmlContent");
+    assertThat(details.getDescription().getRight().getTabs())
+      .flatExtracting(ActiveRulesMediumTests::flattenTabContent)
+      .containsExactly(
+              "How can I fix it?", "htmlContent2", "contextKey2", "displayName2",
+        "How can I fix it?",
+        "<h4>How can I fix it in another component or framework?</h4>\n"+
+          "<p>Although the main framework or component you use in your project is not listed, you may find helpful content in the instructions we provide.</p>\n"+
+        "<p>Caution: The libraries mentioned in these instructions may not be appropriate for your code.</p>\n"+
+    "<p>\n"+
+    "<ul>\n"+
+    "    <li>Do use libraries that are compatible with the frameworks you are using.</li>\n"+
+    "    <li>Don't blindly copy and paste the fix-ups into your code.</li>\n"+
+    "</ul>\n"+
+    "<h4>Help us improve</h4>\n"+
+    "<p>Let us know if the instructions we provide do not work for you.\n"+
+    "    Tell us which framework you use and why our solution does not work by submitting an idea on the SonarLint product-board.</p>\n"+
+    "<a href=\"https://portal.productboard.com/sonarsource/4-sonarlint/submit-idea\">Submit an idea</a>\n"+
+    "<p>We will do our best to provide you with more relevant instructions in the future.</p>", "others", "Others",
+        "More Info", "htmlContent3<br/><br/>extendedDesc<br/><br/><h3>Clean Code Principles</h3>\n" +
+          "<h4>Never Trust User Input</h4>\n" +
+          "<p>\n" +
+          "    Applications must treat all user input and, more generally, all third-party data as\n" +
+          "    attacker-controlled data.\n" +
+          "</p>\n" +
+          "<p>\n" +
+          "    The application must determine where the third-party data comes from and treat that data\n" +
+          "    source as an attack vector. Two rules apply:\n" +
+          "</p>\n" +
+          "\n" +
+          "<p>\n" +
+          "    First, before using it in the application&apos;s business logic, the application must\n" +
+          "    validate the attacker-controlled data against predefined formats, such as:\n" +
+          "</p>\n" +
+          "<ul>\n" +
+          "    <li>Character sets</li>\n" +
+          "    <li>Sizes</li>\n" +
+          "    <li>Types</li>\n" +
+          "    <li>Or any strict schema</li>\n" +
+          "</ul>\n" +
+          "\n" +
+          "<p>\n" +
+          "    Second, the application must sanitize string data before inserting it into interpreted\n" +
+          "    contexts (client-side code, file paths, SQL queries). Unsanitized code can corrupt the\n" +
+          "    application&apos;s logic.\n" +
+          "</p>");
+
+  }
+
+  @Test
+  void it_should_ignore_provided_context_and_return_all_contexts_in_alphabetical_order_with_default_if_context_not_found()
+    throws ExecutionException, InterruptedException {
+    prepareForRuleDescriptionSectionsAndContext();
+
+    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139", "not_found")).get();
+    var details = activeRuleDetailsResponse.details();
+    assertThat(details)
+      .extracting("key", "name", "type", "language", "severity")
+      .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO);
+    assertThat(details.getParams()).isEmpty();
+    assertThat(details.getDescription().getRight().getIntroductionHtmlContent())
+      .isEqualTo("htmlContent");
+    assertThat(details.getDescription().getRight().getTabs())
+      .flatExtracting(ActiveRulesMediumTests::flattenTabContent)
+      .containsExactly(
+        "How can I fix it?", "htmlContent2", "contextKey2", "displayName2",
+        "How can I fix it?", "<h4>How can I fix it in another component or framework?</h4>\n"+
+          "<p>Although the main framework or component you use in your project is not listed, you may find helpful content in the instructions we provide.</p>\n"+
+          "<p>Caution: The libraries mentioned in these instructions may not be appropriate for your code.</p>\n"+
+          "<p>\n"+
+          "<ul>\n"+
+          "    <li>Do use libraries that are compatible with the frameworks you are using.</li>\n"+
+          "    <li>Don't blindly copy and paste the fix-ups into your code.</li>\n"+
+          "</ul>\n"+
+          "<h4>Help us improve</h4>\n"+
+          "<p>Let us know if the instructions we provide do not work for you.\n"+
+          "    Tell us which framework you use and why our solution does not work by submitting an idea on the SonarLint product-board.</p>\n"+
+          "<a href=\"https://portal.productboard.com/sonarsource/4-sonarlint/submit-idea\">Submit an idea</a>\n"+
+          "<p>We will do our best to provide you with more relevant instructions in the future.</p>", "others", "Others",
+        "More Info", "htmlContent3<br/><br/>extendedDesc<br/><br/><h3>Clean Code Principles</h3>\n" +
+          "<h4>Never Trust User Input</h4>\n" +
+          "<p>\n" +
+          "    Applications must treat all user input and, more generally, all third-party data as\n" +
+          "    attacker-controlled data.\n" +
+          "</p>\n" +
+          "<p>\n" +
+          "    The application must determine where the third-party data comes from and treat that data\n" +
+          "    source as an attack vector. Two rules apply:\n" +
+          "</p>\n" +
+          "\n" +
+          "<p>\n" +
+          "    First, before using it in the application&apos;s business logic, the application must\n" +
+          "    validate the attacker-controlled data against predefined formats, such as:\n" +
+          "</p>\n" +
+          "<ul>\n" +
+          "    <li>Character sets</li>\n" +
+          "    <li>Sizes</li>\n" +
+          "    <li>Types</li>\n" +
+          "    <li>Or any strict schema</li>\n" +
+          "</ul>\n" +
+          "\n" +
+          "<p>\n" +
+          "    Second, the application must sanitize string data before inserting it into interpreted\n" +
+          "    contexts (client-side code, file paths, SQL queries). Unsanitized code can corrupt the\n" +
+          "    application&apos;s logic.\n" +
+          "</p>");
+
+  }
+
+  @Test
+  void it_should_return_default_context_key_if_multiple_contexts()
+    throws ExecutionException, InterruptedException {
+    prepareForRuleDescriptionSectionsAndContext();
+
+    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139", "not_found")).get();
+    var details = activeRuleDetailsResponse.details();
+
+    assertThat(details.getDescription().getRight().getTabs())
+      .extracting(ActiveRuleDescriptionTabDto::getTitle).containsExactly("How can I fix it?", "More Info");
+
+    assertThat(details.getDescription().getRight().getTabs().iterator().next().getContent().getRight().getDefaultContextKey())
+      .isEqualTo("others");
+
+  }
+
+  private void prepareForRuleDescriptionSectionsAndContext() {
     StorageFixture.newStorage("connectionId")
       .withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
@@ -318,8 +455,14 @@ class ActiveRulesMediumTests {
             .setKey("resources").setContent("htmlContent3").build()))
         .build())
       .build());
+  }
 
-    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139")).get();
+  @Test
+    void it_should_return_only_tab_content_for_the_provided_context()
+    throws ExecutionException, InterruptedException {
+    prepareForRuleDescriptionSectionsAndContext();
+
+    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139", "contextKey2")).get();
 
     var details = activeRuleDetailsResponse.details();
     assertThat(details)
@@ -332,7 +475,7 @@ class ActiveRulesMediumTests {
     assertThat(details.getDescription().getRight().getTabs())
       .flatExtracting(ActiveRulesMediumTests::flattenTabContent)
       .containsExactly(
-        "How can I fix it?", "htmlContent2", "contextKey2", "displayName2",
+        "How can I fix it?", "htmlContent2",
         "More Info", "htmlContent3<br/><br/>extendedDesc<br/><br/><h3>Clean Code Principles</h3>\n" +
           "<h4>Never Trust User Input</h4>\n" +
           "<p>\n" +
@@ -431,7 +574,8 @@ class ActiveRulesMediumTests {
     if (tab.getContent().isLeft()) {
       return List.of(tab.getTitle(), tab.getContent().getLeft().getHtmlContent());
     }
-    return tab.getContent().getRight().stream().flatMap(s -> Stream.of(tab.getTitle(), s.getHtmlContent(), s.getContextKey(), s.getDisplayName())).collect(Collectors.toList());
+    List<Object> flattenTabContents = tab.getContent().getRight().getContextualSections().stream().flatMap(s -> Stream.of(tab.getTitle(), s.getHtmlContent(), s.getContextKey(), s.getDisplayName())).collect(Collectors.toList());
+    return flattenTabContents;
   }
 
   @TempDir

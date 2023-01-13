@@ -112,7 +112,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
 
   private static final String MESSAGE_BLOB_NAME = "message";
   private static final String FLOWS_BLOB_NAME = "flows";
-
+  private static final String RULE_DESCRIPTION_CONTEXT_KEY_PROPERTY_NAME = "ruleDescriptionContextKey";
   private final PersistentEntityStore entityStore;
 
   private final Path backupFile;
@@ -220,7 +220,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       (Instant) requireNonNull(storedIssue.getProperty(CREATION_DATE_PROPERTY_NAME)),
       (IssueSeverity) requireNonNull(storedIssue.getProperty(SEVERITY_PROPERTY_NAME)),
       (RuleType) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME)),
-      textRange)
+      textRange, (String) storedIssue.getProperty(RULE_DESCRIPTION_CONTEXT_KEY_PROPERTY_NAME))
         .setFlows(readFlows(storedIssue.getBlob(FLOWS_BLOB_NAME)));
   }
 
@@ -514,6 +514,10 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       issueEntity.setBlobString(RANGE_HASH_PROPERTY_NAME, textRange.getHash());
     }
     issueEntity.setBlob(FLOWS_BLOB_NAME, toProtoFlow(issue.getFlows()));
+    var ruleDescriptionContextKey = issue.getRuleDescriptionContextKey();
+    if (ruleDescriptionContextKey != null) {
+      issueEntity.setProperty(RULE_DESCRIPTION_CONTEXT_KEY_PROPERTY_NAME, ruleDescriptionContextKey);
+    }
   }
 
   private static InputStream toProtoFlow(List<Flow> flows) {

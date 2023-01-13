@@ -39,9 +39,11 @@ public class ServerTaintIssue {
   private RuleType type;
   private List<Flow> flows = new ArrayList<>();
   private TextRangeWithHash textRange;
+  @Nullable
+  private final String ruleDescriptionContextKey;
 
   public ServerTaintIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant creationDate, IssueSeverity severity, RuleType type,
-    @Nullable TextRangeWithHash textRange) {
+    @Nullable TextRangeWithHash textRange, @Nullable String ruleDescriptionContextKey) {
     this.key = key;
     this.resolved = resolved;
     this.ruleKey = ruleKey;
@@ -51,6 +53,7 @@ public class ServerTaintIssue {
     this.severity = severity;
     this.type = type;
     this.textRange = textRange;
+    this.ruleDescriptionContextKey = ruleDescriptionContextKey;
   }
 
   public String getKey() {
@@ -88,6 +91,11 @@ public class ServerTaintIssue {
   @CheckForNull
   public TextRangeWithHash getTextRange() {
     return textRange;
+  }
+
+  @CheckForNull
+  public String getRuleDescriptionContextKey() {
+    return  ruleDescriptionContextKey;
   }
 
   public List<Flow> getFlows() {

@@ -30,7 +30,9 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleContextualSectionDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleContextualSectionWithDefaultContextKeyDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleDescriptionTabDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleMonolithicDescriptionDto;
@@ -41,6 +43,8 @@ import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleSplitDes
 class ActiveRuleDetailsAdapter {
   public static final String INTRODUCTION_SECTION_KEY = "introduction";
   public static final String RESOURCES_SECTION_KEY = "resources";
+  private static final String DEFAULT_CONTEXT_KEY = "others";
+  private static final String DEFAULT_CONTEXT_DISPLAY_NAME = "Others";
   private static final Map<String, String> SECTION_KEYS_TO_TAB_TITLE_ORDERED = new LinkedHashMap<>();
 
   static {
@@ -50,22 +54,23 @@ class ActiveRuleDetailsAdapter {
     SECTION_KEYS_TO_TAB_TITLE_ORDERED.put(RESOURCES_SECTION_KEY, "More Info");
   }
 
-  public static ActiveRuleDetailsDto transform(ActiveRuleDetails ruleDetails) {
+  public static ActiveRuleDetailsDto transform(ActiveRuleDetails ruleDetails, @Nullable String contextKey) {
     return new ActiveRuleDetailsDto(
       ruleDetails.getKey(),
       ruleDetails.getName(),
       ruleDetails.getDefaultSeverity(),
       ruleDetails.getType(),
-      transformDescriptions(ruleDetails),
+      transformDescriptions(ruleDetails, contextKey),
       transform(ruleDetails.getParams()),
       ruleDetails.getLanguage());
   }
 
-  private static Either<ActiveRuleMonolithicDescriptionDto, ActiveRuleSplitDescriptionDto> transformDescriptions(ActiveRuleDetails ruleDetails) {
+  private static Either<ActiveRuleMonolithicDescriptionDto, ActiveRuleSplitDescriptionDto> transformDescriptions(ActiveRuleDetails ruleDetails,
+    @Nullable String contextKey) {
     if (ruleDetails.hasMonolithicDescription()) {
       return Either.forLeft(transformMonolithicDescription(ruleDetails));
     }
-    return Either.forRight(transformSplitDescription(ruleDetails));
+    return Either.forRight(transformSplitDescription(ruleDetails, contextKey));
   }
 
   private static ActiveRuleMonolithicDescriptionDto transformMonolithicDescription(ActiveRuleDetails ruleDetails) {
@@ -81,10 +86,10 @@ class ActiveRuleDetailsAdapter {
     return (principles.stream().anyMatch(StringUtils::isNotBlank) ? "<h3>Clean Code Principles</h3>\n" : "") + concat(principles);
   }
 
-  private static ActiveRuleSplitDescriptionDto transformSplitDescription(ActiveRuleDetails ruleDetails) {
+  private static ActiveRuleSplitDescriptionDto transformSplitDescription(ActiveRuleDetails ruleDetails, @Nullable String contextKey) {
     var sectionsByKey = ruleDetails.getDescriptionSectionsByKey();
 
-    var tabbedSections = new ArrayList<>(transformSectionsButIntroductionToTabs(ruleDetails));
+    var tabbedSections = new ArrayList<>(transformSectionsButIntroductionToTabs(ruleDetails, contextKey));
     addMoreInfoTabIfNeeded(ruleDetails, tabbedSections);
     return new ActiveRuleSplitDescriptionDto(extractIntroductionFromSections(sectionsByKey), tabbedSections);
   }
@@ -113,24 +118,30 @@ class ActiveRuleDetailsAdapter {
     }
   }
 
-  private static Collection<ActiveRuleDescriptionTabDto> transformSectionsButIntroductionToTabs(ActiveRuleDetails ruleDetails) {
+  private static Collection<ActiveRuleDescriptionTabDto> transformSectionsButIntroductionToTabs(ActiveRuleDetails ruleDetails, @Nullable String contextKey) {
     var tabbedSections = new ArrayList<ActiveRuleDescriptionTabDto>();
     var sectionsByKey = ruleDetails.getDescriptionSectionsByKey();
     SECTION_KEYS_TO_TAB_TITLE_ORDERED.keySet().forEach(sectionKey -> {
       if (sectionsByKey.containsKey(sectionKey)) {
-        var sections = sectionsByKey.get(sectionKey);
+        var tabContents = sectionsByKey.get(sectionKey);
         var title = SECTION_KEYS_TO_TAB_TITLE_ORDERED.get(sectionKey);
-        Either<ActiveRuleNonContextualSectionDto, Collection<ActiveRuleContextualSectionDto>> content;
-        if (sections.size() == 1 && sections.get(0).getContext().isEmpty()) {
-          content = Either
-            .forLeft(new ActiveRuleNonContextualSectionDto(getTabContent(sections.get(0), ruleDetails.getExtendedDescription(), ruleDetails.getCleanCodePrincipleKeys())));
+        Either<ActiveRuleNonContextualSectionDto, ActiveRuleContextualSectionWithDefaultContextKeyDto> content;
+        var matchingContext = tabContents.stream().filter(c -> c.getContext().isPresent() && c.getContext().get().getKey().equals(contextKey)).findFirst();
+        if (tabContents.size() == 1 && tabContents.get(0).getContext().isEmpty()) {
+          content = buildNonContextualSectionDto(ruleDetails, tabContents.get(0));
+        } else if (contextKey != null && matchingContext.isPresent()) {
+          content = buildNonContextualSectionDto(ruleDetails, matchingContext.get());
         } else {
           // if there is more than one section, they should all have a context (verified in sonar-plugin-api)
-          content = Either.forRight(sections.stream().map(s -> {
+          List<ActiveRuleContextualSectionDto> contextualSectionContents = tabContents.stream().map(s -> {
             var context = s.getContext().get();
             return new ActiveRuleContextualSectionDto(getTabContent(s, ruleDetails.getExtendedDescription(), ruleDetails.getCleanCodePrincipleKeys()), context.getKey(),
               context.getDisplayName());
-          }).collect(Collectors.toList()));
+          }).collect(Collectors.toList());
+          contextualSectionContents.add(
+            new ActiveRuleContextualSectionDto(OthersSectionHtmlContent.getHtmlContent(),
+              DEFAULT_CONTEXT_KEY, DEFAULT_CONTEXT_DISPLAY_NAME));
+          content = Either.forRight(new ActiveRuleContextualSectionWithDefaultContextKeyDto(DEFAULT_CONTEXT_KEY, contextualSectionContents));
         }
         tabbedSections.add(new ActiveRuleDescriptionTabDto(title, content));
       }
@@ -168,4 +179,11 @@ class ActiveRuleDetailsAdapter {
   private ActiveRuleDetailsAdapter() {
     // utility class
   }
+
+  @NotNull
+  private static Either<ActiveRuleNonContextualSectionDto, ActiveRuleContextualSectionWithDefaultContextKeyDto> buildNonContextualSectionDto(ActiveRuleDetails ruleDetails,
+    ActiveRuleDetails.DescriptionSection matchingContext) {
+    return Either.forLeft(new ActiveRuleNonContextualSectionDto(getTabContent(matchingContext, ruleDetails.getExtendedDescription(), ruleDetails.getCleanCodePrincipleKeys())));
+  }
+
 }

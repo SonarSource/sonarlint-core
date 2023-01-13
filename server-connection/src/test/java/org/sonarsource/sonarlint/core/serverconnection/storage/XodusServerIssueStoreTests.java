@@ -160,6 +160,7 @@ class XodusServerIssueStoreTests {
       .extracting(ServerIssueLocation::getFilePath, ServerIssueLocation::getMessage, l -> l.getTextRange().getHash(), l -> l.getTextRange().getStartLine(),
         l -> l.getTextRange().getStartLineOffset(), l -> l.getTextRange().getEndLine(), l -> l.getTextRange().getEndLineOffset())
       .containsOnly(tuple("file/path", "flow message", "myFlowRangeHash", 5, 6, 7, 8));
+    assertThat(savedIssue.getRuleDescriptionContextKey()).isEqualTo("context");
   }
 
   @Test
@@ -497,8 +498,8 @@ class XodusServerIssueStoreTests {
 
     var taintIssues = store.loadTaint("branch", "file/path");
     assertThat(taintIssues)
-      .extracting("key", "resolved", "ruleKey", "message", "filePath", "severity", "type")
-      .containsOnly(tuple("key", false, "repo:key", "message", "file/path", IssueSeverity.MINOR, RuleType.VULNERABILITY));
+      .extracting("key", "resolved", "ruleKey", "message", "filePath", "severity", "type", "ruleDescriptionContextKey")
+      .containsOnly(tuple("key", false, "repo:key", "message", "file/path", IssueSeverity.MINOR, RuleType.VULNERABILITY, "context"));
     assertThat(taintIssues)
       .extracting(ServerTaintIssue::getTextRange)
       .extracting("startLine", "startLineOffset", "endLine", "endLineOffset", "hash")

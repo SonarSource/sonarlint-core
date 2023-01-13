@@ -19,22 +19,23 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import java.util.Collection;
+public class ActiveRuleContextualSectionWithDefaultContextKeyDto {
 
-public class ActiveRuleDescriptionTabDto {
-  private final String title;
-  private final Either<ActiveRuleNonContextualSectionDto, ActiveRuleContextualSectionWithDefaultContextKeyDto> content;
+  private final String defaultContextKey;
+  private final Collection<ActiveRuleContextualSectionDto> contextualSections;
 
-  public ActiveRuleDescriptionTabDto(String title, Either<ActiveRuleNonContextualSectionDto, ActiveRuleContextualSectionWithDefaultContextKeyDto> content) {
-    this.title = title;
-    this.content = content;
+  public ActiveRuleContextualSectionWithDefaultContextKeyDto(String defaultContextKey, Collection<ActiveRuleContextualSectionDto> contextualSections) {
+    this.defaultContextKey = defaultContextKey;
+    this.contextualSections = contextualSections;
   }
 
-  public String getTitle() {
-    return title;
+  public String getDefaultContextKey() {
+    return defaultContextKey;
   }
 
-  public Either<ActiveRuleNonContextualSectionDto, ActiveRuleContextualSectionWithDefaultContextKeyDto> getContent() {
-    return content;
+  public Collection<ActiveRuleContextualSectionDto> getContextualSections() {
+    return contextualSections;
   }
+
 }

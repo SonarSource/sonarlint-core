@@ -24,12 +24,14 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
+import javax.annotation.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
@@ -41,6 +43,7 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Location;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.TaintVulnerabilityLite;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -98,7 +101,8 @@ class TaintIssueDownloaderTests {
           .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Location No Text Range").setComponent(FILE_3_KEY)))
         .addFlows(Flow.newBuilder()
           .addLocations(Common.Location.newBuilder().setMsg("Flow 2 - Location 1").setComponent(FILE_1_KEY)
-            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(5).setEndOffset(6)))))
+            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(5).setEndOffset(6))))
+        .setRuleDescriptionContextKey("context1"))
       .addIssues(Issues.Issue.newBuilder()
         .setKey("uuid2")
         .setRule("javasecurity:S789")
@@ -117,7 +121,8 @@ class TaintIssueDownloaderTests {
           .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Location No Text Range").setComponent(FILE_3_KEY)))
         .addFlows(Flow.newBuilder()
           .addLocations(Common.Location.newBuilder().setMsg("Flow 2 - Location 1").setComponent(FILE_1_KEY)
-            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(5).setEndOffset(6)))))
+            .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(5).setEndOffset(6))))
+        .setRuleDescriptionContextKey("context2"))
       .addComponents(Issues.Component.newBuilder()
         .setKey(PROJECT_KEY))
       .addComponents(Issues.Component.newBuilder()
@@ -153,22 +158,16 @@ class TaintIssueDownloaderTests {
     assertThat(taintIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
     assertThat(taintIssue.getType()).isEqualTo(RuleType.VULNERABILITY);
     assertThat(taintIssue.getSeverity()).isEqualTo(IssueSeverity.INFO);
-    assertThat(taintIssue.getTextRange().getStartLine()).isEqualTo(2);
-    assertThat(taintIssue.getTextRange().getStartLineOffset()).isEqualTo(7);
-    assertThat(taintIssue.getTextRange().getEndLine()).isEqualTo(4);
-    assertThat(taintIssue.getTextRange().getEndLineOffset()).isEqualTo(9);
-    assertThat(taintIssue.getTextRange().getHash()).isEqualTo(hash("My\n\tCode\n  Snippet"));
+
+    assertTextRange(taintIssue.getTextRange(), 2, 7,4, 9, hash("My\n\tCode\n  Snippet"));
 
     assertThat(taintIssue.getFlows()).hasSize(2);
     assertThat(taintIssue.getFlows().get(0).locations()).hasSize(4);
 
     var flowLocation11 = taintIssue.getFlows().get(0).locations().get(0);
     assertThat(flowLocation11.getFilePath()).isEqualTo("foo/bar/Hello.java");
-    assertThat(flowLocation11.getTextRange().getStartLine()).isEqualTo(5);
-    assertThat(flowLocation11.getTextRange().getStartLineOffset()).isEqualTo(1);
-    assertThat(flowLocation11.getTextRange().getEndLine()).isEqualTo(5);
-    assertThat(flowLocation11.getTextRange().getEndLineOffset()).isEqualTo(6);
-    assertThat(flowLocation11.getTextRange().getHash()).isEqualTo(hash("After"));
+
+    assertTextRange(flowLocation11.getTextRange(), 5, 1, 5, 6, hash("After"));
 
     // Invalid text range
     assertThat(taintIssue.getFlows().get(0).locations().get(1).getTextRange().getHash()).isEmpty();
@@ -180,6 +179,7 @@ class TaintIssueDownloaderTests {
     assertThat(taintIssue.getFlows().get(0).locations().get(3).getTextRange()).isNull();
 
     assertThat(taintIssue.getFlows().get(1).locations()).hasSize(1);
+    assertThat(taintIssue.getRuleDescriptionContextKey()).isEqualTo("context1");
   }
 
   @Test
@@ -236,6 +236,7 @@ class TaintIssueDownloaderTests {
       .addFlows(Issues.Flow.newBuilder()
         .addLocations(Issues.Location.newBuilder().setMessage("Flow 2 - Location 1").setFilePath("foo/bar/Hello.java")
           .setTextRange(Issues.TextRange.newBuilder().setStartLine(5).setStartLineOffset(1).setEndLine(5).setEndLineOffset(6).setHash("hashLocation21"))))
+      .setRuleDescriptionContextKey("context")
       .build();
 
     var taintNoRange = TaintVulnerabilityLite.newBuilder()
@@ -261,22 +262,15 @@ class TaintIssueDownloaderTests {
     assertThat(serverTaintIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
     assertThat(serverTaintIssue.getSeverity()).isEqualTo(IssueSeverity.MAJOR);
     assertThat(serverTaintIssue.getType()).isEqualTo(RuleType.VULNERABILITY);
-    assertThat(serverTaintIssue.getTextRange().getStartLine()).isEqualTo(1);
-    assertThat(serverTaintIssue.getTextRange().getStartLineOffset()).isEqualTo(2);
-    assertThat(serverTaintIssue.getTextRange().getEndLine()).isEqualTo(3);
-    assertThat(serverTaintIssue.getTextRange().getEndLineOffset()).isEqualTo(4);
-    assertThat(serverTaintIssue.getTextRange().getHash()).isEqualTo("hash");
+
+    assertTextRange(serverTaintIssue.getTextRange(), 1, 2, 3, 4, "hash");
 
     assertThat(serverTaintIssue.getFlows()).hasSize(2);
     assertThat(serverTaintIssue.getFlows().get(0).locations()).hasSize(3);
 
     var flowLocation11 = serverTaintIssue.getFlows().get(0).locations().get(0);
     assertThat(flowLocation11.getFilePath()).isEqualTo("foo/bar/Hello.java");
-    assertThat(flowLocation11.getTextRange().getStartLine()).isEqualTo(5);
-    assertThat(flowLocation11.getTextRange().getStartLineOffset()).isEqualTo(1);
-    assertThat(flowLocation11.getTextRange().getEndLine()).isEqualTo(5);
-    assertThat(flowLocation11.getTextRange().getEndLineOffset()).isEqualTo(6);
-    assertThat(flowLocation11.getTextRange().getHash()).isEqualTo("hashLocation11");
+    assertTextRange(flowLocation11.getTextRange(),5, 1, 5, 6, "hashLocation11");
 
     // No text range
     assertThat(serverTaintIssue.getFlows().get(0).locations().get(2).getTextRange()).isNull();
@@ -287,7 +281,18 @@ class TaintIssueDownloaderTests {
     assertThat(taintIssueNoRange.getKey()).isEqualTo("uuid2");
     assertThat(taintIssueNoRange.getFilePath()).isEqualTo("foo/bar/Hello.java");
     assertThat(taintIssueNoRange.getTextRange()).isNull();
-    assertThat(taintIssueNoRange.getTextRange()).isNull();
+
+    assertThat(serverTaintIssue.getRuleDescriptionContextKey()).isEqualTo("context");
+  }
+
+  private static void assertTextRange(@Nullable TextRangeWithHash textRangeWithHash, int startLine, int startLineOffset,
+    int endLine, int endLineOffset, String hash) {
+    assertThat(textRangeWithHash).isNotNull();
+    assertThat(textRangeWithHash.getStartLine()).isEqualTo(startLine);
+    assertThat(textRangeWithHash.getStartLineOffset()).isEqualTo(startLineOffset);
+    assertThat(textRangeWithHash.getEndLine()).isEqualTo(endLine);
+    assertThat(textRangeWithHash.getEndLineOffset()).isEqualTo(endLineOffset);
+    assertThat(textRangeWithHash.getHash()).isEqualTo(hash);
   }
 
 }
