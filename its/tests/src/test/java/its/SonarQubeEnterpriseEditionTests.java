@@ -19,6 +19,7 @@
  */
 package its;
 
+import com.sonar.orchestrator.OnlyOnSonarQube;
 import com.sonar.orchestrator.OrchestratorExtension;
 import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
@@ -160,9 +161,9 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     }
 
     @Test
+    // New property was introduced in SonarCFamily 6.18 part of SQ 8.8
+    @OnlyOnSonarQube(from = "8.8")
     void analysisC_new_prop() throws Exception {
-      // New property was introduced in SonarCFamily 6.18 part of SQ 8.8
-      assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 8));
 
       updateProject(PROJECT_KEY_C);
       var issueListener = new SaveIssueListener();

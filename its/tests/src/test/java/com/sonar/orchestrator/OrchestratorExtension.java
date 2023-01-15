@@ -19,18 +19,24 @@
  */
 package com.sonar.orchestrator;
 
-import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.config.Configuration;
 import com.sonar.orchestrator.container.SonarDistribution;
 import com.sonar.orchestrator.server.StartupLogWatcher;
+import com.sonar.orchestrator.version.Version;
+import java.lang.reflect.AnnotatedElement;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.ConditionEvaluationResult;
+import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.platform.commons.util.AnnotationUtils;
+import org.junit.platform.commons.util.StringUtils;
 
-public class OrchestratorExtension extends Orchestrator implements BeforeAllCallback, AfterAllCallback {
+public class OrchestratorExtension extends Orchestrator implements BeforeAllCallback, AfterAllCallback, ExecutionCondition {
 
+  private static final ConditionEvaluationResult ENABLED = ConditionEvaluationResult.enabled("@OnlyOnSonarQube is not present");
   private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(Orchestrator.class);
 
   OrchestratorExtension(Configuration config, SonarDistribution distribution, @Nullable StartupLogWatcher startupLogWatcher) {
@@ -45,11 +51,29 @@ public class OrchestratorExtension extends Orchestrator implements BeforeAllCall
       start();
     }
   }
+
   @Override
   public void afterAll(ExtensionContext context) {
     if (context.getStore(NAMESPACE).getOrComputeIfAbsent(AtomicInteger.class).decrementAndGet() == 0) {
       stop();
     }
+  }
+
+  public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
+    var element = context.getElement().orElse(null);
+    return AnnotationUtils.findAnnotation(element, OnlyOnSonarQube.class).map((annotation) -> {
+      return this.toResult(element, annotation);
+    }).orElse(ENABLED);
+  }
+
+  private ConditionEvaluationResult toResult(AnnotatedElement element, OnlyOnSonarQube annotation) {
+    var min = annotation.from();
+    if (this.getServer().version().compareTo(Version.create(min)) < 0) {
+      var reason = "SonarQube version (" + this.getServer().version() + ") is lower than minimum requested (" + min + ")";
+      return ConditionEvaluationResult.disabled(reason);
+    }
+    var reason = "SonarQube version (" + this.getServer().version() + ") meets requirements";
+    return ConditionEvaluationResult.enabled(reason);
   }
 
 }
