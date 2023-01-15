@@ -55,6 +55,7 @@ public enum Language {
   TS("ts", Constants.JAVASCRIPT_PLUGIN_KEY, "TypeScript", new String[] {".ts", ".tsx"},
     "sonar.typescript.file.suffixes"),
   JSP("jsp", "web", "JSP", new String[] {".jsp", ".jspf", ".jspx"}, "sonar.jsp.file.suffixes"),
+  VBNET("vbnet", "vbnet", "VB.NET", new String[] {".vb"}, "sonar.vbnet.file.suffixes"),
   XML("xml", "xml", "XML", new String[] {".xml", ".xsd", ".xsl"}, "sonar.xml.file.suffixes"),
   YAML("yaml", Constants.JAVASCRIPT_PLUGIN_KEY, "YAML", new String[] {".yml", "yaml"}, "sonar.yaml.file.suffixes");
   private String languageKey;

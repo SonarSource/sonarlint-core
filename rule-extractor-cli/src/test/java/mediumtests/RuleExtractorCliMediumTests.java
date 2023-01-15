@@ -77,6 +77,15 @@ class RuleExtractorCliMediumTests {
   }
 
   @Test
+  void shouldDumpVbNetRules() throws Exception {
+    params.add("-l");
+    params.add("vbnet");
+    var exitCode = RuleExtractorCli.execute(params.toArray(new String[0]));
+    assertThat(exitCode).isZero();
+    var json = Files.readString(outputFile, StandardCharsets.UTF_8);
+    JsonAssertions.assertThatJson(json).inPath("*.key").isArray().contains("vbnet:S139");
+  }
+  @Test
   void shouldExcludeJsRulesIfLanguageNotEnabled() throws Exception {
     params.add("-l");
     params.add("java");
