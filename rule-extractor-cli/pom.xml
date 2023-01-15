@@ -112,6 +112,12 @@
                   <version>9.12.1.20358</version>
                   <type>jar</type>
                 </artifactItem>
+                <artifactItem>
+                  <groupId>org.sonarsource.dotnet</groupId>
+                  <artifactId>sonar-vbnet-plugin</artifactId>
+                  <version>8.51.0.59060</version>
+                  <type>jar</type>
+                </artifactItem>
               </artifactItems>
               <outputDirectory>${project.build.directory}/plugins</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
