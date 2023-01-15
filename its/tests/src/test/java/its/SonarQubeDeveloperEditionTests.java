@@ -20,12 +20,12 @@
 package its;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.sonar.orchestrator.OnlyOnSonarQube;
 import com.sonar.orchestrator.OrchestratorExtension;
 import com.sonar.orchestrator.build.SonarScanner;
 import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
-import com.sonar.orchestrator.version.Version;
 import its.utils.OrchestratorUtils;
 import java.io.File;
 import java.io.IOException;
@@ -501,9 +501,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
+    @OnlyOnSonarQube(from = "9.4")
     void shouldUpdateQualityProfileInLocalStorageWhenProfileChangedOnServer() throws IOException {
-      assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 4));
-
       var projectKey = "projectKey-sse";
       provisionProject(ORCHESTRATOR, projectKey, "Sample Java");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint.xml"));
@@ -532,8 +531,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
+    @OnlyOnSonarQube(from = "9.6")
     void shouldUpdateIssueInLocalStorageWhenIssueResolvedOnServer() {
-      assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6));
 
       var projectKey = "projectKey-sse2";
       provisionProject(ORCHESTRATOR, projectKey, "Sample Java");
@@ -767,9 +766,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    void updatesStorageTaintVulnerabilityEvents() {
-      assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6));
-
+    @OnlyOnSonarQube(from = "9.6")
+    void shouldUpdateTaintVulnerabilityInLocalStorageWhenChangedOnServer() {
       engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVA_TAINT, null);
       Deque<ServerEvent> events = new ConcurrentLinkedDeque<>();
       engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVA_TAINT), events::add, null);
@@ -932,10 +930,9 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
+    // SonarQube should support opening security hotspots
+    @OnlyOnSonarQube(from = "8.6")
     void canFetchHotspot() throws InvalidProtocolBufferException {
-      assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 6),
-        "SonarQube should support opening security hotspots");
-
       analyzeMavenProject("sample-java-hotspot", PROJECT_KEY_JAVA_HOTSPOT);
       var securityHotspotsService = new ServerApi(endpointParams(ORCHESTRATOR), sqHttpClient()).hotspot();
 
@@ -984,8 +981,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
+    @OnlyOnSonarQube(from = "9.7")
     void loadHotspotRuleDescription() throws Exception {
-      assumeThat(ORCHESTRATOR.getServer().version()).isGreaterThanOrEqualTo(Version.create("9.7"));
       updateProject(engine, PROJECT_KEY_JAVA_HOTSPOT);
 
       var ruleDetails = engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey(ORCHESTRATOR, "S4792"), PROJECT_KEY_JAVA_HOTSPOT).get();
@@ -1430,9 +1427,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     @Test
     @Tag(USE_NEW_CLIENT_API)
+    @OnlyOnSonarQube(from = "9.7")
     void shouldEmulateDescriptionSectionsForHotspotRules() throws ExecutionException, InterruptedException {
-      assumeThat(ORCHESTRATOR.getServer().version()).isGreaterThanOrEqualTo(Version.create("9.7"));
-
       var projectKey = "sample-java-hotspot-new-backend";
 
       provisionProject(ORCHESTRATOR, projectKey, "Java With Security Hotspots");

@@ -19,6 +19,7 @@
  */
 package its;
 
+import com.sonar.orchestrator.OnlyOnSonarQube;
 import com.sonar.orchestrator.OrchestratorExtension;
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.build.SonarScanner;
@@ -299,9 +300,9 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     }
 
     @Test
+    // SonarQube should support pulling issues
+    @OnlyOnSonarQube(from = "9.6")
     void sync_all_issues_of_enabled_languages() {
-      assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6), "SonarQube should support pulling issues");
-
       engineWithJavaOnly.syncServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_LANGUAGE_MIX, MAIN_BRANCH_NAME, null);
 
       var javaIssues = engineWithJavaOnly.getServerIssues(new ProjectBinding(PROJECT_KEY_LANGUAGE_MIX, "", ""), MAIN_BRANCH_NAME, "src/main/java/foo/Foo.java");
