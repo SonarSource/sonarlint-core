@@ -28,6 +28,7 @@ import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
+import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 
 public final class DefaultClientIssue implements Issue {
   private final IssueSeverity severity;
@@ -39,6 +40,7 @@ public final class DefaultClientIssue implements Issue {
   private final List<QuickFix> quickFixes;
   private final org.sonarsource.sonarlint.core.commons.TextRange textRange;
   private final Optional<String> ruleDescriptionContextKey;
+  private final Optional<VulnerabilityProbability> vulnerabilityProbability;
 
   public DefaultClientIssue(org.sonarsource.sonarlint.core.analysis.api.Issue i, SonarLintRuleDefinition sonarLintRuleDefinition) {
     this.textRange = i.getTextRange() != null ? i.getTextRange() : null;
@@ -50,9 +52,11 @@ public final class DefaultClientIssue implements Issue {
     this.severity = sonarLintRuleDefinition.getDefaultSeverity();
     this.type = sonarLintRuleDefinition.getType();
     this.ruleKey = sonarLintRuleDefinition.getKey();
+    this.vulnerabilityProbability = sonarLintRuleDefinition.getVulnerabilityProbability();
   }
 
-  public DefaultClientIssue(org.sonarsource.sonarlint.core.analysis.api.Issue i, IssueSeverity severity, RuleType type) {
+  public DefaultClientIssue(org.sonarsource.sonarlint.core.analysis.api.Issue i, IssueSeverity severity,
+    RuleType type, Optional<VulnerabilityProbability> vulnerabilityProbability) {
     this.textRange = i.getTextRange() != null ? i.getTextRange() : null;
     this.primaryMessage = i.getMessage();
     this.clientInputFile = i.getInputFile();
@@ -62,6 +66,7 @@ public final class DefaultClientIssue implements Issue {
     this.type = type;
     this.ruleKey = i.getRuleKey();
     this.ruleDescriptionContextKey = i.getRuleDescriptionContextKey();
+    this.vulnerabilityProbability = vulnerabilityProbability;
   }
 
   @Override
@@ -104,6 +109,11 @@ public final class DefaultClientIssue implements Issue {
   @Override
   public Optional<String> getRuleDescriptionContextKey() {
     return ruleDescriptionContextKey;
+  }
+
+  @Override
+  public Optional<VulnerabilityProbability> getVulnerabilityProbability() {
+    return vulnerabilityProbability;
   }
 
   @CheckForNull

@@ -76,6 +76,7 @@ class DefaultClientIssueTests {
     assertThat(underTest.getSeverity()).isEqualTo(IssueSeverity.MAJOR);
     assertThat(underTest.getType()).isEqualTo(RuleType.BUG);
     assertThat(underTest.getInputFile()).isEqualTo(clientInputFile);
+    assertThat(underTest.getVulnerabilityProbability()).isEmpty();
   }
 
 }

@@ -113,9 +113,9 @@ public class ActiveRulesServiceImpl implements ActiveRulesService {
         .orElseGet(() -> CompletableFuture.failedFuture(new IllegalStateException("Unable to find rule definition for rule template " + templateKey)));
     } else {
       return serverApiProvider.getServerApi(connectionId).map(serverApi -> fetchRuleFromServer(connectionId, ruleKey, serverApi)
-        .thenApply(serverRule -> rulesService.getRule(connectionId, ruleKey)
-          .map(ruleDefFromPlugin -> ActiveRuleDetails.merging(serverRule, ruleDefFromPlugin))
-          .orElseGet(() -> ActiveRuleDetails.merging(activeRuleFromStorage, serverRule))))
+          .thenApply(serverRule -> rulesService.getRule(connectionId, ruleKey)
+            .map(ruleDefFromPlugin -> ActiveRuleDetails.merging(serverRule, ruleDefFromPlugin))
+            .orElseGet(() -> ActiveRuleDetails.merging(activeRuleFromStorage, serverRule))))
         .orElseGet(() -> CompletableFuture.failedFuture(new IllegalStateException("Unknown connection '" + connectionId + "'")));
     }
   }

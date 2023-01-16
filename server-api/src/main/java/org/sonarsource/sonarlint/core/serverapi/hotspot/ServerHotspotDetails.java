@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.serverapi.hotspot;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 
 public class ServerHotspotDetails {
   public ServerHotspotDetails(String message,
@@ -58,7 +59,7 @@ public class ServerHotspotDetails {
     public final String key;
     public final String name;
     public final String securityCategory;
-    public final Probability vulnerabilityProbability;
+    public final VulnerabilityProbability vulnerabilityProbability;
     public final String riskDescription;
     public final String vulnerabilityDescription;
     public final String fixRecommendations;
@@ -66,7 +67,7 @@ public class ServerHotspotDetails {
     public Rule(String key,
       String name,
       String securityCategory,
-      Probability vulnerabilityProbability,
+      VulnerabilityProbability vulnerabilityProbability,
       String riskDescription,
       String vulnerabilityDescription,
       String fixRecommendations) {
@@ -80,9 +81,6 @@ public class ServerHotspotDetails {
       this.fixRecommendations = fixRecommendations;
     }
 
-    public enum Probability {
-      HIGH, MEDIUM, LOW
-    }
   }
 
   public enum Status {
