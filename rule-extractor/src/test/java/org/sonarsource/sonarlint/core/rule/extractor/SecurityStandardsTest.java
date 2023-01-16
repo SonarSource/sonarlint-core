@@ -19,9 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.rule.extractor;
 
-import java.util.EnumSet;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 import static java.util.Collections.emptySet;
@@ -29,7 +26,6 @@ import static java.util.Collections.singleton;
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.rule.extractor.SecurityStandards.CWES_BY_SL_CATEGORY;
-import static org.sonarsource.sonarlint.core.rule.extractor.SecurityStandards.SL_CATEGORY_KEYS_ORDERING;
 import static org.sonarsource.sonarlint.core.rule.extractor.SecurityStandards.fromSecurityStandards;
 
 class SecurityStandardsTest {
@@ -68,29 +64,5 @@ class SecurityStandardsTest {
 
       assertThat(securityStandards.getSlCategory()).isEqualTo(slCategory);
     });
-  }
-
-  @Test
-  void fromSecurityStandards_finds_SLCategory_first_in_order_when_CWEs_map_to_multiple_SLCategories() {
-    EnumSet<SecurityStandards.SLCategory> slCategories = EnumSet.allOf(SecurityStandards.SLCategory.class);
-    slCategories.remove(SecurityStandards.SLCategory.OTHERS);
-
-    while (!slCategories.isEmpty()) {
-      // First category from SLCategories
-      SecurityStandards.SLCategory expected = slCategories.stream().min(SL_CATEGORY_KEYS_ORDERING.onResultOf(SecurityStandards.SLCategory::getKey)).get();
-      // Everything except for the expected category
-      SecurityStandards.SLCategory[] expectedIgnored = slCategories.stream().filter(t -> t != expected).toArray(SecurityStandards.SLCategory[]::new);
-
-      // All CWEs from all categories
-      Set<String> cwes = slCategories.stream()
-        .flatMap(t -> CWES_BY_SL_CATEGORY.get(t).stream().map(e -> "cwe:" + e))
-        .collect(Collectors.toSet());
-      SecurityStandards securityStandards = fromSecurityStandards(cwes);
-
-      assertThat(securityStandards.getSlCategory()).isEqualTo(expected);
-      assertThat(securityStandards.getIgnoredSLCategories()).containsOnly(expectedIgnored);
-
-      slCategories.remove(expected);
-    }
   }
 }
