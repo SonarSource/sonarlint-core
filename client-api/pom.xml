@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-parent</artifactId>
-    <version>8.13-SNAPSHOT</version>
+    <version>8.14-SNAPSHOT</version>
   </parent>
   <artifactId>sonarlint-client-api</artifactId>
   <name>SonarLint Core - Client API</name>
