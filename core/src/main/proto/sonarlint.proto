@@ -31,15 +31,15 @@ message Issues {
 
   message Issue {
     // used for matching
-    string serverIssueKey = 1;
-    string ruleKey = 2;
+    string server_issue_key = 1;
+    string rule_key = 2;
     int32 line = 3;
     string message = 4;
-    string lineHash = 5;
+    string line_hash = 5;
 
     // values carried forward
     reserved 6; // removed assignee
-    int64 creationDate = 7;
+    int64 creation_date = 7;
     bool resolved = 8;
   }
 }

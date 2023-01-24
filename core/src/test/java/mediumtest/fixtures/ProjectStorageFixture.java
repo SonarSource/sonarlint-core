@@ -87,7 +87,7 @@ public class ProjectStorageFixture {
       ruleSets.forEach(ruleSet -> {
         var ruleSetBuilder = Sonarlint.RuleSet.newBuilder();
         ruleSet.activeRules.forEach(activeRule -> {
-          ruleSetBuilder.addRules(Sonarlint.RuleSet.ActiveRule.newBuilder()
+          ruleSetBuilder.addRule(Sonarlint.RuleSet.ActiveRule.newBuilder()
             .setRuleKey(activeRule.ruleKey)
             .setSeverity(activeRule.severity)
             .setTemplateKey(trimToEmpty(activeRule.templateKey))

@@ -85,8 +85,8 @@ class LocalStorageSynchronizerTests {
     var ruleSetsByLanguageKeyMap = analyzerConfiguration.getRuleSetsByLanguageKeyMap();
     assertThat(ruleSetsByLanguageKeyMap).containsKey(Language.JS.getLanguageKey());
     var ruleSet = ruleSetsByLanguageKeyMap.get(Language.JS.getLanguageKey());
-    assertThat(ruleSet.getRulesCount()).isEqualTo(1);
-    var activeRule = ruleSet.getRulesList().get(0);
+    assertThat(ruleSet.getRuleCount()).isEqualTo(1);
+    var activeRule = ruleSet.getRuleList().get(0);
     assertThat(activeRule.getRuleKey()).isEqualTo("ruleKey");
     assertThat(activeRule.getSeverity()).isEqualTo("MAJOR");
     assertThat(activeRule.getTemplateKey()).isEqualTo("templateKey");
@@ -128,9 +128,9 @@ class LocalStorageSynchronizerTests {
     var ruleSetsByLanguageKeyMap = analyzerConfiguration.getRuleSetsByLanguageKeyMap();
     assertThat(ruleSetsByLanguageKeyMap).containsOnlyKeys(Language.JS.getLanguageKey(), Language.JAVA.getLanguageKey());
     var ruleSetJs = ruleSetsByLanguageKeyMap.get(Language.JS.getLanguageKey());
-    assertThat(ruleSetJs.getRulesCount()).isEqualTo(1);
+    assertThat(ruleSetJs.getRuleCount()).isEqualTo(1);
     var ruleSetJava = ruleSetsByLanguageKeyMap.get(Language.JAVA.getLanguageKey());
-    assertThat(ruleSetJava.getRulesCount()).isZero();
+    assertThat(ruleSetJava.getRuleCount()).isZero();
   }
 
   @Test
@@ -163,9 +163,9 @@ class LocalStorageSynchronizerTests {
     var ruleSetsByLanguageKeyMap = analyzerConfiguration.getRuleSetsByLanguageKeyMap();
     assertThat(ruleSetsByLanguageKeyMap).containsOnlyKeys(Language.JS.getLanguageKey(), Language.JAVA.getLanguageKey());
     var ruleSetJs = ruleSetsByLanguageKeyMap.get(Language.JS.getLanguageKey());
-    assertThat(ruleSetJs.getRulesCount()).isEqualTo(1);
+    assertThat(ruleSetJs.getRuleCount()).isEqualTo(1);
     var ruleSetJava = ruleSetsByLanguageKeyMap.get(Language.JAVA.getLanguageKey());
-    assertThat(ruleSetJava.getRulesCount()).isZero();
+    assertThat(ruleSetJava.getRuleCount()).isZero();
   }
 
   @Test
@@ -194,7 +194,7 @@ class LocalStorageSynchronizerTests {
     var ruleSetsByLanguageKeyMap = analyzerConfiguration.getRuleSetsByLanguageKeyMap();
     assertThat(ruleSetsByLanguageKeyMap).containsKey(Language.JS.getLanguageKey());
     var ruleSet = ruleSetsByLanguageKeyMap.get(Language.JS.getLanguageKey());
-    assertThat(ruleSet.getRulesCount()).isEqualTo(1);
+    assertThat(ruleSet.getRuleCount()).isEqualTo(1);
   }
 
   @Test
