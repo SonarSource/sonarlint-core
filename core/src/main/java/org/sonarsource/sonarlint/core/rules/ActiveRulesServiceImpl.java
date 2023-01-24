@@ -124,7 +124,7 @@ public class ActiveRulesServiceImpl implements ActiveRulesService {
     return serverApi.rules().getRule(ruleKey)
       .handle((r, e) -> {
         if (e != null) {
-          throw new IllegalStateException(COULD_NOT_FIND_RULE + ruleKey + "' on '" + connectionId + "'");
+          throw new IllegalStateException(COULD_NOT_FIND_RULE + ruleKey + "' on '" + connectionId + "'", e);
         }
         return r;
       });
