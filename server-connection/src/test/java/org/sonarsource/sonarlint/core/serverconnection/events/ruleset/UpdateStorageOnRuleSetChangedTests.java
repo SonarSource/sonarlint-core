@@ -37,6 +37,7 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStorage;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration.CURRENT_SCHEMA_VERSION;
 
 class UpdateStorageOnRuleSetChangedTests {
 
@@ -78,7 +79,7 @@ class UpdateStorageOnRuleSetChangedTests {
   @Test
   void should_update_existing_rule_in_storage() {
     projectStorage.store("projectKey1", new AnalyzerConfiguration(new Settings(emptyMap()), Map.of("lang1", new RuleSet(List.of(
-      new ServerActiveRule("ruleKey1", IssueSeverity.MINOR, Map.of("paramKey", "paramValue"), "")), "2020-10-27T23:08:58+0000"))));
+      new ServerActiveRule("ruleKey1", IssueSeverity.MINOR, Map.of("paramKey", "paramValue"), "")), "2020-10-27T23:08:58+0000")), CURRENT_SCHEMA_VERSION));
     var event = new RuleSetChangedEvent(
       List.of("projectKey1"),
       List.of(new RuleSetChangedEvent.ActiveRule("ruleKey1", "lang1", IssueSeverity.MAJOR, emptyMap(), null)),
@@ -99,7 +100,7 @@ class UpdateStorageOnRuleSetChangedTests {
   @Test
   void should_activate_rule_of_existing_language_in_storage() {
     projectStorage.store("projectKey1", new AnalyzerConfiguration(new Settings(emptyMap()), Map.of("lang1", new RuleSet(List.of(
-      new ServerActiveRule("ruleKey1", IssueSeverity.MINOR, Map.of("paramKey", "paramValue"), "")), ""))));
+      new ServerActiveRule("ruleKey1", IssueSeverity.MINOR, Map.of("paramKey", "paramValue"), "")), "")), CURRENT_SCHEMA_VERSION));
     var event = new RuleSetChangedEvent(
       List.of("projectKey1"),
       List.of(new RuleSetChangedEvent.ActiveRule("ruleKey2", "lang1", IssueSeverity.MAJOR, emptyMap(), null)),
@@ -122,7 +123,7 @@ class UpdateStorageOnRuleSetChangedTests {
   @Test
   void should_activate_rule_of_unknown_language_in_storage() {
     projectStorage.store("projectKey1", new AnalyzerConfiguration(new Settings(emptyMap()), Map.of("lang1", new RuleSet(List.of(
-      new ServerActiveRule("ruleKey1", IssueSeverity.MINOR, Map.of("paramKey", "paramValue"), "")), ""))));
+      new ServerActiveRule("ruleKey1", IssueSeverity.MINOR, Map.of("paramKey", "paramValue"), "")), "")), CURRENT_SCHEMA_VERSION));
     var event = new RuleSetChangedEvent(
       List.of("projectKey1"),
       List.of(new RuleSetChangedEvent.ActiveRule("ruleKey2", "lang2", IssueSeverity.MAJOR, emptyMap(), null)),
@@ -150,7 +151,7 @@ class UpdateStorageOnRuleSetChangedTests {
   void should_deactivate_rule_in_storage() {
     projectStorage.store("projectKey1", new AnalyzerConfiguration(new Settings(emptyMap()), Map.of("lang1", new RuleSet(List.of(
       new ServerActiveRule("ruleKey1", IssueSeverity.MINOR, Map.of("paramKey", "paramValue"), ""),
-      new ServerActiveRule("ruleKey2", IssueSeverity.MAJOR, Map.of(), "")), ""))));
+      new ServerActiveRule("ruleKey2", IssueSeverity.MAJOR, Map.of(), "")), "")), CURRENT_SCHEMA_VERSION));
     var event = new RuleSetChangedEvent(
       List.of("projectKey1"),
       List.of(),
@@ -172,7 +173,7 @@ class UpdateStorageOnRuleSetChangedTests {
   void should_remove_ruleset_from_storage_when_deactivating_last_rule() {
     projectStorage.store("projectKey1", new AnalyzerConfiguration(new Settings(emptyMap()), Map.of("lang1", new RuleSet(List.of(
       new ServerActiveRule("ruleKey1", IssueSeverity.MINOR, Map.of("paramKey", "paramValue"), "")), ""),
-      "lang2", new RuleSet(List.of(new ServerActiveRule("otherRule", IssueSeverity.MAJOR, emptyMap(), "")), ""))));
+      "lang2", new RuleSet(List.of(new ServerActiveRule("otherRule", IssueSeverity.MAJOR, emptyMap(), "")), "")), CURRENT_SCHEMA_VERSION));
     var event = new RuleSetChangedEvent(
       List.of("projectKey1"),
       List.of(),

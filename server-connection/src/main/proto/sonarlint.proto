@@ -27,12 +27,12 @@ option java_package = "org.sonarsource.sonarlint.core.serverconnection.proto";
 option optimize_for = SPEED;
 
 message ServerInfo {
-    string version = 1;
+  string version = 1;
 }
 
 message PluginReferences {
-    map<string, PluginReference> plugins_by_key = 1;
-  
+  map<string, PluginReference> plugins_by_key = 1;
+
   message PluginReference {
     string key = 1;
     string hash = 2;
@@ -45,25 +45,26 @@ message ProjectComponents {
 }
 
 message AnalyzerConfiguration {
-    map<string, string> settings = 1;
-    map<string, RuleSet> ruleSetsByLanguageKey = 2;
+  map<string, string> settings = 1;
+  map<string, RuleSet> ruleSetsByLanguageKey = 2;
+  uint32 schema_version = 3;
 }
 
 message RuleSet {
-    repeated ActiveRule rules = 1;
-    string lastModified = 3;
+  repeated ActiveRule rules = 1;
+  string lastModified = 3;
 
-    message ActiveRule {
-        string ruleKey = 1;
-        string severity = 2;
-        string templateKey = 3;
-        map<string,string> params = 4;
-    }
+  message ActiveRule {
+    string ruleKey = 1;
+    string severity = 2;
+    string templateKey = 3;
+    map<string, string> params = 4;
+  }
 }
 
 message ProjectBranches {
-    repeated string branchName = 1;
-    string mainBranchName = 2;
+  repeated string branchName = 1;
+  string mainBranchName = 2;
 }
 
 message Flows {

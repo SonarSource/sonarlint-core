@@ -109,7 +109,7 @@ public class ProjectStorage {
       new Settings(analyzerConfiguration.getSettingsMap()),
       analyzerConfiguration.getRuleSetsByLanguageKeyMap().entrySet().stream().collect(Collectors.toMap(
         Map.Entry::getKey,
-        e -> adapt(e.getValue()))));
+        e -> adapt(e.getValue()))), analyzerConfiguration.getSchemaVersion());
   }
 
   private static RuleSet adapt(Sonarlint.RuleSet ruleSet) {
@@ -128,6 +128,7 @@ public class ProjectStorage {
 
   private static Sonarlint.AnalyzerConfiguration adapt(AnalyzerConfiguration analyzerConfiguration) {
     return Sonarlint.AnalyzerConfiguration.newBuilder()
+      .setSchemaVersion(analyzerConfiguration.getSchemaVersion())
       .putAllSettings(analyzerConfiguration.getSettings().getAll())
       .putAllRuleSetsByLanguageKey(analyzerConfiguration.getRuleSetByLanguageKey().entrySet().stream()
         .collect(Collectors.toMap(Map.Entry::getKey, e -> adapt(e.getValue()))))
