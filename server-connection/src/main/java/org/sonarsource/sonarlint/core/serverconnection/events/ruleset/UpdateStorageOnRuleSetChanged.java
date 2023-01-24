@@ -42,7 +42,7 @@ public class UpdateStorageOnRuleSetChanged implements ServerEventHandler<RuleSet
   public void handle(RuleSetChangedEvent event) {
     event.getProjectKeys().forEach(projectKey -> projectStorage.update(projectKey, currentConfiguration -> {
       var newRuleSetByLanguageKey = incorporate(event, currentConfiguration.getRuleSetByLanguageKey());
-      return new AnalyzerConfiguration(currentConfiguration.getSettings(), newRuleSetByLanguageKey);
+      return new AnalyzerConfiguration(currentConfiguration.getSettings(), newRuleSetByLanguageKey, currentConfiguration.getSchemaVersion());
     }));
   }
 
