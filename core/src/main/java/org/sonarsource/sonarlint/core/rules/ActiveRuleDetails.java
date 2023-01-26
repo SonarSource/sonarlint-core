@@ -37,6 +37,8 @@ import org.sonarsource.sonarlint.core.serverapi.rules.ServerRule;
 
 public class ActiveRuleDetails {
 
+  public static final String DEFAULT_SECTION = "default";
+
   public static ActiveRuleDetails from(SonarLintRuleDefinition ruleDefinition) {
     return new ActiveRuleDetails(
       ruleDefinition.getKey(),
@@ -129,7 +131,11 @@ public class ActiveRuleDetails {
   }
 
   public boolean hasMonolithicDescription() {
-    return descriptionSectionsByKey.isEmpty();
+    return descriptionSectionsByKey.isEmpty() || hasOnlyDefaultSection();
+  }
+
+  private boolean hasOnlyDefaultSection() {
+    return descriptionSectionsByKey.size() == 1 && descriptionSectionsByKey.containsKey(DEFAULT_SECTION);
   }
 
   public Map<String, List<DescriptionSection>> getDescriptionSectionsByKey() {
