@@ -192,6 +192,41 @@ class ActiveRulesMediumTests {
   }
 
   @Test
+  void it_return_single_section_from_server_when_project_is_bound() throws ExecutionException, InterruptedException {
+    var name = "name";
+    var desc = "desc";
+    StorageFixture.newStorage("connectionId")
+      .withProject("projectKey",
+        projectStorage -> projectStorage.withRuleSet(Language.JS.getLanguageKey(),
+          ruleSet -> ruleSet.withActiveRule("jssecurity:S5696", "BLOCKER")))
+      .create(storageDir);
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withStorageRoot(storageDir.resolve("storage"))
+      .build();
+    mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=jssecurity:S5696", Rules.ShowResponse.newBuilder()
+      .setRule(Rules.Rule.newBuilder().setName(name).setSeverity("BLOCKER").setType(Common.RuleType.VULNERABILITY).setLang("js")
+        .setHtmlDesc(desc)
+        .setDescriptionSections(Rules.Rule.DescriptionSections.newBuilder()
+          .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
+            .setKey("default")
+            .setContent(desc)
+            .build())
+          .build())
+        .build())
+      .build());
+
+    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "jssecurity:S5696")).get();
+
+    var details = activeRuleDetailsResponse.details();
+    assertThat(details)
+      .extracting("key", "name", "type", "language", "severity", "description.left.htmlContent")
+      .containsExactly("jssecurity:S5696", name, RuleType.VULNERABILITY, Language.JS, IssueSeverity.BLOCKER, desc);
+    assertThat(details.getParams()).isEmpty();
+  }
+
+  @Test
   void it_should_fail_to_merge_rule_from_storage_and_server_when_connection_is_unknown() {
     StorageFixture.newStorage("connectionId")
       .withProject("projectKey",
