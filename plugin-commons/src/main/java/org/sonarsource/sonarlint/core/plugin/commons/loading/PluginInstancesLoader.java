@@ -68,7 +68,7 @@ public class PluginInstancesLoader {
 
   PluginInstancesLoader(PluginClassloaderFactory classloaderFactory) {
     this.classloaderFactory = classloaderFactory;
-    this.baseClassLoader = new Slf4jBridgeClassLoader(getClass().getClassLoader());
+    this.baseClassLoader = getClass().getClassLoader();
   }
 
   public Map<String, Plugin> instantiatePluginClasses(Collection<PluginInfo> plugins) {

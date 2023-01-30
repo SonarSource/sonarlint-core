@@ -48,6 +48,7 @@ public class PluginClassloaderFactory {
 
   // underscores are used to not conflict with plugin keys (if someday a plugin key is "api")
   private static final String API_CLASSLOADER_KEY = "_api_";
+  private static final String SLF4J_CLASSLOADER_KEY = "_slf4j_";
 
   /**
    * Creates as many classloaders as requested by the input parameter.
@@ -57,11 +58,15 @@ public class PluginClassloaderFactory {
     builder.newClassloader(API_CLASSLOADER_KEY, baseClassLoader);
     builder.setMask(API_CLASSLOADER_KEY, apiMask());
 
-    for (PluginClassLoaderDef def : defs) {
+    builder.newClassloader(SLF4J_CLASSLOADER_KEY, new Slf4jBridgeClassLoader(baseClassLoader));
+    builder.setExportMask(SLF4J_CLASSLOADER_KEY, slf4jMask());
+
+    for (var def : defs) {
       builder.newClassloader(def.getBasePluginKey());
       builder.setParent(def.getBasePluginKey(), API_CLASSLOADER_KEY, new Mask());
+      builder.addSibling(def.getBasePluginKey(), SLF4J_CLASSLOADER_KEY, new Mask());
       builder.setLoadingOrder(def.getBasePluginKey(), PARENT_FIRST);
-      for (File jar : def.getFiles()) {
+      for (var jar : def.getFiles()) {
         builder.addURL(def.getBasePluginKey(), fileToUrl(jar));
       }
       exportResources(def, builder, defs);
@@ -76,7 +81,7 @@ public class PluginClassloaderFactory {
   private static void exportResources(PluginClassLoaderDef def, ClassloaderBuilder builder, Collection<PluginClassLoaderDef> allPlugins) {
     // export the resources to all other plugins
     builder.setExportMask(def.getBasePluginKey(), def.getExportMask());
-    for (PluginClassLoaderDef other : allPlugins) {
+    for (var other : allPlugins) {
       if (!other.getBasePluginKey().equals(def.getBasePluginKey())) {
         builder.addSibling(def.getBasePluginKey(), other.getBasePluginKey(), new Mask());
       }
@@ -89,7 +94,7 @@ public class PluginClassloaderFactory {
   private static Map<PluginClassLoaderDef, ClassLoader> build(Collection<PluginClassLoaderDef> defs, ClassloaderBuilder builder) {
     Map<PluginClassLoaderDef, ClassLoader> result = new IdentityHashMap<>(defs.size());
     var classloadersByBasePluginKey = builder.build();
-    for (PluginClassLoaderDef def : defs) {
+    for (var def : defs) {
       var classloader = classloadersByBasePluginKey.get(def.getBasePluginKey());
       if (classloader == null) {
         LOG.error("Fail to create classloader for plugin '{}'", def.getBasePluginKey());
@@ -122,9 +127,13 @@ public class PluginClassloaderFactory {
       .addInclusion("net/sourceforge/pmd/")
       .addInclusion("com/sonarsource/plugins/license/api/")
       .addInclusion("org/sonarsource/sonarlint/plugin/api/")
-      .addInclusion("org/slf4j/")
 
       // API exclusions
       .addExclusion("org/sonar/api/internal/");
+  }
+
+  private static Mask slf4jMask() {
+    return new Mask()
+      .addInclusion("org/slf4j/");
   }
 }
