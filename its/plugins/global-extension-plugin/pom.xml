@@ -30,6 +30,11 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>1.7.36</version>
+    </dependency>
+    <dependency>
       <!-- packaged with the plugin -->
       <groupId>commons-lang</groupId>
       <artifactId>commons-lang</artifactId>
