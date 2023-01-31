@@ -26,7 +26,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import mediumtest.ConnectedExtraPluginMediumTests.StoreIssueListener;
+import mediumtest.ConnectedIssueMediumTests.StoreIssueListener;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterAll;
@@ -67,6 +67,7 @@ class ConnectedEmbeddedPluginMediumTests {
   @BeforeAll
   static void prepare(@TempDir Path slHome) {
     var storage = newStorage(SERVER_ID)
+      .withServerVersion("9.8")
       .withJSPlugin()
       .withJavaPlugin()
       .withProject("test-project")
@@ -89,9 +90,10 @@ class ConnectedEmbeddedPluginMediumTests {
       .setSonarLintUserHome(slHome)
       .setStorageRoot(storage.getPath())
       .setLogOutput((m, l) -> System.out.println(m))
-      .addEnabledLanguages(Language.JAVA, Language.JS)
+      .addEnabledLanguages(Language.JAVA, Language.JS, Language.SECRETS)
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
       .useEmbeddedPlugin("java", PluginLocator.getJavaPluginPath())
+      .useEmbeddedPlugin("text", PluginLocator.getTextPluginPath())
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
   }
@@ -213,6 +215,23 @@ class ConnectedEmbeddedPluginMediumTests {
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
       tuple("java:S3776", 3, inputFile.getPath(), IssueSeverity.BLOCKER));
+  }
+
+  @Test
+  void secrets_rules_should_always_be_active_with_legacy_sonarqube(@TempDir Path baseDir) throws IOException {
+    var inputFile = prepareInputFile(baseDir, "t.txt",
+      "  public static final String KEY = \"AKIAIGKECZXA7EXAMPLF\"\n" , false);
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
+        .setProjectKey(JAVA_MODULE_KEY)
+        .setBaseDir(baseDir)
+        .addInputFile(inputFile)
+        .setModuleKey("key")
+        .build(),
+      new StoreIssueListener(issues), null, null);
+
+    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
+      tuple("secrets:S6290", 1, inputFile.getPath(), IssueSeverity.BLOCKER));
   }
 
   private ClientInputFile prepareJavaInputFile(Path baseDir) throws IOException {

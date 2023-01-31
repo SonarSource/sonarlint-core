@@ -66,6 +66,7 @@ import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectSto
 
 public class ServerConnection {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final Version SECRET_ANALYSIS_MIN_SQ_VERSION = Version.create("9.9");
 
   private final Set<Language> enabledLanguages;
   private final ProjectStorage projectStorage;
@@ -217,6 +218,13 @@ public class ServerConnection {
     // when storage is not present, consider hotspots should not be detected
     return serverInfoStorage.getServerInfo()
       .map(serverInfo -> HotspotApi.permitsTracking(isSonarCloud, serverInfo::getVersion))
+      .orElse(false);
+  }
+
+  public boolean supportsSecretAnalysis() {
+    // when storage is not present, assume that secrets are not supported by server
+    return isSonarCloud || serverInfoStorage.getServerInfo()
+      .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(SECRET_ANALYSIS_MIN_SQ_VERSION) >= 0)
       .orElse(false);
   }
 

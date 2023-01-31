@@ -213,6 +213,12 @@
                   <version>2.6.1.3686</version>
                   <type>jar</type>
                 </artifactItem>
+                <artifactItem>
+                  <groupId>org.sonarsource.text</groupId>
+                  <artifactId>sonar-text-plugin</artifactId>
+                  <version>2.1.0.621</version>
+                  <type>jar</type>
+                </artifactItem>
               </artifactItems>
               <outputDirectory>${project.build.directory}/plugins</outputDirectory>
               <overWriteReleases>false</overWriteReleases>

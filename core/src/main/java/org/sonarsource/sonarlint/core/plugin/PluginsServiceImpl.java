@@ -38,7 +38,6 @@ public class PluginsServiceImpl implements PluginsService {
   private Path storageRoot;
   private Set<Path> embeddedPluginPaths;
   private Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
-  private Map<String, Path> connectedModeExtraPluginPathsByKey;
   private Set<Language> enabledLanguagesInStandaloneMode;
   private Set<Language> enabledLanguagesInConnectedMode;
 
@@ -47,11 +46,10 @@ public class PluginsServiceImpl implements PluginsService {
   }
 
   public void initialize(Path storageRoot, Set<Path> embeddedPluginPaths, Map<String, Path> connectedModeEmbeddedPluginPathsByKey,
-    Map<String, Path> connectedModeExtraPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> enabledLanguagesInConnectedMode) {
+    Set<Language> enabledLanguagesInStandaloneMode, Set<Language> enabledLanguagesInConnectedMode) {
     this.storageRoot = storageRoot;
     this.embeddedPluginPaths = embeddedPluginPaths;
     this.connectedModeEmbeddedPluginPathsByKey = connectedModeEmbeddedPluginPathsByKey;
-    this.connectedModeExtraPluginPathsByKey = connectedModeExtraPluginPathsByKey;
     this.enabledLanguagesInStandaloneMode = enabledLanguagesInStandaloneMode;
     this.enabledLanguagesInConnectedMode = enabledLanguagesInConnectedMode;
   }
@@ -82,7 +80,6 @@ public class PluginsServiceImpl implements PluginsService {
 
     Map<String, Path> pluginsToLoadByKey = new HashMap<>();
     // order is important as e.g. embedded takes precedence over stored
-    pluginsToLoadByKey.putAll(connectedModeExtraPluginPathsByKey);
     pluginsToLoadByKey.putAll(pluginsStorage.getStoredPluginPathsByKey());
     pluginsToLoadByKey.putAll(connectedModeEmbeddedPluginPathsByKey);
     Set<Path> pluginPaths = new HashSet<>(pluginsToLoadByKey.values());

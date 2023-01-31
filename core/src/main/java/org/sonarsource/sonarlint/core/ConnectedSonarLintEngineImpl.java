@@ -134,7 +134,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   private PluginsLoadResult loadPlugins() {
     Map<String, Path> pluginsToLoadByKey = new HashMap<>();
     // order is important as e.g. embedded takes precedence over stored
-    pluginsToLoadByKey.putAll(globalConfig.getExtraPluginsPathsByKey());
     pluginsToLoadByKey.putAll(serverConnection.getStoredPluginPathsByKey());
     pluginsToLoadByKey.putAll(globalConfig.getEmbeddedPluginPathsByKey());
     Set<Path> plugins = new HashSet<>(pluginsToLoadByKey.values());
@@ -262,16 +261,19 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
         }
       });
 
-    analysisContext.get().allRulesDefinitionsByKey.values().stream()
-      .filter(ruleDefinition -> isRuleFromExtraPlugin(ruleDefinition.getLanguage(), globalConfig))
-      .filter(this::shouldIncludeRuleForAnalysis)
-      .forEach(analysisRulesContext::includeRule);
-
+    var supportSecretAnalysis = serverConnection.supportsSecretAnalysis();
+    if (!supportSecretAnalysis) {
+      analysisContext.get().allRulesDefinitionsByKey.values().stream()
+        .filter(ruleDefinition -> ruleDefinition.getLanguage() == Language.SECRETS)
+        .filter(this::shouldIncludeRuleForAnalysis)
+        .forEach(analysisRulesContext::includeRule);
+    }
     return analysisRulesContext;
   }
 
   private boolean shouldIncludeRuleForAnalysis(SonarLintRuleDefinition ruleDefinition) {
-    return !ruleDefinition.getType().equals(RuleType.SECURITY_HOTSPOT) || serverConnection.permitsHotspotTracking();
+    return !ruleDefinition.getType().equals(RuleType.SECURITY_HOTSPOT) ||
+      (globalConfig.isHotspotsEnabled() && serverConnection.permitsHotspotTracking());
   }
 
   private ServerActiveRule tryConvertDeprecatedKeys(ServerActiveRule possiblyDeprecatedActiveRuleFromStorage) {
@@ -298,10 +300,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     }
   }
 
-  private static boolean isRuleFromExtraPlugin(Language ruleLanguage, ConnectedGlobalConfiguration config) {
-    return config.getExtraPluginsPathsByKey().keySet()
-      .stream().anyMatch(extraPluginKey -> ruleLanguage.getLanguageKey().equals(extraPluginKey));
-  }
 
   @Override
   public void sync(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, @Nullable ClientProgressMonitor monitor) {
@@ -321,8 +319,8 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     var ruleDefFromPluginOpt = analysisContext.get().findRule(ruleKey);
     if (ruleDefFromPluginOpt.isPresent()) {
       var ruleDefFromPlugin = ruleDefFromPluginOpt.get();
-      if (globalConfig.getExtraPluginsPathsByKey().containsKey(ruleDefFromPlugin.getLanguage().getPluginKey()) || projectKey == null) {
-        // if no project key, or for rules from extra plugins there will be no rules metadata in the storage
+      if ((!serverConnection.supportsSecretAnalysis() && ruleDefFromPlugin.getLanguage().equals(Language.SECRETS)) || projectKey == null) {
+        // if no project key, or secrets are not supported by server and it's a secret rule
         return CompletableFuture.completedFuture(
           new ConnectedRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(), ruleDefFromPlugin.getDefaultSeverity(),
             ruleDefFromPlugin.getType(),

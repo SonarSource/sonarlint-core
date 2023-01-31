@@ -34,7 +34,6 @@ public class InitializeParams {
   private final String telemetryProductKey;
   private final Path storageRoot;
   private final Set<Path> embeddedPluginPaths;
-  private final Map<String, Path> connectedModeExtraPluginPathsByKey;
   private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
   private final Set<Language> enabledLanguagesInStandaloneMode;
   private final Set<Language> extraEnabledLanguagesInConnectedMode;
@@ -49,14 +48,13 @@ public class InitializeParams {
    * @param sonarlintUserHome Path to SonarLint user home directory. If null, will default to ~/.sonarlint
    */
   public InitializeParams(HostInfoDto hostInfo, String telemetryProductKey, Path storageRoot, Set<Path> embeddedPluginPaths,
-    Map<String, Path> connectedModeExtraPluginPathsByKey, Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode,
-    Set<Language> extraEnabledLanguagesInConnectedMode, boolean enableSecurityHotspots, List<SonarQubeConnectionConfigurationDto> sonarQubeConnections,
+    Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> extraEnabledLanguagesInConnectedMode,
+    boolean enableSecurityHotspots, List<SonarQubeConnectionConfigurationDto> sonarQubeConnections,
     List<SonarCloudConnectionConfigurationDto> sonarCloudConnections, @Nullable String sonarlintUserHome, boolean shouldManageLocalServer) {
     this.hostInfo = hostInfo;
     this.telemetryProductKey = telemetryProductKey;
     this.storageRoot = storageRoot;
     this.embeddedPluginPaths = embeddedPluginPaths;
-    this.connectedModeExtraPluginPathsByKey = connectedModeExtraPluginPathsByKey;
     this.connectedModeEmbeddedPluginPathsByKey = connectedModeEmbeddedPluginPathsByKey;
     this.enabledLanguagesInStandaloneMode = enabledLanguagesInStandaloneMode;
     this.extraEnabledLanguagesInConnectedMode = extraEnabledLanguagesInConnectedMode;
@@ -81,10 +79,6 @@ public class InitializeParams {
 
   public Set<Path> getEmbeddedPluginPaths() {
     return embeddedPluginPaths;
-  }
-
-  public Map<String, Path> getConnectedModeExtraPluginPathsByKey() {
-    return connectedModeExtraPluginPathsByKey;
   }
 
   public Map<String, Path> getConnectedModeEmbeddedPluginPathsByKey() {

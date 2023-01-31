@@ -35,7 +35,6 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
   private final String connectionId;
   private final Path storageRoot;
   private final Map<String, Path> overriddenPluginsPathsByKey;
-  private final Map<String, Path> extraPluginsPathsByKey;
   private final boolean isSonarCloud;
   private final boolean isHotspotsEnabled;
 
@@ -44,7 +43,6 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
     this.connectionId = builder.connectionId;
     this.storageRoot = builder.storageRoot != null ? builder.storageRoot : getSonarLintUserHome().resolve(DEFAULT_STORAGE_DIR);
     this.overriddenPluginsPathsByKey = new HashMap<>(builder.overriddenPluginsPathsByKey);
-    this.extraPluginsPathsByKey = new HashMap<>(builder.extraPluginsPathsByKey);
     this.isSonarCloud = builder.isSonarCloud;
     this.isHotspotsEnabled = builder.isHotspotsEnabled;
   }
@@ -77,15 +75,11 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
     return overriddenPluginsPathsByKey;
   }
 
-  public Map<String, Path> getExtraPluginsPathsByKey() {
-    return extraPluginsPathsByKey;
-  }
 
   public static final class Builder extends AbstractBuilder<Builder> {
     private String connectionId;
     private Path storageRoot;
     private final Map<String, Path> overriddenPluginsPathsByKey = new HashMap<>();
-    private final Map<String, Path> extraPluginsPathsByKey = new HashMap<>();
     private final boolean isSonarCloud;
     private boolean isHotspotsEnabled;
 
@@ -113,14 +107,6 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
      */
     public Builder setStorageRoot(Path storageRoot) {
       this.storageRoot = storageRoot;
-      return this;
-    }
-
-    /**
-     * Register extra embedded plugin to be used in connected mode
-     */
-    public Builder addExtraPlugin(String pluginKey, Path pluginPath) {
-      extraPluginsPathsByKey.put(pluginKey, pluginPath);
       return this;
     }
 
