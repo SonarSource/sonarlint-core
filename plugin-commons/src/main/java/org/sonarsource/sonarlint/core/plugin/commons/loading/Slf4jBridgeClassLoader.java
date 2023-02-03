@@ -24,23 +24,44 @@ import java.net.URL;
 import java.net.URLClassLoader;
 
 /**
- * Some plugins uses slf4j instead of the Sonar plugin API logging facade. As some IDEs are exposing slf4j,
+ * Some plugins use slf4j instead of the Sonar plugin API logging facade. As some IDEs are exposing slf4j,
  * we don't want plugin logs to ends up in IDE logs, but we want to intercept them. So plugin classloaders will extend this custom classloader, that will intercept
  * attempts to get slf4j classes, and then load our own classes from the sonarlint-slf4j-sonar-log module.
  *
  */
 public class Slf4jBridgeClassLoader extends URLClassLoader {
 
-  public Slf4jBridgeClassLoader(ClassLoader parent) {
-    super(new URL[0], parent);
+  private final ClassLoader sonarLintClassLoader;
+
+  public Slf4jBridgeClassLoader(ClassLoader sonarLintClassLoader) {
+    // Use systemclassloader as parent in order to avoid finding slf4j in the parent classloader (some IDEs can provide slf4j to plugins)
+    super(new URL[0], getSystemClassloader());
+    this.sonarLintClassLoader = sonarLintClassLoader;
+  }
+
+  /**
+    * JRE system classloader. In Oracle JVM:
+    * - ClassLoader.getSystemClassLoader() is sun.misc.Launcher$AppClassLoader. It contains app classpath.
+    * - ClassLoader.getSystemClassLoader().getParent() is sun.misc.Launcher$ExtClassLoader. It is the JRE core classloader.
+    */
+  private static ClassLoader getSystemClassloader() {
+    var systemClassLoader = ClassLoader.getSystemClassLoader();
+    var systemParent = systemClassLoader.getParent();
+    if (systemParent != null) {
+      systemClassLoader = systemParent;
+    }
+    return systemClassLoader;
   }
 
   @Override
   protected Class<?> findClass(final String name) throws ClassNotFoundException {
+    if (name.startsWith("org.sonar.api.utils.log")) {
+      return sonarLintClassLoader.loadClass(name);
+    }
     if (name.startsWith("org.slf4j")) {
       var path = name.replace('.', '/').concat(".clazz");
       var classContentPath = "slf4j-sonar-log/" + path;
-      try (var is = getParent().getResourceAsStream(classContentPath)) {
+      try (var is = sonarLintClassLoader.getResourceAsStream(classContentPath)) {
         if (is == null) {
           throw new IllegalStateException("Unable to find resource " + classContentPath);
         }

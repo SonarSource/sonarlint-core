@@ -68,7 +68,7 @@ public class PluginInstancesLoader {
 
   PluginInstancesLoader(PluginClassloaderFactory classloaderFactory) {
     this.classloaderFactory = classloaderFactory;
-    this.baseClassLoader = new Slf4jBridgeClassLoader(getClass().getClassLoader());
+    this.baseClassLoader = getClass().getClassLoader();
   }
 
   public Map<String, Plugin> instantiatePluginClasses(Collection<PluginInfo> plugins) {
@@ -134,7 +134,7 @@ public class PluginInstancesLoader {
   }
 
   private static void extractFile(Path zipFile, String fileName, Path outputFile) throws IOException {
-    try (var fileSystem = FileSystems.newFileSystem(zipFile, null)) {
+    try (var fileSystem = FileSystems.newFileSystem(zipFile, (ClassLoader) null)) {
       var fileToExtract = fileSystem.getPath(fileName);
       Files.copy(fileToExtract, outputFile);
     }
