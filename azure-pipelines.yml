@@ -243,7 +243,7 @@ stages:
             Category: '-DexcludedGroups=SonarCloud'
           Latest:
             SQ_VERSION: 'LATEST_RELEASE'
-            JDKVersion: '1.11'
+            JDKVersion: '1.17'
             Category: '-DexcludedGroups=SonarCloud'
           Lts89:
             SQ_VERSION: 'LATEST_RELEASE[8.9]'
