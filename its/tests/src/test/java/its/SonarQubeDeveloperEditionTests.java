@@ -116,10 +116,8 @@ import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
@@ -238,7 +236,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       updateProject(engine, projectKey);
 
       var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(projectKey, "sample-java-custom","src/main/java/foo/Foo.java"),
+      engine.analyze(createAnalysisConfiguration(projectKey, "sample-java-custom", "src/main/java/foo/Foo.java"),
         issueListener, null, null);
       assertThat(issueListener.getIssues()).extracting("ruleKey", "startLine").containsOnly(
         tuple("mycompany-java:AvoidAnnotation", 12));
@@ -344,13 +342,21 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var qp = getQualityProfile(adminWsClient, "SonarLint IT Java");
 
-      WsRequest request = new PostRequest("/api/rules/create")
-        .setParam("custom_key", "myrule")
-        .setParam("name", "myrule")
-        .setParam("markdown_description", "my_rule_description")
+      PostRequest request = new PostRequest("/api/rules/create")
         .setParam("params", "methodName=echo;className=foo.Foo;argumentTypes=int")
-        .setParam("template_key", javaRuleKey("S2253"))
+        .setParam("name", "myrule")
         .setParam("severity", "MAJOR");
+      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 0)) {
+          request.setParam("customKey", "myrule")
+          .setParam("markdownDescription", "my_rule_description")
+          .setParam("templateKey", javaRuleKey("S2253"));
+      } else {
+        request.setParam("custom_key", "myrule")
+          .setParam("markdown_description", "my_rule_description")
+          .setParam("template_key", javaRuleKey("S2253"));
+      }
+
+        ;
       try (var response = adminWsClient.wsConnector().call(request)) {
         assertTrue(response.isSuccessful());
       }
@@ -394,7 +400,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       updateProject(engine, projectKey);
 
       var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(projectKey, "sample-java","src/main/java/foo/Foo.java"),
+      engine.analyze(createAnalysisConfiguration(projectKey, "sample-java", "src/main/java/foo/Foo.java"),
         issueListener, null, null);
       assertThat(issueListener.getIssues()).hasSize(2);
 
@@ -1053,7 +1059,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       if (testInfo.getTags().contains(USE_NEW_CLIENT_API)) {
         backend = new SonarLintBackendImpl(newDummySonarLintClient());
         backend.initialize(
-          new InitializeParams(new HostInfoDto("clientName"),"integrationTests", sonarUserHome.resolve("storage"), Collections.emptySet(), Collections.emptyMap(), Collections.emptyMap(), Set.of(Language.JAVA),
+          new InitializeParams(new HostInfoDto("clientName"), "integrationTests", sonarUserHome.resolve("storage"), Collections.emptySet(), Collections.emptyMap(),
+            Collections.emptyMap(), Set.of(Language.JAVA),
             Collections.emptySet(), false, List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl())), Collections.emptyList(),
             sonarUserHome.toString(), false));
       }
