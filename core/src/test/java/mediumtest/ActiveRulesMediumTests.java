@@ -60,7 +60,7 @@ class ActiveRulesMediumTests {
     backend = newBackend()
       .withUnboundConfigScope("scopeId")
       .withStorageRoot(storageDir)
-      .withEmbeddedPlugin(TestPlugin.PYTHON)
+      .withStandaloneEmbeddedPlugin(TestPlugin.PYTHON)
       .build();
 
     var activeRuleDetailsResponse = this.backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139")).get();
@@ -80,7 +80,7 @@ class ActiveRulesMediumTests {
     backend = newBackend()
       .withUnboundConfigScope("scopeId")
       .withStorageRoot(storageDir)
-      .withEmbeddedPlugin(TestPlugin.PYTHON)
+      .withStandaloneEmbeddedPlugin(TestPlugin.PYTHON)
       .build();
 
     var futureResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:SXXXX"));
@@ -114,29 +114,6 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-  void it_should_return_embedded_rule_when_project_is_bound_and_rule_comes_from_extra_plugin() throws ExecutionException, InterruptedException {
-    StorageFixture.newStorage("connectionId")
-      .withProject("projectKey")
-      .create(storageDir);
-    backend = newBackend()
-      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withStorageRoot(storageDir.resolve("storage"))
-      .withExtraPlugin(TestPlugin.PYTHON)
-      .build();
-
-    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139")).get();
-
-    var details = activeRuleDetailsResponse.details();
-    assertThat(details)
-      .extracting("key", "name", "type", "language", "severity", "description.left.htmlContent")
-      .containsExactly("python:S139", "Comments should not be located at the end of lines of code", RuleType.CODE_SMELL, Language.PYTHON, IssueSeverity.MINOR,
-        PYTHON_S139_DESCRIPTION);
-    assertThat(details.getParams())
-      .extracting("name", "description", "defaultValue")
-      .containsExactly(tuple("legalTrailingCommentPattern", null, "^#\\s*+[^\\s]++$"));
-  }
-
-  @Test
   void it_should_merge_rule_from_storage_and_server_when_project_is_bound() throws ExecutionException, InterruptedException {
     StorageFixture.newStorage("connectionId")
       .withProject("projectKey",
@@ -147,7 +124,7 @@ class ActiveRulesMediumTests {
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withStorageRoot(storageDir.resolve("storage"))
-      .withExtraPlugin(TestPlugin.PYTHON)
+      .withConnectedEmbeddedPlugin(TestPlugin.PYTHON)
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
@@ -175,7 +152,7 @@ class ActiveRulesMediumTests {
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withChildConfigScope("childScopeId", "scopeId")
       .withStorageRoot(storageDir.resolve("storage"))
-      .withExtraPlugin(TestPlugin.PYTHON)
+      .withConnectedEmbeddedPlugin(TestPlugin.PYTHON)
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
@@ -236,7 +213,6 @@ class ActiveRulesMediumTests {
     backend = newBackend()
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withStorageRoot(storageDir.resolve("storage"))
-      .withExtraPlugin(TestPlugin.PYTHON)
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
@@ -261,7 +237,6 @@ class ActiveRulesMediumTests {
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withStorageRoot(storageDir.resolve("storage"))
-      .withExtraPlugin(TestPlugin.PYTHON)
       .build();
 
     var futureResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139"));
@@ -283,7 +258,7 @@ class ActiveRulesMediumTests {
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withStorageRoot(storageDir.resolve("storage"))
-      .withExtraPlugin(TestPlugin.PYTHON)
+      .withConnectedEmbeddedPlugin(TestPlugin.PYTHON)
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:custom", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())

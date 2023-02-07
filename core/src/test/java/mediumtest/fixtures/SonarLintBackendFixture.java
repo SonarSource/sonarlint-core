@@ -78,7 +78,7 @@ public class SonarLintBackendFixture {
     private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections = new ArrayList<>();
     private final List<ConfigurationScopeDto> configurationScopes = new ArrayList<>();
     private final Set<Path> embeddedPluginPaths = new HashSet<>();
-    private final Map<String, Path> extraPluginPathsByKey = new HashMap<>();
+    private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey = new HashMap<>();
     private final Set<Language> enabledLanguages = new HashSet<>();
     private Path storageRoot = Paths.get(".");
     private Path sonarlintUserHome = Paths.get(".");
@@ -120,13 +120,14 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintBackendBuilder withEmbeddedPlugin(TestPlugin plugin) {
+    public SonarLintBackendBuilder withStandaloneEmbeddedPlugin(TestPlugin plugin) {
       this.embeddedPluginPaths.add(plugin.getPath());
       return withEnabledLanguage(plugin.getLanguage());
     }
 
-    public SonarLintBackendBuilder withExtraPlugin(TestPlugin plugin) {
-      extraPluginPathsByKey.put(plugin.getLanguage().getPluginKey(), plugin.getPath());
+    public SonarLintBackendBuilder withConnectedEmbeddedPlugin(TestPlugin plugin) {
+      this.embeddedPluginPaths.add(plugin.getPath());
+      this.connectedModeEmbeddedPluginPathsByKey.put(plugin.getLanguage().getPluginKey(), plugin.getPath());
       return withEnabledLanguage(plugin.getLanguage());
     }
 
@@ -139,7 +140,7 @@ public class SonarLintBackendFixture {
       var sonarLintBackend = new SonarLintBackendImpl(client);
       client.setBackend(sonarLintBackend);
       sonarLintBackend
-        .initialize(new InitializeParams(client.getClientInfo(), MEDIUM_TESTS_PRODUCT_KEY, storageRoot, embeddedPluginPaths, extraPluginPathsByKey, Collections.emptyMap(),
+        .initialize(new InitializeParams(client.getClientInfo(), MEDIUM_TESTS_PRODUCT_KEY, storageRoot, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
           enabledLanguages, Collections.emptySet(), false, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(), startEmbeddedServer));
       sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
       return sonarLintBackend;
