@@ -119,9 +119,9 @@ class OpenHotspotInIdeMediumTests {
     assertThat(fakeClient.getMessagesToShow()).isEmpty();
     await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys("scopeId"));
     assertThat(fakeClient.getHotspotToShowByConfigScopeId().get("scopeId"))
-      .extracting(HotspotDetailsDto::getMessage, HotspotDetailsDto::getAuthor, HotspotDetailsDto::getFilePath,
+      .extracting(HotspotDetailsDto::getKey, HotspotDetailsDto::getMessage, HotspotDetailsDto::getAuthor, HotspotDetailsDto::getFilePath,
         HotspotDetailsDto::getStatus, HotspotDetailsDto::getResolution, HotspotDetailsDto::getCodeSnippet)
-      .containsExactly(tuple("msg", "author", "file/path", "REVIEWED", "SAFE", "source\ncode\nfile"));
+      .containsExactly(tuple("key", "msg", "author", "file/path", "REVIEWED", "SAFE", "source\ncode\nfile"));
   }
 
   @Test

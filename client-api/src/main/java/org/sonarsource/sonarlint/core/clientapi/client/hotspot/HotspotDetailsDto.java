@@ -22,19 +22,28 @@ package org.sonarsource.sonarlint.core.clientapi.client.hotspot;
 import javax.annotation.Nullable;
 
 public class HotspotDetailsDto {
+  private final String key;
+  @Deprecated(forRemoval = true)
   private final String message;
   private final String filePath;
+  @Deprecated(forRemoval = true)
   private final TextRangeDto textRange;
+  @Deprecated(forRemoval = true)
   private final String author;
+  @Deprecated(forRemoval = true)
   private final String status;
+  @Deprecated(forRemoval = true)
   @Nullable
   private final String resolution;
+  @Deprecated(forRemoval = true)
   private final HotspotRule rule;
+  @Deprecated(forRemoval = true)
   @Nullable
   private final String codeSnippet;
 
-  public HotspotDetailsDto(String message, String filePath, TextRangeDto textRange, String author, String status, @Nullable String resolution, HotspotRule rule,
+  public HotspotDetailsDto(String key, String message, String filePath, TextRangeDto textRange, String author, String status, @Nullable String resolution, HotspotRule rule,
     @Nullable String codeSnippet) {
+    this.key = key;
     this.message = message;
     this.filePath = filePath;
     this.textRange = textRange;
@@ -43,6 +52,10 @@ public class HotspotDetailsDto {
     this.resolution = resolution;
     this.rule = rule;
     this.codeSnippet = codeSnippet;
+  }
+
+  public String getKey() {
+    return key;
   }
 
   public String getMessage() {
