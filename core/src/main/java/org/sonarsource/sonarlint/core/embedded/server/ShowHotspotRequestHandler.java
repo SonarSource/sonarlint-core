@@ -126,7 +126,7 @@ class ShowHotspotRequestHandler implements HttpRequestHandler {
   private void showHotspotForScope(String connectionId, String configurationScopeId, String projectKey, String hotspotKey) {
     tryFetchHotspot(connectionId, projectKey, hotspotKey)
       .ifPresentOrElse(
-        hotspot -> client.showHotspot(new ShowHotspotParams(configurationScopeId, adapt(hotspot))),
+        hotspot -> client.showHotspot(new ShowHotspotParams(configurationScopeId, adapt(hotspotKey, hotspot))),
         () -> client.showMessage(new ShowMessageParams(MessageType.ERROR, "Could not show the hotspot. See logs for more details")));
   }
 
@@ -158,8 +158,9 @@ class ShowHotspotRequestHandler implements HttpRequestHandler {
     }
   }
 
-  private static HotspotDetailsDto adapt(ServerHotspotDetails hotspot) {
+  private static HotspotDetailsDto adapt(String hotspotKey, ServerHotspotDetails hotspot) {
     return new HotspotDetailsDto(
+      hotspotKey,
       hotspot.message,
       hotspot.filePath,
       adapt(hotspot.textRange),
