@@ -29,28 +29,14 @@ import java.net.URLClassLoader;
  * attempts to get slf4j classes, and then load our own classes from the sonarlint-slf4j-sonar-log module.
  *
  */
-public class Slf4jBridgeClassLoader extends URLClassLoader {
+public class Slf4jBridgeClassLoader extends ClassLoader {
 
   private final ClassLoader sonarLintClassLoader;
 
   public Slf4jBridgeClassLoader(ClassLoader sonarLintClassLoader) {
-    // Use systemclassloader as parent in order to avoid finding slf4j in the parent classloader (some IDEs can provide slf4j to plugins)
-    super(new URL[0], getSystemClassloader());
+    // Use Platform ClassLoader as parent in order to avoid finding slf4j in the Application classloader (some IDEs can provide slf4j to plugins)
+    super(ClassLoader.getPlatformClassLoader());
     this.sonarLintClassLoader = sonarLintClassLoader;
-  }
-
-  /**
-    * JRE system classloader. In Oracle JVM:
-    * - ClassLoader.getSystemClassLoader() is sun.misc.Launcher$AppClassLoader. It contains app classpath.
-    * - ClassLoader.getSystemClassLoader().getParent() is sun.misc.Launcher$ExtClassLoader. It is the JRE core classloader.
-    */
-  private static ClassLoader getSystemClassloader() {
-    var systemClassLoader = ClassLoader.getSystemClassLoader();
-    var systemParent = systemClassLoader.getParent();
-    if (systemParent != null) {
-      systemClassLoader = systemParent;
-    }
-    return systemClassLoader;
   }
 
   @Override
