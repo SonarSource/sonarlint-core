@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -68,7 +69,7 @@ public class ServerConnection {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final Version SECRET_ANALYSIS_MIN_SQ_VERSION = Version.create("9.9");
 
-  private final Set<Language> enabledLanguages;
+  private final Set<Language> enabledLanguagesToSync;
   private final ProjectStorage projectStorage;
   private final StorageReader storageReader;
   private final PluginsStorage pluginsStorage;
@@ -88,7 +89,7 @@ public class ServerConnection {
 
   public ServerConnection(Path globalStorageRoot, String connectionId, boolean isSonarCloud, Set<Language> enabledLanguages, Set<String> embeddedPluginKeys, Path workDir) {
     this.isSonarCloud = isSonarCloud;
-    this.enabledLanguages = enabledLanguages;
+    this.enabledLanguagesToSync = enabledLanguages.stream().filter(Language::shouldSyncInConnectedMode).collect(Collectors.toCollection(LinkedHashSet::new));
 
     connectionStorageRoot = globalStorageRoot.resolve(encodeForFs(connectionId));
 
@@ -99,12 +100,12 @@ public class ServerConnection {
     this.storageReader = new StorageReader(projectStoragePaths);
     this.serverIssueStoresManager = new ServerIssueStoresManager(projectsStorageRoot, workDir);
     this.issueStoreReader = new IssueStoreReader(serverIssueStoresManager);
-    this.issuesUpdater = new ServerIssueUpdater(serverIssueStoresManager, new IssueDownloader(enabledLanguages), new TaintIssueDownloader(enabledLanguages));
+    this.issuesUpdater = new ServerIssueUpdater(serverIssueStoresManager, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
     this.hotspotsUpdater = new ServerHotspotUpdater(serverIssueStoresManager);
     serverInfoStorage = new ServerInfoStorage(connectionStorageRoot);
     this.pluginsStorage = new PluginsStorage(connectionStorageRoot.resolve("plugins"));
     serverInfoSynchronizer = new ServerInfoSynchronizer(serverInfoStorage);
-    this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguages, embeddedPluginKeys, serverInfoSynchronizer, pluginsStorage, projectStorage);
+    this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguagesToSync, embeddedPluginKeys, serverInfoSynchronizer, pluginsStorage, projectStorage);
     this.projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(projectStoragePaths);
     pluginsStorage.cleanUp();
     coreEventRouter = new EventDispatcher()
@@ -154,7 +155,7 @@ public class ServerConnection {
   }
 
   public void subscribeForEvents(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, Consumer<ServerEvent> clientEventConsumer, ClientLogOutput clientLogOutput) {
-    serverEventsAutoSubscriber.subscribePermanently(new ServerApi(new ServerApiHelper(endpoint, client)), projectKeys, enabledLanguages,
+    serverEventsAutoSubscriber.subscribePermanently(new ServerApi(new ServerApiHelper(endpoint, client)), projectKeys, enabledLanguagesToSync,
       e -> notifyHandlers(e, clientEventConsumer), clientLogOutput);
   }
 
