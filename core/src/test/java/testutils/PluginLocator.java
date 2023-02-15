@@ -32,7 +32,7 @@ public class PluginLocator {
   public static final String SONAR_PHP_PLUGIN_JAR = "sonar-php-plugin-3.23.1.8766.jar";
   public static final String SONAR_PYTHON_PLUGIN_JAR = "sonar-python-plugin-1.14.0.3086.jar";
   public static final String SONAR_XML_PLUGIN_JAR = "sonar-xml-plugin-2.6.1.3686.jar";
-  public static final String SONAR_TEXT_PLUGIN_JAR = "sonar-text-plugin-2.1.0.621.jar";
+  public static final String SONAR_TEXT_PLUGIN_JAR = "sonar-text-plugin-2.0.1.611.jar";
 
   public static Path getJavaPluginPath() {
     return getPluginPath(SONAR_JAVA_PLUGIN_JAR);
