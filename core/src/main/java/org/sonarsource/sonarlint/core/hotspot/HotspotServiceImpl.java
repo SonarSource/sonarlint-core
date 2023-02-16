@@ -19,7 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.hotspot;
 
+import java.nio.file.Path;
+import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
+import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.CheckLocalDetectionSupportedParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.CheckLocalDetectionSupportedResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.OpenHotspotInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
@@ -29,23 +33,35 @@ import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurat
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
+import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ServerInfoStorage;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
+
+import static org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi.TRACKING_COMPATIBLE_MIN_SQ_VERSION;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 
 public class HotspotServiceImpl implements HotspotService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final String LOCAL_DETECTION_NOT_SUPPORTED_REASON = "The project is not bound to SonarQube 9.7+";
 
   private final SonarLintClient client;
   private final ConfigurationRepository configurationRepository;
   private final ConnectionConfigurationRepository connectionRepository;
 
   private final TelemetryServiceImpl telemetryService;
+  private Path storageRoot;
 
-  public HotspotServiceImpl(SonarLintClient client, ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository, TelemetryServiceImpl telemetryService) {
+  public HotspotServiceImpl(SonarLintClient client, ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository,
+    TelemetryServiceImpl telemetryService) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
     this.telemetryService = telemetryService;
+  }
+
+  public void initialize(Path storageRoot) {
+    this.storageRoot = storageRoot;
   }
 
   @Override
@@ -62,6 +78,27 @@ public class HotspotServiceImpl implements HotspotService {
     client.openUrlInBrowser(new OpenUrlInBrowserParams(url));
 
     telemetryService.hotspotOpenedInBrowser();
+  }
+
+  @Override
+  public CompletableFuture<CheckLocalDetectionSupportedResponse> checkLocalDetectionSupported(CheckLocalDetectionSupportedParams params) {
+    var configScopeId = params.getConfigScopeId();
+    boolean supported = false;
+    if (configScopeId != null) {
+      var effectiveBinding = configurationRepository.getEffectiveBinding(configScopeId);
+      supported = effectiveBinding.flatMap(binding -> connectionRepository.getEndpointParams(binding.getConnectionId()))
+        .map(ps -> isLocalDetectionSupported(ps.isSonarCloud(), effectiveBinding.get().getConnectionId()))
+        .orElse(false);
+    }
+    return CompletableFuture.completedFuture(new CheckLocalDetectionSupportedResponse(supported, supported ? null : LOCAL_DETECTION_NOT_SUPPORTED_REASON));
+  }
+
+  private boolean isLocalDetectionSupported(boolean isSonarCloud, String connectionId) {
+    return !isSonarCloud &&
+      new ServerInfoStorage(storageRoot.resolve(encodeForFs(connectionId))).getServerInfo()
+        .map(StoredServerInfo::getVersion)
+        .map(version -> version.compareToIgnoreQualifier(TRACKING_COMPATIBLE_MIN_SQ_VERSION) >= 0)
+        .orElse(false);
   }
 
   static String buildHotspotUrl(String projectKey, String branch, String hotspotKey, EndpointParams endpointParams) {

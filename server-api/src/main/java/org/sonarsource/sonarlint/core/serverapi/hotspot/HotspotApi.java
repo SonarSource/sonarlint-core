@@ -44,7 +44,7 @@ public class HotspotApi {
 
   // the rule key is returned only on SQ, since 9.7
   // without that info, hotspot tracking is almost impossible
-  private static final Version TRACKING_COMPATIBLE_MIN_SQ_VERSION = Version.create("9.7");
+  public static final Version TRACKING_COMPATIBLE_MIN_SQ_VERSION = Version.create("9.7");
 
   private static final String HOTSPOTS_SEARCH_API_URL = "/api/hotspots/search.protobuf";
   private static final String HOTSPOTS_SHOW_API_URL = "/api/hotspots/show.protobuf";

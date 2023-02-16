@@ -19,13 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.hotspot;
 
-import java.util.concurrent.CompletableFuture;
-import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
-public interface HotspotService {
+public class CheckLocalDetectionSupportedParams {
+  private final String configScopeId;
 
-  @JsonNotification
-  void openHotspotInBrowser(OpenHotspotInBrowserParams params);
+  public CheckLocalDetectionSupportedParams(@Nullable String configScopeId) {
+    this.configScopeId = configScopeId;
+  }
 
-  CompletableFuture<CheckLocalDetectionSupportedResponse> checkLocalDetectionSupported(CheckLocalDetectionSupportedParams params);
+  @CheckForNull
+  public String getConfigScopeId() {
+    return configScopeId;
+  }
 }

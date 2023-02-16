@@ -89,6 +89,11 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintBackendBuilder withSonarCloudConnection(String connectionId, String organizationKey) {
+      sonarCloudConnections.add(new SonarCloudConnectionConfigurationDto(connectionId, organizationKey));
+      return this;
+    }
+
     public SonarLintBackendBuilder withUnboundConfigScope(String configurationScopeId) {
       return withUnboundConfigScope(configurationScopeId, configurationScopeId);
     }

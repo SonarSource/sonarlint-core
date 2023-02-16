@@ -276,6 +276,10 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
       (globalConfig.isHotspotsEnabled() && serverConnection.permitsHotspotTracking());
   }
 
+  public boolean isSecurityHotspotsDetectionSupported() {
+    return serverConnection.permitsHotspotTracking();
+  }
+
   private ServerActiveRule tryConvertDeprecatedKeys(ServerActiveRule possiblyDeprecatedActiveRuleFromStorage) {
     SonarLintRuleDefinition ruleOrTemplateDefinition;
     if (StringUtils.isNotBlank(possiblyDeprecatedActiveRuleFromStorage.getTemplateKey())) {
