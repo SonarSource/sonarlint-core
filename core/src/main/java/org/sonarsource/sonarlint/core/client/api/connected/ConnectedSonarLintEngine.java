@@ -191,6 +191,8 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    */
   Collection<ServerHotspot> getServerHotspots(ProjectBinding projectBinding, String branchName, String ideFilePath);
 
+  boolean isSecurityHotspotsDetectionSupported();
+
   /**
    * Get a list of files that are excluded from analysis, out of the provided files.
    *
