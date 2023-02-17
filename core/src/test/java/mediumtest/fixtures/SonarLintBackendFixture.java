@@ -83,6 +83,7 @@ public class SonarLintBackendFixture {
     private Path storageRoot = Paths.get(".");
     private Path sonarlintUserHome = Paths.get(".");
     private boolean startEmbeddedServer;
+    private boolean areSecurityHotspotsEnabled;
 
     public SonarLintBackendBuilder withSonarQubeConnection(String connectionId, String serverUrl) {
       sonarQubeConnections.add(new SonarQubeConnectionConfigurationDto(connectionId, serverUrl));
@@ -141,12 +142,17 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintBackendBuilder withSecurityHotspotsEnabled() {
+      this.areSecurityHotspotsEnabled = true;
+      return this;
+    }
+
     public SonarLintBackendImpl build(FakeSonarLintClient client) {
       var sonarLintBackend = new SonarLintBackendImpl(client);
       client.setBackend(sonarLintBackend);
       sonarLintBackend
         .initialize(new InitializeParams(client.getClientInfo(), MEDIUM_TESTS_PRODUCT_KEY, storageRoot, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
-          enabledLanguages, Collections.emptySet(), false, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(), startEmbeddedServer));
+          enabledLanguages, Collections.emptySet(), areSecurityHotspotsEnabled, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(), startEmbeddedServer));
       sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
       return sonarLintBackend;
     }
