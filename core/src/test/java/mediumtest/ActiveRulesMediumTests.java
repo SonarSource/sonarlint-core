@@ -35,6 +35,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleDescriptionTabDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleNonContextualSectionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetActiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
@@ -56,16 +57,15 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-  void it_should_return_embedded_rule_when_project_is_not_bound() throws ExecutionException, InterruptedException {
+  void it_should_return_embedded_rule_when_project_is_not_bound() {
     backend = newBackend()
       .withUnboundConfigScope("scopeId")
       .withStorageRoot(storageDir)
       .withStandaloneEmbeddedPlugin(TestPlugin.PYTHON)
       .build();
 
-    var activeRuleDetailsResponse = this.backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139")).get();
+    var details = getActiveRuleDetails("scopeId", "python:S139");
 
-    var details = activeRuleDetailsResponse.details();
     assertThat(details)
       .extracting("key", "name", "type", "language", "severity", "description.left.htmlContent")
       .containsExactly("python:S139", "Comments should not be located at the end of lines of code", RuleType.CODE_SMELL, Language.PYTHON, IssueSeverity.MINOR,
@@ -92,8 +92,7 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-  void it_should_return_rule_loaded_from_server_plugin_when_project_is_bound_and_project_storage_does_not_exist()
-    throws ExecutionException, InterruptedException {
+  void it_should_return_rule_loaded_from_server_plugin_when_project_is_bound_and_project_storage_does_not_exist() {
     StorageFixture.newStorage("connectionId")
       .withJavaPlugin()
       .create(storageDir);
@@ -103,9 +102,8 @@ class ActiveRulesMediumTests {
       .withEnabledLanguage(Language.JAVA)
       .build();
 
-    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "java:S106")).get();
+    var details = getActiveRuleDetails("scopeId", "java:S106");
 
-    var details = activeRuleDetailsResponse.details();
     assertThat(details)
       .extracting("key", "name", "type", "language", "severity", "description.left.htmlContent")
       .containsExactly("java:S106", "Standard outputs should not be used directly to log anything", RuleType.CODE_SMELL, Language.JAVA, IssueSeverity.MAJOR,
@@ -114,7 +112,7 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-  void it_should_merge_rule_from_storage_and_server_when_project_is_bound() throws ExecutionException, InterruptedException {
+  void it_should_merge_rule_from_storage_and_server_when_project_is_bound() {
     StorageFixture.newStorage("connectionId")
       .withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
@@ -130,9 +128,8 @@ class ActiveRulesMediumTests {
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
       .build());
 
-    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139")).get();
+    var details = getActiveRuleDetails("scopeId", "python:S139");
 
-    var details = activeRuleDetailsResponse.details();
     assertThat(details)
       .extracting("key", "name", "type", "language", "severity", "description.left.htmlContent")
       .containsExactly("python:S139", "Comments should not be located at the end of lines of code", RuleType.CODE_SMELL, Language.PYTHON, IssueSeverity.INFO,
@@ -141,7 +138,7 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-  void it_should_merge_rule_from_storage_and_server_when_parent_project_is_bound() throws ExecutionException, InterruptedException {
+  void it_should_merge_rule_from_storage_and_server_when_parent_project_is_bound() {
     StorageFixture.newStorage("connectionId")
       .withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
@@ -158,9 +155,8 @@ class ActiveRulesMediumTests {
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
       .build());
 
-    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("childScopeId", "python:S139")).get();
+    var details = getActiveRuleDetails("childScopeId", "python:S139");
 
-    var details = activeRuleDetailsResponse.details();
     assertThat(details)
       .extracting("key", "name", "type", "language", "severity", "description.left.htmlContent")
       .containsExactly("python:S139", "Comments should not be located at the end of lines of code", RuleType.CODE_SMELL, Language.PYTHON, IssueSeverity.INFO,
@@ -169,7 +165,7 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-  void it_return_single_section_from_server_when_project_is_bound() throws ExecutionException, InterruptedException {
+  void it_return_single_section_from_server_when_project_is_bound() {
     var name = "name";
     var desc = "desc";
     StorageFixture.newStorage("connectionId")
@@ -194,9 +190,8 @@ class ActiveRulesMediumTests {
         .build())
       .build());
 
-    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "jssecurity:S5696")).get();
+    var details = getActiveRuleDetails("scopeId", "jssecurity:S5696");
 
-    var details = activeRuleDetailsResponse.details();
     assertThat(details)
       .extracting("key", "name", "type", "language", "severity", "description.left.htmlContent")
       .containsExactly("jssecurity:S5696", name, RuleType.VULNERABILITY, Language.JS, IssueSeverity.BLOCKER, desc);
@@ -248,7 +243,7 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-  void it_should_merge_template_rule_from_storage_and_server_when_project_is_bound() throws ExecutionException, InterruptedException {
+  void it_should_merge_template_rule_from_storage_and_server_when_project_is_bound() {
     StorageFixture.newStorage("connectionId")
       .withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
@@ -264,9 +259,8 @@ class ActiveRulesMediumTests {
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
       .build());
 
-    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:custom")).get();
+    var details = getActiveRuleDetails("scopeId", "python:custom");
 
-    var details = activeRuleDetailsResponse.details();
     assertThat(details)
       .extracting("key", "name", "type", "language", "severity", "description.left.htmlContent")
       .containsExactly("python:custom", "newName", RuleType.CODE_SMELL, Language.PYTHON, IssueSeverity.INFO, "desc<br/><br/>extendedDesc");
@@ -274,8 +268,7 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-  void it_should_merge_rule_from_storage_and_server_rule_when_rule_is_unknown_in_loaded_plugins()
-    throws ExecutionException, InterruptedException {
+  void it_should_merge_rule_from_storage_and_server_rule_when_rule_is_unknown_in_loaded_plugins() {
     StorageFixture.newStorage("connectionId")
       .withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
@@ -291,9 +284,8 @@ class ActiveRulesMediumTests {
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
       .build());
 
-    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139")).get();
+    var details = getActiveRuleDetails("scopeId", "python:S139");
 
-    var details = activeRuleDetailsResponse.details();
     assertThat(details)
       .extracting("key", "name", "type", "language", "severity", "description.left.htmlContent")
       .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO, "desc<br/><br/>extendedDesc");
@@ -301,12 +293,11 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-  void it_should_merge_rule_from_storage_and_server_with_description_sections_when_project_is_bound_and_none_context()
-    throws ExecutionException, InterruptedException {
+  void it_should_merge_rule_from_storage_and_server_with_description_sections_when_project_is_bound_and_none_context() {
     prepareForRuleDescriptionSectionsAndContext();
 
-    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139", null)).get();
-    var details = activeRuleDetailsResponse.details();
+    var details = getActiveRuleDetails("scopeId", "python:S139");
+
     assertThat(details)
       .extracting("key", "name", "type", "language", "severity")
       .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO);
@@ -362,12 +353,11 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-  void it_should_ignore_provided_context_and_return_all_contexts_in_alphabetical_order_with_default_if_context_not_found()
-    throws ExecutionException, InterruptedException {
+  void it_should_ignore_provided_context_and_return_all_contexts_in_alphabetical_order_with_default_if_context_not_found() {
     prepareForRuleDescriptionSectionsAndContext();
 
-    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139", "not_found")).get();
-    var details = activeRuleDetailsResponse.details();
+    var details = getActiveRuleDetails("scopeId", "python:S139", "not_found");
+
     assertThat(details)
       .extracting("key", "name", "type", "language", "severity")
       .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO);
@@ -422,12 +412,10 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-  void it_should_return_default_context_key_if_multiple_contexts()
-    throws ExecutionException, InterruptedException {
+  void it_should_return_default_context_key_if_multiple_contexts() {
     prepareForRuleDescriptionSectionsAndContext();
 
-    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139", "not_found")).get();
-    var details = activeRuleDetailsResponse.details();
+    var details = getActiveRuleDetails("scopeId", "python:S139", "not_found");
 
     assertThat(details.getDescription().getRight().getTabs())
       .extracting(ActiveRuleDescriptionTabDto::getTitle).containsExactly("How can I fix it?", "More Info");
@@ -466,13 +454,11 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-  void it_should_return_only_tab_content_for_the_provided_context()
-    throws ExecutionException, InterruptedException {
+  void it_should_return_only_tab_content_for_the_provided_context() {
     prepareForRuleDescriptionSectionsAndContext();
 
-    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139", "contextKey2")).get();
+    var details = getActiveRuleDetails("scopeId", "python:S139", "contextKey2");
 
-    var details = activeRuleDetailsResponse.details();
     assertThat(details)
       .extracting("key", "name", "type", "language", "severity")
       .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO);
@@ -514,8 +500,7 @@ class ActiveRulesMediumTests {
   }
 
   @Test
-  void it_should_add_a_more_info_tab_if_no_resource_section_exists_and_extended_description_exists()
-    throws ExecutionException, InterruptedException {
+  void it_should_add_a_more_info_tab_if_no_resource_section_exists_and_extended_description_exists() {
     StorageFixture.newStorage("connectionId")
       .withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
@@ -541,9 +526,8 @@ class ActiveRulesMediumTests {
         .build())
       .build());
 
-    var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139")).get();
+    var details = getActiveRuleDetails("scopeId", "python:S139");
 
-    var details = activeRuleDetailsResponse.details();
     assertThat(details.getDescription().getRight().getTabs())
       .filteredOn(ActiveRuleDescriptionTabDto::getTitle, "More Info")
       .extracting(ActiveRuleDescriptionTabDto::getContent)
@@ -578,12 +562,42 @@ class ActiveRulesMediumTests {
         "</p>");
   }
 
+  @Test
+  void it_should_split_security_hotspots_rule_description_and_adapt_title() {
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", "url")
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withStorageRoot(storageDir)
+      .withConnectedEmbeddedPlugin(TestPlugin.PYTHON)
+      .withSecurityHotspotsEnabled()
+      .build();
+
+    var details = getActiveRuleDetails("scopeId", "python:S4784");
+
+    assertThat(details.getDescription().isRight()).isTrue();
+    assertThat(details.getDescription().getRight().getTabs())
+      .hasSize(3)
+      .extracting(ActiveRuleDescriptionTabDto::getTitle)
+      .contains("What's the risk?");
+  }
+
   private static List<Object> flattenTabContent(ActiveRuleDescriptionTabDto tab) {
     if (tab.getContent().isLeft()) {
       return List.of(tab.getTitle(), tab.getContent().getLeft().getHtmlContent());
     }
-    List<Object> flattenTabContents = tab.getContent().getRight().getContextualSections().stream().flatMap(s -> Stream.of(tab.getTitle(), s.getHtmlContent(), s.getContextKey(), s.getDisplayName())).collect(Collectors.toList());
-    return flattenTabContents;
+    return tab.getContent().getRight().getContextualSections().stream().flatMap(s -> Stream.of(tab.getTitle(), s.getHtmlContent(), s.getContextKey(), s.getDisplayName())).collect(Collectors.toList());
+  }
+
+  private ActiveRuleDetailsDto getActiveRuleDetails(String configScopeId, String ruleKey) {
+    return getActiveRuleDetails(configScopeId, ruleKey, null);
+  }
+
+  private ActiveRuleDetailsDto getActiveRuleDetails(String configScopeId, String ruleKey, String contextKey) {
+    try {
+      return this.backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams(configScopeId, ruleKey, contextKey)).get().details();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @TempDir

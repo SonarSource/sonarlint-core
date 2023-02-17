@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.rules;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,20 +38,18 @@ import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleMonolith
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleNonContextualSectionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleParamDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleSplitDescriptionDto;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 
 class ActiveRuleDetailsAdapter {
   public static final String INTRODUCTION_SECTION_KEY = "introduction";
+  public static final String ROOT_CAUSE_SECTION_KEY = "root_cause";
+  public static final String ASSESS_THE_PROBLEM_SECTION_KEY = "assess_the_problem";
+  public static final String HOW_TO_FIX_SECTION_KEY = "how_to_fix";
   public static final String RESOURCES_SECTION_KEY = "resources";
   private static final String DEFAULT_CONTEXT_KEY = "others";
   private static final String DEFAULT_CONTEXT_DISPLAY_NAME = "Others";
-  private static final Map<String, String> SECTION_KEYS_TO_TAB_TITLE_ORDERED = new LinkedHashMap<>();
-
-  static {
-    SECTION_KEYS_TO_TAB_TITLE_ORDERED.put("root_cause", "Why is this an issue?");
-    SECTION_KEYS_TO_TAB_TITLE_ORDERED.put("assess_the_problem", "Assess the risk");
-    SECTION_KEYS_TO_TAB_TITLE_ORDERED.put("how_to_fix", "How can I fix it?");
-    SECTION_KEYS_TO_TAB_TITLE_ORDERED.put(RESOURCES_SECTION_KEY, "More Info");
-  }
+  private static final List<String> SECTION_KEYS_ORDERED = List.of(ROOT_CAUSE_SECTION_KEY, ASSESS_THE_PROBLEM_SECTION_KEY,
+    HOW_TO_FIX_SECTION_KEY, RESOURCES_SECTION_KEY);
 
   public static ActiveRuleDetailsDto transform(ActiveRuleDetails ruleDetails, @Nullable String contextKey) {
     return new ActiveRuleDetailsDto(
@@ -113,7 +110,7 @@ class ActiveRuleDetailsAdapter {
       var content = concat(htmlSnippets);
       if (StringUtils.isNotBlank(content)) {
         tabbedSections
-          .add(new ActiveRuleDescriptionTabDto(SECTION_KEYS_TO_TAB_TITLE_ORDERED.get(RESOURCES_SECTION_KEY), Either.forLeft(new ActiveRuleNonContextualSectionDto(content))));
+          .add(new ActiveRuleDescriptionTabDto(getTabTitle(ruleDetails, RESOURCES_SECTION_KEY), Either.forLeft(new ActiveRuleNonContextualSectionDto(content))));
       }
     }
   }
@@ -121,10 +118,9 @@ class ActiveRuleDetailsAdapter {
   private static Collection<ActiveRuleDescriptionTabDto> transformSectionsButIntroductionToTabs(ActiveRuleDetails ruleDetails, @Nullable String contextKey) {
     var tabbedSections = new ArrayList<ActiveRuleDescriptionTabDto>();
     var sectionsByKey = ruleDetails.getDescriptionSectionsByKey();
-    SECTION_KEYS_TO_TAB_TITLE_ORDERED.keySet().forEach(sectionKey -> {
+    SECTION_KEYS_ORDERED.forEach(sectionKey -> {
       if (sectionsByKey.containsKey(sectionKey)) {
         var tabContents = sectionsByKey.get(sectionKey);
-        var title = SECTION_KEYS_TO_TAB_TITLE_ORDERED.get(sectionKey);
         Either<ActiveRuleNonContextualSectionDto, ActiveRuleContextualSectionWithDefaultContextKeyDto> content;
         var matchingContext = tabContents.stream().filter(c -> c.getContext().isPresent() && c.getContext().get().getKey().equals(contextKey)).findFirst();
         if (tabContents.size() == 1 && tabContents.get(0).getContext().isEmpty()) {
@@ -143,10 +139,23 @@ class ActiveRuleDetailsAdapter {
               DEFAULT_CONTEXT_KEY, DEFAULT_CONTEXT_DISPLAY_NAME));
           content = Either.forRight(new ActiveRuleContextualSectionWithDefaultContextKeyDto(DEFAULT_CONTEXT_KEY, contextualSectionContents));
         }
-        tabbedSections.add(new ActiveRuleDescriptionTabDto(title, content));
+        tabbedSections.add(new ActiveRuleDescriptionTabDto(getTabTitle(ruleDetails, sectionKey), content));
       }
     });
     return tabbedSections;
+  }
+
+  private static String getTabTitle(ActiveRuleDetails ruleDetails, String sectionKey) {
+    if (ROOT_CAUSE_SECTION_KEY.equals(sectionKey)) {
+      return RuleType.SECURITY_HOTSPOT.equals(ruleDetails.getType()) ? "What's the risk?" : "Why is this an issue?";
+    }
+    if (ASSESS_THE_PROBLEM_SECTION_KEY.equals(sectionKey)) {
+      return "Assess the risk";
+    }
+    if (HOW_TO_FIX_SECTION_KEY.equals(sectionKey)) {
+      return "How can I fix it?";
+    }
+    return "More Info";
   }
 
   private static String concat(Collection<String> htmlSnippets) {

@@ -1451,7 +1451,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       assertThat(extendedDescription.getTabs())
         .flatExtracting(this::extractTabContent)
         .containsOnly(
-          "Why is this an issue?",
+          "What's the risk?",
           "<p>Configuring loggers is security-sensitive. It has led in the past to the following vulnerabilities:</p>\n" +
             "<ul>\n" +
             "  <li> <a href=\"http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-0285\">CVE-2018-0285</a> </li>\n" +
