@@ -39,7 +39,7 @@ public enum Language {
   OBJC("objc", "cpp", "Objective-C", new String[] {".m"}, "sonar.objc.file.suffixes"),
   COBOL("cobol", "cobol", "COBOL", new String[0], "sonar.cobol.file.suffixes"),
   HTML("web", "web", "HTML", new String[] {".html", ".xhtml", ".cshtml", ".vbhtml", ".aspx", ".ascx", ".rhtml", ".erb", ".shtm", ".shtml"}, "sonar.html.file.suffixes"),
-  IPYTHON("ipynb", "python", "IPython", new String[] {".ipynb"}, "sonar.ipython.file.suffixes"),
+  IPYTHON("ipynb", "python", "IPython Notebooks", new String[] {".ipynb"}, "sonar.ipython.file.suffixes"),
   JAVA("java", "java", "Java", new String[] {".java", ".jav"}, "sonar.java.file.suffixes"),
   JS("js", Constants.JAVASCRIPT_PLUGIN_KEY, "JavaScript", new String[] {".js", ".jsx", ".vue"}, "sonar.javascript.file.suffixes"),
   KOTLIN("kotlin", "kotlin", "Kotlin", new String[] {".kt"}, "sonar.kotlin.file.suffixes"),
