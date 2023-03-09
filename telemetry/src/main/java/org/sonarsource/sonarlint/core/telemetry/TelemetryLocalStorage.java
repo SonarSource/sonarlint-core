@@ -49,6 +49,7 @@ public class TelemetryLocalStorage {
   private int taintVulnerabilitiesInvestigatedRemotelyCount;
   private final Set<String> raisedIssuesRules;
   private final Set<String> quickFixesApplied;
+  private final Map<String, TelemetryHelpAndFeedbackCounter> helpAndFeedbackLinkClickedCount;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -57,6 +58,7 @@ public class TelemetryLocalStorage {
     notificationsCountersByEventType = new LinkedHashMap<>();
     raisedIssuesRules = new HashSet<>();
     quickFixesApplied = new HashSet<>();
+    helpAndFeedbackLinkClickedCount = new LinkedHashMap<>();
   }
 
   public Collection<String> getRaisedIssuesRules() {
@@ -110,6 +112,10 @@ public class TelemetryLocalStorage {
     return notificationsCountersByEventType;
   }
 
+  public Map<String, TelemetryHelpAndFeedbackCounter> getHelpAndFeedbackLinkClickedCounter() {
+    return helpAndFeedbackLinkClickedCount;
+  }
+
   void setLastUploadTime() {
     setLastUploadTime(LocalDateTime.now());
   }
@@ -136,6 +142,7 @@ public class TelemetryLocalStorage {
     taintVulnerabilitiesInvestigatedRemotelyCount = 0;
     raisedIssuesRules.clear();
     quickFixesApplied.clear();
+    this.helpAndFeedbackLinkClickedCount.clear();
   }
 
   long numUseDays() {
@@ -153,6 +160,7 @@ public class TelemetryLocalStorage {
   /**
    * Register that an analysis was performed.
    * This should be used when multiple files are analyzed.
+   *
    * @see #setUsedAnalysis(String, int)
    */
   void setUsedAnalysis() {
@@ -264,5 +272,9 @@ public class TelemetryLocalStorage {
 
   public int taintVulnerabilitiesInvestigatedRemotelyCount() {
     return taintVulnerabilitiesInvestigatedRemotelyCount;
+  }
+
+  public void helpAndFeedbackLinkClicked(String itemId) {
+    this.helpAndFeedbackLinkClickedCount.computeIfAbsent(itemId, k -> new TelemetryHelpAndFeedbackCounter()).incrementHelpAndFeedbackLinkClickedCount();
   }
 }
