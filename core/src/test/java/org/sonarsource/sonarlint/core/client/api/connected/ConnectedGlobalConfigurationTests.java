@@ -86,9 +86,11 @@ class ConnectedGlobalConfigurationTests {
     var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
       .useEmbeddedPlugin(Language.JAVA.getLanguageKey(), Paths.get("java.jar"))
       .useEmbeddedPlugin(Language.ABAP.getLanguageKey(), Paths.get("abap.jar"))
+      .useEmbeddedPlugin(Language.GO.getLanguageKey(), Paths.get("go.jar"))
       .build();
     assertThat(config.getEmbeddedPluginPathsByKey()).containsOnly(entry("java", Paths.get("java.jar")),
-      entry("abap", Paths.get("abap.jar")));
+      entry("abap", Paths.get("abap.jar")),
+      entry("go", Paths.get("go.jar")));
   }
 
   @Test
