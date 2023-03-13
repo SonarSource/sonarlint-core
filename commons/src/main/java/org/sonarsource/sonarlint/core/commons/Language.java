@@ -58,7 +58,8 @@ public enum Language {
   JSP("jsp", "web", "JSP", new String[] {".jsp", ".jspf", ".jspx"}, "sonar.jsp.file.suffixes"),
   VBNET("vbnet", "vbnet", "VB.NET", new String[] {".vb"}, "sonar.vbnet.file.suffixes"),
   XML("xml", "xml", "XML", new String[] {".xml", ".xsd", ".xsl"}, "sonar.xml.file.suffixes"),
-  YAML("yaml", Constants.JAVASCRIPT_PLUGIN_KEY, "YAML", new String[] {".yml", "yaml"}, "sonar.yaml.file.suffixes");
+  YAML("yaml", Constants.JAVASCRIPT_PLUGIN_KEY, "YAML", new String[] {".yml", "yaml"}, "sonar.yaml.file.suffixes"),
+  GO("go", "go", "Go", new String[] {".go"}, "sonar.go.file.suffixes");
   private String languageKey;
   private String pluginKey;
   private String[] defaultFileSuffixes;

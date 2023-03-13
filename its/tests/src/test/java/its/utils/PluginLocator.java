@@ -27,6 +27,9 @@ public class PluginLocator {
   public static Path getCppPluginPath() {
     return getPluginPath("sonar-cfamily-plugin-6.32.0.44918.jar");
   }
+  public static Path getGoPluginPath() {
+    return getPluginPath("sonar-go-plugin-1.12.0.4243.jar");
+  }
 
   private static Path getPluginPath(String file) {
     return Paths.get("target/plugins/").resolve(file);

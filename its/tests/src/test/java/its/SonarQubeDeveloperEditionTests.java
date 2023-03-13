@@ -27,6 +27,7 @@ import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
 import its.utils.OrchestratorUtils;
+import its.utils.PluginLocator;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -177,6 +178,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         .addEnabledLanguage(Language.XML)
         // Needed to have the global extension plugin loaded
         .addEnabledLanguage(Language.COBOL)
+        .addEnabledLanguage(Language.GO)
+        .useEmbeddedPlugin(Language.GO.getPluginKey(), PluginLocator.getGoPluginPath())
         .setLogOutput((msg, level) -> {
           logs.add(msg);
           System.out.println(msg);
@@ -280,6 +283,20 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-web", "src/file.html"), issueListener, null, null);
+      assertThat(issueListener.getIssues()).hasSize(1);
+    }
+
+    @Test
+    void shouldRaiseIssuesOnAGoProject() throws IOException {
+      var projectKey = "sample-go";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample Go");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/go-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "go", "SonarLint IT Go");
+
+      updateProject(engine, projectKey);
+
+      var issueListener = new SaveIssueListener();
+      engine.analyze(createAnalysisConfiguration(projectKey, "sample-go", "src/sample.go"), issueListener, null, null);
       assertThat(issueListener.getIssues()).hasSize(1);
     }
 
