@@ -52,8 +52,10 @@ import static org.mockito.Mockito.when;
 class TelemetryManagerTests {
   private static final int DEFAULT_NOTIF_CLICKED = 5;
   private static final int DEFAULT_NOTIF_COUNT = 10;
+  private static final int DEFAULT_HELP_AND_FEEDBACK_COUNT = 12;
 
   private static final String FOO_EVENT = "foo_event";
+  private static final String SUGGEST_FEATURE = "suggestFeature";
 
   private final TelemetryClientAttributesProvider attributes = new TelemetryClientAttributesProvider() {
 
@@ -376,6 +378,7 @@ class TelemetryManagerTests {
     manager.taintVulnerabilitiesInvestigatedRemotely();
     manager.addReportedRules(new HashSet<>(Arrays.asList("ruleKey1", "ruleKey2")));
     manager.addQuickFixAppliedForRule("ruleKey1");
+    manager.helpAndFeedbackLinkClicked("faq");
 
     manager.uploadLazily();
 
@@ -387,6 +390,7 @@ class TelemetryManagerTests {
     assertThat(reloaded.taintVulnerabilitiesInvestigatedRemotelyCount()).isZero();
     assertThat(reloaded.getRaisedIssuesRules()).isEmpty();
     assertThat(reloaded.getQuickFixesApplied()).isEmpty();
+    assertThat(reloaded.getHelpAndFeedbackLinkClickedCounter()).isEmpty();
   }
 
   @Test
@@ -412,6 +416,23 @@ class TelemetryManagerTests {
     assertThat(reloaded.getQuickFixesApplied()).containsExactlyInAnyOrder("ruleKey1", "ruleKey2");
   }
 
+  @Test
+  void accumulate_help_and_feedback_clicks() {
+    createAndSaveSampleData(storage);
+
+    manager.helpAndFeedbackLinkClicked("faq");
+    manager.helpAndFeedbackLinkClicked("docs");
+    manager.helpAndFeedbackLinkClicked("docs");
+    manager.helpAndFeedbackLinkClicked("getHelp");
+
+    var reloaded = storage.tryRead();
+    assertThat(reloaded.getHelpAndFeedbackLinkClickedCounter()).hasSize(4);
+    assertThat(reloaded.getHelpAndFeedbackLinkClickedCounter().get(SUGGEST_FEATURE).getHelpAndFeedbackLinkClickedCount()).isEqualTo(12);
+    assertThat(reloaded.getHelpAndFeedbackLinkClickedCounter().get("docs").getHelpAndFeedbackLinkClickedCount()).isEqualTo(2);
+    assertThat(reloaded.getHelpAndFeedbackLinkClickedCounter().get("faq").getHelpAndFeedbackLinkClickedCount()).isEqualTo(1);
+    assertThat(reloaded.getHelpAndFeedbackLinkClickedCounter().get("getHelp").getHelpAndFeedbackLinkClickedCount()).isEqualTo(1);
+  }
+
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {
     storage.tryUpdateAtomically(data -> {
       data.setEnabled(false);
@@ -420,6 +441,7 @@ class TelemetryManagerTests {
       data.setLastUploadTime(LocalDateTime.now().minusDays(2));
       data.setNumUseDays(5);
       data.notifications().put(FOO_EVENT, new TelemetryNotificationsCounter(DEFAULT_NOTIF_COUNT, DEFAULT_NOTIF_CLICKED));
+      data.getHelpAndFeedbackLinkClickedCounter().put(SUGGEST_FEATURE, new TelemetryHelpAndFeedbackCounter(DEFAULT_HELP_AND_FEEDBACK_COUNT));
     });
   }
 
