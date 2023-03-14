@@ -39,10 +39,10 @@ import okhttp3.OkHttpClient;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteException;
-import org.junit.Ignore;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -259,13 +259,14 @@ class SonarCloudTests extends AbstractConnectedTests {
     assertThat(engine.getServerBranches(projectKey(PROJECT_KEY_JAVA)).getMainBranchName()).contains(MAIN_BRANCH_NAME);
   }
 
-//  @Test
-//  void downloadProjects() {
-//    provisionProject("foo-bar", "Foo");
-//    assertThat(engine.downloadAllProjects(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), null)).containsKeys(projectKey("foo-bar"),
-//      projectKey(PROJECT_KEY_JAVA),
-//      projectKey(PROJECT_KEY_PHP));
-//  }
+  @Test
+  @Disabled
+  void downloadProjects() {
+    provisionProject("foo-bar", "Foo");
+    assertThat(engine.downloadAllProjects(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), null)).containsKeys(projectKey("foo-bar"),
+      projectKey(PROJECT_KEY_JAVA),
+      projectKey(PROJECT_KEY_PHP));
+  }
 
   @Test
   void testRuleDescription() throws Exception {
