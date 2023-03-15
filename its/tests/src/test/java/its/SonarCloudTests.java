@@ -42,7 +42,6 @@ import org.apache.commons.exec.ExecuteException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -260,7 +259,6 @@ class SonarCloudTests extends AbstractConnectedTests {
   }
 
   @Test
-  @Disabled
   void downloadProjects() {
     provisionProject("foo-bar", "Foo");
     assertThat(engine.downloadAllProjects(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), null)).containsKeys(projectKey("foo-bar"),
