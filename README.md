@@ -41,11 +41,7 @@ Execute from project base directory:
 
 ### Run integration tests
 
-#### Prerequisites
-
-Some integration tests load plugins relying on Node.js, so make sure the latest LTS version is installed and `node` is in the PATH.
-
-    mvn verify -f its/pom.xml -Dsonar.runtimeVersion=<SQ server version>
+See [Running Integration Tests](its/README.md)
 
 License
 -------
