@@ -30,6 +30,9 @@ public class PluginLocator {
   public static Path getGoPluginPath() {
     return getPluginPath("sonar-go-plugin-1.12.0.4243.jar");
   }
+  public static Path getIacPluginPath() {
+    return getPluginPath("sonar-iac-plugin-1.14.0.3594.jar");
+  }
 
   private static Path getPluginPath(String file) {
     return Paths.get("target/plugins/").resolve(file);

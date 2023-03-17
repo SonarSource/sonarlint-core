@@ -59,7 +59,11 @@ public enum Language {
   VBNET("vbnet", "vbnet", "VB.NET", new String[] {".vb"}, "sonar.vbnet.file.suffixes"),
   XML("xml", "xml", "XML", new String[] {".xml", ".xsd", ".xsl"}, "sonar.xml.file.suffixes"),
   YAML("yaml", Constants.JAVASCRIPT_PLUGIN_KEY, "YAML", new String[] {".yml", "yaml"}, "sonar.yaml.file.suffixes"),
-  GO("go", "go", "Go", new String[] {".go"}, "sonar.go.file.suffixes");
+  GO("go", "go", "Go", new String[] {".go"}, "sonar.go.file.suffixes"),
+  CLOUDFORMATION("cloudformation", "iac", "CloudFormation", new String[0], "sonar.cloudformation.file.suffixes"),
+  DOCKER("docker", "iac", "Docker", new String[0], "sonar.docker.file.suffixes"),
+  KUBERNETES("kubernetes", "iac", "Kubernetes", new String[0], "sonar.kubernetes.file.suffixes"),
+  TERRAFORM("terraform", "iac", "Terraform", new String[] {".tf"}, "sonar.terraform.file.suffixes");
   private String languageKey;
   private String pluginKey;
   private String[] defaultFileSuffixes;
