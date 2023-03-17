@@ -99,6 +99,16 @@ class LanguageDetectionTests {
   }
 
   @Test
+  void recognise_terraform_file() throws IOException {
+    var detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
+
+    assertThat(detection.language(newInputFile("myFile.tf"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.TERRAFORM);
+    assertThat(detection.language(newInputFile("folder/myFile.tf"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.TERRAFORM);
+
+    assertThat(detection.language(newInputFile("style.notf"))).isNull();
+  }
+
+  @Test
   void should_not_fail_if_no_language() throws Exception {
     var detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
     assertThat(detection.language(newInputFile("Foo.blabla"))).isNull();

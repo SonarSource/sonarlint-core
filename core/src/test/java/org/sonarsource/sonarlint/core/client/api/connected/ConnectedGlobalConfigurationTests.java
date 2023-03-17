@@ -87,10 +87,18 @@ class ConnectedGlobalConfigurationTests {
       .useEmbeddedPlugin(Language.JAVA.getLanguageKey(), Paths.get("java.jar"))
       .useEmbeddedPlugin(Language.ABAP.getLanguageKey(), Paths.get("abap.jar"))
       .useEmbeddedPlugin(Language.GO.getLanguageKey(), Paths.get("go.jar"))
+      .useEmbeddedPlugin(Language.CLOUDFORMATION.getLanguageKey(), Paths.get("iac.jar"))
+      .useEmbeddedPlugin(Language.DOCKER.getLanguageKey(), Paths.get("iac.jar"))
+      .useEmbeddedPlugin(Language.KUBERNETES.getLanguageKey(), Paths.get("iac.jar"))
+      .useEmbeddedPlugin(Language.TERRAFORM.getLanguageKey(), Paths.get("iac.jar"))
       .build();
     assertThat(config.getEmbeddedPluginPathsByKey()).containsOnly(entry("java", Paths.get("java.jar")),
       entry("abap", Paths.get("abap.jar")),
-      entry("go", Paths.get("go.jar")));
+      entry("go", Paths.get("go.jar")),
+      entry("cloudformation", Paths.get("iac.jar")),
+      entry("docker", Paths.get("iac.jar")),
+      entry("kubernetes", Paths.get("iac.jar")),
+      entry("terraform", Paths.get("iac.jar")));
   }
 
   @Test

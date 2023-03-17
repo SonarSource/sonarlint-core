@@ -165,6 +165,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       nodeJsHelper.detect(null);
 
       var globalConfig = ConnectedGlobalConfiguration.sonarQubeBuilder()
+        .enableHotspots()
         .setConnectionId(CONNECTION_ID)
         .setSonarLintUserHome(sonarUserHome)
         .addEnabledLanguage(Language.JAVA)
@@ -179,7 +180,12 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         // Needed to have the global extension plugin loaded
         .addEnabledLanguage(Language.COBOL)
         .addEnabledLanguage(Language.GO)
+        .addEnabledLanguage(Language.CLOUDFORMATION)
+        .addEnabledLanguage(Language.DOCKER)
+        .addEnabledLanguage(Language.KUBERNETES)
+        .addEnabledLanguage(Language.TERRAFORM)
         .useEmbeddedPlugin(Language.GO.getPluginKey(), PluginLocator.getGoPluginPath())
+        .useEmbeddedPlugin(Language.CLOUDFORMATION.getPluginKey(), PluginLocator.getIacPluginPath())
         .setLogOutput((msg, level) -> {
           logs.add(msg);
           System.out.println(msg);
@@ -301,6 +307,66 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
+    @OnlyOnSonarQube(from = "9.2")
+    void shouldRaiseIssuesOnACloudFormationProject() throws IOException {
+      var projectKey = "sample-cloudformation";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample CloudFormation");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/cloudformation-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "cloudformation", "SonarLint IT CloudFormation");
+
+      updateProject(engine, projectKey);
+
+      var issueListener = new SaveIssueListener();
+      engine.analyze(createAnalysisConfiguration(projectKey, "sample-cloudformation", "src/sample.yaml"), issueListener, null, null);
+      assertThat(issueListener.getIssues()).hasSize(2);
+    }
+
+    @Test
+    @OnlyOnSonarQube(from = "9.2")
+    void shouldRaiseIssuesOnADockerProject() throws IOException {
+      var projectKey = "sample-docker";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample Docker");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/docker-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "docker", "SonarLint IT Docker");
+
+      updateProject(engine, projectKey);
+
+      var issueListener = new SaveIssueListener();
+      engine.analyze(createAnalysisConfiguration(projectKey, "sample-docker", "src/Dockerfile"), issueListener, null, null);
+      assertThat(issueListener.getIssues()).hasSize(2);
+    }
+
+    @Test
+    @OnlyOnSonarQube(from = "9.2")
+    void shouldRaiseIssuesOnAKubernetesProject() throws IOException {
+      var projectKey = "sample-kubernetes";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample Kubernetes");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/kubernetes-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "kubernetes", "SonarLint IT Kubernetes");
+
+      updateProject(engine, projectKey);
+
+      var issueListener = new SaveIssueListener();
+      engine.analyze(createAnalysisConfiguration(projectKey, "sample-kubernetes", "src/sample.yaml"), issueListener, null, null);
+      assertThat(issueListener.getIssues()).hasSize(1);
+    }
+
+    @Test
+    @OnlyOnSonarQube(from = "9.2")
+    void shouldRaiseIssuesOnATerraformProject() throws IOException {
+      var projectKey = "sample-terraform";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample Terraform");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/terraform-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "terraform", "SonarLint IT Terraform");
+
+      updateProject(engine, projectKey);
+
+      var issueListener = new SaveIssueListener();
+      engine.analyze(createAnalysisConfiguration(projectKey, "sample-terraform", "src/sample.tf"), issueListener, null, null);
+      assertThat(issueListener.getIssues()).hasSize(1);
+    }
+
+    @Test
     void customSensorsShouldNotBeExecuted() throws Exception {
       var projectKey = "sample-java-custom-sensor";
       provisionProject(ORCHESTRATOR, projectKey, "Sample Java Custom");
@@ -330,8 +396,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-global-extension",
-        "src/foo.glob",
-        "sonar.cobol.file.suffixes", "glob"),
+          "src/foo.glob",
+          "sonar.cobol.file.suffixes", "glob"),
         issueListener, null, null);
 
       assertThat(issueListener.getIssues()).extracting("ruleKey", "message").containsOnly(
@@ -339,8 +405,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-global-extension",
-        "src/foo.glob",
-        "sonar.cobol.file.suffixes", "glob"),
+          "src/foo.glob",
+          "sonar.cobol.file.suffixes", "glob"),
         issueListener, null, null);
 
       assertThat(issueListener.getIssues()).extracting("ruleKey", "message").containsOnly(
@@ -364,7 +430,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         .setParam("name", "myrule")
         .setParam("severity", "MAJOR");
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 0)) {
-          request.setParam("customKey", "myrule")
+        request.setParam("customKey", "myrule")
           .setParam("markdownDescription", "my_rule_description")
           .setParam("templateKey", javaRuleKey("S2253"));
       } else {
@@ -373,7 +439,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           .setParam("template_key", javaRuleKey("S2253"));
       }
 
-        ;
+      ;
       try (var response = adminWsClient.wsConnector().call(request)) {
         assertTrue(response.isSuccessful());
       }
@@ -654,7 +720,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       } else {
         assertThat(
           adminWsClient.issues().search(new SearchRequest().setTypes(List.of("SECURITY_HOTSPOT")).setComponentKeys(List.of(PROJECT_KEY))).getIssuesList())
-            .isNotEmpty();
+          .isNotEmpty();
       }
     }
 
@@ -945,8 +1011,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_HOTSPOT, PROJECT_KEY_JAVA_HOTSPOT,
-        "src/main/java/foo/Foo.java",
-        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+          "src/main/java/foo/Foo.java",
+          "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
         issueListener, null, null);
 
       assertThat(issueListener.getIssues()).isEmpty();
@@ -989,8 +1055,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_HOTSPOT, PROJECT_KEY_JAVA_HOTSPOT,
-        "src/main/java/foo/Foo.java",
-        "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath()),
+          "src/main/java/foo/Foo.java",
+          "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath()),
         issueListener, null, null);
 
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {

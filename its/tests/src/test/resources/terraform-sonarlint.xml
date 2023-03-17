@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<profile>
+  <name>SonarLint IT Terraform</name>
+  <language>terraform</language>
+  <rules>
+    <rule>
+      <repositoryKey>terraform</repositoryKey>
+      <key>S6273</key>
+      <priority>MINOR</priority>
+    </rule>
+  </rules>
+</profile>
