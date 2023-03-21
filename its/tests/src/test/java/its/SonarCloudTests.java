@@ -22,8 +22,6 @@ package its;
 import its.utils.PreemptiveAuthenticatorInterceptor;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -42,7 +40,6 @@ import org.apache.commons.exec.ExecuteException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -53,6 +50,7 @@ import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsClientFactories;
 import org.sonarqube.ws.client.WsRequest;
+import org.sonarqube.ws.client.WsResponse;
 import org.sonarqube.ws.client.settings.ResetRequest;
 import org.sonarqube.ws.client.settings.SetRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
@@ -70,7 +68,6 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.waitAtMost;
 
 @Tag("SonarCloud")
@@ -199,6 +196,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     request.setParam("q", "-" + randomPositiveInt);
     request.setParam("organization", SONARCLOUD_ORGANIZATION);
     try (var response = adminWsClient.wsConnector().call(request)) {
+      assertIsOk(response);
     }
 
     try {
@@ -215,6 +213,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     request.setParam("qualityProfile", profileName);
     request.setParam("organization", SONARCLOUD_ORGANIZATION);
     try (var response = adminWsClient.wsConnector().call(request)) {
+      assertIsOk(response);
     }
   }
 
@@ -225,6 +224,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     request.setParam("organization", SONARCLOUD_ORGANIZATION);
     request.setPart("backup", new PostRequest.Part(MediaTypes.XML, backupFile));
     try (var response = adminWsClient.wsConnector().call(request)) {
+      assertIsOk(response);
     }
   }
 
@@ -234,6 +234,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     request.setParam("project", projectKey(key));
     request.setParam("organization", SONARCLOUD_ORGANIZATION);
     try (var response = adminWsClient.wsConnector().call(request)) {
+      assertIsOk(response);
     }
   }
 
@@ -260,12 +261,13 @@ class SonarCloudTests extends AbstractConnectedTests {
   }
 
   @Test
-  @Disabled
   void downloadProjects() {
     provisionProject("foo-bar", "Foo");
-    assertThat(engine.downloadAllProjects(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), null)).containsKeys(projectKey("foo-bar"),
-      projectKey(PROJECT_KEY_JAVA),
-      projectKey(PROJECT_KEY_PHP));
+    waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
+      assertThat(engine.downloadAllProjects(sonarcloudEndpointITOrg(), new SonarLintHttpClientOkHttpImpl(SC_CLIENT), null)).containsKeys(projectKey("foo-bar"),
+        projectKey(PROJECT_KEY_JAVA),
+        projectKey(PROJECT_KEY_PHP));
+    });
   }
 
   @Test
@@ -487,5 +489,13 @@ class SonarCloudTests extends AbstractConnectedTests {
     executor.setWorkingDirectory(workDir.toFile());
     var exitValue = executor.execute(cmdLine);
     assertThat(exitValue).isZero();
+  }
+
+  private static void assertIsOk(WsResponse response) {
+    var code = response.code();
+    assertThat(code)
+      .withFailMessage(() -> "Expected an HTTP call to have an OK code, got: " + code)
+      // This is an approximation for "non error codes" - 200, 201, 204... + possible redirects
+      .isBetween(200, 399);
   }
 }
