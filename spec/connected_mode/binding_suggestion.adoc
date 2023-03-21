@@ -3,7 +3,7 @@
 
 == Overview
 
-For xref:glossary.adoc#connected_mode[connected mode] to work, a xref:glossary.adoc#connection[connection] should be defined to allow SonarLint to communicate with the server. Then, SonarLint needs to know which xref:glossary.adoc#sonar_project[Sonar Project] should be considered. This is the xref:glossary.adoc#binding[_binding_]. Inside IDE, there could be different bindings, for different xref:glossary.adoc#configuration_scope[_configuration scopes_].
+For xref:../glossary.adoc#connected_mode[connected mode] to work, a xref:glossary.adoc#connection[connection] should be defined to allow SonarLint to communicate with the server. Then, SonarLint needs to know which xref:glossary.adoc#sonar_project[Sonar Project] should be considered. This is the xref:glossary.adoc#binding[_binding_]. Inside IDE, there could be different bindings, for different xref:glossary.adoc#configuration_scope[_configuration scopes_].
 
 For most users, there will be only one configured connection (to their corporate SonarQube server, or to SonarCloud). But every time they open a new project or solution, they will need to setup the binding. This process can be tedious, and easily forgotten.
 
@@ -13,13 +13,13 @@ Binding suggestion is the feature where SonarLint assist users as much as possib
 
 Binding suggestion is triggered:
 
-* when a xref:glossary.adoc#configuration_scope[configuration scope] is added (only for this _configuration scope_)
-* when a xref:glossary.adoc#connection_config[connection configuration] is added/updated (for all _configuration scopes_)
+* when a xref:../glossary.adoc#configuration_scope[configuration scope] is added (only for this _configuration scope_)
+* when a xref:../glossary.adoc#connection_config[connection configuration] is added/updated (for all _configuration scopes_)
 
 == Conditions
 
-1. At least one xref:glossary.adoc#connection_config[connection configuration] is defined
-2. Only consider xref:glossary.adoc#configuration_scope[configuration scopes] that:
+1. At least one xref:../glossary.adoc#connection_config[connection configuration] is defined
+2. Only consider xref:../glossary.adoc#configuration_scope[configuration scopes] that:
 ** are not bound (or maybe if we know the binding is **invalid**? #TBD#)
 ** have their _bindingSuggestionDisabled_ attribute set to `false`
 
@@ -27,7 +27,7 @@ Binding suggestion is triggered:
 
 === SonarQube/SonarCloud scanner configuration file auto-detection
 
-For each xref:glossary.adoc#configuration_scope[configuration scope]:
+For each xref:../glossary.adoc#configuration_scope[configuration scope]:
 
 1. Search for the presence of files `sonar-project.properties` or `.sonarcloud.properties`. This step should be under IDE responsibility, since the configuration scope layout and filesystem is very IDE specific. The IDE should provide the list of files (with filename) and their text content.
 
@@ -84,7 +84,7 @@ We should favor binding clues with a non-empty _projectKey_.
 
 ==== Exact matching on projectKey
 
-For each binding clue having a projectKey, search for a xref:glossary.adoc#sonar_project[Sonar project] having the exact same _projectKey_ among the matched connections. If there is at least one perfect match, return the match(es).
+For each binding clue having a projectKey, search for a xref:../glossary.adoc#sonar_project[Sonar project] having the exact same _projectKey_ among the matched connections. If there is at least one perfect match, return the match(es).
 
 ==== Matching based on configuration scope _name_
 

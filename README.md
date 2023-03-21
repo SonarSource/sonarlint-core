@@ -43,6 +43,11 @@ Execute from project base directory:
 
 See [Running Integration Tests](its/README.md)
 
+Documentation
+-------------
+
+Have a look at the documentation [here](spec/README.adoc).
+
 License
 -------
 
