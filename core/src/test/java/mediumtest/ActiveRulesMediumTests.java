@@ -313,7 +313,7 @@ class ActiveRulesMediumTests {
           "<p>Although the main framework or component you use in your project is not listed, you may find helpful content in the instructions we provide.</p>\n"+
           "<p>Caution: The libraries mentioned in these instructions may not be appropriate for your code.</p>\n"+
           "<p>\n"+
-          "<ul class=\"other-tab-list\">\n"+
+          "<ul class=\"other-context-list\">\n"+
           "    <li class=\"do\">Do use libraries that are compatible with the frameworks you are using.</li>\n"+
           "    <li class=\"dont\">Don't blindly copy and paste the fix-ups into your code.</li>\n"+
           "</ul>\n"+
@@ -372,7 +372,7 @@ class ActiveRulesMediumTests {
           "<p>Although the main framework or component you use in your project is not listed, you may find helpful content in the instructions we provide.</p>\n"+
           "<p>Caution: The libraries mentioned in these instructions may not be appropriate for your code.</p>\n"+
           "<p>\n"+
-          "<ul class=\"other-tab-list\">\n"+
+          "<ul class=\"other-context-list\">\n"+
           "    <li class=\"do\">Do use libraries that are compatible with the frameworks you are using.</li>\n"+
           "    <li class=\"dont\">Don't blindly copy and paste the fix-ups into your code.</li>\n"+
           "</ul>\n"+
