@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Slf4j log adaptor
+ * SonarLint Core - SLF4J log adaptor
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -19,13 +19,13 @@
  */
 package org.slf4j;
 
-import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 /**
  * A slf4j logger that delegates all logs to a sonar API logger. 
  */
 public class LoggerAdapter implements Logger {
-  private static final org.sonar.api.utils.log.Logger SONAR_LOGGER = Loggers.get("SonarLint");
+  private static final SonarLintLogger SONAR_LOGGER = SonarLintLogger.get();
 
   @Override
   public String getName() {

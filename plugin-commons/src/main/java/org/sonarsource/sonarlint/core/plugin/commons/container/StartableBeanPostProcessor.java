@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.plugin.commons.container;
 
 import org.sonar.api.Startable;
-import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor;
 import org.springframework.lang.Nullable;
@@ -48,7 +48,7 @@ public class StartableBeanPostProcessor implements DestructionAwareBeanPostProce
         ((Startable) bean).stop();
       }
     } catch (Exception e) {
-      Loggers.get(StartableBeanPostProcessor.class)
+      SonarLintLogger.get()
         .warn("Dispose of component {} failed", bean.getClass().getCanonicalName(), e);
     }
   }

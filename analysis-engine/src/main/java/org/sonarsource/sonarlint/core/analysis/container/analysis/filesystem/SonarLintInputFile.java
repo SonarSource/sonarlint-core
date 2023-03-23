@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.function.Function;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.TextPointer;
 import org.sonar.api.batch.fs.TextRange;
@@ -159,6 +160,15 @@ public class SonarLintInputFile implements InputFile {
   public Charset charset() {
     var charset = clientInputFile.getCharset();
     return charset != null ? charset : Charset.defaultCharset();
+  }
+
+  @Override
+  public String md5Hash() {
+    try {
+      return DigestUtils.md5Hex(contents());
+    } catch (IOException e) {
+      throw new IllegalStateException("Unable to compute md5Hash for " + uri(), e);
+    }
   }
 
   @Override

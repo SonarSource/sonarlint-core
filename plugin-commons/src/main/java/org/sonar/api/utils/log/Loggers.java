@@ -21,15 +21,16 @@ package org.sonar.api.utils.log;
 
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.SonarLintLoggerImpl;
 
 /**
  * Overrides the behavior of loggers in the sonar API.
- * Basically the factory always returns {@link SonarApiLogger}, which uses {@link SonarLintLogger} to delegate
+ * Basically the factory always returns {@link SonarLintLoggerImpl}, which uses {@link SonarLintLogger} to delegate
  * the logging to an {@link ClientLogOutput}.
  * The LogOutput can be set dynamically at any time, for the executing thread.
  */
 public class Loggers {
-  private static final SonarApiLogger logger = new SonarApiLogger();
+  private static final SonarLintLoggerImpl logger = new SonarLintLoggerImpl();
 
   public static Logger get(Class<?> name) {
     return logger;

@@ -119,6 +119,27 @@ class SonarLintLoggerTests {
     inOrder.verify(delegator).log("msg b", Level.DEBUG, null);
   }
 
+  @Test
+  void should_log_trace() {
+    logger.trace("msg");
+    logger.trace("msg", (Object) null);
+    // Keep a separate variable to avoid Eclipse refactoring into a non varargs method
+    var emptyArgs = new Object[0];
+    logger.trace("msg", emptyArgs);
+    logger.trace("msg {}", "a");
+    logger.trace("msg {} {}", "a", "a");
+    // Keep a separate variable to avoid Eclipse refactoring into a non varargs method
+    var args = new Object[] {"b"};
+    logger.trace("msg {}", args);
+
+    var inOrder = Mockito.inOrder(delegator);
+    inOrder.verify(delegator).log("msg", Level.TRACE);
+    inOrder.verify(delegator, times(2)).log("msg", Level.TRACE, null);
+    inOrder.verify(delegator).log("msg a", Level.TRACE, null);
+    inOrder.verify(delegator).log("msg a a", Level.TRACE, null);
+    inOrder.verify(delegator).log("msg b", Level.TRACE, null);
+  }
+
   // SLCORE-292
   @Test
   void extract_throwable_from_format_params() {

@@ -26,10 +26,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.sonar.api.utils.System2;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInstancesLoader;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginRequirementsCheckResult;
@@ -42,7 +41,7 @@ import static java.util.stream.Collectors.toList;
  * Orchestrates the loading and instantiation of plugins
  */
 public class PluginsLoader {
-  private static final Logger LOG = Loggers.get(PluginsLoader.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final SonarPluginRequirementsChecker requirementsChecker = new SonarPluginRequirementsChecker();
 
   public static class Configuration {

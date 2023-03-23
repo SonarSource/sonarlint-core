@@ -20,13 +20,11 @@
 package org.sonarsource.sonarlint.core.plugin.commons.loading;
 
 import java.io.IOException;
-import java.net.URL;
-import java.net.URLClassLoader;
 
 /**
- * Some plugins use slf4j instead of the Sonar plugin API logging facade. As some IDEs are exposing slf4j,
+ * Some plugins use SLF4J instead of the Sonar plugin API logging facade. As some IDEs are exposing SLF4J,
  * we don't want plugin logs to ends up in IDE logs, but we want to intercept them. So plugin classloaders will extend this custom classloader, that will intercept
- * attempts to get slf4j classes, and then load our own classes from the sonarlint-slf4j-sonar-log module.
+ * attempts to get SLF4J classes, and then load our own classes from the sonarlint-slf4j-sonar-log module.
  *
  */
 public class Slf4jBridgeClassLoader extends ClassLoader {
@@ -34,14 +32,14 @@ public class Slf4jBridgeClassLoader extends ClassLoader {
   private final ClassLoader sonarLintClassLoader;
 
   public Slf4jBridgeClassLoader(ClassLoader sonarLintClassLoader) {
-    // Use Platform ClassLoader as parent in order to avoid finding slf4j in the Application classloader (some IDEs can provide slf4j to plugins)
+    // Use Platform ClassLoader as parent in order to avoid finding SLF4J in the Application classloader (some IDEs can provide SLF4J to plugins)
     super(ClassLoader.getPlatformClassLoader());
     this.sonarLintClassLoader = sonarLintClassLoader;
   }
 
   @Override
   protected Class<?> findClass(final String name) throws ClassNotFoundException {
-    if (name.startsWith("org.sonar.api.utils.log")) {
+    if (name.startsWith("org.sonarsource.sonarlint.core.commons.log")) {
       return sonarLintClassLoader.loadClass(name);
     }
     if (name.startsWith("org.slf4j")) {
