@@ -21,20 +21,15 @@ package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
-public class ActiveRuleDescriptionTabDto {
-  private final String title;
-  private final Either<ActiveRuleNonContextualSectionDto, ActiveRuleContextualSectionWithDefaultContextKeyDto> content;
+public class GetStandaloneRuleDescriptionResponse {
 
-  public ActiveRuleDescriptionTabDto(String title, Either<ActiveRuleNonContextualSectionDto, ActiveRuleContextualSectionWithDefaultContextKeyDto> content) {
-    this.title = title;
-    this.content = content;
+  private final Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> description;
+
+  public GetStandaloneRuleDescriptionResponse(Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> description) {
+    this.description = description;
   }
 
-  public String getTitle() {
-    return title;
-  }
-
-  public Either<ActiveRuleNonContextualSectionDto, ActiveRuleContextualSectionWithDefaultContextKeyDto> getContent() {
-    return content;
+  public Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> getDescription() {
+    return description;
   }
 }

@@ -34,10 +34,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleDescriptionTabDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleDetailsDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleNonContextualSectionDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetActiveRuleDetailsParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.EffectiveRuleDetailsDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.EffectiveRuleParamDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetEffectiveRuleDetailsParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleDescriptionTabDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleNonContextualSectionDto;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -49,7 +50,7 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-class ActiveRulesMediumTests {
+class EffectiveRulesMediumTests {
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
@@ -61,17 +62,18 @@ class ActiveRulesMediumTests {
     backend = newBackend()
       .withUnboundConfigScope("scopeId")
       .withStorageRoot(storageDir)
-      .withStandaloneEmbeddedPlugin(TestPlugin.PYTHON)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .build();
 
-    var details = getActiveRuleDetails("scopeId", "python:S139");
+    var details = getEffectiveRuleDetails("scopeId", "python:S139");
 
     assertThat(details)
-      .extracting("key", "name", "type", "language", "severity", "description.left.htmlContent")
+      .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
+        EffectiveRuleDetailsDto::getSeverity, r -> r.getDescription().getLeft().getHtmlContent())
       .containsExactly("python:S139", "Comments should not be located at the end of lines of code", RuleType.CODE_SMELL, Language.PYTHON, IssueSeverity.MINOR,
         PYTHON_S139_DESCRIPTION);
     assertThat(details.getParams())
-      .extracting("name", "description", "defaultValue")
+      .extracting(EffectiveRuleParamDto::getName, EffectiveRuleParamDto::getDescription, EffectiveRuleParamDto::getValue)
       .containsExactly(tuple("legalTrailingCommentPattern", null, "^#\\s*+[^\\s]++$"));
   }
 
@@ -80,10 +82,10 @@ class ActiveRulesMediumTests {
     backend = newBackend()
       .withUnboundConfigScope("scopeId")
       .withStorageRoot(storageDir)
-      .withStandaloneEmbeddedPlugin(TestPlugin.PYTHON)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .build();
 
-    var futureResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:SXXXX"));
+    var futureResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:SXXXX"));
 
     assertThat(futureResponse).failsWithin(1, TimeUnit.SECONDS)
       .withThrowableOfType(ExecutionException.class)
@@ -102,10 +104,11 @@ class ActiveRulesMediumTests {
       .withEnabledLanguage(Language.JAVA)
       .build();
 
-    var details = getActiveRuleDetails("scopeId", "java:S106");
+    var details = getEffectiveRuleDetails("scopeId", "java:S106");
 
     assertThat(details)
-      .extracting("key", "name", "type", "language", "severity", "description.left.htmlContent")
+      .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
+        EffectiveRuleDetailsDto::getSeverity, r -> r.getDescription().getLeft().getHtmlContent())
       .containsExactly("java:S106", "Standard outputs should not be used directly to log anything", RuleType.CODE_SMELL, Language.JAVA, IssueSeverity.MAJOR,
         JAVA_S106_DESCRIPTION);
     assertThat(details.getParams()).isEmpty();
@@ -122,16 +125,17 @@ class ActiveRulesMediumTests {
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withStorageRoot(storageDir.resolve("storage"))
-      .withConnectedEmbeddedPlugin(TestPlugin.PYTHON)
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
       .build());
 
-    var details = getActiveRuleDetails("scopeId", "python:S139");
+    var details = getEffectiveRuleDetails("scopeId", "python:S139");
 
     assertThat(details)
-      .extracting("key", "name", "type", "language", "severity", "description.left.htmlContent")
+      .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
+        EffectiveRuleDetailsDto::getSeverity, r -> r.getDescription().getLeft().getHtmlContent())
       .containsExactly("python:S139", "Comments should not be located at the end of lines of code", RuleType.CODE_SMELL, Language.PYTHON, IssueSeverity.INFO,
         PYTHON_S139_DESCRIPTION + "<br/><br/>extendedDesc");
     assertThat(details.getParams()).isEmpty();
@@ -149,16 +153,17 @@ class ActiveRulesMediumTests {
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withChildConfigScope("childScopeId", "scopeId")
       .withStorageRoot(storageDir.resolve("storage"))
-      .withConnectedEmbeddedPlugin(TestPlugin.PYTHON)
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
       .build());
 
-    var details = getActiveRuleDetails("childScopeId", "python:S139");
+    var details = getEffectiveRuleDetails("childScopeId", "python:S139");
 
     assertThat(details)
-      .extracting("key", "name", "type", "language", "severity", "description.left.htmlContent")
+      .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
+        EffectiveRuleDetailsDto::getSeverity, r -> r.getDescription().getLeft().getHtmlContent())
       .containsExactly("python:S139", "Comments should not be located at the end of lines of code", RuleType.CODE_SMELL, Language.PYTHON, IssueSeverity.INFO,
         PYTHON_S139_DESCRIPTION + "<br/><br/>extendedDesc");
     assertThat(details.getParams()).isEmpty();
@@ -190,10 +195,11 @@ class ActiveRulesMediumTests {
         .build())
       .build());
 
-    var details = getActiveRuleDetails("scopeId", "jssecurity:S5696");
+    var details = getEffectiveRuleDetails("scopeId", "jssecurity:S5696");
 
     assertThat(details)
-      .extracting("key", "name", "type", "language", "severity", "description.left.htmlContent")
+      .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
+        EffectiveRuleDetailsDto::getSeverity, r -> r.getDescription().getLeft().getHtmlContent())
       .containsExactly("jssecurity:S5696", name, RuleType.VULNERABILITY, Language.JS, IssueSeverity.BLOCKER, desc);
     assertThat(details.getParams()).isEmpty();
   }
@@ -213,7 +219,7 @@ class ActiveRulesMediumTests {
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
       .build());
 
-    var futureResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139"));
+    var futureResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:S139"));
 
     assertThat(futureResponse).failsWithin(1, TimeUnit.SECONDS)
       .withThrowableOfType(ExecutionException.class)
@@ -234,7 +240,7 @@ class ActiveRulesMediumTests {
       .withStorageRoot(storageDir.resolve("storage"))
       .build();
 
-    var futureResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("scopeId", "python:S139"));
+    var futureResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:S139"));
 
     assertThat(futureResponse).failsWithin(3, TimeUnit.SECONDS)
       .withThrowableOfType(ExecutionException.class)
@@ -253,16 +259,17 @@ class ActiveRulesMediumTests {
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withStorageRoot(storageDir.resolve("storage"))
-      .withConnectedEmbeddedPlugin(TestPlugin.PYTHON)
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:custom", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
       .build());
 
-    var details = getActiveRuleDetails("scopeId", "python:custom");
+    var details = getEffectiveRuleDetails("scopeId", "python:custom");
 
     assertThat(details)
-      .extracting("key", "name", "type", "language", "severity", "description.left.htmlContent")
+      .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
+        EffectiveRuleDetailsDto::getSeverity, r -> r.getDescription().getLeft().getHtmlContent())
       .containsExactly("python:custom", "newName", RuleType.CODE_SMELL, Language.PYTHON, IssueSeverity.INFO, "desc<br/><br/>extendedDesc");
     assertThat(details.getParams()).isEmpty();
   }
@@ -284,10 +291,11 @@ class ActiveRulesMediumTests {
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
       .build());
 
-    var details = getActiveRuleDetails("scopeId", "python:S139");
+    var details = getEffectiveRuleDetails("scopeId", "python:S139");
 
     assertThat(details)
-      .extracting("key", "name", "type", "language", "severity", "description.left.htmlContent")
+      .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
+        EffectiveRuleDetailsDto::getSeverity, r -> r.getDescription().getLeft().getHtmlContent())
       .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO, "desc<br/><br/>extendedDesc");
     assertThat(details.getParams()).isEmpty();
   }
@@ -296,16 +304,17 @@ class ActiveRulesMediumTests {
   void it_should_merge_rule_from_storage_and_server_with_description_sections_when_project_is_bound_and_none_context() {
     prepareForRuleDescriptionSectionsAndContext();
 
-    var details = getActiveRuleDetails("scopeId", "python:S139");
+    var details = getEffectiveRuleDetails("scopeId", "python:S139");
 
     assertThat(details)
-      .extracting("key", "name", "type", "language", "severity")
+      .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
+        EffectiveRuleDetailsDto::getSeverity)
       .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO);
     assertThat(details.getParams()).isEmpty();
     assertThat(details.getDescription().getRight().getIntroductionHtmlContent())
       .isEqualTo("htmlContent");
     assertThat(details.getDescription().getRight().getTabs())
-      .flatExtracting(ActiveRulesMediumTests::flattenTabContent)
+      .flatExtracting(EffectiveRulesMediumTests::flattenTabContent)
       .containsExactly(
         "How can I fix it?", "htmlContent2", "contextKey2", "displayName2",
         "How can I fix it?",
@@ -321,7 +330,8 @@ class ActiveRulesMediumTests {
           "<p>Let us know if the instructions we provide do not work for you.\n"+
           "    Tell us which framework you use and why our solution does not work by submitting an idea on the SonarLint product-board.</p>\n"+
           "<a href=\"https://portal.productboard.com/sonarsource/4-sonarlint/submit-idea\">Submit an idea</a>\n"+
-          "<p>We will do our best to provide you with more relevant instructions in the future.</p>", "others", "Others",
+          "<p>We will do our best to provide you with more relevant instructions in the future.</p>",
+        "others", "Others",
         "More Info", "htmlContent3<br/><br/>extendedDesc<br/><br/><h3>Clean Code Principles</h3>\n" +
           "<h4>Never Trust User Input</h4>\n" +
           "<p>\n" +
@@ -356,16 +366,17 @@ class ActiveRulesMediumTests {
   void it_should_ignore_provided_context_and_return_all_contexts_in_alphabetical_order_with_default_if_context_not_found() {
     prepareForRuleDescriptionSectionsAndContext();
 
-    var details = getActiveRuleDetails("scopeId", "python:S139", "not_found");
+    var details = getEffectiveRuleDetails("scopeId", "python:S139", "not_found");
 
     assertThat(details)
-      .extracting("key", "name", "type", "language", "severity")
+      .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
+        EffectiveRuleDetailsDto::getSeverity)
       .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO);
     assertThat(details.getParams()).isEmpty();
     assertThat(details.getDescription().getRight().getIntroductionHtmlContent())
       .isEqualTo("htmlContent");
     assertThat(details.getDescription().getRight().getTabs())
-      .flatExtracting(ActiveRulesMediumTests::flattenTabContent)
+      .flatExtracting(EffectiveRulesMediumTests::flattenTabContent)
       .containsExactly(
         "How can I fix it?", "htmlContent2", "contextKey2", "displayName2",
         "How can I fix it?", "<h4>How can I fix it in another component or framework?</h4>\n"+
@@ -380,7 +391,8 @@ class ActiveRulesMediumTests {
           "<p>Let us know if the instructions we provide do not work for you.\n"+
           "    Tell us which framework you use and why our solution does not work by submitting an idea on the SonarLint product-board.</p>\n"+
           "<a href=\"https://portal.productboard.com/sonarsource/4-sonarlint/submit-idea\">Submit an idea</a>\n"+
-          "<p>We will do our best to provide you with more relevant instructions in the future.</p>", "others", "Others",
+          "<p>We will do our best to provide you with more relevant instructions in the future.</p>",
+        "others", "Others",
         "More Info", "htmlContent3<br/><br/>extendedDesc<br/><br/><h3>Clean Code Principles</h3>\n" +
           "<h4>Never Trust User Input</h4>\n" +
           "<p>\n" +
@@ -415,10 +427,10 @@ class ActiveRulesMediumTests {
   void it_should_return_default_context_key_if_multiple_contexts() {
     prepareForRuleDescriptionSectionsAndContext();
 
-    var details = getActiveRuleDetails("scopeId", "python:S139", "not_found");
+    var details = getEffectiveRuleDetails("scopeId", "python:S139", "not_found");
 
     assertThat(details.getDescription().getRight().getTabs())
-      .extracting(ActiveRuleDescriptionTabDto::getTitle).containsExactly("How can I fix it?", "More Info");
+      .extracting(RuleDescriptionTabDto::getTitle).containsExactly("How can I fix it?", "More Info");
 
     assertThat(details.getDescription().getRight().getTabs().iterator().next().getContent().getRight().getDefaultContextKey())
       .isEqualTo("others");
@@ -457,17 +469,18 @@ class ActiveRulesMediumTests {
   void it_should_return_only_tab_content_for_the_provided_context() {
     prepareForRuleDescriptionSectionsAndContext();
 
-    var details = getActiveRuleDetails("scopeId", "python:S139", "contextKey2");
+    var details = getEffectiveRuleDetails("scopeId", "python:S139", "contextKey2");
 
     assertThat(details)
-      .extracting("key", "name", "type", "language", "severity")
+      .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
+        EffectiveRuleDetailsDto::getSeverity)
       .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO);
     assertThat(details.getParams()).isEmpty();
     assertThat(details.getDescription())
       .extracting("right.introductionHtmlContent")
       .isEqualTo("htmlContent");
     assertThat(details.getDescription().getRight().getTabs())
-      .flatExtracting(ActiveRulesMediumTests::flattenTabContent)
+      .flatExtracting(EffectiveRulesMediumTests::flattenTabContent)
       .containsExactly(
         "How can I fix it?", "htmlContent2",
         "More Info", "htmlContent3<br/><br/>extendedDesc<br/><br/><h3>Clean Code Principles</h3>\n" +
@@ -526,13 +539,13 @@ class ActiveRulesMediumTests {
         .build())
       .build());
 
-    var details = getActiveRuleDetails("scopeId", "python:S139");
+    var details = getEffectiveRuleDetails("scopeId", "python:S139");
 
     assertThat(details.getDescription().getRight().getTabs())
-      .filteredOn(ActiveRuleDescriptionTabDto::getTitle, "More Info")
-      .extracting(ActiveRuleDescriptionTabDto::getContent)
+      .filteredOn(RuleDescriptionTabDto::getTitle, "More Info")
+      .extracting(RuleDescriptionTabDto::getContent)
       .extracting(Either::getLeft)
-      .extracting(ActiveRuleNonContextualSectionDto::getHtmlContent)
+      .extracting(RuleNonContextualSectionDto::getHtmlContent)
       .containsExactly("extendedDesc<br/><br/><h3>Clean Code Principles</h3>\n" +
         "<h4>Never Trust User Input</h4>\n" +
         "<p>\n" +
@@ -568,33 +581,34 @@ class ActiveRulesMediumTests {
       .withSonarQubeConnection("connectionId", "url")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withStorageRoot(storageDir)
-      .withConnectedEmbeddedPlugin(TestPlugin.PYTHON)
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .withSecurityHotspotsEnabled()
       .build();
 
-    var details = getActiveRuleDetails("scopeId", "python:S4784");
+    var details = getEffectiveRuleDetails("scopeId", "python:S4784");
 
     assertThat(details.getDescription().isRight()).isTrue();
     assertThat(details.getDescription().getRight().getTabs())
       .hasSize(3)
-      .extracting(ActiveRuleDescriptionTabDto::getTitle)
+      .extracting(RuleDescriptionTabDto::getTitle)
       .contains("What's the risk?");
   }
 
-  private static List<Object> flattenTabContent(ActiveRuleDescriptionTabDto tab) {
+  private static List<Object> flattenTabContent(RuleDescriptionTabDto tab) {
     if (tab.getContent().isLeft()) {
       return List.of(tab.getTitle(), tab.getContent().getLeft().getHtmlContent());
     }
-    return tab.getContent().getRight().getContextualSections().stream().flatMap(s -> Stream.of(tab.getTitle(), s.getHtmlContent(), s.getContextKey(), s.getDisplayName())).collect(Collectors.toList());
+    return tab.getContent().getRight().getContextualSections().stream().flatMap(s -> Stream.of(tab.getTitle(), s.getHtmlContent(), s.getContextKey(), s.getDisplayName()))
+      .collect(Collectors.toList());
   }
 
-  private ActiveRuleDetailsDto getActiveRuleDetails(String configScopeId, String ruleKey) {
-    return getActiveRuleDetails(configScopeId, ruleKey, null);
+  private EffectiveRuleDetailsDto getEffectiveRuleDetails(String configScopeId, String ruleKey) {
+    return getEffectiveRuleDetails(configScopeId, ruleKey, null);
   }
 
-  private ActiveRuleDetailsDto getActiveRuleDetails(String configScopeId, String ruleKey, String contextKey) {
+  private EffectiveRuleDetailsDto getEffectiveRuleDetails(String configScopeId, String ruleKey, String contextKey) {
     try {
-      return this.backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams(configScopeId, ruleKey, contextKey)).get().details();
+      return this.backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, ruleKey, contextKey)).get().details();
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }

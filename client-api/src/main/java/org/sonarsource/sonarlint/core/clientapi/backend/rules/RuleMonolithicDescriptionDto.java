@@ -19,30 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
+public class RuleMonolithicDescriptionDto {
+  private final String htmlContent;
 
-public class ActiveRuleParamDto {
-  private final String name;
-  private final String description;
-  private final String defaultValue;
-
-  public ActiveRuleParamDto(String name, String description, @Nullable String defaultValue) {
-    this.name = name;
-    this.description = description;
-    this.defaultValue = defaultValue;
+  public RuleMonolithicDescriptionDto(String htmlContent) {
+    this.htmlContent = htmlContent;
   }
 
-  public String getName() {
-    return name;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  @CheckForNull
-  public String getDefaultValue() {
-    return defaultValue;
+  /**
+   * @return the rule description content + the extended description if any
+   */
+  public String getHtmlContent() {
+    return htmlContent;
   }
 }

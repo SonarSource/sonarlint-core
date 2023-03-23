@@ -22,12 +22,12 @@ package org.sonarsource.sonarlint.core.clientapi;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.services.JsonDelegate;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
-import org.sonarsource.sonarlint.core.clientapi.backend.authentication.AuthenticationHelperService;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.authentication.AuthenticationHelperService;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.ConnectionService;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRulesService;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.RulesService;
 import org.sonarsource.sonarlint.core.clientapi.backend.telemetry.TelemetryService;
 
 public interface SonarLintBackend {
@@ -48,7 +48,7 @@ public interface SonarLintBackend {
   ConfigurationService getConfigurationService();
 
   @JsonDelegate
-  ActiveRulesService getActiveRulesService();
+  RulesService getRulesService();
 
   @JsonDelegate
   HotspotService getHotspotService();

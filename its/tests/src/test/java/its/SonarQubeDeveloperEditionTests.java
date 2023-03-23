@@ -82,8 +82,8 @@ import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingCo
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRuleDescriptionTabDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetActiveRuleDetailsParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleDescriptionTabDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
@@ -1212,7 +1212,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto("project", null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, projectKey, false)))));
 
-      var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("project", "javasecurity:S2083", null)).get();
+      var activeRuleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("project", "javasecurity:S2083", null)).get();
 
       var description = activeRuleDetailsResponse.details().getDescription();
 
@@ -1328,7 +1328,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto("project", null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, projectKey, false)))));
 
-      var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("project", "javasecurity:S5131", "spring")).get();
+      var activeRuleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("project", "javasecurity:S5131", "spring")).get();
 
       var description = activeRuleDetailsResponse.details().getDescription();
 
@@ -1526,7 +1526,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto("project", null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, projectKey, false)))));
 
-      var activeRuleDetailsResponse = backend.getActiveRulesService().getActiveRuleDetails(new GetActiveRuleDetailsParams("project", javaRuleKey(ORCHESTRATOR, "S4792"), null))
+      var activeRuleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("project", javaRuleKey(ORCHESTRATOR, "S4792"), null))
         .get();
 
       var extendedDescription = activeRuleDetailsResponse.details().getDescription().getRight();
@@ -1684,7 +1684,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
             "</ul>");
     }
 
-    private List<Object> extractTabContent(ActiveRuleDescriptionTabDto tab) {
+    private List<Object> extractTabContent(RuleDescriptionTabDto tab) {
       if (tab.getContent().isLeft()) {
         return List.of(tab.getTitle(), tab.getContent().getLeft().getHtmlContent());
       }

@@ -19,17 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
-public class ActiveRuleMonolithicDescriptionDto {
-  private final String htmlContent;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
-  public ActiveRuleMonolithicDescriptionDto(String htmlContent) {
-    this.htmlContent = htmlContent;
+public class RuleDescriptionTabDto {
+  private final String title;
+  private final Either<RuleNonContextualSectionDto, RuleContextualSectionWithDefaultContextKeyDto> content;
+
+  public RuleDescriptionTabDto(String title, Either<RuleNonContextualSectionDto, RuleContextualSectionWithDefaultContextKeyDto> content) {
+    this.title = title;
+    this.content = content;
   }
 
-  /**
-   * @return the rule description content + the extended description if any
-   */
-  public String getHtmlContent() {
-    return htmlContent;
+  public String getTitle() {
+    return title;
+  }
+
+  public Either<RuleNonContextualSectionDto, RuleContextualSectionWithDefaultContextKeyDto> getContent() {
+    return content;
   }
 }

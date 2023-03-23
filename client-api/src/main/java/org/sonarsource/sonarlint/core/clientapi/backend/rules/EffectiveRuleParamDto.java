@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Client API
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,30 +17,32 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package mediumtest.fixtures;
+package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
-import java.nio.file.Path;
-import org.sonarsource.sonarlint.core.commons.Language;
-import testutils.PluginLocator;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
-public enum TestPlugin {
-  JAVA(Language.JAVA, PluginLocator.getJavaPluginPath()),
-  PHP(Language.PHP, PluginLocator.getPhpPluginPath()),
-  PYTHON(Language.PYTHON, PluginLocator.getPythonPluginPath());
+public class EffectiveRuleParamDto {
+  private final String name;
+  private final String description;
+  private final String value;
 
-  private final Language language;
-  private final Path path;
-
-  TestPlugin(Language language, Path path) {
-    this.language = language;
-    this.path = path;
+  public EffectiveRuleParamDto(String name, String description, @Nullable String value) {
+    this.name = name;
+    this.description = description;
+    this.value = value;
   }
 
-  public Language getLanguage() {
-    return language;
+  public String getName() {
+    return name;
   }
 
-  public Path getPath() {
-    return path;
+  public String getDescription() {
+    return description;
+  }
+
+  @CheckForNull
+  public String getValue() {
+    return value;
   }
 }

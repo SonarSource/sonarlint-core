@@ -19,14 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
-public class GetActiveRuleDetailsResponse {
-  private final ActiveRuleDetailsDto details;
+import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
-  public GetActiveRuleDetailsResponse(ActiveRuleDetailsDto details) {
-    this.details = details;
+public class RuleNonContextualSectionDto {
+  private final String htmlContent;
+
+  public RuleNonContextualSectionDto(@NonNull String htmlContent) {
+    this.htmlContent = htmlContent;
   }
 
-  public ActiveRuleDetailsDto details() {
-    return details;
+  @NonNull
+  public String getHtmlContent() {
+    return htmlContent;
   }
 }

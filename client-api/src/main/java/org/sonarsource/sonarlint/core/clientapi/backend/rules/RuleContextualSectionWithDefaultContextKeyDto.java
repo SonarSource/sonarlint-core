@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Client API
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,30 +17,25 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package mediumtest.fixtures;
+package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
-import java.nio.file.Path;
-import org.sonarsource.sonarlint.core.commons.Language;
-import testutils.PluginLocator;
+import java.util.Collection;
+public class RuleContextualSectionWithDefaultContextKeyDto {
 
-public enum TestPlugin {
-  JAVA(Language.JAVA, PluginLocator.getJavaPluginPath()),
-  PHP(Language.PHP, PluginLocator.getPhpPluginPath()),
-  PYTHON(Language.PYTHON, PluginLocator.getPythonPluginPath());
+  private final String defaultContextKey;
+  private final Collection<RuleContextualSectionDto> contextualSections;
 
-  private final Language language;
-  private final Path path;
-
-  TestPlugin(Language language, Path path) {
-    this.language = language;
-    this.path = path;
+  public RuleContextualSectionWithDefaultContextKeyDto(String defaultContextKey, Collection<RuleContextualSectionDto> contextualSections) {
+    this.defaultContextKey = defaultContextKey;
+    this.contextualSections = contextualSections;
   }
 
-  public Language getLanguage() {
-    return language;
+  public String getDefaultContextKey() {
+    return defaultContextKey;
   }
 
-  public Path getPath() {
-    return path;
+  public Collection<RuleContextualSectionDto> getContextualSections() {
+    return contextualSections;
   }
+
 }

@@ -26,7 +26,8 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.ActiveRulesService;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetStandaloneRuleDescriptionParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.RulesService;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 
@@ -43,14 +44,16 @@ public interface StandaloneSonarLintEngine extends SonarLintEngine {
    * @return Rule details
    * @throws IllegalArgumentException if ruleKey is unknown
    * @since 1.2
-   * @deprecated use {@link ActiveRulesService#getActiveRuleDetails(String, String)} instead
+   * @deprecated use {@link RulesService#listAllStandaloneRulesDefinitions()} and {@link RulesService#getStandaloneRuleDescription(GetStandaloneRuleDescriptionParams)} instead
    */
   @Deprecated(since = "8.12")
   Optional<StandaloneRuleDetails> getRuleDetails(String ruleKey);
 
   /**
    * Return rule details of all available rules for SonarLint standalone mode. For now, excluding hotspots and rule templates.
+   * @deprecated use {@link RulesService#listAllStandaloneRulesDefinitions()} instead
    */
+  @Deprecated(since = "8.16")
   Collection<StandaloneRuleDetails> getAllRuleDetails();
 
   /**

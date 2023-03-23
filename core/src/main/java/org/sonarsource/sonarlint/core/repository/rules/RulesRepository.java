@@ -26,43 +26,60 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
+import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
 
 public class RulesRepository {
+
+  private final RulesExtractionHelper extractionHelper;
   private Map<String, SonarLintRuleDefinition> embeddedRulesByKey;
   private final Map<String, Map<String, SonarLintRuleDefinition>> rulesByKeyByConnectionId = new HashMap<>();
   private final Map<String, Map<String, String>> ruleKeyReplacementsByConnectionId = new HashMap<>();
 
-  public void setEmbeddedRules(Collection<SonarLintRuleDefinition> embeddedRules) {
-    this.embeddedRulesByKey = byKey(embeddedRules);
+  public RulesRepository(RulesExtractionHelper extractionHelper) {
+    this.extractionHelper = extractionHelper;
   }
 
-  @CheckForNull
   public Collection<SonarLintRuleDefinition> getEmbeddedRules() {
-    return embeddedRulesByKey == null ? null : embeddedRulesByKey.values();
+    lazyInit();
+    return embeddedRulesByKey.values();
   }
 
   public Optional<SonarLintRuleDefinition> getEmbeddedRule(String ruleKey) {
+    lazyInit();
     return Optional.ofNullable(embeddedRulesByKey.get(ruleKey));
   }
 
-  @CheckForNull
-  public Collection<SonarLintRuleDefinition> getRules(String connectionId) {
-    var rulesByKey = rulesByKeyByConnectionId.get(connectionId);
-    return rulesByKey == null ? null : rulesByKey.values();
+  private synchronized void lazyInit() {
+    if (embeddedRulesByKey == null) {
+      this.embeddedRulesByKey = byKey(extractionHelper.extractEmbeddedRules());
+    }
   }
 
-  public void setRules(String connectionId, Collection<SonarLintRuleDefinition> rules) {
+  public Collection<SonarLintRuleDefinition> getRules(String connectionId) {
+    lazyInit(connectionId);
+    return rulesByKeyByConnectionId.getOrDefault(connectionId, Map.of()).values();
+  }
+
+  public Optional<SonarLintRuleDefinition> getRule(String connectionId, String ruleKey) {
+    lazyInit(connectionId);
+    var connectionRules = rulesByKeyByConnectionId.get(connectionId);
+    return Optional.ofNullable(connectionRules.get(ruleKey))
+      .or(() -> Optional.ofNullable(connectionRules.get(ruleKeyReplacementsByConnectionId.get(connectionId).get(ruleKey))));
+  }
+
+  private synchronized void lazyInit(String connectionId) {
+    var rulesByKey = rulesByKeyByConnectionId.get(connectionId);
+    if (rulesByKey == null) {
+      setRules(connectionId, extractionHelper.extractRulesForConnection(connectionId));
+    }
+  }
+
+  private void setRules(String connectionId, Collection<SonarLintRuleDefinition> rules) {
     var rulesByKey = byKey(rules);
     var ruleKeyReplacements = new HashMap<String, String>();
     rules.forEach(rule -> rule.getDeprecatedKeys().forEach(deprecatedKey -> ruleKeyReplacements.put(deprecatedKey, rule.getKey())));
     rulesByKeyByConnectionId.put(connectionId, rulesByKey);
     ruleKeyReplacementsByConnectionId.put(connectionId, ruleKeyReplacements);
-  }
-
-  public Optional<SonarLintRuleDefinition> getRule(String connectionId, String ruleKey) {
-    var connectionRules = rulesByKeyByConnectionId.get(connectionId);
-    return Optional.ofNullable(connectionRules.get(ruleKey))
-      .or(() -> Optional.ofNullable(connectionRules.get(ruleKeyReplacementsByConnectionId.get(connectionId).get(ruleKey))));
   }
 
   private static Map<String, SonarLintRuleDefinition> byKey(Collection<SonarLintRuleDefinition> rules) {

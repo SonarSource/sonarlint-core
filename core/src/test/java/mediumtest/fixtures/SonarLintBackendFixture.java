@@ -126,12 +126,17 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintBackendBuilder withStandaloneEmbeddedPlugin(TestPlugin plugin) {
-      this.embeddedPluginPaths.add(plugin.getPath());
-      return withEnabledLanguage(plugin.getLanguage());
+    public SonarLintBackendBuilder withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin plugin) {
+      return withStandaloneEmbeddedPlugin(plugin)
+        .withEnabledLanguage(plugin.getLanguage());
     }
 
-    public SonarLintBackendBuilder withConnectedEmbeddedPlugin(TestPlugin plugin) {
+    public SonarLintBackendBuilder withStandaloneEmbeddedPlugin(TestPlugin plugin) {
+      this.embeddedPluginPaths.add(plugin.getPath());
+      return this;
+    }
+
+    public SonarLintBackendBuilder withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin plugin) {
       this.embeddedPluginPaths.add(plugin.getPath());
       this.connectedModeEmbeddedPluginPathsByKey.put(plugin.getLanguage().getPluginKey(), plugin.getPath());
       return withEnabledLanguage(plugin.getLanguage());

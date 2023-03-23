@@ -20,37 +20,38 @@
 package org.sonarsource.sonarlint.core.rules;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
-import org.sonarsource.sonarlint.core.plugin.PluginsServiceImpl;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleDefinitionDto;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.rules.RulesFixtures.aRule;
 
 class RulesServiceImplTest {
 
   private RulesRepository rulesRepository;
-  private PluginsServiceImpl pluginsService;
+  private RulesExtractionHelper extractionHelper;
 
   @BeforeEach
   void prepare() {
-    rulesRepository = new RulesRepository();
-    PluginsRepository pluginsRepository = new PluginsRepository();
-    pluginsService = new PluginsServiceImpl(pluginsRepository);
+    extractionHelper = mock(RulesExtractionHelper.class);
+    rulesRepository = new RulesRepository(extractionHelper);
   }
 
   @Test
-  void it_should_return_all_embedded_rules_from_the_repository() {
-    rulesRepository.setEmbeddedRules(List.of(aRule()));
-    var rulesService = new RulesServiceImpl(pluginsService, rulesRepository);
+  void it_should_return_all_embedded_rules_from_the_repository() throws Exception {
+    when(extractionHelper.extractEmbeddedRules()).thenReturn(List.of(aRule()));
+    var rulesService = new RulesServiceImpl(null, null, rulesRepository);
 
-    var embeddedRules = rulesService.getEmbeddedRules();
+    var embeddedRules = rulesService.listAllStandaloneRulesDefinitions().get(1, TimeUnit.MINUTES).getRulesByKey().values();
 
     assertThat(embeddedRules)
-      .extracting("key", "name")
+      .extracting(RuleDefinitionDto::getKey, RuleDefinitionDto::getName)
       .containsExactly(tuple("repo:ruleKey", "ruleName"));
   }
 }

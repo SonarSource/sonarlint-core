@@ -19,31 +19,42 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
+import javax.annotation.Nullable;
 
-public class ActiveRuleContextualSectionDto {
-  private final String htmlContent;
+public class GetEffectiveRuleDetailsParams {
+
+  private final String configurationScopeId;
+  private final String ruleKey;
+
+  @Nullable
   private final String contextKey;
-  private final String displayName;
 
-  public ActiveRuleContextualSectionDto(@NonNull String htmlContent, @NonNull String contextKey, @NonNull String displayName) {
-    this.htmlContent = htmlContent;
+  /**
+   * @param configurationScopeId the configuration scope id (see spec/glossary.adoc for more details)
+   * @param ruleKey the key of the rule
+   * @deprecated use {@link GetEffectiveRuleDetailsParams}
+   */
+  @Deprecated(since = "8.13", forRemoval = true)
+  public GetEffectiveRuleDetailsParams(String configurationScopeId, String ruleKey) {
+    this(configurationScopeId, ruleKey, null);
+  }
+
+  public GetEffectiveRuleDetailsParams(String configurationScopeId, String ruleKey, @Nullable String contextKey) {
+    this.configurationScopeId = configurationScopeId;
+    this.ruleKey = ruleKey;
     this.contextKey = contextKey;
-    this.displayName = displayName;
   }
 
-  @NonNull
-  public String getHtmlContent() {
-    return htmlContent;
+  public String getConfigurationScopeId() {
+    return configurationScopeId;
   }
 
-  @NonNull
+  public String getRuleKey() {
+    return ruleKey;
+  }
+
+  @Nullable
   public String getContextKey() {
     return contextKey;
-  }
-
-  @NonNull
-  public String getDisplayName() {
-    return displayName;
   }
 }

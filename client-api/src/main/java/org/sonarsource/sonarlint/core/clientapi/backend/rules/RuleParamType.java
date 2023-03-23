@@ -19,23 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
-import java.util.Collection;
-public class ActiveRuleContextualSectionWithDefaultContextKeyDto {
+public enum RuleParamType {
 
-  private final String defaultContextKey;
-  private final Collection<ActiveRuleContextualSectionDto> contextualSections;
-
-  public ActiveRuleContextualSectionWithDefaultContextKeyDto(String defaultContextKey, Collection<ActiveRuleContextualSectionDto> contextualSections) {
-    this.defaultContextKey = defaultContextKey;
-    this.contextualSections = contextualSections;
-  }
-
-  public String getDefaultContextKey() {
-    return defaultContextKey;
-  }
-
-  public Collection<ActiveRuleContextualSectionDto> getContextualSections() {
-    return contextualSections;
-  }
+  /**
+   * Keep in sync with constants in org.sonar.api.server.rule.RuleParamType
+   */
+  STRING, TEXT, BOOLEAN, INTEGER, FLOAT;
 
 }

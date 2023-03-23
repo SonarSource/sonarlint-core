@@ -21,11 +21,21 @@ package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
 import java.util.concurrent.CompletableFuture;
 
-public interface ActiveRulesService {
+public interface RulesService {
+
   /**
-   * Returns the details about the rule key passed in parameters.
-   * This method can access missing details on the server when the configuration scope is bound.
+   * Returns the effective details about a rule. "Effective" means that returned rule details will take into account
+   * the binding and the finding context.
    * @return a completed future if the rule was found, else a failed future
    */
-  CompletableFuture<GetActiveRuleDetailsResponse> getActiveRuleDetails(GetActiveRuleDetailsParams params);
+  CompletableFuture<GetEffectiveRuleDetailsResponse> getEffectiveRuleDetails(GetEffectiveRuleDetailsParams params);
+
+  /**
+   * Return list of all available rules for SonarLint standalone mode. Used to build the rules configuration UI.
+   * The description is not part of the response, since we usually display description one rule at a time.
+   * Use {@link RulesService#getStandaloneRuleDescription(GetStandaloneRuleDescriptionParams)} to get the rule description.
+   */
+  CompletableFuture<ListAllStandaloneRulesDefinitionsResponse> listAllStandaloneRulesDefinitions();
+
+  CompletableFuture<GetStandaloneRuleDescriptionResponse> getStandaloneRuleDescription(GetStandaloneRuleDescriptionParams params);
 }

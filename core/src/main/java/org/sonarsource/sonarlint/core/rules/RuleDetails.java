@@ -35,12 +35,12 @@ import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerRule;
 
-public class ActiveRuleDetails {
+public class RuleDetails {
 
   public static final String DEFAULT_SECTION = "default";
 
-  public static ActiveRuleDetails from(SonarLintRuleDefinition ruleDefinition) {
-    return new ActiveRuleDetails(
+  public static RuleDetails from(SonarLintRuleDefinition ruleDefinition) {
+    return new RuleDetails(
       ruleDefinition.getKey(),
       ruleDefinition.getLanguage(),
       ruleDefinition.getName(),
@@ -55,8 +55,8 @@ public class ActiveRuleDetails {
       ruleDefinition.getEducationPrincipleKeys());
   }
 
-  public static ActiveRuleDetails merging(ServerActiveRule activeRuleFromStorage, ServerRule serverRule) {
-    return new ActiveRuleDetails(activeRuleFromStorage.getRuleKey(), serverRule.getLanguage(), serverRule.getName(), serverRule.getHtmlDesc(),
+  public static RuleDetails merging(ServerActiveRule activeRuleFromStorage, ServerRule serverRule) {
+    return new RuleDetails(activeRuleFromStorage.getRuleKey(), serverRule.getLanguage(), serverRule.getName(), serverRule.getHtmlDesc(),
       serverRule.getDescriptionSections().stream()
         .map(s -> new DescriptionSection(s.getKey(), s.getHtmlContent(), s.getContext().map(c -> new DescriptionSection.Context(c.getKey(), c.getDisplayName()))))
         .collect(Collectors.groupingBy(DescriptionSection::getKey)),
@@ -65,8 +65,8 @@ public class ActiveRuleDetails {
       serverRule.getEducationPrincipleKeys());
   }
 
-  public static ActiveRuleDetails merging(ServerRule activeRuleFromServer, SonarLintRuleDefinition ruleDefFromPlugin) {
-    return new ActiveRuleDetails(ruleDefFromPlugin.getKey(), ruleDefFromPlugin.getLanguage(), ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(),
+  public static RuleDetails merging(ServerRule activeRuleFromServer, SonarLintRuleDefinition ruleDefFromPlugin) {
+    return new RuleDetails(ruleDefFromPlugin.getKey(), ruleDefFromPlugin.getLanguage(), ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(),
       ruleDefFromPlugin.getDescriptionSections().stream()
         .map(s -> new DescriptionSection(s.getKey(), s.getHtmlContent(), s.getContext().map(c -> new DescriptionSection.Context(c.getKey(), c.getDisplayName()))))
         .collect(Collectors.groupingBy(DescriptionSection::getKey)),
@@ -74,8 +74,8 @@ public class ActiveRuleDetails {
       activeRuleFromServer.getHtmlNote(), Collections.emptyList(), ruleDefFromPlugin.getEducationPrincipleKeys());
   }
 
-  public static ActiveRuleDetails merging(ServerActiveRule activeRuleFromStorage, ServerRule serverRule, SonarLintRuleDefinition templateRuleDefFromPlugin) {
-    return new ActiveRuleDetails(
+  public static RuleDetails merging(ServerActiveRule activeRuleFromStorage, ServerRule serverRule, SonarLintRuleDefinition templateRuleDefFromPlugin) {
+    return new RuleDetails(
       activeRuleFromStorage.getRuleKey(),
       templateRuleDefFromPlugin.getLanguage(),
       serverRule.getName(),
@@ -100,7 +100,7 @@ public class ActiveRuleDetails {
   private final String extendedDescription;
   private final Set<String> educationPrincipleKeys;
 
-  public ActiveRuleDetails(String key, Language language, String name, String htmlDescription, Map<String, List<DescriptionSection>> descriptionSectionsByKey,
+  public RuleDetails(String key, Language language, String name, String htmlDescription, Map<String, List<DescriptionSection>> descriptionSectionsByKey,
     IssueSeverity defaultSeverity, RuleType type, @Nullable String extendedDescription, Collection<ActiveRuleParam> params, Set<String> educationPrincipleKeys) {
     this.key = key;
     this.language = language;
