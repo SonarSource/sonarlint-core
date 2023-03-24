@@ -33,6 +33,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.DidAddConfi
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.DidRemoveConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -88,6 +89,8 @@ public class ConfigurationServiceImpl implements ConfigurationService {
     var removed = repository.remove(idToRemove);
     if (removed == null) {
       LOG.error("Attempt to remove configuration scope '{}' that was not registered", idToRemove);
+    } else {
+      clientEventBus.post(new ConfigurationScopeRemovedEvent(idToRemove));
     }
   }
 
