@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Version Control System
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -18,7 +18,6 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 @ParametersAreNonnullByDefault
-package org.sonarsource.sonarlint.core.vcs;
+package org.sonarsource.sonarlint.core.repository.vcs;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-

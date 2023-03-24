@@ -35,6 +35,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.authentication.AuthenticationHelperService;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
+import org.sonarsource.sonarlint.core.clientapi.backend.branch.SonarProjectBranchService;
 import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
@@ -44,9 +45,11 @@ import org.sonarsource.sonarlint.core.plugin.PluginsServiceImpl;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
+import org.sonarsource.sonarlint.core.repository.vcs.ActiveSonarProjectBranchRepository;
 import org.sonarsource.sonarlint.core.rules.RulesServiceImpl;
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
+import org.sonarsource.sonarlint.core.branch.SonarProjectBranchServiceImpl;
 
 public class SonarLintBackendImpl implements SonarLintBackend {
 
@@ -63,6 +66,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   private final PluginsServiceImpl pluginsService;
   private final AuthenticationHelperServiceImpl authenticationHelperService;
   private final RulesExtractionHelper rulesExtractionHelper;
+  private final SonarProjectBranchServiceImpl sonarProjectBranchService;
 
   public SonarLintBackendImpl(SonarLintClient client) {
     EventBus clientEventBus = new AsyncEventBus("clientEvents", clientEventsExecutorService);
@@ -85,9 +89,12 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     this.embeddedServer = new EmbeddedServer(client, connectionService, awaitingUserTokenFutureRepository, configurationService, bindingSuggestionProvider, serverApiProvider,
       telemetryService);
     this.authenticationHelperService = new AuthenticationHelperServiceImpl(client, embeddedServer, awaitingUserTokenFutureRepository);
+    var sonarProjectBranchRepository = new ActiveSonarProjectBranchRepository();
+    this.sonarProjectBranchService = new SonarProjectBranchServiceImpl(sonarProjectBranchRepository, configurationRepository, clientEventBus);
     clientEventBus.register(bindingSuggestionProvider);
     clientEventBus.register(sonarProjectCache);
     clientEventBus.register(rulesRepository);
+    clientEventBus.register(sonarProjectBranchService);
   }
 
   @Override
@@ -138,6 +145,10 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   @Override
   public RulesServiceImpl getRulesService() {
     return rulesService;
+  }
+
+  public SonarProjectBranchService getSonarProjectBranchService() {
+    return sonarProjectBranchService;
   }
 
   @Override
