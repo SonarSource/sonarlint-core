@@ -54,7 +54,9 @@ class EffectiveRulesMediumTests {
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
+    if (backend != null) {
+      backend.shutdown().get();
+    }
   }
 
   @Test
@@ -74,7 +76,7 @@ class EffectiveRulesMediumTests {
         PYTHON_S139_DESCRIPTION);
     assertThat(details.getParams())
       .extracting(EffectiveRuleParamDto::getName, EffectiveRuleParamDto::getDescription, EffectiveRuleParamDto::getValue)
-      .containsExactly(tuple("legalTrailingCommentPattern", null, "^#\\s*+[^\\s]++$"));
+      .containsExactly(tuple("legalTrailingCommentPattern", "Pattern for text of trailing comments that are allowed. By default, Mypy and Black pragma comments as well as comments containing only one word.", "^#\\s*+([^\\s]++|fmt.*|type.*)$"));
   }
 
   @Test

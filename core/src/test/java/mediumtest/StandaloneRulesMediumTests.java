@@ -20,6 +20,7 @@
 package mediumtest;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import mediumtest.fixtures.TestPlugin;
@@ -28,8 +29,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetStandaloneRuleDescriptionParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetStandaloneRuleDescriptionResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.ListAllStandaloneRulesDefinitionsResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleDefinitionDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleParamDefinitionDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleParamType;
 import org.sonarsource.sonarlint.core.commons.Language;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
@@ -56,6 +60,41 @@ class StandaloneRulesMediumTests {
   }
 
   @Test
+  void it_should_return_param_definition() {
+    backend = newBackend()
+      .withStorageRoot(storageDir)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .build();
+
+    var javaS1176 = listAllStandaloneRulesDefinitions().getRulesByKey().get("java:S1176");
+
+    assertThat(javaS1176.getParamsByKey()).containsOnlyKeys("exclusion", "forClasses");
+    assertThat(javaS1176.getParamsByKey().get("forClasses"))
+      .extracting(RuleParamDefinitionDto::getKey, RuleParamDefinitionDto::getName, RuleParamDefinitionDto::getDescription,
+        RuleParamDefinitionDto::getType, RuleParamDefinitionDto::isMultiple, RuleParamDefinitionDto::getPossibleValues, RuleParamDefinitionDto::getDefaultValue)
+      .containsExactly("forClasses",
+        "forClasses",
+        "Pattern of classes which should adhere to this constraint. Ex : **.api.**",
+        RuleParamType.STRING,
+        false,
+        List.of(),
+        "**.api.**");
+  }
+
+  @Test
+  void it_should_return_rule_description() throws ExecutionException, InterruptedException {
+    backend = newBackend()
+      .withStorageRoot(storageDir)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .build();
+
+    var ruleDescription = backend.getRulesService().getStandaloneRuleDescription(new GetStandaloneRuleDescriptionParams("java:S1176")).get();
+
+    assertThat(ruleDescription.getDescription().isLeft()).isTrue();
+    assertThat(ruleDescription.getDescription().getLeft().getHtmlContent()).startsWith("<p>Try to imagine using the standard Java API (Collections, JDBC, IO, …\u200B) without Javadoc.");
+  }
+
+  @Test
   void it_should_not_contain_rule_templates() {
     backend = newBackend()
       .withStorageRoot(storageDir)
@@ -64,7 +103,7 @@ class StandaloneRulesMediumTests {
 
     var allRules = listAllStandaloneRulesDefinitions().getRulesByKey().values();
 
-    assertThat(allRules).extracting(RuleDefinitionDto::getKey).doesNotContain("python:XPath");
+    assertThat(allRules).extracting(RuleDefinitionDto::getKey).isNotEmpty().doesNotContain("python:XPath");
     assertThat(backend.getRulesService().getStandaloneRuleDescription(new GetStandaloneRuleDescriptionParams("python:XPath"))).failsWithin(1, TimeUnit.MINUTES);
   }
 
@@ -77,7 +116,7 @@ class StandaloneRulesMediumTests {
 
     var allRules = listAllStandaloneRulesDefinitions().getRulesByKey().values();
 
-    assertThat(allRules).extracting(RuleDefinitionDto::getKey).doesNotContain("java:S1313");
+    assertThat(allRules).extracting(RuleDefinitionDto::getKey).isNotEmpty().doesNotContain("java:S1313");
     assertThat(backend.getRulesService().getStandaloneRuleDescription(new GetStandaloneRuleDescriptionParams("java:S1313"))).failsWithin(1, TimeUnit.MINUTES);
   }
 

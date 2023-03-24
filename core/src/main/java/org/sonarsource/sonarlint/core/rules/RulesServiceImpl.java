@@ -208,7 +208,7 @@ public class RulesServiceImpl implements RulesService {
   @Override
   public CompletableFuture<GetStandaloneRuleDescriptionResponse> getStandaloneRuleDescription(GetStandaloneRuleDescriptionParams params) {
     return getEmbeddedRuleAsync(params.getRuleKey())
-      .thenApply(ruleDetails -> RuleDetailsAdapter.toStandaloneRuleDescriptionResponse(ruleDetails));
+      .thenApply(RuleDetailsAdapter::toStandaloneRuleDescriptionResponse);
   }
 
 }
