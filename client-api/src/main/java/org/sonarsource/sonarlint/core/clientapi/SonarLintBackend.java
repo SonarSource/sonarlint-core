@@ -29,6 +29,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.connection.ConnectionSer
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RulesService;
 import org.sonarsource.sonarlint.core.clientapi.backend.telemetry.TelemetryService;
+import org.sonarsource.sonarlint.core.clientapi.backend.branch.SonarProjectBranchService;
 
 public interface SonarLintBackend {
 
@@ -55,6 +56,9 @@ public interface SonarLintBackend {
 
   @JsonDelegate
   TelemetryService getTelemetryService();
+
+  @JsonDelegate
+  SonarProjectBranchService getSonarProjectBranchService();
 
   @JsonRequest
   CompletableFuture<Void> shutdown();
