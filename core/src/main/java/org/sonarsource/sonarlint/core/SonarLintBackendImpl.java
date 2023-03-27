@@ -22,6 +22,9 @@ package org.sonarsource.sonarlint.core;
 import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.MoreExecutors;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Optional;
@@ -50,6 +53,7 @@ import org.sonarsource.sonarlint.core.repository.vcs.ActiveSonarProjectBranchRep
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
 import org.sonarsource.sonarlint.core.rules.RulesServiceImpl;
 import org.sonarsource.sonarlint.core.smartnotifications.SmartNotifications;
+import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
 public class SonarLintBackendImpl implements SonarLintBackend {
@@ -69,6 +73,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   private final RulesExtractionHelper rulesExtractionHelper;
   private final SmartNotifications smartNotifications;
   private final SonarProjectBranchServiceImpl sonarProjectBranchService;
+  private final SynchronizationServiceImpl synchronizationServiceImpl;
 
   public SonarLintBackendImpl(SonarLintClient client) {
     EventBus clientEventBus = new AsyncEventBus("clientEvents", clientEventsExecutorService);
@@ -94,10 +99,12 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     smartNotifications = new SmartNotifications(configurationRepository, connectionConfigurationRepository, serverApiProvider, client, telemetryService);
     var sonarProjectBranchRepository = new ActiveSonarProjectBranchRepository();
     this.sonarProjectBranchService = new SonarProjectBranchServiceImpl(sonarProjectBranchRepository, configurationRepository, clientEventBus);
+    this.synchronizationServiceImpl = new SynchronizationServiceImpl(client, configurationRepository, sonarProjectBranchService, serverApiProvider);
     clientEventBus.register(bindingSuggestionProvider);
     clientEventBus.register(sonarProjectCache);
     clientEventBus.register(rulesRepository);
     clientEventBus.register(sonarProjectBranchService);
+    clientEventBus.register(synchronizationServiceImpl);
   }
 
   @Override
@@ -112,6 +119,12 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     rulesService.initialize(params.getStorageRoot(), params.getStandaloneRuleConfigByKey());
     hotspotService.initialize(params.getStorageRoot());
     var sonarlintUserHome = Optional.ofNullable(params.getSonarlintUserHome()).map(Paths::get).orElse(SonarLintUserHome.get());
+    var workDir = params.getWorkDir();
+    if (workDir == null) {
+      workDir = sonarlintUserHome.resolve("work");
+    }
+    createFolderIfNeeded(sonarlintUserHome);
+    createFolderIfNeeded(workDir);
     telemetryService.initialize(params.getTelemetryProductKey(), sonarlintUserHome);
     if (params.shouldManageLocalServer()) {
       embeddedServer.initialize(params.getHostInfo());
@@ -120,7 +133,19 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     if (params.shouldManageSmartNotifications()) {
       smartNotifications.initialize(params.getStorageRoot());
     }
+    if (params.shouldSynchronizeProjects()) {
+      synchronizationServiceImpl.initialize(params.getStorageRoot(), workDir, enabledLanguagesInConnectedMode, params.getConnectedModeEmbeddedPluginPathsByKey().keySet(),
+        params.areTaintVulnerabilitiesEnabled());
+    }
     return CompletableFuture.completedFuture(null);
+  }
+
+  private static void createFolderIfNeeded(Path path) {
+    try {
+      Files.createDirectories(path);
+    } catch (IOException e) {
+      throw new IllegalStateException("Cannot create directory '" + path.toString() + "'", e);
+    }
   }
 
   @Override
@@ -165,6 +190,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
       this.bindingSuggestionProvider.shutdown();
       this.embeddedServer.shutdown();
       this.smartNotifications.shutdown();
+      this.synchronizationServiceImpl.shutdown();
     });
   }
 

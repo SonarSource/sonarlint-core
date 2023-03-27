@@ -99,6 +99,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams
 import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
+import org.sonarsource.sonarlint.core.clientapi.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -401,8 +402,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-global-extension",
-          "src/foo.glob",
-          "sonar.cobol.file.suffixes", "glob"),
+        "src/foo.glob",
+        "sonar.cobol.file.suffixes", "glob"),
         issueListener, null, null);
 
       assertThat(issueListener.getIssues()).extracting("ruleKey", "message").containsOnly(
@@ -410,8 +411,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-global-extension",
-          "src/foo.glob",
-          "sonar.cobol.file.suffixes", "glob"),
+        "src/foo.glob",
+        "sonar.cobol.file.suffixes", "glob"),
         issueListener, null, null);
 
       assertThat(issueListener.getIssues()).extracting("ruleKey", "message").containsOnly(
@@ -725,7 +726,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       } else {
         assertThat(
           adminWsClient.issues().search(new SearchRequest().setTypes(List.of("SECURITY_HOTSPOT")).setComponentKeys(List.of(PROJECT_KEY))).getIssuesList())
-          .isNotEmpty();
+            .isNotEmpty();
       }
     }
 
@@ -1016,8 +1017,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_HOTSPOT, PROJECT_KEY_JAVA_HOTSPOT,
-          "src/main/java/foo/Foo.java",
-          "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+        "src/main/java/foo/Foo.java",
+        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
         issueListener, null, null);
 
       assertThat(issueListener.getIssues()).isEmpty();
@@ -1060,8 +1061,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_HOTSPOT, PROJECT_KEY_JAVA_HOTSPOT,
-          "src/main/java/foo/Foo.java",
-          "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath()),
+        "src/main/java/foo/Foo.java",
+        "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath()),
         issueListener, null, null);
 
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
@@ -1147,9 +1148,10 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       if (testInfo.getTags().contains(USE_NEW_CLIENT_API)) {
         backend = new SonarLintBackendImpl(newDummySonarLintClient());
         backend.initialize(
-          new InitializeParams(new HostInfoDto("clientName"),"integrationTests", sonarUserHome.resolve("storage"), Collections.emptySet(), Collections.emptyMap(), Set.of(Language.JAVA),
-            Collections.emptySet(), false, List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(),
-            sonarUserHome.toString(), false, Map.of(), false));
+          new InitializeParams(new HostInfoDto("clientName"), "integrationTests", sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"), Collections.emptySet(),
+            Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(), false,
+            List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(), false,
+            Map.of(), false, true, false));
       }
     }
 
@@ -1398,6 +1400,11 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
         @Override
         public void reportProgress(ReportProgressParams params) {
+
+        }
+
+        @Override
+        public void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params) {
 
         }
 

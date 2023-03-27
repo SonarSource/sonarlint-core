@@ -37,6 +37,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams
 import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
+import org.sonarsource.sonarlint.core.clientapi.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 
 public interface SonarLintClient {
@@ -101,7 +102,7 @@ public interface SonarLintClient {
    * If there is an error while creating the corresponding UI, clients can fail the returned future.
    * Tasks requesting the start of the progress should wait for the client to answer before continuing.
    */
-  @JsonNotification
+  @JsonRequest
   CompletableFuture<Void> startProgress(StartProgressParams params);
 
   /**
@@ -109,4 +110,7 @@ public interface SonarLintClient {
    */
   @JsonNotification
   void reportProgress(ReportProgressParams params);
+
+  @JsonNotification
+  void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params);
 }

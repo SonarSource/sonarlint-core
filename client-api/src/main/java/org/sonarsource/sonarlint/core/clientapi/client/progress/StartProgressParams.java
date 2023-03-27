@@ -30,7 +30,9 @@ public class StartProgressParams {
    */
   private final String taskId;
   /**
-   * Configuration scope on which to report the progress. Could be null for a global task that does not relate to a configuration scope in particular
+   * Configuration scope on which to report the progress.
+   * Could be null for a task that does not relate to a configuration scope in particular,
+   * or if several configuration scopes are involved.
    */
   @CheckForNull
   private final String configurationScopeId;
