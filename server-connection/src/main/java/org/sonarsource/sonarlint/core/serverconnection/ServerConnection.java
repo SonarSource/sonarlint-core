@@ -88,24 +88,28 @@ public class ServerConnection {
   private final ServerInfoStorage serverInfoStorage;
 
   public ServerConnection(Path globalStorageRoot, String connectionId, boolean isSonarCloud, Set<Language> enabledLanguages, Set<String> embeddedPluginKeys, Path workDir) {
-    this.isSonarCloud = isSonarCloud;
-    this.enabledLanguagesToSync = enabledLanguages.stream().filter(Language::shouldSyncInConnectedMode).collect(Collectors.toCollection(LinkedHashSet::new));
+    this(new ServerConnectionSpec(globalStorageRoot, connectionId, isSonarCloud, enabledLanguages, embeddedPluginKeys, workDir));
+  }
 
-    connectionStorageRoot = globalStorageRoot.resolve(encodeForFs(connectionId));
+  public ServerConnection(ServerConnectionSpec spec) {
+    this.isSonarCloud = spec.isSonarCloud;
+    this.enabledLanguagesToSync = spec.enabledLanguages.stream().filter(Language::shouldSyncInConnectedMode).collect(Collectors.toCollection(LinkedHashSet::new));
+
+    connectionStorageRoot = spec.globalStorageRoot.resolve(encodeForFs(spec.connectionId));
 
     var projectsStorageRoot = connectionStorageRoot.resolve("projects");
     var projectStoragePaths = new ProjectStoragePaths(projectsStorageRoot);
     projectStorage = new ProjectStorage(projectsStorageRoot);
 
     this.storageReader = new StorageReader(projectStoragePaths);
-    this.serverIssueStoresManager = new ServerIssueStoresManager(projectsStorageRoot, workDir);
+    this.serverIssueStoresManager = new ServerIssueStoresManager(projectsStorageRoot, spec.workDir);
     this.issueStoreReader = new IssueStoreReader(serverIssueStoresManager);
     this.issuesUpdater = new ServerIssueUpdater(serverIssueStoresManager, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
     this.hotspotsUpdater = new ServerHotspotUpdater(serverIssueStoresManager);
     serverInfoStorage = new ServerInfoStorage(connectionStorageRoot);
     this.pluginsStorage = new PluginsStorage(connectionStorageRoot.resolve("plugins"));
     serverInfoSynchronizer = new ServerInfoSynchronizer(serverInfoStorage);
-    this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguagesToSync, embeddedPluginKeys, serverInfoSynchronizer, pluginsStorage, projectStorage);
+    this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguagesToSync, spec.embeddedPluginKeys, serverInfoSynchronizer, pluginsStorage, projectStorage);
     this.projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(projectStoragePaths);
     pluginsStorage.cleanUp();
     coreEventRouter = new EventDispatcher()
@@ -230,7 +234,10 @@ public class ServerConnection {
   }
 
   public void syncServerIssuesForProject(EndpointParams endpoint, HttpClient client, String projectKey, String branchName) {
-    var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
+    syncServerIssuesForProject(new ServerApi(new ServerApiHelper(endpoint, client)), projectKey, branchName);
+  }
+
+  public void syncServerIssuesForProject(ServerApi serverApi, String projectKey, String branchName) {
     var serverVersion = readOrSynchronizeServerVersion(serverApi);
     if (IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
       LOG.info("[SYNC] Synchronizing issues for project '{}' on branch '{}'", projectKey, branchName);
@@ -241,7 +248,10 @@ public class ServerConnection {
   }
 
   public void syncServerTaintIssuesForProject(EndpointParams endpoint, HttpClient client, String projectKey, String branchName) {
-    var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
+    syncServerTaintIssuesForProject(new ServerApi(new ServerApiHelper(endpoint, client)), projectKey, branchName);
+  }
+
+  public void syncServerTaintIssuesForProject(ServerApi serverApi, String projectKey, String branchName) {
     var serverVersion = readOrSynchronizeServerVersion(serverApi);
     if (IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
       LOG.info("[SYNC] Synchronizing taint issues for project '{}' on branch '{}'", projectKey, branchName);

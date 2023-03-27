@@ -34,6 +34,8 @@ public class InitializeParams {
   private final HostInfoDto hostInfo;
   private final String telemetryProductKey;
   private final Path storageRoot;
+  @Nullable
+  private final Path workDir;
   private final Set<Path> embeddedPluginPaths;
   private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
   private final Set<Language> enabledLanguagesInStandaloneMode;
@@ -44,20 +46,24 @@ public class InitializeParams {
   private final String sonarlintUserHome;
   private final boolean shouldManageLocalServer;
   private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey;
+  private final boolean taintVulnerabilitiesEnabled;
+  private final boolean shouldSynchronizeProjects;
 
   /**
    * @param telemetryProductKey       SonarLint product key (vscode, idea, eclipse, ...)
    * @param sonarlintUserHome         Path to SonarLint user home directory. If null, will default to ~/.sonarlint
+   * @param workDir                   Path to work directory. If null, will default to [sonarlintUserHome]/work
    * @param standaloneRuleConfigByKey Local rule configuration for standalone analysis. This configuration will override defaults rule activation and parameters.
    */
-  public InitializeParams(HostInfoDto hostInfo, String telemetryProductKey, Path storageRoot, Set<Path> embeddedPluginPaths,
+  public InitializeParams(HostInfoDto hostInfo, String telemetryProductKey, Path storageRoot, @Nullable Path workDir, Set<Path> embeddedPluginPaths,
     Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> extraEnabledLanguagesInConnectedMode,
-    boolean enableSecurityHotspots, List<SonarQubeConnectionConfigurationDto> sonarQubeConnections,
-    List<SonarCloudConnectionConfigurationDto> sonarCloudConnections, @Nullable String sonarlintUserHome, boolean shouldManageLocalServer,
-    Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
+    boolean enableSecurityHotspots, List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections,
+    @Nullable String sonarlintUserHome, boolean shouldManageLocalServer, Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey, boolean taintVulnerabilitiesEnabled,
+    boolean shouldSynchronizeProjects) {
     this.hostInfo = hostInfo;
     this.telemetryProductKey = telemetryProductKey;
     this.storageRoot = storageRoot;
+    this.workDir = workDir;
     this.embeddedPluginPaths = embeddedPluginPaths;
     this.connectedModeEmbeddedPluginPathsByKey = connectedModeEmbeddedPluginPathsByKey;
     this.enabledLanguagesInStandaloneMode = enabledLanguagesInStandaloneMode;
@@ -68,6 +74,8 @@ public class InitializeParams {
     this.sonarlintUserHome = sonarlintUserHome;
     this.shouldManageLocalServer = shouldManageLocalServer;
     this.standaloneRuleConfigByKey = standaloneRuleConfigByKey;
+    this.taintVulnerabilitiesEnabled = taintVulnerabilitiesEnabled;
+    this.shouldSynchronizeProjects = shouldSynchronizeProjects;
   }
 
   public HostInfoDto getHostInfo() {
@@ -80,6 +88,10 @@ public class InitializeParams {
 
   public Path getStorageRoot() {
     return storageRoot;
+  }
+
+  public Path getWorkDir() {
+    return workDir;
   }
 
   public Set<Path> getEmbeddedPluginPaths() {
@@ -121,5 +133,13 @@ public class InitializeParams {
 
   public Map<String, StandaloneRuleConfigDto> getStandaloneRuleConfigByKey() {
     return standaloneRuleConfigByKey;
+  }
+
+  public boolean areTaintVulnerabilitiesEnabled() {
+    return taintVulnerabilitiesEnabled;
+  }
+
+  public boolean shouldSynchronizeProjects() {
+    return shouldSynchronizeProjects;
   }
 }

@@ -67,7 +67,7 @@ class TelemetryMediumTests {
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isFalse();
 
     this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "master", "ab12ef45"));
-    assertThat(sonarlintUserHome).isEmptyDirectory();
+    assertThat(sonarlintUserHome.resolve("telemetry")).doesNotExist();
   }
 
   @Test

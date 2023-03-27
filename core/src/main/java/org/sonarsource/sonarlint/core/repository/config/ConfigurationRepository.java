@@ -20,10 +20,13 @@
 package org.sonarsource.sonarlint.core.repository.config;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 
@@ -101,5 +104,22 @@ public class ConfigurationRepository {
       .filter(e -> e.getValue().isBoundTo(connectionId, projectKey))
       .map(e -> configScopePerId.get(e.getKey()))
       .collect(Collectors.toList());
+  }
+
+  public Map<String, Binding> getEffectiveBindingForLeafConfigScopesById() {
+    var leaves = getLeafConfigurationScopeIds();
+    return bindingPerConfigScopeId.keySet().stream()
+      .filter(leaves::contains)
+      .map(scopeId -> Map.entry(scopeId, getEffectiveBinding(scopeId)))
+      .filter(entry -> entry.getValue().isPresent())
+      .map(entry -> Map.entry(entry.getKey(), entry.getValue().get()))
+      .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+  }
+
+  private Set<String> getLeafConfigurationScopeIds() {
+    var parentConfigScopeIds = configScopePerId.values().stream().map(ConfigurationScope::getParentId).filter(Predicate.not(Objects::isNull)).collect(Collectors.toSet());
+    var leaves = new HashSet<>(configScopePerId.keySet());
+    leaves.removeAll(parentConfigScopeIds);
+    return leaves;
   }
 }

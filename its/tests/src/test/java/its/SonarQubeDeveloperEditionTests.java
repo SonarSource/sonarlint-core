@@ -47,7 +47,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -83,8 +82,8 @@ import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingCo
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleDescriptionTabDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetEffectiveRuleDetailsParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleDescriptionTabDto;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
@@ -98,6 +97,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressParams;
+import org.sonarsource.sonarlint.core.clientapi.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -1146,9 +1146,9 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       if (testInfo.getTags().contains(USE_NEW_CLIENT_API)) {
         backend = new SonarLintBackendImpl(newDummySonarLintClient());
         backend.initialize(
-          new InitializeParams(new HostInfoDto("clientName"),"integrationTests", sonarUserHome.resolve("storage"), Collections.emptySet(), Collections.emptyMap(), Set.of(Language.JAVA),
+          new InitializeParams(new HostInfoDto("clientName"),"integrationTests", sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"), Collections.emptySet(), Collections.emptyMap(), Set.of(Language.JAVA),
             Collections.emptySet(), false, List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl())), Collections.emptyList(),
-            sonarUserHome.toString(), false, Map.of()));
+            sonarUserHome.toString(), false, Map.of(), true, false));
       }
     }
 
@@ -1374,6 +1374,11 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
         @Override
         public void reportProgress(ReportProgressParams params) {
+
+        }
+
+        @Override
+        public void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params) {
 
         }
 

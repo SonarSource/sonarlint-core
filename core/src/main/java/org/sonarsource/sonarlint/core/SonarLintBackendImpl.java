@@ -22,6 +22,9 @@ package org.sonarsource.sonarlint.core;
 import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.MoreExecutors;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Optional;
@@ -29,13 +32,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import org.sonarsource.sonarlint.core.branch.SonarProjectBranchServiceImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.authentication.AuthenticationHelperService;
+import org.sonarsource.sonarlint.core.clientapi.backend.branch.SonarProjectBranchService;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
-import org.sonarsource.sonarlint.core.clientapi.backend.branch.SonarProjectBranchService;
 import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
@@ -46,10 +50,10 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.repository.vcs.ActiveSonarProjectBranchRepository;
-import org.sonarsource.sonarlint.core.rules.RulesServiceImpl;
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
+import org.sonarsource.sonarlint.core.rules.RulesServiceImpl;
+import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
-import org.sonarsource.sonarlint.core.branch.SonarProjectBranchServiceImpl;
 
 public class SonarLintBackendImpl implements SonarLintBackend {
 
@@ -67,6 +71,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   private final AuthenticationHelperServiceImpl authenticationHelperService;
   private final RulesExtractionHelper rulesExtractionHelper;
   private final SonarProjectBranchServiceImpl sonarProjectBranchService;
+  private final SynchronizationServiceImpl synchronizationServiceImpl;
 
   public SonarLintBackendImpl(SonarLintClient client) {
     EventBus clientEventBus = new AsyncEventBus("clientEvents", clientEventsExecutorService);
@@ -91,10 +96,12 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     this.authenticationHelperService = new AuthenticationHelperServiceImpl(client, embeddedServer, awaitingUserTokenFutureRepository);
     var sonarProjectBranchRepository = new ActiveSonarProjectBranchRepository();
     this.sonarProjectBranchService = new SonarProjectBranchServiceImpl(sonarProjectBranchRepository, configurationRepository, clientEventBus);
+    this.synchronizationServiceImpl = new SynchronizationServiceImpl(client, configurationRepository, sonarProjectBranchService, serverApiProvider);
     clientEventBus.register(bindingSuggestionProvider);
     clientEventBus.register(sonarProjectCache);
     clientEventBus.register(rulesRepository);
     clientEventBus.register(sonarProjectBranchService);
+    clientEventBus.register(synchronizationServiceImpl);
   }
 
   @Override
@@ -109,12 +116,30 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     rulesService.initialize(params.getStorageRoot(), params.getStandaloneRuleConfigByKey());
     hotspotService.initialize(params.getStorageRoot());
     var sonarlintUserHome = Optional.ofNullable(params.getSonarlintUserHome()).map(Paths::get).orElse(SonarLintUserHome.get());
+    var workDir = params.getWorkDir();
+    if (workDir == null) {
+      workDir = sonarlintUserHome.resolve("work");
+    }
+    createFolderIfNeeded(sonarlintUserHome);
+    createFolderIfNeeded(workDir);
     telemetryService.initialize(params.getTelemetryProductKey(), sonarlintUserHome);
     if (params.shouldManageLocalServer()) {
       embeddedServer.initialize(params.getHostInfo());
     }
     authenticationHelperService.initialize(params.getHostInfo().getName());
+    if (params.shouldSynchronizeProjects()) {
+      synchronizationServiceImpl.initialize(params.getStorageRoot(), workDir, enabledLanguagesInConnectedMode, params.getConnectedModeEmbeddedPluginPathsByKey().keySet(),
+        params.areTaintVulnerabilitiesEnabled());
+    }
     return CompletableFuture.completedFuture(null);
+  }
+
+  private static void createFolderIfNeeded(Path path) {
+    try {
+      Files.createDirectories(path);
+    } catch (IOException e) {
+      throw new IllegalStateException("Cannot create directory '" + path.toString() + "'", e);
+    }
   }
 
   @Override
@@ -158,6 +183,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
       this.pluginsService.shutdown();
       this.bindingSuggestionProvider.shutdown();
       this.embeddedServer.shutdown();
+      this.synchronizationServiceImpl.shutdown();
     });
   }
 
