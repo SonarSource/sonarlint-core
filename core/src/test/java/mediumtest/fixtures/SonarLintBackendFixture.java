@@ -29,13 +29,17 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import javax.annotation.CheckForNull;
 import org.jetbrains.annotations.Nullable;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.HostInfoDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.branch.DidChangeActiveSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.DidUpdateBindingParams;
@@ -58,9 +62,10 @@ import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
-import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressParams;
+import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
+import org.sonarsource.sonarlint.core.clientapi.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import testutils.MockWebServerExtensionWithProtobuf;
@@ -81,6 +86,7 @@ public class SonarLintBackendFixture {
     private final List<SonarQubeConnectionConfigurationDto> sonarQubeConnections = new ArrayList<>();
     private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections = new ArrayList<>();
     private final List<ConfigurationScopeDto> configurationScopes = new ArrayList<>();
+    private final Map<String, String> activeBranchPerScopeId = new HashMap<>();
     private final Set<Path> embeddedPluginPaths = new HashSet<>();
     private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey = new HashMap<>();
     private final Set<Language> enabledLanguages = new HashSet<>();
@@ -89,6 +95,8 @@ public class SonarLintBackendFixture {
     private boolean startEmbeddedServer;
     private boolean manageSmartNotifications;
     private boolean areSecurityHotspotsEnabled;
+    private boolean synchronizeProjects;
+    private boolean taintVulnerabilitiesEnabled = true;
 
     private final Map<String, StandaloneRuleConfigDto> standaloneConfigByKey = new HashMap<>();
 
@@ -117,6 +125,16 @@ public class SonarLintBackendFixture {
 
     public SonarLintBackendBuilder withBoundConfigScope(String configurationScopeId, String connectionId, String projectKey) {
       return withConfigScope(configurationScopeId, configurationScopeId, null, new BindingConfigurationDto(connectionId, projectKey, false));
+    }
+
+    public SonarLintBackendBuilder withBoundConfigScope(String configurationScopeId, String connectionId, String projectKey, String activeBranchName) {
+      withConfigScope(configurationScopeId, configurationScopeId, null, new BindingConfigurationDto(connectionId, projectKey, false));
+      return withActiveBranch(configurationScopeId, activeBranchName);
+    }
+
+    public SonarLintBackendBuilder withActiveBranch(String configurationScopeId, String activeBranchName) {
+      activeBranchPerScopeId.put(configurationScopeId, activeBranchName);
+      return this;
     }
 
     public SonarLintBackendBuilder withChildConfigScope(String configurationScopeId, String parentScopeId) {
@@ -169,29 +187,41 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintBackendImpl build(FakeSonarLintClient client) {
-      var sonarLintBackend = new SonarLintBackendImpl(client);
-      client.setBackend(sonarLintBackend);
-      sonarLintBackend
-        .initialize(new InitializeParams(client.getClientInfo(), MEDIUM_TESTS_PRODUCT_KEY, storageRoot, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
-          enabledLanguages, Collections.emptySet(), areSecurityHotspotsEnabled, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(), startEmbeddedServer,
-          standaloneConfigByKey, manageSmartNotifications));
-      sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
-      return sonarLintBackend;
-    }
-
-    public SonarLintBackendImpl build() {
-      return build(newFakeClient().build());
-    }
-
     public SonarLintBackendBuilder withEmbeddedServer() {
       startEmbeddedServer = true;
+      return this;
+    }
+
+    public SonarLintBackendBuilder withProjectSynchronization() {
+      synchronizeProjects = true;
+      return this;
+    }
+
+    public SonarLintBackendBuilder withTaintVulnerabilitiesDisabled() {
+      taintVulnerabilitiesEnabled = false;
       return this;
     }
 
     public SonarLintBackendBuilder withSmartNotifications() {
       manageSmartNotifications = true;
       return this;
+    }
+
+    public SonarLintBackendImpl build(FakeSonarLintClient client) {
+      var sonarLintBackend = new SonarLintBackendImpl(client);
+      client.setBackend(sonarLintBackend);
+      sonarLintBackend
+        .initialize(new InitializeParams(client.getClientInfo(), MEDIUM_TESTS_PRODUCT_KEY, storageRoot, null, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
+          enabledLanguages, Collections.emptySet(), areSecurityHotspotsEnabled, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(), startEmbeddedServer,
+          standaloneConfigByKey, manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects));
+      sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
+      activeBranchPerScopeId.forEach(
+        (scopeId, branch) -> sonarLintBackend.getSonarProjectBranchService().didChangeActiveSonarProjectBranch(new DidChangeActiveSonarProjectBranchParams(scopeId, branch)));
+      return sonarLintBackend;
+    }
+
+    public SonarLintBackendImpl build() {
+      return build(newFakeClient().build());
     }
   }
 
@@ -201,6 +231,7 @@ public class SonarLintBackendFixture {
     private String hostName = "";
     private final LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl = new LinkedHashMap<>();
     private final LinkedHashMap<String, ConfigurationScopeDto> cannedBindingAssistByProjectKey = new LinkedHashMap<>();
+    private boolean rejectingProgress;
 
     public SonarLintClientBuilder withFoundFile(String name, String path, String content) {
       foundFiles.add(new FoundFileDto(name, path, content));
@@ -217,6 +248,11 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintClientBuilder rejectingProgress() {
+      this.rejectingProgress = true;
+      return this;
+    }
+
     public SonarLintClientBuilder assistingConnectingAndBindingToSonarQube(String scopeId, String connectionId, String baseUrl, String projectKey) {
       this.cannedAssistCreatingSonarQubeConnectionByBaseUrl.put(baseUrl, new SonarQubeConnectionConfigurationDto(connectionId, baseUrl, true));
       this.cannedBindingAssistByProjectKey.put(projectKey, new ConfigurationScopeDto(scopeId, null, true, scopeId, new BindingConfigurationDto(connectionId, projectKey, false)));
@@ -224,7 +260,8 @@ public class SonarLintBackendFixture {
     }
 
     public FakeSonarLintClient build() {
-      return new FakeSonarLintClient(new HostInfoDto(hostName), foundFiles, hostDescription, cannedAssistCreatingSonarQubeConnectionByBaseUrl, cannedBindingAssistByProjectKey);
+      return new FakeSonarLintClient(new HostInfoDto(hostName), foundFiles, hostDescription, cannedAssistCreatingSonarQubeConnectionByBaseUrl, cannedBindingAssistByProjectKey,
+        rejectingProgress);
     }
   }
 
@@ -240,17 +277,21 @@ public class SonarLintBackendFixture {
     private final String workspaceTitle;
     private final LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl;
     private final LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey;
+    private final boolean rejectingProgress;
     private final Map<String, Collection<HotspotDetailsDto>> hotspotToShowByConfigScopeId = new HashMap<>();
+    private final Map<String, ProgressReport> progressReportsByTaskId = new ConcurrentHashMap<>();
+    private final Set<String> synchronizedConfigScopeIds = new HashSet<>();
     private SonarLintBackendImpl backend;
 
     public FakeSonarLintClient(HostInfoDto clientInfo, List<FoundFileDto> foundFiles, String workspaceTitle,
       LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
-      LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey) {
+      LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, boolean rejectingProgress) {
       this.clientInfo = clientInfo;
       this.foundFiles = foundFiles;
       this.workspaceTitle = workspaceTitle;
       this.cannedAssistCreatingSonarQubeConnectionByBaseUrl = cannedAssistCreatingSonarQubeConnectionByBaseUrl;
       this.bindingAssistResponseByProjectKey = bindingAssistResponseByProjectKey;
+      this.rejectingProgress = rejectingProgress;
     }
 
     public void setBackend(SonarLintBackendImpl backend) {
@@ -331,12 +372,39 @@ public class SonarLintBackendFixture {
 
     @Override
     public CompletableFuture<Void> startProgress(StartProgressParams params) {
+      if (rejectingProgress) {
+        return CompletableFuture.failedFuture(new RuntimeException("Failed to start progress"));
+      }
+      progressReportsByTaskId.put(params.getTaskId(),
+        new ProgressReport(params.getConfigurationScopeId(), params.getTitle(), params.getMessage(), params.isIndeterminate(), params.isCancellable()));
       return CompletableFuture.completedFuture(null);
     }
 
     @Override
     public void reportProgress(ReportProgressParams params) {
+      var progressReport = progressReportsByTaskId.computeIfAbsent(params.getTaskId(), k -> {
+        throw new IllegalStateException("Cannot update a progress that has not been started before");
+      });
+      var notification = params.getNotification();
+      if (notification.isLeft()) {
+        var updateNotification = notification.getLeft();
+        progressReport.addStep(new ProgressStep(updateNotification.getMessage(), updateNotification.getPercentage()));
+      } else {
+        progressReport.complete();
+      }
+    }
 
+    public Map<String, ProgressReport> getProgressReportsByTaskId() {
+      return progressReportsByTaskId;
+    }
+
+    @Override
+    public void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params) {
+      synchronizedConfigScopeIds.addAll(params.getConfigurationScopeIds());
+    }
+
+    public Set<String> getSynchronizedConfigScopeIds() {
+      return synchronizedConfigScopeIds;
     }
 
     public boolean hasReceivedSuggestions() {
@@ -372,5 +440,146 @@ public class SonarLintBackendFixture {
       completableFuture.cancel(false);
       return completableFuture;
     }
+
+    public static class ProgressReport {
+      @CheckForNull
+      private final String configurationScopeId;
+      private final String title;
+      @CheckForNull
+      private final String startingMessage;
+      private final boolean indeterminate;
+      private final boolean cancellable;
+      private final Collection<ProgressStep> steps;
+      private boolean complete;
+
+      private ProgressReport(@Nullable String configurationScopeId, String title, @Nullable String startingMessage, boolean indeterminate, boolean cancellable) {
+        this(configurationScopeId, title, startingMessage, indeterminate, cancellable, new ArrayList<>(), false);
+      }
+
+      public ProgressReport(@Nullable String configurationScopeId, String title, @Nullable String startingMessage, boolean indeterminate, boolean cancellable,
+        Collection<ProgressStep> steps, boolean complete) {
+        this.configurationScopeId = configurationScopeId;
+        this.title = title;
+        this.startingMessage = startingMessage;
+        this.indeterminate = indeterminate;
+        this.cancellable = cancellable;
+        this.steps = steps;
+        this.complete = complete;
+      }
+
+      private void addStep(ProgressStep step) {
+        steps.add(step);
+      }
+
+      @CheckForNull
+      public String getConfigurationScopeId() {
+        return configurationScopeId;
+      }
+
+      public String getTitle() {
+        return title;
+      }
+
+      @CheckForNull
+      public String getStartingMessage() {
+        return startingMessage;
+      }
+
+      public boolean isIndeterminate() {
+        return indeterminate;
+      }
+
+      public boolean isCancellable() {
+        return cancellable;
+      }
+
+      public Collection<ProgressStep> getSteps() {
+        return steps;
+      }
+
+      public void complete() {
+        this.complete = true;
+      }
+
+      public boolean isComplete() {
+        return complete;
+      }
+
+      @Override
+      public boolean equals(Object o) {
+        if (this == o)
+          return true;
+        if (o == null || getClass() != o.getClass())
+          return false;
+        ProgressReport that = (ProgressReport) o;
+        return indeterminate == that.indeterminate && cancellable == that.cancellable && complete == that.complete
+          && Objects.equals(configurationScopeId, that.configurationScopeId) && title.equals(that.title) && Objects.equals(startingMessage, that.startingMessage)
+          && steps.equals(that.steps);
+      }
+
+      @Override
+      public int hashCode() {
+        return Objects.hash(configurationScopeId, title, startingMessage, indeterminate, cancellable, steps, complete);
+      }
+
+      @Override
+      public String toString() {
+        return "ProgressReport{" +
+          "configurationScopeId='" + configurationScopeId + '\'' +
+          ", title='" + title + '\'' +
+          ", startingMessage='" + startingMessage + '\'' +
+          ", indeterminate=" + indeterminate +
+          ", cancellable=" + cancellable +
+          ", steps=" + steps +
+          ", complete=" + complete +
+          '}';
+      }
+    }
+
+    public static class ProgressStep {
+      @CheckForNull
+      private final String message;
+      @CheckForNull
+      private final Integer percentage;
+
+      public ProgressStep(@Nullable String message, @Nullable Integer percentage) {
+        this.message = message;
+        this.percentage = percentage;
+      }
+
+      @CheckForNull
+      public String getMessage() {
+        return message;
+      }
+
+      @CheckForNull
+      public Integer getPercentage() {
+        return percentage;
+      }
+
+      @Override
+      public boolean equals(Object o) {
+        if (this == o)
+          return true;
+        if (o == null || getClass() != o.getClass())
+          return false;
+        ProgressStep that = (ProgressStep) o;
+        return Objects.equals(message, that.message) && Objects.equals(percentage, that.percentage);
+      }
+
+      @Override
+      public int hashCode() {
+        return Objects.hash(message, percentage);
+      }
+
+      @Override
+      public String toString() {
+        return "ProgressStep{" +
+          "message='" + message + '\'' +
+          ", percentage=" + percentage +
+          '}';
+      }
+    }
+
   }
 }

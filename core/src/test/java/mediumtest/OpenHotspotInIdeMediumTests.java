@@ -53,7 +53,7 @@ class OpenHotspotInIdeMediumTests {
   private SonarLintBackendImpl backend;
   static ServerFixture.Server serverWithHotspot = newSonarQubeServer("1.2.3")
     .withProject("projectKey",
-      project -> project.withHotspot("key", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", new TextRange(1, 0, 3, 4)))
+      project -> project.withDefaultBranch(branch -> branch.withHotspot("key", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", new TextRange(1, 0, 3, 4))))
     .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))
     .start();
   static ServerFixture.Server serverWithoutHotspot = newSonarQubeServer("1.2.3")

@@ -96,4 +96,8 @@ public class ServerApi {
   public PushApi push() {
     return new PushApi(helper);
   }
+
+  public boolean isSonarCloud() {
+    return helper.isSonarCloud();
+  }
 }

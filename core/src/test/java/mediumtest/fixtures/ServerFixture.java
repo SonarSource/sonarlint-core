@@ -19,6 +19,7 @@
  */
 package mediumtest.fixtures;
 
+import com.google.protobuf.Message;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -29,6 +30,7 @@ import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 public class ServerFixture {
@@ -74,12 +76,38 @@ public class ServerFixture {
     }
 
     public static class ServerProjectBuilder {
+      private final Map<String, ServerProjectBranchBuilder> branchesByName = new HashMap<>();
 
+      public ServerProjectBuilder withEmptyBranch(String branchName) {
+        var builder = new ServerProjectBranchBuilder();
+        this.branchesByName.put(branchName, builder);
+        return this;
+      }
+
+      public ServerProjectBuilder withBranch(String branchName, UnaryOperator<ServerProjectBranchBuilder> branchBuilder) {
+        var builder = new ServerProjectBranchBuilder();
+        this.branchesByName.put(branchName, branchBuilder.apply(builder));
+        return this;
+      }
+
+      public ServerProjectBuilder withDefaultBranch(UnaryOperator<ServerProjectBranchBuilder> branchBuilder) {
+        return withBranch(null, branchBuilder);
+      }
+    }
+
+    public static class ServerProjectBranchBuilder {
       private final Collection<ServerHotspot> hotspots = new ArrayList<>();
+      private final Collection<ServerIssue> issues = new ArrayList<>();
 
-      public ServerProjectBuilder withHotspot(String hotspotKey, String ruleKey, String message, String author, String filePath,
+      public ServerProjectBranchBuilder withHotspot(String hotspotKey, String ruleKey, String message, String author, String filePath,
         String status, String resolution, TextRange textRange) {
         this.hotspots.add(new ServerHotspot(hotspotKey, ruleKey, message, author, filePath, status, resolution, textRange));
+        return this;
+      }
+
+      public ServerProjectBranchBuilder withIssue(String issueKey, String ruleKey, String message, String author, String filePath,
+        String status, String resolution, TextRange textRange) {
+        this.issues.add(new ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, textRange));
         return this;
       }
 
@@ -96,6 +124,29 @@ public class ServerFixture {
         private ServerHotspot(String hotspotKey, String ruleKey, String message, String author, String filePath, String status,
           String resolution, TextRange textRange) {
           this.hotspotKey = hotspotKey;
+          this.ruleKey = ruleKey;
+          this.message = message;
+          this.author = author;
+          this.filePath = filePath;
+          this.status = status;
+          this.resolution = resolution;
+          this.textRange = textRange;
+        }
+      }
+
+      private static class ServerIssue {
+        private final String issueKey;
+        private final String ruleKey;
+        private final String message;
+        private final String author;
+        private final String filePath;
+        private final String status;
+        private final String resolution;
+        private final TextRange textRange;
+
+        private ServerIssue(String issueKey, String ruleKey, String message, String author, String filePath, String status,
+          String resolution, TextRange textRange) {
+          this.issueKey = issueKey;
           this.ruleKey = ruleKey;
           this.message = message;
           this.author = author;
@@ -143,6 +194,7 @@ public class ServerFixture {
     private void registerWebApiResponses() {
       registerSystemApiResponses();
       registerHotspotsApiResponses();
+      registerIssuesApiResponses();
       registerSourceApiResponses();
     }
 
@@ -152,26 +204,71 @@ public class ServerFixture {
     }
 
     private void registerHotspotsApiResponses() {
-      projectsByProjectKey.forEach((projectKey, project) -> project.hotspots.forEach(hotspot -> {
-        var textRange = hotspot.textRange;
-        mockWebServer.addProtobufResponse("/api/hotspots/show.protobuf?projectKey=" + projectKey + "&hotspot=" + hotspot.hotspotKey,
-          Hotspots.ShowWsResponse.newBuilder()
-            .setMessage(hotspot.message)
-            .setComponent(Hotspots.Component.newBuilder().setPath(hotspot.filePath).setKey(projectKey + ":" + hotspot.filePath))
-            .setTextRange(Common.TextRange.newBuilder().setStartLine(textRange.getStartLine()).setStartOffset(textRange.getStartLineOffset()).setEndLine(textRange.getEndLine())
-              .setEndOffset(textRange.getEndLineOffset()).build())
-            .setAuthor(hotspot.author)
-            .setStatus(hotspot.status)
-            .setResolution(hotspot.resolution)
-            .setRule(Hotspots.Rule.newBuilder().setKey(hotspot.ruleKey)
-              .setName("name")
-              .setSecurityCategory("category")
-              .setVulnerabilityProbability("HIGH")
-              .setRiskDescription("risk")
-              .setVulnerabilityDescription("vulnerability")
-              .setFixRecommendations("fix")
-              .build())
-            .build());
+      registerHotspotsShowApiResponses();
+    }
+
+    private void registerHotspotsShowApiResponses() {
+      projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
+        branch.hotspots.forEach(hotspot -> {
+          var textRange = hotspot.textRange;
+          mockWebServer.addProtobufResponse("/api/hotspots/show.protobuf?projectKey=" + projectKey + "&hotspot=" + hotspot.hotspotKey,
+            Hotspots.ShowWsResponse.newBuilder()
+              .setMessage(hotspot.message)
+              .setComponent(Hotspots.Component.newBuilder().setPath(hotspot.filePath).setKey(projectKey + ":" + hotspot.filePath))
+              .setTextRange(Common.TextRange.newBuilder().setStartLine(textRange.getStartLine()).setStartOffset(textRange.getStartLineOffset()).setEndLine(textRange.getEndLine())
+                .setEndOffset(textRange.getEndLineOffset()).build())
+              .setAuthor(hotspot.author)
+              .setStatus(hotspot.status)
+              .setResolution(hotspot.resolution)
+              .setRule(Hotspots.Rule.newBuilder().setKey(hotspot.ruleKey)
+                .setName("name")
+                .setSecurityCategory("category")
+                .setVulnerabilityProbability("HIGH")
+                .setRiskDescription("risk")
+                .setVulnerabilityDescription("vulnerability")
+                .setFixRecommendations("fix")
+                .build())
+              .build());
+        });
+      }));
+    }
+
+    private void registerIssuesApiResponses() {
+      registerApiIssuesPullResponses();
+      registerApiIssuesPullTaintResponses();
+    }
+
+    private void registerApiIssuesPullResponses() {
+      projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
+        var branchParameter = branchName == null ? "" : "&branchName=" + branchName;
+        var timestamp = Issues.IssuesPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
+        var issuesArray = branch.issues.stream().map(issue -> Issues.IssueLite.newBuilder()
+          .setKey(issue.issueKey)
+          .setRuleKey(issue.ruleKey)
+          .setType(Common.RuleType.BUG)
+          .setUserSeverity(Common.Severity.MAJOR)
+          .setMainLocation(Issues.Location.newBuilder().setFilePath(issue.filePath).setMessage(issue.message)
+            .setTextRange(Issues.TextRange.newBuilder()
+              .setStartLine(issue.textRange.getStartLine())
+              .setStartLineOffset(issue.textRange.getStartLineOffset())
+              .setEndLine(issue.textRange.getEndLine())
+              .setEndLineOffset(issue.textRange.getEndLineOffset())
+              .setHash("hash")))
+          .setCreationDate(123456789L)
+          .build()).toArray(Issues.IssueLite[]::new);
+        var messages = new Message[issuesArray.length + 1];
+        messages[0] = timestamp;
+        System.arraycopy(issuesArray, 0, messages, 1, issuesArray.length);
+        mockWebServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + projectKey + branchParameter, messages);
+        mockWebServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + projectKey + branchParameter + "&changedSince=" + timestamp.getQueryTimestamp(), messages);
+      }));
+    }
+
+    private void registerApiIssuesPullTaintResponses() {
+      projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
+        var timestamp = Issues.IssuesPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
+        mockWebServer.addProtobufResponseDelimited("/api/issues/pull_taint?projectKey=" + projectKey + "&branchName=" + branchName, timestamp);
+        mockWebServer.addProtobufResponseDelimited("/api/issues/pull_taint?projectKey=" + projectKey + "&branchName=" + branchName + "&changedSince=" + timestamp.getQueryTimestamp(), timestamp);
       }));
     }
 
