@@ -20,6 +20,7 @@
 package mediumtest.fixtures;
 
 import java.io.IOException;
+import java.net.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -57,20 +58,26 @@ import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResp
 import org.sonarsource.sonarlint.core.clientapi.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FoundFileDto;
 import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
+import org.sonarsource.sonarlint.core.clientapi.client.http.GetProxyPasswordAuthenticationParams;
+import org.sonarsource.sonarlint.core.clientapi.client.http.GetProxyPasswordAuthenticationResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.http.ProxyDto;
+import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesParams;
+import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.clientapi.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.http.HttpClient;
-import testutils.MockWebServerExtensionWithProtobuf;
 
 import static mediumtest.fixtures.StorageFixture.newStorage;
 
@@ -98,6 +105,7 @@ public class SonarLintBackendFixture {
     private boolean areSecurityHotspotsEnabled;
     private boolean synchronizeProjects;
     private boolean taintVulnerabilitiesEnabled = true;
+    private String userAgent;
 
     private final Map<String, StandaloneRuleConfigDto> standaloneConfigByKey = new HashMap<>();
     private final List<StorageFixture.StorageBuilder> storages = new ArrayList<>();
@@ -235,6 +243,16 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintBackendBuilder withTaintVulnerabilitiesDisabled() {
+      taintVulnerabilitiesEnabled = false;
+      return this;
+    }
+
+    public SonarLintBackendBuilder withUserAgent() {
+      userAgent = "SonarLintBackendFixture";
+      return this;
+    }
+
     public SonarLintBackendBuilder withSmartNotifications() {
       manageSmartNotifications = true;
       return this;
@@ -249,10 +267,10 @@ public class SonarLintBackendFixture {
       var sonarLintBackend = new SonarLintTestBackend(client);
       client.setBackend(sonarLintBackend);
       sonarLintBackend
-        .initialize(new InitializeParams(client.getClientInfo(), telemetryProductKey, storageParentPath.resolve("storage"), workDir, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
+        .initialize(new InitializeParams(client.getClientInfo(), telemetryProductKey, storageParentPath.resolve("storage"), workDir, embeddedPluginPaths,
+          connectedModeEmbeddedPluginPathsByKey,
           enabledLanguages, extraEnabledLanguagesInConnectedMode, areSecurityHotspotsEnabled, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
-          startEmbeddedServer,
-          standaloneConfigByKey, manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects));
+          startEmbeddedServer, standaloneConfigByKey, manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, userAgent));
       sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
       activeBranchPerScopeId.forEach(
         (scopeId, branch) -> sonarLintBackend.getSonarProjectBranchService().didChangeActiveSonarProjectBranch(new DidChangeActiveSonarProjectBranchParams(scopeId, branch)));
@@ -270,6 +288,7 @@ public class SonarLintBackendFixture {
     public SonarLintTestBackend build() {
       return build(newFakeClient().build());
     }
+
   }
 
   public static class SonarLintClientBuilder {
@@ -279,6 +298,10 @@ public class SonarLintBackendFixture {
     private final LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl = new LinkedHashMap<>();
     private final LinkedHashMap<String, ConfigurationScopeDto> cannedBindingAssistByProjectKey = new LinkedHashMap<>();
     private boolean rejectingProgress;
+
+    private ProxyDto proxy;
+    private GetProxyPasswordAuthenticationResponse proxyAuth;
+    private Map<String, UsernamePasswordDto> creds = new HashMap<>();
 
     public SonarLintClientBuilder withFoundFile(String name, String path, String content) {
       foundFiles.add(new FoundFileDto(name, path, content));
@@ -300,6 +323,21 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintClientBuilder withCredentials(String connectionId, String user, String password) {
+      creds.put(connectionId, new UsernamePasswordDto(user, password));
+      return this;
+    }
+
+    public SonarLintClientBuilder withHttpProxy(String hostname, int port) {
+      this.proxy = new ProxyDto(Proxy.Type.HTTP, hostname, port);
+      return this;
+    }
+
+    public SonarLintClientBuilder withHttpProxyAuth(String username, String password) {
+      this.proxyAuth = new GetProxyPasswordAuthenticationResponse(username, password);
+      return this;
+    }
+
     public SonarLintClientBuilder assistingConnectingAndBindingToSonarQube(String scopeId, String connectionId, String baseUrl, String projectKey) {
       this.cannedAssistCreatingSonarQubeConnectionByBaseUrl.put(baseUrl, new SonarQubeConnectionConfigurationDto(connectionId, baseUrl, true));
       this.cannedBindingAssistByProjectKey.put(projectKey, new ConfigurationScopeDto(scopeId, null, true, scopeId, new BindingConfigurationDto(connectionId, projectKey, false)));
@@ -308,12 +346,11 @@ public class SonarLintBackendFixture {
 
     public FakeSonarLintClient build() {
       return new FakeSonarLintClient(new HostInfoDto(hostName), foundFiles, hostDescription, cannedAssistCreatingSonarQubeConnectionByBaseUrl, cannedBindingAssistByProjectKey,
-        rejectingProgress);
+        rejectingProgress, proxy, proxyAuth, creds);
     }
   }
 
   public static class FakeSonarLintClient implements SonarLintClient {
-    private static final HttpClient httpClient = MockWebServerExtensionWithProtobuf.httpClient();
     private final Map<String, List<BindingSuggestionDto>> bindingSuggestions = new HashMap<>();
 
     private final List<String> urlsToOpen = new ArrayList<>();
@@ -328,17 +365,24 @@ public class SonarLintBackendFixture {
     private final Map<String, Collection<HotspotDetailsDto>> hotspotToShowByConfigScopeId = new HashMap<>();
     private final Map<String, ProgressReport> progressReportsByTaskId = new ConcurrentHashMap<>();
     private final Set<String> synchronizedConfigScopeIds = new HashSet<>();
+    private final ProxyDto proxy;
+    private final GetProxyPasswordAuthenticationResponse proxyAuth;
+    private final Map<String, UsernamePasswordDto> creds;
     private SonarLintBackendImpl backend;
 
     public FakeSonarLintClient(HostInfoDto clientInfo, List<FoundFileDto> foundFiles, String workspaceTitle,
       LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
-      LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, boolean rejectingProgress) {
+      LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, boolean rejectingProgress, @Nullable ProxyDto proxy,
+      @Nullable GetProxyPasswordAuthenticationResponse proxyAuth, Map<String, UsernamePasswordDto> creds) {
       this.clientInfo = clientInfo;
       this.foundFiles = foundFiles;
       this.workspaceTitle = workspaceTitle;
       this.cannedAssistCreatingSonarQubeConnectionByBaseUrl = cannedAssistCreatingSonarQubeConnectionByBaseUrl;
       this.bindingAssistResponseByProjectKey = bindingAssistResponseByProjectKey;
       this.rejectingProgress = rejectingProgress;
+      this.proxy = proxy;
+      this.proxyAuth = proxyAuth;
+      this.creds = creds;
     }
 
     public void setBackend(SonarLintBackendImpl backend) {
@@ -357,18 +401,6 @@ public class SonarLintBackendFixture {
     @Override
     public CompletableFuture<FindFileByNamesInScopeResponse> findFileByNamesInScope(FindFileByNamesInScopeParams params) {
       return CompletableFuture.completedFuture(new FindFileByNamesInScopeResponse(foundFiles));
-    }
-
-    @Nullable
-    @Override
-    public HttpClient getHttpClient(String connectionId) {
-      return httpClient;
-    }
-
-    @Nullable
-    @Override
-    public HttpClient getHttpClientNoAuth(String forUrl) {
-      return httpClient;
     }
 
     @Override
@@ -452,6 +484,28 @@ public class SonarLintBackendFixture {
 
     public Set<String> getSynchronizedConfigScopeIds() {
       return synchronizedConfigScopeIds;
+    }
+
+    public CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params) {
+      var usernamePasswordDto = creds.get(params.getConnectionId());
+      var response = new GetCredentialsResponse(usernamePasswordDto != null ? usernamePasswordDto : new UsernamePasswordDto(null, null));
+      return CompletableFuture.completedFuture(response);
+    }
+
+    @Override
+    public CompletableFuture<SelectProxiesResponse> selectProxies(SelectProxiesParams params) {
+      if (proxy != null) {
+        return CompletableFuture.completedFuture(new SelectProxiesResponse(List.of(proxy)));
+      }
+      return CompletableFuture.completedFuture(new SelectProxiesResponse(List.of()));
+    }
+
+    @Override
+    public CompletableFuture<GetProxyPasswordAuthenticationResponse> getProxyPasswordAuthentication(GetProxyPasswordAuthenticationParams params) {
+      if (proxyAuth != null) {
+        return CompletableFuture.completedFuture(proxyAuth);
+      }
+      return CompletableFuture.completedFuture(new GetProxyPasswordAuthenticationResponse(null, null));
     }
 
     public boolean hasReceivedSuggestions() {

@@ -19,6 +19,11 @@
  */
 package testutils;
 
+import com.github.tomakehurst.wiremock.http.Body;
+import com.github.tomakehurst.wiremock.http.ContentTypeHeader;
+import com.google.protobuf.Message;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -56,6 +61,16 @@ public class TestUtils {
 
   public static ClientInputFile createInputFile(final Path path, String relativePath, final boolean isTest, final Charset encoding) {
     return new OnDiskTestClientInputFile(path, relativePath, isTest, encoding);
+  }
+
+  public static Body protobufBody(Message message) {
+    var baos = new ByteArrayOutputStream();
+    try {
+      message.writeTo(baos);
+      return Body.ofBinaryOrText(baos.toByteArray(), ContentTypeHeader.absent());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
 }
