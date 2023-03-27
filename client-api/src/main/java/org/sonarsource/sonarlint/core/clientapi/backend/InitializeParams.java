@@ -51,6 +51,7 @@ public class InitializeParams {
   // not controllable anymore, it is the backend's responsibility to decide
   private final boolean taintVulnerabilitiesEnabled;
   private final boolean shouldSynchronizeProjects;
+  private final String userAgent;
 
   /**
    * @param telemetryProductKey       SonarLint product key (vscode, idea, eclipse, ...)
@@ -62,7 +63,7 @@ public class InitializeParams {
     Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> extraEnabledLanguagesInConnectedMode,
     boolean enableSecurityHotspots, List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections,
     @Nullable String sonarlintUserHome, boolean shouldManageLocalServer, Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey, boolean shouldManageSmartNotifications,
-    @Deprecated boolean taintVulnerabilitiesEnabled, boolean shouldSynchronizeProjects) {
+    @Deprecated boolean taintVulnerabilitiesEnabled, boolean shouldSynchronizeProjects, String userAgent) {
     this.hostInfo = hostInfo;
     this.telemetryProductKey = telemetryProductKey;
     this.storageRoot = storageRoot;
@@ -80,6 +81,7 @@ public class InitializeParams {
     this.shouldManageSmartNotifications = shouldManageSmartNotifications;
     this.taintVulnerabilitiesEnabled = taintVulnerabilitiesEnabled;
     this.shouldSynchronizeProjects = shouldSynchronizeProjects;
+    this.userAgent = userAgent;
   }
 
   public HostInfoDto getHostInfo() {
@@ -155,5 +157,9 @@ public class InitializeParams {
 
   public boolean shouldSynchronizeProjects() {
     return shouldSynchronizeProjects;
+  }
+
+  public String getUserAgent() {
+    return userAgent;
   }
 }

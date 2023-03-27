@@ -28,6 +28,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
+import org.sonarsource.sonarlint.core.http.HttpClientManager;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -40,14 +41,17 @@ public class AuthenticationHelperServiceImpl implements AuthenticationHelperServ
   private final SonarLintClient client;
   private final EmbeddedServer embeddedServer;
   private final AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository;
+
+  private final HttpClientManager httpClientManager;
   private final String clientName;
 
   public AuthenticationHelperServiceImpl(SonarLintClient client, EmbeddedServer embeddedServer, AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository,
-    String clientName) {
+    String clientName, HttpClientManager httpClientManager) {
     this.client = client;
     this.embeddedServer = embeddedServer;
     this.awaitingUserTokenFutureRepository = awaitingUserTokenFutureRepository;
     this.clientName = clientName;
+    this.httpClientManager = httpClientManager;
   }
 
   @Override
@@ -88,11 +92,8 @@ public class AuthenticationHelperServiceImpl implements AuthenticationHelperServ
   private CompletableFuture<Boolean> doesServerSupportAutomaticUserTokenGeneration(String serverUrl, boolean isSonarCloud) {
     if (!isSonarCloud) {
       var endpoint = new EndpointParams(serverUrl, false, null);
-      var httpClient = client.getHttpClientNoAuth(serverUrl);
-      if (httpClient != null) {
-        return new ServerApi(endpoint, httpClient).system().getStatus()
-          .thenApply(status -> Version.create(status.getVersion()).satisfiesMinRequirement(MIN_SQ_VERSION_SUPPORTING_AUTOMATIC_TOKEN_GENERATION));
-      }
+      return new ServerApi(endpoint, httpClientManager.getHttpClient()).system().getStatus()
+        .thenApply(status -> Version.create(status.getVersion()).satisfiesMinRequirement(MIN_SQ_VERSION_SUPPORTING_AUTOMATIC_TOKEN_GENERATION));
     }
     return CompletableFuture.completedFuture(false);
 

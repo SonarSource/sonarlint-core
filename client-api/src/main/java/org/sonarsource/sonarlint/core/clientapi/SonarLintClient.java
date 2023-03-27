@@ -19,8 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.clientapi;
 
+import java.net.Authenticator;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.ProxySelector;
+import java.net.URI;
 import java.util.concurrent.CompletableFuture;
-import javax.annotation.CheckForNull;
+import java.util.stream.Collectors;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
@@ -29,16 +34,22 @@ import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingPara
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
+import org.sonarsource.sonarlint.core.clientapi.client.http.GetProxyPasswordAuthenticationParams;
+import org.sonarsource.sonarlint.core.clientapi.client.http.GetProxyPasswordAuthenticationResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.http.ProxyDto;
+import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesParams;
+import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.clientapi.client.sync.DidSynchronizeConfigurationScopeParams;
-import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 
 public interface SonarLintClient {
 
@@ -47,23 +58,6 @@ public interface SonarLintClient {
 
   @JsonRequest
   CompletableFuture<FindFileByNamesInScopeResponse> findFileByNamesInScope(FindFileByNamesInScopeParams params);
-
-  /**
-   * Temporary workaround until we decide what to do regarding HTTP requests
-   * @deprecated will be removed
-   */
-  @Deprecated(forRemoval = true)
-  @CheckForNull
-  HttpClient getHttpClient(String connectionId);
-
-  /**
-   * Temporary workaround until we decide what to do regarding HTTP requests
-   * @param forUrl The URL can be useful to set up the http client (e.g. for proxy)
-   * @deprecated will be removed
-   */
-  @Deprecated(forRemoval = true)
-  @CheckForNull
-  HttpClient getHttpClientNoAuth(String forUrl);
 
   @JsonNotification
   void openUrlInBrowser(OpenUrlInBrowserParams params);
@@ -113,4 +107,38 @@ public interface SonarLintClient {
 
   @JsonNotification
   void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params);
+
+  @JsonRequest
+  CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params);
+
+  @JsonRequest
+  default CompletableFuture<SelectProxiesResponse> selectProxies(SelectProxiesParams params) {
+    var proxies = ProxySelector.getDefault().select(URI.create(params.getUri()));
+    var response = new SelectProxiesResponse(proxies.stream().map(SonarLintClient::convert).collect(Collectors.toList()));
+    return CompletableFuture.completedFuture(response);
+  }
+
+  private static ProxyDto convert(Proxy proxy) {
+    if (proxy.type() == Proxy.Type.DIRECT) {
+      return ProxyDto.NO_PROXY;
+    }
+    var address = proxy.address();
+    if (!(address instanceof InetSocketAddress)) {
+      throw new IllegalArgumentException("Unsupported address type:" + address.getClass());
+    }
+
+    var server = ((InetSocketAddress) address).getHostString();
+    var port = ((InetSocketAddress) address).getPort();
+    return new ProxyDto(proxy.type(), server, port);
+  }
+
+  @JsonRequest
+  default CompletableFuture<GetProxyPasswordAuthenticationResponse> getProxyPasswordAuthentication(GetProxyPasswordAuthenticationParams params) {
+    var passwordAuthentication = Authenticator.requestPasswordAuthentication(params.getHost(), null, params.getPort(), params.getProtocol(), params.getPrompt(), params.getScheme(),
+      null, Authenticator.RequestorType.PROXY);
+    var response = new GetProxyPasswordAuthenticationResponse(passwordAuthentication != null ? passwordAuthentication.getUserName() : null,
+      passwordAuthentication != null ? new String(passwordAuthentication.getPassword()) : null);
+    return CompletableFuture.completedFuture(response);
+  }
+
 }
