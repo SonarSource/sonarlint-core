@@ -55,6 +55,8 @@ import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResp
 import org.sonarsource.sonarlint.core.clientapi.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FoundFileDto;
@@ -427,6 +429,10 @@ public class SonarLintBackendFixture {
 
     public Set<String> getSynchronizedConfigScopeIds() {
       return synchronizedConfigScopeIds;
+    }
+
+    public CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params) {
+      return CompletableFuture.failedFuture(new UnsupportedOperationException("Unsupported!"));
     }
 
     public boolean hasReceivedSuggestions() {
