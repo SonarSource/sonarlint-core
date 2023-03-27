@@ -58,6 +58,8 @@ import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.http.HttpClient;
+import org.sonarsource.sonarlint.core.commons.http.JavaHttpClientAdapter;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -88,7 +90,7 @@ class SonarCloudTests extends AbstractConnectedTests {
   private static final String PROJECT_KEY_XML = "sample-xml";
   private static final String PROJECT_KEY_JAVA_TAINT = "sample-java-taint";
 
-  private static final SonarLintHttpClientJavaNetImpl SC_CLIENT = new SonarLintHttpClientJavaNetImpl(SHARED_CLIENT, SONARCLOUD_USER, SONARCLOUD_PASSWORD);
+  private static final HttpClient SC_CLIENT = httpClientWithCredentials(SONARCLOUD_USER, SONARCLOUD_PASSWORD);
 
   private final ProgressMonitor progress = new ProgressMonitor(null);
 

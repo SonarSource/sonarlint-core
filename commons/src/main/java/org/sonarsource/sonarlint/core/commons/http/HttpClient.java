@@ -26,7 +26,9 @@ import java.util.function.Consumer;
 
 /**
  * The client(IDE) is responsible to provide an HttpClient, configured with authentication, timeouts, proxy support, ...
+ * @deprecated
  */
+@Deprecated
 public interface HttpClient {
 
   String JSON_CONTENT_TYPE = "application/json; charset=utf-8";
