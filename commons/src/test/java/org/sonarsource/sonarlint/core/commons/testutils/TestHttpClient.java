@@ -36,12 +36,6 @@ import org.sonarsource.sonarlint.core.commons.http.HttpConnectionListener;
 public class TestHttpClient implements HttpClient {
 
   private static final java.net.http.HttpClient SHARED_CLIENT = java.net.http.HttpClient.newBuilder().build();
-  private final Map<String, String> headers = new HashMap<>();
-
-  public TestHttpClient withHeader(String name, String value) {
-    headers.put(name, value);
-    return this;
-  }
 
   @Override
   public Response post(String url, String contentType, String bodyContent) {
@@ -144,9 +138,7 @@ public class TestHttpClient implements HttpClient {
   }
 
   private HttpRequest.Builder requestBuilder(String url) {
-    var builder = HttpRequest.newBuilder().uri(URI.create(url));
-    headers.forEach(builder::headers);
-    return builder;
+    return HttpRequest.newBuilder().uri(URI.create(url));
   }
 
   public static class HttpAsyncRequest implements HttpClient.AsyncRequest {
