@@ -29,6 +29,8 @@ import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingPara
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
@@ -113,4 +115,7 @@ public interface SonarLintClient {
 
   @JsonNotification
   void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params);
+
+  @JsonRequest
+  CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params);
 }
