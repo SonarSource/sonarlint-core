@@ -290,7 +290,6 @@ public class SonarLintBackendFixture {
   }
 
   public static class FakeSonarLintClient implements SonarLintClient {
-    private static final HttpClient httpClient = MockWebServerExtensionWithProtobuf.httpClient();
     private final Map<String, List<BindingSuggestionDto>> bindingSuggestions = new HashMap<>();
 
     private final List<String> urlsToOpen = new ArrayList<>();
@@ -334,18 +333,6 @@ public class SonarLintBackendFixture {
     @Override
     public CompletableFuture<FindFileByNamesInScopeResponse> findFileByNamesInScope(FindFileByNamesInScopeParams params) {
       return CompletableFuture.completedFuture(new FindFileByNamesInScopeResponse(foundFiles));
-    }
-
-    @Nullable
-    @Override
-    public HttpClient getHttpClient(String connectionId) {
-      return httpClient;
-    }
-
-    @Nullable
-    @Override
-    public HttpClient getHttpClientNoAuth(String forUrl) {
-      return httpClient;
     }
 
     @Override

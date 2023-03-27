@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons.testutils;
+package org.sonarsource.sonarlint.core.commons.http;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,12 +28,21 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-import org.sonarsource.sonarlint.core.commons.http.HttpClient;
-import org.sonarsource.sonarlint.core.commons.http.HttpConnectionListener;
+import javax.annotation.Nullable;
 
-public class TestHttpClient implements HttpClient {
+public class JavaHttpClientAdapter implements HttpClient {
 
-  private static final java.net.http.HttpClient SHARED_CLIENT = java.net.http.HttpClient.newBuilder().build();
+  private final java.net.http.HttpClient javaClient;
+  @Nullable
+  private final String usernameOrToken;
+  @Nullable
+  private final String password;
+
+  public JavaHttpClientAdapter(java.net.http.HttpClient javaClient, @Nullable String usernameOrToken, @Nullable String password) {
+    this.javaClient = javaClient;
+    this.usernameOrToken = usernameOrToken;
+    this.password = password;
+  }
 
   @Override
   public Response post(String url, String contentType, String bodyContent) {
@@ -65,22 +74,19 @@ public class TestHttpClient implements HttpClient {
 
   @Override
   public AsyncRequest getEventStream(String url, HttpConnectionListener connectionListener, Consumer<String> messageConsumer) {
-    var request = requestBuilder(url).GET().build();
-    var responseFuture = SHARED_CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream());
-    var wrappedFuture = responseFuture.whenComplete((response, ex) -> {
-      if (ex != null) {
-        connectionListener.onError(null);
+    var request = requestBuilder(url)
+      .header("Accept", "text/event-stream")
+      .GET().build();
+    var responseFuture = javaClient.sendAsync(request, responseInfo -> {
+      if (responseInfo.statusCode() == HttpURLConnection.HTTP_OK) {
+        connectionListener.onConnected();
+        return new SseSubscriber(messageConsumer::accept);
       } else {
-        if (response.statusCode() == HttpURLConnection.HTTP_OK) {
-          connectionListener.onConnected();
-          // simplified reading, for tests we assume the event comes full, never chunked
-          messageConsumer.accept(wrap(response).bodyAsString());
-        } else {
-          connectionListener.onError(response.statusCode());
-        }
+        connectionListener.onError(responseInfo.statusCode());
+        throw new RuntimeException("Request failed");
       }
     });
-    return new HttpAsyncRequest(wrappedFuture);
+    return new HttpAsyncRequest(responseFuture);
   }
 
   @Override
@@ -93,18 +99,18 @@ public class TestHttpClient implements HttpClient {
 
   private Response executeRequest(HttpRequest request) {
     try {
-      return wrap(SHARED_CLIENT.send(request, HttpResponse.BodyHandlers.ofInputStream()));
+      return wrap(javaClient.send(request, HttpResponse.BodyHandlers.ofInputStream()));
     } catch (Exception e) {
       throw new IllegalStateException("Unable to execute request: " + e.getMessage(), e);
     }
   }
 
   private CompletableFuture<Response> executeRequestAsync(HttpRequest request) {
-    var call = SHARED_CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream());
-    return call.thenApply(this::wrap);
+    var call = javaClient.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream());
+    return call.thenApply(JavaHttpClientAdapter::wrap);
   }
 
-  private Response wrap(HttpResponse<InputStream> wrapped) {
+  private static Response wrap(HttpResponse<InputStream> wrapped) {
     return new Response() {
 
       @Override
@@ -144,13 +150,19 @@ public class TestHttpClient implements HttpClient {
   }
 
   private HttpRequest.Builder requestBuilder(String url) {
-    return HttpRequest.newBuilder().uri(URI.create(url));
+    var request = HttpRequest.newBuilder().uri(URI.create(url));
+    if (usernameOrToken != null) {
+      var plainCreds = usernameOrToken + ":" + (password != null ? password : "");
+      var encoded = new String(java.util.Base64.getEncoder().encode(plainCreds.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
+      request.header("Authorization", "Basic " + encoded);
+    }
+    return request;
   }
 
-  public static class HttpAsyncRequest implements HttpClient.AsyncRequest {
-    private final CompletableFuture<HttpResponse<InputStream>> response;
+  public static class HttpAsyncRequest implements AsyncRequest {
+    private final CompletableFuture<?> response;
 
-    private HttpAsyncRequest(CompletableFuture<HttpResponse<InputStream>> response) {
+    private HttpAsyncRequest(CompletableFuture<?> response) {
       this.response = response;
     }
 

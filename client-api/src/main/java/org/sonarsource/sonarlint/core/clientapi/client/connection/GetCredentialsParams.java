@@ -21,5 +21,13 @@ package org.sonarsource.sonarlint.core.clientapi.client.connection;
 
 public class GetCredentialsParams {
 
-  private String connectionId;
+  private final String connectionId;
+
+  public GetCredentialsParams(String connectionId) {
+    this.connectionId = connectionId;
+  }
+
+  public String getConnectionId() {
+    return connectionId;
+  }
 }
