@@ -19,6 +19,10 @@
  */
 package mediumtest;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.ServerFixture;
@@ -76,7 +80,7 @@ class AuthenticationHelperMediumTests {
   }
 
   @Test
-  void it_should_open_the_sonarlint_auth_url_for_sonarqube_9_7_plus() {
+  void it_should_open_the_sonarlint_auth_url_for_sonarqube_9_7_plus() throws IOException, InterruptedException {
     var fakeClient = newFakeClient().withHostName("ClientName").build();
     backend = newBackend().withEmbeddedServer().build(fakeClient);
     server = newSonarQubeServer("9.7").start();
@@ -86,7 +90,14 @@ class AuthenticationHelperMediumTests {
     await().atMost(Duration.ofSeconds(3)).until(() -> !fakeClient.getUrlsToOpen().isEmpty());
     assertThat(fakeClient.getUrlsToOpen())
       .containsExactly(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort()));
-    httpClient().post("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token", HttpClient.JSON_CONTENT_TYPE, "{\"token\": \"value\"}");
+
+    var request = HttpRequest.newBuilder()
+      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
+      .header("Content-Type", "application/json; charset=utf-8")
+      .POST(HttpRequest.BodyPublishers.ofString("{\"token\": \"value\"}")).build();
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    assertThat(response.statusCode()).isEqualTo(200);
+
     assertThat(futureResponse)
       .succeedsWithin(Duration.ofSeconds(3))
       .extracting(HelpGenerateUserTokenResponse::getToken)
@@ -109,23 +120,30 @@ class AuthenticationHelperMediumTests {
   }
 
   @Test
-  void it_should_reject_incoming_user_token_with_wrong_http_method() {
+  void it_should_reject_incoming_user_token_with_wrong_http_method() throws IOException, InterruptedException {
     var fakeClient = newFakeClient().build();
     backend = newBackend().withEmbeddedServer().build(fakeClient);
 
-    var response = httpClient().get("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token");
+    var request = HttpRequest.newBuilder()
+      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
+      .GET().build();
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
-    assertThat(response.code()).isEqualTo(400);
+    assertThat(response.statusCode()).isEqualTo(400);
   }
 
   @Test
-  void it_should_reject_incoming_user_token_with_wrong_body() {
+  void it_should_reject_incoming_user_token_with_wrong_body() throws IOException, InterruptedException {
     var fakeClient = newFakeClient().build();
     backend = newBackend().withEmbeddedServer().build(fakeClient);
 
-    var response = httpClient().post("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token", HttpClient.JSON_CONTENT_TYPE, "{\"token\":");
+    var request = HttpRequest.newBuilder()
+      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
+      .header("Content-Type", "application/json; charset=utf-8")
+      .POST(HttpRequest.BodyPublishers.ofString("{\"token\":")).build();
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
-    assertThat(response.code()).isEqualTo(400);
+    assertThat(response.statusCode()).isEqualTo(400);
   }
 
   private SonarLintBackendImpl backend;

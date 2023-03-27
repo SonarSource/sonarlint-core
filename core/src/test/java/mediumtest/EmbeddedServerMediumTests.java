@@ -19,16 +19,18 @@
  */
 package mediumtest;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
-import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension.httpClient;
 
 class EmbeddedServerMediumTests {
 
@@ -38,28 +40,34 @@ class EmbeddedServerMediumTests {
   }
 
   @Test
-  void it_should_return_the_ide_name_and_empty_description_if_the_origin_is_not_trusted() {
+  void it_should_return_the_ide_name_and_empty_description_if_the_origin_is_not_trusted() throws IOException, InterruptedException {
     var fakeClient = newFakeClient().withHostName("ClientName").build();
     backend = newBackend().withEmbeddedServer().build(fakeClient);
 
-    var response = httpClient().get("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/status");
+    var request = HttpRequest.newBuilder()
+      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/status"))
+      .GET().build();
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
     assertThat(response)
-      .extracting(HttpClient.Response::isSuccessful, HttpClient.Response::code, HttpClient.Response::bodyAsString)
-      .containsExactly(true, 200, "{\"ideName\":\"ClientName\",\"description\":\"\"}");
+      .extracting(HttpResponse::statusCode, HttpResponse::body)
+      .containsExactly(200, "{\"ideName\":\"ClientName\",\"description\":\"\"}");
   }
 
   @Test
-  void it_should_return_the_ide_name_and_full_description_if_the_origin_is_trusted() {
+  void it_should_return_the_ide_name_and_full_description_if_the_origin_is_trusted() throws IOException, InterruptedException {
     var fakeClient = newFakeClient().withHostName("ClientName").withHostDescription("WorkspaceTitle").build();
     backend = newBackend().withEmbeddedServer().withSonarQubeConnection("connectionId", "https://sonar.my").build(fakeClient);
 
-    var response = httpClient().withHeader("Origin","https://sonar.my")
-      .get("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/status");
+    var request = HttpRequest.newBuilder()
+      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/status"))
+      .header("Origin", "https://sonar.my")
+      .GET().build();
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
     assertThat(response)
-      .extracting(HttpClient.Response::isSuccessful, HttpClient.Response::code, HttpClient.Response::bodyAsString)
-      .containsExactly(true, 200, "{\"ideName\":\"ClientName\",\"description\":\"WorkspaceTitle\"}");
+      .extracting(HttpResponse::statusCode, HttpResponse::body)
+      .containsExactly(200, "{\"ideName\":\"ClientName\",\"description\":\"WorkspaceTitle\"}");
   }
 
   private SonarLintBackendImpl backend;
