@@ -52,7 +52,7 @@ class InitializationMediumTests {
 
     var future = backend
       .initialize(new InitializeParams(new HostInfoDto("name"), "productKey", Path.of("unused"), Path.of("unused"), emptySet(), emptyMap(), emptySet(), emptySet(), false,
-        emptyList(), emptyList(), "home", false, emptyMap(), false, false, false));
+        emptyList(), emptyList(), "home", false, emptyMap(), false, false, false, "userAgent"));
 
     assertThat(future)
       .failsWithin(Duration.ofSeconds(1))

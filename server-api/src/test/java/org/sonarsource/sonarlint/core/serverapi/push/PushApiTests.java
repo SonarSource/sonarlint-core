@@ -24,6 +24,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import mockwebserver3.MockResponse;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -66,7 +69,7 @@ class PushApiTests {
       "}\n\n");
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 
-    List<ServerEvent> receivedEvents = new ArrayList<>();
+    List<ServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add,
       silentLogOutput);
 
@@ -87,7 +90,7 @@ class PushApiTests {
       "}\n\n");
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 
-    List<ServerEvent> receivedEvents = new ArrayList<>();
+    List<ServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add,
       silentLogOutput);
 
@@ -115,7 +118,7 @@ class PushApiTests {
       "}\n\n");
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 
-    List<ServerEvent> receivedEvents = new ArrayList<>();
+    List<ServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add,
       silentLogOutput);
 
@@ -144,7 +147,7 @@ class PushApiTests {
       "}\n\n");
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 
-    List<ServerEvent> receivedEvents = new ArrayList<>();
+    List<ServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add,
       silentLogOutput);
 
@@ -170,7 +173,7 @@ class PushApiTests {
       "\"activatedRules\": ");
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 
-    List<ServerEvent> receivedEvents = new ArrayList<>();
+    List<ServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add,
       silentLogOutput);
 
@@ -195,7 +198,7 @@ class PushApiTests {
       "}\n\n");
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 
-    List<ServerEvent> receivedEvents = new ArrayList<>();
+    List<ServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add,
       silentLogOutput);
 
@@ -209,7 +212,7 @@ class PushApiTests {
       "data: \"plop\"\n\n");
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 
-    List<ServerEvent> receivedEvents = new ArrayList<>();
+    List<ServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add,
       silentLogOutput);
 
@@ -223,7 +226,7 @@ class PushApiTests {
       "data: {]\n\n");
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 
-    List<ServerEvent> receivedEvents = new ArrayList<>();
+    List<ServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add,
       silentLogOutput);
 
@@ -237,7 +240,7 @@ class PushApiTests {
       "data: {]\n\n");
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 
-    List<ServerEvent> receivedEvents = new ArrayList<>();
+    List<ServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add,
       silentLogOutput);
 
@@ -257,7 +260,7 @@ class PushApiTests {
       "}\n\n");
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
 
-    List<ServerEvent> receivedEvents = new ArrayList<>();
+    List<ServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add,
       silentLogOutput);
 
@@ -278,7 +281,7 @@ class PushApiTests {
       "}\n\n");
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1&languages=java,py", mockResponse);
 
-    List<ServerEvent> receivedEvents = new ArrayList<>();
+    List<ServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add, silentLogOutput);
 
     await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(receivedEvents)
@@ -301,7 +304,7 @@ class PushApiTests {
       "}\n\n");
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1&languages=java,py", mockResponse);
 
-    List<ServerEvent> receivedEvents = new ArrayList<>();
+    List<ServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add, silentLogOutput);
 
     await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(receivedEvents)
@@ -324,7 +327,7 @@ class PushApiTests {
       "}\n\n");
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1&languages=java,py", mockResponse);
 
-    List<ServerEvent> receivedEvents = new ArrayList<>();
+    List<ServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add, silentLogOutput);
 
     await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(receivedEvents)
@@ -346,7 +349,7 @@ class PushApiTests {
       "}\n\n");
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1&languages=java,py", mockResponse);
 
-    List<ServerEvent> receivedEvents = new ArrayList<>();
+    List<ServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add, silentLogOutput);
 
     assertThat(receivedEvents).isEmpty();
@@ -402,7 +405,7 @@ class PushApiTests {
       "}\n\n");
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey&languages=java,py", mockResponse);
 
-    List<ServerEvent> receivedEvents = new ArrayList<>();
+    List<ServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add, silentLogOutput);
 
     await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(receivedEvents)
@@ -431,7 +434,7 @@ class PushApiTests {
       "}\n\n");
     mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey&languages=java,py", mockResponse);
 
-    List<ServerEvent> receivedEvents = new ArrayList<>();
+    List<ServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add, silentLogOutput);
 
     await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(receivedEvents)
