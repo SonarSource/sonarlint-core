@@ -47,6 +47,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.hotspot.HotspotServiceImpl;
+import org.sonarsource.sonarlint.core.http.HttpClientManager;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsServiceImpl;
@@ -84,6 +85,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   private final LanguageSupportRepository languageSupportRepository;
 
   public SonarLintBackendImpl(SonarLintClient client) {
+    var httpClientManager = new HttpClientManager(client);
     EventBus clientEventBus = new AsyncEventBus("clientEvents", clientEventsExecutorService);
     var configurationRepository = new ConfigurationRepository();
     this.configurationService = new ConfigurationServiceImpl(clientEventBus, configurationRepository);
@@ -96,7 +98,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     pluginsService = new PluginsServiceImpl(pluginRepository, languageSupportRepository, storageService);
     rulesExtractionHelper = new RulesExtractionHelper(pluginsService, languageSupportRepository);
     var rulesRepository = new RulesRepository(rulesExtractionHelper);
-    var serverApiProvider = new ServerApiProvider(connectionConfigurationRepository, client);
+    var serverApiProvider = new ServerApiProvider(connectionConfigurationRepository, httpClientManager);
     rulesService = new RulesServiceImpl(serverApiProvider, configurationRepository, rulesRepository, storageService);
     this.telemetryService = new TelemetryServiceImpl();
     this.hotspotService = new HotspotServiceImpl(client, storageService, configurationRepository, connectionConfigurationRepository, serverApiProvider, telemetryService);
@@ -105,7 +107,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     bindingSuggestionProvider = new BindingSuggestionProviderImpl(configurationRepository, connectionConfigurationRepository, client, bindingClueProvider, sonarProjectCache);
     this.embeddedServer = new EmbeddedServer(client, connectionService, awaitingUserTokenFutureRepository, configurationService, bindingSuggestionProvider, serverApiProvider,
       telemetryService);
-    this.authenticationHelperService = new AuthenticationHelperServiceImpl(client, embeddedServer, awaitingUserTokenFutureRepository);
+    this.authenticationHelperService = new AuthenticationHelperServiceImpl(client, embeddedServer, awaitingUserTokenFutureRepository, httpClientManager);
     smartNotifications = new SmartNotifications(configurationRepository, connectionConfigurationRepository, serverApiProvider, client, storageService, telemetryService);
     var sonarProjectBranchRepository = new ActiveSonarProjectBranchRepository();
     this.sonarProjectBranchService = new SonarProjectBranchServiceImpl(sonarProjectBranchRepository, configurationRepository, clientEventBus);

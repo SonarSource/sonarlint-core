@@ -89,6 +89,9 @@ import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResp
 import org.sonarsource.sonarlint.core.clientapi.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
@@ -103,7 +106,6 @@ import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRange;
-import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspotDetails;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
@@ -1406,15 +1408,14 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
         }
 
-        @Override
-        public HttpClient getHttpClient(String connectionId) {
-          return sqHttpClient();
+        public CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params) {
+          if (params.getConnectionId().equals(CONNECTION_ID)) {
+            return CompletableFuture.completedFuture(new GetCredentialsResponse(new UsernamePasswordDto(SONARLINT_USER, SONARLINT_PWD)));
+          } else {
+            return CompletableFuture.failedFuture(new IllegalArgumentException("Unknown connection: " + params.getConnectionId()));
+          }
         }
 
-        @Override
-        public HttpClient getHttpClientNoAuth(String forUrl) {
-          return sqHttpClient();
-        }
       };
     }
   }

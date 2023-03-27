@@ -30,6 +30,8 @@ import okio.Buffer;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.sonarsource.sonarlint.core.commons.http.HttpClient;
+import org.sonarsource.sonarlint.core.commons.http.JavaHttpClientAdapter;
 
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -114,8 +116,11 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
     }
   }
 
-  public static TestHttpClient httpClient() {
-    return new TestHttpClient();
+  private static final java.net.http.HttpClient SHARED_CLIENT = java.net.http.HttpClient.newBuilder().build();
+
+  @Deprecated
+  public static HttpClient httpClient() {
+    return new JavaHttpClientAdapter(SHARED_CLIENT, null, null);
   }
 
 }
