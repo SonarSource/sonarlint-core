@@ -521,7 +521,6 @@ class EffectiveRulesMediumTests {
       throw new RuntimeException(e);
     }
   }
-
   private static final String PYTHON_S139_DESCRIPTION = "<p>This rule verifies that single-line comments are not located at the ends of lines of code. The main idea behind this rule is that in order to be\n"
     +
     "really readable, trailing comments would have to be properly written and formatted (correct alignment, no interference with the visual structure of\n" +

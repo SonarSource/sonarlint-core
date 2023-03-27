@@ -22,8 +22,8 @@ package org.sonarsource.sonarlint.core;
 import java.util.Optional;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.http.HttpClientManager;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 
@@ -33,11 +33,11 @@ public class ServerApiProvider {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final ConnectionConfigurationRepository connectionRepository;
-  private final SonarLintClient client;
+  private final HttpClientManager httpClientManager;
 
-  public ServerApiProvider(ConnectionConfigurationRepository connectionRepository, SonarLintClient client) {
+  public ServerApiProvider(ConnectionConfigurationRepository connectionRepository, HttpClientManager httpClientManager) {
     this.connectionRepository = connectionRepository;
-    this.client = client;
+    this.httpClientManager = httpClientManager;
   }
 
   public Optional<ServerApi> getServerApi(String connectionId) {
@@ -46,12 +46,7 @@ public class ServerApiProvider {
       LOG.debug("Connection '{}' is gone", connectionId);
       return Optional.empty();
     }
-    var httpClient = client.getHttpClient(connectionId);
-    if (httpClient != null) {
-      return Optional.of(new ServerApi(params.get(), httpClient));
-    } else {
-      return Optional.empty();
-    }
+    return Optional.of(new ServerApi(params.get(), httpClientManager.getHttpClient(connectionId)));
   }
 
 }

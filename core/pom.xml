@@ -10,6 +10,10 @@
   <name>SonarLint Core - Implementation</name>
   <description>Common library used by some SonarLint flavors</description>
 
+  <properties>
+    <sslcontext-kickstart.version>8.0.0</sslcontext-kickstart.version>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
@@ -99,9 +103,24 @@
       <artifactId>guava</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5</artifactId>
+      <version>5.2.1</version>
+    </dependency>
+    <dependency>
       <groupId>org.apache.httpcomponents.core5</groupId>
       <artifactId>httpcore5</artifactId>
       <version>5.2</version>
+    </dependency>
+    <dependency>
+      <groupId>io.github.hakky54</groupId>
+      <artifactId>sslcontext-kickstart</artifactId>
+      <version>${sslcontext-kickstart.version}</version>
+    </dependency>
+    <dependency>
+    <groupId>io.github.hakky54</groupId>
+      <artifactId>sslcontext-kickstart-for-apache5</artifactId>
+      <version>${sslcontext-kickstart.version}</version>
     </dependency>
     <dependency>
       <groupId>com.squareup.okhttp3</groupId>
@@ -111,6 +130,12 @@
     <dependency>
       <groupId>com.squareup.okhttp3</groupId>
       <artifactId>mockwebserver3</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.github.tomakehurst</groupId>
+      <artifactId>wiremock-jre8</artifactId>
+      <version>2.35.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -296,7 +321,7 @@
               <createSourcesJar>true</createSourcesJar>
               <relocations>
                 <relocation>
-                  <pattern></pattern>
+                  <pattern />
                   <shadedPattern>org.sonarsource.sonarlint.shaded.</shadedPattern>
                   <includes>
                     <include>org.apache.**</include>
@@ -305,6 +330,9 @@
                     <include>org.springframework.**</include>
                     <include>org.sonarqube.ws.**</include>
                   </includes>
+                  <excludes>
+                    <exclude>org.apache.hc.**</exclude>
+                  </excludes>
                 </relocation>
               </relocations>
               <artifactSet>
