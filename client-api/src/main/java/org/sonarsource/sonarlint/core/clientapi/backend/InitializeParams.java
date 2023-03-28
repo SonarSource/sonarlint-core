@@ -27,6 +27,7 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.commons.Language;
 
 public class InitializeParams {
@@ -42,15 +43,18 @@ public class InitializeParams {
   private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections;
   private final String sonarlintUserHome;
   private final boolean shouldManageLocalServer;
+  private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey;
 
   /**
-   * @param telemetryProductKey SonarLint product key (vscode, idea, eclipse, ...)
-   * @param sonarlintUserHome Path to SonarLint user home directory. If null, will default to ~/.sonarlint
+   * @param telemetryProductKey       SonarLint product key (vscode, idea, eclipse, ...)
+   * @param sonarlintUserHome         Path to SonarLint user home directory. If null, will default to ~/.sonarlint
+   * @param standaloneRuleConfigByKey Local rule configuration for standalone analysis. This configuration will override defaults rule activation and parameters.
    */
   public InitializeParams(HostInfoDto hostInfo, String telemetryProductKey, Path storageRoot, Set<Path> embeddedPluginPaths,
     Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> extraEnabledLanguagesInConnectedMode,
     boolean enableSecurityHotspots, List<SonarQubeConnectionConfigurationDto> sonarQubeConnections,
-    List<SonarCloudConnectionConfigurationDto> sonarCloudConnections, @Nullable String sonarlintUserHome, boolean shouldManageLocalServer) {
+    List<SonarCloudConnectionConfigurationDto> sonarCloudConnections, @Nullable String sonarlintUserHome, boolean shouldManageLocalServer,
+    Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
     this.hostInfo = hostInfo;
     this.telemetryProductKey = telemetryProductKey;
     this.storageRoot = storageRoot;
@@ -63,6 +67,7 @@ public class InitializeParams {
     this.sonarCloudConnections = sonarCloudConnections;
     this.sonarlintUserHome = sonarlintUserHome;
     this.shouldManageLocalServer = shouldManageLocalServer;
+    this.standaloneRuleConfigByKey = standaloneRuleConfigByKey;
   }
 
   public HostInfoDto getHostInfo() {
@@ -112,5 +117,9 @@ public class InitializeParams {
 
   public boolean shouldManageLocalServer() {
     return shouldManageLocalServer;
+  }
+
+  public Map<String, StandaloneRuleConfigDto> getStandaloneRuleConfigByKey() {
+    return standaloneRuleConfigByKey;
   }
 }

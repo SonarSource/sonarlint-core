@@ -52,7 +52,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
 
   private final ConfigurationServiceImpl configurationService;
   private final ConnectionServiceImpl connectionService;
-  private final RulesServiceImpl activeRulesService;
+  private final RulesServiceImpl rulesService;
   private final HotspotServiceImpl hotspotService;
   private final TelemetryServiceImpl telemetryService;
   private final EmbeddedServer embeddedServer;
@@ -76,7 +76,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     rulesExtractionHelper = new RulesExtractionHelper(pluginsService);
     var rulesRepository = new RulesRepository(rulesExtractionHelper);
     var serverApiProvider = new ServerApiProvider(connectionConfigurationRepository, client);
-    activeRulesService = new RulesServiceImpl(serverApiProvider, configurationRepository, rulesRepository);
+    rulesService = new RulesServiceImpl(serverApiProvider, configurationRepository, rulesRepository);
     this.telemetryService = new TelemetryServiceImpl();
     this.hotspotService = new HotspotServiceImpl(client, configurationRepository, connectionConfigurationRepository, telemetryService);
     var bindingClueProvider = new BindingClueProvider(connectionConfigurationRepository, client);
@@ -98,7 +98,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     pluginsService.initialize(params.getStorageRoot(), params.getEmbeddedPluginPaths(), params.getConnectedModeEmbeddedPluginPathsByKey(),
       params.getEnabledLanguagesInStandaloneMode(), enabledLanguagesInConnectedMode);
     rulesExtractionHelper.initialize(params.getEnabledLanguagesInStandaloneMode(), enabledLanguagesInConnectedMode, params.isEnableSecurityHotspots());
-    activeRulesService.initialize(params.getStorageRoot());
+    rulesService.initialize(params.getStorageRoot(), params.getStandaloneRuleConfigByKey());
     hotspotService.initialize(params.getStorageRoot());
     var sonarlintUserHome = Optional.ofNullable(params.getSonarlintUserHome()).map(Paths::get).orElse(SonarLintUserHome.get());
     telemetryService.initialize(params.getTelemetryProductKey(), sonarlintUserHome);
@@ -136,7 +136,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
 
   @Override
   public RulesServiceImpl getRulesService() {
-    return activeRulesService;
+    return rulesService;
   }
 
   @Override

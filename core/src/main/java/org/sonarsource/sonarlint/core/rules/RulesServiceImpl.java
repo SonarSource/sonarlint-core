@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
@@ -37,6 +38,8 @@ import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetEffectiveRuleDe
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetEffectiveRuleDetailsResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.ListAllStandaloneRulesDefinitionsResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleDefinitionDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.StandaloneRuleConfigDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.UpdateStandaloneRulesConfigurationParams;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.repository.config.Binding;
@@ -62,6 +65,7 @@ public class RulesServiceImpl implements RulesService {
   private final RulesRepository rulesRepository;
   private static final String COULD_NOT_FIND_RULE = "Could not find rule '";
   private Path storageRoot;
+  private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfig = new ConcurrentHashMap<>();
 
   public RulesServiceImpl(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository) {
     this.serverApiProvider = serverApiProvider;
@@ -69,8 +73,9 @@ public class RulesServiceImpl implements RulesService {
     this.rulesRepository = rulesRepository;
   }
 
-  public void initialize(Path storageRoot) {
+  public void initialize(Path storageRoot, Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
     this.storageRoot = storageRoot;
+    this.standaloneRuleConfig.putAll(standaloneRuleConfigByKey);
   }
 
   @Override
@@ -209,6 +214,16 @@ public class RulesServiceImpl implements RulesService {
   public CompletableFuture<GetStandaloneRuleDescriptionResponse> getStandaloneRuleDescription(GetStandaloneRuleDescriptionParams params) {
     return getEmbeddedRuleAsync(params.getRuleKey())
       .thenApply(RuleDetailsAdapter::toStandaloneRuleDescriptionResponse);
+  }
+
+  @Override
+  public void updateStandaloneRulesConfiguration(UpdateStandaloneRulesConfigurationParams params) {
+    setStandaloneRuleConfig(params.getRuleConfigByKey());
+  }
+
+  public synchronized void setStandaloneRuleConfig(Map<String, StandaloneRuleConfigDto> standaloneRuleConfig) {
+    this.standaloneRuleConfig.clear();
+    this.standaloneRuleConfig.putAll(standaloneRuleConfig);
   }
 
 }

@@ -1144,7 +1144,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         backend.initialize(
           new InitializeParams(new HostInfoDto("clientName"),"integrationTests", sonarUserHome.resolve("storage"), Collections.emptySet(), Collections.emptyMap(), Set.of(Language.JAVA),
             Collections.emptySet(), false, List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl())), Collections.emptyList(),
-            sonarUserHome.toString(), false));
+            sonarUserHome.toString(), false, Map.of()));
       }
     }
 

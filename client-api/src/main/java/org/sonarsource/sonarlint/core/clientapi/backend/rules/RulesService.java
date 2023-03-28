@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
+import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 
 public interface RulesService {
 
@@ -28,6 +30,7 @@ public interface RulesService {
    * the binding and the finding context.
    * @return a completed future if the rule was found, else a failed future
    */
+  @JsonRequest
   CompletableFuture<GetEffectiveRuleDetailsResponse> getEffectiveRuleDetails(GetEffectiveRuleDetailsParams params);
 
   /**
@@ -35,7 +38,15 @@ public interface RulesService {
    * The description is not part of the response, since we usually display description one rule at a time.
    * Use {@link RulesService#getStandaloneRuleDescription(GetStandaloneRuleDescriptionParams)} to get the rule description.
    */
+  @JsonRequest
   CompletableFuture<ListAllStandaloneRulesDefinitionsResponse> listAllStandaloneRulesDefinitions();
 
+  @JsonRequest
   CompletableFuture<GetStandaloneRuleDescriptionResponse> getStandaloneRuleDescription(GetStandaloneRuleDescriptionParams params);
+
+  /**
+   * Notify the backend about changes to the standalone rule's configuration. This configuration will override defaults rule activation and parameters
+   */
+  @JsonNotification
+  void updateStandaloneRulesConfiguration(UpdateStandaloneRulesConfigurationParams params);
 }

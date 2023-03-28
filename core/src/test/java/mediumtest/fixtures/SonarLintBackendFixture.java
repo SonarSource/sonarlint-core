@@ -157,7 +157,7 @@ public class SonarLintBackendFixture {
       client.setBackend(sonarLintBackend);
       sonarLintBackend
         .initialize(new InitializeParams(client.getClientInfo(), MEDIUM_TESTS_PRODUCT_KEY, storageRoot, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
-          enabledLanguages, Collections.emptySet(), areSecurityHotspotsEnabled, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(), startEmbeddedServer));
+          enabledLanguages, Collections.emptySet(), areSecurityHotspotsEnabled, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(), startEmbeddedServer, Map.of()));
       sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
       return sonarLintBackend;
     }
