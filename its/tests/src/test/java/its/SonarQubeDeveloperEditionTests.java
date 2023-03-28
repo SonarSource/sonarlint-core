@@ -48,7 +48,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -84,8 +83,8 @@ import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingCo
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleDescriptionTabDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetEffectiveRuleDetailsParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleDescriptionTabDto;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
@@ -97,6 +96,8 @@ import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScope
 import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
+import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
+import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
@@ -1388,6 +1389,16 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         @Override
         public CompletableFuture<AssistBindingResponse> assistBinding(AssistBindingParams params) {
           return null;
+        }
+
+        @Override
+        public CompletableFuture<Void> startProgress(StartProgressParams params) {
+          return CompletableFuture.completedFuture(null);
+        }
+
+        @Override
+        public void reportProgress(ReportProgressParams params) {
+
         }
 
         @Override

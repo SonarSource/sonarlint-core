@@ -31,9 +31,11 @@ import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreating
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
-import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
+import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 
@@ -93,4 +95,18 @@ public interface SonarLintClient {
    */
   @JsonRequest
   CompletableFuture<AssistBindingResponse> assistBinding(AssistBindingParams params);
+
+  /**
+   * Requests the client to start showing progress to users.
+   * If there is an error while creating the corresponding UI, clients can fail the returned future.
+   * Tasks requesting the start of the progress should wait for the client to answer before continuing.
+   */
+  @JsonNotification
+  CompletableFuture<Void> startProgress(StartProgressParams params);
+
+  /**
+   * Reports progress to the client.
+   */
+  @JsonNotification
+  void reportProgress(ReportProgressParams params);
 }
