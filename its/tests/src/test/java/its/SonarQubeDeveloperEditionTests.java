@@ -96,6 +96,8 @@ import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScope
 import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
+import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
+import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -1363,6 +1365,16 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         @Override
         public CompletableFuture<AssistBindingResponse> assistBinding(AssistBindingParams params) {
           return null;
+        }
+
+        @Override
+        public CompletableFuture<Void> startProgress(StartProgressParams params) {
+          return CompletableFuture.completedFuture(null);
+        }
+
+        @Override
+        public void reportProgress(ReportProgressParams params) {
+
         }
 
         @Override

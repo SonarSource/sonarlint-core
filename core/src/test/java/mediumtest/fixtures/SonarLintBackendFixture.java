@@ -58,6 +58,8 @@ import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
+import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
+import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import testutils.MockWebServerExtensionWithProtobuf;
@@ -307,6 +309,16 @@ public class SonarLintBackendFixture {
       var scopeId = cannedResponse.getId();
       backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(scopeId, cannedResponse.getBinding()));
       return CompletableFuture.completedFuture(new AssistBindingResponse(scopeId));
+    }
+
+    @Override
+    public CompletableFuture<Void> startProgress(StartProgressParams params) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public void reportProgress(ReportProgressParams params) {
+
     }
 
     public boolean hasReceivedSuggestions() {
