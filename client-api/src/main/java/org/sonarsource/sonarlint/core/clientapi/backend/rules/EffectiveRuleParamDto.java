@@ -26,11 +26,13 @@ public class EffectiveRuleParamDto {
   private final String name;
   private final String description;
   private final String value;
+  private final String defaultValue;
 
-  public EffectiveRuleParamDto(String name, String description, @Nullable String value) {
+  public EffectiveRuleParamDto(String name, String description, @Nullable String value, @Nullable String defaultValue) {
     this.name = name;
     this.description = description;
     this.value = value;
+    this.defaultValue = defaultValue;
   }
 
   public String getName() {
@@ -41,8 +43,19 @@ public class EffectiveRuleParamDto {
     return description;
   }
 
+  /**
+   * Get the effective value, as would be used by the analyzer
+   */
   @CheckForNull
   public String getValue() {
     return value;
+  }
+
+  /**
+   * Get the default value as defined in the rule's definition
+   */
+  @CheckForNull
+  public String getDefaultValue() {
+    return defaultValue;
   }
 }

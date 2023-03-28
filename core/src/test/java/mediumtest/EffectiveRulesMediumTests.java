@@ -34,11 +34,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
+import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.EffectiveRuleParamDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleDescriptionTabDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleNonContextualSectionDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.StandaloneRuleConfigDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.UpdateStandaloneRulesConfigurationParams;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -75,8 +78,39 @@ class EffectiveRulesMediumTests {
       .containsExactly("python:S139", "Comments should not be located at the end of lines of code", RuleType.CODE_SMELL, Language.PYTHON, IssueSeverity.MINOR,
         PYTHON_S139_DESCRIPTION);
     assertThat(details.getParams())
-      .extracting(EffectiveRuleParamDto::getName, EffectiveRuleParamDto::getDescription, EffectiveRuleParamDto::getValue)
-      .containsExactly(tuple("legalTrailingCommentPattern", "Pattern for text of trailing comments that are allowed. By default, Mypy and Black pragma comments as well as comments containing only one word.", "^#\\s*+([^\\s]++|fmt.*|type.*)$"));
+      .extracting(EffectiveRuleParamDto::getName, EffectiveRuleParamDto::getDescription, EffectiveRuleParamDto::getValue, EffectiveRuleParamDto::getDefaultValue)
+      .containsExactly(tuple("legalTrailingCommentPattern", "Pattern for text of trailing comments that are allowed. By default, Mypy and Black pragma comments as well as comments containing only one word.",
+        "^#\\s*+([^\\s]++|fmt.*|type.*)$",
+        "^#\\s*+([^\\s]++|fmt.*|type.*)$"));
+  }
+
+  @Test
+  void it_should_consider_standalone_rule_config_for_effective_parameter_values() {
+    backend = newBackend()
+      .withUnboundConfigScope("scopeId")
+      .withStorageRoot(storageDir)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
+      .withStandaloneRuleConfig("python:S139", true, Map.of("legalTrailingCommentPattern", "initialValue"))
+      .build();
+
+    var detailsAfterInit = getEffectiveRuleDetails("scopeId", "python:S139");
+
+    assertThat(detailsAfterInit.getParams())
+      .extracting(EffectiveRuleParamDto::getName, EffectiveRuleParamDto::getDescription, EffectiveRuleParamDto::getValue, EffectiveRuleParamDto::getDefaultValue)
+      .containsExactly(tuple("legalTrailingCommentPattern", "Pattern for text of trailing comments that are allowed. By default, Mypy and Black pragma comments as well as comments containing only one word.",
+        "initialValue",
+        "^#\\s*+([^\\s]++|fmt.*|type.*)$"));
+
+    backend.getRulesService().updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("python:S139",
+      new StandaloneRuleConfigDto(true, Map.of("legalTrailingCommentPattern", "updatedValue")))));
+
+    var detailsAfterUpdate = getEffectiveRuleDetails("scopeId", "python:S139");
+
+    assertThat(detailsAfterUpdate.getParams())
+      .extracting(EffectiveRuleParamDto::getName, EffectiveRuleParamDto::getDescription, EffectiveRuleParamDto::getValue, EffectiveRuleParamDto::getDefaultValue)
+      .containsExactly(tuple("legalTrailingCommentPattern", "Pattern for text of trailing comments that are allowed. By default, Mypy and Black pragma comments as well as comments containing only one word.",
+        "updatedValue",
+        "^#\\s*+([^\\s]++|fmt.*|type.*)$"));
   }
 
   @Test
@@ -320,18 +354,18 @@ class EffectiveRulesMediumTests {
       .containsExactly(
         "How can I fix it?", "htmlContent2", "contextKey2", "displayName2",
         "How can I fix it?",
-        "<h4>How can I fix it in another component or framework?</h4>\n"+
-          "<p>Although the main framework or component you use in your project is not listed, you may find helpful content in the instructions we provide.</p>\n"+
-          "<p>Caution: The libraries mentioned in these instructions may not be appropriate for your code.</p>\n"+
-          "<p>\n"+
-          "<ul class=\"other-context-list\">\n"+
-          "    <li class=\"do\">Do use libraries that are compatible with the frameworks you are using.</li>\n"+
-          "    <li class=\"dont\">Don't blindly copy and paste the fix-ups into your code.</li>\n"+
-          "</ul>\n"+
-          "<h4>Help us improve</h4>\n"+
-          "<p>Let us know if the instructions we provide do not work for you.\n"+
-          "    Tell us which framework you use and why our solution does not work by submitting an idea on the SonarLint product-board.</p>\n"+
-          "<a href=\"https://portal.productboard.com/sonarsource/4-sonarlint/submit-idea\">Submit an idea</a>\n"+
+        "<h4>How can I fix it in another component or framework?</h4>\n" +
+          "<p>Although the main framework or component you use in your project is not listed, you may find helpful content in the instructions we provide.</p>\n" +
+          "<p>Caution: The libraries mentioned in these instructions may not be appropriate for your code.</p>\n" +
+          "<p>\n" +
+          "<ul class=\"other-context-list\">\n" +
+          "    <li class=\"do\">Do use libraries that are compatible with the frameworks you are using.</li>\n" +
+          "    <li class=\"dont\">Don't blindly copy and paste the fix-ups into your code.</li>\n" +
+          "</ul>\n" +
+          "<h4>Help us improve</h4>\n" +
+          "<p>Let us know if the instructions we provide do not work for you.\n" +
+          "    Tell us which framework you use and why our solution does not work by submitting an idea on the SonarLint product-board.</p>\n" +
+          "<a href=\"https://portal.productboard.com/sonarsource/4-sonarlint/submit-idea\">Submit an idea</a>\n" +
           "<p>We will do our best to provide you with more relevant instructions in the future.</p>",
         "others", "Others",
         "More Info", "htmlContent3<br/><br/>extendedDesc<br/><br/><h3>Clean Code Principles</h3>\n" +
@@ -381,18 +415,18 @@ class EffectiveRulesMediumTests {
       .flatExtracting(EffectiveRulesMediumTests::flattenTabContent)
       .containsExactly(
         "How can I fix it?", "htmlContent2", "contextKey2", "displayName2",
-        "How can I fix it?", "<h4>How can I fix it in another component or framework?</h4>\n"+
-          "<p>Although the main framework or component you use in your project is not listed, you may find helpful content in the instructions we provide.</p>\n"+
-          "<p>Caution: The libraries mentioned in these instructions may not be appropriate for your code.</p>\n"+
-          "<p>\n"+
-          "<ul class=\"other-context-list\">\n"+
-          "    <li class=\"do\">Do use libraries that are compatible with the frameworks you are using.</li>\n"+
-          "    <li class=\"dont\">Don't blindly copy and paste the fix-ups into your code.</li>\n"+
-          "</ul>\n"+
-          "<h4>Help us improve</h4>\n"+
-          "<p>Let us know if the instructions we provide do not work for you.\n"+
-          "    Tell us which framework you use and why our solution does not work by submitting an idea on the SonarLint product-board.</p>\n"+
-          "<a href=\"https://portal.productboard.com/sonarsource/4-sonarlint/submit-idea\">Submit an idea</a>\n"+
+        "How can I fix it?", "<h4>How can I fix it in another component or framework?</h4>\n" +
+          "<p>Although the main framework or component you use in your project is not listed, you may find helpful content in the instructions we provide.</p>\n" +
+          "<p>Caution: The libraries mentioned in these instructions may not be appropriate for your code.</p>\n" +
+          "<p>\n" +
+          "<ul class=\"other-context-list\">\n" +
+          "    <li class=\"do\">Do use libraries that are compatible with the frameworks you are using.</li>\n" +
+          "    <li class=\"dont\">Don't blindly copy and paste the fix-ups into your code.</li>\n" +
+          "</ul>\n" +
+          "<h4>Help us improve</h4>\n" +
+          "<p>Let us know if the instructions we provide do not work for you.\n" +
+          "    Tell us which framework you use and why our solution does not work by submitting an idea on the SonarLint product-board.</p>\n" +
+          "<a href=\"https://portal.productboard.com/sonarsource/4-sonarlint/submit-idea\">Submit an idea</a>\n" +
           "<p>We will do our best to provide you with more relevant instructions in the future.</p>",
         "others", "Others",
         "More Info", "htmlContent3<br/><br/>extendedDesc<br/><br/><h3>Clean Code Principles</h3>\n" +
@@ -618,7 +652,7 @@ class EffectiveRulesMediumTests {
 
   @TempDir
   Path storageDir;
-  private SonarLintBackendImpl backend;
+  private SonarLintBackend backend;
   @RegisterExtension
   private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
   private static final String PYTHON_S139_DESCRIPTION = "<p>This rule verifies that single-line comments are not located at the ends of lines of code. The main idea behind this rule is that in order to be\n"

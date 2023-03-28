@@ -130,7 +130,7 @@ class RuleDetailsAdapter {
           content = buildNonContextualSectionDto(ruleDetails, matchingContext.get());
         } else {
           // if there is more than one section, they should all have a context (verified in sonar-plugin-api)
-          List<RuleContextualSectionDto> contextualSectionContents = tabContents.stream().map(s -> {
+          var contextualSectionContents = tabContents.stream().map(s -> {
             var context = s.getContext().get();
             return new RuleContextualSectionDto(getTabContent(s, ruleDetails.getExtendedDescription(), ruleDetails.getCleanCodePrincipleKeys()), context.getKey(),
               context.getDisplayName());
@@ -175,12 +175,13 @@ class RuleDetailsAdapter {
     return concat(htmlSnippets);
   }
 
-  private static Collection<EffectiveRuleParamDto> transform(Collection<RuleDetails.ActiveRuleParam> params) {
+  private static Collection<EffectiveRuleParamDto> transform(Collection<RuleDetails.EffectiveRuleParam> params) {
     var builder = new ArrayList<EffectiveRuleParamDto>();
     for (var param : params) {
       builder.add(new EffectiveRuleParamDto(
         param.getName(),
         param.getDescription(),
+        param.getValue(),
         param.getDefaultValue()));
     }
     return builder;
