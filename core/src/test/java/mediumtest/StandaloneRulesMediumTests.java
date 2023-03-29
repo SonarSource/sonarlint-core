@@ -29,12 +29,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetStandaloneRuleDescriptionParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetStandaloneRuleDescriptionResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.ListAllStandaloneRulesDefinitionsResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleDefinitionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleParamDefinitionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleParamType;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -82,16 +83,19 @@ class StandaloneRulesMediumTests {
   }
 
   @Test
-  void it_should_return_rule_description() throws ExecutionException, InterruptedException {
+  void it_should_return_rule_details_with_definition_and_description() throws ExecutionException, InterruptedException {
     backend = newBackend()
       .withStorageRoot(storageDir)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .build();
 
-    var ruleDescription = backend.getRulesService().getStandaloneRuleDescription(new GetStandaloneRuleDescriptionParams("java:S1176")).get();
+    var ruleDetails = backend.getRulesService().getStandaloneRuleDetails(new GetStandaloneRuleDescriptionParams("java:S1176")).get();
 
-    assertThat(ruleDescription.getDescription().isLeft()).isTrue();
-    assertThat(ruleDescription.getDescription().getLeft().getHtmlContent()).startsWith("<p>Try to imagine using the standard Java API (Collections, JDBC, IO, …\u200B) without Javadoc.");
+    assertThat(ruleDetails.getRuleDefinition().getName()).isEqualTo("Public types, methods and fields (API) should be documented with Javadoc");
+    assertThat(ruleDetails.getRuleDefinition().getDefaultSeverity()).isEqualTo(IssueSeverity.MAJOR);
+    assertThat(ruleDetails.getRuleDefinition().getType()).isEqualTo(RuleType.CODE_SMELL);
+    assertThat(ruleDetails.getDescription().isLeft()).isTrue();
+    assertThat(ruleDetails.getDescription().getLeft().getHtmlContent()).startsWith("<p>Try to imagine using the standard Java API (Collections, JDBC, IO, …\u200B) without Javadoc.");
   }
 
   @Test
@@ -104,7 +108,7 @@ class StandaloneRulesMediumTests {
     var allRules = listAllStandaloneRulesDefinitions().getRulesByKey().values();
 
     assertThat(allRules).extracting(RuleDefinitionDto::getKey).isNotEmpty().doesNotContain("python:XPath");
-    assertThat(backend.getRulesService().getStandaloneRuleDescription(new GetStandaloneRuleDescriptionParams("python:XPath"))).failsWithin(1, TimeUnit.MINUTES);
+    assertThat(backend.getRulesService().getStandaloneRuleDetails(new GetStandaloneRuleDescriptionParams("python:XPath"))).failsWithin(1, TimeUnit.MINUTES);
   }
 
   @Test
@@ -117,7 +121,7 @@ class StandaloneRulesMediumTests {
     var allRules = listAllStandaloneRulesDefinitions().getRulesByKey().values();
 
     assertThat(allRules).extracting(RuleDefinitionDto::getKey).isNotEmpty().doesNotContain("java:S1313");
-    assertThat(backend.getRulesService().getStandaloneRuleDescription(new GetStandaloneRuleDescriptionParams("java:S1313"))).failsWithin(1, TimeUnit.MINUTES);
+    assertThat(backend.getRulesService().getStandaloneRuleDetails(new GetStandaloneRuleDescriptionParams("java:S1313"))).failsWithin(1, TimeUnit.MINUTES);
   }
 
   private ListAllStandaloneRulesDefinitionsResponse listAllStandaloneRulesDefinitions() {

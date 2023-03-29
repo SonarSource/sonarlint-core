@@ -63,7 +63,7 @@ class RuleDetailsAdapter {
       ruleDetails.getLanguage());
   }
 
-  private static Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> transformDescriptions(RuleDetails ruleDetails,
+  static Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> transformDescriptions(RuleDetails ruleDetails,
     @Nullable String contextKey) {
     if (ruleDetails.hasMonolithicDescription()) {
       return Either.forLeft(transformMonolithicDescription(ruleDetails));
@@ -197,7 +197,4 @@ class RuleDetailsAdapter {
     return Either.forLeft(new RuleNonContextualSectionDto(getTabContent(matchingContext, ruleDetails.getExtendedDescription(), ruleDetails.getCleanCodePrincipleKeys())));
   }
 
-  public static GetStandaloneRuleDescriptionResponse toStandaloneRuleDescriptionResponse(RuleDetails ruleDetails) {
-    return new GetStandaloneRuleDescriptionResponse(transformDescriptions(ruleDetails, null));
-  }
 }

@@ -23,10 +23,16 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 public class GetStandaloneRuleDescriptionResponse {
 
+  private final RuleDefinitionDto ruleDefinition;
   private final Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> description;
 
-  public GetStandaloneRuleDescriptionResponse(Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> description) {
+  public GetStandaloneRuleDescriptionResponse(RuleDefinitionDto ruleDefinition, Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> description) {
+    this.ruleDefinition = ruleDefinition;
     this.description = description;
+  }
+
+  public RuleDefinitionDto getRuleDefinition() {
+    return ruleDefinition;
   }
 
   public Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> getDescription() {

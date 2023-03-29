@@ -36,13 +36,16 @@ public interface RulesService {
   /**
    * Return list of all available rules for SonarLint standalone mode. Used to build the rules configuration UI.
    * The description is not part of the response, since we usually display description one rule at a time.
-   * Use {@link RulesService#getStandaloneRuleDescription(GetStandaloneRuleDescriptionParams)} to get the rule description.
+   * Use {@link RulesService#getStandaloneRuleDetails(GetStandaloneRuleDescriptionParams)} to get the rule description.
    */
   @JsonRequest
   CompletableFuture<ListAllStandaloneRulesDefinitionsResponse> listAllStandaloneRulesDefinitions();
 
+  /**
+   * Get rule details of a single rule. The details will include the rule description.
+   */
   @JsonRequest
-  CompletableFuture<GetStandaloneRuleDescriptionResponse> getStandaloneRuleDescription(GetStandaloneRuleDescriptionParams params);
+  CompletableFuture<GetStandaloneRuleDescriptionResponse> getStandaloneRuleDetails(GetStandaloneRuleDescriptionParams params);
 
   /**
    * Notify the backend about changes to the standalone rule's configuration. This configuration will override defaults rule activation and parameters

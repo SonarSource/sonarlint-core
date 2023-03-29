@@ -44,7 +44,7 @@ public interface StandaloneSonarLintEngine extends SonarLintEngine {
    * @return Rule details
    * @throws IllegalArgumentException if ruleKey is unknown
    * @since 1.2
-   * @deprecated use {@link RulesService#listAllStandaloneRulesDefinitions()} and {@link RulesService#getStandaloneRuleDescription(GetStandaloneRuleDescriptionParams)} instead
+   * @deprecated use {@link RulesService#listAllStandaloneRulesDefinitions()} and {@link RulesService#getStandaloneRuleDetails(GetStandaloneRuleDescriptionParams)} instead
    */
   @Deprecated(since = "8.12")
   Optional<StandaloneRuleDetails> getRuleDetails(String ruleKey);

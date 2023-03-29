@@ -213,14 +213,16 @@ public class RulesServiceImpl implements RulesService {
   }
 
   @Override
-  public CompletableFuture<GetStandaloneRuleDescriptionResponse> getStandaloneRuleDescription(GetStandaloneRuleDescriptionParams params) {
+  public CompletableFuture<GetStandaloneRuleDescriptionResponse> getStandaloneRuleDetails(GetStandaloneRuleDescriptionParams params) {
     var ruleKey = params.getRuleKey();
     var embeddedRule = rulesRepository.getEmbeddedRule(ruleKey);
     if (embeddedRule.isEmpty()) {
       return CompletableFuture.failedFuture(new IllegalArgumentException(COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules"));
     }
-    var ruleDetails = RuleDetails.from(embeddedRule.get(), standaloneRuleConfig.get(ruleKey));
-    return CompletableFuture.completedFuture(RuleDetailsAdapter.toStandaloneRuleDescriptionResponse(ruleDetails));
+    var ruleDefinition = embeddedRule.get();
+    var ruleDetails = RuleDetails.from(ruleDefinition, standaloneRuleConfig.get(ruleKey));
+
+    return CompletableFuture.completedFuture(new GetStandaloneRuleDescriptionResponse(convert(ruleDefinition), RuleDetailsAdapter.transformDescriptions(ruleDetails, null)));
   }
 
   @Override
