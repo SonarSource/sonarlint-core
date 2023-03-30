@@ -88,6 +88,10 @@ public class SonarLintLogTester implements BeforeTestExecutionCallback, AfterTes
 
   @Override
   public void afterTestExecution(ExtensionContext context) {
+    clear();
+  }
+
+  public void clear() {
     logs.clear();
     logsByLevel.clear();
   }

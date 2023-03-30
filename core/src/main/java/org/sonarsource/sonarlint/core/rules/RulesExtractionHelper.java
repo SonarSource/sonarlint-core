@@ -22,11 +22,14 @@ package org.sonarsource.sonarlint.core.rules;
 import java.util.List;
 import java.util.Set;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.PluginsServiceImpl;
 import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 
 public class RulesExtractionHelper {
+
+  private final SonarLintLogger logger = SonarLintLogger.get();
 
   private final PluginsServiceImpl pluginsService;
   private final RulesDefinitionExtractor ruleExtractor = new RulesDefinitionExtractor();
@@ -45,10 +48,12 @@ public class RulesExtractionHelper {
   }
 
   public List<SonarLintRuleDefinition> extractEmbeddedRules() {
+    logger.debug("Extracting standalone rules metadata");
     return ruleExtractor.extractRules(pluginsService.getEmbeddedPlugins().getPluginInstancesByKeys(), enabledLanguages, false, false);
   }
 
   public List<SonarLintRuleDefinition> extractRulesForConnection(String connectionId) {
+    logger.debug("Extracting rules metadata for connection '{}'", connectionId);
     return ruleExtractor.extractRules(pluginsService.getPlugins(connectionId).getPluginInstancesByKeys(), enabledLanguagesInConnectedMode, true, enableSecurityHotspots);
   }
 

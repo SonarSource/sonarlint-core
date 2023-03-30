@@ -87,6 +87,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     this.authenticationHelperService = new AuthenticationHelperServiceImpl(client, embeddedServer, awaitingUserTokenFutureRepository);
     clientEventBus.register(bindingSuggestionProvider);
     clientEventBus.register(sonarProjectCache);
+    clientEventBus.register(rulesRepository);
   }
 
   @Override

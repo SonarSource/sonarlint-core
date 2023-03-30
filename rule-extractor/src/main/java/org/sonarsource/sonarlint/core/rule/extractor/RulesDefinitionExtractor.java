@@ -44,7 +44,7 @@ public class RulesDefinitionExtractor {
 
     List<SonarLintRuleDefinition> rules = new ArrayList<>();
 
-    for (RulesDefinition.Repository repoDef : context.repositories()) {
+    for (var repoDef : context.repositories()) {
       if (repoDef.isExternal()) {
         continue;
       }

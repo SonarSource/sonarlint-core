@@ -19,12 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.repository.rules;
 
+import com.google.common.eventbus.Subscribe;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import javax.annotation.CheckForNull;
+import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
+import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
 
@@ -85,5 +87,15 @@ public class RulesRepository {
   private static Map<String, SonarLintRuleDefinition> byKey(Collection<SonarLintRuleDefinition> rules) {
     return rules.stream()
       .collect(Collectors.toMap(SonarLintRuleDefinition::getKey, r -> r));
+  }
+
+  @Subscribe
+  public void connectionRemoved(ConnectionConfigurationRemovedEvent e) {
+    evictAll(e.getRemovedConnectionId());
+  }
+
+  private void evictAll(String connectionId) {
+    rulesByKeyByConnectionId.remove(connectionId);
+    ruleKeyReplacementsByConnectionId.remove(connectionId);
   }
 }
