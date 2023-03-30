@@ -19,13 +19,43 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
-import java.util.concurrent.CompletableFuture;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
-public interface ActiveRulesService {
+public class EffectiveRuleParamDto {
+  private final String name;
+  private final String description;
+  private final String value;
+  private final String defaultValue;
+
+  public EffectiveRuleParamDto(String name, String description, @Nullable String value, @Nullable String defaultValue) {
+    this.name = name;
+    this.description = description;
+    this.value = value;
+    this.defaultValue = defaultValue;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
   /**
-   * Returns the details about the rule key passed in parameters.
-   * This method can access missing details on the server when the configuration scope is bound.
-   * @return a completed future if the rule was found, else a failed future
+   * Get the effective value, as would be used by the analyzer
    */
-  CompletableFuture<GetActiveRuleDetailsResponse> getActiveRuleDetails(GetActiveRuleDetailsParams params);
+  @CheckForNull
+  public String getValue() {
+    return value;
+  }
+
+  /**
+   * Get the default value as defined in the rule's definition
+   */
+  @CheckForNull
+  public String getDefaultValue() {
+    return defaultValue;
+  }
 }

@@ -25,17 +25,17 @@ import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 
-public class ActiveRuleDetailsDto {
+public class EffectiveRuleDetailsDto {
   private final String key;
   private final String name;
   private final IssueSeverity severity;
   private final RuleType type;
-  private final Either<ActiveRuleMonolithicDescriptionDto, ActiveRuleSplitDescriptionDto> description;
-  private final Collection<ActiveRuleParamDto> params;
+  private final Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> description;
+  private final Collection<EffectiveRuleParamDto> params;
   private final Language language;
 
-  public ActiveRuleDetailsDto(String key, String name, IssueSeverity severity, RuleType type, Either<ActiveRuleMonolithicDescriptionDto, ActiveRuleSplitDescriptionDto> description,
-    Collection<ActiveRuleParamDto> params, Language language) {
+  public EffectiveRuleDetailsDto(String key, String name, IssueSeverity severity, RuleType type, Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> description,
+    Collection<EffectiveRuleParamDto> params, Language language) {
     this.key = key;
     this.name = name;
     this.severity = severity;
@@ -61,11 +61,11 @@ public class ActiveRuleDetailsDto {
     return type;
   }
 
-  public Either<ActiveRuleMonolithicDescriptionDto, ActiveRuleSplitDescriptionDto> getDescription() {
+  public Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> getDescription() {
     return description;
   }
 
-  public Collection<ActiveRuleParamDto> getParams() {
+  public Collection<EffectiveRuleParamDto> getParams() {
     return params;
   }
 

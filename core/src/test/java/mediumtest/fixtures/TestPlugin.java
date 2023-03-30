@@ -24,6 +24,8 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import testutils.PluginLocator;
 
 public enum TestPlugin {
+  JAVA(Language.JAVA, PluginLocator.getJavaPluginPath()),
+  PHP(Language.PHP, PluginLocator.getPhpPluginPath()),
   PYTHON(Language.PYTHON, PluginLocator.getPythonPluginPath());
 
   private final Language language;

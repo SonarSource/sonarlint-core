@@ -28,19 +28,22 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
+import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamDefinition;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerRule;
 
-public class ActiveRuleDetails {
+public class RuleDetails {
 
   public static final String DEFAULT_SECTION = "default";
 
-  public static ActiveRuleDetails from(SonarLintRuleDefinition ruleDefinition) {
-    return new ActiveRuleDetails(
+  public static RuleDetails from(SonarLintRuleDefinition ruleDefinition, @Nullable StandaloneRuleConfigDto ruleConfig) {
+    return new RuleDetails(
       ruleDefinition.getKey(),
       ruleDefinition.getLanguage(),
       ruleDefinition.getName(),
@@ -51,12 +54,20 @@ public class ActiveRuleDetails {
       ruleDefinition.getDefaultSeverity(),
       ruleDefinition.getType(),
       null,
-      ruleDefinition.getParams().values().stream().map(p -> new ActiveRuleParam(p.name(), p.description(), p.defaultValue())).collect(Collectors.toList()),
+      transformParams(ruleDefinition.getParams(), ruleConfig != null ? ruleConfig.getParamValueByKey() : Map.of()),
       ruleDefinition.getEducationPrincipleKeys());
   }
 
-  public static ActiveRuleDetails merging(ServerActiveRule activeRuleFromStorage, ServerRule serverRule) {
-    return new ActiveRuleDetails(activeRuleFromStorage.getRuleKey(), serverRule.getLanguage(), serverRule.getName(), serverRule.getHtmlDesc(),
+  @NotNull
+  private static List<EffectiveRuleParam> transformParams(Map<String, SonarLintRuleParamDefinition> ruleDefinitionParams, Map<String, String> ruleConfigParams) {
+    return ruleDefinitionParams.values()
+      .stream()
+      .map(p -> new EffectiveRuleParam(p.name(), p.description(), ruleConfigParams.getOrDefault(p.key(), p.defaultValue()), p.defaultValue()))
+      .collect(Collectors.toList());
+  }
+
+  public static RuleDetails merging(ServerActiveRule activeRuleFromStorage, ServerRule serverRule) {
+    return new RuleDetails(activeRuleFromStorage.getRuleKey(), serverRule.getLanguage(), serverRule.getName(), serverRule.getHtmlDesc(),
       serverRule.getDescriptionSections().stream()
         .map(s -> new DescriptionSection(s.getKey(), s.getHtmlContent(), s.getContext().map(c -> new DescriptionSection.Context(c.getKey(), c.getDisplayName()))))
         .collect(Collectors.groupingBy(DescriptionSection::getKey)),
@@ -65,8 +76,8 @@ public class ActiveRuleDetails {
       serverRule.getEducationPrincipleKeys());
   }
 
-  public static ActiveRuleDetails merging(ServerRule activeRuleFromServer, SonarLintRuleDefinition ruleDefFromPlugin) {
-    return new ActiveRuleDetails(ruleDefFromPlugin.getKey(), ruleDefFromPlugin.getLanguage(), ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(),
+  public static RuleDetails merging(ServerRule activeRuleFromServer, SonarLintRuleDefinition ruleDefFromPlugin) {
+    return new RuleDetails(ruleDefFromPlugin.getKey(), ruleDefFromPlugin.getLanguage(), ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(),
       ruleDefFromPlugin.getDescriptionSections().stream()
         .map(s -> new DescriptionSection(s.getKey(), s.getHtmlContent(), s.getContext().map(c -> new DescriptionSection.Context(c.getKey(), c.getDisplayName()))))
         .collect(Collectors.groupingBy(DescriptionSection::getKey)),
@@ -74,8 +85,8 @@ public class ActiveRuleDetails {
       activeRuleFromServer.getHtmlNote(), Collections.emptyList(), ruleDefFromPlugin.getEducationPrincipleKeys());
   }
 
-  public static ActiveRuleDetails merging(ServerActiveRule activeRuleFromStorage, ServerRule serverRule, SonarLintRuleDefinition templateRuleDefFromPlugin) {
-    return new ActiveRuleDetails(
+  public static RuleDetails merging(ServerActiveRule activeRuleFromStorage, ServerRule serverRule, SonarLintRuleDefinition templateRuleDefFromPlugin) {
+    return new RuleDetails(
       activeRuleFromStorage.getRuleKey(),
       templateRuleDefFromPlugin.getLanguage(),
       serverRule.getName(),
@@ -96,12 +107,12 @@ public class ActiveRuleDetails {
   private final Map<String, List<DescriptionSection>> descriptionSectionsByKey;
   private final IssueSeverity defaultSeverity;
   private final RuleType type;
-  private final Collection<ActiveRuleParam> params;
+  private final Collection<EffectiveRuleParam> params;
   private final String extendedDescription;
   private final Set<String> educationPrincipleKeys;
 
-  public ActiveRuleDetails(String key, Language language, String name, String htmlDescription, Map<String, List<DescriptionSection>> descriptionSectionsByKey,
-    IssueSeverity defaultSeverity, RuleType type, @Nullable String extendedDescription, Collection<ActiveRuleParam> params, Set<String> educationPrincipleKeys) {
+  public RuleDetails(String key, Language language, String name, String htmlDescription, Map<String, List<DescriptionSection>> descriptionSectionsByKey,
+    IssueSeverity defaultSeverity, RuleType type, @Nullable String extendedDescription, Collection<EffectiveRuleParam> params, Set<String> educationPrincipleKeys) {
     this.key = key;
     this.language = language;
     this.name = name;
@@ -150,7 +161,7 @@ public class ActiveRuleDetails {
     return type;
   }
 
-  public Collection<ActiveRuleParam> getParams() {
+  public Collection<EffectiveRuleParam> getParams() {
     return params;
   }
 
@@ -163,14 +174,18 @@ public class ActiveRuleDetails {
     return extendedDescription;
   }
 
-  public static class ActiveRuleParam {
+  public static class EffectiveRuleParam {
     private final String name;
     private final String description;
+    @Nullable
+    private final String value;
+    @Nullable
     private final String defaultValue;
 
-    public ActiveRuleParam(String name, String description, @Nullable String defaultValue) {
+    public EffectiveRuleParam(String name, String description, @Nullable String value, @Nullable String defaultValue) {
       this.name = name;
       this.description = description;
+      this.value = value;
       this.defaultValue = defaultValue;
     }
 
@@ -180,6 +195,11 @@ public class ActiveRuleDetails {
 
     public String getDescription() {
       return description;
+    }
+
+    @CheckForNull
+    public String getValue() {
+      return value;
     }
 
     @CheckForNull

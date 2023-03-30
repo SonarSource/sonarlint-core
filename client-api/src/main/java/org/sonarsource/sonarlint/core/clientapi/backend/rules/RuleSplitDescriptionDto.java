@@ -24,11 +24,11 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
-public class ActiveRuleSplitDescriptionDto {
+public class RuleSplitDescriptionDto {
   private final String introductionHtmlContent;
-  private final Collection<ActiveRuleDescriptionTabDto> tabs;
+  private final Collection<RuleDescriptionTabDto> tabs;
 
-  public ActiveRuleSplitDescriptionDto(@Nullable String introductionHtmlContent, @NonNull Collection<ActiveRuleDescriptionTabDto> tabs) {
+  public RuleSplitDescriptionDto(@Nullable String introductionHtmlContent, @NonNull Collection<RuleDescriptionTabDto> tabs) {
     this.introductionHtmlContent = introductionHtmlContent;
     this.tabs = tabs;
   }
@@ -39,7 +39,7 @@ public class ActiveRuleSplitDescriptionDto {
   }
 
   @NonNull
-  public Collection<ActiveRuleDescriptionTabDto> getTabs() {
+  public Collection<RuleDescriptionTabDto> getTabs() {
     return tabs;
   }
 }

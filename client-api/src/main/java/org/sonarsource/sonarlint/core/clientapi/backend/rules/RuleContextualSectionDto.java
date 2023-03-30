@@ -17,17 +17,33 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.backend.hotspot;
+package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
-import java.util.concurrent.CompletableFuture;
-import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
-import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
+import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
-public interface HotspotService {
+public class RuleContextualSectionDto {
+  private final String htmlContent;
+  private final String contextKey;
+  private final String displayName;
 
-  @JsonNotification
-  void openHotspotInBrowser(OpenHotspotInBrowserParams params);
+  public RuleContextualSectionDto(@NonNull String htmlContent, @NonNull String contextKey, @NonNull String displayName) {
+    this.htmlContent = htmlContent;
+    this.contextKey = contextKey;
+    this.displayName = displayName;
+  }
 
-  @JsonRequest
-  CompletableFuture<CheckLocalDetectionSupportedResponse> checkLocalDetectionSupported(CheckLocalDetectionSupportedParams params);
+  @NonNull
+  public String getHtmlContent() {
+    return htmlContent;
+  }
+
+  @NonNull
+  public String getContextKey() {
+    return contextKey;
+  }
+
+  @NonNull
+  public String getDisplayName() {
+    return displayName;
+  }
 }

@@ -19,10 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
-public class ActiveRuleMonolithicDescriptionDto {
+public class RuleMonolithicDescriptionDto {
   private final String htmlContent;
 
-  public ActiveRuleMonolithicDescriptionDto(String htmlContent) {
+  public RuleMonolithicDescriptionDto(String htmlContent) {
     this.htmlContent = htmlContent;
   }
 

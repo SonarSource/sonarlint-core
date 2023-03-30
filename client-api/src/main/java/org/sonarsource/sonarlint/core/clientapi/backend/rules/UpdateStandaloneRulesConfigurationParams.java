@@ -19,23 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
-import java.util.Collection;
-public class ActiveRuleContextualSectionWithDefaultContextKeyDto {
+import java.util.Map;
 
-  private final String defaultContextKey;
-  private final Collection<ActiveRuleContextualSectionDto> contextualSections;
+public class UpdateStandaloneRulesConfigurationParams {
 
-  public ActiveRuleContextualSectionWithDefaultContextKeyDto(String defaultContextKey, Collection<ActiveRuleContextualSectionDto> contextualSections) {
-    this.defaultContextKey = defaultContextKey;
-    this.contextualSections = contextualSections;
+  private final Map<String, StandaloneRuleConfigDto> ruleConfigByKey;
+
+
+  public UpdateStandaloneRulesConfigurationParams(Map<String, StandaloneRuleConfigDto> ruleConfigByKey) {
+    this.ruleConfigByKey = ruleConfigByKey;
   }
 
-  public String getDefaultContextKey() {
-    return defaultContextKey;
+  public Map<String, StandaloneRuleConfigDto> getRuleConfigByKey() {
+    return ruleConfigByKey;
   }
-
-  public Collection<ActiveRuleContextualSectionDto> getContextualSections() {
-    return contextualSections;
-  }
-
 }

@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.DidAddConfi
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
@@ -84,6 +85,8 @@ public class SonarLintBackendFixture {
     private Path sonarlintUserHome = Paths.get(".");
     private boolean startEmbeddedServer;
     private boolean areSecurityHotspotsEnabled;
+
+    private final Map<String, StandaloneRuleConfigDto> standaloneConfigByKey = new HashMap<>();
 
     public SonarLintBackendBuilder withSonarQubeConnection(String connectionId, String serverUrl) {
       sonarQubeConnections.add(new SonarQubeConnectionConfigurationDto(connectionId, serverUrl));
@@ -126,12 +129,17 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintBackendBuilder withStandaloneEmbeddedPlugin(TestPlugin plugin) {
-      this.embeddedPluginPaths.add(plugin.getPath());
-      return withEnabledLanguage(plugin.getLanguage());
+    public SonarLintBackendBuilder withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin plugin) {
+      return withStandaloneEmbeddedPlugin(plugin)
+        .withEnabledLanguage(plugin.getLanguage());
     }
 
-    public SonarLintBackendBuilder withConnectedEmbeddedPlugin(TestPlugin plugin) {
+    public SonarLintBackendBuilder withStandaloneEmbeddedPlugin(TestPlugin plugin) {
+      this.embeddedPluginPaths.add(plugin.getPath());
+      return this;
+    }
+
+    public SonarLintBackendBuilder withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin plugin) {
       this.embeddedPluginPaths.add(plugin.getPath());
       this.connectedModeEmbeddedPluginPathsByKey.put(plugin.getLanguage().getPluginKey(), plugin.getPath());
       return withEnabledLanguage(plugin.getLanguage());
@@ -147,12 +155,18 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintBackendBuilder withStandaloneRuleConfig(String ruleKey, boolean isActive, Map<String, String> params) {
+      this.standaloneConfigByKey.put(ruleKey, new StandaloneRuleConfigDto(isActive, params));
+      return this;
+    }
+
     public SonarLintBackendImpl build(FakeSonarLintClient client) {
       var sonarLintBackend = new SonarLintBackendImpl(client);
       client.setBackend(sonarLintBackend);
       sonarLintBackend
         .initialize(new InitializeParams(client.getClientInfo(), MEDIUM_TESTS_PRODUCT_KEY, storageRoot, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
-          enabledLanguages, Collections.emptySet(), areSecurityHotspotsEnabled, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(), startEmbeddedServer));
+          enabledLanguages, Collections.emptySet(), areSecurityHotspotsEnabled, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(), startEmbeddedServer,
+          standaloneConfigByKey));
       sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
       return sonarLintBackend;
     }

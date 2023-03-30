@@ -21,7 +21,9 @@ package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
 import javax.annotation.Nullable;
 
-public class GetActiveRuleDetailsParams {
+import static java.util.Objects.requireNonNull;
+
+public class GetEffectiveRuleDetailsParams {
 
   private final String configurationScopeId;
   private final String ruleKey;
@@ -32,16 +34,16 @@ public class GetActiveRuleDetailsParams {
   /**
    * @param configurationScopeId the configuration scope id (see spec/glossary.adoc for more details)
    * @param ruleKey the key of the rule
-   * @deprecated use {@link GetActiveRuleDetailsParams}
+   * @deprecated use {@link GetEffectiveRuleDetailsParams}
    */
   @Deprecated(since = "8.13", forRemoval = true)
-  public GetActiveRuleDetailsParams(String configurationScopeId, String ruleKey) {
+  public GetEffectiveRuleDetailsParams(String configurationScopeId, String ruleKey) {
     this(configurationScopeId, ruleKey, null);
   }
 
-  public GetActiveRuleDetailsParams(String configurationScopeId, String ruleKey, @Nullable String contextKey) {
-    this.configurationScopeId = configurationScopeId;
-    this.ruleKey = ruleKey;
+  public GetEffectiveRuleDetailsParams(String configurationScopeId, String ruleKey, @Nullable String contextKey) {
+    this.configurationScopeId = requireNonNull(configurationScopeId);
+    this.ruleKey = requireNonNull(ruleKey);
     this.contextKey = contextKey;
   }
 

@@ -19,30 +19,24 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
+import java.util.Map;
 
-public class ActiveRuleParamDto {
-  private final String name;
-  private final String description;
-  private final String defaultValue;
+public class StandaloneRuleConfigDto {
 
-  public ActiveRuleParamDto(String name, String description, @Nullable String defaultValue) {
-    this.name = name;
-    this.description = description;
-    this.defaultValue = defaultValue;
+  private final boolean isActive;
+
+  private final Map<String, String> paramValueByKey;
+
+  public StandaloneRuleConfigDto(boolean isActive, Map<String, String> paramValueByKey) {
+    this.isActive = isActive;
+    this.paramValueByKey = paramValueByKey;
   }
 
-  public String getName() {
-    return name;
+  public boolean isActive() {
+    return isActive;
   }
 
-  public String getDescription() {
-    return description;
-  }
-
-  @CheckForNull
-  public String getDefaultValue() {
-    return defaultValue;
+  public Map<String, String> getParamValueByKey() {
+    return paramValueByKey;
   }
 }

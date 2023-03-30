@@ -19,14 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
-public class GetActiveRuleDetailsResponse {
-  private final ActiveRuleDetailsDto details;
+public enum RuleParamType {
 
-  public GetActiveRuleDetailsResponse(ActiveRuleDetailsDto details) {
-    this.details = details;
-  }
+  /**
+   * Keep in sync with constants in org.sonar.api.server.rule.RuleParamType
+   */
+  STRING, TEXT, BOOLEAN, INTEGER, FLOAT;
 
-  public ActiveRuleDetailsDto details() {
-    return details;
-  }
 }

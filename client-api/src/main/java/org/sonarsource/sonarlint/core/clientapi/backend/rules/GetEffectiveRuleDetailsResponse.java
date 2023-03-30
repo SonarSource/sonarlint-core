@@ -17,17 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.backend.hotspot;
+package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
-import java.util.concurrent.CompletableFuture;
-import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
-import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
+public class GetEffectiveRuleDetailsResponse {
+  private final EffectiveRuleDetailsDto details;
 
-public interface HotspotService {
+  public GetEffectiveRuleDetailsResponse(EffectiveRuleDetailsDto details) {
+    this.details = details;
+  }
 
-  @JsonNotification
-  void openHotspotInBrowser(OpenHotspotInBrowserParams params);
-
-  @JsonRequest
-  CompletableFuture<CheckLocalDetectionSupportedResponse> checkLocalDetectionSupported(CheckLocalDetectionSupportedParams params);
+  public EffectiveRuleDetailsDto details() {
+    return details;
+  }
 }

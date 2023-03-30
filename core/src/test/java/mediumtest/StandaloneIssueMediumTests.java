@@ -404,6 +404,7 @@ class StandaloneIssueMediumTests {
       .build(), issues::add,
       null, null);
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("python:S1172", 1, "foo.py"),
       tuple("python:PrintStatementUsage", 2, "foo.py"));
   }
 
@@ -425,6 +426,7 @@ class StandaloneIssueMediumTests {
       .build(), issues::add,
       null, null);
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("python:S1172", 1, "foo.py"),
       tuple("python:PrintStatementUsage", 2, "foo.py"));
   }
 

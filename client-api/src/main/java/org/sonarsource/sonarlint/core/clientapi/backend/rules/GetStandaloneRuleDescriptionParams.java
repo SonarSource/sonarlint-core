@@ -19,31 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
+import static java.util.Objects.requireNonNull;
 
-public class ActiveRuleContextualSectionDto {
-  private final String htmlContent;
-  private final String contextKey;
-  private final String displayName;
+public class GetStandaloneRuleDescriptionParams {
 
-  public ActiveRuleContextualSectionDto(@NonNull String htmlContent, @NonNull String contextKey, @NonNull String displayName) {
-    this.htmlContent = htmlContent;
-    this.contextKey = contextKey;
-    this.displayName = displayName;
+  private final String ruleKey;
+
+  public GetStandaloneRuleDescriptionParams(String ruleKey) {
+    this.ruleKey = requireNonNull(ruleKey);
   }
 
-  @NonNull
-  public String getHtmlContent() {
-    return htmlContent;
-  }
-
-  @NonNull
-  public String getContextKey() {
-    return contextKey;
-  }
-
-  @NonNull
-  public String getDisplayName() {
-    return displayName;
+  public String getRuleKey() {
+    return ruleKey;
   }
 }

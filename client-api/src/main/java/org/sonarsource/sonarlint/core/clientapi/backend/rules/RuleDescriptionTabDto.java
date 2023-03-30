@@ -19,17 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
-public class ActiveRuleNonContextualSectionDto {
-  private final String htmlContent;
+public class RuleDescriptionTabDto {
+  private final String title;
+  private final Either<RuleNonContextualSectionDto, RuleContextualSectionWithDefaultContextKeyDto> content;
 
-  public ActiveRuleNonContextualSectionDto(@NonNull String htmlContent) {
-    this.htmlContent = htmlContent;
+  public RuleDescriptionTabDto(String title, Either<RuleNonContextualSectionDto, RuleContextualSectionWithDefaultContextKeyDto> content) {
+    this.title = title;
+    this.content = content;
   }
 
-  @NonNull
-  public String getHtmlContent() {
-    return htmlContent;
+  public String getTitle() {
+    return title;
+  }
+
+  public Either<RuleNonContextualSectionDto, RuleContextualSectionWithDefaultContextKeyDto> getContent() {
+    return content;
   }
 }
