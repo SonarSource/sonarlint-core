@@ -61,7 +61,7 @@ public class ConfigurationRepository {
   }
 
   public Optional<Binding> getEffectiveBinding(String configScopeId) {
-    var configScopeIdToSearchIn = configScopeId;
+    var configScopeIdToSearchIn = requireNonNull(configScopeId, "Configuration Scope ID is mandatory");
     while (true) {
       var binding = getConfiguredBinding(configScopeIdToSearchIn);
       if (binding.isPresent()) {

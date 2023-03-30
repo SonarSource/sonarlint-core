@@ -19,12 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
+import static java.util.Objects.requireNonNull;
+
 public class GetStandaloneRuleDescriptionParams {
 
   private final String ruleKey;
 
   public GetStandaloneRuleDescriptionParams(String ruleKey) {
-    this.ruleKey = ruleKey;
+    this.ruleKey = requireNonNull(ruleKey);
   }
 
   public String getRuleKey() {

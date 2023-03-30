@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
 import javax.annotation.Nullable;
 
+import static java.util.Objects.requireNonNull;
+
 public class GetEffectiveRuleDetailsParams {
 
   private final String configurationScopeId;
@@ -40,8 +42,8 @@ public class GetEffectiveRuleDetailsParams {
   }
 
   public GetEffectiveRuleDetailsParams(String configurationScopeId, String ruleKey, @Nullable String contextKey) {
-    this.configurationScopeId = configurationScopeId;
-    this.ruleKey = ruleKey;
+    this.configurationScopeId = requireNonNull(configurationScopeId);
+    this.ruleKey = requireNonNull(ruleKey);
     this.contextKey = contextKey;
   }
 
