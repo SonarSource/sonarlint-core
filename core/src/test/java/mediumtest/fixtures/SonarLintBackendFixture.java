@@ -63,6 +63,8 @@ import org.sonarsource.sonarlint.core.clientapi.client.fs.FoundFileDto;
 import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
+import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesParams;
+import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressParams;
@@ -419,6 +421,11 @@ public class SonarLintBackendFixture {
     }
 
     public CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params) {
+      return CompletableFuture.failedFuture(new UnsupportedOperationException("Unsupported!"));
+    }
+
+    @Override
+    public CompletableFuture<SelectProxiesResponse> selectProxies(SelectProxiesParams params) {
       return CompletableFuture.failedFuture(new UnsupportedOperationException("Unsupported!"));
     }
 

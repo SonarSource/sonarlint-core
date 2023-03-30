@@ -19,11 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.http;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.ProxySelector;
+import java.net.SocketAddress;
+import java.net.URI;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.TokenDto;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.UsernamePasswordDto;
+import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.http.JavaHttpClientAdapter;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -33,10 +43,33 @@ public class HttpClientManager {
   private final SonarLintLogger logger = SonarLintLogger.get();
 
   private final SonarLintClient client;
-  private final java.net.http.HttpClient sharedClient = java.net.http.HttpClient.newBuilder().build();
+  private final java.net.http.HttpClient sharedClient;
 
   public HttpClientManager(SonarLintClient client) {
     this.client = client;
+    this.sharedClient = java.net.http.HttpClient.newBuilder()
+      .proxy(new ProxySelector() {
+        @Override
+        public List<Proxy> select(URI uri) {
+          try {
+            return client.selectProxies(new SelectProxiesParams(uri.toString())).get().getProxies().stream()
+              .map(p -> new Proxy(p.getType(), new InetSocketAddress(p.getHostname(), p.getPort())))
+              .collect(Collectors.toList());
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logger.warn("Interrupted!", e);
+          } catch (ExecutionException e) {
+            logger.warn("Unable to get proxy", e);
+          }
+          return List.of();
+        }
+
+        @Override
+        public void connectFailed(URI uri, SocketAddress sa, IOException ioe) {
+
+        }
+      })
+      .build();
   }
 
   public HttpClient getHttpClient() {
