@@ -230,7 +230,7 @@ public class RulesServiceImpl implements RulesService {
     setStandaloneRuleConfig(params.getRuleConfigByKey());
   }
 
-  public synchronized void setStandaloneRuleConfig(Map<String, StandaloneRuleConfigDto> standaloneRuleConfig) {
+  private synchronized void setStandaloneRuleConfig(Map<String, StandaloneRuleConfigDto> standaloneRuleConfig) {
     this.standaloneRuleConfig.clear();
     this.standaloneRuleConfig.putAll(standaloneRuleConfig);
   }
