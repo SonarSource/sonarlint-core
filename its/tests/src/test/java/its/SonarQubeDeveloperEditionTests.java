@@ -47,6 +47,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -114,6 +115,7 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
 import static its.utils.ItUtils.SONAR_VERSION;
 import static java.util.Collections.singletonList;
+import static org.apache.commons.lang3.StringUtils.abbreviate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
@@ -1224,96 +1226,21 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         assertThat(extendedDescription.getIntroductionHtmlContent()).isNull();
         assertThat(extendedDescription.getTabs())
           .flatExtracting(this::extractTabContent)
-          .contains(
+          .containsExactly(
             "Why is this an issue?",
-            "<p>Path injections occur when an application uses untrusted data to construct a file path and access this file without validating its path first.</p>\n" +
-              "<p>A user with malicious intent would inject specially crafted values, such as <code>../</code>, to change the initial intended path. The resulting\n" +
-              "path would resolve somewhere in the filesystem where the user should not normally have access to.</p>\n" +
-              "<h3>What is the potential impact?</h3>\n" +
-              "<p>A web application is vulnerable to path injection and an attacker is able to exploit it.</p>\n" +
-              "<p>The files that can be affected are limited by the permission of the process that runs the application. Worst case scenario: the process runs with\n" +
-              "root privileges on Linux, and therefore any file can be affected.</p>\n" +
-              "<p>Below are some real-world scenarios that illustrate some impacts of an attacker exploiting the vulnerability.</p>\n" +
-              "<h4>Override or delete arbitrary files</h4>\n" +
-              "<p>The injected path component tampers with the location of a file the application is supposed to delete or write into. The vulnerability is exploited\n" +
-              "to remove or corrupt files that are critical for the application or for the system to work properly.</p>\n" +
-              "<p>It could result in data being lost or the application being unavailable.</p>\n" +
-              "<h4>Read arbitrary files</h4>\n" +
-              "<p>The injected path component tampers with the location of a file the application is supposed to read and output. The vulnerability is exploited to\n" +
-              "leak the content of arbitrary files from the file system, including sensitive files like SSH private keys.</p>",
+            "<p>Path injections occur when an application us...",
             "How can I fix it?",
-            // actual description not checked because it changes frequently between versions
-            "java_se", "Java SE",
-            "<h4>How can I fix it in another component or framework?</h4>\n"
-              + "<p>Although the main framework or component you use in your project is not listed, you may find helpful content in the instructions we provide.</p>\n"
-              + "<p>Caution: The libraries mentioned in these instructions may not be appropriate for your code.</p>\n"
-              + "<p>\n"
-              + "<ul class=\"other-context-list\">\n"
-              + "    <li class=\"do\">Do use libraries that are compatible with the frameworks you are using.</li>\n"
-              + "    <li class=\"dont\">Don't blindly copy and paste the fix-ups into your code.</li>\n"
-              + "</ul>\n"
-              + "<h4>Help us improve</h4>\n"
-              + "<p>Let us know if the instructions we provide do not work for you.\n"
-              + "    Tell us which framework you use and why our solution does not work by submitting an idea on the SonarLint product-board.</p>\n"
-              + "<a href=\"https://portal.productboard.com/sonarsource/4-sonarlint/submit-idea\">Submit an idea</a>\n"
-              + "<p>We will do our best to provide you with more relevant instructions in the future.</p>",
-            "others", "Others",
+            "<p>The following code is vulnerable to path inj...",
+            "java_se",
+            "Java SE",
+            "How can I fix it?",
+            "<h4>How can I fix it in another component or fr...",
+            "others",
+            "Others",
             "More Info",
-            "<h3>Standards</h3>\n" +
-              "<ul>\n" +
-              "  <li> <a href=\"https://owasp.org/Top10/A01_2021-Broken_Access_Control/\">OWASP Top 10 2021 Category A1</a> - Broken Access Control </li>\n" +
-              "  <li> <a href=\"https://owasp.org/Top10/A03_2021-Injection/\">OWASP Top 10 2021 Category A3</a> - Injection </li>\n" +
-              "  <li> <a href=\"https://www.owasp.org/index.php/Top_10-2017_A1-Injection\">OWASP Top 10 2017 Category A1</a> - Injection </li>\n" +
-              "  <li> <a href=\"https://www.owasp.org/index.php/Top_10-2017_A5-Broken_Access_Control\">OWASP Top 10 2017 Category A5</a> - Broken Access Control </li>\n" +
-              "  <li> <a href=\"https://cwe.mitre.org/data/definitions/20\">MITRE, CWE-20</a> - Improper Input Validation </li>\n" +
-              "  <li> <a href=\"https://cwe.mitre.org/data/definitions/22\">MITRE, CWE-22</a> - Improper Limitation of a Pathname to a Restricted Directory ('Path\n" +
-              "  Traversal') </li>\n" +
-              "</ul><br/><br/><h3>Clean Code Principles</h3>\n" +
-              "<h4>Defense-In-Depth</h4>\n" +
-              "<p>\n" +
-              "    Applications and infrastructure benefit greatly from relying on multiple security mechanisms\n" +
-              "    layered on top of each other. If one security mechanism fails, there is a high probability\n" +
-              "    that the subsequent layers of security will successfully defend against the attack.\n" +
-              "</p>\n" +
-              "<p>A non-exhaustive list of these code protection ramparts includes the following:</p>\n" +
-              "<ul>\n" +
-              "    <li>Minimizing the attack surface of the code</li>\n" +
-              "    <li>Application of the principle of least privilege</li>\n" +
-              "    <li>Validation and sanitization of data</li>\n" +
-              "    <li>Encrypting incoming, outgoing, or stored data with secure cryptography</li>\n" +
-              "    <li>Ensuring that internal errors cannot disrupt the overall runtime</li>\n" +
-              "    <li>Separation of tasks and access to information</li>\n" +
-              "</ul>\n" +
-              "\n" +
-              "<p>\n" +
-              "    Note that these layers must be simple enough to use in an everyday workflow. Security\n" +
-              "    measures should not break usability.\n" +
-              "</p><br/><br/><h4>Never Trust User Input</h4>\n" +
-              "<p>\n" +
-              "    Applications must treat all user input and, more generally, all third-party data as\n" +
-              "    attacker-controlled data.\n" +
-              "</p>\n" +
-              "<p>\n" +
-              "    The application must determine where the third-party data comes from and treat that data\n" +
-              "    source as an attack vector. Two rules apply:\n" +
-              "</p>\n" +
-              "\n" +
-              "<p>\n" +
-              "    First, before using it in the application&apos;s business logic, the application must\n" +
-              "    validate the attacker-controlled data against predefined formats, such as:\n" +
-              "</p>\n" +
-              "<ul>\n" +
-              "    <li>Character sets</li>\n" +
-              "    <li>Sizes</li>\n" +
-              "    <li>Types</li>\n" +
-              "    <li>Or any strict schema</li>\n" +
-              "</ul>\n" +
-              "\n" +
-              "<p>\n" +
-              "    Second, the application must sanitize string data before inserting it into interpreted\n" +
-              "    contexts (client-side code, file paths, SQL queries). Unsanitized code can corrupt the\n" +
-              "    application&apos;s logic.\n" +
-              "</p>");
+            "<h3>Standards</h3>\n"
+              + "<ul>\n"
+              + "  <li> <a href=\"https:/...");
       }
     }
 
@@ -1347,170 +1274,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           .flatExtracting(this::extractTabContent)
           .containsExactly(
             "Why is this an issue?",
-            "<p>Reflected cross-site scripting (XSS) occurs in a web application when the application retrieves data like parameters or headers from an incoming\n"
-              + "HTTP request and inserts it into its HTTP response without first sanitizing it. The most common cause is the insertion of GET parameters.</p>\n"
-              + "<p>When well-intentioned users open a link to a page that is vulnerable to reflected XSS, they are exposed to attacks that target their own\n"
-              + "browser.</p>\n"
-              + "<p>A user with malicious intent carefully crafts the link beforehand.</p>\n"
-              + "<p>After creating this link, the attacker must use phishing techniques to ensure that his target users click on the link.</p>\n"
-              + "<h3>What is the potential impact?</h3>\n"
-              + "<p>A well-intentioned user opens a malicious link that injects data into the web application. This data can be text, but it can also be arbitrary code\n"
-              + "that can be interpreted by the target user’s browser, such as HTML, CSS, or JavaScript.</p>\n"
-              + "<p>Below are some real-world scenarios that illustrate some impacts of an attacker exploiting the vulnerability.</p>\n"
-              + "<h4>Vandalism on the front-end website</h4>\n"
-              + "<p>The malicious link defaces the target web application from the perspective of the user who is the victim. This may result in loss of integrity and\n"
-              + "theft of the benevolent user’s data.</p>\n"
-              + "<h4>Identity spoofing</h4>\n"
-              + "<p>The forged link injects malicious code into the web application. The code enables identity spoofing thanks to cookie theft.</p>\n"
-              + "<h4>Record user activity</h4>\n"
-              + "<p>The forged link injects malicious code into the web application. To leak confidential information, attackers can inject code that records keyboard\n"
-              + "activity (keylogger) and even requests access to other devices, such as the camera or microphone.</p>\n"
-              + "<h4>Chaining XSS with other vulnerabilities</h4>\n"
-              + "<p>In many cases, bug hunters and attackers chain cross-site scripting vulnerabilities with other vulnerabilities to maximize their impact.<br> For\n"
-              + "example, an XSS can be used as the first step to exploit more dangerous vulnerabilities or features that require higher privileges, such as a code\n"
-              + "injection vulnerability in the admin control panel of a web application.</p>",
+            "<p>Reflected cross-site scripting (XSS) occurs ...",
             "How can I fix it?",
-            "<p>The following code is vulnerable to cross-site scripting because it returns an HTML response that contains user input.</p>\n"
-              + "<p>If you do not intend to send HTML code to clients, the vulnerability can be fixed by specifying the type of data returned in the response. For\n"
-              + "example, you can use the <code>produces</code> property of the <code>GetMapping</code> annotation.</p>\n"
-              + "<h4>Noncompliant code example</h4>\n"
-              + "<pre data-diff-id=\"1\" data-diff-type=\"noncompliant\">\n"
-              + "@RestController\n"
-              + "public class ApiController\n"
-              + "{\n"
-              + "    @GetMapping(value = \"/endpoint\")\n"
-              + "    public String endpoint(@RequestParam(\"input\") input)\n"
-              + "    {\n"
-              + "        return input;\n"
-              + "    }\n"
-              + "}\n"
-              + "</pre>\n"
-              + "<h4>Compliant solution</h4>\n"
-              + "<pre data-diff-id=\"1\" data-diff-type=\"compliant\">\n"
-              + "@RestController\n"
-              + "public class ApiController\n"
-              + "{\n"
-              + "    @GetMapping(value = \"/endpoint\", produces = \"text/plain\")\n"
-              + "    public String endpoint(@RequestParam(\"input\") input)\n"
-              + "    {\n"
-              + "        return input;\n"
-              + "    }\n"
-              + "}\n"
-              + "</pre>\n"
-              + "<h3>How does this work?</h3>\n"
-              + "<p>If the HTTP response is HTML code, it is highly recommended to use a template engine like <a href=\"https://www.thymeleaf.org/\">Thymeleaf</a> to\n"
-              + "generate it. This template engine separates the view from the business logic and automatically encodes the output of variables, drastically reducing\n"
-              + "the risk of cross-site scripting vulnerabilities.</p>\n"
-              + "<p>If you do not intend to send HTML code to clients, the vulnerability can be fixed by specifying the type of data returned in the response with the\n"
-              + "<code>content-type</code> HTTP header. This header tells the browser that the response does not contain HTML code and should not be parsed and\n"
-              + "interpreted as HTML. Thus, the response is not vulnerable to reflected cross-site scripting.</p>\n"
-              + "<p>For example, setting the content-type to <code>text/plain</code> allows to safely reflect user input since browsers will not try to parse and\n"
-              + "execute the response.</p>\n"
-              + "<h3>Pitfalls</h3>\n"
-              + "<h4>Content-types</h4>\n"
-              + "<p>Be aware that there are more content-types than <code>text/html</code> that allow to execute JavaScript code in a browser and thus are prone to\n"
-              + "cross-site scripting vulnerabilities.<br> The following content-types are known to be affected:</p>\n"
-              + "<ul>\n"
-              + "  <li> application/mathml+xml </li>\n"
-              + "  <li> application/rdf+xml </li>\n"
-              + "  <li> application/vnd.wap.xhtml+xml </li>\n"
-              + "  <li> application/xhtml+xml </li>\n"
-              + "  <li> application/xml </li>\n"
-              + "  <li> image/svg+xml </li>\n"
-              + "  <li> multipart/x-mixed-replace </li>\n"
-              + "  <li> text/html </li>\n"
-              + "  <li> text/rdf </li>\n"
-              + "  <li> text/xml </li>\n"
-              + "  <li> text/xsl </li>\n"
-              + "</ul>\n"
-              + "<h4>The limits of validation</h4>\n"
-              + "<p>Validation of user inputs is a good practice to protect against various injection attacks. But for XSS, validation on its own is not the\n"
-              + "recommended approach.</p>\n"
-              + "<p>As an example, filtering out user inputs based on a deny-list will never fully prevent XSS vulnerability from being exploited. This practice is\n"
-              + "sometimes used by web application firewalls. It is only a matter of time for malicious users to find the exploitation payload that will defeat the\n"
-              + "filters.</p>\n"
-              + "<p>Another example is applications that allow users or third-party services to send HTML content to be used by the application. A common approach is\n"
-              + "trying to parse HTML and strip sensitive HTML tags. Again, this deny-list approach is vulnerable by design: maintaining a list of sensitive HTML tags,\n"
-              + "in the long run, is very difficult.</p>\n"
-              + "<p>A preferred option is to use Markdown in conjunction with a parser that removes embedded HTML and restricts the use of \"javascript:\" URI.</p>\n"
-              + "<h3>Going the extra mile</h3>\n"
-              + "<h4>Content Security Policy (CSP) Header</h4>\n"
-              + "<p>With a defense-in-depth security approach, the <strong>CSP</strong> response header can be added to instruct client browsers to\n"
-              + "<strong>block</strong> loading data that does not meet the application’s security requirements. If configured correctly, this can prevent any attempt\n"
-              + "to exploit XSS in the application.<br> <a href=\"https://web.dev/csp-xss/\">Learn more here.</a></p>",
+            "<p>The following code is vulnerable to cross-si...",
             "More Info",
             "<h3>Documentation</h3>\n"
               + "<ul>\n"
-              + "  <li> <a href=\"https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html\">OWASP Cheat Sheet</a> - XSS\n"
-              + "  Prevention Cheat Sheet </li>\n"
-              + "  <li> <a href=\"https://javadoc.io/doc/org.owasp.encoder/encoder/latest/index.html\">OWASP Encoder</a> </li>\n"
-              + "  <li> <a href=\"https://spring.io/guides/gs/securing-web/\">Spring.io, Securing a Web Application</a> </li>\n"
-              + "  <li> <a href=\"https://www.thymeleaf.org/doc/tutorials/2.1/usingthymeleaf.html\">Thymeleaf.org, Tutorial: Using Thymeleaf</a> </li>\n"
-              + "</ul>\n"
-              + "<h3>Articles &amp; Blog Posts</h3>\n"
-              + "<ul>\n"
-              + "  <li> <a href=\"https://blog.sonarsource.com/wordpress-stored-xss-vulnerability\">SonarSource, WordPress 5.8.2 Stored XSS Vulnerability</a> </li>\n"
-              + "  <li> <a href=\"https://blog.sonarsource.com/ghost-admin-takeover\">SonarSource, Ghost CMS 4.3.2 - Cross-Origin Admin Takeover</a> </li>\n"
-              + "  <li> <a href=\"https://samy.pl/myspace/\">Samy Kamkar, The MySpace Worm</a> </li>\n"
-              + "</ul>\n"
-              + "<h3>Conference Presentations</h3>\n"
-              + "<ul>\n"
-              + "  <li> <a href=\"https://www.youtube.com/watch?v=ksq7e6UUDag\">DEF CON Safe Mode Red Team Village, Ray Doyle, Weaponized XSS Moving Beyond Alert</a>\n"
-              + "  </li>\n"
-              + "</ul>\n"
-              + "<h3>Standards</h3>\n"
-              + "<ul>\n"
-              + "  <li> <a href=\"https://owasp.org/Top10/A03_2021-Injection/\">OWASP Top 10 2021 Category A3</a> - Injection </li>\n"
-              + "  <li> <a href=\"https://owasp.org/www-project-top-ten/2017/A7_2017-Cross-Site_Scripting_(XSS)\">OWASP Top 10 2017 Category A7</a> - Cross-Site\n"
-              + "  Scripting (XSS) </li>\n"
-              + "  <li> <a href=\"https://cwe.mitre.org/data/definitions/79.html\">MITRE, CWE-79</a> - Improper Neutralization of Input During Web Page Generation\n"
-              + "  ('Cross-site Scripting') </li>\n"
-              + "</ul><br/><br/><h3>Clean Code Principles</h3>\n"
-              + "<h4>Defense-In-Depth</h4>\n"
-              + "<p>\n"
-              + "    Applications and infrastructure benefit greatly from relying on multiple security mechanisms\n"
-              + "    layered on top of each other. If one security mechanism fails, there is a high probability\n"
-              + "    that the subsequent layers of security will successfully defend against the attack.\n"
-              + "</p>\n"
-              + "<p>A non-exhaustive list of these code protection ramparts includes the following:</p>\n"
-              + "<ul>\n"
-              + "    <li>Minimizing the attack surface of the code</li>\n"
-              + "    <li>Application of the principle of least privilege</li>\n"
-              + "    <li>Validation and sanitization of data</li>\n"
-              + "    <li>Encrypting incoming, outgoing, or stored data with secure cryptography</li>\n"
-              + "    <li>Ensuring that internal errors cannot disrupt the overall runtime</li>\n"
-              + "    <li>Separation of tasks and access to information</li>\n"
-              + "</ul>\n"
-              + "\n"
-              + "<p>\n"
-              + "    Note that these layers must be simple enough to use in an everyday workflow. Security\n"
-              + "    measures should not break usability.\n"
-              + "</p><br/><br/><h4>Never Trust User Input</h4>\n"
-              + "<p>\n"
-              + "    Applications must treat all user input and, more generally, all third-party data as\n"
-              + "    attacker-controlled data.\n"
-              + "</p>\n"
-              + "<p>\n"
-              + "    The application must determine where the third-party data comes from and treat that data\n"
-              + "    source as an attack vector. Two rules apply:\n"
-              + "</p>\n"
-              + "\n"
-              + "<p>\n"
-              + "    First, before using it in the application&apos;s business logic, the application must\n"
-              + "    validate the attacker-controlled data against predefined formats, such as:\n"
-              + "</p>\n"
-              + "<ul>\n"
-              + "    <li>Character sets</li>\n"
-              + "    <li>Sizes</li>\n"
-              + "    <li>Types</li>\n"
-              + "    <li>Or any strict schema</li>\n"
-              + "</ul>\n"
-              + "\n"
-              + "<p>\n"
-              + "    Second, the application must sanitize string data before inserting it into interpreted\n"
-              + "    contexts (client-side code, file paths, SQL queries). Unsanitized code can corrupt the\n"
-              + "    application&apos;s logic.\n"
-              + "</p>");
+              + "  <li> <a href=\"htt...");
       }
     }
 
@@ -1535,160 +1305,21 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         .flatExtracting(this::extractTabContent)
         .containsOnly(
           "What's the risk?",
-          "<p>Configuring loggers is security-sensitive. It has led in the past to the following vulnerabilities:</p>\n" +
-            "<ul>\n" +
-            "  <li> <a href=\"http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-0285\">CVE-2018-0285</a> </li>\n" +
-            "  <li> <a href=\"http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2000-1127\">CVE-2000-1127</a> </li>\n" +
-            "  <li> <a href=\"http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2017-15113\">CVE-2017-15113</a> </li>\n" +
-            "  <li> <a href=\"http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2015-5742\">CVE-2015-5742</a> </li>\n" +
-            "</ul>\n" +
-            "<p>Logs are useful before, during and after a security incident.</p>\n" +
-            "<ul>\n" +
-            "  <li> Attackers will most of the time start their nefarious work by probing the system for vulnerabilities. Monitoring this activity and stopping it\n" +
-            "  is the first step to prevent an attack from ever happening. </li>\n" +
-            "  <li> In case of a successful attack, logs should contain enough information to understand what damage an attacker may have inflicted. </li>\n" +
-            "</ul>\n" +
-            "<p>Logs are also a target for attackers because they might contain sensitive information. Configuring loggers has an impact on the type of information\n" +
-            "logged and how they are logged.</p>\n" +
-            "<p>This rule flags for review code that initiates loggers configuration. The goal is to guide security code reviews.</p>\n" +
-            "<h2>Exceptions</h2>\n" +
-            "<p>Log4J 1.x is not covered as it has reached <a href=\"https://blogs.apache.org/foundation/entry/apache_logging_services_project_announces\">end of\n" +
-            "life</a>.</p>\n",
+          "<p>Configuring loggers is security-sensitive. I...",
           "Assess the risk",
-          "<h2>Ask Yourself Whether</h2>\n" +
-            "<ul>\n" +
-            "  <li> unauthorized users might have access to the logs, either because they are stored in an insecure location or because the application gives\n" +
-            "  access to them. </li>\n" +
-            "  <li> the logs contain sensitive information on a production server. This can happen when the logger is in debug mode. </li>\n" +
-            "  <li> the log can grow without limit. This can happen when additional information is written into logs every time a user performs an action and the\n" +
-            "  user can perform the action as many times as he/she wants. </li>\n" +
-            "  <li> the logs do not contain enough information to understand the damage an attacker might have inflicted. The loggers mode (info, warn, error)\n" +
-            "  might filter out important information. They might not print contextual information like the precise time of events or the server hostname. </li>\n" +
-            "  <li> the logs are only stored locally instead of being backuped or replicated. </li>\n" +
-            "</ul>\n" +
-            "<p>There is a risk if you answered yes to any of those questions.</p>\n" +
-            "<h2>Sensitive Code Example</h2>\n" +
-            "<p>This rule supports the following libraries: Log4J, <code>java.util.logging</code> and Logback</p>\n" +
-            "<pre>\n" +
-            "// === Log4J 2 ===\n" +
-            "import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory;\n" +
-            "import org.apache.logging.log4j.Level;\n" +
-            "import org.apache.logging.log4j.core.*;\n" +
-            "import org.apache.logging.log4j.core.config.*;\n" +
-            "\n" +
-            "// Sensitive: creating a new custom configuration\n" +
-            "abstract class CustomConfigFactory extends ConfigurationFactory {\n" +
-            "    // ...\n" +
-            "}\n" +
-            "\n" +
-            "class A {\n" +
-            "    void foo(Configuration config, LoggerContext context, java.util.Map&lt;String, Level&gt; levelMap,\n" +
-            "            Appender appender, java.io.InputStream stream, java.net.URI uri,\n" +
-            "            java.io.File file, java.net.URL url, String source, ClassLoader loader, Level level, Filter filter)\n" +
-            "            throws java.io.IOException {\n" +
-            "        // Creating a new custom configuration\n" +
-            "        ConfigurationBuilderFactory.newConfigurationBuilder();  // Sensitive\n" +
-            "\n" +
-            "        // Setting loggers level can result in writing sensitive information in production\n" +
-            "        Configurator.setAllLevels(\"com.example\", Level.DEBUG);  // Sensitive\n" +
-            "        Configurator.setLevel(\"com.example\", Level.DEBUG);  // Sensitive\n" +
-            "        Configurator.setLevel(levelMap);  // Sensitive\n" +
-            "        Configurator.setRootLevel(Level.DEBUG);  // Sensitive\n" +
-            "\n" +
-            "        config.addAppender(appender); // Sensitive: this modifies the configuration\n" +
-            "\n" +
-            "        LoggerConfig loggerConfig = config.getRootLogger();\n" +
-            "        loggerConfig.addAppender(appender, level, filter); // Sensitive\n" +
-            "        loggerConfig.setLevel(level); // Sensitive\n" +
-            "\n" +
-            "        context.setConfigLocation(uri); // Sensitive\n" +
-            "\n" +
-            "        // Load the configuration from a stream or file\n" +
-            "        new ConfigurationSource(stream);  // Sensitive\n" +
-            "        new ConfigurationSource(stream, file);  // Sensitive\n" +
-            "        new ConfigurationSource(stream, url);  // Sensitive\n" +
-            "        ConfigurationSource.fromResource(source, loader);  // Sensitive\n" +
-            "        ConfigurationSource.fromUri(uri);  // Sensitive\n" +
-            "    }\n" +
-            "}\n" +
-            "</pre>\n" +
-            "<pre>\n" +
-            "// === java.util.logging ===\n" +
-            "import java.util.logging.*;\n" +
-            "\n" +
-            "class M {\n" +
-            "    void foo(LogManager logManager, Logger logger, java.io.InputStream is, Handler handler)\n" +
-            "            throws SecurityException, java.io.IOException {\n" +
-            "        logManager.readConfiguration(is); // Sensitive\n" +
-            "\n" +
-            "        logger.setLevel(Level.FINEST); // Sensitive\n" +
-            "        logger.addHandler(handler); // Sensitive\n" +
-            "    }\n" +
-            "}\n" +
-            "</pre>\n" +
-            "<pre>\n" +
-            "// === Logback ===\n" +
-            "import ch.qos.logback.classic.util.ContextInitializer;\n" +
-            "import ch.qos.logback.core.Appender;\n" +
-            "import ch.qos.logback.classic.joran.JoranConfigurator;\n" +
-            "import ch.qos.logback.classic.spi.ILoggingEvent;\n" +
-            "import ch.qos.logback.classic.*;\n" +
-            "\n" +
-            "class M {\n" +
-            "    void foo(Logger logger, Appender&lt;ILoggingEvent&gt; fileAppender) {\n" +
-            "        System.setProperty(ContextInitializer.CONFIG_FILE_PROPERTY, \"config.xml\"); // Sensitive\n" +
-            "        JoranConfigurator configurator = new JoranConfigurator(); // Sensitive\n" +
-            "\n" +
-            "        logger.addAppender(fileAppender); // Sensitive\n" +
-            "        logger.setLevel(Level.DEBUG); // Sensitive\n" +
-            "    }\n" +
-            "}\n" +
-            "</pre>\n",
+          "<h2>Ask Yourself Whether</h2>\n"
+            + "<ul>\n"
+            + "  <li> unaut...",
           "How can I fix it?",
-          "<h2>Recommended Secure Coding Practices</h2>\n" +
-            "<ul>\n" +
-            "  <li> Check that your production deployment doesn’t have its loggers in \"debug\" mode as it might write sensitive information in logs. </li>\n" +
-            "  <li> Production logs should be stored in a secure location which is only accessible to system administrators. </li>\n" +
-            "  <li> Configure the loggers to display all warnings, info and error messages. Write relevant information such as the precise time of events and the\n" +
-            "  hostname. </li>\n" +
-            "  <li> Choose log format which is easy to parse and process automatically. It is important to process logs rapidly in case of an attack so that the\n" +
-            "  impact is known and limited. </li>\n" +
-            "  <li> Check that the permissions of the log files are correct. If you index the logs in some other service, make sure that the transfer and the\n" +
-            "  service are secure too. </li>\n" +
-            "  <li> Add limits to the size of the logs and make sure that no user can fill the disk with logs. This can happen even when the user does not control\n" +
-            "  the logged information. An attacker could just repeat a logged action many times. </li>\n" +
-            "</ul>\n" +
-            "<p>Remember that configuring loggers properly doesn’t make them bullet-proof. Here is a list of recommendations explaining on how to use your\n" +
-            "logs:</p>\n" +
-            "<ul>\n" +
-            "  <li> Don’t log any sensitive information. This obviously includes passwords and credit card numbers but also any personal information such as user\n" +
-            "  names, locations, etc…\u200B Usually any information which is protected by law is good candidate for removal. </li>\n" +
-            "  <li> Sanitize all user inputs before writing them in the logs. This includes checking its size, content, encoding, syntax, etc…\u200B As for any user\n" +
-            "  input, validate using whitelists whenever possible. Enabling users to write what they want in your logs can have many impacts. It could for example\n" +
-            "  use all your storage space or compromise your log indexing service. </li>\n" +
-            "  <li> Log enough information to monitor suspicious activities and evaluate the impact an attacker might have on your systems. Register events such as\n" +
-            "  failed logins, successful logins, server side input validation failures, access denials and any important transaction. </li>\n" +
-            "  <li> Monitor the logs for any suspicious activity. </li>\n" +
-            "</ul>\n" +
-            "<h2>See</h2>\n" +
-            "<ul>\n" +
-            "  <li> <a href=\"https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/\">OWASP Top 10 2021 Category A9</a> - Security Logging and\n" +
-            "  Monitoring Failures </li>\n" +
-            "  <li> <a href=\"https://www.owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure\">OWASP Top 10 2017 Category A3</a> - Sensitive Data\n" +
-            "  Exposure </li>\n" +
-            "  <li> <a href=\"https://owasp.org/www-project-top-ten/2017/A10_2017-Insufficient_Logging%2526Monitoring\">OWASP Top 10 2017 Category A10</a> -\n" +
-            "  Insufficient Logging &amp; Monitoring </li>\n" +
-            "  <li> <a href=\"https://cwe.mitre.org/data/definitions/117\">MITRE, CWE-117</a> - Improper Output Neutralization for Logs </li>\n" +
-            "  <li> <a href=\"https://cwe.mitre.org/data/definitions/532\">MITRE, CWE-532</a> - Information Exposure Through Log Files </li>\n" +
-            "  <li> <a href=\"https://www.sans.org/top25-software-errors/#cat3\">SANS Top 25</a> - Porous Defenses </li>\n" +
-            "</ul>");
+          "<h2>Recommended Secure Coding Practices</h2>\n"
+            + "<u...");
     }
 
     private List<Object> extractTabContent(RuleDescriptionTabDto tab) {
       if (tab.getContent().isLeft()) {
-        return List.of(tab.getTitle(), tab.getContent().getLeft().getHtmlContent());
+        return List.of(tab.getTitle(), abbreviate(tab.getContent().getLeft().getHtmlContent(), 50));
       }
-      return tab.getContent().getRight().getContextualSections().stream().flatMap(s -> Stream.of(tab.getTitle(), s.getHtmlContent(), s.getContextKey(), s.getDisplayName()))
+      return tab.getContent().getRight().getContextualSections().stream().flatMap(s -> Stream.of(tab.getTitle(), abbreviate(s.getHtmlContent(), 50), s.getContextKey(), s.getDisplayName()))
         .collect(Collectors.toList());
     }
 
