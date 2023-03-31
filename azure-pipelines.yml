@@ -209,12 +209,16 @@ stages:
             -B --settings $(mavenSettings.secureFilePath) -Dcommercial -Denable-repo=private
             -Pcoverage
             -Dsonar.coverage.jacoco.xmlReportPaths=$(Build.Repository.LocalPath)/report-aggregate/target/site/jacoco-aggregate/jacoco.xml
+            -Dsonar.scanner.keepReport=true
           publishJUnitResults: false
           javaHomeOption: 'JDKVersion'
           jdkVersionOption: '1.11'
           mavenOptions: $(MAVEN_OPTS)
           sonarQubeRunAnalysis: true
           sqMavenPluginVersionChoice: 'latest'
+      # to debug coverage issues
+      - publish: '$(Build.Repository.LocalPath)/report-aggregate/target/site/jacoco-aggregate/jacoco.xml'
+        artifact: 'JaCoCo Aggregated Report'
       - template: mend-with-maven-repox.yml@commonTemplates
         parameters:
           productName : 'SonarLint/Core'
