@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.StorageFixture;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -37,6 +38,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 class ConnectionSyncMediumTests {
 
@@ -79,6 +81,7 @@ class ConnectionSyncMediumTests {
 
     // Removing and adding the connection back should evict the cache
     backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(), List.of()));
+    await().untilAsserted( () -> assertThat(logTester.logs()).contains("Evict cached rules definitions for connection 'connectionId'"));
     backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto("connectionId", "http://foo")), List.of()));
 
     logTester.clear();

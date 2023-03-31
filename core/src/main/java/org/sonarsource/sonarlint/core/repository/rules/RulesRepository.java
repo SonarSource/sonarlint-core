@@ -25,12 +25,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
-import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
 
 public class RulesRepository {
+
+  private final SonarLintLogger logger = SonarLintLogger.get();
 
   private final RulesExtractionHelper extractionHelper;
   private Map<String, SonarLintRuleDefinition> embeddedRulesByKey;
@@ -95,6 +97,7 @@ public class RulesRepository {
   }
 
   private void evictAll(String connectionId) {
+    logger.debug("Evict cached rules definitions for connection '{}'", connectionId);
     rulesByKeyByConnectionId.remove(connectionId);
     ruleKeyReplacementsByConnectionId.remove(connectionId);
   }
