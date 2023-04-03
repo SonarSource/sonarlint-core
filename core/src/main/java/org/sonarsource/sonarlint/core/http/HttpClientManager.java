@@ -53,7 +53,7 @@ public class HttpClientManager {
         public List<Proxy> select(URI uri) {
           try {
             return client.selectProxies(new SelectProxiesParams(uri.toString())).get().getProxies().stream()
-              .map(p -> new Proxy(p.getType(), new InetSocketAddress(p.getHostname(), p.getPort())))
+              .map(p -> p.getType() == Proxy.Type.DIRECT ? Proxy.NO_PROXY : new Proxy(p.getType(), new InetSocketAddress(p.getHostname(), p.getPort())))
               .collect(Collectors.toList());
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
