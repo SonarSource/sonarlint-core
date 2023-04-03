@@ -50,11 +50,11 @@ class ConnectionServiceImplTests {
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester();
 
-  public static final SonarQubeConnectionConfigurationDto SQ_DTO_1 = new SonarQubeConnectionConfigurationDto("sq1", "url1");
-  public static final SonarQubeConnectionConfigurationDto SQ_DTO_1_DUP = new SonarQubeConnectionConfigurationDto("sq1", "url1_dup");
-  public static final SonarQubeConnectionConfigurationDto SQ_DTO_2 = new SonarQubeConnectionConfigurationDto("sq2", "url2");
-  public static final SonarCloudConnectionConfigurationDto SC_DTO_1 = new SonarCloudConnectionConfigurationDto("sc1", "org1");
-  public static final SonarCloudConnectionConfigurationDto SC_DTO_2 = new SonarCloudConnectionConfigurationDto("sc2", "org2");
+  public static final SonarQubeConnectionConfigurationDto SQ_DTO_1 = new SonarQubeConnectionConfigurationDto("sq1", "url1", true);
+  public static final SonarQubeConnectionConfigurationDto SQ_DTO_1_DUP = new SonarQubeConnectionConfigurationDto("sq1", "url1_dup", true);
+  public static final SonarQubeConnectionConfigurationDto SQ_DTO_2 = new SonarQubeConnectionConfigurationDto("sq2", "url2", true);
+  public static final SonarCloudConnectionConfigurationDto SC_DTO_1 = new SonarCloudConnectionConfigurationDto("sc1", "org1", true);
+  public static final SonarCloudConnectionConfigurationDto SC_DTO_2 = new SonarCloudConnectionConfigurationDto("sc2", "org2", true);
 
   EventBus eventBus;
   ConnectionServiceImpl underTest;
@@ -130,7 +130,7 @@ class ConnectionServiceImplTests {
     underTest = new ConnectionServiceImpl(eventBus, mockedRepo);
 
     // Emulate a race condition on the repository: the connection is gone between get and remove
-    when(mockedRepo.getConnectionsById()).thenReturn(Map.of("id", new SonarQubeConnectionConfiguration("id", "http://foo")));
+    when(mockedRepo.getConnectionsById()).thenReturn(Map.of("id", new SonarQubeConnectionConfiguration("id", "http://foo", true)));
     when(mockedRepo.remove("id")).thenReturn(null);
 
     underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(), List.of()));
@@ -159,7 +159,7 @@ class ConnectionServiceImplTests {
     underTest = new ConnectionServiceImpl(eventBus, mockedRepo);
 
     // Emulate a race condition on the repository: the connection is gone between get and add
-    when(mockedRepo.getConnectionsById()).thenReturn(Map.of(SQ_DTO_2.getConnectionId(), new SonarQubeConnectionConfiguration(SQ_DTO_2.getConnectionId(), "http://foo")));
+    when(mockedRepo.getConnectionsById()).thenReturn(Map.of(SQ_DTO_2.getConnectionId(), new SonarQubeConnectionConfiguration(SQ_DTO_2.getConnectionId(), "http://foo", true)));
     when(mockedRepo.addOrReplace(any())).thenReturn(null);
 
     underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_2), List.of()));

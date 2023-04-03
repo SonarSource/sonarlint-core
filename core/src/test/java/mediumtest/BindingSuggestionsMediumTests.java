@@ -81,7 +81,7 @@ class BindingSuggestionsMediumTests {
     await().until(() -> logTester.logs(), logs -> logs.contains("No connections configured, skipping binding suggestions."));
 
     backend.getConnectionService()
-      .didUpdateConnections(new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto(MYSONAR, mockWebServerExtension.endpointParams().getBaseUrl())), List.of()));
+      .didUpdateConnections(new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto(MYSONAR, mockWebServerExtension.endpointParams().getBaseUrl(), true)), List.of()));
 
     await().atMost(Duration.of(5, ChronoUnit.SECONDS)).until(fakeClient::hasReceivedSuggestions);
     var bindingSuggestions = fakeClient.getBindingSuggestions();
@@ -106,7 +106,7 @@ class BindingSuggestionsMediumTests {
       .build());
 
     backend.getConnectionService()
-      .didUpdateConnections(new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto(MYSONAR, mockWebServerExtension.endpointParams().getBaseUrl())), List.of()));
+      .didUpdateConnections(new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto(MYSONAR, mockWebServerExtension.endpointParams().getBaseUrl(), true)), List.of()));
 
     await().atMost(Duration.of(5, ChronoUnit.SECONDS)).until(fakeClient::hasReceivedSuggestions);
     var bindingSuggestions = fakeClient.getBindingSuggestions();

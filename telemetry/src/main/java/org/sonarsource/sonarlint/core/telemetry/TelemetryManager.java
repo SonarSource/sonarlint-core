@@ -132,6 +132,10 @@ public class TelemetryManager {
     storage.tryUpdateAtomically(s -> s.helpAndFeedbackLinkClicked(itemId));
   }
 
+  public void smartNotificationsSent(String itemId) {
+    storage.tryUpdateAtomically(s -> s.helpAndFeedbackLinkClicked(itemId));
+  }
+
   /**
    * Save and upload lazily telemetry data.
    */

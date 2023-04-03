@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScope
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 
 public interface SonarLintClient {
@@ -70,6 +71,9 @@ public interface SonarLintClient {
    */
   @JsonNotification
   void showMessage(ShowMessageParams params);
+
+  @JsonNotification
+  void showSmartNotification(ShowSmartNotificationParams params);
 
   @JsonRequest
   CompletableFuture<GetHostInfoResponse> getHostInfo();

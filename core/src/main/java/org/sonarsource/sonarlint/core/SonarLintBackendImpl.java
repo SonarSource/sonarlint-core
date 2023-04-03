@@ -46,6 +46,7 @@ import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurat
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rules.RulesServiceImpl;
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
+import org.sonarsource.sonarlint.core.smartnotifications.SmartNotifications;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
 public class SonarLintBackendImpl implements SonarLintBackend {
@@ -63,6 +64,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   private final PluginsServiceImpl pluginsService;
   private final AuthenticationHelperServiceImpl authenticationHelperService;
   private final RulesExtractionHelper rulesExtractionHelper;
+  private final SmartNotifications smartNotifications;
 
   public SonarLintBackendImpl(SonarLintClient client) {
     EventBus clientEventBus = new AsyncEventBus("clientEvents", clientEventsExecutorService);
@@ -85,6 +87,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     this.embeddedServer = new EmbeddedServer(client, connectionService, awaitingUserTokenFutureRepository, configurationService, bindingSuggestionProvider, serverApiProvider,
       telemetryService);
     this.authenticationHelperService = new AuthenticationHelperServiceImpl(client, embeddedServer, awaitingUserTokenFutureRepository);
+    smartNotifications = new SmartNotifications(configurationRepository, connectionConfigurationRepository, serverApiProvider, client, telemetryService);
     clientEventBus.register(bindingSuggestionProvider);
     clientEventBus.register(sonarProjectCache);
     clientEventBus.register(rulesRepository);
@@ -107,6 +110,9 @@ public class SonarLintBackendImpl implements SonarLintBackend {
       embeddedServer.initialize(params.getHostInfo());
     }
     authenticationHelperService.initialize(params.getHostInfo().getName());
+    if (params.shouldManageSmartNotifications()) {
+      smartNotifications.initialize(params.getStorageRoot());
+    }
     return CompletableFuture.completedFuture(null);
   }
 
@@ -147,6 +153,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
       this.pluginsService.shutdown();
       this.bindingSuggestionProvider.shutdown();
       this.embeddedServer.shutdown();
+      this.smartNotifications.shutdown();
     });
   }
 

@@ -17,23 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.repository.connection;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.smartnotifications;
 
-import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
-class SonarCloudConnectionConfigurationTest {
-
-  @Test
-  void testEqualsAndHashCode() {
-    var underTest = new SonarCloudConnectionConfiguration("id1", "org1", true);
-    assertThat(underTest)
-      .isEqualTo(new SonarCloudConnectionConfiguration("id1", "org1", true))
-      .isNotEqualTo(new SonarCloudConnectionConfiguration("id2", "org1", true))
-      .isNotEqualTo(new SonarCloudConnectionConfiguration("id1", "org2", true))
-      .isNotEqualTo(new SonarQubeConnectionConfiguration("id1", "http://server1", true))
-      .hasSameHashCodeAs(new SonarCloudConnectionConfiguration("id1", "org1", true));
-  }
-
-}
+import javax.annotation.ParametersAreNonnullByDefault;

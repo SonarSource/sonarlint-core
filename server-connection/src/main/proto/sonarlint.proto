@@ -88,3 +88,7 @@ message Location {
   string message = 2;
   optional TextRange text_range = 3;
 }
+
+message LastEventPolling {
+  int64 last_event_polling = 1;
+}

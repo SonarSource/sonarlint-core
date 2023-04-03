@@ -75,7 +75,7 @@ class ServerApiProviderTests {
 
   @Test
   void getServerApi_returns_empty_if_client_cant_provide_httpclient() {
-    when(connectionRepository.getConnectionById("sc1")).thenReturn(new SonarCloudConnectionConfiguration("sc1", "myorg"));
+    when(connectionRepository.getConnectionById("sc1")).thenReturn(new SonarCloudConnectionConfiguration("sc1", "myorg", true));
     when(client.getHttpClient("sc1")).thenReturn(null);
 
     var serverApi = underTest.getServerApi("sc1");

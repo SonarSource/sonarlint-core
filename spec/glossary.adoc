@@ -20,4 +20,5 @@
 [[sensor]]Sensor:: A Sensor is the Java interface implemented by <<sonar_analyzer,Sonar analyzers>> to analyze source files and report <<finding,findings>>.
 [[sonar_analyzer]]Sonar Analyzer:: A component responsible to analyze user's code, for one or multiple languages.
 [[sonar_project]]Sonar Project:: A project that exists on SonarQube or SonarCloud. Sonar Projects are identified by a <<project_key,projectKey>>.
+[[smart_notification]]Smart Notifications:: A feature that enables the IDE to receive notifications, only available in <<connected_mode,connected mode>> with SonarQube or SonarCloud. You receive a smart notification when the quality gate status of an opened project in your IDE changes, or when an analysis raises new issues that you've introduced in an opened project.
 [[standalone_mode]]Standalone Mode:: The use of SonarLint without a SonarQube server or SonarCloud.  See also <<connected_mode,connected mode>>.

@@ -17,35 +17,51 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.backend.connection.config;
+package org.sonarsource.sonarlint.core.clientapi.client.smartnotification;
 
+import java.util.Set;
 import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
-public class SonarQubeConnectionConfigurationDto {
+public class ShowSmartNotificationParams {
 
-  /**
-   * The id of the connection on the client side
-   */
+  @NonNull
+  private final String category;
+  @NonNull
   private final String connectionId;
-  private final String serverUrl;
-  private final boolean disableNotifications;
+  @NonNull
+  private final String link;
+  @NonNull
+  private final Set<String> scopeIds;
+  @NonNull
+  private final String text;
 
-  public SonarQubeConnectionConfigurationDto(@NonNull String connectionId, @NonNull String serverUrl, boolean disableNotifications) {
+  public ShowSmartNotificationParams(@NonNull String text, @NonNull String link,
+    @NonNull Set<String> scopeIds, @NonNull String category, @NonNull String connectionId) {
+    this.text = text;
+    this.link = link;
+    this.scopeIds = scopeIds;
+    this.category = category;
     this.connectionId = connectionId;
-    this.serverUrl = serverUrl;
-    this.disableNotifications = disableNotifications;
+  }
+
+  public String getCategory() {
+    return category;
   }
 
   public String getConnectionId() {
     return connectionId;
   }
 
-  public String getServerUrl() {
-    return serverUrl;
+  public String getLink() {
+    return link;
   }
 
-  public boolean getDisableNotifications() {
-    return disableNotifications;
+  public Set<String> getScopeIds() {
+    return scopeIds;
+  }
+
+  public String getText() {
+    return text;
   }
 
 }

@@ -82,7 +82,7 @@ class ConnectionSyncMediumTests {
     // Removing and adding the connection back should evict the cache
     backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(), List.of()));
     await().untilAsserted( () -> assertThat(logTester.logs()).contains("Evict cached rules definitions for connection 'connectionId'"));
-    backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto("connectionId", "http://foo")), List.of()));
+    backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto("connectionId", "http://foo", true)), List.of()));
 
     logTester.clear();
 

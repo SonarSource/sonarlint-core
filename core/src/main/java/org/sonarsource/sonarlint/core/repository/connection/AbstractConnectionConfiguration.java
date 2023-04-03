@@ -27,14 +27,20 @@ public abstract class AbstractConnectionConfiguration {
    * The id of the connection on the client side
    */
   private final String connectionId;
+  private final boolean disableNotifications;
 
-  protected AbstractConnectionConfiguration(String connectionId) {
+  protected AbstractConnectionConfiguration(String connectionId, boolean disableNotifications) {
     Objects.requireNonNull(connectionId, "Connection id is mandatory");
     this.connectionId = connectionId;
+    this.disableNotifications = disableNotifications;
   }
 
   public String getConnectionId() {
     return connectionId;
+  }
+
+  public boolean isDisableNotifications() {
+    return disableNotifications;
   }
 
   @Override
@@ -42,7 +48,8 @@ public abstract class AbstractConnectionConfiguration {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     var that = (AbstractConnectionConfiguration) o;
-    return Objects.equals(connectionId, that.connectionId);
+    return Objects.equals(connectionId, that.connectionId)
+      && Objects.equals(disableNotifications, that.disableNotifications);
   }
 
   @Override
