@@ -44,6 +44,7 @@ public class InitializeParams {
   private final String sonarlintUserHome;
   private final boolean shouldManageLocalServer;
   private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey;
+  private final boolean shouldManageSmartNotifications;
 
   /**
    * @param telemetryProductKey       SonarLint product key (vscode, idea, eclipse, ...)
@@ -54,7 +55,7 @@ public class InitializeParams {
     Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> extraEnabledLanguagesInConnectedMode,
     boolean enableSecurityHotspots, List<SonarQubeConnectionConfigurationDto> sonarQubeConnections,
     List<SonarCloudConnectionConfigurationDto> sonarCloudConnections, @Nullable String sonarlintUserHome, boolean shouldManageLocalServer,
-    Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
+    Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey, boolean shouldManageSmartNotifications) {
     this.hostInfo = hostInfo;
     this.telemetryProductKey = telemetryProductKey;
     this.storageRoot = storageRoot;
@@ -68,6 +69,7 @@ public class InitializeParams {
     this.sonarlintUserHome = sonarlintUserHome;
     this.shouldManageLocalServer = shouldManageLocalServer;
     this.standaloneRuleConfigByKey = standaloneRuleConfigByKey;
+    this.shouldManageSmartNotifications = shouldManageSmartNotifications;
   }
 
   public HostInfoDto getHostInfo() {
@@ -121,5 +123,9 @@ public class InitializeParams {
 
   public Map<String, StandaloneRuleConfigDto> getStandaloneRuleConfigByKey() {
     return standaloneRuleConfigByKey;
+  }
+
+  public boolean shouldManageSmartNotifications() {
+    return shouldManageSmartNotifications;
   }
 }

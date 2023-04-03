@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.repository.config;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -78,7 +79,8 @@ public class ConfigurationRepository {
   private Optional<Binding> getConfiguredBinding(String configScopeId) {
     var bindingConfiguration = bindingPerConfigScopeId.get(configScopeId);
     if (bindingConfiguration != null && bindingConfiguration.isBound()) {
-      return Optional.of(new Binding(requireNonNull(bindingConfiguration.getConnectionId()), requireNonNull(bindingConfiguration.getSonarProjectKey())));
+      return Optional.of(new Binding(requireNonNull(bindingConfiguration.getConnectionId()),
+        requireNonNull(bindingConfiguration.getSonarProjectKey())));
     }
     return Optional.empty();
   }
@@ -101,5 +103,18 @@ public class ConfigurationRepository {
       .filter(e -> e.getValue().isBoundTo(connectionId, projectKey))
       .map(e -> configScopePerId.get(e.getKey()))
       .collect(Collectors.toList());
+  }
+
+  public Map<String, Map<String, Set<String>>> getScopeIdsPerProjectKeyPerConnectionId() {
+    Map<String, Map<String, Set<String>>> scopeIdsPerProjectKeyPerConnectionId = new HashMap<>();
+    bindingPerConfigScopeId
+      .forEach((scopeId, bindingConfiguration) -> {
+        if (bindingConfiguration.isBound()) {
+          scopeIdsPerProjectKeyPerConnectionId.computeIfAbsent(bindingConfiguration.getConnectionId(), k -> new HashMap<>())
+            .computeIfAbsent(bindingConfiguration.getSonarProjectKey(), k -> new HashSet<>())
+            .add(scopeId);
+        }
+      });
+    return scopeIdsPerProjectKeyPerConnectionId;
   }
 }

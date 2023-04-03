@@ -30,8 +30,8 @@ public class SonarQubeConnectionConfiguration extends AbstractConnectionConfigur
 
   private final String serverUrl;
 
-  public SonarQubeConnectionConfiguration(String connectionId, String serverUrl) {
-    super(connectionId);
+  public SonarQubeConnectionConfiguration(String connectionId, String serverUrl, boolean disableNotifications) {
+    super(connectionId, disableNotifications);
     this.serverUrl = serverUrl;
   }
 

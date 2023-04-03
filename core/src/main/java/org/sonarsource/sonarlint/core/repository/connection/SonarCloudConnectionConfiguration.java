@@ -28,8 +28,8 @@ public class SonarCloudConnectionConfiguration extends AbstractConnectionConfigu
 
   private final String organization;
 
-  public SonarCloudConnectionConfiguration(String connectionId, String organization) {
-    super(connectionId);
+  public SonarCloudConnectionConfiguration(String connectionId, String organization, boolean disableNotifications) {
+    super(connectionId, disableNotifications);
     this.organization = organization;
   }
 

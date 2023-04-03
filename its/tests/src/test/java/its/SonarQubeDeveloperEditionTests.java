@@ -96,6 +96,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScope
 import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
+import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -1145,8 +1146,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         backend = new SonarLintBackendImpl(newDummySonarLintClient());
         backend.initialize(
           new InitializeParams(new HostInfoDto("clientName"),"integrationTests", sonarUserHome.resolve("storage"), Collections.emptySet(), Collections.emptyMap(), Set.of(Language.JAVA),
-            Collections.emptySet(), false, List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl())), Collections.emptyList(),
-            sonarUserHome.toString(), false, Map.of()));
+            Collections.emptySet(), false, List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(),
+            sonarUserHome.toString(), false, Map.of(), false));
       }
     }
 
@@ -1342,6 +1343,11 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
         @Override
         public void showMessage(ShowMessageParams params) {
+
+        }
+
+        @Override
+        public void showSmartNotification(ShowSmartNotificationParams params) {
 
         }
 

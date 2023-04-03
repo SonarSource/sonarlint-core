@@ -52,11 +52,11 @@ public class ConnectionServiceImpl implements ConnectionService {
   }
 
   private static AbstractConnectionConfiguration adapt(SonarQubeConnectionConfigurationDto sqDto) {
-    return new SonarQubeConnectionConfiguration(sqDto.getConnectionId(), sqDto.getServerUrl());
+    return new SonarQubeConnectionConfiguration(sqDto.getConnectionId(), sqDto.getServerUrl(), sqDto.getDisableNotifications());
   }
 
-  private static AbstractConnectionConfiguration adapt(SonarCloudConnectionConfigurationDto sqDto) {
-    return new SonarCloudConnectionConfiguration(sqDto.getConnectionId(), sqDto.getOrganization());
+  private static AbstractConnectionConfiguration adapt(SonarCloudConnectionConfigurationDto scDto) {
+    return new SonarCloudConnectionConfiguration(scDto.getConnectionId(), scDto.getOrganization(), scDto.getDisableNotifications());
   }
 
   private static void putAndLogIfDuplicateId(Map<String, AbstractConnectionConfiguration> map, AbstractConnectionConfiguration config) {

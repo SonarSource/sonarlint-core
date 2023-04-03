@@ -58,6 +58,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
+import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import testutils.MockWebServerExtensionWithProtobuf;
@@ -84,17 +85,23 @@ public class SonarLintBackendFixture {
     private Path storageRoot = Paths.get(".");
     private Path sonarlintUserHome = Paths.get(".");
     private boolean startEmbeddedServer;
+    private boolean manageSmartNotifications;
     private boolean areSecurityHotspotsEnabled;
 
     private final Map<String, StandaloneRuleConfigDto> standaloneConfigByKey = new HashMap<>();
 
     public SonarLintBackendBuilder withSonarQubeConnection(String connectionId, String serverUrl) {
-      sonarQubeConnections.add(new SonarQubeConnectionConfigurationDto(connectionId, serverUrl));
+      sonarQubeConnections.add(new SonarQubeConnectionConfigurationDto(connectionId, serverUrl, true));
+      return this;
+    }
+
+    public SonarLintBackendBuilder withSonarQubeConnectionAndNotifications(String connectionId, String serverUrl) {
+      sonarQubeConnections.add(new SonarQubeConnectionConfigurationDto(connectionId, serverUrl, false));
       return this;
     }
 
     public SonarLintBackendBuilder withSonarCloudConnection(String connectionId, String organizationKey) {
-      sonarCloudConnections.add(new SonarCloudConnectionConfigurationDto(connectionId, organizationKey));
+      sonarCloudConnections.add(new SonarCloudConnectionConfigurationDto(connectionId, organizationKey, true));
       return this;
     }
 
@@ -166,7 +173,7 @@ public class SonarLintBackendFixture {
       sonarLintBackend
         .initialize(new InitializeParams(client.getClientInfo(), MEDIUM_TESTS_PRODUCT_KEY, storageRoot, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
           enabledLanguages, Collections.emptySet(), areSecurityHotspotsEnabled, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(), startEmbeddedServer,
-          standaloneConfigByKey));
+          standaloneConfigByKey, manageSmartNotifications));
       sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
       return sonarLintBackend;
     }
@@ -177,6 +184,11 @@ public class SonarLintBackendFixture {
 
     public SonarLintBackendBuilder withEmbeddedServer() {
       startEmbeddedServer = true;
+      return this;
+    }
+
+    public SonarLintBackendBuilder withSmartNotifications() {
+      manageSmartNotifications = true;
       return this;
     }
   }
@@ -204,7 +216,7 @@ public class SonarLintBackendFixture {
     }
 
     public SonarLintClientBuilder assistingConnectingAndBindingToSonarQube(String scopeId, String connectionId, String baseUrl, String projectKey) {
-      this.cannedAssistCreatingSonarQubeConnectionByBaseUrl.put(baseUrl, new SonarQubeConnectionConfigurationDto(connectionId, baseUrl));
+      this.cannedAssistCreatingSonarQubeConnectionByBaseUrl.put(baseUrl, new SonarQubeConnectionConfigurationDto(connectionId, baseUrl, true));
       this.cannedBindingAssistByProjectKey.put(projectKey, new ConfigurationScopeDto(scopeId, null, true, scopeId, new BindingConfigurationDto(connectionId, projectKey, false)));
       return this;
     }
@@ -220,6 +232,7 @@ public class SonarLintBackendFixture {
 
     private final List<String> urlsToOpen = new ArrayList<>();
     private final List<ShowMessageParams> messagesToShow = new ArrayList<>();
+    private final List<ShowSmartNotificationParams> smartNotificationsToShow = new ArrayList<>();
     private final HostInfoDto clientInfo;
     private final List<FoundFileDto> foundFiles;
     private final String workspaceTitle;
@@ -279,6 +292,11 @@ public class SonarLintBackendFixture {
     }
 
     @Override
+    public void showSmartNotification(ShowSmartNotificationParams params) {
+      smartNotificationsToShow.add(params);
+    }
+
+    @Override
     public CompletableFuture<GetHostInfoResponse> getHostInfo() {
       return CompletableFuture.completedFuture(new GetHostInfoResponse(workspaceTitle));
     }
@@ -313,6 +331,10 @@ public class SonarLintBackendFixture {
       return !bindingSuggestions.isEmpty();
     }
 
+    public boolean hasReceivedSmartNotifications() {
+      return !smartNotificationsToShow.isEmpty();
+    }
+
     public Map<String, List<BindingSuggestionDto>> getBindingSuggestions() {
       return bindingSuggestions;
     }
@@ -323,6 +345,10 @@ public class SonarLintBackendFixture {
 
     public List<ShowMessageParams> getMessagesToShow() {
       return messagesToShow;
+    }
+
+    public List<ShowSmartNotificationParams> getSmartNotificationsToShow() {
+      return smartNotificationsToShow;
     }
 
     public Map<String, Collection<HotspotDetailsDto>> getHotspotToShowByConfigScopeId() {
