@@ -19,6 +19,7 @@
  */
 package mediumtest.fixtures;
 
+import java.net.Proxy;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -63,6 +64,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.fs.FoundFileDto;
 import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
+import org.sonarsource.sonarlint.core.clientapi.client.http.ProxyDto;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
@@ -71,8 +73,6 @@ import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressPar
 import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.clientapi.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.http.HttpClient;
-import testutils.MockWebServerExtensionWithProtobuf;
 
 public class SonarLintBackendFixture {
 
@@ -249,6 +249,7 @@ public class SonarLintBackendFixture {
     public SonarLintBackendImpl build() {
       return build(newFakeClient().build());
     }
+
   }
 
   public static class SonarLintClientBuilder {
@@ -258,6 +259,8 @@ public class SonarLintBackendFixture {
     private final LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl = new LinkedHashMap<>();
     private final LinkedHashMap<String, ConfigurationScopeDto> cannedBindingAssistByProjectKey = new LinkedHashMap<>();
     private boolean rejectingProgress;
+
+    private ProxyDto proxy;
 
     public SonarLintClientBuilder withFoundFile(String name, String path, String content) {
       foundFiles.add(new FoundFileDto(name, path, content));
@@ -278,6 +281,10 @@ public class SonarLintBackendFixture {
       this.rejectingProgress = true;
       return this;
     }
+    public SonarLintClientBuilder withHttpProxy(String hostname, int port) {
+      this.proxy = new ProxyDto(Proxy.Type.HTTP, hostname, port);
+      return this;
+    }
 
     public SonarLintClientBuilder assistingConnectingAndBindingToSonarQube(String scopeId, String connectionId, String baseUrl, String projectKey) {
       this.cannedAssistCreatingSonarQubeConnectionByBaseUrl.put(baseUrl, new SonarQubeConnectionConfigurationDto(connectionId, baseUrl, true));
@@ -287,7 +294,7 @@ public class SonarLintBackendFixture {
 
     public FakeSonarLintClient build() {
       return new FakeSonarLintClient(new HostInfoDto(hostName), foundFiles, hostDescription, cannedAssistCreatingSonarQubeConnectionByBaseUrl, cannedBindingAssistByProjectKey,
-        rejectingProgress);
+        rejectingProgress, proxy);
     }
   }
 
@@ -306,17 +313,19 @@ public class SonarLintBackendFixture {
     private final Map<String, Collection<HotspotDetailsDto>> hotspotToShowByConfigScopeId = new HashMap<>();
     private final Map<String, ProgressReport> progressReportsByTaskId = new ConcurrentHashMap<>();
     private final Set<String> synchronizedConfigScopeIds = new HashSet<>();
+    private final ProxyDto proxy;
     private SonarLintBackendImpl backend;
 
     public FakeSonarLintClient(HostInfoDto clientInfo, List<FoundFileDto> foundFiles, String workspaceTitle,
       LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
-      LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, boolean rejectingProgress) {
+      LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, boolean rejectingProgress, @Nullable ProxyDto proxy) {
       this.clientInfo = clientInfo;
       this.foundFiles = foundFiles;
       this.workspaceTitle = workspaceTitle;
       this.cannedAssistCreatingSonarQubeConnectionByBaseUrl = cannedAssistCreatingSonarQubeConnectionByBaseUrl;
       this.bindingAssistResponseByProjectKey = bindingAssistResponseByProjectKey;
       this.rejectingProgress = rejectingProgress;
+      this.proxy = proxy;
     }
 
     public void setBackend(SonarLintBackendImpl backend) {
@@ -426,7 +435,10 @@ public class SonarLintBackendFixture {
 
     @Override
     public CompletableFuture<SelectProxiesResponse> selectProxies(SelectProxiesParams params) {
-      return CompletableFuture.failedFuture(new UnsupportedOperationException("Unsupported!"));
+      if (proxy != null) {
+        return CompletableFuture.completedFuture(new SelectProxiesResponse(List.of(proxy)));
+      }
+      return CompletableFuture.completedFuture(new SelectProxiesResponse(List.of()));
     }
 
     public boolean hasReceivedSuggestions() {
