@@ -206,7 +206,7 @@ stages:
         inputs:
           goals: 'verify'
           options:  >-
-            -B --settings $(mavenSettings.secureFilePath) -Dcommercial -Denable-repo=private
+            -X -B --settings $(mavenSettings.secureFilePath) -Dcommercial -Denable-repo=private
             -Pcoverage
             -Dsonar.coverage.jacoco.xmlReportPaths=$(Build.Repository.LocalPath)/report-aggregate/target/site/jacoco-aggregate/jacoco.xml
             -Dsonar.scanner.keepReport=true
@@ -219,6 +219,28 @@ stages:
       # to debug coverage issues
       - publish: '$(Build.Repository.LocalPath)/report-aggregate/target/site/jacoco-aggregate/jacoco.xml'
         artifact: 'JaCoCo Aggregated Report'
+      - publish: '$(Build.Repository.LocalPath)/analysis-engine/target/site/jacoco/jacoco.xml'
+        artifact: 'JaCoCo analysis-engine Report'
+      - publish: '$(Build.Repository.LocalPath)/commons/target/site/jacoco/jacoco.xml'
+        artifact: 'JaCoCo commons Report'
+      - publish: '$(Build.Repository.LocalPath)/core/target/site/jacoco/jacoco.xml'
+        artifact: 'JaCoCo core Report'
+      - publish: '$(Build.Repository.LocalPath)/issue-tracking/target/site/jacoco/jacoco.xml'
+        artifact: 'JaCoCo issue-tracking Report'
+      - publish: '$(Build.Repository.LocalPath)/plugin-commons/target/site/jacoco/jacoco.xml'
+        artifact: 'JaCoCo plugin-commons Report'
+      - publish: '$(Build.Repository.LocalPath)/rule-extractor/target/site/jacoco/jacoco.xml'
+        artifact: 'JaCoCo rule-extractor Report'
+      - publish: '$(Build.Repository.LocalPath)/rule-extractor-cli/target/site/jacoco/jacoco.xml'
+        artifact: 'JaCoCo rule-extractor-cli Report'
+      - publish: '$(Build.Repository.LocalPath)/server-api/target/site/jacoco/jacoco.xml'
+        artifact: 'JaCoCo server-api Report'
+      - publish: '$(Build.Repository.LocalPath)/server-connection/target/site/jacoco/jacoco.xml'
+        artifact: 'JaCoCo server-connection Report'
+      - publish: '$(Build.Repository.LocalPath)/telemetry/target/site/jacoco/jacoco.xml'
+        artifact: 'JaCoCo telemetry Report'
+      - publish: '$(Build.Repository.LocalPath)/vcs/target/site/jacoco/jacoco.xml'
+        artifact: 'JaCoCo vcs Report'
       - template: mend-with-maven-repox.yml@commonTemplates
         parameters:
           productName : 'SonarLint/Core'
