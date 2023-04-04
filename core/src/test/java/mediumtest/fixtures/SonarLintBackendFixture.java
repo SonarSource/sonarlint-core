@@ -64,6 +64,8 @@ import org.sonarsource.sonarlint.core.clientapi.client.fs.FoundFileDto;
 import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
+import org.sonarsource.sonarlint.core.clientapi.client.http.GetProxyPasswordAuthenticationParams;
+import org.sonarsource.sonarlint.core.clientapi.client.http.GetProxyPasswordAuthenticationResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.http.ProxyDto;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesResponse;
@@ -261,6 +263,7 @@ public class SonarLintBackendFixture {
     private boolean rejectingProgress;
 
     private ProxyDto proxy;
+    private GetProxyPasswordAuthenticationResponse proxyAuth;
 
     public SonarLintClientBuilder withFoundFile(String name, String path, String content) {
       foundFiles.add(new FoundFileDto(name, path, content));
@@ -286,6 +289,11 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintClientBuilder withHttpProxyAuth(String username, String password) {
+      this.proxyAuth = new GetProxyPasswordAuthenticationResponse(username, password);
+      return this;
+    }
+
     public SonarLintClientBuilder assistingConnectingAndBindingToSonarQube(String scopeId, String connectionId, String baseUrl, String projectKey) {
       this.cannedAssistCreatingSonarQubeConnectionByBaseUrl.put(baseUrl, new SonarQubeConnectionConfigurationDto(connectionId, baseUrl, true));
       this.cannedBindingAssistByProjectKey.put(projectKey, new ConfigurationScopeDto(scopeId, null, true, scopeId, new BindingConfigurationDto(connectionId, projectKey, false)));
@@ -294,7 +302,7 @@ public class SonarLintBackendFixture {
 
     public FakeSonarLintClient build() {
       return new FakeSonarLintClient(new HostInfoDto(hostName), foundFiles, hostDescription, cannedAssistCreatingSonarQubeConnectionByBaseUrl, cannedBindingAssistByProjectKey,
-        rejectingProgress, proxy);
+        rejectingProgress, proxy, proxyAuth);
     }
   }
 
@@ -315,10 +323,11 @@ public class SonarLintBackendFixture {
     private final Set<String> synchronizedConfigScopeIds = new HashSet<>();
     private final ProxyDto proxy;
     private SonarLintBackendImpl backend;
+    private GetProxyPasswordAuthenticationResponse proxyAuth;
 
     public FakeSonarLintClient(HostInfoDto clientInfo, List<FoundFileDto> foundFiles, String workspaceTitle,
       LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
-      LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, boolean rejectingProgress, @Nullable ProxyDto proxy) {
+      LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, boolean rejectingProgress, @Nullable ProxyDto proxy, @Nullable GetProxyPasswordAuthenticationResponse proxyAuth) {
       this.clientInfo = clientInfo;
       this.foundFiles = foundFiles;
       this.workspaceTitle = workspaceTitle;
@@ -326,6 +335,7 @@ public class SonarLintBackendFixture {
       this.bindingAssistResponseByProjectKey = bindingAssistResponseByProjectKey;
       this.rejectingProgress = rejectingProgress;
       this.proxy = proxy;
+      this.proxyAuth = proxyAuth;
     }
 
     public void setBackend(SonarLintBackendImpl backend) {
@@ -439,6 +449,14 @@ public class SonarLintBackendFixture {
         return CompletableFuture.completedFuture(new SelectProxiesResponse(List.of(proxy)));
       }
       return CompletableFuture.completedFuture(new SelectProxiesResponse(List.of()));
+    }
+
+    @Override
+    public CompletableFuture<GetProxyPasswordAuthenticationResponse> getProxyPasswordAuthentication(GetProxyPasswordAuthenticationParams params) {
+      if (proxyAuth != null) {
+        return CompletableFuture.completedFuture(proxyAuth);
+      }
+      return CompletableFuture.completedFuture(new GetProxyPasswordAuthenticationResponse(null, null));
     }
 
     public boolean hasReceivedSuggestions() {
