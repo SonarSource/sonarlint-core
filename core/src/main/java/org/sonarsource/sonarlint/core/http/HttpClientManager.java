@@ -20,7 +20,9 @@
 package org.sonarsource.sonarlint.core.http;
 
 import java.io.IOException;
+import java.net.Authenticator;
 import java.net.InetSocketAddress;
+import java.net.PasswordAuthentication;
 import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.SocketAddress;
@@ -33,6 +35,7 @@ import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.TokenDto;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.UsernamePasswordDto;
+import org.sonarsource.sonarlint.core.clientapi.client.http.GetProxyPasswordAuthenticationParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.http.JavaHttpClientAdapter;
@@ -67,6 +70,28 @@ public class HttpClientManager {
         @Override
         public void connectFailed(URI uri, SocketAddress sa, IOException ioe) {
 
+        }
+      })
+      .authenticator(new Authenticator() {
+        @Override
+        protected PasswordAuthentication getPasswordAuthentication() {
+          if (getRequestorType() != RequestorType.PROXY) {
+            // We only handle proxy authentication here
+            return null;
+          }
+          try {
+            var response = client.getProxyPasswordAuthentication(
+              new GetProxyPasswordAuthenticationParams(getRequestingHost(), getRequestingPort(), getRequestingProtocol(), getRequestingPrompt(), getRequestingScheme())).get();
+            if (response.getProxyUser() != null || response.getProxyPassword() != null) {
+              return new PasswordAuthentication(response.getProxyUser(), response.getProxyPassword().toCharArray());
+            }
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logger.warn("Interrupted!", e);
+          } catch (ExecutionException e) {
+            logger.warn("Unable to get proxy", e);
+          }
+          return null;
         }
       })
       .build();
