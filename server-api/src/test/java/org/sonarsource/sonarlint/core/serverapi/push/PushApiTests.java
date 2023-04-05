@@ -281,10 +281,10 @@ class PushApiTests {
     List<ServerEvent> receivedEvents = new ArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add, silentLogOutput);
 
-    assertThat(receivedEvents)
+    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(receivedEvents)
       .asInstanceOf(InstanceOfAssertFactories.list(IssueChangedEvent.class))
       .extracting(IssueChangedEvent::getImpactedIssueKeys, IssueChangedEvent::getResolved, IssueChangedEvent::getUserSeverity, IssueChangedEvent::getUserType)
-      .containsOnly(tuple(List.of("key1"), true, null, null));
+      .containsOnly(tuple(List.of("key1"), true, null, null)));
   }
 
   @Test
