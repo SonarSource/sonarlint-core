@@ -32,6 +32,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
@@ -1206,7 +1207,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     @Test
     @Tag(USE_NEW_CLIENT_API)
-    void shouldContainAllContextsIfNoContextProvided() throws ExecutionException, InterruptedException {
+    void shouldReturnAllContextsWithOthersSelectedIfNoContextProvided() throws ExecutionException, InterruptedException {
       var projectKey = "sample-java-taint-new-backend";
 
       provisionProject(ORCHESTRATOR, projectKey, "Java With Taint Vulnerabilities");
@@ -1231,23 +1232,23 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
             "Why is this an issue?",
             "<p>Path injections occur when an application us...",
             "How can I fix it?",
-            "<p>The following code is vulnerable to path inj...",
-            "java_se",
-            "Java SE",
-            "How can I fix it?",
-            "<h4>How can I fix it in another component or fr...",
-            "others",
-            "Others",
+            "--> Java SE (java_se)",
+            "    <p>The following code is vulnerable to path inj...",
+            "--> Others (others)",
+            "    <h4>How can I fix it in another component or fr...",
             "More Info",
             "<h3>Standards</h3>\n"
               + "<ul>\n"
               + "  <li> <a href=\"https:/...");
+
+        var howToFixTab = extendedDescription.getTabs().get(1);
+        assertThat(howToFixTab.getContent().getRight().getDefaultContextKey()).isEqualTo("others");
       }
     }
 
     @Test
     @Tag(USE_NEW_CLIENT_API)
-    void shouldContainsOnlyAppropriateContextIfContextProvided() throws ExecutionException, InterruptedException {
+    void shouldReturnAllContextsWithTheMatchingOneSelectedIfContextProvided() throws ExecutionException, InterruptedException {
       var projectKey = "sample-java-taint-rule-context-new-backend";
 
       provisionProject(ORCHESTRATOR, projectKey, "Java With Taint Vulnerabilities And Multiple Contexts");
@@ -1277,11 +1278,23 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
             "Why is this an issue?",
             "<p>Reflected cross-site scripting (XSS) occurs ...",
             "How can I fix it?",
-            "<p>The following code is vulnerable to cross-si...",
+            "--> JSP (jsp)",
+            "    <p>The following code is vulnerable to cross-si...",
+            "--> Servlet (servlet)",
+            "    <p>The following code is vulnerable to cross-si...",
+            "--> Spring (spring)",
+            "    <p>The following code is vulnerable to cross-si...",
+            "--> Thymeleaf (thymeleaf)",
+            "    <p>The following code is vulnerable to cross-si...",
+            "--> Others (others)",
+            "    <h4>How can I fix it in another component or fr...",
             "More Info",
             "<h3>Documentation</h3>\n"
               + "<ul>\n"
               + "  <li> <a href=\"htt...");
+
+        var howToFixTab = extendedDescription.getTabs().get(1);
+        assertThat(howToFixTab.getContent().getRight().getDefaultContextKey()).isEqualTo("spring");
       }
     }
 
@@ -1316,12 +1329,18 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
             + "<u...");
     }
 
-    private List<Object> extractTabContent(RuleDescriptionTabDto tab) {
+    private List<String> extractTabContent(RuleDescriptionTabDto tab) {
+      List<String> result = new ArrayList<>();
+      result.add(tab.getTitle());
       if (tab.getContent().isLeft()) {
-        return List.of(tab.getTitle(), abbreviate(tab.getContent().getLeft().getHtmlContent(), 50));
+        result.add(abbreviate(tab.getContent().getLeft().getHtmlContent(), 50));
+      } else {
+        tab.getContent().getRight().getContextualSections().forEach(s -> {
+          result.add("--> " + s.getDisplayName() + " (" + s.getContextKey() + ")");
+          result.add("    " + abbreviate(s.getHtmlContent(), 50));
+        });
       }
-      return tab.getContent().getRight().getContextualSections().stream().flatMap(s -> Stream.of(tab.getTitle(), abbreviate(s.getHtmlContent(), 50), s.getContextKey(), s.getDisplayName()))
-        .collect(Collectors.toList());
+      return result;
     }
 
     private SonarLintClient newDummySonarLintClient() {
