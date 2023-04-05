@@ -28,7 +28,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class SonarLintLoggerImplTest {
+class SonarApiLoggerAdapterTest {
 
   private static final NullPointerException THROWN = new NullPointerException() {
     @Override
@@ -41,7 +41,7 @@ class SonarLintLoggerImplTest {
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester();
 
-  private final SonarLintLoggerImpl underTest = new SonarLintLoggerImpl();
+  private final SonarApiLoggerAdapter underTest = new SonarApiLoggerAdapter();
 
   @Test
   void shouldHaveDebugAndTraceAlwaysEnabled() {

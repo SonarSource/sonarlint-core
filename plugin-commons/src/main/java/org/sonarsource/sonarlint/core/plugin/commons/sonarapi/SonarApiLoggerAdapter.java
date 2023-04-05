@@ -24,7 +24,11 @@ import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
-public class SonarLintLoggerImpl implements Logger {
+/**
+ * Implementation of the Sonar API Logger facade that redirects everything to the SonarLintLogger.
+ * We can't keep the default behavior of redirecting to slf4j as it might go to the IDE logs.
+ */
+public class SonarApiLoggerAdapter implements Logger {
 
   private static final SonarLintLogger logger = SonarLintLogger.get();
 
