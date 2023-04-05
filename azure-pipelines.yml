@@ -241,6 +241,8 @@ stages:
         artifact: 'JaCoCo telemetry Report'
       - publish: '$(Build.Repository.LocalPath)/vcs/target/site/jacoco/jacoco.xml'
         artifact: 'JaCoCo vcs Report'
+      - publish: '$(Build.Repository.LocalPath)/core/target/jacoco.exec'
+        artifact: 'JaCoCo core exec Report'
       - template: mend-with-maven-repox.yml@commonTemplates
         parameters:
           productName : 'SonarLint/Core'
