@@ -56,6 +56,12 @@ import static org.assertj.core.api.Assertions.tuple;
 
 class EffectiveRulesMediumTests {
 
+  @TempDir
+  Path storageDir;
+  private SonarLintBackend backend;
+  @RegisterExtension
+  private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
+
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
     if (backend != null) {
@@ -368,7 +374,7 @@ class EffectiveRulesMediumTests {
   }
 
   @Test
-  void it_should_ignore_provided_context_and_return_all_contexts_in_alphabetical_order_with_default_if_context_not_found() {
+  void it_should_return_all_contexts_in_alphabetical_order_with_others_as_default_if_context_not_found() {
     prepareForRuleDescriptionSectionsAndContext();
 
     var details = getEffectiveRuleDetails("scopeId", "python:S139", "not_found");
@@ -392,53 +398,13 @@ class EffectiveRulesMediumTests {
         "    <h4>How can I fix it in another component or fr...",
         "More Info",
         "htmlContent3<br/><br/>extendedDesc<br/><br/><h3...");
-  }
-
-  @Test
-  void it_should_return_default_context_key_if_multiple_contexts() {
-    prepareForRuleDescriptionSectionsAndContext();
-
-    var details = getEffectiveRuleDetails("scopeId", "python:S139", "not_found");
-
-    assertThat(details.getDescription().getRight().getTabs())
-      .extracting(RuleDescriptionTabDto::getTitle).containsExactly("How can I fix it?", "More Info");
 
     assertThat(details.getDescription().getRight().getTabs().iterator().next().getContent().getRight().getDefaultContextKey())
       .isEqualTo("others");
   }
 
-  private void prepareForRuleDescriptionSectionsAndContext() {
-    StorageFixture.newStorage("connectionId")
-      .withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
-          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah"))))
-      .create(storageDir);
-    backend = newBackend()
-      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
-      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withStorageRoot(storageDir.resolve("storage"))
-      .withEnabledLanguage(Language.PYTHON)
-      .build();
-    mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
-      .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc")
-        .setEducationPrinciples(Rules.Rule.EducationPrinciples.newBuilder().addEducationPrinciples("never_trust_user_input").build())
-        .setDescriptionSections(Rules.Rule.DescriptionSections.newBuilder()
-          .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
-            .setKey("introduction").setContent("intro content"))
-          .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
-            .setKey("how_to_fix").setContent("fix spring")
-            .setContext(Rules.Rule.DescriptionSection.Context.newBuilder().setKey("spring").setDisplayName("Spring").build()).build())
-          .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
-            .setKey("how_to_fix").setContent("fix struts")
-            .setContext(Rules.Rule.DescriptionSection.Context.newBuilder().setKey("struts").setDisplayName("Struts").build()).build())
-          .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
-            .setKey("resources").setContent("htmlContent3").build()))
-        .build())
-      .build());
-  }
-
   @Test
-  void it_should_return_only_tab_content_for_the_provided_context() {
+  void it_should_return_all_contexts_in_alphabetical_order_with_the_provided_context_as_default() {
     prepareForRuleDescriptionSectionsAndContext();
 
     var details = getEffectiveRuleDetails("scopeId", "python:S139", "spring");
@@ -455,9 +421,17 @@ class EffectiveRulesMediumTests {
       .flatExtracting(EffectiveRulesMediumTests::flattenTabContent)
       .containsExactly(
         "How can I fix it?",
-        "fix spring",
+        "--> Spring (spring)",
+        "    fix spring",
+        "--> Struts (struts)",
+        "    fix struts",
+        "--> Others (others)",
+        "    <h4>How can I fix it in another component or fr...",
         "More Info",
         "htmlContent3<br/><br/>extendedDesc<br/><br/><h3...");
+
+    assertThat(details.getDescription().getRight().getTabs().iterator().next().getContent().getRight().getDefaultContextKey())
+      .isEqualTo("spring");
   }
 
   @Test
@@ -542,6 +516,36 @@ class EffectiveRulesMediumTests {
       .contains("What's the risk?");
   }
 
+  private void prepareForRuleDescriptionSectionsAndContext() {
+    StorageFixture.newStorage("connectionId")
+      .withProject("projectKey",
+        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah"))))
+      .create(storageDir);
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withStorageRoot(storageDir.resolve("storage"))
+      .withEnabledLanguage(Language.PYTHON)
+      .build();
+    mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
+      .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc")
+        .setEducationPrinciples(Rules.Rule.EducationPrinciples.newBuilder().addEducationPrinciples("never_trust_user_input").build())
+        .setDescriptionSections(Rules.Rule.DescriptionSections.newBuilder()
+          .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
+            .setKey("introduction").setContent("intro content"))
+          .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
+            .setKey("how_to_fix").setContent("fix spring")
+            .setContext(Rules.Rule.DescriptionSection.Context.newBuilder().setKey("spring").setDisplayName("Spring").build()).build())
+          .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
+            .setKey("how_to_fix").setContent("fix struts")
+            .setContext(Rules.Rule.DescriptionSection.Context.newBuilder().setKey("struts").setDisplayName("Struts").build()).build())
+          .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
+            .setKey("resources").setContent("htmlContent3").build()))
+        .build())
+      .build());
+  }
+
   private static List<String> flattenTabContent(RuleDescriptionTabDto tab) {
     List<String> result = new ArrayList<>();
     result.add(tab.getTitle());
@@ -568,11 +572,6 @@ class EffectiveRulesMediumTests {
     }
   }
 
-  @TempDir
-  Path storageDir;
-  private SonarLintBackend backend;
-  @RegisterExtension
-  private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
   private static final String PYTHON_S139_DESCRIPTION = "<p>This rule verifies that single-line comments are not located at the ends of lines of code. The main idea behind this rule is that in order to be\n"
     +
     "really readable, trailing comments would have to be properly written and formatted (correct alignment, no interference with the visual structure of\n" +

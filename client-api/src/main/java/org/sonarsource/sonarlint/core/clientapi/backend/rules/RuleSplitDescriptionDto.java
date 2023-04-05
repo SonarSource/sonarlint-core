@@ -19,16 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
-import java.util.Collection;
+import java.util.List;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
 public class RuleSplitDescriptionDto {
   private final String introductionHtmlContent;
-  private final Collection<RuleDescriptionTabDto> tabs;
+  private final List<RuleDescriptionTabDto> tabs;
 
-  public RuleSplitDescriptionDto(@Nullable String introductionHtmlContent, @NonNull Collection<RuleDescriptionTabDto> tabs) {
+  public RuleSplitDescriptionDto(@Nullable String introductionHtmlContent, @NonNull List<RuleDescriptionTabDto> tabs) {
     this.introductionHtmlContent = introductionHtmlContent;
     this.tabs = tabs;
   }
@@ -39,7 +39,7 @@ public class RuleSplitDescriptionDto {
   }
 
   @NonNull
-  public Collection<RuleDescriptionTabDto> getTabs() {
+  public List<RuleDescriptionTabDto> getTabs() {
     return tabs;
   }
 }

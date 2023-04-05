@@ -30,14 +30,13 @@ import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.jetbrains.annotations.NotNull;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetStandaloneRuleDescriptionResponse;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.EffectiveRuleDetailsDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.EffectiveRuleParamDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleContextualSectionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleContextualSectionWithDefaultContextKeyDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleDescriptionTabDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleMonolithicDescriptionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleNonContextualSectionDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.EffectiveRuleParamDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleSplitDescriptionDto;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 
@@ -63,8 +62,7 @@ class RuleDetailsAdapter {
       ruleDetails.getLanguage());
   }
 
-  static Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> transformDescriptions(RuleDetails ruleDetails,
-    @Nullable String contextKey) {
+  static Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> transformDescriptions(RuleDetails ruleDetails, @Nullable String contextKey) {
     if (ruleDetails.hasMonolithicDescription()) {
       return Either.forLeft(transformMonolithicDescription(ruleDetails));
     }
@@ -123,22 +121,22 @@ class RuleDetailsAdapter {
       if (sectionsByKey.containsKey(sectionKey)) {
         var tabContents = sectionsByKey.get(sectionKey);
         Either<RuleNonContextualSectionDto, RuleContextualSectionWithDefaultContextKeyDto> content;
-        var matchingContext = tabContents.stream().filter(c -> c.getContext().isPresent() && c.getContext().get().getKey().equals(contextKey)).findFirst();
+        var foundMatchingContext = tabContents.stream().anyMatch(c -> c.getContext().isPresent() && c.getContext().get().getKey().equals(contextKey));
         if (tabContents.size() == 1 && tabContents.get(0).getContext().isEmpty()) {
           content = buildNonContextualSectionDto(ruleDetails, tabContents.get(0));
-        } else if (contextKey != null && matchingContext.isPresent()) {
-          content = buildNonContextualSectionDto(ruleDetails, matchingContext.get());
         } else {
           // if there is more than one section, they should all have a context (verified in sonar-plugin-api)
           var contextualSectionContents = tabContents.stream().map(s -> {
             var context = s.getContext().get();
             return new RuleContextualSectionDto(getTabContent(s, ruleDetails.getExtendedDescription(), ruleDetails.getCleanCodePrincipleKeys()), context.getKey(),
               context.getDisplayName());
-          }).collect(Collectors.toList());
+          })
+            .sorted(Comparator.comparing(RuleContextualSectionDto::getDisplayName))
+            .collect(Collectors.toList());
           contextualSectionContents.add(
             new RuleContextualSectionDto(OthersSectionHtmlContent.getHtmlContent(),
               DEFAULT_CONTEXT_KEY, DEFAULT_CONTEXT_DISPLAY_NAME));
-          content = Either.forRight(new RuleContextualSectionWithDefaultContextKeyDto(DEFAULT_CONTEXT_KEY, contextualSectionContents));
+          content = Either.forRight(new RuleContextualSectionWithDefaultContextKeyDto(foundMatchingContext ? contextKey : DEFAULT_CONTEXT_KEY, contextualSectionContents));
         }
         tabbedSections.add(new RuleDescriptionTabDto(getTabTitle(ruleDetails, sectionKey), content));
       }

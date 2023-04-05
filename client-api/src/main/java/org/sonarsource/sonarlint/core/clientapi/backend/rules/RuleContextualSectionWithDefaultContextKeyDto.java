@@ -19,13 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
-import java.util.Collection;
+import java.util.List;
+
 public class RuleContextualSectionWithDefaultContextKeyDto {
 
   private final String defaultContextKey;
-  private final Collection<RuleContextualSectionDto> contextualSections;
+  private final List<RuleContextualSectionDto> contextualSections;
 
-  public RuleContextualSectionWithDefaultContextKeyDto(String defaultContextKey, Collection<RuleContextualSectionDto> contextualSections) {
+  public RuleContextualSectionWithDefaultContextKeyDto(String defaultContextKey, List<RuleContextualSectionDto> contextualSections) {
     this.defaultContextKey = defaultContextKey;
     this.contextualSections = contextualSections;
   }
@@ -34,7 +35,7 @@ public class RuleContextualSectionWithDefaultContextKeyDto {
     return defaultContextKey;
   }
 
-  public Collection<RuleContextualSectionDto> getContextualSections() {
+  public List<RuleContextualSectionDto> getContextualSections() {
     return contextualSections;
   }
 
