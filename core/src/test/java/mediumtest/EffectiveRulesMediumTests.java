@@ -33,7 +33,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.EffectiveRuleParamDto;
@@ -80,7 +79,8 @@ class EffectiveRulesMediumTests {
         PYTHON_S139_DESCRIPTION);
     assertThat(details.getParams())
       .extracting(EffectiveRuleParamDto::getName, EffectiveRuleParamDto::getDescription, EffectiveRuleParamDto::getValue, EffectiveRuleParamDto::getDefaultValue)
-      .containsExactly(tuple("legalTrailingCommentPattern", "Pattern for text of trailing comments that are allowed. By default, Mypy and Black pragma comments as well as comments containing only one word.",
+      .containsExactly(tuple("legalTrailingCommentPattern",
+        "Pattern for text of trailing comments that are allowed. By default, Mypy and Black pragma comments as well as comments containing only one word.",
         "^#\\s*+([^\\s]++|fmt.*|type.*)$",
         "^#\\s*+([^\\s]++|fmt.*|type.*)$"));
   }
@@ -98,7 +98,8 @@ class EffectiveRulesMediumTests {
 
     assertThat(detailsAfterInit.getParams())
       .extracting(EffectiveRuleParamDto::getName, EffectiveRuleParamDto::getDescription, EffectiveRuleParamDto::getValue, EffectiveRuleParamDto::getDefaultValue)
-      .containsExactly(tuple("legalTrailingCommentPattern", "Pattern for text of trailing comments that are allowed. By default, Mypy and Black pragma comments as well as comments containing only one word.",
+      .containsExactly(tuple("legalTrailingCommentPattern",
+        "Pattern for text of trailing comments that are allowed. By default, Mypy and Black pragma comments as well as comments containing only one word.",
         "initialValue",
         "^#\\s*+([^\\s]++|fmt.*|type.*)$"));
 
@@ -109,7 +110,8 @@ class EffectiveRulesMediumTests {
 
     assertThat(detailsAfterUpdate.getParams())
       .extracting(EffectiveRuleParamDto::getName, EffectiveRuleParamDto::getDescription, EffectiveRuleParamDto::getValue, EffectiveRuleParamDto::getDefaultValue)
-      .containsExactly(tuple("legalTrailingCommentPattern", "Pattern for text of trailing comments that are allowed. By default, Mypy and Black pragma comments as well as comments containing only one word.",
+      .containsExactly(tuple("legalTrailingCommentPattern",
+        "Pattern for text of trailing comments that are allowed. By default, Mypy and Black pragma comments as well as comments containing only one word.",
         "updatedValue",
         "^#\\s*+([^\\s]++|fmt.*|type.*)$"));
   }
@@ -349,14 +351,18 @@ class EffectiveRulesMediumTests {
       .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO);
     assertThat(details.getParams()).isEmpty();
     assertThat(details.getDescription().getRight().getIntroductionHtmlContent())
-      .isEqualTo("htmlContent");
+      .isEqualTo("intro content");
     assertThat(details.getDescription().getRight().getTabs())
       .flatExtracting(EffectiveRulesMediumTests::flattenTabContent)
       .containsExactly(
         "How can I fix it?",
-        "htmlContent2",
-        "contextKey2",
-        "displayName2",
+        "fix spring",
+        "spring",
+        "Spring",
+        "How can I fix it?",
+        "fix struts",
+        "struts",
+        "Struts",
         "How can I fix it?",
         "<h4>How can I fix it in another component or fr...",
         "others",
@@ -377,21 +383,24 @@ class EffectiveRulesMediumTests {
       .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO);
     assertThat(details.getParams()).isEmpty();
     assertThat(details.getDescription().getRight().getIntroductionHtmlContent())
-      .isEqualTo("htmlContent");
+      .isEqualTo("intro content");
     assertThat(details.getDescription().getRight().getTabs())
       .flatExtracting(EffectiveRulesMediumTests::flattenTabContent)
       .containsExactly(
         "How can I fix it?",
-        "htmlContent2",
-        "contextKey2",
-        "displayName2",
+        "fix spring",
+        "spring",
+        "Spring",
+        "How can I fix it?",
+        "fix struts",
+        "struts",
+        "Struts",
         "How can I fix it?",
         "<h4>How can I fix it in another component or fr...",
         "others",
         "Others",
         "More Info",
         "htmlContent3<br/><br/>extendedDesc<br/><br/><h3...");
-
   }
 
   @Test
@@ -405,7 +414,6 @@ class EffectiveRulesMediumTests {
 
     assertThat(details.getDescription().getRight().getTabs().iterator().next().getContent().getRight().getDefaultContextKey())
       .isEqualTo("others");
-
   }
 
   private void prepareForRuleDescriptionSectionsAndContext() {
@@ -425,11 +433,13 @@ class EffectiveRulesMediumTests {
         .setEducationPrinciples(Rules.Rule.EducationPrinciples.newBuilder().addEducationPrinciples("never_trust_user_input").build())
         .setDescriptionSections(Rules.Rule.DescriptionSections.newBuilder()
           .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
-            .setKey("introduction").setContent("htmlContent")
-            .setContext(Rules.Rule.DescriptionSection.Context.newBuilder().setKey("contextKey").setDisplayName("displayName").build()).build())
+            .setKey("introduction").setContent("intro content"))
           .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
-            .setKey("how_to_fix").setContent("htmlContent2")
-            .setContext(Rules.Rule.DescriptionSection.Context.newBuilder().setKey("contextKey2").setDisplayName("displayName2").build()).build())
+            .setKey("how_to_fix").setContent("fix spring")
+            .setContext(Rules.Rule.DescriptionSection.Context.newBuilder().setKey("spring").setDisplayName("Spring").build()).build())
+          .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
+            .setKey("how_to_fix").setContent("fix struts")
+            .setContext(Rules.Rule.DescriptionSection.Context.newBuilder().setKey("struts").setDisplayName("Struts").build()).build())
           .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
             .setKey("resources").setContent("htmlContent3").build()))
         .build())
@@ -440,7 +450,7 @@ class EffectiveRulesMediumTests {
   void it_should_return_only_tab_content_for_the_provided_context() {
     prepareForRuleDescriptionSectionsAndContext();
 
-    var details = getEffectiveRuleDetails("scopeId", "python:S139", "contextKey2");
+    var details = getEffectiveRuleDetails("scopeId", "python:S139", "spring");
 
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
@@ -449,12 +459,12 @@ class EffectiveRulesMediumTests {
     assertThat(details.getParams()).isEmpty();
     assertThat(details.getDescription())
       .extracting("right.introductionHtmlContent")
-      .isEqualTo("htmlContent");
+      .isEqualTo("intro content");
     assertThat(details.getDescription().getRight().getTabs())
       .flatExtracting(EffectiveRulesMediumTests::flattenTabContent)
       .containsExactly(
         "How can I fix it?",
-        "htmlContent2",
+        "fix spring",
         "More Info",
         "htmlContent3<br/><br/>extendedDesc<br/><br/><h3...");
   }
@@ -545,7 +555,8 @@ class EffectiveRulesMediumTests {
     if (tab.getContent().isLeft()) {
       return List.of(tab.getTitle(), abbreviate(tab.getContent().getLeft().getHtmlContent(), 50));
     }
-    return tab.getContent().getRight().getContextualSections().stream().flatMap(s -> Stream.of(tab.getTitle(), abbreviate(s.getHtmlContent(), 50), s.getContextKey(), s.getDisplayName()))
+    return tab.getContent().getRight().getContextualSections().stream()
+      .flatMap(s -> Stream.of(tab.getTitle(), abbreviate(s.getHtmlContent(), 50), s.getContextKey(), s.getDisplayName()))
       .collect(Collectors.toList());
   }
 
