@@ -25,11 +25,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.PluginsMinVersions;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
 import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
 import org.sonarsource.sonarlint.core.plugin.commons.SkipReason.UnsatisfiedRuntimeRequirement.RuntimeRequirement;
@@ -39,7 +38,7 @@ public class SonarPluginRequirementsChecker {
 
   private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
 
-  private static final Logger LOG = Loggers.get(SonarPluginRequirementsChecker.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final PluginsMinVersions pluginMinVersions;
   private final Version implementedPluginApiVersion;

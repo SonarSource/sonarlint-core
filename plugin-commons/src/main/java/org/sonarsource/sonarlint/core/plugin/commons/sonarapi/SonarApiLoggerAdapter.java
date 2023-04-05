@@ -17,36 +17,44 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonar.api.utils.log;
+package org.sonarsource.sonarlint.core.plugin.commons.sonarapi;
 
+import javax.annotation.Nullable;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.LoggerLevel;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 /**
- * This class can't be moved to another package because {@link BaseLogger} is not public. And we have to extend BaseLogger to please {@link DefaultProfiler}.
+ * Implementation of the Sonar API Logger facade that redirects everything to the SonarLintLogger.
+ * We can't keep the default behavior of redirecting to slf4j as it might go to the IDE logs.
  */
-public class SonarApiLogger extends BaseLogger {
+public class SonarApiLoggerAdapter implements Logger {
 
   private static final SonarLintLogger logger = SonarLintLogger.get();
 
   @Override
   public boolean isTraceEnabled() {
-    return false;
+    return true;
   }
 
   @Override
-  public void doTrace(String msg) {
+  public void trace(String msg) {
+    logger.trace(msg);
   }
 
   @Override
-  public void doTrace(String pattern, Object arg) {
+  public void trace(String pattern, @Nullable Object arg) {
+    logger.trace(pattern, arg);
   }
 
   @Override
-  public void doTrace(String msg, Object arg1, Object arg2) {
+  public void trace(String msg, @Nullable Object arg1, @Nullable Object arg2) {
+    logger.trace(msg, arg1, arg2);
   }
 
   @Override
-  public void doTrace(String msg, Object... args) {
+  public void trace(String msg, Object... args) {
+    logger.trace(msg, args);
   }
 
   @Override
@@ -56,92 +64,92 @@ public class SonarApiLogger extends BaseLogger {
   }
 
   @Override
-  public void doDebug(String msg) {
+  public void debug(String msg) {
     logger.debug(msg);
   }
 
   @Override
-  public void doDebug(String pattern, Object arg) {
+  public void debug(String pattern, @Nullable Object arg) {
     logger.debug(pattern, arg);
   }
 
   @Override
-  public void doDebug(String msg, Object arg1, Object arg2) {
+  public void debug(String msg, @Nullable Object arg1, @Nullable Object arg2) {
     logger.debug(msg, arg1, arg2);
   }
 
   @Override
-  public void doDebug(String msg, Object... args) {
+  public void debug(String msg, Object... args) {
     logger.debug(msg, args);
   }
 
   @Override
-  public void doInfo(String msg) {
+  public void info(String msg) {
     logger.info(msg);
   }
 
   @Override
-  public void doInfo(String msg, Object arg) {
+  public void info(String msg, @Nullable Object arg) {
     logger.info(msg, arg);
   }
 
   @Override
-  public void doInfo(String msg, Object arg1, Object arg2) {
+  public void info(String msg, @Nullable Object arg1, @Nullable Object arg2) {
     logger.info(msg, arg1, arg2);
   }
 
   @Override
-  public void doInfo(String msg, Object... args) {
+  public void info(String msg, Object... args) {
     logger.info(msg, args);
   }
 
   @Override
-  public void doWarn(String msg) {
+  public void warn(String msg) {
     logger.warn(msg);
   }
 
   @Override
-  public void doWarn(String msg, Throwable throwable) {
+  public void warn(String msg, Throwable throwable) {
     logger.warn(msg, throwable);
   }
 
   @Override
-  public void doWarn(String msg, Object arg) {
+  public void warn(String msg, @Nullable Object arg) {
     logger.warn(msg, arg);
   }
 
   @Override
-  public void doWarn(String msg, Object arg1, Object arg2) {
+  public void warn(String msg, @Nullable Object arg1, @Nullable Object arg2) {
     logger.warn(msg, arg1, arg2);
   }
 
   @Override
-  public void doWarn(String msg, Object... args) {
+  public void warn(String msg, Object... args) {
     logger.warn(msg, args);
   }
 
   @Override
-  public void doError(String msg) {
+  public void error(String msg) {
     logger.error(msg);
   }
 
   @Override
-  public void doError(String msg, Object arg) {
+  public void error(String msg, @Nullable Object arg) {
     logger.error(msg, arg);
   }
 
   @Override
-  public void doError(String msg, Object arg1, Object arg2) {
+  public void error(String msg, @Nullable Object arg1, @Nullable Object arg2) {
     logger.error(msg, arg1, arg2);
   }
 
   @Override
-  public void doError(String msg, Object... args) {
+  public void error(String msg, Object... args) {
     logger.error(msg, args);
   }
 
   @Override
-  public void doError(String msg, Throwable thrown) {
+  public void error(String msg, Throwable thrown) {
     logger.error(msg, thrown);
   }
 
@@ -152,7 +160,7 @@ public class SonarApiLogger extends BaseLogger {
 
   @Override
   public LoggerLevel getLevel() {
-    return LoggerLevel.DEBUG;
+    return LoggerLevel.TRACE;
   }
 
 }

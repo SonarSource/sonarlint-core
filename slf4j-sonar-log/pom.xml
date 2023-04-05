@@ -6,8 +6,8 @@
     <version>8.16-SNAPSHOT</version>
   </parent>
   <artifactId>sonarlint-slf4j-sonar-log</artifactId>
-  <name>SonarLint Core - Slf4j log adaptor</name>
-  <description>Redirect slf4j logs to sonarlint logging facade</description>
+  <name>SonarLint Core - SLF4J log adaptor</name>
+  <description>Redirect SLF4J logs to sonarlint logging facade</description>
 
   <properties>
     <!-- The library is bundled into sonarlint-plugin-commons -->
@@ -16,9 +16,9 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.sonarsource.api.plugin</groupId>
-      <artifactId>sonar-plugin-api</artifactId>
-      <version>${sonar-plugin-api.version}</version>
+      <groupId>org.sonarsource.sonarlint.core</groupId>
+      <artifactId>sonarlint-commons</artifactId>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
 </project>

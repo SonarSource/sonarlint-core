@@ -49,6 +49,7 @@ class SonarLintInputFileTests {
     var file = new SonarLintInputFile(inputFile, f -> new FileMetadata().readMetadata(filePath.toFile(), StandardCharsets.UTF_8));
 
     assertThat(file.contents()).isEqualTo("test string");
+    assertThat(file.md5Hash()).isEqualTo("6f8db599de986fab7a21625b7916589c");
     assertThat(file.charset()).isEqualByComparingTo(StandardCharsets.UTF_8);
     assertThat(file.absolutePath()).isEqualTo(FileUtils.toSonarQubePath(inputFile.getPath()));
     assertThat(file.file()).isEqualTo(filePath.toFile());
