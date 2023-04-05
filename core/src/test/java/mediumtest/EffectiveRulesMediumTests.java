@@ -20,6 +20,7 @@
 package mediumtest;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -356,17 +357,12 @@ class EffectiveRulesMediumTests {
       .flatExtracting(EffectiveRulesMediumTests::flattenTabContent)
       .containsExactly(
         "How can I fix it?",
-        "fix spring",
-        "spring",
-        "Spring",
-        "How can I fix it?",
-        "fix struts",
-        "struts",
-        "Struts",
-        "How can I fix it?",
-        "<h4>How can I fix it in another component or fr...",
-        "others",
-        "Others",
+        "--> Spring (spring)",
+        "    fix spring",
+        "--> Struts (struts)",
+        "    fix struts",
+        "--> Others (others)",
+        "    <h4>How can I fix it in another component or fr...",
         "More Info",
         "htmlContent3<br/><br/>extendedDesc<br/><br/><h3...");
   }
@@ -388,17 +384,12 @@ class EffectiveRulesMediumTests {
       .flatExtracting(EffectiveRulesMediumTests::flattenTabContent)
       .containsExactly(
         "How can I fix it?",
-        "fix spring",
-        "spring",
-        "Spring",
-        "How can I fix it?",
-        "fix struts",
-        "struts",
-        "Struts",
-        "How can I fix it?",
-        "<h4>How can I fix it in another component or fr...",
-        "others",
-        "Others",
+        "--> Spring (spring)",
+        "    fix spring",
+        "--> Struts (struts)",
+        "    fix struts",
+        "--> Others (others)",
+        "    <h4>How can I fix it in another component or fr...",
         "More Info",
         "htmlContent3<br/><br/>extendedDesc<br/><br/><h3...");
   }
@@ -551,13 +542,18 @@ class EffectiveRulesMediumTests {
       .contains("What's the risk?");
   }
 
-  private static List<Object> flattenTabContent(RuleDescriptionTabDto tab) {
+  private static List<String> flattenTabContent(RuleDescriptionTabDto tab) {
+    List<String> result = new ArrayList<>();
+    result.add(tab.getTitle());
     if (tab.getContent().isLeft()) {
-      return List.of(tab.getTitle(), abbreviate(tab.getContent().getLeft().getHtmlContent(), 50));
+      result.add(abbreviate(tab.getContent().getLeft().getHtmlContent(), 50));
+    } else {
+      tab.getContent().getRight().getContextualSections().forEach(s -> {
+        result.add("--> " + s.getDisplayName() + " (" + s.getContextKey() + ")");
+        result.add("    " + abbreviate(s.getHtmlContent(), 50));
+      });
     }
-    return tab.getContent().getRight().getContextualSections().stream()
-      .flatMap(s -> Stream.of(tab.getTitle(), abbreviate(s.getHtmlContent(), 50), s.getContextKey(), s.getDisplayName()))
-      .collect(Collectors.toList());
+    return result;
   }
 
   private EffectiveRuleDetailsDto getEffectiveRuleDetails(String configScopeId, String ruleKey) {
