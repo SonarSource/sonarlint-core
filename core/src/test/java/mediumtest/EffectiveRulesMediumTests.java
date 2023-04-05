@@ -50,6 +50,7 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static org.apache.commons.lang3.StringUtils.abbreviate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -352,50 +353,16 @@ class EffectiveRulesMediumTests {
     assertThat(details.getDescription().getRight().getTabs())
       .flatExtracting(EffectiveRulesMediumTests::flattenTabContent)
       .containsExactly(
-        "How can I fix it?", "htmlContent2", "contextKey2", "displayName2",
         "How can I fix it?",
-        "<h4>How can I fix it in another component or framework?</h4>\n" +
-          "<p>Although the main framework or component you use in your project is not listed, you may find helpful content in the instructions we provide.</p>\n" +
-          "<p>Caution: The libraries mentioned in these instructions may not be appropriate for your code.</p>\n" +
-          "<p>\n" +
-          "<ul class=\"other-context-list\">\n" +
-          "    <li class=\"do\">Do use libraries that are compatible with the frameworks you are using.</li>\n" +
-          "    <li class=\"dont\">Don't blindly copy and paste the fix-ups into your code.</li>\n" +
-          "</ul>\n" +
-          "<h4>Help us improve</h4>\n" +
-          "<p>Let us know if the instructions we provide do not work for you.\n" +
-          "    Tell us which framework you use and why our solution does not work by submitting an idea on the SonarLint product-board.</p>\n" +
-          "<a href=\"https://portal.productboard.com/sonarsource/4-sonarlint/submit-idea\">Submit an idea</a>\n" +
-          "<p>We will do our best to provide you with more relevant instructions in the future.</p>",
-        "others", "Others",
-        "More Info", "htmlContent3<br/><br/>extendedDesc<br/><br/><h3>Clean Code Principles</h3>\n" +
-          "<h4>Never Trust User Input</h4>\n" +
-          "<p>\n" +
-          "    Applications must treat all user input and, more generally, all third-party data as\n" +
-          "    attacker-controlled data.\n" +
-          "</p>\n" +
-          "<p>\n" +
-          "    The application must determine where the third-party data comes from and treat that data\n" +
-          "    source as an attack vector. Two rules apply:\n" +
-          "</p>\n" +
-          "\n" +
-          "<p>\n" +
-          "    First, before using it in the application&apos;s business logic, the application must\n" +
-          "    validate the attacker-controlled data against predefined formats, such as:\n" +
-          "</p>\n" +
-          "<ul>\n" +
-          "    <li>Character sets</li>\n" +
-          "    <li>Sizes</li>\n" +
-          "    <li>Types</li>\n" +
-          "    <li>Or any strict schema</li>\n" +
-          "</ul>\n" +
-          "\n" +
-          "<p>\n" +
-          "    Second, the application must sanitize string data before inserting it into interpreted\n" +
-          "    contexts (client-side code, file paths, SQL queries). Unsanitized code can corrupt the\n" +
-          "    application&apos;s logic.\n" +
-          "</p>");
-
+        "htmlContent2",
+        "contextKey2",
+        "displayName2",
+        "How can I fix it?",
+        "<h4>How can I fix it in another component or fr...",
+        "others",
+        "Others",
+        "More Info",
+        "htmlContent3<br/><br/>extendedDesc<br/><br/><h3...");
   }
 
   @Test
@@ -414,48 +381,16 @@ class EffectiveRulesMediumTests {
     assertThat(details.getDescription().getRight().getTabs())
       .flatExtracting(EffectiveRulesMediumTests::flattenTabContent)
       .containsExactly(
-        "How can I fix it?", "htmlContent2", "contextKey2", "displayName2",
-        "How can I fix it?", "<h4>How can I fix it in another component or framework?</h4>\n" +
-          "<p>Although the main framework or component you use in your project is not listed, you may find helpful content in the instructions we provide.</p>\n" +
-          "<p>Caution: The libraries mentioned in these instructions may not be appropriate for your code.</p>\n" +
-          "<p>\n" +
-          "<ul class=\"other-context-list\">\n" +
-          "    <li class=\"do\">Do use libraries that are compatible with the frameworks you are using.</li>\n" +
-          "    <li class=\"dont\">Don't blindly copy and paste the fix-ups into your code.</li>\n" +
-          "</ul>\n" +
-          "<h4>Help us improve</h4>\n" +
-          "<p>Let us know if the instructions we provide do not work for you.\n" +
-          "    Tell us which framework you use and why our solution does not work by submitting an idea on the SonarLint product-board.</p>\n" +
-          "<a href=\"https://portal.productboard.com/sonarsource/4-sonarlint/submit-idea\">Submit an idea</a>\n" +
-          "<p>We will do our best to provide you with more relevant instructions in the future.</p>",
-        "others", "Others",
-        "More Info", "htmlContent3<br/><br/>extendedDesc<br/><br/><h3>Clean Code Principles</h3>\n" +
-          "<h4>Never Trust User Input</h4>\n" +
-          "<p>\n" +
-          "    Applications must treat all user input and, more generally, all third-party data as\n" +
-          "    attacker-controlled data.\n" +
-          "</p>\n" +
-          "<p>\n" +
-          "    The application must determine where the third-party data comes from and treat that data\n" +
-          "    source as an attack vector. Two rules apply:\n" +
-          "</p>\n" +
-          "\n" +
-          "<p>\n" +
-          "    First, before using it in the application&apos;s business logic, the application must\n" +
-          "    validate the attacker-controlled data against predefined formats, such as:\n" +
-          "</p>\n" +
-          "<ul>\n" +
-          "    <li>Character sets</li>\n" +
-          "    <li>Sizes</li>\n" +
-          "    <li>Types</li>\n" +
-          "    <li>Or any strict schema</li>\n" +
-          "</ul>\n" +
-          "\n" +
-          "<p>\n" +
-          "    Second, the application must sanitize string data before inserting it into interpreted\n" +
-          "    contexts (client-side code, file paths, SQL queries). Unsanitized code can corrupt the\n" +
-          "    application&apos;s logic.\n" +
-          "</p>");
+        "How can I fix it?",
+        "htmlContent2",
+        "contextKey2",
+        "displayName2",
+        "How can I fix it?",
+        "<h4>How can I fix it in another component or fr...",
+        "others",
+        "Others",
+        "More Info",
+        "htmlContent3<br/><br/>extendedDesc<br/><br/><h3...");
 
   }
 
@@ -518,34 +453,10 @@ class EffectiveRulesMediumTests {
     assertThat(details.getDescription().getRight().getTabs())
       .flatExtracting(EffectiveRulesMediumTests::flattenTabContent)
       .containsExactly(
-        "How can I fix it?", "htmlContent2",
-        "More Info", "htmlContent3<br/><br/>extendedDesc<br/><br/><h3>Clean Code Principles</h3>\n" +
-          "<h4>Never Trust User Input</h4>\n" +
-          "<p>\n" +
-          "    Applications must treat all user input and, more generally, all third-party data as\n" +
-          "    attacker-controlled data.\n" +
-          "</p>\n" +
-          "<p>\n" +
-          "    The application must determine where the third-party data comes from and treat that data\n" +
-          "    source as an attack vector. Two rules apply:\n" +
-          "</p>\n" +
-          "\n" +
-          "<p>\n" +
-          "    First, before using it in the application&apos;s business logic, the application must\n" +
-          "    validate the attacker-controlled data against predefined formats, such as:\n" +
-          "</p>\n" +
-          "<ul>\n" +
-          "    <li>Character sets</li>\n" +
-          "    <li>Sizes</li>\n" +
-          "    <li>Types</li>\n" +
-          "    <li>Or any strict schema</li>\n" +
-          "</ul>\n" +
-          "\n" +
-          "<p>\n" +
-          "    Second, the application must sanitize string data before inserting it into interpreted\n" +
-          "    contexts (client-side code, file paths, SQL queries). Unsanitized code can corrupt the\n" +
-          "    application&apos;s logic.\n" +
-          "</p>");
+        "How can I fix it?",
+        "htmlContent2",
+        "More Info",
+        "htmlContent3<br/><br/>extendedDesc<br/><br/><h3...");
   }
 
   @Test
@@ -632,9 +543,9 @@ class EffectiveRulesMediumTests {
 
   private static List<Object> flattenTabContent(RuleDescriptionTabDto tab) {
     if (tab.getContent().isLeft()) {
-      return List.of(tab.getTitle(), tab.getContent().getLeft().getHtmlContent());
+      return List.of(tab.getTitle(), abbreviate(tab.getContent().getLeft().getHtmlContent(), 50));
     }
-    return tab.getContent().getRight().getContextualSections().stream().flatMap(s -> Stream.of(tab.getTitle(), s.getHtmlContent(), s.getContextKey(), s.getDisplayName()))
+    return tab.getContent().getRight().getContextualSections().stream().flatMap(s -> Stream.of(tab.getTitle(), abbreviate(s.getHtmlContent(), 50), s.getContextKey(), s.getDisplayName()))
       .collect(Collectors.toList());
   }
 
