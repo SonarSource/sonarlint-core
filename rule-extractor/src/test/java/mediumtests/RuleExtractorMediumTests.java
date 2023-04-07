@@ -62,9 +62,9 @@ class RuleExtractorMediumTests {
   @BeforeAll
   static void prepare() throws IOException {
     var dir = Paths.get("target/plugins/");
-    allJars = Files.list(dir)
-      .filter(x -> x.getFileName().toString().endsWith(".jar"))
-      .collect(toSet());
+    try (var files = Files.list(dir)) {
+      allJars = files.filter(x -> x.getFileName().toString().endsWith(".jar")).collect(toSet());
+    }
   }
 
   @Test

@@ -228,10 +228,11 @@ class AnalysisEngineMediumTests {
 
   private static Path findPythonJarPath() throws IOException {
     var pluginsFolderPath = Paths.get("target/plugins/");
-    return Files.list(pluginsFolderPath)
-      .filter(x -> x.getFileName().toString().endsWith(".jar"))
-      .filter(x -> x.getFileName().toString().contains("python"))
-      .findFirst().orElseThrow(() -> new RuntimeException("Unable to locate the python plugin"));
+    try (var files = Files.list(pluginsFolderPath)) {
+      return files.filter(x -> x.getFileName().toString().endsWith(".jar"))
+        .filter(x -> x.getFileName().toString().contains("python"))
+        .findFirst().orElseThrow(() -> new RuntimeException("Unable to locate the python plugin"));
+    }
   }
 
   private static ActiveRule trailingCommentRule() {
