@@ -66,6 +66,7 @@ import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.progress.CanceledException;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
+import testutils.ConsoleConsumer;
 import testutils.OnDiskTestClientInputFile;
 import testutils.PluginLocator;
 import testutils.TestUtils;
@@ -105,8 +106,9 @@ class StandaloneIssueMediumTests {
       + "}", StandardCharsets.UTF_8);
     var pb = new ProcessBuilder("npm" + (SystemUtils.IS_OS_WINDOWS ? ".cmd" : ""), "install")
       .directory(fakeTypeScriptProjectPath.toFile())
-      .inheritIO();
+      .redirectErrorStream(true);
     var process = pb.start();
+    new Thread(new ConsoleConsumer(process)).start();
     if (process.waitFor() != 0) {
       fail("Unable to run npm install");
     }
