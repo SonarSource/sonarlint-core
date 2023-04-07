@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.smartnotifications;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import java.nio.file.Path;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
@@ -33,6 +34,7 @@ import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -41,6 +43,8 @@ import org.sonarsource.sonarlint.core.serverconnection.smartnotifications.Server
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
 public class SmartNotifications {
+
+  private final SonarLintLogger logger = SonarLintLogger.get();
 
   private final ConfigurationRepository configurationRepository;
   private final ConnectionConfigurationRepository connectionRepository;
@@ -87,10 +91,9 @@ public class SmartNotifications {
 
     var isSupported = isConnectionIdSupported.computeIfAbsent(connectionId, v -> developersApi.isSupported());
     if (Boolean.TRUE.equals(isSupported)) {
-      var projectKeysByLastEventPolling =
-        scopeIdsPerProjectKey.keySet().stream()
-          .collect(Collectors.toMap(Function.identity(),
-            p -> getLastNotificationTime(lastEventPollingService.getLastEventPolling(connectionId, p))));
+      var projectKeysByLastEventPolling = scopeIdsPerProjectKey.keySet().stream()
+        .collect(Collectors.toMap(Function.identity(),
+          p -> getLastNotificationTime(lastEventPollingService.getLastEventPolling(connectionId, p))));
 
       var notifications = retrieveServerNotifications(developersApi, projectKeysByLastEventPolling);
 
@@ -107,8 +110,8 @@ public class SmartNotifications {
   }
 
   public void shutdown() {
-    if (smartNotificationsPolling != null) {
-      smartNotificationsPolling.shutdownNow();
+    if (smartNotificationsPolling != null && !MoreExecutors.shutdownAndAwaitTermination(smartNotificationsPolling, 5, TimeUnit.SECONDS)) {
+      logger.warn("Unable to stop smart notifications executor service in a timely manner");
     }
   }
 
