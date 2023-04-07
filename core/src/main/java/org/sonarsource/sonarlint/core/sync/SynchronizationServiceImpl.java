@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.sync;
 
 import com.google.common.eventbus.Subscribe;
+import com.google.common.util.concurrent.MoreExecutors;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
@@ -158,8 +159,8 @@ public class SynchronizationServiceImpl {
   }
 
   public void shutdown() {
-    if (scheduledSynchronizer != null) {
-      scheduledSynchronizer.shutdownNow();
+    if (scheduledSynchronizer != null && !MoreExecutors.shutdownAndAwaitTermination(scheduledSynchronizer, 5, TimeUnit.SECONDS)) {
+      LOG.warn("Unable to stop synchronizer executor service in a timely manner");
     }
     ServerConnectionCache.clear();
   }

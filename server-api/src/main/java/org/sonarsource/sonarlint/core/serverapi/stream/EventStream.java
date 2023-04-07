@@ -19,21 +19,26 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.stream;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.http.HttpConnectionListener;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level.DEBUG;
 
 public class EventStream {
+
+  private final SonarLintLogger logger = SonarLintLogger.get();
   private static final Integer UNAUTHORIZED = 401;
   private static final Integer FORBIDDEN = 403;
   private static final Integer NOT_FOUND = 404;
@@ -144,7 +149,9 @@ public class EventStream {
     if (currentRequest.get() != null) {
       currentRequest.get().cancel();
     }
-    executor.shutdownNow();
+    if (!MoreExecutors.shutdownAndAwaitTermination(executor, 5, TimeUnit.SECONDS)) {
+      logger.warn("Unable to stop event stream executor service in a timely manner");
+    }
   }
 
   private static class Attempt {

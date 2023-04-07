@@ -209,10 +209,9 @@ stages:
             -X -B --settings $(mavenSettings.secureFilePath) -Dcommercial -Denable-repo=private
             -Pcoverage
             -Dsonar.coverage.jacoco.xmlReportPaths=$(Build.Repository.LocalPath)/report-aggregate/target/site/jacoco-aggregate/jacoco.xml
-            -Dsonar.scanner.keepReport=true
           publishJUnitResults: false
           javaHomeOption: 'JDKVersion'
-          jdkVersionOption: '1.11'
+          jdkVersionOption: '1.17'
           mavenOptions: $(MAVEN_OPTS)
           sonarQubeRunAnalysis: true
           sqMavenPluginVersionChoice: 'latest'
