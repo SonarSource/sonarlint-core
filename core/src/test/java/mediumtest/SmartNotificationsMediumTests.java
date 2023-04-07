@@ -54,9 +54,6 @@ import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectSto
 
 class SmartNotificationsMediumTests {
 
-  private SonarLintBackendImpl backend;
-  @RegisterExtension
-  private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
   private static final ZonedDateTime STORED_DATE = ZonedDateTime.now().minusHours(1);
   private static final String PROJECT_KEY = "projectKey";
   private static final String PROJECT_KEY_2 = "projectKey2";
@@ -89,6 +86,11 @@ class SmartNotificationsMediumTests {
     "\"project\": \"" + PROJECT_KEY_3 + "\"," +
     "\"date\": \"2022-01-01T08:00:00+0000\"," +
     "\"category\": \"category\"}]}";
+  @RegisterExtension
+  private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
+  private SonarLintBackendImpl backend;
+  @TempDir
+  private Path tmpDir;
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
@@ -96,7 +98,7 @@ class SmartNotificationsMediumTests {
   }
 
   @Test
-  void it_should_send_notification_for_two_config_scope_with_same_binding(@TempDir Path tmpDir) {
+  void it_should_send_notification_for_two_config_scope_with_same_binding() {
     var fakeClient = newFakeClient().build();
 
     writeFile(tmpDir, CONNECTION_ID, PROJECT_KEY);
@@ -122,7 +124,7 @@ class SmartNotificationsMediumTests {
   }
 
   @Test
-  void it_should_send_notification_for_different_bindings(@TempDir Path tmpDir) {
+  void it_should_send_notification_for_different_bindings() {
     var fakeClient = newFakeClient().build();
 
     writeFile(tmpDir, CONNECTION_ID, PROJECT_KEY);
@@ -161,7 +163,7 @@ class SmartNotificationsMediumTests {
   }
 
   @Test
-  void it_should_not_send_notification_with_unbound_config_scope(@TempDir Path tmpDir) {
+  void it_should_not_send_notification_with_unbound_config_scope() {
     var fakeClient = newFakeClient().build();
 
     writeFile(tmpDir, CONNECTION_ID, PROJECT_KEY);
@@ -186,7 +188,7 @@ class SmartNotificationsMediumTests {
   }
 
   @Test
-  void it_should_send_notification_after_adding_removing_binding(@TempDir Path tmpDir) {
+  void it_should_send_notification_after_adding_removing_binding() {
     var fakeClient = newFakeClient().build();
 
     writeFile(tmpDir, CONNECTION_ID, PROJECT_KEY);
@@ -218,7 +220,7 @@ class SmartNotificationsMediumTests {
   }
 
   @Test
-  void it_should_send_notification_after_adding_removing_connection(@TempDir Path tmpDir) {
+  void it_should_send_notification_after_adding_removing_connection() {
     var fakeClient = newFakeClient().build();
 
     writeFile(tmpDir, CONNECTION_ID, PROJECT_KEY);
