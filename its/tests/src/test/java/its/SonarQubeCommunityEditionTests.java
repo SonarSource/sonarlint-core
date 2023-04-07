@@ -25,6 +25,7 @@ import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.build.SonarScanner;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
+import its.utils.ConsoleConsumer;
 import its.utils.ItUtils;
 import its.utils.OrchestratorUtils;
 import java.io.File;
@@ -433,8 +434,9 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
       var pb = new ProcessBuilder("npm" + (SystemUtils.IS_OS_WINDOWS ? ".cmd" : ""), "install")
         .directory(tsAnalysisConfig.baseDir().toFile())
-        .inheritIO();
+        .redirectErrorStream(true);
       var process = pb.start();
+      new Thread(new ConsoleConsumer(process)).start();
       if (process.waitFor() != 0) {
         fail("Unable to run npm install");
       }
