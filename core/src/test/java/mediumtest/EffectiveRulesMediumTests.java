@@ -183,7 +183,7 @@ class EffectiveRulesMediumTests {
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
         EffectiveRuleDetailsDto::getSeverity, r -> r.getDescription().getLeft().getHtmlContent())
       .containsExactly("python:S139", "Comments should not be located at the end of lines of code", RuleType.CODE_SMELL, Language.PYTHON, IssueSeverity.INFO,
-        PYTHON_S139_DESCRIPTION + "<br/><br/>extendedDesc");
+        PYTHON_S139_DESCRIPTION + "extendedDesc");
     assertThat(details.getParams()).isEmpty();
   }
 
@@ -211,7 +211,7 @@ class EffectiveRulesMediumTests {
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
         EffectiveRuleDetailsDto::getSeverity, r -> r.getDescription().getLeft().getHtmlContent())
       .containsExactly("python:S139", "Comments should not be located at the end of lines of code", RuleType.CODE_SMELL, Language.PYTHON, IssueSeverity.INFO,
-        PYTHON_S139_DESCRIPTION + "<br/><br/>extendedDesc");
+        PYTHON_S139_DESCRIPTION + "extendedDesc");
     assertThat(details.getParams()).isEmpty();
   }
 
@@ -316,7 +316,7 @@ class EffectiveRulesMediumTests {
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
         EffectiveRuleDetailsDto::getSeverity, r -> r.getDescription().getLeft().getHtmlContent())
-      .containsExactly("python:custom", "newName", RuleType.CODE_SMELL, Language.PYTHON, IssueSeverity.INFO, "desc<br/><br/>extendedDesc");
+      .containsExactly("python:custom", "newName", RuleType.CODE_SMELL, Language.PYTHON, IssueSeverity.INFO, "descextendedDesc");
     assertThat(details.getParams()).isEmpty();
   }
 
@@ -342,7 +342,7 @@ class EffectiveRulesMediumTests {
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
         EffectiveRuleDetailsDto::getSeverity, r -> r.getDescription().getLeft().getHtmlContent())
-      .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO, "desc<br/><br/>extendedDesc");
+      .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO, "descextendedDesc");
     assertThat(details.getParams()).isEmpty();
   }
 
@@ -370,7 +370,7 @@ class EffectiveRulesMediumTests {
         "--> Others (others)",
         "    <h4>How can I fix it in another component or fr...",
         "More Info",
-        "htmlContent3<br/><br/>extendedDesc<br/><br/><h3...");
+        "htmlContent3extendedDesc<h3>Clean Code Principl...");
   }
 
   @Test
@@ -397,7 +397,7 @@ class EffectiveRulesMediumTests {
         "--> Others (others)",
         "    <h4>How can I fix it in another component or fr...",
         "More Info",
-        "htmlContent3<br/><br/>extendedDesc<br/><br/><h3...");
+        "htmlContent3extendedDesc<h3>Clean Code Principl...");
 
     assertThat(details.getDescription().getRight().getTabs().iterator().next().getContent().getRight().getDefaultContextKey())
       .isEqualTo("others");
@@ -420,15 +420,15 @@ class EffectiveRulesMediumTests {
     assertThat(details.getDescription().getRight().getTabs())
       .flatExtracting(EffectiveRulesMediumTests::flattenTabContent)
       .containsExactly(
-        "How can I fix it?",
-        "--> Spring (spring)",
-        "    fix spring",
-        "--> Struts (struts)",
-        "    fix struts",
-        "--> Others (others)",
-        "    <h4>How can I fix it in another component or fr...",
-        "More Info",
-        "htmlContent3<br/><br/>extendedDesc<br/><br/><h3...");
+      "How can I fix it?",
+      "--> Spring (spring)",
+      "    fix spring",
+      "--> Struts (struts)",
+      "    fix struts",
+      "--> Others (others)",
+      "    <h4>How can I fix it in another component or fr...",
+      "More Info",
+      "htmlContent3extendedDesc<h3>Clean Code Principl...");
 
     assertThat(details.getDescription().getRight().getTabs().iterator().next().getContent().getRight().getDefaultContextKey())
       .isEqualTo("spring");
@@ -468,7 +468,7 @@ class EffectiveRulesMediumTests {
       .extracting(RuleDescriptionTabDto::getContent)
       .extracting(Either::getLeft)
       .extracting(RuleNonContextualSectionDto::getHtmlContent)
-      .containsExactly("extendedDesc<br/><br/><h3>Clean Code Principles</h3>\n" +
+      .containsExactly("extendedDesc<h3>Clean Code Principles</h3>\n" +
         "<h4>Never Trust User Input</h4>\n" +
         "<p>\n" +
         "    Applications must treat all user input and, more generally, all third-party data as\n" +

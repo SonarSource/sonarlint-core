@@ -160,7 +160,7 @@ class RuleDetailsAdapter {
   private static String concat(Collection<String> htmlSnippets) {
     return htmlSnippets.stream()
       .filter(StringUtils::isNotBlank)
-      .collect(Collectors.joining("<br/><br/>"));
+      .collect(Collectors.joining());
   }
 
   private static String getTabContent(RuleDetails.DescriptionSection section, @Nullable String extendedDescription, Set<String> educationPrincipleKeys) {
