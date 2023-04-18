@@ -100,7 +100,7 @@
                 <artifactItem>
                   <groupId>org.sonarsource.iac</groupId>
                   <artifactId>sonar-iac-plugin</artifactId>
-                  <version>1.14.0.3594</version>
+                  <version>1.16.0.3845</version>
                   <type>jar</type>
                 </artifactItem>
               </artifactItems>
