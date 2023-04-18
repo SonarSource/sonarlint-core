@@ -94,7 +94,7 @@
                 <artifactItem>
                   <groupId>org.sonarsource.slang</groupId>
                   <artifactId>sonar-go-plugin</artifactId>
-                  <version>1.12.0.4243</version>
+                  <version>1.12.0.4259</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
