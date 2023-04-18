@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.clientapi;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.services.JsonDelegate;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
+import org.sonarsource.sonarlint.core.clientapi.backend.analysis.AnalysisService;
+import org.sonarsource.sonarlint.core.clientapi.backend.authentication.AuthenticationHelperService;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.authentication.AuthenticationHelperService;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationService;
@@ -56,6 +58,9 @@ public interface SonarLintBackend {
 
   @JsonDelegate
   TelemetryService getTelemetryService();
+
+  @JsonDelegate
+  AnalysisService getAnalysisService();
 
   @JsonDelegate
   SonarProjectBranchService getSonarProjectBranchService();

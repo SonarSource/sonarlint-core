@@ -59,6 +59,7 @@ public class ProjectStorageFixture {
   public static class ProjectStorageBuilder {
     private final String projectKey;
     private final List<RuleSetBuilder> ruleSets = new ArrayList<>();
+    private final Map<String, String> projectSettings = new HashMap<>();
 
     public ProjectStorageBuilder(String projectKey) {
       this.projectKey = projectKey;
@@ -72,6 +73,11 @@ public class ProjectStorageFixture {
       var ruleSetBuilder = new RuleSetBuilder(languageKey);
       consumer.accept(ruleSetBuilder);
       ruleSets.add(ruleSetBuilder);
+      return this;
+    }
+
+    public ProjectStorageBuilder withSetting(String key, String value) {
+      projectSettings.put(key, value);
       return this;
     }
 
@@ -96,7 +102,9 @@ public class ProjectStorageFixture {
         });
         protoRuleSets.put(ruleSet.languageKey, ruleSetBuilder.build());
       });
-      var analyzerConfiguration = Sonarlint.AnalyzerConfiguration.newBuilder().putAllRuleSetsByLanguageKey(protoRuleSets).build();
+      var analyzerConfiguration = Sonarlint.AnalyzerConfiguration.newBuilder()
+        .putAllSettings(projectSettings)
+        .putAllRuleSetsByLanguageKey(protoRuleSets).build();
       ProtobufUtil.writeToFile(analyzerConfiguration, projectFolder.resolve("analyzer_config.pb"));
       return new ProjectStorage(projectFolder);
     }
