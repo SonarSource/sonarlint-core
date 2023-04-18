@@ -95,7 +95,7 @@ public class LanguageDetection {
         .collect(joining(","));
   }
 
-  static String sanitizeExtension(String suffix) {
+  public static String sanitizeExtension(String suffix) {
     return StringUtils.lowerCase(StringUtils.removeStart(suffix, "."));
   }
 }

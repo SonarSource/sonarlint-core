@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FilenameUtils;
+import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
@@ -95,9 +96,9 @@ public class ServerConnection {
     this.isSonarCloud = spec.isSonarCloud;
     this.enabledLanguagesToSync = spec.enabledLanguages.stream().filter(Language::shouldSyncInConnectedMode).collect(Collectors.toCollection(LinkedHashSet::new));
 
-    connectionStorageRoot = spec.globalStorageRoot.resolve(encodeForFs(spec.connectionId));
+    connectionStorageRoot = computeConnectionStorageRoot(spec.globalStorageRoot, spec.connectionId);
 
-    var projectsStorageRoot = connectionStorageRoot.resolve("projects");
+    var projectsStorageRoot = computeProjectsStorageRoot(connectionStorageRoot);
     var projectStoragePaths = new ProjectStoragePaths(projectsStorageRoot);
     projectStorage = new ProjectStorage(projectsStorageRoot);
 
@@ -118,6 +119,16 @@ public class ServerConnection {
       .dispatch(TaintVulnerabilityRaisedEvent.class, new UpdateStorageOnTaintVulnerabilityRaised(serverIssueStoresManager))
       .dispatch(TaintVulnerabilityClosedEvent.class, new UpdateStorageOnTaintVulnerabilityClosed(serverIssueStoresManager));
     this.serverEventsAutoSubscriber = new ServerEventsAutoSubscriber();
+  }
+
+  @NotNull
+  public static Path computeProjectsStorageRoot(Path connectionStorageRoot) {
+    return connectionStorageRoot.resolve("projects");
+  }
+
+  @NotNull
+  public static Path computeConnectionStorageRoot(Path globalStorageRoot, String connectionId) {
+    return globalStorageRoot.resolve(encodeForFs(connectionId));
   }
 
   public Map<String, Path> getStoredPluginPathsByKey() {

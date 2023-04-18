@@ -90,6 +90,7 @@ public class SonarLintBackendFixture {
     private final Set<Path> embeddedPluginPaths = new HashSet<>();
     private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey = new HashMap<>();
     private final Set<Language> enabledLanguages = new HashSet<>();
+    private final Set<Language> extraEnabledLanguagesInConnectedMode = new HashSet<>();
     private Path storageRoot = Paths.get(".");
     private Path sonarlintUserHome = Paths.get(".");
     private boolean startEmbeddedServer;
@@ -177,6 +178,11 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintBackendBuilder withExtraEnabledLanguagesInConnectedMode(Language language) {
+      this.extraEnabledLanguagesInConnectedMode.add(language);
+      return this;
+    }
+
     public SonarLintBackendBuilder withSecurityHotspotsEnabled() {
       this.areSecurityHotspotsEnabled = true;
       return this;
@@ -207,12 +213,14 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+
+
     public SonarLintBackendImpl build(FakeSonarLintClient client) {
       var sonarLintBackend = new SonarLintBackendImpl(client);
       client.setBackend(sonarLintBackend);
       sonarLintBackend
         .initialize(new InitializeParams(client.getClientInfo(), MEDIUM_TESTS_PRODUCT_KEY, storageRoot, null, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
-          enabledLanguages, Collections.emptySet(), areSecurityHotspotsEnabled, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(), startEmbeddedServer,
+          enabledLanguages, extraEnabledLanguagesInConnectedMode, areSecurityHotspotsEnabled, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(), startEmbeddedServer,
           standaloneConfigByKey, manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects));
       sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
       activeBranchPerScopeId.forEach(

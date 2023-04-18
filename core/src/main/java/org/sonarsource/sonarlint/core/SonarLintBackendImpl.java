@@ -33,9 +33,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchServiceImpl;
+import org.sonarsource.sonarlint.core.analysis.AnalysisServiceImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.clientapi.backend.authentication.AuthenticationHelperService;
 import org.sonarsource.sonarlint.core.clientapi.backend.branch.SonarProjectBranchService;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationService;
@@ -46,6 +48,7 @@ import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.hotspot.HotspotServiceImpl;
 import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsServiceImpl;
+import org.sonarsource.sonarlint.core.serverconnection.StorageFacade;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
@@ -74,6 +77,8 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   private final SmartNotifications smartNotifications;
   private final SonarProjectBranchServiceImpl sonarProjectBranchService;
   private final SynchronizationServiceImpl synchronizationServiceImpl;
+  private final AnalysisServiceImpl analysisService;
+  private final StorageFacade storageFacade;
 
   public SonarLintBackendImpl(SonarLintClient client) {
     EventBus clientEventBus = new AsyncEventBus("clientEvents", clientEventsExecutorService);
@@ -100,6 +105,8 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     var sonarProjectBranchRepository = new ActiveSonarProjectBranchRepository();
     this.sonarProjectBranchService = new SonarProjectBranchServiceImpl(sonarProjectBranchRepository, configurationRepository, clientEventBus);
     this.synchronizationServiceImpl = new SynchronizationServiceImpl(client, configurationRepository, sonarProjectBranchService, serverApiProvider);
+    this.storageFacade = new StorageFacade();
+    this.analysisService = new AnalysisServiceImpl(configurationRepository, storageFacade);
     clientEventBus.register(bindingSuggestionProvider);
     clientEventBus.register(sonarProjectCache);
     clientEventBus.register(rulesRepository);
@@ -137,6 +144,9 @@ public class SonarLintBackendImpl implements SonarLintBackend {
       synchronizationServiceImpl.initialize(params.getStorageRoot(), workDir, enabledLanguagesInConnectedMode, params.getConnectedModeEmbeddedPluginPathsByKey().keySet(),
         params.areTaintVulnerabilitiesEnabled());
     }
+    storageFacade.initialize(params.getStorageRoot());
+    analysisService.initialize(params.getEnabledLanguagesInStandaloneMode(), enabledLanguagesInConnectedMode);
+
     return CompletableFuture.completedFuture(null);
   }
 
@@ -171,6 +181,11 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   @Override
   public TelemetryServiceImpl getTelemetryService() {
     return telemetryService;
+  }
+
+  @Override
+  public AnalysisService getAnalysisService() {
+    return analysisService;
   }
 
   @Override
