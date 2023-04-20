@@ -76,7 +76,7 @@ class ProxyMediumTests {
   @BeforeEach
   void configureProxy(TestInfo info) {
     if (info.getTags().contains(PROXY_AUTH_ENABLED)) {
-      proxyMock.stubFor(get(urlEqualTo(".*"))
+      proxyMock.stubFor(get(urlEqualTo("/api/rules/show.protobuf?key=python:S139"))
         .inScenario("Proxy Auth")
         .whenScenarioStateIs(STARTED)
         .willReturn(aResponse()
@@ -85,6 +85,10 @@ class ProxyMediumTests {
         )
         .willSetStateTo("Challenge returned")
       );
+      proxyMock.stubFor(get(urlEqualTo("/api/rules/show.protobuf?key=python:S139"))
+        .inScenario("Proxy Auth")
+        .whenScenarioStateIs("Challenge returned")
+        .willReturn(aResponse().proxiedFrom(sonarqubeMock.baseUrl())));
     } else {
       proxyMock.stubFor(get(urlMatching(".*")).willReturn(aResponse().proxiedFrom(sonarqubeMock.baseUrl())));
     }
@@ -125,7 +129,8 @@ class ProxyMediumTests {
       .build(fakeClient);
     sonarqubeMock.stubFor(get(urlEqualTo("/api/rules/show.protobuf?key=python:S139"))
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Rules.ShowResponse.newBuilder()
-        .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc from server").build())
+        .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc(
+          "desc").setHtmlNote("extendedDesc from server").build())
         .build()))));
 
     var details = getEffectiveRuleDetails("scopeId", "python:S139");
@@ -155,7 +160,8 @@ class ProxyMediumTests {
       .build(fakeClient);
     sonarqubeMock.stubFor(get(urlEqualTo("/api/rules/show.protobuf?key=python:S139"))
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Rules.ShowResponse.newBuilder()
-        .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc from server").build())
+        .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc(
+          "desc").setHtmlNote("extendedDesc from server").build())
         .build()))));
 
     var details = getEffectiveRuleDetails("scopeId", "python:S139");
@@ -163,7 +169,7 @@ class ProxyMediumTests {
     assertThat(details.getDescription().getLeft().getHtmlContent()).contains("extendedDesc from server");
 
     proxyMock.verify(getRequestedFor(urlEqualTo("/api/rules/show.protobuf?key=python:S139"))
-      .withHeader("Authorization", containing("Basic")));
+      .withHeader("Proxy-Authorization", containing("Basic")));
   }
 
   private EffectiveRuleDetailsDto getEffectiveRuleDetails(String configScopeId, String ruleKey) {
