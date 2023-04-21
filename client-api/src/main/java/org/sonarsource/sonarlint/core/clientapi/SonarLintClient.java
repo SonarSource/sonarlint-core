@@ -19,7 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.clientapi;
 
+import java.net.Authenticator;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.ProxySelector;
+import java.net.URI;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
@@ -36,6 +42,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.GetProxyPasswordAuthenticationParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.GetProxyPasswordAuthenticationResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.http.ProxyDto;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
@@ -105,8 +112,33 @@ public interface SonarLintClient {
   CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params);
 
   @JsonRequest
-  CompletableFuture<SelectProxiesResponse> selectProxies(SelectProxiesParams params);
+  default CompletableFuture<SelectProxiesResponse> selectProxies(SelectProxiesParams params) {
+    var proxies = ProxySelector.getDefault().select(URI.create(params.getUri()));
+    var response = new SelectProxiesResponse(proxies.stream().map(SonarLintClient::convert).collect(Collectors.toList()));
+    return CompletableFuture.completedFuture(response);
+  }
+
+  private static ProxyDto convert(Proxy proxy) {
+    if (proxy.type() == Proxy.Type.DIRECT) {
+      return ProxyDto.NO_PROXY;
+    }
+    var address = proxy.address();
+    if (!(address instanceof InetSocketAddress)) {
+      throw new IllegalArgumentException("Unsupported address type:" + address.getClass());
+    }
+
+    var server = ((InetSocketAddress) address).getHostString();
+    var port = ((InetSocketAddress) address).getPort();
+    return new ProxyDto(proxy.type(), server, port);
+  }
 
   @JsonRequest
-  CompletableFuture<GetProxyPasswordAuthenticationResponse> getProxyPasswordAuthentication(GetProxyPasswordAuthenticationParams params);
+  default CompletableFuture<GetProxyPasswordAuthenticationResponse> getProxyPasswordAuthentication(GetProxyPasswordAuthenticationParams params) {
+    var passwordAuthentication = Authenticator.requestPasswordAuthentication(params.getHost(), null, params.getPort(), params.getProtocol(), params.getPrompt(), params.getScheme(),
+      null, Authenticator.RequestorType.PROXY);
+    var response = new GetProxyPasswordAuthenticationResponse(passwordAuthentication != null ? passwordAuthentication.getUserName() : null,
+      passwordAuthentication != null ? new String(passwordAuthentication.getPassword()) : null);
+    return CompletableFuture.completedFuture(response);
+  }
+
 }
