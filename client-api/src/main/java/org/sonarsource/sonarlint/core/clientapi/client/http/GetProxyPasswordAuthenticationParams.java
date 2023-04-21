@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.clientapi.client.http;
 
 import java.net.Authenticator;
 import java.net.InetAddress;
-import java.net.URL;
 
 /**
  * @see Authenticator#requestPasswordAuthentication(String, InetAddress, int, String, String, String)
