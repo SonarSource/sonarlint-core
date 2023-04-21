@@ -34,7 +34,7 @@ import java.util.function.Consumer;
 public class SseSubscriber implements HttpResponse.BodySubscriber<Void> {
   protected final Consumer<? super String> messageConsumer;
   protected final CompletableFuture<Void> future;
-  protected volatile Flow.Subscription subscription;
+  protected Flow.Subscription subscription;
   protected volatile String deferredText;
 
   public SseSubscriber(Consumer<? super String> messageConsumer) {

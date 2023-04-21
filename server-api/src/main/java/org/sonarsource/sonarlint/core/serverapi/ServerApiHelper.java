@@ -114,7 +114,7 @@ public class ServerApiHelper {
     var url = buildEndpointUrl(relativePath);
 
     return client.getAsync(url)
-      .whenComplete((response, error) -> logTime(startTime, url, response.code()));
+      .whenComplete((response, error) -> logTime(startTime, url, response != null ? response.code() : -1));
   }
 
   public CompletableFuture<HttpClient.Response> rawPostAsync(String relativePath, String contentType, String body) {
@@ -122,7 +122,7 @@ public class ServerApiHelper {
     var url = buildEndpointUrl(relativePath);
 
     return client.postAsync(url, contentType, body)
-      .whenComplete((response, error) -> logTime(startTime, url, response.code()));
+      .whenComplete((response, error) -> logTime(startTime, url, response != null ? response.code() : -1));
   }
 
   private static void logTime(Instant startTime, String url, int responseCode) {
