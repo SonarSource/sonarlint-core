@@ -19,11 +19,10 @@
  */
 package its;
 
-import com.sonar.orchestrator.OnlyOnSonarQube;
-import com.sonar.orchestrator.OrchestratorExtension;
 import com.sonar.orchestrator.container.Edition;
+import com.sonar.orchestrator.junit5.OnlyOnSonarQube;
+import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.locator.FileLocation;
-import its.utils.OrchestratorUtils;
 import its.utils.PluginLocator;
 import java.io.File;
 import java.io.IOException;
@@ -49,8 +48,8 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.commons.Language;
 
+import static its.utils.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   private static final String PROJECT_KEY_COBOL = "sample-cobol";
@@ -59,8 +58,11 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   private static final String PROJECT_KEY_APEX = "sample-apex";
 
   @RegisterExtension
-  static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
+  static OrchestratorExtension ORCHESTRATOR = OrchestratorExtension.builderEnv()
+    .setSonarVersion(SONAR_VERSION)
     .setEdition(Edition.ENTERPRISE)
+    .defaultForceAuthentication()
+    .useDefaultAdminCredentialsForBuilds(true)
     .activateLicense()
     .keepBundledPlugins()
     .restoreProfileAtStartup(FileLocation.ofClasspath("/c-sonarlint.xml"))
@@ -127,7 +129,6 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
         .setLogOutput((msg, level) -> System.out.println(msg))
         .build());
     }
-
 
     @Test
     void analysisC_old_build_wrapper_prop(@TempDir File buildWrapperOutput) throws Exception {

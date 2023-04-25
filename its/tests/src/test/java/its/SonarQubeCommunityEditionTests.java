@@ -19,15 +19,15 @@
  */
 package its;
 
-import com.sonar.orchestrator.OnlyOnSonarQube;
-import com.sonar.orchestrator.OrchestratorExtension;
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.build.SonarScanner;
+import com.sonar.orchestrator.container.Edition;
+import com.sonar.orchestrator.junit5.OnlyOnSonarQube;
+import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
 import its.utils.ConsoleConsumer;
 import its.utils.ItUtils;
-import its.utils.OrchestratorUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -82,7 +82,11 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
   public static final String XOO_PLUGIN_KEY = "xoo";
   @RegisterExtension
-  static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
+  static OrchestratorExtension ORCHESTRATOR = OrchestratorExtension.builderEnv()
+    .setSonarVersion(SONAR_VERSION)
+    .setEdition(Edition.COMMUNITY)
+    .defaultForceAuthentication()
+    .useDefaultAdminCredentialsForBuilds(true)
     .keepBundledPlugins()
     .addPlugin(MavenLocation.of("org.sonarsource.sonarqube", "sonar-xoo-plugin", SONAR_VERSION))
     .addPlugin(FileLocation.of("../plugins/java-custom-rules/target/java-custom-rules-plugin.jar"))
@@ -143,7 +147,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
       } else {
         assertThat(
           adminWsClient.issues().search(new SearchRequest().setTypes(List.of("SECURITY_HOTSPOT")).setComponentKeys(List.of(XOO_PROJECT_KEY))).getIssuesList())
-          .isNotEmpty();
+            .isNotEmpty();
       }
     }
 

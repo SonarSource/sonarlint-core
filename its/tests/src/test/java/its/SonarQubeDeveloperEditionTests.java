@@ -20,13 +20,12 @@
 package its;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.sonar.orchestrator.OnlyOnSonarQube;
-import com.sonar.orchestrator.OrchestratorExtension;
+import com.sonar.orchestrator.junit5.OnlyOnSonarQube;
+import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.build.SonarScanner;
 import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
-import its.utils.OrchestratorUtils;
 import its.utils.PluginLocator;
 import java.io.File;
 import java.io.IOException;
@@ -44,8 +43,6 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterAll;
@@ -131,10 +128,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   public static final String CONNECTION_ID = "orchestrator";
 
   @RegisterExtension
-  static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
+  static OrchestratorExtension ORCHESTRATOR = OrchestratorExtension.builderEnv()
+    .setSonarVersion(SONAR_VERSION)
     .setEdition(Edition.DEVELOPER)
-    .activateLicense()
+    .defaultForceAuthentication()
+    .useDefaultAdminCredentialsForBuilds(true)
     .keepBundledPlugins()
+    .activateLicense()
     .addPlugin(MavenLocation.of("org.sonarsource.sonarqube", "sonar-xoo-plugin", SONAR_VERSION))
     .addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
     .addPlugin(FileLocation.of("../plugins/custom-sensor-plugin/target/custom-sensor-plugin.jar"))
