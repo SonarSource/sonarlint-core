@@ -58,6 +58,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreating
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FoundFileDto;
@@ -269,6 +270,7 @@ public class SonarLintBackendFixture {
 
     private ProxyDto proxy;
     private GetProxyPasswordAuthenticationResponse proxyAuth;
+    private Map<String, UsernamePasswordDto> creds = new HashMap<>();
 
     public SonarLintClientBuilder withFoundFile(String name, String path, String content) {
       foundFiles.add(new FoundFileDto(name, path, content));
@@ -289,6 +291,12 @@ public class SonarLintBackendFixture {
       this.rejectingProgress = true;
       return this;
     }
+
+    public SonarLintClientBuilder withCredentials(String connectionId, String user, String password) {
+      creds.put(connectionId, new UsernamePasswordDto(user, password));
+      return this;
+    }
+
     public SonarLintClientBuilder withHttpProxy(String hostname, int port) {
       this.proxy = new ProxyDto(Proxy.Type.HTTP, hostname, port);
       return this;
@@ -307,7 +315,7 @@ public class SonarLintBackendFixture {
 
     public FakeSonarLintClient build() {
       return new FakeSonarLintClient(new HostInfoDto(hostName), foundFiles, hostDescription, cannedAssistCreatingSonarQubeConnectionByBaseUrl, cannedBindingAssistByProjectKey,
-        rejectingProgress, proxy, proxyAuth);
+        rejectingProgress, proxy, proxyAuth, creds);
     }
   }
 
@@ -328,11 +336,13 @@ public class SonarLintBackendFixture {
     private final Set<String> synchronizedConfigScopeIds = new HashSet<>();
     private final ProxyDto proxy;
     private final GetProxyPasswordAuthenticationResponse proxyAuth;
+    private final Map<String, UsernamePasswordDto> creds;
     private SonarLintBackendImpl backend;
 
     public FakeSonarLintClient(HostInfoDto clientInfo, List<FoundFileDto> foundFiles, String workspaceTitle,
       LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
-      LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, boolean rejectingProgress, @Nullable ProxyDto proxy, @Nullable GetProxyPasswordAuthenticationResponse proxyAuth) {
+      LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, boolean rejectingProgress, @Nullable ProxyDto proxy,
+      @Nullable GetProxyPasswordAuthenticationResponse proxyAuth, Map<String, UsernamePasswordDto> creds) {
       this.clientInfo = clientInfo;
       this.foundFiles = foundFiles;
       this.workspaceTitle = workspaceTitle;
@@ -341,6 +351,7 @@ public class SonarLintBackendFixture {
       this.rejectingProgress = rejectingProgress;
       this.proxy = proxy;
       this.proxyAuth = proxyAuth;
+      this.creds = creds;
     }
 
     public void setBackend(SonarLintBackendImpl backend) {
@@ -445,7 +456,9 @@ public class SonarLintBackendFixture {
     }
 
     public CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params) {
-      return CompletableFuture.failedFuture(new UnsupportedOperationException("Unsupported!"));
+      var usernamePasswordDto = creds.get(params.getConnectionId());
+      var response = new GetCredentialsResponse(usernamePasswordDto != null ? usernamePasswordDto : new UsernamePasswordDto(null, null));
+      return CompletableFuture.completedFuture(response);
     }
 
     @Override

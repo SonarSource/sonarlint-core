@@ -19,12 +19,7 @@
  */
 package mediumtest;
 
-import com.github.tomakehurst.wiremock.http.Body;
-import com.github.tomakehurst.wiremock.http.ContentTypeHeader;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
-import com.google.protobuf.Message;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -55,6 +50,7 @@ import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
+import static testutils.TestUtils.protobufBody;
 
 class ProxyMediumTests {
 
@@ -81,10 +77,8 @@ class ProxyMediumTests {
         .whenScenarioStateIs(STARTED)
         .willReturn(aResponse()
           .withStatus(407)
-          .withHeader("Proxy-Authenticate", "Basic realm=\"Access to the proxy\"")
-        )
-        .willSetStateTo("Challenge returned")
-      );
+          .withHeader("Proxy-Authenticate", "Basic realm=\"Access to the proxy\""))
+        .willSetStateTo("Challenge returned"));
       proxyMock.stubFor(get(urlMatching(".*"))
         .inScenario("Proxy Auth")
         .whenScenarioStateIs("Challenge returned")
@@ -98,16 +92,6 @@ class ProxyMediumTests {
   void tearDown() throws ExecutionException, InterruptedException {
     if (backend != null) {
       backend.shutdown().get();
-    }
-  }
-
-  private static Body protobufBody(Message message) {
-    var baos = new ByteArrayOutputStream();
-    try {
-      message.writeTo(baos);
-      return Body.ofBinaryOrText(baos.toByteArray(), ContentTypeHeader.absent());
-    } catch (IOException e) {
-      throw new RuntimeException(e);
     }
   }
 
@@ -127,7 +111,7 @@ class ProxyMediumTests {
       .withStorageRoot(storageDir.resolve("storage"))
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .build(fakeClient);
-    sonarqubeMock.stubFor(get(urlEqualTo("/api/rules/show.protobuf?key=python:S139"))
+    sonarqubeMock.stubFor(get("/api/rules/show.protobuf?key=python:S139")
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Rules.ShowResponse.newBuilder()
         .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc(
           "desc").setHtmlNote("extendedDesc from server").build())
@@ -158,7 +142,7 @@ class ProxyMediumTests {
       .withStorageRoot(storageDir.resolve("storage"))
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .build(fakeClient);
-    sonarqubeMock.stubFor(get(urlEqualTo("/api/rules/show.protobuf?key=python:S139"))
+    sonarqubeMock.stubFor(get("/api/rules/show.protobuf?key=python:S139")
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Rules.ShowResponse.newBuilder()
         .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc(
           "desc").setHtmlNote("extendedDesc from server").build())
@@ -173,12 +157,8 @@ class ProxyMediumTests {
   }
 
   private EffectiveRuleDetailsDto getEffectiveRuleDetails(String configScopeId, String ruleKey) {
-    return getEffectiveRuleDetails(configScopeId, ruleKey, null);
-  }
-
-  private EffectiveRuleDetailsDto getEffectiveRuleDetails(String configScopeId, String ruleKey, String contextKey) {
     try {
-      return this.backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, ruleKey, contextKey)).get().details();
+      return this.backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, ruleKey, null)).get().details();
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
