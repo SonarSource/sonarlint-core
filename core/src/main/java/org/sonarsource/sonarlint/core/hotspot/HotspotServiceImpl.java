@@ -20,11 +20,16 @@
 package org.sonarsource.sonarlint.core.hotspot;
 
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
+import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.ChangeHotspotStatusParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.CheckLocalDetectionSupportedParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.CheckLocalDetectionSupportedResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
+import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotStatus;
+import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.ListAllowedStatusesParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.ListAllowedStatusesResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.OpenHotspotInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -91,6 +96,16 @@ public class HotspotServiceImpl implements HotspotService {
         .orElse(false);
     }
     return CompletableFuture.completedFuture(new CheckLocalDetectionSupportedResponse(supported, supported ? null : LOCAL_DETECTION_NOT_SUPPORTED_REASON));
+  }
+
+  @Override
+  public CompletableFuture<ListAllowedStatusesResponse> listAllowedStatuses(ListAllowedStatusesParams params) {
+    return CompletableFuture.completedFuture(new ListAllowedStatusesResponse(Collections.emptyList()));
+  }
+
+  @Override
+  public CompletableFuture<Void> changeStatus(ChangeHotspotStatusParams params) {
+    return CompletableFuture.completedFuture(null);
   }
 
   private boolean isLocalDetectionSupported(boolean isSonarCloud, String connectionId) {
