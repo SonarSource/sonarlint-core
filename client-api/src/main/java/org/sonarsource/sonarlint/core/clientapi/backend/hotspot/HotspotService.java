@@ -30,4 +30,44 @@ public interface HotspotService {
 
   @JsonRequest
   CompletableFuture<CheckLocalDetectionSupportedResponse> checkLocalDetectionSupported(CheckLocalDetectionSupportedParams params);
+
+  /**
+   * The list of available statuses differs between SonarQube and SonarCloud, so different values will be returned based on the connectionId:
+   * <ul>
+   *   <li>For SonarCloud, the allowed statuses are {@link HotspotStatus#TO_REVIEW}, {@link HotspotStatus#SAFE} and {@link HotspotStatus#FIXED}</li>
+   *   <li>For SonarQube, on top of the previous ones, the {@link HotspotStatus#ACKNOWLEDGED} status is also allowed</li>
+   * </ul>
+   * If the connectionId provided as a parameter is unknown, the returned future will fail.
+   */
+  @JsonRequest
+  CompletableFuture<ListAllowedStatusesResponse> listAllowedStatuses(ListAllowedStatusesParams params);
+
+  /**
+   * <p>This method achieves several things:
+   * <ul>
+   *   <li>Changes the hotspot status on the SonarQube bound to the provided configuration scope</li>
+   *   <li>Updates the hotspot status in the local storage</li>
+   *   <li>Increment the 'hotspot.status_changed_count' counter for telemetry</li>
+   * </ul>
+   *</p>
+   * <p>
+   * This method will fail if:
+   * <ul>
+   *   <li>there is a communication problem with the server: network outage, server is down, unauthorized</li>
+   * </ul>
+   * In those cases, a failed future will be returned.
+   * </p>
+   *<p>
+   * This method will silently deal with the following conditions:
+   * <ul>
+   *   <li>the provided configuration scope ID is unknown</li>
+   *   <li>the connection bound to the configuration scope is unknown</li>
+   *   <li>the connection bound to the configuration scope targets SonarCloud, for which we don't support hotspots</li>
+   *   <li>the hotspotKey is not found in the local storage</li>
+   * </ul>
+   * In those cases a completed future will be returned.
+   * </p>
+   */
+  @JsonRequest
+  CompletableFuture<Void> changeStatus(ChangeHotspotStatusParams params);
 }
