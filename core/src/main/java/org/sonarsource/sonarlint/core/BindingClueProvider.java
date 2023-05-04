@@ -223,7 +223,7 @@ public class BindingClueProvider {
     private final String sonarProjectKey;
     private final String serverUrl;
 
-    private SonarQubeBindingClue(@Nullable String sonarProjectKey, String serverUrl) {
+    SonarQubeBindingClue(@Nullable String sonarProjectKey, String serverUrl) {
       this.sonarProjectKey = sonarProjectKey;
       this.serverUrl = serverUrl;
     }

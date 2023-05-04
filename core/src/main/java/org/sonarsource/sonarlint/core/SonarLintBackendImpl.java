@@ -70,7 +70,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
 
   private final ExecutorService clientEventsExecutorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Client Events Processor"));
 
-  private final BindingSuggestionProvider bindingSuggestionProvider;
+  private final BindingSuggestionProviderImpl bindingSuggestionProvider;
   private final PluginsServiceImpl pluginsService;
   private final AuthenticationHelperServiceImpl authenticationHelperService;
   private final RulesExtractionHelper rulesExtractionHelper;
@@ -97,7 +97,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     this.hotspotService = new HotspotServiceImpl(client, configurationRepository, connectionConfigurationRepository, telemetryService);
     var bindingClueProvider = new BindingClueProvider(connectionConfigurationRepository, client);
     var sonarProjectCache = new SonarProjectsCache(serverApiProvider);
-    bindingSuggestionProvider = new BindingSuggestionProvider(configurationRepository, connectionConfigurationRepository, client, bindingClueProvider, sonarProjectCache);
+    bindingSuggestionProvider = new BindingSuggestionProviderImpl(configurationRepository, connectionConfigurationRepository, client, bindingClueProvider, sonarProjectCache);
     this.embeddedServer = new EmbeddedServer(client, connectionService, awaitingUserTokenFutureRepository, configurationService, bindingSuggestionProvider, serverApiProvider,
       telemetryService);
     this.authenticationHelperService = new AuthenticationHelperServiceImpl(client, embeddedServer, awaitingUserTokenFutureRepository);
@@ -191,6 +191,11 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   @Override
   public RulesServiceImpl getRulesService() {
     return rulesService;
+  }
+
+  @Override
+  public BindingSuggestionProviderImpl getBindingService() {
+    return bindingSuggestionProvider;
   }
 
   public SonarProjectBranchService getSonarProjectBranchService() {

@@ -29,14 +29,19 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
+import org.sonarsource.sonarlint.core.clientapi.backend.binding.BindingService;
+import org.sonarsource.sonarlint.core.clientapi.backend.binding.GetBindingSuggestionParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingSuggestionDto;
-import org.sonarsource.sonarlint.core.clientapi.client.SuggestBindingParams;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.SuggestBindingParams;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.GetBindingSuggestionsResponse;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
@@ -47,12 +52,13 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 
 import static java.lang.String.join;
+import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singlePlural;
 
-public class BindingSuggestionProvider {
+public class BindingSuggestionProviderImpl implements BindingService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final ConfigurationRepository configRepository;
@@ -63,13 +69,13 @@ public class BindingSuggestionProvider {
   private final ExecutorService executorService;
   private final AtomicBoolean enabled = new AtomicBoolean(true);
 
-  public BindingSuggestionProvider(ConfigurationRepository configRepository, ConnectionConfigurationRepository connectionRepository, SonarLintClient client,
+  public BindingSuggestionProviderImpl(ConfigurationRepository configRepository, ConnectionConfigurationRepository connectionRepository, SonarLintClient client,
     BindingClueProvider bindingClueProvider, SonarProjectsCache sonarProjectsCache) {
     this(configRepository, connectionRepository, client, bindingClueProvider, sonarProjectsCache, new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
       new LinkedBlockingQueue<>(), r -> new Thread(r, "Binding Suggestion Provider")));
   }
 
-  BindingSuggestionProvider(ConfigurationRepository configRepository, ConnectionConfigurationRepository connectionRepository, SonarLintClient client,
+  BindingSuggestionProviderImpl(ConfigurationRepository configRepository, ConnectionConfigurationRepository connectionRepository, SonarLintClient client,
     BindingClueProvider bindingClueProvider, SonarProjectsCache sonarProjectsCache, ExecutorService executorService) {
     this.configRepository = configRepository;
     this.connectionRepository = connectionRepository;
@@ -117,22 +123,33 @@ public class BindingSuggestionProvider {
     }
   }
 
+  @Override
+  public CompletableFuture<GetBindingSuggestionsResponse> getBindingSuggestions(GetBindingSuggestionParams params) {
+    return CompletableFuture.supplyAsync(() -> {
+      var suggestions = computeBindingSuggestions(Set.of(params.getConfigScopeId()), Set.of(params.getConnectionId()));
+      return new GetBindingSuggestionsResponse(suggestions);
+    }, executorService);
+  }
+
   private void queueBindingSuggestionComputation(Set<String> configScopeIds, Set<String> candidateConnectionIds) {
     executorService.submit(() -> {
-      try {
-        if (enabled.get()) {
-          bindingSuggestionComputation(configScopeIds, candidateConnectionIds);
-        } else {
-          LOG.debug("Skipping binding suggestion computation as it is disabled");
-        }
-      } catch (InterruptedException e) {
-        LOG.debug("Binding suggestion computation was interrupted", e);
-        Thread.currentThread().interrupt();
+      if (enabled.get()) {
+        computeAndNotifyBindingSuggestions(configScopeIds, candidateConnectionIds);
+      } else {
+        LOG.debug("Skipping binding suggestion computation as it is disabled");
       }
     });
   }
 
-  private void bindingSuggestionComputation(Set<String> configScopeIds, Set<String> candidateConnectionIds) throws InterruptedException {
+  private void computeAndNotifyBindingSuggestions(Set<String> configScopeIds, Set<String> candidateConnectionIds) {
+    Map<String, List<BindingSuggestionDto>> suggestions = computeBindingSuggestions(configScopeIds, candidateConnectionIds);
+    if (!suggestions.isEmpty()) {
+      client.suggestBinding(new SuggestBindingParams(suggestions));
+    }
+  }
+
+  @NonNull
+  private Map<String, List<BindingSuggestionDto>> computeBindingSuggestions(Set<String> configScopeIds, Set<String> candidateConnectionIds) {
     var eligibleConfigScopesForBindingSuggestion = new HashSet<String>();
     for (var configScopeId : configScopeIds) {
       if (isScopeEligibleForBindingSuggestion(configScopeId)) {
@@ -141,18 +158,24 @@ public class BindingSuggestionProvider {
     }
 
     if (eligibleConfigScopesForBindingSuggestion.isEmpty()) {
-      return;
+      return emptyMap();
     }
 
     Map<String, List<BindingSuggestionDto>> suggestions = new HashMap<>();
 
-    for (var configScopeId : eligibleConfigScopesForBindingSuggestion) {
-      var scopeSuggestions = suggestBindingForEligibleScope(configScopeId, candidateConnectionIds);
-      LOG.debug("Found {} {} for configuration scope '{}'", scopeSuggestions.size(), singlePlural(scopeSuggestions.size(), "suggestion", "suggestions"), configScopeId);
-      suggestions.put(configScopeId, scopeSuggestions);
+    try {
+      for (var configScopeId : eligibleConfigScopesForBindingSuggestion) {
+        var scopeSuggestions = suggestBindingForEligibleScope(configScopeId, candidateConnectionIds);
+        LOG.debug("Found {} {} for configuration scope '{}'", scopeSuggestions.size(), singlePlural(scopeSuggestions.size(), "suggestion"
+          , "suggestions"), configScopeId);
+        suggestions.put(configScopeId, scopeSuggestions);
+      }
+    } catch (InterruptedException e) {
+      LOG.debug("Binding suggestion computation was interrupted", e);
+      Thread.currentThread().interrupt();
     }
 
-    client.suggestBinding(new SuggestBindingParams(suggestions));
+    return suggestions;
   }
 
   private List<BindingSuggestionDto> suggestBindingForEligibleScope(String checkedConfigScopeId, Set<String> candidateConnectionIds) throws InterruptedException {

@@ -25,14 +25,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.client.api.util.TextSearchIndex;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
+import org.sonarsource.sonarlint.core.clientapi.backend.binding.GetBindingSuggestionParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingSuggestionDto;
-import org.sonarsource.sonarlint.core.clientapi.client.SuggestBindingParams;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
@@ -75,7 +78,7 @@ class BindingSuggestionProviderTests {
   private final BindingClueProvider bindingClueProvider = mock(BindingClueProvider.class);
   private final SonarProjectsCache sonarProjectsCache = mock(SonarProjectsCache.class);
 
-  private final BindingSuggestionProvider underTest = new BindingSuggestionProvider(configRepository, connectionRepository, client, bindingClueProvider, sonarProjectsCache, MoreExecutors.newDirectExecutorService());
+  private final BindingSuggestionProviderImpl underTest = new BindingSuggestionProviderImpl(configRepository, connectionRepository, client, bindingClueProvider, sonarProjectsCache, MoreExecutors.newDirectExecutorService());
 
   @BeforeEach
   public void setup() {
@@ -311,6 +314,28 @@ class BindingSuggestionProviderTests {
     assertThat(params.getSuggestions().get(CONFIG_SCOPE_ID_1))
       .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
       .containsOnly(tuple(SC_1_ID, PROJECT_KEY_1, "Project 1"));
+  }
+
+  @Test
+  void get_suggested_binding() throws InterruptedException, ExecutionException {
+    when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
+    when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "foo-bar"));
+    when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
+    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID)))
+      .thenReturn(List.of(
+        new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.SonarQubeBindingClue(null, null), Set.of(SQ_1_ID))));
+    var searchIndex = new TextSearchIndex<ServerProject>();
+    searchIndex.index(SERVER_PROJECT_1, "foo bar garbage1");
+    when(sonarProjectsCache.getTextSearchIndex(SQ_1_ID)).thenReturn(searchIndex);
+    when(sonarProjectsCache.getSonarProject(SQ_1_ID, PROJECT_KEY_1)).thenReturn(Optional.empty());
+
+    var suggestBindingParamsCompletableFuture = underTest.getBindingSuggestions(new GetBindingSuggestionParams(CONFIG_SCOPE_ID_1, SQ_1_ID));
+    assertThat(suggestBindingParamsCompletableFuture).succeedsWithin(1, TimeUnit.MINUTES);
+    assertThat(suggestBindingParamsCompletableFuture.get().getSuggestions()).hasSize(1);
+    assertThat(suggestBindingParamsCompletableFuture.get().getSuggestions().get(CONFIG_SCOPE_ID_1))
+      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
+      .containsOnly(
+        tuple(SQ_1_ID, PROJECT_KEY_1, "Project 1"));
   }
 
   @Test

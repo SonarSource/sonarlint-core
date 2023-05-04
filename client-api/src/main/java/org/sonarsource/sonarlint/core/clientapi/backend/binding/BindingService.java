@@ -17,24 +17,18 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.client;
+package org.sonarsource.sonarlint.core.clientapi.backend.binding;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
-import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingSuggestionDto;
+import java.util.concurrent.CompletableFuture;
+import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.GetBindingSuggestionsResponse;
 
-public class SuggestBindingParams {
+public interface BindingService {
 
-  Map<String, List<BindingSuggestionDto>> suggestions = new HashMap<>();
-
-  public SuggestBindingParams(@NonNull Map<String, List<BindingSuggestionDto>> suggestions) {
-    this.suggestions = suggestions;
-  }
-
-  @NonNull
-  public Map<String, List<BindingSuggestionDto>> getSuggestions() {
-    return suggestions;
-  }
+  /**
+   * Calculates a suggested binding for a 'configScopeId' and 'connectionId' specified in the {@link GetBindingSuggestionParams}
+   * @return {@link GetBindingSuggestionsResponse} containing binding suggestions
+   */
+  @JsonRequest
+  CompletableFuture<GetBindingSuggestionsResponse> getBindingSuggestions(GetBindingSuggestionParams params);
 }

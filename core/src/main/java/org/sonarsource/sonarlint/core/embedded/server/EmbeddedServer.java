@@ -29,7 +29,7 @@ import org.apache.hc.core5.http.impl.bootstrap.ServerBootstrap;
 import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.io.CloseMode;
-import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
+import org.sonarsource.sonarlint.core.BindingSuggestionProviderImpl;
 import org.sonarsource.sonarlint.core.ConfigurationServiceImpl;
 import org.sonarsource.sonarlint.core.ConnectionServiceImpl;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
@@ -53,12 +53,12 @@ public class EmbeddedServer {
   private final ConnectionServiceImpl connectionService;
   private final AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository;
   private final ConfigurationServiceImpl configurationService;
-  private final BindingSuggestionProvider bindingSuggestionProvider;
+  private final BindingSuggestionProviderImpl bindingSuggestionProvider;
   private final ServerApiProvider serverApiProvider;
   private final TelemetryServiceImpl telemetryService;
 
   public EmbeddedServer(SonarLintClient client, ConnectionServiceImpl connectionService, AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository,
-    ConfigurationServiceImpl configurationService, BindingSuggestionProvider bindingSuggestionProvider, ServerApiProvider serverApiProvider,
+    ConfigurationServiceImpl configurationService, BindingSuggestionProviderImpl bindingSuggestionProvider, ServerApiProvider serverApiProvider,
     TelemetryServiceImpl telemetryService) {
     this.client = client;
     this.connectionService = connectionService;
