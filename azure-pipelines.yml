@@ -1,5 +1,13 @@
 trigger:
-- master
+  branches:
+    include:
+      - master
+  paths:
+    exclude:
+      - docs/**/*
+      - spec/**/*
+      - README.md
+
 
 schedules:
 - cron: "0 0 * * *"
