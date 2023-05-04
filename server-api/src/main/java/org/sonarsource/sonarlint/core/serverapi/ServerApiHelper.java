@@ -94,8 +94,7 @@ public class ServerApiHelper {
     var url = buildEndpointUrl(relativePath);
 
     var response = client.get(url);
-    var duration = Duration.between(startTime, Instant.now());
-    LOG.debug("{} {} {} | response time={}ms", "GET", response.code(), url, duration.toMillis());
+    logResponseDuration(url, startTime, response);
     return response;
   }
 
@@ -105,9 +104,14 @@ public class ServerApiHelper {
 
     return client.getAsync(url)
       .whenComplete((response, error) -> {
-        var duration = Duration.between(startTime, Instant.now());
-        LOG.debug("{} {} {} | response time={}ms", "GET", response.code(), url, duration.toMillis());
+        logResponseDuration(url, startTime, response);
       });
+  }
+
+  private static void logResponseDuration(String url, Instant startTime, @Nullable HttpClient.Response response) {
+    var duration = Duration.between(startTime, Instant.now());
+    var status = response == null ? "no response" : response.code();
+    LOG.debug("{} {} {} | response time={}ms", "GET", status, url, duration.toMillis());
   }
 
   private String buildEndpointUrl(String relativePath) {
