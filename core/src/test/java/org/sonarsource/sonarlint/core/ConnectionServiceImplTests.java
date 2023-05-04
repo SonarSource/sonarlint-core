@@ -78,14 +78,14 @@ class ConnectionServiceImplTests {
 
     underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_1), List.of()));
     assertThat(repository.getConnectionsById()).containsOnlyKeys("sq1");
-    assertThat(repository.getConnectionById("sq1")).usingRecursiveComparison().isEqualTo(SQ_DTO_1);
+    assertThat(repository.getConnectionById("sq1")).usingRecursiveComparison().ignoringFields("kind").isEqualTo(SQ_DTO_1);
 
     underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_1, SQ_DTO_2), List.of()));
     assertThat(repository.getConnectionsById()).containsOnlyKeys("sq1", "sq2");
 
     underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_1, SQ_DTO_2), List.of(SC_DTO_1)));
     assertThat(repository.getConnectionsById()).containsOnlyKeys("sq1", "sq2", "sc1");
-    assertThat(repository.getConnectionById("sc1")).usingRecursiveComparison().isEqualTo(SC_DTO_1);
+    assertThat(repository.getConnectionById("sc1")).usingRecursiveComparison().ignoringFields("kind").isEqualTo(SC_DTO_1);
 
     var captor = ArgumentCaptor.forClass(ConnectionConfigurationAddedEvent.class);
     verify(eventBus, times(3)).post(captor.capture());
@@ -101,7 +101,7 @@ class ConnectionServiceImplTests {
 
     underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_1, SQ_DTO_1_DUP), List.of()));
 
-    assertThat(repository.getConnectionById("sq1")).usingRecursiveComparison().isEqualTo(SQ_DTO_1_DUP);
+    assertThat(repository.getConnectionById("sq1")).usingRecursiveComparison().ignoringFields("kind").isEqualTo(SQ_DTO_1_DUP);
 
     assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).containsExactly("Duplicate connection registered: sq1");
   }
@@ -144,7 +144,7 @@ class ConnectionServiceImplTests {
 
     underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_1_DUP), List.of()));
 
-    assertThat(repository.getConnectionById("sq1")).usingRecursiveComparison().isEqualTo(SQ_DTO_1_DUP);
+    assertThat(repository.getConnectionById("sq1")).usingRecursiveComparison().ignoringFields("kind").isEqualTo(SQ_DTO_1_DUP);
 
     var captor = ArgumentCaptor.forClass(ConnectionConfigurationUpdatedEvent.class);
     verify(eventBus, times(1)).post(captor.capture());

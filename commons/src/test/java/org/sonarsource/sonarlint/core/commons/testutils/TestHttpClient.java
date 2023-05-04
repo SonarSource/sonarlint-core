@@ -26,8 +26,6 @@ import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
@@ -54,6 +52,14 @@ public class TestHttpClient implements HttpClient {
   @Override
   public CompletableFuture<Response> getAsync(String url) {
     var request = requestBuilder(url).GET().build();
+    return executeRequestAsync(request);
+  }
+
+  @Override
+  public CompletableFuture<Response> postAsync(String url, String contentType, String body) {
+    var request = requestBuilder(url)
+      .headers("Content-Type", contentType)
+      .POST(HttpRequest.BodyPublishers.ofString(body)).build();
     return executeRequestAsync(request);
   }
 

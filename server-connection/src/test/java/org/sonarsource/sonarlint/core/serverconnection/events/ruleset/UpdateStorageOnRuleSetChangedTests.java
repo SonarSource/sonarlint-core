@@ -46,7 +46,7 @@ class UpdateStorageOnRuleSetChangedTests {
 
   @BeforeEach
   void setUp(@TempDir Path tempDir) {
-    projectStorage = new ProjectStorage(tempDir);
+    projectStorage = new ProjectStorage(tempDir, tempDir);
     handler = new UpdateStorageOnRuleSetChanged(projectStorage);
   }
 

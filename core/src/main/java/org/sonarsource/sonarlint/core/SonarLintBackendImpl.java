@@ -94,7 +94,8 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     var serverApiProvider = new ServerApiProvider(connectionConfigurationRepository, client);
     rulesService = new RulesServiceImpl(serverApiProvider, configurationRepository, rulesRepository);
     this.telemetryService = new TelemetryServiceImpl();
-    this.hotspotService = new HotspotServiceImpl(client, configurationRepository, connectionConfigurationRepository, telemetryService);
+    this.storageFacade = new StorageFacade();
+    this.hotspotService = new HotspotServiceImpl(client, storageFacade, configurationRepository, connectionConfigurationRepository, serverApiProvider, telemetryService);
     var bindingClueProvider = new BindingClueProvider(connectionConfigurationRepository, client);
     var sonarProjectCache = new SonarProjectsCache(serverApiProvider);
     bindingSuggestionProvider = new BindingSuggestionProviderImpl(configurationRepository, connectionConfigurationRepository, client, bindingClueProvider, sonarProjectCache);
@@ -105,7 +106,6 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     var sonarProjectBranchRepository = new ActiveSonarProjectBranchRepository();
     this.sonarProjectBranchService = new SonarProjectBranchServiceImpl(sonarProjectBranchRepository, configurationRepository, clientEventBus);
     this.synchronizationServiceImpl = new SynchronizationServiceImpl(client, configurationRepository, sonarProjectBranchService, serverApiProvider);
-    this.storageFacade = new StorageFacade();
     this.analysisService = new AnalysisServiceImpl(configurationRepository, storageFacade);
     clientEventBus.register(bindingSuggestionProvider);
     clientEventBus.register(sonarProjectCache);
@@ -124,7 +124,6 @@ public class SonarLintBackendImpl implements SonarLintBackend {
       params.getEnabledLanguagesInStandaloneMode(), enabledLanguagesInConnectedMode);
     rulesExtractionHelper.initialize(params.getEnabledLanguagesInStandaloneMode(), enabledLanguagesInConnectedMode, params.isEnableSecurityHotspots());
     rulesService.initialize(params.getStorageRoot(), params.getStandaloneRuleConfigByKey());
-    hotspotService.initialize(params.getStorageRoot());
     var sonarlintUserHome = Optional.ofNullable(params.getSonarlintUserHome()).map(Paths::get).orElse(SonarLintUserHome.get());
     var workDir = params.getWorkDir();
     if (workDir == null) {
@@ -144,7 +143,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
       synchronizationServiceImpl.initialize(params.getStorageRoot(), workDir, enabledLanguagesInConnectedMode, params.getConnectedModeEmbeddedPluginPathsByKey().keySet(),
         params.areTaintVulnerabilitiesEnabled());
     }
-    storageFacade.initialize(params.getStorageRoot());
+    storageFacade.initialize(params.getStorageRoot(), workDir);
     analysisService.initialize(params.getEnabledLanguagesInStandaloneMode(), enabledLanguagesInConnectedMode);
 
     return CompletableFuture.completedFuture(null);

@@ -24,20 +24,24 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 import org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils;
+
+import static org.sonarsource.sonarlint.core.commons.http.HttpClient.FORM_URL_ENCODED_CONTENT_TYPE;
+import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 
 public class HotspotApi {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -61,6 +65,23 @@ public class HotspotApi {
 
   public static boolean permitsTracking(boolean isSonarCloud, Supplier<Version> serverVersion) {
     return !isSonarCloud && serverVersion.get().compareToIgnoreQualifier(TRACKING_COMPATIBLE_MIN_SQ_VERSION) >= 0;
+  }
+
+  public CompletableFuture<Void> changeStatusAsync(String hotspotKey, HotspotReviewStatus status) {
+    if (helper.isSonarCloud()) {
+      // hotspots are not supported on SonarCloud at the moment
+      return CompletableFuture.completedFuture(null);
+    }
+    var isReviewed = status.isReviewed();
+    var webApiStatus = isReviewed ? "REVIEWED" : "TO_REVIEW";
+    var body = "hotspot=" + urlEncode(hotspotKey) + "&status=" + urlEncode(webApiStatus);
+    if (isReviewed) {
+      body += "&resolution=" + urlEncode(status.name());
+    }
+    return helper.postAsync("api/hotspots/change_status", FORM_URL_ENCODED_CONTENT_TYPE, body)
+      .thenAccept(response -> {
+        // no data, return void
+      });
   }
 
   public Collection<ServerHotspot> getAll(String projectKey, String branchName, ProgressMonitor progress) {
@@ -98,9 +119,9 @@ public class HotspotApi {
 
   private static String getSearchUrl(String projectKey, @Nullable String filePath, String branchName) {
     return HOTSPOTS_SEARCH_API_URL
-      + "?projectKey=" + UrlUtils.urlEncode(projectKey)
-      + (filePath != null ? ("&files=" + UrlUtils.urlEncode(filePath)) : "")
-      + "&branch=" + UrlUtils.urlEncode(branchName);
+      + "?projectKey=" + urlEncode(projectKey)
+      + (filePath != null ? ("&files=" + urlEncode(filePath)) : "")
+      + "&branch=" + urlEncode(branchName);
   }
 
   public Optional<ServerHotspotDetails> fetch(GetSecurityHotspotRequestParams params) {
@@ -163,8 +184,8 @@ public class HotspotApi {
 
   private static String getShowUrl(String hotspotKey, String projectKey) {
     return HOTSPOTS_SHOW_API_URL
-      + "?projectKey=" + UrlUtils.urlEncode(projectKey)
-      + "&hotspot=" + UrlUtils.urlEncode(hotspotKey);
+      + "?projectKey=" + urlEncode(projectKey)
+      + "&hotspot=" + urlEncode(hotspotKey);
   }
 
   private static TextRange convertTextRange(Common.TextRange textRange) {

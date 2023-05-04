@@ -85,7 +85,7 @@ public class TelemetryHttpClient {
     var analyzers = TelemetryUtils.toPayload(data.analyzers());
     var notifications = TelemetryUtils.toPayload(attributesProvider.devNotificationsDisabled(), data.notifications());
     var showHotspotPayload = new ShowHotspotPayload(data.showHotspotRequestsCount());
-    var hotspotPayload = new HotspotPayload(data.openHotspotInBrowserCount());
+    var hotspotPayload = new HotspotPayload(data.openHotspotInBrowserCount(), data.hotspotStatusChangedCount());
     var taintVulnerabilitiesPayload = new TaintVulnerabilitiesPayload(data.taintVulnerabilitiesInvestigatedLocallyCount(),
       data.taintVulnerabilitiesInvestigatedRemotelyCount());
     var os = System.getProperty("os.name");

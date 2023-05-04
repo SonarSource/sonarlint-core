@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.repository.connection;
 
 import java.util.Objects;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 
 public class SonarCloudConnectionConfiguration extends AbstractConnectionConfiguration {
 
@@ -29,7 +30,7 @@ public class SonarCloudConnectionConfiguration extends AbstractConnectionConfigu
   private final String organization;
 
   public SonarCloudConnectionConfiguration(String connectionId, String organization, boolean disableNotifications) {
-    super(connectionId, disableNotifications);
+    super(connectionId, ConnectionKind.SONARCLOUD, disableNotifications);
     this.organization = organization;
   }
 

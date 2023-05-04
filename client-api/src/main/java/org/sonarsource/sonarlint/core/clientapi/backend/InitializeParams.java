@@ -92,6 +92,7 @@ public class InitializeParams {
     return storageRoot;
   }
 
+  @CheckForNull
   public Path getWorkDir() {
     return workDir;
   }

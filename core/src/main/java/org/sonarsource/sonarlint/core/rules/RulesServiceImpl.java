@@ -107,7 +107,7 @@ public class RulesServiceImpl implements RulesService {
   }
 
   private Optional<ServerActiveRule> findServerActiveRuleInStorage(Binding binding, String ruleKey) {
-    var projectStorage = new ProjectStorage(storageRoot.resolve(encodeForFs(binding.getConnectionId())).resolve("projects"));
+    var projectStorage = new ProjectStorage(storageRoot.resolve(encodeForFs(binding.getConnectionId())).resolve("projects"), null);
     AnalyzerConfiguration analyzerConfiguration;
     try {
       analyzerConfiguration = projectStorage

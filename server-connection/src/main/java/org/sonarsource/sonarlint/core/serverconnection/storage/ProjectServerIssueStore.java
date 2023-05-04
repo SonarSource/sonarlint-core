@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
@@ -40,6 +41,11 @@ public interface ProjectServerIssueStore {
 
   void replaceAllHotspotsOfFile(String branchName, String serverFilePath, Collection<ServerHotspot> serverHotspots);
 
+  /**
+   * Update the resolution status of a hotspot by its key.
+   * @return true if the hotspot with the given key was found, else false
+   */
+  boolean changeHotspotStatus(String hotspotKey, HotspotReviewStatus newStatus);
   /**
    * Store issues for a single file by replacing existing ones and moving issues if necessary.
    */

@@ -49,6 +49,7 @@ import jetbrains.exodus.util.CompressBackupUtil;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
@@ -383,6 +384,19 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       var fileEntity = getOrCreateFile(branch, serverFilePath, txn);
       replaceAllHotspotsOfFile(serverHotspots, txn, fileEntity);
     }));
+  }
+
+  @Override
+  public boolean changeHotspotStatus(String hotspotKey, HotspotReviewStatus newStatus) {
+    return entityStore.computeInTransaction(txn -> {
+      var optionalEntity = findUnique(txn, HOTSPOT_ENTITY_TYPE, KEY_PROPERTY_NAME, hotspotKey);
+      if (optionalEntity.isPresent()) {
+        var hotspotEntity = optionalEntity.get();
+        hotspotEntity.setProperty(RESOLVED_PROPERTY_NAME, newStatus != HotspotReviewStatus.TO_REVIEW);
+        return true;
+      }
+      return false;
+    });
   }
 
   private static void replaceAllHotspotsOfFile(Collection<ServerHotspot> hotspots, @NotNull StoreTransaction txn, Entity fileEntity) {

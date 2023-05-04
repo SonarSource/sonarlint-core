@@ -30,6 +30,7 @@ import java.util.function.Consumer;
 public interface HttpClient {
 
   String JSON_CONTENT_TYPE = "application/json; charset=utf-8";
+  String FORM_URL_ENCODED_CONTENT_TYPE = "application/x-www-form-urlencoded";
 
   interface Response extends Closeable {
 
@@ -59,6 +60,11 @@ public interface HttpClient {
   AsyncRequest getEventStream(String url, HttpConnectionListener connectionListener, Consumer<String> messageConsumer);
 
   Response post(String url, String contentType, String body);
+
+  default CompletableFuture<Response> postAsync(String url, String contentType, String body) {
+    // default implementation to keep backward compatibility
+    throw new UnsupportedOperationException();
+  }
 
   Response delete(String url, String contentType, String body);
 

@@ -23,6 +23,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Objects;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 
 import static org.apache.commons.lang.StringUtils.removeEnd;
 
@@ -31,7 +32,7 @@ public class SonarQubeConnectionConfiguration extends AbstractConnectionConfigur
   private final String serverUrl;
 
   public SonarQubeConnectionConfiguration(String connectionId, String serverUrl, boolean disableNotifications) {
-    super(connectionId, disableNotifications);
+    super(connectionId, ConnectionKind.SONARQUBE, disableNotifications);
     this.serverUrl = serverUrl;
   }
 

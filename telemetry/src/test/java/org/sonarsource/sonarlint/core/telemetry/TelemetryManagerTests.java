@@ -388,6 +388,7 @@ class TelemetryManagerTests {
     assertThat(reloaded.notifications()).isEmpty();
     assertThat(reloaded.taintVulnerabilitiesInvestigatedLocallyCount()).isZero();
     assertThat(reloaded.taintVulnerabilitiesInvestigatedRemotelyCount()).isZero();
+    assertThat(reloaded.hotspotStatusChangedCount()).isZero();
     assertThat(reloaded.getRaisedIssuesRules()).isEmpty();
     assertThat(reloaded.getQuickFixesApplied()).isEmpty();
     assertThat(reloaded.getHelpAndFeedbackLinkClickedCounter()).isEmpty();

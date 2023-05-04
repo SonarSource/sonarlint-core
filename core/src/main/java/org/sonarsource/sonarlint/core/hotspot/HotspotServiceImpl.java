@@ -19,9 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.hotspot;
 
-import java.nio.file.Path;
-import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.ChangeHotspotStatusParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.CheckLocalDetectionSupportedParams;
@@ -32,41 +33,40 @@ import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.ListAllowedStatu
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.ListAllowedStatusesResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.OpenHotspotInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
+import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.repository.config.Binding;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
+import org.sonarsource.sonarlint.core.serverconnection.StorageFacade;
 import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ServerInfoStorage;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
 import static org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi.TRACKING_COMPATIBLE_MIN_SQ_VERSION;
-import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 
 public class HotspotServiceImpl implements HotspotService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String LOCAL_DETECTION_NOT_SUPPORTED_REASON = "The project is not bound to SonarQube 9.7+";
-
   private final SonarLintClient client;
   private final ConfigurationRepository configurationRepository;
   private final ConnectionConfigurationRepository connectionRepository;
 
+  private final ServerApiProvider serverApiProvider;
   private final TelemetryServiceImpl telemetryService;
-  private Path storageRoot;
+  private final StorageFacade storageFacade;
 
-  public HotspotServiceImpl(SonarLintClient client, ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository,
-    TelemetryServiceImpl telemetryService) {
+  public HotspotServiceImpl(SonarLintClient client, StorageFacade storageFacade, ConfigurationRepository configurationRepository,
+    ConnectionConfigurationRepository connectionRepository, ServerApiProvider serverApiProvider, TelemetryServiceImpl telemetryService) {
     this.client = client;
+    this.storageFacade = storageFacade;
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
+    this.serverApiProvider = serverApiProvider;
     this.telemetryService = telemetryService;
-  }
-
-  public void initialize(Path storageRoot) {
-    this.storageRoot = storageRoot;
   }
 
   @Override
@@ -100,17 +100,58 @@ public class HotspotServiceImpl implements HotspotService {
 
   @Override
   public CompletableFuture<ListAllowedStatusesResponse> listAllowedStatuses(ListAllowedStatusesParams params) {
-    return CompletableFuture.completedFuture(new ListAllowedStatusesResponse(Collections.emptyList()));
+    var connectionId = params.getConnectionId();
+    var connection = connectionRepository.getConnectionById(connectionId);
+    if (connection == null) {
+      return CompletableFuture.failedFuture(new IllegalArgumentException("Connection with ID '" + connectionId + "' does not exist"));
+    }
+    var allowedStatuses = HotspotReviewStatus.allowedStatusesOn(connection.getKind());
+    return CompletableFuture.completedFuture(toResponse(allowedStatuses));
+  }
+
+  private ListAllowedStatusesResponse toResponse(List<HotspotReviewStatus> coreStatuses) {
+    return new ListAllowedStatusesResponse(coreStatuses.stream().map(s -> HotspotStatus.valueOf(s.name()))
+      // respect ordering of the client-api enum for the UI
+      .sorted()
+      .collect(Collectors.toList()));
   }
 
   @Override
   public CompletableFuture<Void> changeStatus(ChangeHotspotStatusParams params) {
-    return CompletableFuture.completedFuture(null);
+    var configurationScopeId = params.getConfigurationScopeId();
+    var optionalBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
+    return optionalBinding
+      .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
+      .map(connection -> {
+        if (connection.isSonarCloud()) {
+          return CompletableFuture.<Void>completedFuture(null);
+        }
+        var reviewStatus = toCore(params.getNewStatus());
+        return connection.hotspot().changeStatusAsync(params.getHotspotKey(), reviewStatus)
+          .thenAccept(nothing -> {
+            saveStatusInStorage(optionalBinding.get(), params.getHotspotKey(), reviewStatus);
+            telemetryService.hotspotStatusChanged();
+          })
+          .exceptionally(throwable -> {
+            throw new HotspotStatusChangeException(throwable);
+          });
+      })
+      .orElseGet(() -> CompletableFuture.completedFuture(null));
+  }
+
+  private HotspotReviewStatus toCore(HotspotStatus newStatus) {
+    return HotspotReviewStatus.valueOf(newStatus.name());
+  }
+
+  private void saveStatusInStorage(Binding binding, String hotspotKey, HotspotReviewStatus newStatus) {
+    storageFacade.projectsStorageFacade(binding.getConnectionId())
+      .findings(binding.getSonarProjectKey())
+      .changeHotspotStatus(hotspotKey, newStatus);
   }
 
   private boolean isLocalDetectionSupported(boolean isSonarCloud, String connectionId) {
     return !isSonarCloud &&
-      new ServerInfoStorage(storageRoot.resolve(encodeForFs(connectionId))).getServerInfo()
+      storageFacade.getServerInfo(connectionId).getServerInfo()
         .map(StoredServerInfo::getVersion)
         .map(version -> version.compareToIgnoreQualifier(TRACKING_COMPATIBLE_MIN_SQ_VERSION) >= 0)
         .orElse(false);

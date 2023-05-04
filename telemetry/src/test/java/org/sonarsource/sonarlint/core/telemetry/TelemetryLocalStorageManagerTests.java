@@ -45,7 +45,7 @@ class TelemetryLocalStorageManagerTests {
   private Path filePath;
 
   @BeforeEach
-  void setUp(@TempDir Path temp) throws IOException {
+  void setUp(@TempDir Path temp) {
     filePath = temp.resolve("usage");
   }
 
@@ -194,5 +194,17 @@ class TelemetryLocalStorageManagerTests {
 
     var data2 = storage.tryRead();
     assertThat(data2.openHotspotInBrowserCount()).isEqualTo(2);
+  }
+
+  @Test
+  void should_increment_hotspot_status_changed() {
+    var storage = new TelemetryLocalStorageManager(filePath);
+
+    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementHotspotStatusChangedCount);
+    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementHotspotStatusChangedCount);
+    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementHotspotStatusChangedCount);
+
+    var data = storage.tryRead();
+    assertThat(data.hotspotStatusChangedCount()).isEqualTo(3);
   }
 }

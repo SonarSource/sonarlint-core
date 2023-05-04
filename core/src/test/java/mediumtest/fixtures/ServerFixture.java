@@ -26,6 +26,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
+import mockwebserver3.MockResponse;
+import mockwebserver3.RecordedRequest;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
@@ -34,6 +36,9 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 public class ServerFixture {
+  public static ServerBuilder newSonarQubeServer() {
+    return newSonarQubeServer("99.9");
+  }
   public static ServerBuilder newSonarQubeServer(String version) {
     return new ServerBuilder(ServerKind.SONARQUBE, version);
   }
@@ -46,8 +51,13 @@ public class ServerFixture {
     SONARQUBE, SONARCLOUD
   }
 
+  public enum ServerStatus {
+    UP, DOWN
+  }
+
   public static class ServerBuilder {
     private final ServerKind serverKind;
+    private ServerStatus serverStatus = ServerStatus.UP;
     private final String version;
     private final Map<String, ServerProjectBuilder> projectByProjectKey = new HashMap<>();
     private final Map<String, ServerSourceFileBuilder> sourceFileByComponentKey = new HashMap<>();
@@ -55,6 +65,11 @@ public class ServerFixture {
     public ServerBuilder(ServerKind serverKind, @Nullable String version) {
       this.serverKind = serverKind;
       this.version = version;
+    }
+
+    public ServerBuilder withStatus(ServerStatus status){
+      serverStatus = status;
+      return this;
     }
 
     public ServerBuilder withProject(String projectKey, UnaryOperator<ServerProjectBuilder> projectBuilder) {
@@ -70,7 +85,7 @@ public class ServerFixture {
     }
 
     public Server start() {
-      var server = new Server(serverKind, version, projectByProjectKey, sourceFileByComponentKey);
+      var server = new Server(serverKind, serverStatus, version, projectByProjectKey, sourceFileByComponentKey);
       server.start();
       return server;
     }
@@ -172,15 +187,17 @@ public class ServerFixture {
 
     private final MockWebServerExtensionWithProtobuf mockWebServer = new MockWebServerExtensionWithProtobuf();
     private final ServerKind serverKind;
+    private final ServerStatus serverStatus;
     @Nullable
     private final String version;
     private final Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey;
     private final Map<String, ServerBuilder.ServerSourceFileBuilder> sourceFileByComponentKey;
 
-    public Server(ServerKind serverKind, @Nullable String version,
+    public Server(ServerKind serverKind, ServerStatus serverStatus, @Nullable String version,
       Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey,
       Map<String, ServerBuilder.ServerSourceFileBuilder> sourceFileByComponentKey) {
       this.serverKind = serverKind;
+      this.serverStatus = serverStatus;
       this.version = version;
       this.projectsByProjectKey = projectsByProjectKey;
       this.sourceFileByComponentKey = sourceFileByComponentKey;
@@ -192,10 +209,12 @@ public class ServerFixture {
     }
 
     private void registerWebApiResponses() {
-      registerSystemApiResponses();
-      registerHotspotsApiResponses();
-      registerIssuesApiResponses();
-      registerSourceApiResponses();
+      if (serverStatus == ServerStatus.UP) {
+        registerSystemApiResponses();
+        registerHotspotsApiResponses();
+        registerIssuesApiResponses();
+        registerSourceApiResponses();
+      }
     }
 
     private void registerSystemApiResponses() {
@@ -205,6 +224,7 @@ public class ServerFixture {
 
     private void registerHotspotsApiResponses() {
       registerHotspotsShowApiResponses();
+      registerHotspotsStatusChangeApiResponses();
     }
 
     private void registerHotspotsShowApiResponses() {
@@ -231,6 +251,10 @@ public class ServerFixture {
               .build());
         });
       }));
+    }
+
+    private void registerHotspotsStatusChangeApiResponses() {
+      mockWebServer.addResponse("/api/hotspots/change_status", new MockResponse().setResponseCode(200));
     }
 
     private void registerIssuesApiResponses() {
@@ -286,6 +310,10 @@ public class ServerFixture {
 
     public String url(String path) {
       return mockWebServer.url(path);
+    }
+
+    public RecordedRequest lastRequest() {
+      return mockWebServer.takeRequest();
     }
   }
 }
