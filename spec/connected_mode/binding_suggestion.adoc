@@ -66,7 +66,7 @@ At the end of this step, we should have a possibly empty list of binding clues h
 
 === Connection matching
 
-Candidates for connection matching depend on the trigger. We are not necessarily looking for bindings suggestion among all configured connections.
+Candidates for connection matching depend on the trigger. We are not necessarily looking for binding suggestions among all configured connections.
 
 For each binding clue, find the matching connection(s) among connection candidates.
 
@@ -91,7 +91,7 @@ For each binding clue having a projectKey, search for a xref:../glossary.adoc#so
 ==== Matching based on configuration scope _name_
 
 If no perfect matches were found in the previous step, then for each _binding clue_ with no _projectKey_, we should do a search among all _Sonar Projects_ of their matched connections.
-If there was no binding clues with no _projectKey_, then simply do a search for connection candidates.
+If there were no binding clues with no _projectKey_, then simply do a search for connection candidates.
 
 The matching is based on a scoring described in `TextSearchIndex`. If there is only one _Sonar Project_ with the highest score, then we will return this one, else if there are multiple with top score, then we will return all top candidates. Finally, if there are no matches (#FIXME# or score is too low?), then we should return `NO_MATCHES_FOUND`.
 

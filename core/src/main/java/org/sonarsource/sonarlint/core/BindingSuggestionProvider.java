@@ -176,7 +176,7 @@ public class BindingSuggestionProvider {
           searchGoodMatchInConnections(suggestions, configScopeName, bindingClueWithConnections.getConnectionIds());
         }
         if (cluesWithoutProjectKey.isEmpty()) {
-          searchGoodMatchInConnections(suggestions, configScopeName, connectionRepository.getConnectionsById().keySet());
+          searchGoodMatchInConnections(suggestions, configScopeName, eligibleConnectionIds);
         }
       }
     }

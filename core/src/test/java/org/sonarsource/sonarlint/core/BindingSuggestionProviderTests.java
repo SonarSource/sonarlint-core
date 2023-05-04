@@ -83,7 +83,7 @@ class BindingSuggestionProviderTests {
   }
 
   @Test
-  void trigger_suggest_binding_if_config_flag_turned_on() throws InterruptedException {
+  void trigger_suggest_binding_if_config_flag_turned_on() {
     when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1));
 
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(
@@ -94,7 +94,7 @@ class BindingSuggestionProviderTests {
   }
 
   @Test
-  void dont_trigger_suggest_binding_if_config_flag_turned_off() throws InterruptedException {
+  void dont_trigger_suggest_binding_if_config_flag_turned_off() {
     when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1));
 
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(
@@ -105,7 +105,7 @@ class BindingSuggestionProviderTests {
   }
 
   @Test
-  void trigger_suggest_binding_if_config_scope_added() throws InterruptedException {
+  void trigger_suggest_binding_if_config_scope_added() {
     when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1));
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(ImmutableSortedSet.of(CONFIG_SCOPE_ID_1, CONFIG_SCOPE_ID_2)));
@@ -115,7 +115,7 @@ class BindingSuggestionProviderTests {
   }
 
   @Test
-  void dont_trigger_suggest_binding_if_config_scope_added_but_no_connections() throws InterruptedException {
+  void dont_trigger_suggest_binding_if_config_scope_added_but_no_connections() {
     when(connectionRepository.getConnectionsById()).thenReturn(Map.of());
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(ImmutableSortedSet.of(CONFIG_SCOPE_ID_1, CONFIG_SCOPE_ID_2)));
@@ -125,7 +125,7 @@ class BindingSuggestionProviderTests {
   }
 
   @Test
-  void trigger_suggest_binding_if_connection_added_and_at_least_one_config_scope() throws InterruptedException {
+  void trigger_suggest_binding_if_connection_added_and_at_least_one_config_scope() {
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
     when(configRepository.getConfigScopeIds()).thenReturn(Set.of("id1"));
     underTest.connectionAdded(new ConnectionConfigurationAddedEvent(SQ_1_ID));
@@ -134,7 +134,7 @@ class BindingSuggestionProviderTests {
   }
 
   @Test
-  void dont_trigger_suggest_binding_if_connection_added_but_no_config_scopes() throws InterruptedException {
+  void dont_trigger_suggest_binding_if_connection_added_but_no_config_scopes() {
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
     when(configRepository.getConfigScopeIds()).thenReturn(Set.of());
 
@@ -144,7 +144,7 @@ class BindingSuggestionProviderTests {
   }
 
   @Test
-  void dont_trigger_suggest_binding_if_connection_added_but_then_gone() throws InterruptedException {
+  void dont_trigger_suggest_binding_if_connection_added_but_then_gone() {
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(null);
 
     underTest.connectionAdded(new ConnectionConfigurationAddedEvent(SQ_1_ID));
@@ -153,7 +153,7 @@ class BindingSuggestionProviderTests {
   }
 
   @Test
-  void skip_suggestions_for_non_eligible_config_scopes() throws InterruptedException {
+  void skip_suggestions_for_non_eligible_config_scopes() {
     when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1));
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
 
@@ -183,7 +183,7 @@ class BindingSuggestionProviderTests {
   }
 
   @Test
-  void compute_suggestions_for_config_scope_with_invalid_binding() throws InterruptedException {
+  void compute_suggestions_for_config_scope_with_invalid_binding() {
     when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1));
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
 
@@ -312,6 +312,45 @@ class BindingSuggestionProviderTests {
       .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
       .containsOnly(tuple(SC_1_ID, PROJECT_KEY_1, "Project 1"));
   }
+
+  @Test
+  void search_only_among_connection_candidates() throws InterruptedException {
+    when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1, SC_1_ID, SC_1));
+    when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
+    when(connectionRepository.getConnectionById(SC_1_ID)).thenReturn(SC_1);
+
+    when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "foo-bar"));
+    when(configRepository.getConfigScopeIds()).thenReturn(Set.of(CONFIG_SCOPE_ID_1));
+    when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
+
+    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID)))
+      .thenReturn(List.of(
+        new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1), Set.of(SQ_1_ID, SC_1_ID))));
+
+    when(sonarProjectsCache.getSonarProject(SQ_1_ID, PROJECT_KEY_1)).thenReturn(Optional.empty());
+    when(sonarProjectsCache.getSonarProject(SC_1_ID, PROJECT_KEY_1)).thenReturn(Optional.empty());
+
+    var searchIndex = new TextSearchIndex<ServerProject>();
+    searchIndex.index(SERVER_PROJECT_1, "foo bar garbage1");
+    searchIndex.index(serverProject("key2", "Project 2"), "foo bar garbage2");
+    searchIndex.index(serverProject("key3", "Project 3"), "foo bar more garbage");
+    when(sonarProjectsCache.getTextSearchIndex(SC_1_ID)).thenReturn(searchIndex);
+    when(sonarProjectsCache.getTextSearchIndex(SQ_1_ID)).thenReturn(searchIndex);
+
+    underTest.connectionAdded(new ConnectionConfigurationAddedEvent(SQ_1_ID));
+
+    var captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
+    verify(client).suggestBinding(captor.capture());
+
+    var params = captor.getValue();
+    assertThat(params.getSuggestions()).containsOnlyKeys(CONFIG_SCOPE_ID_1);
+    assertThat(params.getSuggestions().get(CONFIG_SCOPE_ID_1))
+      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
+      .containsOnly(
+        tuple(SQ_1_ID, PROJECT_KEY_1, "Project 1"),
+        tuple(SQ_1_ID, "key2", "Project 2"));
+  }
+
 
   @Test
   void text_search_should_retain_only_top_scores() throws InterruptedException {
