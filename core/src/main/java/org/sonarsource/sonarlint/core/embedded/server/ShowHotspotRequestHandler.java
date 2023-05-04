@@ -33,7 +33,7 @@ import org.apache.hc.core5.http.io.HttpRequestHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.net.URIBuilder;
-import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
+import org.sonarsource.sonarlint.core.BindingSuggestionProviderImpl;
 import org.sonarsource.sonarlint.core.ConfigurationServiceImpl;
 import org.sonarsource.sonarlint.core.ConnectionServiceImpl;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
@@ -57,12 +57,12 @@ class ShowHotspotRequestHandler implements HttpRequestHandler {
   private final SonarLintClient client;
   private final ConnectionServiceImpl connectionService;
   private final ConfigurationServiceImpl configurationService;
-  private final BindingSuggestionProvider bindingSuggestionProvider;
+  private final BindingSuggestionProviderImpl bindingSuggestionProvider;
   private final ServerApiProvider serverApiProvider;
   private final TelemetryServiceImpl telemetryService;
 
   public ShowHotspotRequestHandler(SonarLintClient client, ConnectionServiceImpl connectionService, ConfigurationServiceImpl configurationService,
-    BindingSuggestionProvider bindingSuggestionProvider, ServerApiProvider serverApiProvider, TelemetryServiceImpl telemetryService) {
+    BindingSuggestionProviderImpl bindingSuggestionProvider, ServerApiProvider serverApiProvider, TelemetryServiceImpl telemetryService) {
     this.client = client;
     this.connectionService = connectionService;
     this.configurationService = configurationService;

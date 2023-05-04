@@ -30,6 +30,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
+import org.sonarsource.sonarlint.core.clientapi.backend.binding.GetBindingSuggestionParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.ConfigurationScopeDto;
@@ -171,6 +172,37 @@ class BindingSuggestionsMediumTests {
 
     await().atMost(Duration.of(5, ChronoUnit.SECONDS)).until(fakeClient::hasReceivedSuggestions);
     var bindingSuggestions = fakeClient.getBindingSuggestions();
+    assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
+    assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
+      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
+      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME));
+  }
+
+  @Test
+  void test_binding_suggestion_via_service() throws ExecutionException, InterruptedException {
+    var fakeClient = newFakeClient().build();
+    backend = newBackend()
+      .withSonarQubeConnection(MYSONAR, mockWebServerExtension.endpointParams().getBaseUrl())
+      .build(fakeClient);
+
+    mockWebServerExtension.addProtobufResponse("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1", Components.SearchWsResponse.newBuilder()
+      .addComponents(Components.Component.newBuilder()
+        .setKey(SLCORE_PROJECT_KEY)
+        .setName(SLCORE_PROJECT_NAME)
+        .build())
+      .setPaging(Common.Paging.newBuilder().setTotal(1).build())
+      .build());
+
+    backend.getConfigurationService()
+      .didAddConfigurationScopes(
+        new DidAddConfigurationScopesParams(List.of(
+          new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "sonarlint-core",
+            new BindingConfigurationDto(null, null, false)))));
+
+    await().atMost(Duration.of(5, ChronoUnit.SECONDS)).until(fakeClient::hasReceivedSuggestions);
+    var bindingParamsCompletableFuture =
+      backend.getBindingService().getBindingSuggestions(new GetBindingSuggestionParams(CONFIG_SCOPE_ID, MYSONAR));
+    var bindingSuggestions = bindingParamsCompletableFuture.get().getSuggestions();
     assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
       .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
