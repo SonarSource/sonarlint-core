@@ -41,10 +41,16 @@ public class ProjectStorage {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final Path projectsRootPath;
+  private final Path workDir;
   private final RWLock rwLock = new RWLock();
 
-  public ProjectStorage(Path projectsRootPath) {
+  public ProjectStorage(Path projectsRootPath, Path workDir) {
     this.projectsRootPath = projectsRootPath;
+    this.workDir = workDir;
+  }
+
+  public ProjectServerIssueStore findings(String projectKey) {
+    return new ServerIssueStoresManager(projectsRootPath, workDir).get(projectKey);
   }
 
   public void store(String projectKey, AnalyzerConfiguration analyzerConfiguration) {

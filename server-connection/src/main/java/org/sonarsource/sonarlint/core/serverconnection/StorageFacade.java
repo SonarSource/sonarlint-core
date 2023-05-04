@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.nio.file.Path;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStorage;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ServerInfoStorage;
 
 import static org.sonarsource.sonarlint.core.serverconnection.ServerConnection.computeConnectionStorageRoot;
 import static org.sonarsource.sonarlint.core.serverconnection.ServerConnection.computeProjectsStorageRoot;
@@ -28,14 +29,21 @@ import static org.sonarsource.sonarlint.core.serverconnection.ServerConnection.c
 public class StorageFacade {
 
   private Path globalStorageRoot;
+  private Path workDir;
 
-  public void initialize(Path globalStorageRoot) {
+  public void initialize(Path globalStorageRoot, Path workDir) {
     this.globalStorageRoot = globalStorageRoot;
+    this.workDir = workDir;
   }
 
   public ProjectStorage projectsStorageFacade(String connectionId) {
     var connectionStorageRoot = computeConnectionStorageRoot(globalStorageRoot, connectionId);
     var projectsStorageRoot = computeProjectsStorageRoot(connectionStorageRoot);
-    return new ProjectStorage(projectsStorageRoot);
+    return new ProjectStorage(projectsStorageRoot, workDir);
+  }
+
+  public ServerInfoStorage getServerInfo(String connectionId) {
+    var connectionStorageRoot = computeConnectionStorageRoot(globalStorageRoot, connectionId);
+    return new ServerInfoStorage(connectionStorageRoot);
   }
 }

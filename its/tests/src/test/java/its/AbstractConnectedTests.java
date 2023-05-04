@@ -118,6 +118,14 @@ public abstract class AbstractConnectedTests {
     }
 
     @Override
+    public CompletableFuture<Response> postAsync(String url, String contentType, String body) {
+      var request = buildRequest(url)
+        .headers("Content-Type", contentType)
+        .POST(HttpRequest.BodyPublishers.ofString(body)).build();
+      return executeRequestAsync(request);
+    }
+
+    @Override
     public AsyncRequest getEventStream(String url, HttpConnectionListener connectionListener, Consumer<String> messageConsumer) {
       var request = buildRequest(url)
         .header("Accept", "text/event-stream")

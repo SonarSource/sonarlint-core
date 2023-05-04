@@ -81,7 +81,12 @@ public class ProjectStorageFixture {
       return this;
     }
 
-    public ProjectStorage create(Path projectsRootPath) {
+    public ProjectStorageBuilder withHotspot(String key, String value) {
+      projectSettings.put(key, value);
+      return this;
+    }
+
+    ProjectStorage create(Path projectsRootPath) {
       var projectFolder = projectsRootPath.resolve(ProjectStoragePaths.encodeForFs(projectKey));
       try {
         FileUtils.forceMkdir(projectFolder.toFile());

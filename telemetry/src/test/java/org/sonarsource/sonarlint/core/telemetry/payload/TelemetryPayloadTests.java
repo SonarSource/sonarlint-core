@@ -49,7 +49,7 @@ class TelemetryPayloadTests {
     counters.put("NEW_ISSUES", new TelemetryNotificationsCounterPayload(10, 1));
     var notifPayload = new TelemetryNotificationsPayload(true, counters);
     var showHotspotPayload = new ShowHotspotPayload(4);
-    var hotspotPayload = new HotspotPayload(5);
+    var hotspotPayload = new HotspotPayload(5, 3);
     var taintVulnerabilitiesPayload = new TaintVulnerabilitiesPayload(6, 7);
     var rulesPayload = new TelemetryRulesPayload(Arrays.asList("enabledRuleKey1", "enabledRuleKey2"), Arrays.asList("disabledRuleKey1", "disabledRuleKey2"),
       Arrays.asList("reportedRuleKey1", "reportedRuleKey2"), Arrays.asList("quickFixedRuleKey1", "quickFixedRuleKey2"));
@@ -88,7 +88,7 @@ class TelemetryPayloadTests {
       + "\"show_hotspot\":{\"requests_count\":4},"
       + "\"taint_vulnerabilities\":{\"investigated_locally_count\":6,\"investigated_remotely_count\":7},"
       + "\"rules\":{\"non_default_enabled\":[\"enabledRuleKey1\",\"enabledRuleKey2\"],\"default_disabled\":[\"disabledRuleKey1\",\"disabledRuleKey2\"],\"raised_issues\":[\"reportedRuleKey1\",\"reportedRuleKey2\"],\"quick_fix_applied\":[\"quickFixedRuleKey1\",\"quickFixedRuleKey2\"]},"
-      + "\"hotspot\":{\"open_in_browser_count\":5},"
+      + "\"hotspot\":{\"open_in_browser_count\":5,\"status_changed_count\":3},"
       + "\"help_and_feedback\":{\"count_by_link\":{\"docs\":5,\"faq\":4}},"
       + "\"aString\":\"stringValue\","
       + "\"aBool\":false,"

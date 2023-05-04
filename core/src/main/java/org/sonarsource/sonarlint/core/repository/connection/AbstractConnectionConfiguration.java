@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.repository.connection;
 
 import java.util.Objects;
+import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 
 public abstract class AbstractConnectionConfiguration {
 
@@ -28,15 +29,21 @@ public abstract class AbstractConnectionConfiguration {
    */
   private final String connectionId;
   private final boolean disableNotifications;
+  private final ConnectionKind kind;
 
-  protected AbstractConnectionConfiguration(String connectionId, boolean disableNotifications) {
+  protected AbstractConnectionConfiguration(String connectionId, ConnectionKind kind, boolean disableNotifications) {
     Objects.requireNonNull(connectionId, "Connection id is mandatory");
     this.connectionId = connectionId;
+    this.kind = kind;
     this.disableNotifications = disableNotifications;
   }
 
   public String getConnectionId() {
     return connectionId;
+  }
+
+  public ConnectionKind getKind() {
+    return kind;
   }
 
   public boolean isDisableNotifications() {

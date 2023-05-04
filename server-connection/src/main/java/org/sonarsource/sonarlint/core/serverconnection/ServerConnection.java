@@ -100,7 +100,7 @@ public class ServerConnection {
 
     var projectsStorageRoot = computeProjectsStorageRoot(connectionStorageRoot);
     var projectStoragePaths = new ProjectStoragePaths(projectsStorageRoot);
-    projectStorage = new ProjectStorage(projectsStorageRoot);
+    projectStorage = new ProjectStorage(projectsStorageRoot, spec.workDir);
 
     this.storageReader = new StorageReader(projectStoragePaths);
     this.serverIssueStoresManager = new ServerIssueStoresManager(projectsStorageRoot, spec.workDir);

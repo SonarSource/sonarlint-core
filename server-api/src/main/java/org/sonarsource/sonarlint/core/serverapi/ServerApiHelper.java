@@ -86,6 +86,16 @@ public class ServerApiHelper {
       });
   }
 
+  public CompletableFuture<HttpClient.Response> postAsync(String url, String contentType, String body) {
+    return rawPostAsync(url, contentType, body)
+      .thenApply(response -> {
+        if (!response.isSuccessful()) {
+          throw handleError(response);
+        }
+        return response;
+      });
+  }
+
   /**
    * Execute GET and don't check response
    */
@@ -104,10 +114,20 @@ public class ServerApiHelper {
     var url = buildEndpointUrl(relativePath);
 
     return client.getAsync(url)
-      .whenComplete((response, error) -> {
-        var duration = Duration.between(startTime, Instant.now());
-        LOG.debug("{} {} {} | response time={}ms", "GET", response.code(), url, duration.toMillis());
-      });
+      .whenComplete((response, error) -> logTime(startTime, url, response.code()));
+  }
+
+  public CompletableFuture<HttpClient.Response> rawPostAsync(String relativePath, String contentType, String body) {
+    var startTime = Instant.now();
+    var url = buildEndpointUrl(relativePath);
+
+    return client.postAsync(url, contentType, body)
+      .whenComplete((response, error) -> logTime(startTime, url, response.code()));
+  }
+
+  private static void logTime(Instant startTime, String url, int responseCode) {
+    var duration = Duration.between(startTime, Instant.now());
+    LOG.debug("{} {} {} | response time={}ms", "GET", responseCode, url, duration.toMillis());
   }
 
   private String buildEndpointUrl(String relativePath) {

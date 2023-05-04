@@ -28,7 +28,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
@@ -39,6 +41,7 @@ import static java.util.Optional.ofNullable;
 public class InMemoryIssueStore implements ProjectServerIssueStore {
   private final Map<String, Map<String, List<ServerIssue>>> issuesByFileByBranch = new HashMap<>();
   private final Map<String, Map<String, Collection<ServerHotspot>>> hotspotsByFileByBranch = new HashMap<>();
+  private final Map<String, ServerHotspot> hotspotsByKey = new HashMap<>();
   private final Map<String, Instant> lastIssueSyncByBranch = new HashMap<>();
   private final Map<String, ServerIssue> issuesByKey = new HashMap<>();
   private final Map<String, Map<String, List<ServerTaintIssue>>> taintIssuesByFileByBranch = new HashMap<>();
@@ -95,14 +98,40 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
 
   @Override
   public void replaceAllHotspotsOfBranch(String branchName, Collection<ServerHotspot> serverHotspots) {
+    var branchHotspots = hotspotsByFileByBranch.get(branchName);
+    if (branchHotspots != null) {
+      branchHotspots.values().forEach(fileHotspots -> fileHotspots.forEach(hotspot -> hotspotsByKey.remove(hotspot.getKey())));
+    }
     hotspotsByFileByBranch.put(branchName, serverHotspots.stream().collect(Collectors.groupingBy(ServerHotspot::getFilePath, Collectors.toCollection(ArrayList::new))));
+    hotspotsByKey.putAll(serverHotspots.stream().collect(Collectors.toMap(ServerHotspot::getKey, Function.identity())));
   }
 
   @Override
   public void replaceAllHotspotsOfFile(String branchName, String serverFilePath, Collection<ServerHotspot> serverHotspots) {
+    var branchHotspots = hotspotsByFileByBranch.get(branchName);
+    if (branchHotspots != null) {
+      var fileHotspots = branchHotspots.get(serverFilePath);
+      if (fileHotspots != null) {
+        fileHotspots.forEach(hotspot -> hotspotsByKey.remove(hotspot.getKey()));
+      }
+    }
     hotspotsByFileByBranch
       .computeIfAbsent(branchName, __ -> new HashMap<>())
       .put(serverFilePath, serverHotspots);
+    hotspotsByKey.putAll(serverHotspots.stream().collect(Collectors.toMap(ServerHotspot::getKey, Function.identity())));
+  }
+
+  @Override
+  public boolean changeHotspotStatus(String hotspotKey, HotspotReviewStatus newStatus) {
+    return hotspotsByKey.computeIfPresent(hotspotKey, (key, hotspot) -> new ServerHotspot(
+      hotspot.getKey(),
+      hotspot.getRuleKey(),
+      hotspot.getMessage(),
+      hotspot.getFilePath(),
+      hotspot.getTextRange(),
+      hotspot.getCreationDate(),
+      newStatus.isReviewed(),
+      hotspot.getVulnerabilityProbability())) != null;
   }
 
   @Override

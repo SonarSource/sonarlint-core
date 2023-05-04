@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Telemetry
+ * SonarLint Core - Commons
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,18 +17,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.telemetry.payload;
+package org.sonarsource.sonarlint.core.commons;
 
-import com.google.gson.annotations.SerializedName;
-
-public class HotspotPayload {
-  @SerializedName("open_in_browser_count")
-  public final int openInBrowserCount;
-  @SerializedName("status_changed_count")
-  public final int statusChangedCount;
-
-  public HotspotPayload(int openInBrowserCount, int statusChangedCount) {
-    this.openInBrowserCount = openInBrowserCount;
-    this.statusChangedCount = statusChangedCount;
-  }
+public enum ConnectionKind {
+  SONARQUBE, SONARCLOUD
 }

@@ -74,7 +74,7 @@ class LocalStorageSynchronizerTests {
 
     final var serverInfoStorage = new ServerInfoStorage(tmpDir);
     var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new ServerInfoSynchronizer(serverInfoStorage), new PluginsStorage(tmpDir),
-      new ProjectStorage(tmpDir));
+      new ProjectStorage(tmpDir, tmpDir));
 
     synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor);
 
@@ -119,7 +119,7 @@ class LocalStorageSynchronizerTests {
 
     final var serverInfoStorage = new ServerInfoStorage(tmpDir);
     var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS, Language.JAVA), emptySet(), new ServerInfoSynchronizer(serverInfoStorage), new PluginsStorage(tmpDir),
-      new ProjectStorage(tmpDir));
+      new ProjectStorage(tmpDir, tmpDir));
 
     synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor);
 
@@ -154,7 +154,7 @@ class LocalStorageSynchronizerTests {
     mockApiProjectBranchesList();
     final var serverInfoStorage = new ServerInfoStorage(tmpDir);
     var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS, Language.JAVA), emptySet(), new ServerInfoSynchronizer(serverInfoStorage), new PluginsStorage(tmpDir),
-      new ProjectStorage(tmpDir));
+      new ProjectStorage(tmpDir, tmpDir));
 
     synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor);
 
@@ -185,7 +185,7 @@ class LocalStorageSynchronizerTests {
     mockApiProjectBranchesList();
     final var serverInfoStorage = new ServerInfoStorage(tmpDir);
     var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new ServerInfoSynchronizer(serverInfoStorage), new PluginsStorage(tmpDir),
-      new ProjectStorage(tmpDir));
+      new ProjectStorage(tmpDir, tmpDir));
 
     synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor);
 
@@ -202,7 +202,7 @@ class LocalStorageSynchronizerTests {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"1\", \"status\": \"DOWN\", \"version\": \"1\"}");
     final var serverInfoStorage = new ServerInfoStorage(tmpDir);
     var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new ServerInfoSynchronizer(serverInfoStorage), new PluginsStorage(tmpDir),
-      new ProjectStorage(tmpDir));
+      new ProjectStorage(tmpDir, tmpDir));
 
     var throwable = catchThrowable(() -> synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor));
 
