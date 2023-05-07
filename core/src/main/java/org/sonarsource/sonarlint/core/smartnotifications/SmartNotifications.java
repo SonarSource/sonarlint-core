@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.smartnotifications;
 
 import com.google.common.util.concurrent.MoreExecutors;
-import java.nio.file.Path;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +38,7 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.developers.DevelopersApi;
+import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 import org.sonarsource.sonarlint.core.serverconnection.smartnotifications.ServerNotification;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
@@ -52,21 +52,21 @@ public class SmartNotifications {
   private final SonarLintClient client;
   private final TelemetryServiceImpl telemetryService;
   private final Map<String, Boolean> isConnectionIdSupported;
-  private LastEventPolling lastEventPollingService;
+  private final LastEventPolling lastEventPollingService;
   private ScheduledExecutorService smartNotificationsPolling;
 
   public SmartNotifications(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository,
-    ServerApiProvider serverApiProvider, SonarLintClient client, TelemetryServiceImpl telemetryService) {
+    ServerApiProvider serverApiProvider, SonarLintClient client, StorageService storageService, TelemetryServiceImpl telemetryService) {
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
     this.serverApiProvider = serverApiProvider;
     this.client = client;
     this.telemetryService = telemetryService;
     isConnectionIdSupported = new HashMap<>();
+    lastEventPollingService = new LastEventPolling(storageService);
   }
 
-  public void initialize(Path storageRoot) {
-    lastEventPollingService = new LastEventPolling(storageRoot);
+  public void initialize() {
     smartNotificationsPolling = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "Smart Notifications Polling"));
     smartNotificationsPolling.scheduleAtFixedRate(this::poll, 1, 60, TimeUnit.SECONDS);
   }

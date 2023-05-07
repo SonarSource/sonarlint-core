@@ -19,10 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths;
 
 import static org.apache.commons.lang3.StringUtils.repeat;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,24 +34,6 @@ class ProjectStoragePathsTests {
     assertThat(encodeForFs("too_long_for_most_fs" + repeat("a", 1000))).hasSize(255);
     assertThat(encodeForFs("too_long_for_most_fs" + repeat("a", 1000)))
       .isNotEqualTo(encodeForFs("too_long_for_most_fs" + repeat("a", 1000) + "2"));
-  }
-
-  @Test
-  void encodeProjectKeyForFs(@TempDir Path connectionStorageRoot) {
-    var manager = new ProjectStoragePaths(connectionStorageRoot);
-
-    var moduleStorageRoot = manager.getProjectStorageRoot("module.:key/with_branch%");
-    assertThat(moduleStorageRoot)
-      .isEqualTo(connectionStorageRoot.resolve("6d6f64756c652e3a6b65792f776974685f6272616e636825"));
-  }
-
-  @Test
-  void paths(@TempDir Path connectionStorageRoot) {
-    var manager = new ProjectStoragePaths(connectionStorageRoot);
-
-    assertThat(manager.getComponentListPath("project")).isEqualTo(connectionStorageRoot
-      .resolve("70726f6a656374")
-      .resolve("component_list.pb"));
   }
 
 }

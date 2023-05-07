@@ -1154,9 +1154,9 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @AfterEach
-    void stop(TestInfo testInfo) {
+    void stop(TestInfo testInfo) throws ExecutionException, InterruptedException {
       if (testInfo.getTags().contains(USE_NEW_CLIENT_API)) {
-        backend.shutdown();
+        backend.shutdown().get();
       }
       engine.stop(true);
     }

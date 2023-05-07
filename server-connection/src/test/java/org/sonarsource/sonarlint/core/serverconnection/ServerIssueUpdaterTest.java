@@ -32,7 +32,6 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStoresManager;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -60,9 +59,11 @@ class ServerIssueUpdaterTest {
   @BeforeEach
   void setUp() {
     serverApi = new ServerApi(mock(ServerApiHelper.class));
-    ServerIssueStoresManager manager = mock(ServerIssueStoresManager.class);
-    when(manager.get(PROJECT_KEY)).thenReturn(issueStore);
-    updater = new ServerIssueUpdater(manager, downloader, taintDownloader);
+    ConnectionStorage storage = mock(ConnectionStorage.class);
+    var projectStorage = mock(SonarProjectStorage.class);
+    when(storage.project(PROJECT_KEY)).thenReturn(projectStorage);
+    when(projectStorage.findings()).thenReturn(issueStore);
+    updater = new ServerIssueUpdater(storage, downloader, taintDownloader);
   }
 
   @Test

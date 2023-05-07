@@ -26,19 +26,18 @@ import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil;
 
 public class ProjectStorageUpdateExecutor {
   private final ProjectFileListDownloader projectFileListDownloader;
-  private final ProjectStoragePaths projectStoragePaths;
+  private final ConnectionStorage storage;
 
-  public ProjectStorageUpdateExecutor(ProjectStoragePaths projectStoragePaths) {
-    this(projectStoragePaths, new ProjectFileListDownloader());
+  public ProjectStorageUpdateExecutor(ConnectionStorage storage) {
+    this(storage, new ProjectFileListDownloader());
   }
 
-  ProjectStorageUpdateExecutor(ProjectStoragePaths projectStoragePaths, ProjectFileListDownloader projectFileListDownloader) {
-    this.projectStoragePaths = projectStoragePaths;
+  ProjectStorageUpdateExecutor(ConnectionStorage storage, ProjectFileListDownloader projectFileListDownloader) {
+    this.storage = storage;
     this.projectFileListDownloader = projectFileListDownloader;
   }
 
@@ -52,7 +51,7 @@ public class ProjectStorageUpdateExecutor {
     try {
       FileUtils.replaceDir(dir -> {
         updateComponents(serverApi, projectKey, dir, progress);
-      }, projectStoragePaths.getProjectStorageRoot(projectKey), temp);
+      }, storage.project(projectKey).filePath(), temp);
     } finally {
       org.apache.commons.io.FileUtils.deleteQuietly(temp.toFile());
     }
@@ -67,7 +66,7 @@ public class ProjectStorageUpdateExecutor {
       var relativePath = fileKey.substring(separatorIdx + 1);
       componentsBuilder.addComponent(relativePath);
     }
-    ProtobufUtil.writeToFile(componentsBuilder.build(), temp.resolve(ProjectStoragePaths.COMPONENT_LIST_PB));
+    ProtobufUtil.writeToFile(componentsBuilder.build(), temp.resolve(ComponentsStorage.COMPONENT_LIST_PB));
   }
 
 }

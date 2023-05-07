@@ -27,7 +27,6 @@ import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStoresManager;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -52,9 +51,11 @@ class ServerHotspotUpdaterTest {
   @BeforeEach
   void setUp() {
     hotspotApi = mock(HotspotApi.class);
-    ServerIssueStoresManager manager = mock(ServerIssueStoresManager.class);
-    when(manager.get(PROJECT_KEY)).thenReturn(issueStore);
-    updater = new ServerHotspotUpdater(manager);
+    ConnectionStorage storage = mock(ConnectionStorage.class);
+    var projectStorage = mock(SonarProjectStorage.class);
+    when(storage.project(PROJECT_KEY)).thenReturn(projectStorage);
+    when(projectStorage.findings()).thenReturn(issueStore);
+    updater = new ServerHotspotUpdater(storage);
   }
 
   @Test

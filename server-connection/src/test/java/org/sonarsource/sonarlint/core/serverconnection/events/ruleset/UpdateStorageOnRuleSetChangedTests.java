@@ -30,9 +30,9 @@ import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
+import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
 import org.sonarsource.sonarlint.core.serverconnection.RuleSet;
 import org.sonarsource.sonarlint.core.serverconnection.Settings;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStorage;
 
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,12 +42,12 @@ import static org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfigurat
 class UpdateStorageOnRuleSetChangedTests {
 
   private UpdateStorageOnRuleSetChanged handler;
-  private ProjectStorage projectStorage;
+  private ConnectionStorage storage;
 
   @BeforeEach
   void setUp(@TempDir Path tempDir) {
-    projectStorage = new ProjectStorage(tempDir, tempDir);
-    handler = new UpdateStorageOnRuleSetChanged(projectStorage);
+    storage = new ConnectionStorage(tempDir, tempDir, "connectionId");
+    handler = new UpdateStorageOnRuleSetChanged(storage);
   }
 
   @Test
@@ -61,7 +61,7 @@ class UpdateStorageOnRuleSetChangedTests {
 
     handler.handle(event);
 
-    var projectConfig = projectStorage.getAnalyzerConfiguration("projectKey1");
+    var projectConfig = storage.project("projectKey1").analyzerConfiguration().read();
     assertThat(projectConfig.getSettings().getAll()).isEmpty();
     assertThat(projectConfig.getRuleSetByLanguageKey()).containsOnlyKeys("lang1", "lang2");
     var lang1RuleSet = projectConfig.getRuleSetByLanguageKey().get("lang1");
@@ -78,7 +78,7 @@ class UpdateStorageOnRuleSetChangedTests {
 
   @Test
   void should_update_existing_rule_in_storage() {
-    projectStorage.store("projectKey1", new AnalyzerConfiguration(new Settings(emptyMap()), Map.of("lang1", new RuleSet(List.of(
+    storage.project("projectKey1").analyzerConfiguration().store(new AnalyzerConfiguration(new Settings(emptyMap()), Map.of("lang1", new RuleSet(List.of(
       new ServerActiveRule("ruleKey1", IssueSeverity.MINOR, Map.of("paramKey", "paramValue"), "")), "2020-10-27T23:08:58+0000")), CURRENT_SCHEMA_VERSION));
     var event = new RuleSetChangedEvent(
       List.of("projectKey1"),
@@ -87,7 +87,7 @@ class UpdateStorageOnRuleSetChangedTests {
 
     handler.handle(event);
 
-    var projectConfig = projectStorage.getAnalyzerConfiguration("projectKey1");
+    var projectConfig = storage.project("projectKey1").analyzerConfiguration().read();
     assertThat(projectConfig.getSettings().getAll()).isEmpty();
     assertThat(projectConfig.getRuleSetByLanguageKey()).containsOnlyKeys("lang1");
     var ruleSet = projectConfig.getRuleSetByLanguageKey().get("lang1");
@@ -99,7 +99,7 @@ class UpdateStorageOnRuleSetChangedTests {
 
   @Test
   void should_activate_rule_of_existing_language_in_storage() {
-    projectStorage.store("projectKey1", new AnalyzerConfiguration(new Settings(emptyMap()), Map.of("lang1", new RuleSet(List.of(
+    storage.project("projectKey1").analyzerConfiguration().store(new AnalyzerConfiguration(new Settings(emptyMap()), Map.of("lang1", new RuleSet(List.of(
       new ServerActiveRule("ruleKey1", IssueSeverity.MINOR, Map.of("paramKey", "paramValue"), "")), "")), CURRENT_SCHEMA_VERSION));
     var event = new RuleSetChangedEvent(
       List.of("projectKey1"),
@@ -108,7 +108,7 @@ class UpdateStorageOnRuleSetChangedTests {
 
     handler.handle(event);
 
-    var projectConfig = projectStorage.getAnalyzerConfiguration("projectKey1");
+    var projectConfig = storage.project("projectKey1").analyzerConfiguration().read();
     assertThat(projectConfig.getSettings().getAll()).isEmpty();
     assertThat(projectConfig.getRuleSetByLanguageKey()).containsOnlyKeys("lang1");
     var ruleSet = projectConfig.getRuleSetByLanguageKey().get("lang1");
@@ -122,7 +122,7 @@ class UpdateStorageOnRuleSetChangedTests {
 
   @Test
   void should_activate_rule_of_unknown_language_in_storage() {
-    projectStorage.store("projectKey1", new AnalyzerConfiguration(new Settings(emptyMap()), Map.of("lang1", new RuleSet(List.of(
+    storage.project("projectKey1").analyzerConfiguration().store(new AnalyzerConfiguration(new Settings(emptyMap()), Map.of("lang1", new RuleSet(List.of(
       new ServerActiveRule("ruleKey1", IssueSeverity.MINOR, Map.of("paramKey", "paramValue"), "")), "")), CURRENT_SCHEMA_VERSION));
     var event = new RuleSetChangedEvent(
       List.of("projectKey1"),
@@ -131,7 +131,7 @@ class UpdateStorageOnRuleSetChangedTests {
 
     handler.handle(event);
 
-    var projectConfig = projectStorage.getAnalyzerConfiguration("projectKey1");
+    var projectConfig = storage.project("projectKey1").analyzerConfiguration().read();
     assertThat(projectConfig.getSettings().getAll()).isEmpty();
     assertThat(projectConfig.getRuleSetByLanguageKey()).containsOnlyKeys("lang1", "lang2");
     var lang1RuleSet = projectConfig.getRuleSetByLanguageKey().get("lang1");
@@ -149,7 +149,7 @@ class UpdateStorageOnRuleSetChangedTests {
 
   @Test
   void should_deactivate_rule_in_storage() {
-    projectStorage.store("projectKey1", new AnalyzerConfiguration(new Settings(emptyMap()), Map.of("lang1", new RuleSet(List.of(
+    storage.project("projectKey1").analyzerConfiguration().store(new AnalyzerConfiguration(new Settings(emptyMap()), Map.of("lang1", new RuleSet(List.of(
       new ServerActiveRule("ruleKey1", IssueSeverity.MINOR, Map.of("paramKey", "paramValue"), ""),
       new ServerActiveRule("ruleKey2", IssueSeverity.MAJOR, Map.of(), "")), "")), CURRENT_SCHEMA_VERSION));
     var event = new RuleSetChangedEvent(
@@ -159,7 +159,7 @@ class UpdateStorageOnRuleSetChangedTests {
 
     handler.handle(event);
 
-    var projectConfig = projectStorage.getAnalyzerConfiguration("projectKey1");
+    var projectConfig = storage.project("projectKey1").analyzerConfiguration().read();
     assertThat(projectConfig.getSettings().getAll()).isEmpty();
     assertThat(projectConfig.getRuleSetByLanguageKey()).containsOnlyKeys("lang1");
     var ruleSet = projectConfig.getRuleSetByLanguageKey().get("lang1");
@@ -171,7 +171,7 @@ class UpdateStorageOnRuleSetChangedTests {
 
   @Test
   void should_remove_ruleset_from_storage_when_deactivating_last_rule() {
-    projectStorage.store("projectKey1", new AnalyzerConfiguration(new Settings(emptyMap()), Map.of("lang1", new RuleSet(List.of(
+    storage.project("projectKey1").analyzerConfiguration().store(new AnalyzerConfiguration(new Settings(emptyMap()), Map.of("lang1", new RuleSet(List.of(
       new ServerActiveRule("ruleKey1", IssueSeverity.MINOR, Map.of("paramKey", "paramValue"), "")), ""),
       "lang2", new RuleSet(List.of(new ServerActiveRule("otherRule", IssueSeverity.MAJOR, emptyMap(), "")), "")), CURRENT_SCHEMA_VERSION));
     var event = new RuleSetChangedEvent(
@@ -181,7 +181,7 @@ class UpdateStorageOnRuleSetChangedTests {
 
     handler.handle(event);
 
-    var projectConfig = projectStorage.getAnalyzerConfiguration("projectKey1");
+    var projectConfig = storage.project("projectKey1").analyzerConfiguration().read();
     assertThat(projectConfig.getSettings().getAll()).isEmpty();
     assertThat(projectConfig.getRuleSetByLanguageKey()).containsOnlyKeys("lang2");
   }

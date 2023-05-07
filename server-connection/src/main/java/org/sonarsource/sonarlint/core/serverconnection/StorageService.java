@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Server API
+ * SonarLint Core - Server Connection
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,16 +17,32 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverapi.hotspot;
+package org.sonarsource.sonarlint.core.serverconnection;
 
-import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
+import java.nio.file.Path;
+import org.sonarsource.sonarlint.core.commons.Binding;
 
-public class ChangeSecurityHotspotStatusRequestParams {
-  public final String hotspotKey;
-  public final HotspotReviewStatus status;
+public class StorageService {
 
-  public ChangeSecurityHotspotStatusRequestParams(String hotspotKey, HotspotReviewStatus status) {
-    this.hotspotKey = hotspotKey;
-    this.status = status;
+  private StorageFacade storageFacade;
+
+  public void initialize(Path globalStorageRoot, Path workDir) {
+    storageFacade = StorageFacadeCache.get().getOrCreate(globalStorageRoot, workDir);
+  }
+
+  public StorageFacade getStorageFacade() {
+    return storageFacade;
+  }
+
+  public ConnectionStorage connection(String connectionId) {
+    return storageFacade.connection(connectionId);
+  }
+
+  public SonarProjectStorage binding(Binding binding) {
+    return storageFacade.connection(binding.getConnectionId()).project(binding.getSonarProjectKey());
+  }
+
+  public void close() {
+    StorageFacadeCache.get().close(storageFacade);
   }
 }

@@ -29,25 +29,23 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoadResult;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
-import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
-
-import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
+import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 
 public class PluginsServiceImpl implements PluginsService {
   private final PluginsRepository pluginsRepository;
-  private Path storageRoot;
+  private final StorageService storageService;
   private Set<Path> embeddedPluginPaths;
   private Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
   private Set<Language> enabledLanguagesInStandaloneMode;
   private Set<Language> enabledLanguagesInConnectedMode;
 
-  public PluginsServiceImpl(PluginsRepository pluginsRepository) {
+  public PluginsServiceImpl(PluginsRepository pluginsRepository, StorageService storageService) {
     this.pluginsRepository = pluginsRepository;
+    this.storageService = storageService;
   }
 
-  public void initialize(Path storageRoot, Set<Path> embeddedPluginPaths, Map<String, Path> connectedModeEmbeddedPluginPathsByKey,
+  public void initialize(Set<Path> embeddedPluginPaths, Map<String, Path> connectedModeEmbeddedPluginPathsByKey,
     Set<Language> enabledLanguagesInStandaloneMode, Set<Language> enabledLanguagesInConnectedMode) {
-    this.storageRoot = storageRoot;
     this.embeddedPluginPaths = embeddedPluginPaths;
     this.connectedModeEmbeddedPluginPathsByKey = connectedModeEmbeddedPluginPathsByKey;
     this.enabledLanguagesInStandaloneMode = enabledLanguagesInStandaloneMode;
@@ -76,7 +74,7 @@ public class PluginsServiceImpl implements PluginsService {
 
   private PluginsLoadResult loadPlugins(String connectionId) {
     // for now assume the sync already happened and the plugins are stored
-    var pluginsStorage = new PluginsStorage(storageRoot.resolve(encodeForFs(connectionId)).resolve("plugins"));
+    var pluginsStorage = storageService.connection(connectionId).plugins();
 
     Map<String, Path> pluginsToLoadByKey = new HashMap<>();
     // order is important as e.g. embedded takes precedence over stored

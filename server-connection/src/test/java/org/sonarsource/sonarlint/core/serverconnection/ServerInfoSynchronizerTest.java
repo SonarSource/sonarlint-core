@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,7 +30,6 @@ import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ServerInfoStorage;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,12 +46,15 @@ class ServerInfoSynchronizerTest {
 
   @BeforeEach
   void prepare() {
-    synchronizer = new ServerInfoSynchronizer(new ServerInfoStorage(tmpDir));
+    var storage = new ConnectionStorage(tmpDir, tmpDir, "connectionId");
+    synchronizer = new ServerInfoSynchronizer(storage);
   }
 
   @Test
-  void it_should_read_version_from_storage_when_available() {
-    ProtobufUtil.writeToFile(Sonarlint.ServerInfo.newBuilder().setVersion("1.0.0").build(), tmpDir.resolve("server_info.pb"));
+  void it_should_read_version_from_storage_when_available() throws IOException {
+    var connectionPath = tmpDir.resolve("636f6e6e656374696f6e4964");
+    Files.createDirectory(connectionPath);
+    ProtobufUtil.writeToFile(Sonarlint.ServerInfo.newBuilder().setVersion("1.0.0").build(), connectionPath.resolve("server_info.pb"));
 
     var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(null);
 

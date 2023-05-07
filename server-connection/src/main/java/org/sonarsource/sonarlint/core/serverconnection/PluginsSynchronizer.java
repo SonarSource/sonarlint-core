@@ -31,24 +31,23 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
-import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 
 public class PluginsSynchronizer {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final Set<String> sonarSourceDisabledPluginKeys;
-  private final PluginsStorage pluginsStorage;
+  private final ConnectionStorage storage;
   private final Set<String> embeddedPluginKeys;
   private final PluginsMinVersions pluginsMinVersions = new PluginsMinVersions();
 
-  public PluginsSynchronizer(Set<Language> enabledLanguages, PluginsStorage pluginsStorage, Set<String> embeddedPluginKeys) {
+  public PluginsSynchronizer(Set<Language> enabledLanguages, ConnectionStorage storage, Set<String> embeddedPluginKeys) {
     this.sonarSourceDisabledPluginKeys = getSonarSourceDisabledPluginKeys(enabledLanguages);
-    this.pluginsStorage = pluginsStorage;
+    this.storage = storage;
     this.embeddedPluginKeys = embeddedPluginKeys;
   }
 
   public boolean synchronize(ServerApi serverApi, ProgressMonitor progressMonitor) {
-    var storedPluginsByKey = pluginsStorage.getStoredPluginsByKey();
+    var storedPluginsByKey = storage.plugins().getStoredPluginsByKey();
     var serverPlugins = serverApi.plugins().getInstalled();
     var pluginsToDownload = serverPlugins.stream()
       .filter(p -> shouldDownload(p, storedPluginsByKey))
@@ -67,7 +66,7 @@ public class PluginsSynchronizer {
 
   private void downloadPlugin(ServerApi serverApi, ServerPlugin plugin) {
     LOG.info("[SYNC] Downloading plugin '{}'", plugin.getFilename());
-    serverApi.plugins().getPlugin(plugin.getKey(), pluginBinary -> pluginsStorage.store(plugin, pluginBinary));
+    serverApi.plugins().getPlugin(plugin.getKey(), pluginBinary -> storage.plugins().store(plugin, pluginBinary));
   }
 
   private boolean shouldDownload(ServerPlugin serverPlugin, Map<String, StoredPlugin> storedPluginsByKey) {

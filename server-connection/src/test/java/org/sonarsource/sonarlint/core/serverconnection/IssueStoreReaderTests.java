@@ -30,7 +30,6 @@ import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStoresManager;
 import testutils.InMemoryIssueStore;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,9 +48,11 @@ class IssueStoreReaderTests {
 
   @BeforeEach
   void setUp() {
-    ServerIssueStoresManager manager = mock(ServerIssueStoresManager.class);
-    when(manager.get(PROJECT_KEY)).thenReturn(issueStore);
-    issueStoreReader = new IssueStoreReader(manager);
+    ConnectionStorage storage = mock(ConnectionStorage.class);
+    SonarProjectStorage projectStorage = mock(SonarProjectStorage.class);
+    when(storage.project(PROJECT_KEY)).thenReturn(projectStorage);
+    when(projectStorage.findings()).thenReturn(issueStore);
+    issueStoreReader = new IssueStoreReader(storage);
   }
 
   @Test

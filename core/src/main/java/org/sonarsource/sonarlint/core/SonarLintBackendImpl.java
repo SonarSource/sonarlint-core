@@ -32,8 +32,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import org.sonarsource.sonarlint.core.branch.SonarProjectBranchServiceImpl;
 import org.sonarsource.sonarlint.core.analysis.AnalysisServiceImpl;
+import org.sonarsource.sonarlint.core.branch.SonarProjectBranchServiceImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
@@ -48,13 +48,13 @@ import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.hotspot.HotspotServiceImpl;
 import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsServiceImpl;
-import org.sonarsource.sonarlint.core.serverconnection.StorageFacade;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.repository.vcs.ActiveSonarProjectBranchRepository;
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
 import org.sonarsource.sonarlint.core.rules.RulesServiceImpl;
+import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 import org.sonarsource.sonarlint.core.smartnotifications.SmartNotifications;
 import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
@@ -78,7 +78,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   private final SonarProjectBranchServiceImpl sonarProjectBranchService;
   private final SynchronizationServiceImpl synchronizationServiceImpl;
   private final AnalysisServiceImpl analysisService;
-  private final StorageFacade storageFacade;
+  private final StorageService storageService;
 
   public SonarLintBackendImpl(SonarLintClient client) {
     EventBus clientEventBus = new AsyncEventBus("clientEvents", clientEventsExecutorService);
@@ -88,25 +88,25 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     var awaitingUserTokenFutureRepository = new AwaitingUserTokenFutureRepository();
     this.connectionService = new ConnectionServiceImpl(clientEventBus, connectionConfigurationRepository);
     var pluginRepository = new PluginsRepository();
-    pluginsService = new PluginsServiceImpl(pluginRepository);
+    this.storageService = new StorageService();
+    pluginsService = new PluginsServiceImpl(pluginRepository, storageService);
     rulesExtractionHelper = new RulesExtractionHelper(pluginsService);
     var rulesRepository = new RulesRepository(rulesExtractionHelper);
     var serverApiProvider = new ServerApiProvider(connectionConfigurationRepository, client);
-    rulesService = new RulesServiceImpl(serverApiProvider, configurationRepository, rulesRepository);
+    rulesService = new RulesServiceImpl(serverApiProvider, configurationRepository, rulesRepository, storageService);
     this.telemetryService = new TelemetryServiceImpl();
-    this.storageFacade = new StorageFacade();
-    this.hotspotService = new HotspotServiceImpl(client, storageFacade, configurationRepository, connectionConfigurationRepository, serverApiProvider, telemetryService);
+    this.hotspotService = new HotspotServiceImpl(client, storageService, configurationRepository, connectionConfigurationRepository, serverApiProvider, telemetryService);
     var bindingClueProvider = new BindingClueProvider(connectionConfigurationRepository, client);
     var sonarProjectCache = new SonarProjectsCache(serverApiProvider);
     bindingSuggestionProvider = new BindingSuggestionProviderImpl(configurationRepository, connectionConfigurationRepository, client, bindingClueProvider, sonarProjectCache);
     this.embeddedServer = new EmbeddedServer(client, connectionService, awaitingUserTokenFutureRepository, configurationService, bindingSuggestionProvider, serverApiProvider,
       telemetryService);
     this.authenticationHelperService = new AuthenticationHelperServiceImpl(client, embeddedServer, awaitingUserTokenFutureRepository);
-    smartNotifications = new SmartNotifications(configurationRepository, connectionConfigurationRepository, serverApiProvider, client, telemetryService);
+    smartNotifications = new SmartNotifications(configurationRepository, connectionConfigurationRepository, serverApiProvider, client, storageService, telemetryService);
     var sonarProjectBranchRepository = new ActiveSonarProjectBranchRepository();
     this.sonarProjectBranchService = new SonarProjectBranchServiceImpl(sonarProjectBranchRepository, configurationRepository, clientEventBus);
-    this.synchronizationServiceImpl = new SynchronizationServiceImpl(client, configurationRepository, sonarProjectBranchService, serverApiProvider);
-    this.analysisService = new AnalysisServiceImpl(configurationRepository, storageFacade);
+    this.synchronizationServiceImpl = new SynchronizationServiceImpl(client, configurationRepository, sonarProjectBranchService, serverApiProvider, storageService);
+    this.analysisService = new AnalysisServiceImpl(configurationRepository, storageService);
     clientEventBus.register(bindingSuggestionProvider);
     clientEventBus.register(sonarProjectCache);
     clientEventBus.register(rulesRepository);
@@ -116,14 +116,6 @@ public class SonarLintBackendImpl implements SonarLintBackend {
 
   @Override
   public CompletableFuture<Void> initialize(InitializeParams params) {
-    var enabledLanguagesInConnectedMode = new HashSet<>(params.getEnabledLanguagesInStandaloneMode());
-    enabledLanguagesInConnectedMode.addAll(params.getExtraEnabledLanguagesInConnectedMode());
-    connectionService
-      .initialize(params.getSonarQubeConnections(), params.getSonarCloudConnections());
-    pluginsService.initialize(params.getStorageRoot(), params.getEmbeddedPluginPaths(), params.getConnectedModeEmbeddedPluginPathsByKey(),
-      params.getEnabledLanguagesInStandaloneMode(), enabledLanguagesInConnectedMode);
-    rulesExtractionHelper.initialize(params.getEnabledLanguagesInStandaloneMode(), enabledLanguagesInConnectedMode, params.isEnableSecurityHotspots());
-    rulesService.initialize(params.getStorageRoot(), params.getStandaloneRuleConfigByKey());
     var sonarlintUserHome = Optional.ofNullable(params.getSonarlintUserHome()).map(Paths::get).orElse(SonarLintUserHome.get());
     var workDir = params.getWorkDir();
     if (workDir == null) {
@@ -131,19 +123,27 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     }
     createFolderIfNeeded(sonarlintUserHome);
     createFolderIfNeeded(workDir);
+    storageService.initialize(params.getStorageRoot(), workDir);
+    var enabledLanguagesInConnectedMode = new HashSet<>(params.getEnabledLanguagesInStandaloneMode());
+    enabledLanguagesInConnectedMode.addAll(params.getExtraEnabledLanguagesInConnectedMode());
+    connectionService
+      .initialize(params.getSonarQubeConnections(), params.getSonarCloudConnections());
+    pluginsService.initialize(params.getEmbeddedPluginPaths(), params.getConnectedModeEmbeddedPluginPathsByKey(),
+      params.getEnabledLanguagesInStandaloneMode(), enabledLanguagesInConnectedMode);
+    rulesExtractionHelper.initialize(params.getEnabledLanguagesInStandaloneMode(), enabledLanguagesInConnectedMode, params.isEnableSecurityHotspots());
+    rulesService.initialize(params.getStandaloneRuleConfigByKey());
     telemetryService.initialize(params.getTelemetryProductKey(), sonarlintUserHome);
     if (params.shouldManageLocalServer()) {
       embeddedServer.initialize(params.getHostInfo());
     }
     authenticationHelperService.initialize(params.getHostInfo().getName());
     if (params.shouldManageSmartNotifications()) {
-      smartNotifications.initialize(params.getStorageRoot());
+      smartNotifications.initialize();
     }
     if (params.shouldSynchronizeProjects()) {
-      synchronizationServiceImpl.initialize(params.getStorageRoot(), workDir, enabledLanguagesInConnectedMode, params.getConnectedModeEmbeddedPluginPathsByKey().keySet(),
+      synchronizationServiceImpl.initialize(enabledLanguagesInConnectedMode, params.getConnectedModeEmbeddedPluginPathsByKey().keySet(),
         params.areTaintVulnerabilitiesEnabled());
     }
-    storageFacade.initialize(params.getStorageRoot(), workDir);
     analysisService.initialize(params.getEnabledLanguagesInStandaloneMode(), enabledLanguagesInConnectedMode);
 
     return CompletableFuture.completedFuture(null);
@@ -210,6 +210,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
       this.embeddedServer.shutdown();
       this.smartNotifications.shutdown();
       this.synchronizationServiceImpl.shutdown();
+      storageService.close();
     });
   }
 

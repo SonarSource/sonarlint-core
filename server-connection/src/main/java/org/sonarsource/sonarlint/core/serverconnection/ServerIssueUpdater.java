@@ -28,18 +28,17 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStoresManager;
 
 public class ServerIssueUpdater {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final ServerIssueStoresManager serverIssueStoresManager;
+  private final ConnectionStorage storage;
   private final IssueDownloader issueDownloader;
   private final TaintIssueDownloader taintIssueDownloader;
 
-  public ServerIssueUpdater(ServerIssueStoresManager serverIssueStoresManager, IssueDownloader issueDownloader, TaintIssueDownloader taintIssueDownloader) {
-    this.serverIssueStoresManager = serverIssueStoresManager;
+  public ServerIssueUpdater(ConnectionStorage storage, IssueDownloader issueDownloader, TaintIssueDownloader taintIssueDownloader) {
+    this.storage = storage;
     this.issueDownloader = issueDownloader;
     this.taintIssueDownloader = taintIssueDownloader;
   }
@@ -49,18 +48,18 @@ public class ServerIssueUpdater {
       sync(serverApi, projectKey, branchName);
     } else {
       List<ServerIssue> issues = issueDownloader.downloadFromBatch(serverApi, projectKey, branchName);
-      serverIssueStoresManager.get(projectKey).replaceAllIssuesOfBranch(branchName, issues);
+      storage.project(projectKey).findings().replaceAllIssuesOfBranch(branchName, issues);
     }
   }
 
   public void sync(ServerApi serverApi, String projectKey, String branchName) {
-    var lastSync = serverIssueStoresManager.get(projectKey).getLastIssueSyncTimestamp(branchName);
+    var lastSync = storage.project(projectKey).findings().getLastIssueSyncTimestamp(branchName);
     var result = issueDownloader.downloadFromPull(serverApi, projectKey, branchName, lastSync);
-    serverIssueStoresManager.get(projectKey).mergeIssues(branchName, result.getChangedIssues(), result.getClosedIssueKeys(), result.getQueryTimestamp());
+    storage.project(projectKey).findings().mergeIssues(branchName, result.getChangedIssues(), result.getClosedIssueKeys(), result.getQueryTimestamp());
   }
 
   public void syncTaints(ServerApi serverApi, String projectKey, String branchName) {
-    var serverIssueStore = serverIssueStoresManager.get(projectKey);
+    var serverIssueStore = storage.project(projectKey).findings();
     var lastSync = serverIssueStore.getLastTaintSyncTimestamp(branchName);
     var result = taintIssueDownloader.downloadTaintFromPull(serverApi, projectKey, branchName, lastSync);
     serverIssueStore.mergeTaintIssues(branchName, result.getChangedTaintIssues(), result.getClosedIssueKeys(), result.getQueryTimestamp());
@@ -81,7 +80,7 @@ public class ServerIssueUpdater {
         // null as cause so that it doesn't get wrapped
         throw new DownloadException("Failed to update file issues: " + e.getMessage(), null);
       }
-      serverIssueStoresManager.get(projectBinding.projectKey()).replaceAllIssuesOfFile(branchName, serverFilePath, issues);
+      storage.project(projectBinding.projectKey()).findings().replaceAllIssuesOfFile(branchName, serverFilePath, issues);
     } else {
       LOG.debug("Skip downloading file issues on SonarQube " + IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL + "+");
     }
@@ -102,7 +101,7 @@ public class ServerIssueUpdater {
         // null as cause so that it doesn't get wrapped
         throw new DownloadException("Failed to update file taint vulnerabilities: " + e.getMessage(), null);
       }
-      serverIssueStoresManager.get(projectBinding.projectKey()).replaceAllTaintOfFile(branchName, serverFilePath, taintIssues);
+      storage.project(projectBinding.projectKey()).findings().replaceAllTaintOfFile(branchName, serverFilePath, taintIssues);
     } else {
       LOG.debug("Skip downloading file taint issues on SonarQube " + IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL + "+");
     }

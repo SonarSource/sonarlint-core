@@ -27,20 +27,20 @@ import java.util.Map;
 import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
+import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
 import org.sonarsource.sonarlint.core.serverconnection.RuleSet;
 import org.sonarsource.sonarlint.core.serverconnection.events.ServerEventHandler;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStorage;
 
 public class UpdateStorageOnRuleSetChanged implements ServerEventHandler<RuleSetChangedEvent> {
-  private final ProjectStorage projectStorage;
+  private final ConnectionStorage storage;
 
-  public UpdateStorageOnRuleSetChanged(ProjectStorage projectStorage) {
-    this.projectStorage = projectStorage;
+  public UpdateStorageOnRuleSetChanged(ConnectionStorage storage) {
+    this.storage = storage;
   }
 
   @Override
   public void handle(RuleSetChangedEvent event) {
-    event.getProjectKeys().forEach(projectKey -> projectStorage.update(projectKey, currentConfiguration -> {
+    event.getProjectKeys().forEach(projectKey -> storage.project(projectKey).analyzerConfiguration().update(currentConfiguration -> {
       var newRuleSetByLanguageKey = incorporate(event, currentConfiguration.getRuleSetByLanguageKey());
       return new AnalyzerConfiguration(currentConfiguration.getSettings(), newRuleSetByLanguageKey, currentConfiguration.getSchemaVersion());
     }));

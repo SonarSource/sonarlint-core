@@ -19,26 +19,30 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-// ServerConnections should be shared between engines and the new backend, e.g. to manage concurrent access
-// it's all static because there is no common entrypoint for engines and the backend
-// it is a temporary solution, when engines will be removed, the cache will still be needed but the static access can be removed
-public class ServerConnectionCache {
+// using a static cache is required for compatibility between the legacy engines and the new backend, can be removed when dropping engines
+public class StorageFacadeCache {
 
-  private static final Map<ServerConnectionSpec, ServerConnection> connectionsBySpec = new ConcurrentHashMap<>();
+  private static final StorageFacadeCache uniqueFacade = new StorageFacadeCache();
 
-  public static ServerConnection getOrCreate(ServerConnectionSpec spec) {
-    return connectionsBySpec.computeIfAbsent(spec, k -> new ServerConnection(spec));
+  public static StorageFacadeCache get() {
+    return uniqueFacade;
   }
 
-  private ServerConnectionCache() {
-    // singleton
+  private final Map<Path, StorageFacade> facadePerRootPath = new ConcurrentHashMap<>();
+
+  public StorageFacade getOrCreate(Path globalStorageRoot, Path workDir) {
+    return facadePerRootPath.computeIfAbsent(globalStorageRoot, k -> new StorageFacade(globalStorageRoot, workDir));
   }
 
-  public static synchronized void clear() {
-    connectionsBySpec.values().forEach(connection -> connection.stop(false));
-    connectionsBySpec.clear();
+  public void close(StorageFacade storage) {
+    var removed = facadePerRootPath.values().remove(storage);
+    if (removed) {
+      // close the storage only once
+      storage.close();
+    }
   }
 }

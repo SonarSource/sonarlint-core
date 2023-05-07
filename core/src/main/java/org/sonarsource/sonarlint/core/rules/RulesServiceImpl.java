@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.rules;
 
-import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -40,9 +39,9 @@ import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleParamType;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RulesService;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.UpdateStandaloneRulesConfigurationParams;
+import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.repository.config.Binding;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
@@ -52,10 +51,8 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerRule;
 import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStorage;
+import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
-
-import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 
 public class RulesServiceImpl implements RulesService {
 
@@ -63,18 +60,18 @@ public class RulesServiceImpl implements RulesService {
   private final ServerApiProvider serverApiProvider;
   private final ConfigurationRepository configurationRepository;
   private final RulesRepository rulesRepository;
+  private final StorageService storageService;
   private static final String COULD_NOT_FIND_RULE = "Could not find rule '";
-  private Path storageRoot;
   private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfig = new ConcurrentHashMap<>();
 
-  public RulesServiceImpl(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository) {
+  public RulesServiceImpl(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository, StorageService storageService) {
     this.serverApiProvider = serverApiProvider;
     this.configurationRepository = configurationRepository;
     this.rulesRepository = rulesRepository;
+    this.storageService = storageService;
   }
 
-  public void initialize(Path storageRoot, Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
-    this.storageRoot = storageRoot;
+  public void initialize(Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
     this.standaloneRuleConfig.putAll(standaloneRuleConfigByKey);
   }
 
@@ -107,11 +104,9 @@ public class RulesServiceImpl implements RulesService {
   }
 
   private Optional<ServerActiveRule> findServerActiveRuleInStorage(Binding binding, String ruleKey) {
-    var projectStorage = new ProjectStorage(storageRoot.resolve(encodeForFs(binding.getConnectionId())).resolve("projects"), null);
     AnalyzerConfiguration analyzerConfiguration;
     try {
-      analyzerConfiguration = projectStorage
-        .getAnalyzerConfiguration(binding.getSonarProjectKey());
+      analyzerConfiguration = storageService.binding(binding).analyzerConfiguration().read();
     } catch (StorageException e) {
       // XXX we should make sure this situation can not happen (sync should be enforced at least once)
       return Optional.empty();

@@ -35,13 +35,13 @@ import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.OpenHotspotInBro
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.repository.config.Binding;
+import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
-import org.sonarsource.sonarlint.core.serverconnection.StorageFacade;
+import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
@@ -57,12 +57,12 @@ public class HotspotServiceImpl implements HotspotService {
 
   private final ServerApiProvider serverApiProvider;
   private final TelemetryServiceImpl telemetryService;
-  private final StorageFacade storageFacade;
+  private final StorageService storageService;
 
-  public HotspotServiceImpl(SonarLintClient client, StorageFacade storageFacade, ConfigurationRepository configurationRepository,
+  public HotspotServiceImpl(SonarLintClient client, StorageService storageService, ConfigurationRepository configurationRepository,
     ConnectionConfigurationRepository connectionRepository, ServerApiProvider serverApiProvider, TelemetryServiceImpl telemetryService) {
     this.client = client;
-    this.storageFacade = storageFacade;
+    this.storageService = storageService;
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
     this.serverApiProvider = serverApiProvider;
@@ -88,7 +88,7 @@ public class HotspotServiceImpl implements HotspotService {
   @Override
   public CompletableFuture<CheckLocalDetectionSupportedResponse> checkLocalDetectionSupported(CheckLocalDetectionSupportedParams params) {
     var configScopeId = params.getConfigScopeId();
-    boolean supported = false;
+    var supported = false;
     if (configScopeId != null) {
       var effectiveBinding = configurationRepository.getEffectiveBinding(configScopeId);
       supported = effectiveBinding.flatMap(binding -> connectionRepository.getEndpointParams(binding.getConnectionId()))
@@ -109,7 +109,7 @@ public class HotspotServiceImpl implements HotspotService {
     return CompletableFuture.completedFuture(toResponse(allowedStatuses));
   }
 
-  private ListAllowedStatusesResponse toResponse(List<HotspotReviewStatus> coreStatuses) {
+  private static ListAllowedStatusesResponse toResponse(List<HotspotReviewStatus> coreStatuses) {
     return new ListAllowedStatusesResponse(coreStatuses.stream().map(s -> HotspotStatus.valueOf(s.name()))
       // respect ordering of the client-api enum for the UI
       .sorted()
@@ -139,19 +139,19 @@ public class HotspotServiceImpl implements HotspotService {
       .orElseGet(() -> CompletableFuture.completedFuture(null));
   }
 
-  private HotspotReviewStatus toCore(HotspotStatus newStatus) {
+  private static HotspotReviewStatus toCore(HotspotStatus newStatus) {
     return HotspotReviewStatus.valueOf(newStatus.name());
   }
 
   private void saveStatusInStorage(Binding binding, String hotspotKey, HotspotReviewStatus newStatus) {
-    storageFacade.projectsStorageFacade(binding.getConnectionId())
-      .findings(binding.getSonarProjectKey())
+    storageService.binding(binding)
+      .findings()
       .changeHotspotStatus(hotspotKey, newStatus);
   }
 
   private boolean isLocalDetectionSupported(boolean isSonarCloud, String connectionId) {
     return !isSonarCloud &&
-      storageFacade.getServerInfo(connectionId).getServerInfo()
+      storageService.connection(connectionId).serverInfo().read()
         .map(StoredServerInfo::getVersion)
         .map(version -> version.compareToIgnoreQualifier(TRACKING_COMPATIBLE_MIN_SQ_VERSION) >= 0)
         .orElse(false);

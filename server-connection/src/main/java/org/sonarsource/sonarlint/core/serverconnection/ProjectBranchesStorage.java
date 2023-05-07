@@ -17,47 +17,45 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection.storage;
+package org.sonarsource.sonarlint.core.serverconnection;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Optional;
-import org.sonarsource.sonarlint.core.commons.Version;
+import java.util.Set;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.serverapi.system.ServerInfo;
-import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
-import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil;
+import org.sonarsource.sonarlint.core.serverconnection.storage.RWLock;
 
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil.writeToFile;
 
-public class ServerInfoStorage {
+public class ProjectBranchesStorage {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  public static final String SERVER_INFO_PB = "server_info.pb";
-
   private final Path storageFilePath;
   private final RWLock rwLock = new RWLock();
 
-  public ServerInfoStorage(Path rootPath) {
-    this.storageFilePath = rootPath.resolve(SERVER_INFO_PB);
+  public ProjectBranchesStorage(Path projectStorageRoot) {
+    this.storageFilePath = projectStorageRoot.resolve("project_branches.pb");
   }
 
-  public void store(ServerInfo serverInfo) {
+  public void store(ProjectBranches projectBranches) {
     FileUtils.mkdirs(storageFilePath.getParent());
-    var serverInfoToStore = adapt(serverInfo);
-    LOG.debug("Storing server info in {}", storageFilePath);
-    rwLock.write(() -> writeToFile(serverInfoToStore, storageFilePath));
+    var data = adapt(projectBranches);
+    LOG.debug("Storing project branches in {}", storageFilePath);
+    rwLock.write(() -> writeToFile(data, storageFilePath));
   }
 
-  public Optional<StoredServerInfo> read() {
-    return rwLock.read(() -> Files.exists(storageFilePath) ? Optional.of(adapt(ProtobufUtil.readFile(storageFilePath, Sonarlint.ServerInfo.parser()))) : Optional.empty());
+  public ProjectBranches read() {
+    return adapt(rwLock.read(() -> ProtobufUtil.readFile(storageFilePath, Sonarlint.ProjectBranches.parser())));
   }
 
-  private static Sonarlint.ServerInfo adapt(ServerInfo serverInfo) {
-    return Sonarlint.ServerInfo.newBuilder().setVersion(serverInfo.getVersion()).build();
+  private static ProjectBranches adapt(Sonarlint.ProjectBranches projectBranches) {
+    return new ProjectBranches(Set.copyOf(projectBranches.getBranchNameList()), projectBranches.getMainBranchName());
   }
 
-  private static StoredServerInfo adapt(Sonarlint.ServerInfo serverInfo) {
-    return new StoredServerInfo(Version.create(serverInfo.getVersion()));
+  private static Sonarlint.ProjectBranches adapt(ProjectBranches projectBranches) {
+    return Sonarlint.ProjectBranches.newBuilder()
+      .addAllBranchName(projectBranches.getBranchNames())
+      .setMainBranchName(projectBranches.getMainBranchName())
+      .build();
   }
 }

@@ -24,22 +24,21 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStoresManager;
 
 public class ServerHotspotUpdater {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final ServerIssueStoresManager serverIssueStoresManager;
+  private final ConnectionStorage storage;
 
-  public ServerHotspotUpdater(ServerIssueStoresManager serverIssueStoresManager) {
-    this.serverIssueStoresManager = serverIssueStoresManager;
+  public ServerHotspotUpdater(ConnectionStorage storage) {
+    this.storage = storage;
   }
 
   public void updateAll(HotspotApi hotspotApi, String projectKey, String branchName, Supplier<Version> serverVersionSupplier, ProgressMonitor progress) {
     if (hotspotApi.permitsTracking(serverVersionSupplier)) {
       var projectHotspots = hotspotApi.getAll(projectKey, branchName, progress);
-      serverIssueStoresManager.get(projectKey).replaceAllHotspotsOfBranch(branchName, projectHotspots);
+      storage.project(projectKey).findings().replaceAllHotspotsOfBranch(branchName, projectHotspots);
     } else {
       LOG.info("Skip downloading hotspots from server, not supported");
     }
@@ -53,7 +52,7 @@ public class ServerHotspotUpdater {
     if (hotspotApi.permitsTracking(serverVersionSupplier)) {
       var projectKey = projectBinding.projectKey();
       var projectHotspots = hotspotApi.getFromFile(projectKey, serverFilePath, branchName);
-      serverIssueStoresManager.get(projectKey).replaceAllHotspotsOfFile(branchName, serverFilePath, projectHotspots);
+      storage.project(projectKey).findings().replaceAllHotspotsOfFile(branchName, serverFilePath, projectHotspots);
     } else {
       LOG.info("Skip downloading hotspots for file, not supported");
     }
