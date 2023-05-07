@@ -22,14 +22,14 @@ package org.sonarsource.sonarlint.core.serverconnection.events.issue;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
+import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
 import org.sonarsource.sonarlint.core.serverconnection.events.ServerEventHandler;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStoresManager;
 
 public class UpdateStorageOnIssueChanged implements ServerEventHandler<IssueChangedEvent> {
-  private final ServerIssueStoresManager serverIssueStoresManager;
+  private final ConnectionStorage storage;
 
-  public UpdateStorageOnIssueChanged(ServerIssueStoresManager serverIssueStoresManager) {
-    this.serverIssueStoresManager = serverIssueStoresManager;
+  public UpdateStorageOnIssueChanged(ConnectionStorage storage) {
+    this.storage = storage;
   }
 
   @Override
@@ -49,7 +49,7 @@ public class UpdateStorageOnIssueChanged implements ServerEventHandler<IssueChan
   }
 
   private boolean updateNormalIssue(String projectKey, IssueSeverity userSeverity, RuleType userType, Boolean resolved, String issueKey) {
-    return serverIssueStoresManager.get(projectKey).updateIssue(issueKey, issue -> {
+    return storage.project(projectKey).findings().updateIssue(issueKey, issue -> {
       if (userSeverity != null) {
         issue.setUserSeverity(userSeverity);
       }
@@ -63,7 +63,7 @@ public class UpdateStorageOnIssueChanged implements ServerEventHandler<IssueChan
   }
 
   private void updateTaintIssue(String projectKey, IssueSeverity userSeverity, RuleType userType, Boolean resolved, String issueKey) {
-    serverIssueStoresManager.get(projectKey).updateTaintIssue(issueKey, issue -> {
+    storage.project(projectKey).findings().updateTaintIssue(issueKey, issue -> {
       if (userSeverity != null) {
         issue.setSeverity(userSeverity);
       }

@@ -26,36 +26,29 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 
-import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil.writeToFile;
 
 public class SmartNotificationsStorage {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   public static final String LAST_EVENT_POLLING_PB = "last_event_polling.pb";
-  private final Path rootPath;
+  private final Path storageFilePath;
   private final RWLock rwLock = new RWLock();
 
-  public SmartNotificationsStorage(Path rootPath) {
-    this.rootPath = rootPath;
+  public SmartNotificationsStorage(Path projectStorageRoot) {
+    this.storageFilePath = projectStorageRoot.resolve(LAST_EVENT_POLLING_PB);
   }
 
-  public void store(Long lastEventPolling, String projectKey, String connectionId) {
-    var lastEventPollingPath = getLastEventPollingFilePath(projectKey, connectionId);
-    FileUtils.mkdirs(lastEventPollingPath.getParent());
+  public void store(Long lastEventPolling) {
+    FileUtils.mkdirs(storageFilePath.getParent());
     var serverInfoToStore = adapt(lastEventPolling);
-    LOG.debug("Storing last event polling in {}", lastEventPollingPath);
-    rwLock.write(() -> writeToFile(serverInfoToStore, lastEventPollingPath));
+    LOG.debug("Storing last event polling in {}", storageFilePath);
+    rwLock.write(() -> writeToFile(serverInfoToStore, storageFilePath));
   }
 
-  public Optional<Long> getLastEventPolling(String projectKey, String connectionId) {
-    var filePath = getLastEventPollingFilePath(projectKey, connectionId);
-    return rwLock.read(() -> Files.exists(filePath) ?
-      Optional.of(adapt(ProtobufUtil.readFile(filePath, Sonarlint.LastEventPolling.parser()))) : Optional.empty());
-  }
-
-  private Path getLastEventPollingFilePath(String projectKey, String connectionId) {
-    return rootPath.resolve(encodeForFs(connectionId)).resolve(encodeForFs(projectKey)).resolve(LAST_EVENT_POLLING_PB);
+  public Optional<Long> readLastEventPolling() {
+    return rwLock.read(() -> Files.exists(storageFilePath) ?
+      Optional.of(adapt(ProtobufUtil.readFile(storageFilePath, Sonarlint.LastEventPolling.parser()))) : Optional.empty());
   }
 
   private static Sonarlint.LastEventPolling adapt(Long lastEventPolling) {

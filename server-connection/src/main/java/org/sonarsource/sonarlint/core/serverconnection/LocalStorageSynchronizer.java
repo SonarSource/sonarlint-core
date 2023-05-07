@@ -29,8 +29,6 @@ import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.branches.ServerBranch;
 import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
-import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 
 import static java.util.stream.Collectors.toSet;
@@ -39,15 +37,14 @@ public class LocalStorageSynchronizer {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final Set<String> enabledLanguageKeys;
+  private final ConnectionStorage storage;
   private final ServerInfoSynchronizer serverInfoSynchronizer;
   private final PluginsSynchronizer pluginsSynchronizer;
-  private final ProjectStorage projectStorage;
 
-  public LocalStorageSynchronizer(Set<Language> enabledLanguages, Set<String> embeddedPluginKeys, ServerInfoSynchronizer serverInfoSynchronizer, PluginsStorage pluginsStorage,
-    ProjectStorage projectStorage) {
+  public LocalStorageSynchronizer(Set<Language> enabledLanguages, Set<String> embeddedPluginKeys, ServerInfoSynchronizer serverInfoSynchronizer, ConnectionStorage storage) {
     this.enabledLanguageKeys = enabledLanguages.stream().map(Language::getLanguageKey).collect(toSet());
-    this.projectStorage = projectStorage;
-    this.pluginsSynchronizer = new PluginsSynchronizer(enabledLanguages, pluginsStorage, embeddedPluginKeys);
+    this.storage = storage;
+    this.pluginsSynchronizer = new PluginsSynchronizer(enabledLanguages, storage, embeddedPluginKeys);
     this.serverInfoSynchronizer = serverInfoSynchronizer;
   }
 
@@ -57,11 +54,11 @@ public class LocalStorageSynchronizer {
     var anyPluginUpdated = pluginsSynchronizer.synchronize(serverApi, progressMonitor);
     projectKeys.stream()
       .collect(Collectors.toMap(Function.identity(), projectKey -> synchronizeAnalyzerConfig(serverApi, projectKey, progressMonitor)))
-      .forEach(projectStorage::store);
+      .forEach((projectKey, analyzerConfig) -> storage.project(projectKey).analyzerConfiguration().store(analyzerConfig));
     var branchByProjectKey = projectKeys.stream()
       .collect(Collectors.toMap(Function.identity(), projectKey -> synchronizeProjectBranches(serverApi, projectKey)));
     branchByProjectKey
-      .forEach(projectStorage::store);
+      .forEach((projectKey, branches) -> storage.project(projectKey).branches().store(branches));
     return new SynchronizationResult(anyPluginUpdated);
   }
 
@@ -70,7 +67,7 @@ public class LocalStorageSynchronizer {
     Map<String, RuleSet> currentRuleSets;
     int currentSchemaVersion;
     try {
-      var analyzerConfiguration = projectStorage.getAnalyzerConfiguration(projectKey);
+      var analyzerConfiguration = storage.project(projectKey).analyzerConfiguration().read();
       currentRuleSets = analyzerConfiguration.getRuleSetByLanguageKey();
       currentSchemaVersion = analyzerConfiguration.getSchemaVersion();
     } catch (StorageException e) {

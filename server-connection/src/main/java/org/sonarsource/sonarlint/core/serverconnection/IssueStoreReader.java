@@ -27,15 +27,14 @@ import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStoresManager;
 
 import static java.util.function.Predicate.not;
 
 public class IssueStoreReader {
-  private final ServerIssueStoresManager serverIssueStoresManager;
+  private final ConnectionStorage storage;
 
-  public IssueStoreReader(ServerIssueStoresManager serverIssueStoresManager) {
-    this.serverIssueStoresManager = serverIssueStoresManager;
+  public IssueStoreReader(ConnectionStorage storage) {
+    this.storage = storage;
   }
 
   public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String branchName, String ideFilePath) {
@@ -43,7 +42,7 @@ public class IssueStoreReader {
     if (sqPath == null) {
       return Collections.emptyList();
     }
-    var loadedIssues = serverIssueStoresManager.get(projectBinding.projectKey()).load(branchName, sqPath);
+    var loadedIssues = storage.project(projectBinding.projectKey()).findings().load(branchName, sqPath);
     loadedIssues.forEach(issue -> issue.setFilePath(ideFilePath));
     return loadedIssues;
   }
@@ -53,14 +52,14 @@ public class IssueStoreReader {
     if (sqPath == null) {
       return Collections.emptyList();
     }
-    var loadedIssues = serverIssueStoresManager.get(projectBinding.projectKey()).loadTaint(branchName, sqPath);
+    var loadedIssues = storage.project(projectBinding.projectKey()).findings().loadTaint(branchName, sqPath);
     loadedIssues = filterOutResolvedIssues(loadedIssues);
     loadedIssues.forEach(issue -> issue.setFilePath(ideFilePath));
     return loadedIssues;
   }
 
   public List<ServerTaintIssue> getRawServerTaintIssues(ProjectBinding projectBinding, String branchName) {
-    var loadedIssues = serverIssueStoresManager.get(projectBinding.projectKey()).loadTaint(branchName);
+    var loadedIssues = storage.project(projectBinding.projectKey()).findings().loadTaint(branchName);
     return filterOutResolvedIssues(loadedIssues);
   }
 
@@ -69,7 +68,7 @@ public class IssueStoreReader {
     if (serverFilePath == null) {
       return Collections.emptyList();
     }
-    var loadedHotspots = serverIssueStoresManager.get(projectBinding.projectKey()).loadHotspots(branchName, serverFilePath);
+    var loadedHotspots = storage.project(projectBinding.projectKey()).findings().loadHotspots(branchName, serverFilePath);
     loadedHotspots.forEach(hotspot -> hotspot.setFilePath(ideFilePath));
     return loadedHotspots;
   }

@@ -25,9 +25,10 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
+import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
+import org.sonarsource.sonarlint.core.serverconnection.SonarProjectStorage;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStoresManager;
 import testutils.InMemoryIssueStore;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,9 +46,11 @@ class UpdateStorageOnIssueChangedTests {
   @BeforeEach
   void setUp() {
     serverIssueStore = new InMemoryIssueStore();
-    ServerIssueStoresManager manager = mock(ServerIssueStoresManager.class);
-    when(manager.get(PROJECT_KEY)).thenReturn(serverIssueStore);
-    handler = new UpdateStorageOnIssueChanged(manager);
+    ConnectionStorage storage = mock(ConnectionStorage.class);
+    var projectStorage = mock(SonarProjectStorage.class);
+    when(storage.project(PROJECT_KEY)).thenReturn(projectStorage);
+    when(projectStorage.findings()).thenReturn(serverIssueStore);
+    handler = new UpdateStorageOnIssueChanged(storage);
   }
 
   @Test

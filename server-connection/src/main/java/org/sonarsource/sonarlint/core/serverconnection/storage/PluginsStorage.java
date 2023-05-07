@@ -41,10 +41,12 @@ public class PluginsStorage {
   public static final String PLUGIN_REFERENCES_PB = "plugin_references.pb";
 
   private final Path rootPath;
+  private final Path pluginReferencesFilePath;
   private final RWLock rwLock = new RWLock();
 
-  public PluginsStorage(Path rootPath) {
-    this.rootPath = rootPath;
+  public PluginsStorage(Path connectionStorageRoot) {
+    this.rootPath = connectionStorageRoot.resolve("plugins");
+    this.pluginReferencesFilePath = rootPath.resolve(PLUGIN_REFERENCES_PB);
   }
 
   public void store(ServerPlugin plugin, InputStream pluginBinary) {
@@ -52,12 +54,11 @@ public class PluginsStorage {
       FileUtils.copyInputStreamToFile(pluginBinary, rootPath.resolve(plugin.getFilename()).toFile());
       var reference = adapt(plugin);
       rwLock.write(() -> {
-        var pluginsFilePath = getPluginsFilePath();
-        var references = Files.exists(pluginsFilePath) ? ProtobufUtil.readFile(pluginsFilePath, Sonarlint.PluginReferences.parser())
+        var references = Files.exists(pluginReferencesFilePath) ? ProtobufUtil.readFile(pluginReferencesFilePath, Sonarlint.PluginReferences.parser())
           : Sonarlint.PluginReferences.newBuilder().build();
         var currentReferences = Sonarlint.PluginReferences.newBuilder(references);
         currentReferences.putPluginsByKey(plugin.getKey(), reference);
-        ProtobufUtil.writeToFile(currentReferences.build(), pluginsFilePath);
+        ProtobufUtil.writeToFile(currentReferences.build(), pluginReferencesFilePath);
       });
     } catch (IOException e) {
       // XXX should we stop the whole sync ? just continue and log ?
@@ -66,13 +67,8 @@ public class PluginsStorage {
   }
 
   public List<StoredPlugin> getStoredPlugins() {
-    var filePath = getPluginsFilePath();
-    return rwLock.read(() -> Files.exists(filePath) ? ProtobufUtil.readFile(filePath, Sonarlint.PluginReferences.parser()) : Sonarlint.PluginReferences.newBuilder().build())
-      .getPluginsByKeyMap().values().stream().map(this::adapt).collect(Collectors.toList());
-  }
-
-  private Path getPluginsFilePath() {
-    return rootPath.resolve(PLUGIN_REFERENCES_PB);
+    return rwLock.read(() -> Files.exists(pluginReferencesFilePath) ? ProtobufUtil.readFile(pluginReferencesFilePath, Sonarlint.PluginReferences.parser())
+      : Sonarlint.PluginReferences.newBuilder().build()).getPluginsByKeyMap().values().stream().map(this::adapt).collect(Collectors.toList());
   }
 
   public Map<String, StoredPlugin> getStoredPluginsByKey() {
@@ -113,7 +109,7 @@ public class PluginsStorage {
     }
     var knownPluginsPaths = getStoredPlugins().stream().map(StoredPlugin::getJarPath).collect(Collectors.toSet());
     try (Stream<Path> pathsInDir = Files.list(rootPath)) {
-      return pathsInDir.filter(p -> !p.equals(getPluginsFilePath()))
+      return pathsInDir.filter(p -> !p.equals(pluginReferencesFilePath))
         .filter(p -> !knownPluginsPaths.contains(p))
         .map(Path::toFile)
         .collect(Collectors.toList());

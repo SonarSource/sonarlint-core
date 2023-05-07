@@ -19,34 +19,34 @@
  */
 package org.sonarsource.sonarlint.core.smartnotifications;
 
-import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import org.sonarsource.sonarlint.core.serverconnection.storage.SmartNotificationsStorage;
+import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 
 public class LastEventPolling {
 
-  private final SmartNotificationsStorage storage;
+  private final StorageService storage;
 
-  public LastEventPolling(Path storageRoot) {
-    this.storage = new SmartNotificationsStorage(storageRoot);
+  public LastEventPolling(StorageService storage) {
+    this.storage = storage;
   }
 
   public ZonedDateTime getLastEventPolling(String connectionId, String projectKey) {
-    var lastEventPollingEpoch = storage.getLastEventPolling(projectKey, connectionId);
+    var lastEventPollingEpoch = storage.connection(connectionId).project(projectKey).smartNotifications().readLastEventPolling();
     return lastEventPollingEpoch.map(aLong -> ZonedDateTime.ofInstant(Instant.ofEpochMilli(aLong), ZoneId.systemDefault()))
       .orElseGet(ZonedDateTime::now);
   }
 
   public void setLastEventPolling(ZonedDateTime dateTime, String connectionId, String projectKey) {
-    var lastEventPolling = storage.getLastEventPolling(projectKey, connectionId);
+    var smartNotificationsStorage = storage.connection(connectionId).project(projectKey).smartNotifications();
+    var lastEventPolling = smartNotificationsStorage.readLastEventPolling();
     var dateTimeEpoch = dateTime.toInstant().toEpochMilli();
     if (lastEventPolling.isPresent() && dateTimeEpoch <= lastEventPolling.get()) {
       // this can happen if the settings changed between the read and write
       return;
     }
-    storage.store(dateTimeEpoch, projectKey, connectionId);
+    smartNotificationsStorage.store(dateTimeEpoch);
   }
 
 }

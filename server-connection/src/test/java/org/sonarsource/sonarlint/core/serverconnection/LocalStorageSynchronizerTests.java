@@ -37,10 +37,7 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Qualityprofil
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Settings;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ServerInfoStorage;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static java.util.Collections.emptySet;
@@ -72,13 +69,12 @@ class LocalStorageSynchronizerTests {
     mockApiRulesSearchReturnsOneRule(JS_QP_KEY);
     mockApiProjectBranchesList();
 
-    final var serverInfoStorage = new ServerInfoStorage(tmpDir);
-    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new ServerInfoSynchronizer(serverInfoStorage), new PluginsStorage(tmpDir),
-      new ProjectStorage(tmpDir, tmpDir));
+    var storage = new ConnectionStorage(tmpDir, tmpDir, "connectionId");
+    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new ServerInfoSynchronizer(storage), storage);
 
     synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor);
 
-    var analyzerConfigFile = tmpDir.resolve("70726f6a6563744b6579/analyzer_config.pb");
+    var analyzerConfigFile = tmpDir.resolve("636f6e6e656374696f6e4964/projects/70726f6a6563744b6579/analyzer_config.pb");
     assertThat(analyzerConfigFile).exists();
     var analyzerConfiguration = ProtobufUtil.readFile(analyzerConfigFile, Sonarlint.AnalyzerConfiguration.parser());
     assertThat(analyzerConfiguration.getSettingsMap()).containsEntry("settingKey", "settingValue");
@@ -92,7 +88,7 @@ class LocalStorageSynchronizerTests {
     assertThat(activeRule.getTemplateKey()).isEqualTo("templateKey");
     assertThat(activeRule.getParamsMap()).containsEntry("paramKey", "paramValue");
 
-    var projectBranchesFile = tmpDir.resolve("70726f6a6563744b6579/project_branches.pb");
+    var projectBranchesFile = tmpDir.resolve("636f6e6e656374696f6e4964/projects/70726f6a6563744b6579/project_branches.pb");
     assertThat(projectBranchesFile).exists();
     var projectBranches = ProtobufUtil.readFile(projectBranchesFile, Sonarlint.ProjectBranches.parser());
     assertThat(projectBranches.getBranchNameList()).containsExactlyInAnyOrder("master", "feature/foo");
@@ -101,7 +97,7 @@ class LocalStorageSynchronizerTests {
 
   @Test
   void should_synchronize_a_ruleset_if_missing_language(@TempDir Path tmpDir) {
-    var storageFile = tmpDir.resolve("70726f6a6563744b6579/analyzer_config.pb");
+    var storageFile = tmpDir.resolve("636f6e6e656374696f6e4964/projects/70726f6a6563744b6579/analyzer_config.pb");
     FileUtils.mkdirs(storageFile.getParent());
     ProtobufUtil.writeToFile(Sonarlint.AnalyzerConfiguration.newBuilder()
       .setSchemaVersion(AnalyzerConfiguration.CURRENT_SCHEMA_VERSION)
@@ -117,9 +113,8 @@ class LocalStorageSynchronizerTests {
     // 404 if trying to fetch Java rules
     mockApiProjectBranchesList();
 
-    final var serverInfoStorage = new ServerInfoStorage(tmpDir);
-    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS, Language.JAVA), emptySet(), new ServerInfoSynchronizer(serverInfoStorage), new PluginsStorage(tmpDir),
-      new ProjectStorage(tmpDir, tmpDir));
+    var storage = new ConnectionStorage(tmpDir, tmpDir, "connectionId");
+    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS, Language.JAVA), emptySet(), new ServerInfoSynchronizer(storage), storage);
 
     synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor);
 
@@ -135,7 +130,7 @@ class LocalStorageSynchronizerTests {
 
   @Test
   void should_not_synchronize_up_to_date_ruleset(@TempDir Path tmpDir) {
-    var storageFile = tmpDir.resolve("70726f6a6563744b6579/analyzer_config.pb");
+    var storageFile = tmpDir.resolve("636f6e6e656374696f6e4964/projects/70726f6a6563744b6579/analyzer_config.pb");
     FileUtils.mkdirs(storageFile.getParent());
     ProtobufUtil.writeToFile(Sonarlint.AnalyzerConfiguration.newBuilder()
       .setSchemaVersion(AnalyzerConfiguration.CURRENT_SCHEMA_VERSION)
@@ -152,9 +147,8 @@ class LocalStorageSynchronizerTests {
     mockApiRulesSearchReturnsOneRule(JS_QP_KEY);
     // 404 if trying to fetch Java rules
     mockApiProjectBranchesList();
-    final var serverInfoStorage = new ServerInfoStorage(tmpDir);
-    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS, Language.JAVA), emptySet(), new ServerInfoSynchronizer(serverInfoStorage), new PluginsStorage(tmpDir),
-      new ProjectStorage(tmpDir, tmpDir));
+    var storage = new ConnectionStorage(tmpDir, tmpDir, "connectionId");
+    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS, Language.JAVA), emptySet(), new ServerInfoSynchronizer(storage), storage);
 
     synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor);
 
@@ -170,7 +164,7 @@ class LocalStorageSynchronizerTests {
 
   @Test
   void should_force_synchronization_of_outdated_ruleset(@TempDir Path tmpDir) {
-    var storageFile = tmpDir.resolve("70726f6a6563744b6579/analyzer_config.pb");
+    var storageFile = tmpDir.resolve("636f6e6e656374696f6e4964/projects/70726f6a6563744b6579/analyzer_config.pb");
     FileUtils.mkdirs(storageFile.getParent());
     ProtobufUtil.writeToFile(Sonarlint.AnalyzerConfiguration.newBuilder()
       // No schema version defined, this is equivalent to "0"
@@ -183,9 +177,8 @@ class LocalStorageSynchronizerTests {
     mockApiQualityProfilesSearch(jsProfile(DATE_T0));
     mockApiRulesSearchReturnsOneRule(JS_QP_KEY);
     mockApiProjectBranchesList();
-    final var serverInfoStorage = new ServerInfoStorage(tmpDir);
-    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new ServerInfoSynchronizer(serverInfoStorage), new PluginsStorage(tmpDir),
-      new ProjectStorage(tmpDir, tmpDir));
+    var storage = new ConnectionStorage(tmpDir, tmpDir, "connectionId");
+    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new ServerInfoSynchronizer(storage), storage);
 
     synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor);
 
@@ -200,9 +193,8 @@ class LocalStorageSynchronizerTests {
   @Test
   void should_fail_synchronization_when_server_is_down(@TempDir Path tmpDir) {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"1\", \"status\": \"DOWN\", \"version\": \"1\"}");
-    final var serverInfoStorage = new ServerInfoStorage(tmpDir);
-    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new ServerInfoSynchronizer(serverInfoStorage), new PluginsStorage(tmpDir),
-      new ProjectStorage(tmpDir, tmpDir));
+    var storage = new ConnectionStorage(tmpDir, tmpDir, "connectionId");
+    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new ServerInfoSynchronizer(storage), storage);
 
     var throwable = catchThrowable(() -> synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor));
 

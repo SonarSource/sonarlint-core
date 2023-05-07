@@ -249,7 +249,7 @@ class SmartNotificationsMediumTests {
   }
 
   private void writeFile(Path tmpDir, String connectionId, String projectKey) {
-    var storageFile = tmpDir.resolve(encodeForFs(connectionId)).resolve(encodeForFs(projectKey)).resolve("last_event_polling.pb");
+    var storageFile = tmpDir.resolve(encodeForFs(connectionId)).resolve("projects").resolve(encodeForFs(projectKey)).resolve("last_event_polling.pb");
     FileUtils.mkdirs(storageFile.getParent());
     ProtobufUtil.writeToFile(Sonarlint.LastEventPolling.newBuilder()
       .setLastEventPolling(STORED_DATE.toInstant().toEpochMilli())

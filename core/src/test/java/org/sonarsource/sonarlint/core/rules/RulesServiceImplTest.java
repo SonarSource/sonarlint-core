@@ -46,7 +46,7 @@ class RulesServiceImplTest {
   @Test
   void it_should_return_all_embedded_rules_from_the_repository() throws Exception {
     when(extractionHelper.extractEmbeddedRules()).thenReturn(List.of(aRule()));
-    var rulesService = new RulesServiceImpl(null, null, rulesRepository);
+    var rulesService = new RulesServiceImpl(null, null, rulesRepository, null);
 
     var embeddedRules = rulesService.listAllStandaloneRulesDefinitions().get(1, TimeUnit.MINUTES).getRulesByKey().values();
 

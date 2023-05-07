@@ -29,7 +29,6 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint.PluginReferences;
-import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil;
 import testutils.MockWebServerExtensionWithProtobuf;
 
@@ -55,16 +54,16 @@ class PluginsSynchronizerTests {
     mockServer.addStringResponse("/api/plugins/download?plugin=java", "content-java");
     mockServer.addStringResponse("/api/plugins/download?plugin=javascript", "content-js");
 
-    underTest = new PluginsSynchronizer(Set.of(Language.JAVA, Language.JS), new PluginsStorage(dest), emptySet());
+    underTest = new PluginsSynchronizer(Set.of(Language.JAVA, Language.JS), new ConnectionStorage(dest, tmp, "connectionId"), emptySet());
     var anyPluginUpdated = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), new ProgressMonitor(null));
 
-    var references = ProtobufUtil.readFile(dest.resolve("plugin_references.pb"), PluginReferences.parser());
+    var references = ProtobufUtil.readFile(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb"), PluginReferences.parser());
     assertThat(references.getPluginsByKeyMap().values()).extracting("key", "hash", "filename")
       .containsOnly(
         tuple("java", "de5308f43260d357acc97712ce4c5475", "sonar-java-plugin-5.13.1.18282.jar"),
         tuple("javascript", "79dba9cab72d8d31767f47c03d169598", "sonar-javascript-plugin-5.2.1.7778.jar"));
-    assertThat(dest.resolve("sonar-java-plugin-5.13.1.18282.jar")).hasContent("content-java");
-    assertThat(dest.resolve("sonar-javascript-plugin-5.2.1.7778.jar")).hasContent("content-js");
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-java-plugin-5.13.1.18282.jar")).hasContent("content-java");
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-javascript-plugin-5.2.1.7778.jar")).hasContent("content-js");
     assertThat(anyPluginUpdated).isTrue();
   }
 
@@ -76,7 +75,7 @@ class PluginsSynchronizerTests {
       "{\"key\": \"java\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-java-plugin-5.13.1.18282.jar\", \"sonarLintSupported\": true}" +
       "]}");
     mockServer.addStringResponse("/api/plugins/download?plugin=java", "content-java");
-    underTest = new PluginsSynchronizer(Set.of(Language.JAVA), new PluginsStorage(dest), emptySet());
+    underTest = new PluginsSynchronizer(Set.of(Language.JAVA), new ConnectionStorage(dest, tmp, "connectionId"), emptySet());
     underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), new ProgressMonitor(null));
     mockServer.removeResponse("/api/plugins/download?plugin=java");
 
@@ -93,7 +92,7 @@ class PluginsSynchronizerTests {
       "{\"key\": \"java\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-java-plugin-5.13.1.18282.jar\", \"sonarLintSupported\": true}" +
       "]}");
     mockServer.addStringResponse("/api/plugins/download?plugin=java", "content-java");
-    underTest = new PluginsSynchronizer(Set.of(Language.JAVA), new PluginsStorage(dest), emptySet());
+    underTest = new PluginsSynchronizer(Set.of(Language.JAVA), new ConnectionStorage(dest, tmp, "connectionId"), emptySet());
     underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), new ProgressMonitor(null));
     mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": [" +
       "{\"key\": \"java\", \"hash\": \"79dba9cab72d8d31767f47c03d169598\", \"filename\": \"sonar-java-plugin-5.14.0.18485.jar\", \"sonarLintSupported\": true}" +
@@ -102,11 +101,11 @@ class PluginsSynchronizerTests {
 
     var anyPluginUpdated = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), new ProgressMonitor(null));
 
-    var references = ProtobufUtil.readFile(dest.resolve("plugin_references.pb"), PluginReferences.parser());
+    var references = ProtobufUtil.readFile(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb"), PluginReferences.parser());
     assertThat(references.getPluginsByKeyMap().values()).extracting("key", "hash", "filename")
       .containsOnly(
         tuple("java", "79dba9cab72d8d31767f47c03d169598", "sonar-java-plugin-5.14.0.18485.jar"));
-    assertThat(dest.resolve("sonar-java-plugin-5.14.0.18485.jar")).hasContent("content-java2");
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-java-plugin-5.14.0.18485.jar")).hasContent("content-java2");
     assertThat(anyPluginUpdated).isTrue();
   }
 
@@ -116,11 +115,11 @@ class PluginsSynchronizerTests {
       "{\"key\": \"java\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-java-plugin-5.13.1.18282.jar\", \"sonarLintSupported\": false}" +
       "]}");
 
-    underTest = new PluginsSynchronizer(Set.of(Language.JAVA), new PluginsStorage(dest), Set.of());
+    underTest = new PluginsSynchronizer(Set.of(Language.JAVA), new ConnectionStorage(dest, dest, "connectionId"), Set.of());
     var anyPluginUpdated = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), new ProgressMonitor(null));
 
-    assertThat(dest.resolve("plugin_references.pb")).doesNotExist();
-    assertThat(dest.resolve("sonar-java-plugin-5.13.1.18282.jar")).doesNotExist();
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).doesNotExist();
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-java-plugin-5.13.1.18282.jar")).doesNotExist();
     assertThat(anyPluginUpdated).isFalse();
   }
 
@@ -130,11 +129,11 @@ class PluginsSynchronizerTests {
       "{\"key\": \"java\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-java-plugin-5.12.0.jar\", \"sonarLintSupported\": true}" +
       "]}");
 
-    underTest = new PluginsSynchronizer(Set.of(Language.JAVA), new PluginsStorage(dest), Set.of());
+    underTest = new PluginsSynchronizer(Set.of(Language.JAVA), new ConnectionStorage(dest, dest, "connectionId"), Set.of());
     var anyPluginUpdated = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), new ProgressMonitor(null));
 
-    assertThat(dest.resolve("plugin_references.pb")).doesNotExist();
-    assertThat(dest.resolve("sonar-java-plugin-5.12.0.jar")).doesNotExist();
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).doesNotExist();
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-java-plugin-5.12.0.jar")).doesNotExist();
     assertThat(anyPluginUpdated).isFalse();
   }
 
@@ -144,11 +143,11 @@ class PluginsSynchronizerTests {
       "{\"key\": \"java\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-java-plugin-5.13.1.18282.jar\", \"sonarLintSupported\": true}" +
       "]}");
 
-    underTest = new PluginsSynchronizer(Set.of(Language.JAVA), new PluginsStorage(dest), Set.of("java"));
+    underTest = new PluginsSynchronizer(Set.of(Language.JAVA), new ConnectionStorage(dest, dest, "connectionId"), Set.of("java"));
     var anyPluginUpdated = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), new ProgressMonitor(null));
 
-    assertThat(dest.resolve("plugin_references.pb")).doesNotExist();
-    assertThat(dest.resolve("sonar-java-plugin-5.13.1.18282.jar")).doesNotExist();
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).doesNotExist();
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-java-plugin-5.13.1.18282.jar")).doesNotExist();
     assertThat(anyPluginUpdated).isFalse();
   }
 
@@ -159,11 +158,11 @@ class PluginsSynchronizerTests {
       "{\"key\": \"java\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-java-plugin-5.13.1.18282.jar\", \"sonarLintSupported\": true}" +
       "]}");
 
-    underTest = new PluginsSynchronizer(Set.of(Language.JS), new PluginsStorage(dest), emptySet());
+    underTest = new PluginsSynchronizer(Set.of(Language.JS), new ConnectionStorage(dest, tmp, "connectionId"), emptySet());
     var anyPluginUpdated = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), new ProgressMonitor(null));
 
-    assertThat(dest.resolve("plugin_references.pb")).doesNotExist();
-    assertThat(dest.resolve("sonar-java-plugin-5.13.1.18282.jar")).doesNotExist();
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).doesNotExist();
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-java-plugin-5.13.1.18282.jar")).doesNotExist();
     assertThat(anyPluginUpdated).isFalse();
   }
 
@@ -175,14 +174,14 @@ class PluginsSynchronizerTests {
       "]}");
     mockServer.addStringResponse("/api/plugins/download?plugin=java-custom", "content-java-custom");
 
-    underTest = new PluginsSynchronizer(Set.of(Language.JS), new PluginsStorage(dest), emptySet());
+    underTest = new PluginsSynchronizer(Set.of(Language.JS), new ConnectionStorage(dest, tmp, "connectionId"), emptySet());
     var anyPluginUpdated = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), new ProgressMonitor(null));
 
-    var references = ProtobufUtil.readFile(dest.resolve("plugin_references.pb"), PluginReferences.parser());
+    var references = ProtobufUtil.readFile(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb"), PluginReferences.parser());
     assertThat(references.getPluginsByKeyMap().values()).extracting("key", "hash", "filename")
       .containsOnly(
         tuple("java-custom", "de5308f43260d357acc97712ce4c5475", "java-custom-plugin-4.3.0.1456.jar"));
-    assertThat(dest.resolve("java-custom-plugin-4.3.0.1456.jar")).hasContent("content-java-custom");
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/java-custom-plugin-4.3.0.1456.jar")).hasContent("content-java-custom");
     assertThat(anyPluginUpdated).isTrue();
   }
 
@@ -195,14 +194,14 @@ class PluginsSynchronizerTests {
       "]}");
     mockServer.addStringResponse("/api/plugins/download?plugin=typescript", "content-ts");
 
-    underTest = new PluginsSynchronizer(Set.of(Language.TS), new PluginsStorage(dest), emptySet());
+    underTest = new PluginsSynchronizer(Set.of(Language.TS), new ConnectionStorage(dest, tmp, "connectionId"), emptySet());
     var anyPluginUpdated = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), new ProgressMonitor(null));
 
-    var references = ProtobufUtil.readFile(dest.resolve("plugin_references.pb"), PluginReferences.parser());
+    var references = ProtobufUtil.readFile(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb"), PluginReferences.parser());
     assertThat(references.getPluginsByKeyMap().values()).extracting("key", "hash", "filename")
       .containsOnly(
         tuple("typescript", "de5308f43260d357acc97712ce4c5475", "sonar-typescript-plugin-1.9.0.3766.jar"));
-    assertThat(dest.resolve("sonar-typescript-plugin-1.9.0.3766.jar")).hasContent("content-ts");
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-typescript-plugin-1.9.0.3766.jar")).hasContent("content-ts");
     assertThat(anyPluginUpdated).isTrue();
   }
 
@@ -214,11 +213,11 @@ class PluginsSynchronizerTests {
       "{\"key\": \"typescript\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-typescript-plugin-1.9.0.3766.jar\", \"sonarLintSupported\": true}" +
       "]}");
 
-    underTest = new PluginsSynchronizer(Set.of(Language.JAVA), new PluginsStorage(dest), emptySet());
+    underTest = new PluginsSynchronizer(Set.of(Language.JAVA), new ConnectionStorage(dest, tmp, "connectionId"), emptySet());
     var anyPluginUpdated = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), new ProgressMonitor(null));
 
-    assertThat(dest.resolve("plugin_references.pb")).doesNotExist();
-    assertThat(dest.resolve("sonar-typescript-plugin-1.9.0.3766.jar")).doesNotExist();
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/636f6e6e656374696f6e4964/plugin_references.pb")).doesNotExist();
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-typescript-plugin-1.9.0.3766.jar")).doesNotExist();
     assertThat(anyPluginUpdated).isFalse();
   }
 }

@@ -20,30 +20,24 @@
 package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.nio.file.Path;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStorage;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ServerInfoStorage;
-
-import static org.sonarsource.sonarlint.core.serverconnection.ServerConnection.computeConnectionStorageRoot;
-import static org.sonarsource.sonarlint.core.serverconnection.ServerConnection.computeProjectsStorageRoot;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class StorageFacade {
+  private final Path globalStorageRoot;
+  private final Path workDir;
+  private final Map<String, ConnectionStorage> connectionStorageById = new ConcurrentHashMap<>();
 
-  private Path globalStorageRoot;
-  private Path workDir;
-
-  public void initialize(Path globalStorageRoot, Path workDir) {
+  public StorageFacade(Path globalStorageRoot, Path workDir) {
     this.globalStorageRoot = globalStorageRoot;
     this.workDir = workDir;
   }
 
-  public ProjectStorage projectsStorageFacade(String connectionId) {
-    var connectionStorageRoot = computeConnectionStorageRoot(globalStorageRoot, connectionId);
-    var projectsStorageRoot = computeProjectsStorageRoot(connectionStorageRoot);
-    return new ProjectStorage(projectsStorageRoot, workDir);
+  public ConnectionStorage connection(String connectionId) {
+    return connectionStorageById.computeIfAbsent(connectionId, k -> new ConnectionStorage(globalStorageRoot, workDir, connectionId));
   }
 
-  public ServerInfoStorage getServerInfo(String connectionId) {
-    var connectionStorageRoot = computeConnectionStorageRoot(globalStorageRoot, connectionId);
-    return new ServerInfoStorage(connectionStorageRoot);
+  public void close() {
+    connectionStorageById.values().forEach(ConnectionStorage::close);
   }
 }

@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FilenameUtils;
-import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
@@ -57,90 +56,59 @@ import org.sonarsource.sonarlint.core.serverconnection.events.taint.UpdateStorag
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.prefix.FileTreeMatcher;
-import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStorage;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ServerInfoStorage;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStoresManager;
-import org.sonarsource.sonarlint.core.serverconnection.storage.StorageReader;
-
-import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 
 public class ServerConnection {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final Version SECRET_ANALYSIS_MIN_SQ_VERSION = Version.create("9.9");
 
   private final Set<Language> enabledLanguagesToSync;
-  private final ProjectStorage projectStorage;
-  private final StorageReader storageReader;
-  private final PluginsStorage pluginsStorage;
   private final IssueStoreReader issueStoreReader;
   private final LocalStorageSynchronizer storageSynchronizer;
   private final ProjectStorageUpdateExecutor projectStorageUpdateExecutor;
   private final ServerEventsAutoSubscriber serverEventsAutoSubscriber;
   private final ServerIssueUpdater issuesUpdater;
   private final ServerHotspotUpdater hotspotsUpdater;
-  private final ServerIssueStoresManager serverIssueStoresManager;
   private final boolean isSonarCloud;
-
-  private final Path connectionStorageRoot;
   private final EventDispatcher coreEventRouter;
   private final ServerInfoSynchronizer serverInfoSynchronizer;
-  private final ServerInfoStorage serverInfoStorage;
+  private final ConnectionStorage storage;
+  private final StorageFacade storageFacade;
 
   public ServerConnection(Path globalStorageRoot, String connectionId, boolean isSonarCloud, Set<Language> enabledLanguages, Set<String> embeddedPluginKeys, Path workDir) {
-    this(new ServerConnectionSpec(globalStorageRoot, connectionId, isSonarCloud, enabledLanguages, embeddedPluginKeys, workDir));
+    this(StorageFacadeCache.get().getOrCreate(globalStorageRoot, workDir), connectionId, isSonarCloud, enabledLanguages, embeddedPluginKeys);
   }
 
-  public ServerConnection(ServerConnectionSpec spec) {
-    this.isSonarCloud = spec.isSonarCloud;
-    this.enabledLanguagesToSync = spec.enabledLanguages.stream().filter(Language::shouldSyncInConnectedMode).collect(Collectors.toCollection(LinkedHashSet::new));
+  public ServerConnection(StorageFacade storageFacade, String connectionId, boolean isSonarCloud, Set<Language> enabledLanguages, Set<String> embeddedPluginKeys) {
+    this.isSonarCloud = isSonarCloud;
+    this.enabledLanguagesToSync = enabledLanguages.stream().filter(Language::shouldSyncInConnectedMode).collect(Collectors.toCollection(LinkedHashSet::new));
 
-    connectionStorageRoot = computeConnectionStorageRoot(spec.globalStorageRoot, spec.connectionId);
-
-    var projectsStorageRoot = computeProjectsStorageRoot(connectionStorageRoot);
-    var projectStoragePaths = new ProjectStoragePaths(projectsStorageRoot);
-    projectStorage = new ProjectStorage(projectsStorageRoot, spec.workDir);
-
-    this.storageReader = new StorageReader(projectStoragePaths);
-    this.serverIssueStoresManager = new ServerIssueStoresManager(projectsStorageRoot, spec.workDir);
-    this.issueStoreReader = new IssueStoreReader(serverIssueStoresManager);
-    this.issuesUpdater = new ServerIssueUpdater(serverIssueStoresManager, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
-    this.hotspotsUpdater = new ServerHotspotUpdater(serverIssueStoresManager);
-    serverInfoStorage = new ServerInfoStorage(connectionStorageRoot);
-    this.pluginsStorage = new PluginsStorage(connectionStorageRoot.resolve("plugins"));
-    serverInfoSynchronizer = new ServerInfoSynchronizer(serverInfoStorage);
-    this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguagesToSync, spec.embeddedPluginKeys, serverInfoSynchronizer, pluginsStorage, projectStorage);
-    this.projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(projectStoragePaths);
-    pluginsStorage.cleanUp();
+    this.storageFacade = storageFacade;
+    this.storage = storageFacade.connection(connectionId);
+    this.issueStoreReader = new IssueStoreReader(storage);
+    this.issuesUpdater = new ServerIssueUpdater(storage, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
+    this.hotspotsUpdater = new ServerHotspotUpdater(storage);
+    serverInfoSynchronizer = new ServerInfoSynchronizer(storage);
+    this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguagesToSync, embeddedPluginKeys, serverInfoSynchronizer, storage);
+    this.projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(storage);
+    storage.plugins().cleanUp();
     coreEventRouter = new EventDispatcher()
-      .dispatch(RuleSetChangedEvent.class, new UpdateStorageOnRuleSetChanged(projectStorage))
-      .dispatch(IssueChangedEvent.class, new UpdateStorageOnIssueChanged(serverIssueStoresManager))
-      .dispatch(TaintVulnerabilityRaisedEvent.class, new UpdateStorageOnTaintVulnerabilityRaised(serverIssueStoresManager))
-      .dispatch(TaintVulnerabilityClosedEvent.class, new UpdateStorageOnTaintVulnerabilityClosed(serverIssueStoresManager));
+      .dispatch(RuleSetChangedEvent.class, new UpdateStorageOnRuleSetChanged(storage))
+      .dispatch(IssueChangedEvent.class, new UpdateStorageOnIssueChanged(storage))
+      .dispatch(TaintVulnerabilityRaisedEvent.class, new UpdateStorageOnTaintVulnerabilityRaised(storage))
+      .dispatch(TaintVulnerabilityClosedEvent.class, new UpdateStorageOnTaintVulnerabilityClosed(storage));
     this.serverEventsAutoSubscriber = new ServerEventsAutoSubscriber();
   }
 
-  @NotNull
-  public static Path computeProjectsStorageRoot(Path connectionStorageRoot) {
-    return connectionStorageRoot.resolve("projects");
-  }
-
-  @NotNull
-  public static Path computeConnectionStorageRoot(Path globalStorageRoot, String connectionId) {
-    return globalStorageRoot.resolve(encodeForFs(connectionId));
-  }
-
   public Map<String, Path> getStoredPluginPathsByKey() {
-    return pluginsStorage.getStoredPluginPathsByKey();
+    return storage.plugins().getStoredPluginPathsByKey();
   }
 
   public AnalyzerConfiguration getAnalyzerConfiguration(String projectKey) {
-    return projectStorage.getAnalyzerConfiguration(projectKey);
+    return storage.project(projectKey).analyzerConfiguration().read();
   }
 
   public ProjectBranches getProjectBranches(String projectKey) {
-    return projectStorage.getProjectBranches(projectKey);
+    return storage.project(projectKey).branches().read();
   }
 
   public Map<String, ServerProject> downloadAllProjects(EndpointParams endpoint, HttpClient client, ProgressMonitor monitor) {
@@ -183,7 +151,7 @@ public class ServerConnection {
     List<Path> idePathList = ideFilePaths.stream()
       .map(Paths::get)
       .collect(Collectors.toList());
-    List<Path> sqPathList = storageReader.readProjectComponents(projectKey)
+    List<Path> sqPathList = storage.project(projectKey).components().read()
       .getComponentList().stream()
       .map(Paths::get)
       .collect(Collectors.toList());
@@ -232,14 +200,14 @@ public class ServerConnection {
 
   public boolean permitsHotspotTracking() {
     // when storage is not present, consider hotspots should not be detected
-    return serverInfoStorage.getServerInfo()
+    return storage.serverInfo().read()
       .map(serverInfo -> HotspotApi.permitsTracking(isSonarCloud, serverInfo::getVersion))
       .orElse(false);
   }
 
   public boolean supportsSecretAnalysis() {
     // when storage is not present, assume that secrets are not supported by server
-    return isSonarCloud || serverInfoStorage.getServerInfo()
+    return isSonarCloud || storage.serverInfo().read()
       .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(SECRET_ANALYSIS_MIN_SQ_VERSION) >= 0)
       .orElse(false);
   }
@@ -278,9 +246,9 @@ public class ServerConnection {
 
   public void stop(boolean deleteStorage) {
     serverEventsAutoSubscriber.stop();
-    serverIssueStoresManager.close();
+    StorageFacadeCache.get().close(storageFacade);
     if (deleteStorage) {
-      FileUtils.deleteRecursively(connectionStorageRoot);
+      storage.delete();
     }
   }
 }

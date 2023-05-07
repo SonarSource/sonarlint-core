@@ -17,19 +17,21 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection.storage;
+package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.nio.file.Path;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil;
 
-public class StorageReader {
+public class ComponentsStorage {
+  public static final String COMPONENT_LIST_PB = "component_list.pb";
+  private final Path storageFilePath;
 
-  private final ProjectStoragePaths projectStoragePaths;
-
-  public StorageReader(ProjectStoragePaths projectStoragePaths) {
-    this.projectStoragePaths = projectStoragePaths;
+  public ComponentsStorage(Path projectStorageRoot) {
+    this.storageFilePath = projectStorageRoot.resolve(COMPONENT_LIST_PB);
   }
 
-  public Sonarlint.ProjectComponents readProjectComponents(String projectKey) {
-    return ProtobufUtil.readFile(projectStoragePaths.getComponentListPath(projectKey), Sonarlint.ProjectComponents.parser());
+  public Sonarlint.ProjectComponents read() {
+    return ProtobufUtil.readFile(storageFilePath, Sonarlint.ProjectComponents.parser());
   }
 }

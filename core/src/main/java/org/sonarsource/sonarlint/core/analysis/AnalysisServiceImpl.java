@@ -32,7 +32,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.analysis.GetSupportedFil
 import org.sonarsource.sonarlint.core.clientapi.backend.analysis.GetSupportedFilePatternsResponse;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.serverconnection.StorageFacade;
+import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 
 import static org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.LanguageDetection.sanitizeExtension;
 
@@ -42,11 +42,11 @@ public class AnalysisServiceImpl implements AnalysisService {
 
   private Set<Language> enabledLanguagesInStandaloneMode;
   private Set<Language> enabledLanguagesInConnectedMode;
-  private final StorageFacade storageFacade;
+  private final StorageService storageService;
 
-  public AnalysisServiceImpl(ConfigurationRepository configurationRepository, StorageFacade storageFacade) {
+  public AnalysisServiceImpl(ConfigurationRepository configurationRepository, StorageService storageService) {
     this.configurationRepository = configurationRepository;
-    this.storageFacade = storageFacade;
+    this.storageService = storageService;
   }
 
   public void initialize(Set<Language> enabledLanguagesInStandaloneMode, Set<Language> enabledLanguagesInConnectedMode) {
@@ -66,9 +66,8 @@ public class AnalysisServiceImpl implements AnalysisService {
         analysisSettings = Collections.emptyMap();
       } else {
         enabledLanguages = enabledLanguagesInConnectedMode;
-        var projectStorage = storageFacade.projectsStorageFacade(effectiveBinding.get().getConnectionId());
-        var analyzerConfiguration = projectStorage.getAnalyzerConfiguration(effectiveBinding.get().getSonarProjectKey());
-        analysisSettings = analyzerConfiguration.getSettings().getAll();
+        analysisSettings = storageService.binding(effectiveBinding.get())
+          .analyzerConfiguration().read().getSettings().getAll();
       }
       // TODO merge client side analysis settings
       var patterns = getPatterns(enabledLanguages, analysisSettings);

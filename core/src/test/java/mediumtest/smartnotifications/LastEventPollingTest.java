@@ -25,6 +25,7 @@ import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
+import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.smartnotifications.LastEventPolling;
@@ -41,33 +42,39 @@ class LastEventPollingTest {
 
   @Test
   void should_retrieve_stored_last_event_polling(@TempDir Path tmpDir) {
-    var storageFile = tmpDir.resolve(encodeForFs(CONNECTION_ID)).resolve(encodeForFs(PROJECT_KEY)).resolve(FILE_NAME);
+    var storageFile = tmpDir.resolve(encodeForFs(CONNECTION_ID)).resolve("projects").resolve(encodeForFs(PROJECT_KEY)).resolve(FILE_NAME);
     FileUtils.mkdirs(storageFile.getParent());
     ProtobufUtil.writeToFile(Sonarlint.LastEventPolling.newBuilder()
       .setLastEventPolling(STORED_DATE.toInstant().toEpochMilli())
       .build(), storageFile);
-    var serverInfoStorage = new LastEventPolling(tmpDir);
+    var storage = new StorageService();
+    storage.initialize(tmpDir, tmpDir);
+    var lastEventPolling = new LastEventPolling(storage);
 
-    var result = serverInfoStorage.getLastEventPolling(CONNECTION_ID, PROJECT_KEY);
+    var result = lastEventPolling.getLastEventPolling(CONNECTION_ID, PROJECT_KEY);
 
     assertThat(result).isEqualTo(STORED_DATE.truncatedTo(ChronoUnit.MILLIS));
   }
 
   @Test
   void should_store_last_event_polling(@TempDir Path tmpDir) {
-    var serverInfoStorage = new LastEventPolling(tmpDir);
-    serverInfoStorage.setLastEventPolling(STORED_DATE, CONNECTION_ID, PROJECT_KEY);
+    var storage = new StorageService();
+    storage.initialize(tmpDir, tmpDir);
+    var lastEventPolling = new LastEventPolling(storage);
+    lastEventPolling.setLastEventPolling(STORED_DATE, CONNECTION_ID, PROJECT_KEY);
 
-    var result = serverInfoStorage.getLastEventPolling(CONNECTION_ID, PROJECT_KEY);
+    var result = lastEventPolling.getLastEventPolling(CONNECTION_ID, PROJECT_KEY);
 
     assertThat(result).isEqualTo(STORED_DATE.truncatedTo(ChronoUnit.MILLIS));
   }
 
   @Test
   void should_not_retrieve_stored_last_event_polling(@TempDir Path tmpDir) {
-    var serverInfoStorage = new LastEventPolling(tmpDir);
+    var storage = new StorageService();
+    storage.initialize(tmpDir, tmpDir);
+    var lastEventPolling = new LastEventPolling(storage);
 
-    var result = serverInfoStorage.getLastEventPolling(CONNECTION_ID, PROJECT_KEY);
+    var result = lastEventPolling.getLastEventPolling(CONNECTION_ID, PROJECT_KEY);
 
     assertThat(result).isBeforeOrEqualTo(ZonedDateTime.now()).isAfter(ZonedDateTime.now().minusSeconds(3));
   }

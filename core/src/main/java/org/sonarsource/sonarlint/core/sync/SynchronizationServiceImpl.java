@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.sync;
 
 import com.google.common.eventbus.Subscribe;
 import com.google.common.util.concurrent.MoreExecutors;
-import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -41,8 +40,7 @@ import org.sonarsource.sonarlint.core.progress.TaskManager;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverconnection.ServerConnection;
-import org.sonarsource.sonarlint.core.serverconnection.ServerConnectionCache;
-import org.sonarsource.sonarlint.core.serverconnection.ServerConnectionSpec;
+import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.groupingBy;
@@ -57,26 +55,23 @@ public class SynchronizationServiceImpl {
   private final SonarProjectBranchServiceImpl branchService;
   private final ServerApiProvider serverApiProvider;
   private final TaskManager taskManager;
+  private final StorageService storageService;
   private ScheduledExecutorService scheduledSynchronizer;
-  private Path storageRoot;
-  private Path workDir;
   private Set<Language> enabledLanguagesInConnectedMode;
   private Set<String> connectedModeEmbeddedPluginKeys;
   private boolean taintVulnerabilitiesEnabled;
 
   public SynchronizationServiceImpl(SonarLintClient client, ConfigurationRepository configurationRepository, SonarProjectBranchServiceImpl branchService,
-    ServerApiProvider serverApiProvider) {
+    ServerApiProvider serverApiProvider, StorageService storageService) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.branchService = branchService;
     this.serverApiProvider = serverApiProvider;
     this.taskManager = new TaskManager(client);
+    this.storageService = storageService;
   }
 
-  public void initialize(Path storageRoot, Path workDir, Set<Language> enabledLanguagesInConnectedMode, Set<String> connectedModeEmbeddedPluginKeys,
-    boolean taintVulnerabilitiesEnabled) {
-    this.storageRoot = storageRoot;
-    this.workDir = workDir;
+  public void initialize(Set<Language> enabledLanguagesInConnectedMode, Set<String> connectedModeEmbeddedPluginKeys, boolean taintVulnerabilitiesEnabled) {
     this.enabledLanguagesInConnectedMode = enabledLanguagesInConnectedMode;
     this.connectedModeEmbeddedPluginKeys = connectedModeEmbeddedPluginKeys;
     this.taintVulnerabilitiesEnabled = taintVulnerabilitiesEnabled;
@@ -128,8 +123,8 @@ public class SynchronizationServiceImpl {
       return;
     }
     serverApiProvider.getServerApi(connectionId).ifPresent(serverApi -> {
-      var serverConnection = ServerConnectionCache
-        .getOrCreate(new ServerConnectionSpec(storageRoot, connectionId, serverApi.isSonarCloud(), enabledLanguagesInConnectedMode, connectedModeEmbeddedPluginKeys, workDir));
+      var serverConnection = new ServerConnection(storageService.getStorageFacade(), connectionId, serverApi.isSonarCloud(), enabledLanguagesInConnectedMode,
+        connectedModeEmbeddedPluginKeys);
       var subProgressGap = progressGap / boundConfigurationScopes.size();
       var subProgress = progress;
       for (BoundConfigurationScope scope : boundConfigurationScopes) {
@@ -162,7 +157,6 @@ public class SynchronizationServiceImpl {
     if (scheduledSynchronizer != null && !MoreExecutors.shutdownAndAwaitTermination(scheduledSynchronizer, 5, TimeUnit.SECONDS)) {
       LOG.warn("Unable to stop synchronizer executor service in a timely manner");
     }
-    ServerConnectionCache.clear();
   }
 
   private static class BoundConfigurationScope {

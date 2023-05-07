@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
+import org.sonarsource.sonarlint.core.commons.Binding;
 
 import static java.util.Objects.requireNonNull;
 

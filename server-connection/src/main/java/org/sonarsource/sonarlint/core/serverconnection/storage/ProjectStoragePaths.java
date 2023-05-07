@@ -20,24 +20,11 @@
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import org.apache.commons.codec.binary.Hex;
 
 public class ProjectStoragePaths {
 
   private static final int MAX_FOLDER_NAME_SIZE = 255;
-
-  public static final String COMPONENT_LIST_PB = "component_list.pb";
-
-  private final Path projectStorageRoot;
-
-  public ProjectStoragePaths(Path projectsStorageRoot) {
-    this.projectStorageRoot = projectsStorageRoot;
-  }
-
-  public Path getProjectStorageRoot(String projectKey) {
-    return projectStorageRoot.resolve(encodeForFs(projectKey));
-  }
 
   /**
    * Encodes a string to be used as a valid file or folder name.
@@ -54,7 +41,7 @@ public class ProjectStoragePaths {
     return encoded;
   }
 
-  public Path getComponentListPath(String projectKey) {
-    return getProjectStorageRoot(projectKey).resolve(COMPONENT_LIST_PB);
+  private ProjectStoragePaths() {
+    // utility class
   }
 }

@@ -31,7 +31,6 @@ import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil;
 import testutils.MockWebServerExtensionWithProtobuf;
 
@@ -47,14 +46,14 @@ class ProjectStorageUpdateExecutorTests {
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
   private ProjectStorageUpdateExecutor underTest;
-  private final ProjectStoragePaths projectStoragePaths = mock(ProjectStoragePaths.class);
   private final ProjectFileListDownloader projectFileListDownloader = mock(ProjectFileListDownloader.class);
 
   @Test
   void test_update_components(@TempDir Path tempDir) throws IOException {
     Files.createDirectory(tempDir.resolve("tmp"));
 
-    underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, projectFileListDownloader);
+    var storage = new ConnectionStorage(tempDir, tempDir, "connectionId");
+    underTest = new ProjectStorageUpdateExecutor(storage, projectFileListDownloader);
 
     List<String> fileList = new ArrayList<>();
     fileList.add("rootModule:pom.xml");
@@ -65,15 +64,15 @@ class ProjectStorageUpdateExecutorTests {
     when(projectFileListDownloader.get(eq(serverApi), eq("rootModule"), any(ProgressMonitor.class))).thenReturn(fileList);
     underTest.updateComponents(serverApi, "rootModule", tempDir, mock(ProgressMonitor.class));
 
-    var components = ProtobufUtil.readFile(tempDir.resolve(ProjectStoragePaths.COMPONENT_LIST_PB), Sonarlint.ProjectComponents.parser());
+    var components = ProtobufUtil.readFile(tempDir.resolve(ComponentsStorage.COMPONENT_LIST_PB), Sonarlint.ProjectComponents.parser());
     assertThat(components.getComponentList()).containsOnly(
       "pom.xml", "A/a.java", "B/b.java");
   }
 
   @Test
-  void test_update(@TempDir Path storagePath) throws IOException {
-    when(projectStoragePaths.getProjectStorageRoot("rootModule")).thenReturn(storagePath);
-    underTest = new ProjectStorageUpdateExecutor(projectStoragePaths, projectFileListDownloader);
+  void test_update(@TempDir Path storagePath) {
+    var storage = new ConnectionStorage(storagePath, storagePath, "connectionId");
+    underTest = new ProjectStorageUpdateExecutor(storage, projectFileListDownloader);
 
     List<String> fileList = new ArrayList<>();
     fileList.add("rootModule:pom.xml");
@@ -84,7 +83,7 @@ class ProjectStorageUpdateExecutorTests {
     when(projectFileListDownloader.get(eq(serverApi), eq("rootModule"), any(ProgressMonitor.class))).thenReturn(fileList);
     underTest.update(serverApi, "rootModule", mock(ProgressMonitor.class));
 
-    var components = ProtobufUtil.readFile(storagePath.resolve(ProjectStoragePaths.COMPONENT_LIST_PB), Sonarlint.ProjectComponents.parser());
+    var components = ProtobufUtil.readFile(storagePath.resolve("636f6e6e656374696f6e4964/projects/726f6f744d6f64756c65/" + ComponentsStorage.COMPONENT_LIST_PB), Sonarlint.ProjectComponents.parser());
     assertThat(components.getComponentList()).containsOnly(
       "pom.xml", "A/a.java", "B/b.java");
   }
