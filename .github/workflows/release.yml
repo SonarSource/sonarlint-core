@@ -47,10 +47,10 @@ jobs:
         id: get_version
         run: |
           IFS=. read major minor patch build <<< "${{ github.event.release.tag_name }}"
-          echo ::set-output name=build::"${build}"
+          echo "build=${build}" >> "$GITHUB_OUTPUT"
       - name: Create local repository directory
         id: local_repo
-        run: echo ::set-output name=dir::"$(mktemp -d repo.XXXXXXXX)"
+        run: echo "dir=$(mktemp -d repo.XXXXXXXX)" >> "$GITHUB_OUTPUT"
       - name: Download Artifacts
         uses: SonarSource/gh-action_release/download-build@v4
         with:
