@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -43,6 +44,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.branch.SonarProjectBranc
 import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.hotspot.HotspotServiceImpl;
@@ -60,7 +62,7 @@ import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
 public class SonarLintBackendImpl implements SonarLintBackend {
-
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final ConfigurationServiceImpl configurationService;
   private final ConnectionServiceImpl connectionService;
   private final RulesServiceImpl rulesService;
@@ -204,14 +206,24 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   @Override
   public CompletableFuture<Void> shutdown() {
     return CompletableFuture.runAsync(() -> {
-      MoreExecutors.shutdownAndAwaitTermination(clientEventsExecutorService, 10, TimeUnit.SECONDS);
-      this.pluginsService.shutdown();
-      this.bindingSuggestionProvider.shutdown();
-      this.embeddedServer.shutdown();
-      this.smartNotifications.shutdown();
-      this.synchronizationServiceImpl.shutdown();
-      storageService.close();
+      var shutdownTasks = List.<Runnable>of(
+        () -> MoreExecutors.shutdownAndAwaitTermination(clientEventsExecutorService, 10, TimeUnit.SECONDS),
+        this.pluginsService::shutdown,
+        this.bindingSuggestionProvider::shutdown,
+        this.embeddedServer::shutdown,
+        this.smartNotifications::shutdown,
+        this.synchronizationServiceImpl::shutdown,
+        storageService::close);
+      shutdownTasks.forEach(SonarLintBackendImpl::shutdown);
     });
+  }
+
+  private static void shutdown(Runnable task) {
+    try {
+      task.run();
+    } catch(Exception e) {
+      LOG.error("Error when shutting down", e);
+    }
   }
 
   public int getEmbeddedServerPort() {
