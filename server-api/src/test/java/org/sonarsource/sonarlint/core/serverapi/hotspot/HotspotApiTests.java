@@ -26,6 +26,7 @@ import java.time.ZonedDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
@@ -237,24 +238,37 @@ class HotspotApiTests {
         .setMessage("message5")
         .setVulnerabilityProbability("LOW")
         .build())
+      .addHotspots(Hotspots.SearchWsResponse.Hotspot.newBuilder()
+        .setComponent("component:path6")
+        .setTextRange(Common.TextRange.newBuilder().setStartLine(21).setStartOffset(22).setEndLine(23).setEndOffset(24).build())
+        .setStatus("REVIEWED")
+        .setResolution("UNKNOWN")
+        .setKey("hotspotKey6")
+        .setCreationDate("2020-09-25T12:46:39+0000")
+        .setRuleKey("ruleKey6")
+        .setMessage("message6")
+        .setVulnerabilityProbability("LOW")
+        .build())
       .addComponents(Hotspots.Component.newBuilder().setKey("component:path1").setPath("path1").build())
       .addComponents(Hotspots.Component.newBuilder().setKey("component:path2").setPath("path2").build())
       .addComponents(Hotspots.Component.newBuilder().setKey("component:path3").setPath("path3").build())
       .addComponents(Hotspots.Component.newBuilder().setKey("component:path4").setPath("path4").build())
       .addComponents(Hotspots.Component.newBuilder().setKey("component:path5").setPath("path5").build())
+      .addComponents(Hotspots.Component.newBuilder().setKey("component:path6").setPath("path6").build())
       .build());
 
     var hotspots = underTest.getAll("p", "branch", new ProgressMonitor(null));
 
     assertThat(hotspots)
       .extracting("key", "ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "creationDate",
-        "resolved")
+        "status")
       .containsExactly(
-        tuple("hotspotKey1", "ruleKey1", "message1", "path1", 1, 2, 3, 4, LocalDateTime.of(2020, 9, 21, 12, 46, 39).toInstant(ZoneOffset.UTC), false),
-        tuple("hotspotKey2", "ruleKey2", "message2", "path2", 5, 6, 7, 8, LocalDateTime.of(2020, 9, 22, 12, 46, 39).toInstant(ZoneOffset.UTC), true),
-        tuple("hotspotKey3", "ruleKey3", "message3", "path3", 9, 10, 11, 12, LocalDateTime.of(2020, 9, 23, 12, 46, 39).toInstant(ZoneOffset.UTC), false),
-        tuple("hotspotKey4", "ruleKey4", "message4", "path4", 13, 14, 15, 16, LocalDateTime.of(2020, 9, 24, 12, 46, 39).toInstant(ZoneOffset.UTC), true),
-        tuple("hotspotKey5", "ruleKey5", "message5", "path5", 17, 18, 19, 20, LocalDateTime.of(2020, 9, 25, 12, 46, 39).toInstant(ZoneOffset.UTC), false));
+        tuple("hotspotKey1", "ruleKey1", "message1", "path1", 1, 2, 3, 4, LocalDateTime.of(2020, 9, 21, 12, 46, 39).toInstant(ZoneOffset.UTC), HotspotReviewStatus.TO_REVIEW),
+        tuple("hotspotKey2", "ruleKey2", "message2", "path2", 5, 6, 7, 8, LocalDateTime.of(2020, 9, 22, 12, 46, 39).toInstant(ZoneOffset.UTC), HotspotReviewStatus.SAFE),
+        tuple("hotspotKey3", "ruleKey3", "message3", "path3", 9, 10, 11, 12, LocalDateTime.of(2020, 9, 23, 12, 46, 39).toInstant(ZoneOffset.UTC), HotspotReviewStatus.ACKNOWLEDGED),
+        tuple("hotspotKey4", "ruleKey4", "message4", "path4", 13, 14, 15, 16, LocalDateTime.of(2020, 9, 24, 12, 46, 39).toInstant(ZoneOffset.UTC), HotspotReviewStatus.FIXED),
+        tuple("hotspotKey5", "ruleKey5", "message5", "path5", 17, 18, 19, 20, LocalDateTime.of(2020, 9, 25, 12, 46, 39).toInstant(ZoneOffset.UTC), HotspotReviewStatus.TO_REVIEW),
+        tuple("hotspotKey6", "ruleKey6", "message6", "path6", 21, 22, 23, 24, LocalDateTime.of(2020, 9, 25, 12, 46, 39).toInstant(ZoneOffset.UTC), HotspotReviewStatus.TO_REVIEW));
   }
 
   @Test
@@ -278,9 +292,10 @@ class HotspotApiTests {
 
     assertThat(hotspots)
       .extracting("key", "ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "creationDate",
-        "resolved")
+        "status")
       .containsExactly(
-        tuple("hotspotKey1", "ruleKey1", "message1", "path/to/file.ext", 1, 2, 3, 4, ZonedDateTime.of(2020, 9, 21, 12, 46, 39, 0, ZoneId.of("UTC")).toInstant(), false));
+        tuple("hotspotKey1", "ruleKey1", "message1", "path/to/file.ext", 1, 2, 3, 4, ZonedDateTime.of(2020, 9, 21, 12, 46, 39, 0, ZoneId.of("UTC")).toInstant(),
+          HotspotReviewStatus.TO_REVIEW));
   }
 
   @Test

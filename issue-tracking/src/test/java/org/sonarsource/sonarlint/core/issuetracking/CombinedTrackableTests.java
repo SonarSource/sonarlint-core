@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.issuetracking;
 
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
@@ -41,6 +42,7 @@ class CombinedTrackableTests {
     assertThat(combined.getType()).isEqualTo(RuleType.VULNERABILITY);
     assertThat(combined.getCreationDate()).isZero();
     assertThat(combined.isResolved()).isFalse();
+    assertThat(combined.getReviewStatus()).isEqualTo(HotspotReviewStatus.TO_REVIEW);
 
     assertThat(combined.getLine()).isEqualTo(1);
     assertThat(combined.getMessage()).isEqualTo("nextMessage");
@@ -62,6 +64,7 @@ class CombinedTrackableTests {
     when(t.getType()).thenReturn(type);
     when(t.getTextRange()).thenReturn(new TextRangeWithHash(number, 2, 3, 4, "md5" + number));
     when(t.isResolved()).thenReturn(number == 1);
+    when(t.getReviewStatus()).thenReturn(number == 1 ? HotspotReviewStatus.SAFE : HotspotReviewStatus.TO_REVIEW);
     return t;
   }
 }

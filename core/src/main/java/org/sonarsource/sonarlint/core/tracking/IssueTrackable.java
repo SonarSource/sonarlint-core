@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.tracking;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
+import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
@@ -110,5 +111,10 @@ public class IssueTrackable implements Trackable<Issue> {
   @Override
   public boolean isResolved() {
     return false;
+  }
+
+  @Override
+  public HotspotReviewStatus getReviewStatus() {
+    return null;
   }
 }

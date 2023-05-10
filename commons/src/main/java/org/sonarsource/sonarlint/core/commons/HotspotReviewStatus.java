@@ -42,6 +42,11 @@ public enum HotspotReviewStatus {
     return !equals(TO_REVIEW);
   }
 
+  public boolean isResolved() {
+    // ACKNOWLEDGED is considered as non-resolved because the hotspot is confirmed
+    return equals(SAFE) || equals(FIXED);
+  }
+
   private boolean isAllowedOn(ConnectionKind kind) {
     return allowedConnectionKinds.contains(kind);
   }

@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.issuetracking;
 
+import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
@@ -35,6 +36,7 @@ public class AbstractTrackable<G> implements Trackable<G> {
   protected Long creationDate;
   protected String serverIssueKey;
   protected boolean resolved;
+  protected HotspotReviewStatus reviewStatus;
 
   protected AbstractTrackable(Trackable<G> trackable) {
     this.clientObject = trackable.getClientObject();
@@ -49,6 +51,7 @@ public class AbstractTrackable<G> implements Trackable<G> {
     this.creationDate = trackable.getCreationDate();
     this.serverIssueKey = trackable.getServerIssueKey();
     this.resolved = trackable.isResolved();
+    this.reviewStatus = trackable.getReviewStatus();
   }
 
   @Override
@@ -104,5 +107,10 @@ public class AbstractTrackable<G> implements Trackable<G> {
   @Override
   public boolean isResolved() {
     return resolved;
+  }
+
+  @Override
+  public HotspotReviewStatus getReviewStatus() {
+    return reviewStatus;
   }
 }

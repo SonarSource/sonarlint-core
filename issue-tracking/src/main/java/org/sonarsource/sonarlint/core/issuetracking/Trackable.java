@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.issuetracking;
 
 import javax.annotation.CheckForNull;
+import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
@@ -57,5 +58,11 @@ public interface Trackable<G> {
   String getServerIssueKey();
 
   boolean isResolved();
+
+  /**
+   * Should only return something for trackables tracking a hotspot
+   */
+  @CheckForNull
+  HotspotReviewStatus getReviewStatus();
 
 }

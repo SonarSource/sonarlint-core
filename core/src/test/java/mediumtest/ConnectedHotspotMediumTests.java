@@ -41,6 +41,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
@@ -141,9 +142,9 @@ class ConnectedHotspotMediumTests {
 
     assertThat(serverHotspots)
       .extracting("key", "ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "creationDate",
-      "resolved")
+      "status")
       .containsExactly(
-        tuple("hotspotKey1", "ruleKey1", "message1", "file/path", 1, 2, 3, 4, LocalDateTime.of(2020, 9, 21, 12, 46, 39).toInstant(ZoneOffset.UTC), false));
+        tuple("hotspotKey1", "ruleKey1", "message1", "file/path", 1, 2, 3, 4, LocalDateTime.of(2020, 9, 21, 12, 46, 39).toInstant(ZoneOffset.UTC), HotspotReviewStatus.TO_REVIEW));
   }
 
   @Test
@@ -170,9 +171,9 @@ class ConnectedHotspotMediumTests {
 
     assertThat(serverHotspots)
       .extracting("key", "ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "creationDate",
-        "resolved")
+        "status")
       .containsExactly(
-        tuple("hotspotKey1", "ruleKey1", "message1", "file/path", 1, 2, 3, 4, LocalDateTime.of(2020, 9, 21, 12, 46, 39).toInstant(ZoneOffset.UTC), false));
+        tuple("hotspotKey1", "ruleKey1", "message1", "file/path", 1, 2, 3, 4, LocalDateTime.of(2020, 9, 21, 12, 46, 39).toInstant(ZoneOffset.UTC), HotspotReviewStatus.TO_REVIEW));
   }
 
   private void createStorageAndEngine(String serverVersion) {

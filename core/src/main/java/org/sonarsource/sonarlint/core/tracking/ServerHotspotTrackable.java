@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
+import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
@@ -88,6 +89,12 @@ public class ServerHotspotTrackable implements Trackable {
 
   @Override
   public boolean isResolved() {
-    return serverHotspot.isResolved();
+    return serverHotspot.getStatus().isResolved();
   }
+
+  @Override
+  public HotspotReviewStatus getReviewStatus() {
+    return serverHotspot.getStatus();
+  }
+
 }

@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import org.apache.commons.lang3.StringUtils;
+import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
@@ -72,6 +73,11 @@ public class ProtobufIssueTrackable implements Trackable {
   @Override
   public boolean isResolved() {
     return issue.getResolved();
+  }
+
+  @Override
+  public HotspotReviewStatus getReviewStatus() {
+    return null;
   }
 
   @Override

@@ -65,6 +65,11 @@ class ProtobufIssueTrackableTests {
   }
 
   @Test
+  void should_not_have_review_status() {
+    assertThat(empty.getReviewStatus()).isNull();
+  }
+
+  @Test
   void should_delegate_fields_to_protobuf_issue() {
     assertThat(completeTrackable.getMessage()).isEqualTo(completeIssue.getMessage());
     assertThat(completeTrackable.getLineHash()).isEqualTo(completeIssue.getLineHash());
