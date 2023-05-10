@@ -31,6 +31,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
@@ -575,8 +576,8 @@ class XodusServerIssueStoreTests {
 
     var hotspots = store.loadHotspots("branch", "file/path");
     assertThat(hotspots)
-      .extracting("key", "ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "resolved")
-      .containsOnly(tuple("key", "repo:key", "message", "file/path", 1, 2, 3, 4, true));
+      .extracting("key", "ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "status")
+      .containsOnly(tuple("key", "repo:key", "message", "file/path", 1, 2, 3, 4, HotspotReviewStatus.TO_REVIEW));
   }
 
   @Test
@@ -585,8 +586,8 @@ class XodusServerIssueStoreTests {
 
     var hotspots = store.loadHotspots("branch", "file/path");
     assertThat(hotspots)
-      .extracting("key", "ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "resolved")
-      .containsOnly(tuple("key", "repo:key", "message", "file/path", 1, 2, 3, 4, true));
+      .extracting("key", "ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "status")
+      .containsOnly(tuple("key", "repo:key", "message", "file/path", 1, 2, 3, 4, HotspotReviewStatus.TO_REVIEW));
   }
 
   @Test

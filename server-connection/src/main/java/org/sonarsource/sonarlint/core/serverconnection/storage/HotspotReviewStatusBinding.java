@@ -19,30 +19,24 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
-import java.time.Instant;
+import java.io.ByteArrayInputStream;
+import jetbrains.exodus.bindings.BindingUtils;
+import jetbrains.exodus.bindings.ComparableBinding;
+import jetbrains.exodus.util.LightOutputStream;
+import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
-import org.sonarsource.sonarlint.core.commons.TextRange;
-import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
-import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 
-public class ServerHotspotFixtures {
+public class HotspotReviewStatusBinding extends ComparableBinding {
 
-  public static ServerHotspot aServerHotspot() {
-    return aServerHotspot("key", "file/path");
+  @Override
+  public Comparable readObject(@NotNull ByteArrayInputStream stream) {
+    return HotspotReviewStatus.values()[BindingUtils.readInt(stream)];
   }
 
-  public static ServerHotspot aServerHotspot(String key) {
-    return aServerHotspot(key, "file/path");
+  @Override
+  public void writeObject(@NotNull LightOutputStream output, @NotNull Comparable object) {
+    final HotspotReviewStatus cPair = (HotspotReviewStatus) object;
+    output.writeUnsignedInt(cPair.ordinal() ^ 0x80_000_000);
   }
 
-  public static ServerHotspot aServerHotspot(String key, String filePath) {
-    return new ServerHotspot(
-      key,
-      "repo:key",
-      "message",
-      filePath,
-      new TextRange(1, 2, 3, 4),
-      Instant.now(),
-      HotspotReviewStatus.TO_REVIEW, VulnerabilityProbability.HIGH);
-  }
 }

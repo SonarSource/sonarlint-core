@@ -53,9 +53,9 @@ import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
-import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
@@ -98,6 +98,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private static final String END_LINE_OFFSET_PROPERTY_NAME = "endLineOffset";
   private static final String KEY_PROPERTY_NAME = "key";
   private static final String RESOLVED_PROPERTY_NAME = "resolved";
+  private static final String REVIEW_STATUS_PROPERTY_NAME = "status";
   private static final String RULE_KEY_PROPERTY_NAME = "ruleKey";
   private static final String LINE_HASH_PROPERTY_NAME = "lineHash";
   private static final String RANGE_HASH_PROPERTY_NAME = "rangeHash";
@@ -142,6 +143,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       entityStore.registerCustomPropertyType(txn, IssueSeverity.class, new IssueSeverityBinding());
       entityStore.registerCustomPropertyType(txn, RuleType.class, new IssueTypeBinding());
       entityStore.registerCustomPropertyType(txn, Instant.class, new InstantBinding());
+      entityStore.registerCustomPropertyType(txn, HotspotReviewStatus.class, new HotspotReviewStatusBinding());
     });
 
     entityStore.executeInExclusiveTransaction(afterInit);
@@ -234,6 +236,12 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     var endLineOffset = (Integer) storedHotspot.getProperty(END_LINE_OFFSET_PROPERTY_NAME);
     var textRange = new org.sonarsource.sonarlint.core.commons.TextRange(startLine, startLineOffset, endLine, endLineOffset);
     var vulnerabilityProbability = VulnerabilityProbability.valueOf((String) storedHotspot.getProperty(VULNERABILITY_PROBABILITY_PROPERTY_NAME));
+    var status = (HotspotReviewStatus) storedHotspot.getProperty(REVIEW_STATUS_PROPERTY_NAME);
+    if (status == null) {
+      // backward compatibility. This should not happen as hotspots are all replaced during the sync
+      var resolved = Boolean.TRUE.equals(storedHotspot.getProperty(RESOLVED_PROPERTY_NAME));
+      status = resolved ? HotspotReviewStatus.SAFE : HotspotReviewStatus.TO_REVIEW;
+    }
     return new ServerHotspot(
       (String) requireNonNull(storedHotspot.getProperty(KEY_PROPERTY_NAME)),
       (String) requireNonNull(storedHotspot.getProperty(RULE_KEY_PROPERTY_NAME)),
@@ -241,7 +249,8 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       filePath,
       textRange,
       (Instant) requireNonNull(storedHotspot.getProperty(CREATION_DATE_PROPERTY_NAME)),
-      Boolean.TRUE.equals(storedHotspot.getProperty(RESOLVED_PROPERTY_NAME)), vulnerabilityProbability);
+      status,
+      vulnerabilityProbability);
   }
 
   private static List<Flow> readFlows(@Nullable InputStream blob) {
@@ -392,7 +401,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       var optionalEntity = findUnique(txn, HOTSPOT_ENTITY_TYPE, KEY_PROPERTY_NAME, hotspotKey);
       if (optionalEntity.isPresent()) {
         var hotspotEntity = optionalEntity.get();
-        hotspotEntity.setProperty(RESOLVED_PROPERTY_NAME, newStatus != HotspotReviewStatus.TO_REVIEW);
+        hotspotEntity.setProperty(REVIEW_STATUS_PROPERTY_NAME, newStatus);
         return true;
       }
       return false;
@@ -420,7 +429,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     issueEntity.setProperty(END_LINE_PROPERTY_NAME, textRange.getEndLine());
     issueEntity.setProperty(END_LINE_OFFSET_PROPERTY_NAME, textRange.getEndLineOffset());
     issueEntity.setProperty(CREATION_DATE_PROPERTY_NAME, hotspot.getCreationDate());
-    issueEntity.setProperty(RESOLVED_PROPERTY_NAME, hotspot.isResolved());
+    issueEntity.setProperty(REVIEW_STATUS_PROPERTY_NAME, hotspot.getStatus());
     issueEntity.setProperty(VULNERABILITY_PROBABILITY_PROPERTY_NAME, hotspot.getVulnerabilityProbability().toString());
   }
 

@@ -68,5 +68,6 @@ class IssueTrackableTests {
     var trackable = new IssueTrackable(issue, null, null);
     assertThat(trackable.getClientObject()).isEqualTo(issue);
     assertThat(trackable.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
+    assertThat(trackable.getReviewStatus()).isNull();
   }
 }

@@ -130,7 +130,7 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
       hotspot.getFilePath(),
       hotspot.getTextRange(),
       hotspot.getCreationDate(),
-      newStatus.isReviewed(),
+      newStatus,
       hotspot.getVulnerabilityProbability())) != null;
   }
 

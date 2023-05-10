@@ -174,12 +174,26 @@ public class HotspotApi {
       filePath,
       convertTextRange(hotspot.getTextRange()),
       ServerApiUtils.parseOffsetDateTime(hotspot.getCreationDate()).toInstant(),
-      isResolved(hotspot), VulnerabilityProbability.valueOf(hotspot.getVulnerabilityProbability()));
+      getStatus(hotspot),
+      VulnerabilityProbability.valueOf(hotspot.getVulnerabilityProbability()));
   }
 
-  private static boolean isResolved(Hotspots.SearchWsResponse.Hotspot hotspot) {
-    return "REVIEWED".equals(hotspot.getStatus()) &&
-      hotspot.hasResolution() && ("SAFE".equals(hotspot.getResolution()) || "FIXED".equals(hotspot.getResolution()));
+  private static HotspotReviewStatus getStatus(Hotspots.SearchWsResponse.Hotspot hotspot) {
+    var status = hotspot.getStatus();
+    if ("REVIEWED".equals(status) && hotspot.hasResolution()) {
+      var resolution = hotspot.getResolution();
+      switch (resolution) {
+        case "SAFE":
+          return HotspotReviewStatus.SAFE;
+        case "FIXED":
+          return HotspotReviewStatus.FIXED;
+        case "ACKNOWLEDGED":
+          return HotspotReviewStatus.ACKNOWLEDGED;
+        default:
+          LOG.error("Unknown hotspot resolution '" + resolution + "', will default to 'TO_REVIEW'");
+      }
+    }
+    return HotspotReviewStatus.TO_REVIEW;
   }
 
   private static String getShowUrl(String hotspotKey, String projectKey) {
