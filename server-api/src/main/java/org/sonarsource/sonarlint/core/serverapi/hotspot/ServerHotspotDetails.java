@@ -43,6 +43,7 @@ public class ServerHotspotDetails {
   @Deprecated(forRemoval = true)
   @CheckForNull
   public final String codeSnippet;
+  public final boolean canChangeStatus;
 
   public ServerHotspotDetails(String message,
     String filePath,
@@ -51,7 +52,8 @@ public class ServerHotspotDetails {
     Status status,
     @Nullable Resolution resolution,
     Rule rule,
-    @Nullable String codeSnippet) {
+    @Nullable String codeSnippet,
+    boolean canChangeStatus) {
     this.message = message;
     this.filePath = filePath;
     this.textRange = textRange;
@@ -60,6 +62,7 @@ public class ServerHotspotDetails {
     this.resolution = resolution;
     this.rule = rule;
     this.codeSnippet = codeSnippet;
+    this.canChangeStatus = canChangeStatus;
   }
 
   @Deprecated(forRemoval = true)

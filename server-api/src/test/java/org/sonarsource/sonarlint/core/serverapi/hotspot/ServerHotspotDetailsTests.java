@@ -41,7 +41,7 @@ class ServerHotspotDetailsTests {
         "risk",
         "vulnerability",
         "fix"),
-      "some code \n content");
+      "some code \n content", true);
 
     assertThat(hotspot.message).isEqualTo("message");
     assertThat(hotspot.filePath).isEqualTo("path");
@@ -60,7 +60,7 @@ class ServerHotspotDetailsTests {
     assertThat(hotspot.rule.vulnerabilityDescription).isEqualTo("vulnerability");
     assertThat(hotspot.rule.fixRecommendations).isEqualTo("fix");
     assertThat(hotspot.codeSnippet).isEqualTo("some code \n content");
-
+    assertThat(hotspot.canChangeStatus).isTrue();
   }
 
 }

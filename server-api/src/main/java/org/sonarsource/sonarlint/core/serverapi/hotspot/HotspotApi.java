@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -35,6 +36,7 @@ import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
@@ -120,6 +122,16 @@ public class HotspotApi {
       + "&branch=" + urlEncode(branchName);
   }
 
+  public CompletableFuture<ServerHotspotDetails> show(String hotspotKey) {
+    return helper.getAsync(getShowUrl(hotspotKey)).thenApply(response -> {
+      try (response; var is = response.bodyAsStream()) {
+        return adapt(Hotspots.ShowWsResponse.parseFrom(is), null);
+      } catch (IOException e) {
+        throw new UnexpectedBodyException(e);
+      }
+    });
+  }
+
   public Optional<ServerHotspotDetails> fetch(String hotspotKey) {
     Hotspots.ShowWsResponse response;
     try (var wsResponse = helper.get(getShowUrl(hotspotKey)); var is = wsResponse.bodyAsStream()) {
@@ -153,7 +165,7 @@ public class HotspotApi {
       ServerHotspotDetails.Status.valueOf(hotspot.getStatus()),
       hotspot.hasResolution() ? ServerHotspotDetails.Resolution.valueOf(hotspot.getResolution()) : null,
       adapt(hotspot.getRule()),
-      codeSnippet);
+      codeSnippet, hotspot.getCanChangeStatus());
   }
 
   private static ServerHotspotDetails.Rule adapt(Hotspots.Rule rule) {

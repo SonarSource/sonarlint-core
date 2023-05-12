@@ -57,15 +57,24 @@ public interface HotspotService {
   CompletableFuture<CheckLocalDetectionSupportedResponse> checkLocalDetectionSupported(CheckLocalDetectionSupportedParams params);
 
   /**
-   * The list of available statuses differs between SonarQube and SonarCloud, so different values will be returned based on the connectionId:
+   * Checks if the user has permission to change the hotspot review status.
+   * Also returns the list of allowed statuses.The list differs between SonarQube and SonarCloud, so different values will be returned based on the connectionId:
    * <ul>
    *   <li>For SonarCloud, the allowed statuses are {@link HotspotStatus#TO_REVIEW}, {@link HotspotStatus#SAFE} and {@link HotspotStatus#FIXED}</li>
    *   <li>For SonarQube, on top of the previous ones, the {@link HotspotStatus#ACKNOWLEDGED} status is also allowed</li>
    * </ul>
-   * If the connectionId provided as a parameter is unknown, the returned future will fail.
+   * <p>
+   * This method will fail if:
+   * <ul>
+   *   <li>there is a communication problem with the server: network outage, server is down, unauthorized</li>
+   *   <li>the connectionId provided as a parameter is unknown</li>
+   * </ul>
+   * In those cases, a failed future will be returned.
+   * </p>
+   *
    */
   @JsonRequest
-  CompletableFuture<ListAllowedStatusesResponse> listAllowedStatuses(ListAllowedStatusesParams params);
+  CompletableFuture<CheckStatusChangePermittedResponse> checkStatusChangePermitted(CheckStatusChangePermittedParams params);
 
   /**
    * <p>This method achieves several things:
