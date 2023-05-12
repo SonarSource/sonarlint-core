@@ -21,14 +21,20 @@ package org.sonarsource.sonarlint.core.clientapi.backend.hotspot;
 
 import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
-public class ListAllowedStatusesParams {
+public class CheckStatusChangePermittedParams {
   private final String connectionId;
+  private final String hotspotKey;
 
-  public ListAllowedStatusesParams(@NonNull String connectionId) {
+  public CheckStatusChangePermittedParams(@NonNull String connectionId, String hotspotKey) {
     this.connectionId = connectionId;
+    this.hotspotKey = hotspotKey;
   }
 
   public String getConnectionId() {
     return connectionId;
+  }
+
+  public String getHotspotKey() {
+    return hotspotKey;
   }
 }

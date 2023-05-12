@@ -28,6 +28,7 @@ import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 import mockwebserver3.MockResponse;
 import mockwebserver3.RecordedRequest;
+import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
@@ -39,6 +40,7 @@ public class ServerFixture {
   public static ServerBuilder newSonarQubeServer() {
     return newSonarQubeServer("99.9");
   }
+
   public static ServerBuilder newSonarQubeServer(String version) {
     return new ServerBuilder(ServerKind.SONARQUBE, version);
   }
@@ -67,7 +69,7 @@ public class ServerFixture {
       this.version = version;
     }
 
-    public ServerBuilder withStatus(ServerStatus status){
+    public ServerBuilder withStatus(ServerStatus status) {
       serverStatus = status;
       return this;
     }
@@ -111,12 +113,17 @@ public class ServerFixture {
     }
 
     public static class ServerProjectBranchBuilder {
-      private final Collection<ServerHotspot> hotspots = new ArrayList<>();
+      private final Map<String, ServerHotspot> hotspotsByKey = new HashMap<>();
       private final Collection<ServerIssue> issues = new ArrayList<>();
 
-      public ServerProjectBranchBuilder withHotspot(String hotspotKey, String ruleKey, String message, String author, String filePath,
-        String status, String resolution, TextRange textRange) {
-        this.hotspots.add(new ServerHotspot(hotspotKey, ruleKey, message, author, filePath, status, resolution, textRange));
+      public ServerProjectBranchBuilder withHotspot(String hotspotKey) {
+        return withHotspot(hotspotKey, UnaryOperator.identity());
+      }
+
+      public ServerProjectBranchBuilder withHotspot(String hotspotKey, UnaryOperator<HotspotBuilder> hotspotBuilder) {
+        var builder = new HotspotBuilder();
+        hotspotBuilder.apply(builder);
+        this.hotspotsByKey.put(hotspotKey, builder.build(hotspotKey));
         return this;
       }
 
@@ -132,20 +139,20 @@ public class ServerFixture {
         private final String message;
         private final String author;
         private final String filePath;
-        private final String status;
-        private final String resolution;
+        private final HotspotReviewStatus status;
         private final TextRange textRange;
+        private final boolean canChangeStatus;
 
-        private ServerHotspot(String hotspotKey, String ruleKey, String message, String author, String filePath, String status,
-          String resolution, TextRange textRange) {
+        private ServerHotspot(String hotspotKey, String ruleKey, String message, String author, String filePath, HotspotReviewStatus status, TextRange textRange,
+          boolean canChangeStatus) {
           this.hotspotKey = hotspotKey;
           this.ruleKey = ruleKey;
           this.message = message;
           this.author = author;
           this.filePath = filePath;
           this.status = status;
-          this.resolution = resolution;
           this.textRange = textRange;
+          this.canChangeStatus = canChangeStatus;
         }
       }
 
@@ -179,6 +186,55 @@ public class ServerFixture {
       public ServerSourceFileBuilder withCode(String sourceCode) {
         this.code = sourceCode;
         return this;
+      }
+    }
+
+    public static class HotspotBuilder {
+      private String ruleKey = "ruleKey";
+      private String message = "message";
+      private String author = "author";
+      private String filePath = "filePath";
+      private HotspotReviewStatus reviewStatus = HotspotReviewStatus.TO_REVIEW;
+      private TextRange textRange = new TextRange(1, 2, 3, 4);
+      private boolean canChangeStatus = true;
+
+      public HotspotBuilder withRuleKey(String ruleKey) {
+        this.ruleKey = ruleKey;
+        return this;
+      }
+
+      public HotspotBuilder withMessage(String message) {
+        this.message = message;
+        return this;
+      }
+
+      public HotspotBuilder withAuthor(String author) {
+        this.author = author;
+        return this;
+      }
+
+      public HotspotBuilder withFilePath(String filePath) {
+        this.filePath = filePath;
+        return this;
+      }
+
+      public HotspotBuilder withStatus(HotspotReviewStatus status) {
+        this.reviewStatus = status;
+        return this;
+      }
+
+      public HotspotBuilder withTextRange(TextRange textRange) {
+        this.textRange = textRange;
+        return this;
+      }
+
+      public HotspotBuilder withoutStatusChangePermission() {
+        this.canChangeStatus = false;
+        return this;
+      }
+
+      public ServerProjectBranchBuilder.ServerHotspot build(String hotspotKey) {
+        return new ServerProjectBranchBuilder.ServerHotspot(hotspotKey, ruleKey, message, author, filePath, reviewStatus, textRange, canChangeStatus);
       }
     }
   }
@@ -229,26 +285,31 @@ public class ServerFixture {
 
     private void registerHotspotsShowApiResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
-        branch.hotspots.forEach(hotspot -> {
+        branch.hotspotsByKey.forEach((key, hotspot) -> {
           var textRange = hotspot.textRange;
-          mockWebServer.addProtobufResponse("/api/hotspots/show.protobuf?projectKey=" + projectKey + "&hotspot=" + hotspot.hotspotKey,
-            Hotspots.ShowWsResponse.newBuilder()
-              .setMessage(hotspot.message)
-              .setComponent(Hotspots.Component.newBuilder().setPath(hotspot.filePath).setKey(projectKey + ":" + hotspot.filePath))
-              .setTextRange(Common.TextRange.newBuilder().setStartLine(textRange.getStartLine()).setStartOffset(textRange.getStartLineOffset()).setEndLine(textRange.getEndLine())
-                .setEndOffset(textRange.getEndLineOffset()).build())
-              .setAuthor(hotspot.author)
-              .setStatus(hotspot.status)
-              .setResolution(hotspot.resolution)
-              .setRule(Hotspots.Rule.newBuilder().setKey(hotspot.ruleKey)
-                .setName("name")
-                .setSecurityCategory("category")
-                .setVulnerabilityProbability("HIGH")
-                .setRiskDescription("risk")
-                .setVulnerabilityDescription("vulnerability")
-                .setFixRecommendations("fix")
-                .build())
+          var reviewStatus = hotspot.status;
+          var status = reviewStatus.isReviewed() ? "REVIEWED" : "TO_REVIEW";
+          var builder = Hotspots.ShowWsResponse.newBuilder()
+            .setMessage(hotspot.message)
+            .setComponent(Hotspots.Component.newBuilder().setPath(hotspot.filePath).setKey(projectKey + ":" + hotspot.filePath))
+            .setTextRange(Common.TextRange.newBuilder().setStartLine(textRange.getStartLine()).setStartOffset(textRange.getStartLineOffset()).setEndLine(textRange.getEndLine())
+              .setEndOffset(textRange.getEndLineOffset()).build())
+            .setAuthor(hotspot.author)
+            .setStatus(status)
+            .setCanChangeStatus(hotspot.canChangeStatus)
+            .setRule(Hotspots.Rule.newBuilder().setKey(hotspot.ruleKey)
+              .setName("name")
+              .setSecurityCategory("category")
+              .setVulnerabilityProbability("HIGH")
+              .setRiskDescription("risk")
+              .setVulnerabilityDescription("vulnerability")
+              .setFixRecommendations("fix")
               .build());
+          if (reviewStatus.isReviewed()) {
+            builder = builder.setResolution(reviewStatus.name());
+          }
+          mockWebServer.addProtobufResponse("/api/hotspots/show.protobuf?hotspot=" + hotspot.hotspotKey,
+            builder.build());
         });
       }));
     }
@@ -292,7 +353,8 @@ public class ServerFixture {
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
         var timestamp = Issues.IssuesPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
         mockWebServer.addProtobufResponseDelimited("/api/issues/pull_taint?projectKey=" + projectKey + "&branchName=" + branchName, timestamp);
-        mockWebServer.addProtobufResponseDelimited("/api/issues/pull_taint?projectKey=" + projectKey + "&branchName=" + branchName + "&changedSince=" + timestamp.getQueryTimestamp(), timestamp);
+        mockWebServer.addProtobufResponseDelimited(
+          "/api/issues/pull_taint?projectKey=" + projectKey + "&branchName=" + branchName + "&changedSince=" + timestamp.getQueryTimestamp(), timestamp);
       }));
     }
 

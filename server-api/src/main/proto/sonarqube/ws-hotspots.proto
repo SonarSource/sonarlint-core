@@ -63,6 +63,7 @@ message ShowWsResponse {
   optional string message = 8;
   optional string author = 10;
   optional sonarqube.ws.commons.TextRange textRange = 13;
+  optional bool canChangeStatus = 17;
 }
 
 message Component {

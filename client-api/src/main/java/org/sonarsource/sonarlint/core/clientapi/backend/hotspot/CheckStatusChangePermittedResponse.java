@@ -20,12 +20,27 @@
 package org.sonarsource.sonarlint.core.clientapi.backend.hotspot;
 
 import java.util.List;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
-public class ListAllowedStatusesResponse {
+public class CheckStatusChangePermittedResponse {
+  private final boolean permitted;
+  private final String notPermittedReason;
   private final List<HotspotStatus> allowedStatuses;
 
-  public ListAllowedStatusesResponse(List<HotspotStatus> allowedStatuses) {
+  public CheckStatusChangePermittedResponse(boolean permitted, @Nullable String notPermittedReason, List<HotspotStatus> allowedStatuses) {
+    this.permitted = permitted;
+    this.notPermittedReason = notPermittedReason;
     this.allowedStatuses = allowedStatuses;
+  }
+
+  public boolean isPermitted() {
+    return permitted;
+  }
+
+  @CheckForNull
+  public String getNotPermittedReason() {
+    return notPermittedReason;
   }
 
   public List<HotspotStatus> getAllowedStatuses() {

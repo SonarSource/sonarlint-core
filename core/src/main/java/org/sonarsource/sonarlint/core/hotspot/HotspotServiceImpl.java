@@ -27,10 +27,10 @@ import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.ChangeHotspotStatusParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.CheckLocalDetectionSupportedParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.CheckLocalDetectionSupportedResponse;
+import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.CheckStatusChangePermittedParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotStatus;
-import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.ListAllowedStatusesParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.ListAllowedStatusesResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.OpenHotspotInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.commons.Binding;
@@ -54,6 +54,8 @@ public class HotspotServiceImpl implements HotspotService {
   private static final String NO_BINDING_REASON = "The project is not bound, please bind it to SonarQube 9.7+ or SonarCloud";
   private static final String UNSUPPORTED_SONARQUBE_REASON = "Security Hotspots detection is disabled with this version of SonarQube, " +
     "please bind it to SonarQube 9.7+ or SonarCloud";
+
+  private static final String REVIEW_STATUS_UPDATE_PERMISSION_MISSING_REASON = "Changing a hotspot's status requires the 'Administer Security Hotspot' permission.";
   private final SonarLintClient client;
   private final ConfigurationRepository configurationRepository;
   private final ConnectionConfigurationRepository connectionRepository;
@@ -110,21 +112,27 @@ public class HotspotServiceImpl implements HotspotService {
   }
 
   @Override
-  public CompletableFuture<ListAllowedStatusesResponse> listAllowedStatuses(ListAllowedStatusesParams params) {
+  public CompletableFuture<CheckStatusChangePermittedResponse> checkStatusChangePermitted(CheckStatusChangePermittedParams params) {
     var connectionId = params.getConnectionId();
     var connection = connectionRepository.getConnectionById(connectionId);
-    if (connection == null) {
+    var serverApiOpt = serverApiProvider.getServerApi(connectionId);
+    if (connection == null || serverApiOpt.isEmpty()) {
       return CompletableFuture.failedFuture(new IllegalArgumentException("Connection with ID '" + connectionId + "' does not exist"));
     }
-    var allowedStatuses = HotspotReviewStatus.allowedStatusesOn(connection.getKind());
-    return CompletableFuture.completedFuture(toResponse(allowedStatuses));
+    return serverApiOpt.get().hotspot().show(params.getHotspotKey())
+      .thenApply(hotspot -> {
+        var allowedStatuses = HotspotReviewStatus.allowedStatusesOn(connection.getKind());
+        return toResponse(hotspot.canChangeStatus, allowedStatuses);
+      });
   }
 
-  private static ListAllowedStatusesResponse toResponse(List<HotspotReviewStatus> coreStatuses) {
-    return new ListAllowedStatusesResponse(coreStatuses.stream().map(s -> HotspotStatus.valueOf(s.name()))
-      // respect ordering of the client-api enum for the UI
-      .sorted()
-      .collect(Collectors.toList()));
+  private static CheckStatusChangePermittedResponse toResponse(boolean canChangeStatus, List<HotspotReviewStatus> coreStatuses) {
+    return new CheckStatusChangePermittedResponse(canChangeStatus,
+      canChangeStatus ? null : REVIEW_STATUS_UPDATE_PERMISSION_MISSING_REASON,
+      coreStatuses.stream().map(s -> HotspotStatus.valueOf(s.name()))
+        // respect ordering of the client-api enum for the UI
+        .sorted()
+        .collect(Collectors.toList()));
   }
 
   @Override
