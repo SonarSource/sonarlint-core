@@ -319,7 +319,7 @@ class HotspotApiTests {
 
     var permitsTracking = hotspotApi.permitsTracking(null);
 
-    assertThat(permitsTracking).isFalse();
+    assertThat(permitsTracking).isTrue();
   }
 
   @Test

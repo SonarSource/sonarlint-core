@@ -44,7 +44,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.StringUtils.removeEnd;
 import static org.apache.commons.lang.StringUtils.trimToNull;
 import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singlePlural;
-import static org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration.SONARCLOUD_URL;
+import static org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration.getSonarCloudUrl;
 
 public class BindingClueProvider {
 
@@ -187,7 +187,7 @@ public class BindingClueProvider {
       return new SonarCloudBindingClue(scannerProps.projectKey, scannerProps.organization);
     }
     if (scannerProps.serverUrl != null) {
-      if (removeEnd(scannerProps.serverUrl, "/").equals(SONARCLOUD_URL)) {
+      if (removeEnd(scannerProps.serverUrl, "/").equals(getSonarCloudUrl())) {
         return new SonarCloudBindingClue(scannerProps.projectKey, null);
       } else {
         return new SonarQubeBindingClue(scannerProps.projectKey, scannerProps.serverUrl);

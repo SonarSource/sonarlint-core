@@ -54,6 +54,7 @@ import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectionValidator;
+import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -64,6 +65,7 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.waitAtMost;
 
 @Tag("SonarCloud")
@@ -144,6 +146,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     runMaven(Paths.get("projects/sample-java"), "clean", "compile");
 
     analyzeMavenProject(projectKey(PROJECT_KEY_JAVA_TAINT), PROJECT_KEY_JAVA_TAINT);
+    analyzeMavenProject(projectKey(PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT);
 
     Map<String, String> globalProps = new HashMap<>();
     globalProps.put("sonar.global.label", "It works");
@@ -153,6 +156,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarCloudBuilder()
       .setConnectionId("sonarcloud")
+      .enableHotspots()
       .setSonarLintUserHome(sonarUserHome)
       .addEnabledLanguage(Language.JAVA)
       .addEnabledLanguage(Language.PHP)
@@ -319,14 +323,49 @@ class SonarCloudTests extends AbstractConnectedTests {
   }
 
   @Test
-  void dontReportHotspots() throws Exception {
+  void reportHotspots() throws Exception {
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT,
       "src/main/java/foo/Foo.java",
-      "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+      "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath()),
       issueListener, null, null);
 
-    assertThat(issueListener.getIssues()).isEmpty();
+    assertThat(issueListener.getIssues()).hasSize(1)
+      .extracting(org.sonarsource.sonarlint.core.client.api.common.analysis.Issue::getRuleKey, org.sonarsource.sonarlint.core.client.api.common.analysis.Issue::getType)
+      .containsExactly(tuple("java:S4792", RuleType.SECURITY_HOTSPOT));
+  }
+
+  @Test
+  void loadHotspotRuleDescription() throws Exception {
+    var ruleDetails = engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), SC_CLIENT, "java:S4792", projectKey(PROJECT_KEY_JAVA_HOTSPOT)).get();
+
+    assertThat(ruleDetails.getName()).isEqualTo("Configuring loggers is security-sensitive");
+    // HTML description is null for security hotspots when accessed through the deprecated engine API
+    // When accessed through the backend service, the rule descriptions are split into sections
+    // see its.ConnectedModeBackendTest.returnConvertedDescriptionSectionsForHotspotRules
+    assertThat(ruleDetails.getHtmlDescription()).isNull();
+  }
+
+  @Test
+  void downloadsServerHotspotsForProject() {
+    engine.downloadAllServerHotspots(sonarcloudEndpointITOrg(), SC_CLIENT, projectKey(PROJECT_KEY_JAVA_HOTSPOT), "master", null);
+
+    var serverHotspots = engine.getServerHotspots(new ProjectBinding(projectKey(PROJECT_KEY_JAVA_HOTSPOT), "", "ide"), "master", "ide/src/main/java/foo/Foo.java");
+    assertThat(serverHotspots)
+      .extracting("ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "status")
+      .containsExactly(tuple("java:S4792", "Make sure that this logger's configuration is safe.", "ide/src/main/java/foo/Foo.java", 9, 4, 9, 45, HotspotReviewStatus.TO_REVIEW));
+  }
+
+  @Test
+  void downloadsServerHotspotsForFile() {
+    var projectBinding = new ProjectBinding(projectKey(PROJECT_KEY_JAVA_HOTSPOT), "", "ide");
+
+    engine.downloadAllServerHotspotsForFile(sonarcloudEndpointITOrg(), SC_CLIENT, projectBinding, "ide/src/main/java/foo/Foo.java", "master", null);
+
+    var serverHotspots = engine.getServerHotspots(projectBinding, "master", "ide/src/main/java/foo/Foo.java");
+    assertThat(serverHotspots)
+      .extracting("ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "status")
+      .containsExactly(tuple("java:S4792", "Make sure that this logger's configuration is safe.", "ide/src/main/java/foo/Foo.java", 9, 4, 9, 45, HotspotReviewStatus.TO_REVIEW));
   }
 
   @Test

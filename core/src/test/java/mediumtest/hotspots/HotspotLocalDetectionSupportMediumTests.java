@@ -52,11 +52,11 @@ class HotspotLocalDetectionSupportMediumTests {
 
     assertThat(checkResponse)
       .extracting(CheckLocalDetectionSupportedResponse::isSupported, CheckLocalDetectionSupportedResponse::getReason)
-      .containsExactly(false, "The project is not bound to SonarQube 9.7+");
+      .containsExactly(false, "The project is not bound to SonarQube 9.7+ or SonarCloud");
   }
 
   @Test
-  void it_should_not_support_local_detection_when_connected_to_sonarcloud() {
+  void it_should_support_local_detection_when_connected_to_sonarcloud() {
     backend = newBackend()
       .withSonarCloudConnection("connectionId", "orgKey")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
@@ -66,7 +66,7 @@ class HotspotLocalDetectionSupportMediumTests {
 
     assertThat(checkResponse)
       .extracting(CheckLocalDetectionSupportedResponse::isSupported, CheckLocalDetectionSupportedResponse::getReason)
-      .containsExactly(false, "The project is not bound to SonarQube 9.7+");
+      .containsExactly(true, null);
   }
 
   @Test
@@ -77,7 +77,7 @@ class HotspotLocalDetectionSupportMediumTests {
 
     assertThat(checkResponse)
       .extracting(CheckLocalDetectionSupportedResponse::isSupported, CheckLocalDetectionSupportedResponse::getReason)
-      .containsExactly(false, "The project is not bound to SonarQube 9.7+");
+      .containsExactly(false, "The project is not bound to SonarQube 9.7+ or SonarCloud");
   }
 
   @Test
@@ -88,7 +88,7 @@ class HotspotLocalDetectionSupportMediumTests {
 
     assertThat(checkResponse)
       .extracting(CheckLocalDetectionSupportedResponse::isSupported, CheckLocalDetectionSupportedResponse::getReason)
-      .containsExactly(false, "The project is not bound to SonarQube 9.7+");
+      .containsExactly(false, "The project is not bound to SonarQube 9.7+ or SonarCloud");
   }
 
   @Test
