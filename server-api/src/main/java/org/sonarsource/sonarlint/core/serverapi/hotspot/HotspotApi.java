@@ -64,14 +64,10 @@ public class HotspotApi {
   }
 
   public static boolean permitsTracking(boolean isSonarCloud, Supplier<Version> serverVersion) {
-    return !isSonarCloud && serverVersion.get().compareToIgnoreQualifier(TRACKING_COMPATIBLE_MIN_SQ_VERSION) >= 0;
+    return isSonarCloud || serverVersion.get().compareToIgnoreQualifier(TRACKING_COMPATIBLE_MIN_SQ_VERSION) >= 0;
   }
 
   public CompletableFuture<Void> changeStatusAsync(String hotspotKey, HotspotReviewStatus status) {
-    if (helper.isSonarCloud()) {
-      // hotspots are not supported on SonarCloud at the moment
-      return CompletableFuture.completedFuture(null);
-    }
     var isReviewed = status.isReviewed();
     var webApiStatus = isReviewed ? "REVIEWED" : "TO_REVIEW";
     var body = "hotspot=" + urlEncode(hotspotKey) + "&status=" + urlEncode(webApiStatus);

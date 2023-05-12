@@ -33,9 +33,9 @@ import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.ListAllowedStatu
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.ListAllowedStatusesResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.OpenHotspotInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
+import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
@@ -50,7 +50,7 @@ import static org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi.TRACKI
 public class HotspotServiceImpl implements HotspotService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final String LOCAL_DETECTION_NOT_SUPPORTED_REASON = "The project is not bound to SonarQube 9.7+";
+  private static final String LOCAL_DETECTION_NOT_SUPPORTED_REASON = "The project is not bound to SonarQube 9.7+ or SonarCloud";
   private final SonarLintClient client;
   private final ConfigurationRepository configurationRepository;
   private final ConnectionConfigurationRepository connectionRepository;
@@ -123,9 +123,6 @@ public class HotspotServiceImpl implements HotspotService {
     return optionalBinding
       .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
       .map(connection -> {
-        if (connection.isSonarCloud()) {
-          return CompletableFuture.<Void>completedFuture(null);
-        }
         var reviewStatus = toCore(params.getNewStatus());
         return connection.hotspot().changeStatusAsync(params.getHotspotKey(), reviewStatus)
           .thenAccept(nothing -> {
@@ -150,7 +147,7 @@ public class HotspotServiceImpl implements HotspotService {
   }
 
   private boolean isLocalDetectionSupported(boolean isSonarCloud, String connectionId) {
-    return !isSonarCloud &&
+    return isSonarCloud ||
       storageService.connection(connectionId).serverInfo().read()
         .map(StoredServerInfo::getVersion)
         .map(version -> version.compareToIgnoreQualifier(TRACKING_COMPATIBLE_MIN_SQ_VERSION) >= 0)

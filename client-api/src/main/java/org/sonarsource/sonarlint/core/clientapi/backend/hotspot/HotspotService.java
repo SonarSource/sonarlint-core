@@ -62,7 +62,6 @@ public interface HotspotService {
    * <ul>
    *   <li>the provided configuration scope ID is unknown</li>
    *   <li>the connection bound to the configuration scope is unknown</li>
-   *   <li>the connection bound to the configuration scope targets SonarCloud, for which we don't support hotspots</li>
    *   <li>the hotspotKey is not found in the local storage</li>
    * </ul>
    * In those cases a completed future will be returned.

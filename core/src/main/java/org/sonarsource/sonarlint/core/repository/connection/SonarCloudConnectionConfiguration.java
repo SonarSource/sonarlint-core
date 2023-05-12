@@ -26,12 +26,14 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
 public class SonarCloudConnectionConfiguration extends AbstractConnectionConfiguration {
 
-  public static final String SONARCLOUD_URL = System.getProperty("sonarlint.internal.sonarcloud.url", "https://sonarcloud.io");
+  public static String getSonarCloudUrl() {
+    return System.getProperty("sonarlint.internal.sonarcloud.url", "https://sonarcloud.io");
+  }
 
   private final String organization;
 
   public SonarCloudConnectionConfiguration(String connectionId, String organization, boolean disableNotifications) {
-    super(connectionId, ConnectionKind.SONARCLOUD, disableNotifications, SONARCLOUD_URL);
+    super(connectionId, ConnectionKind.SONARCLOUD, disableNotifications, getSonarCloudUrl());
     this.organization = organization;
   }
 
@@ -41,7 +43,7 @@ public class SonarCloudConnectionConfiguration extends AbstractConnectionConfigu
 
   @Override
   public EndpointParams getEndpointParams() {
-    return new EndpointParams(SONARCLOUD_URL, true, organization);
+    return new EndpointParams(getUrl(), true, organization);
   }
 
   @Override
