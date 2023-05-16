@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.repository.connection;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
 public class SonarCloudConnectionConfiguration extends AbstractConnectionConfiguration {
 
@@ -30,7 +31,7 @@ public class SonarCloudConnectionConfiguration extends AbstractConnectionConfigu
   private final String organization;
 
   public SonarCloudConnectionConfiguration(String connectionId, String organization, boolean disableNotifications) {
-    super(connectionId, ConnectionKind.SONARCLOUD, disableNotifications);
+    super(connectionId, ConnectionKind.SONARCLOUD, disableNotifications, SONARCLOUD_URL);
     this.organization = organization;
   }
 
@@ -39,10 +40,21 @@ public class SonarCloudConnectionConfiguration extends AbstractConnectionConfigu
   }
 
   @Override
+  public EndpointParams getEndpointParams() {
+    return new EndpointParams(SONARCLOUD_URL, true, organization);
+  }
+
+  @Override
   public boolean equals(@Nullable Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
     var that = (SonarCloudConnectionConfiguration) o;
     return Objects.equals(organization, that.organization);
   }

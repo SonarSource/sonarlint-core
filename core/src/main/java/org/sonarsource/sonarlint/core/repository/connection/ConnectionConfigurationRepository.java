@@ -27,8 +27,6 @@ import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
-import static org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration.SONARCLOUD_URL;
-
 public class ConnectionConfigurationRepository {
 
   private final Map<String, AbstractConnectionConfiguration> connectionsById = new ConcurrentHashMap<>();
@@ -61,14 +59,7 @@ public class ConnectionConfigurationRepository {
   }
 
   public Optional<EndpointParams> getEndpointParams(String connectionId) {
-    var connectionConfig = getConnectionById(connectionId);
-    if (connectionConfig instanceof SonarQubeConnectionConfiguration) {
-      return Optional.of(new EndpointParams(((SonarQubeConnectionConfiguration) connectionConfig).getServerUrl(), false, null));
-    } else if (connectionConfig instanceof SonarCloudConnectionConfiguration) {
-      return Optional.of(new EndpointParams(SONARCLOUD_URL, true, ((SonarCloudConnectionConfiguration) connectionConfig).getOrganization()));
-    } else {
-      return Optional.empty();
-    }
+    return Optional.ofNullable(getConnectionById(connectionId)).map(AbstractConnectionConfiguration::getEndpointParams);
   }
 
   public boolean hasConnectionWithOrigin(String serverOrigin) {
@@ -77,30 +68,12 @@ public class ConnectionConfigurationRepository {
     // passed Origin
     // See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Origin
     return connectionsById.values().stream()
-      .anyMatch(connection -> getUrl(connection).startsWith(serverOrigin));
+      .anyMatch(connection -> connection.getUrl().startsWith(serverOrigin));
   }
 
   public List<AbstractConnectionConfiguration> findByUrl(String serverUrl) {
     return connectionsById.values().stream()
-      .filter(connection -> equalsIgnoringTrailingSlash(getUrl(connection), serverUrl))
+      .filter(connection -> connection.isSameServerUrl(serverUrl))
       .collect(Collectors.toList());
-  }
-
-  private static String getUrl(AbstractConnectionConfiguration connectionConfig) {
-    if (connectionConfig instanceof SonarQubeConnectionConfiguration) {
-      return ((SonarQubeConnectionConfiguration) connectionConfig).getServerUrl();
-    }
-    return SONARCLOUD_URL;
-  }
-
-  private static boolean equalsIgnoringTrailingSlash(String aString, String anotherString) {
-    return withTrailingSlash(aString).equals(withTrailingSlash(anotherString));
-  }
-
-  private static String withTrailingSlash(String str) {
-    if (!str.endsWith("/")) {
-      return str + '/';
-    }
-    return str;
   }
 }
