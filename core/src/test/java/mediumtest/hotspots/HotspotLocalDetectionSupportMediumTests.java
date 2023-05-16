@@ -104,7 +104,7 @@ class HotspotLocalDetectionSupportMediumTests {
 
   private void bindToSonarQube(String configScopeId, @Nullable String serverVersion) {
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", "serverUrl")
+      .withSonarQubeConnection("connectionId")
       .withBoundConfigScope(configScopeId, "connectionId", "projectKey")
       .withStorageRoot(storageDir.resolve("storage"))
       .build();

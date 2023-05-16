@@ -73,7 +73,7 @@ class HotspotAllowedStatusesMediumTests {
   @Test
   void it_should_return_4_statuses_for_sonarqube() {
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", "url")
+      .withSonarQubeConnection("connectionId")
       .build();
 
     var response = listAllowedStatuses("connectionId");

@@ -25,8 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import mediumtest.fixtures.StorageFixture;
 import mediumtest.fixtures.TestPlugin;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -500,7 +498,7 @@ class EffectiveRulesMediumTests {
   @Test
   void it_should_split_security_hotspots_rule_description_and_adapt_title() {
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", "url")
+      .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withStorageRoot(storageDir)
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)

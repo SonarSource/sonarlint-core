@@ -50,9 +50,9 @@ import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarC
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
-import org.sonarsource.sonarlint.core.clientapi.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
@@ -101,13 +101,28 @@ public class SonarLintBackendFixture {
 
     private final Map<String, StandaloneRuleConfigDto> standaloneConfigByKey = new HashMap<>();
 
+    public SonarLintBackendBuilder withSonarQubeConnection() {
+      return withSonarQubeConnection("connectionId");
+    }
+
+    public SonarLintBackendBuilder withSonarQubeConnection(String connectionId) {
+      return withSonarQubeConnection(connectionId, "http://not-used", true);
+    }
+
     public SonarLintBackendBuilder withSonarQubeConnection(String connectionId, String serverUrl) {
-      sonarQubeConnections.add(new SonarQubeConnectionConfigurationDto(connectionId, serverUrl, true));
-      return this;
+      return withSonarQubeConnection(connectionId, serverUrl, true);
+    }
+
+    public SonarLintBackendBuilder withSonarQubeConnection(String connectionId, ServerFixture.Server server) {
+      return withSonarQubeConnection(connectionId, server.baseUrl(), true);
     }
 
     public SonarLintBackendBuilder withSonarQubeConnectionAndNotifications(String connectionId, String serverUrl) {
-      sonarQubeConnections.add(new SonarQubeConnectionConfigurationDto(connectionId, serverUrl, false));
+      return withSonarQubeConnection(connectionId, serverUrl, false);
+    }
+
+    private SonarLintBackendBuilder withSonarQubeConnection(String connectionId, String serverUrl, boolean disableNotifications) {
+      sonarQubeConnections.add(new SonarQubeConnectionConfigurationDto(connectionId, serverUrl, disableNotifications));
       return this;
     }
 
@@ -213,14 +228,13 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-
-
     public SonarLintBackendImpl build(FakeSonarLintClient client) {
       var sonarLintBackend = new SonarLintBackendImpl(client);
       client.setBackend(sonarLintBackend);
       sonarLintBackend
         .initialize(new InitializeParams(client.getClientInfo(), MEDIUM_TESTS_PRODUCT_KEY, storageRoot, null, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
-          enabledLanguages, extraEnabledLanguagesInConnectedMode, areSecurityHotspotsEnabled, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(), startEmbeddedServer,
+          enabledLanguages, extraEnabledLanguagesInConnectedMode, areSecurityHotspotsEnabled, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
+          startEmbeddedServer,
           standaloneConfigByKey, manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects));
       sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
       activeBranchPerScopeId.forEach(
