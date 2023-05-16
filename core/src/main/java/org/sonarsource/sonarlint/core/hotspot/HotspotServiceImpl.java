@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.ListAllowedStatu
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.OpenHotspotInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.commons.Binding;
+import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -50,7 +51,9 @@ import static org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi.TRACKI
 public class HotspotServiceImpl implements HotspotService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final String LOCAL_DETECTION_NOT_SUPPORTED_REASON = "The project is not bound to SonarQube 9.7+ or SonarCloud";
+  private static final String NO_BINDING_REASON = "The project is not bound, please bind it to SonarQube 9.7+ or SonarCloud";
+  private static final String UNSUPPORTED_SONARQUBE_REASON = "Security Hotspots detection is disabled with this version of SonarQube, " +
+    "please bind it to SonarQube 9.7+ or SonarCloud";
   private final SonarLintClient client;
   private final ConfigurationRepository configurationRepository;
   private final ConnectionConfigurationRepository connectionRepository;
@@ -88,14 +91,22 @@ public class HotspotServiceImpl implements HotspotService {
   @Override
   public CompletableFuture<CheckLocalDetectionSupportedResponse> checkLocalDetectionSupported(CheckLocalDetectionSupportedParams params) {
     var configScopeId = params.getConfigScopeId();
-    var supported = false;
-    if (configScopeId != null) {
-      var effectiveBinding = configurationRepository.getEffectiveBinding(configScopeId);
-      supported = effectiveBinding.flatMap(binding -> connectionRepository.getEndpointParams(binding.getConnectionId()))
-        .map(ps -> isLocalDetectionSupported(ps.isSonarCloud(), effectiveBinding.get().getConnectionId()))
-        .orElse(false);
+    var configScope = configurationRepository.getConfigurationScope(configScopeId);
+    if (configScope == null) {
+      return CompletableFuture.failedFuture(new IllegalArgumentException("The provided configuration scope does not exist: " + configScopeId));
     }
-    return CompletableFuture.completedFuture(new CheckLocalDetectionSupportedResponse(supported, supported ? null : LOCAL_DETECTION_NOT_SUPPORTED_REASON));
+    var effectiveBinding = configurationRepository.getEffectiveBinding(configScopeId);
+    if (effectiveBinding.isEmpty()) {
+      return CompletableFuture.completedFuture(new CheckLocalDetectionSupportedResponse(false, NO_BINDING_REASON));
+    }
+    var connectionId = effectiveBinding.get().getConnectionId();
+    var connection = connectionRepository.getConnectionById(connectionId);
+    if (connection == null) {
+      return CompletableFuture.failedFuture(new IllegalArgumentException("The provided configuration scope is bound to an unknown connection: " + connectionId));
+    }
+
+    var supported = isLocalDetectionSupported(connection.getKind() == ConnectionKind.SONARCLOUD, effectiveBinding.get().getConnectionId());
+    return CompletableFuture.completedFuture(new CheckLocalDetectionSupportedResponse(supported, supported ? null : UNSUPPORTED_SONARQUBE_REASON));
   }
 
   @Override

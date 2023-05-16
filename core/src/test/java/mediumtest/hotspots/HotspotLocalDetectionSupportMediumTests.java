@@ -20,6 +20,7 @@
 package mediumtest.hotspots;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
 import mediumtest.fixtures.StorageFixture;
@@ -45,14 +46,46 @@ class HotspotLocalDetectionSupportMediumTests {
   }
 
   @Test
-  void it_should_not_support_local_detection_in_standalone_mode() {
+  void it_should_fail_when_the_configuration_scope_id_is_unknown() {
     backend = newBackend().build();
 
-    var checkResponse = checkLocalDetectionSupported(null);
+    var future = backend.getHotspotService().checkLocalDetectionSupported(new CheckLocalDetectionSupportedParams("configScopeId"));
+
+    assertThat(future)
+      .failsWithin(Duration.ofSeconds(2))
+      .withThrowableOfType(ExecutionException.class)
+      .havingCause()
+      .isInstanceOf(IllegalArgumentException.class)
+      .withMessage("The provided configuration scope does not exist: configScopeId");
+  }
+
+  @Test
+  void it_should_fail_when_the_configuration_scope_is_bound_to_an_unknown_connection() {
+    backend = newBackend()
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .build();
+
+    var future = backend.getHotspotService().checkLocalDetectionSupported(new CheckLocalDetectionSupportedParams("configScopeId"));
+
+    assertThat(future)
+      .failsWithin(Duration.ofSeconds(2))
+      .withThrowableOfType(ExecutionException.class)
+      .havingCause()
+      .isInstanceOf(IllegalArgumentException.class)
+      .withMessage("The provided configuration scope is bound to an unknown connection: connectionId");
+  }
+
+  @Test
+  void it_should_not_support_local_detection_in_standalone_mode() {
+    backend = newBackend()
+      .withUnboundConfigScope("configScopeId")
+      .build();
+
+    var checkResponse = checkLocalDetectionSupported("configScopeId");
 
     assertThat(checkResponse)
       .extracting(CheckLocalDetectionSupportedResponse::isSupported, CheckLocalDetectionSupportedResponse::getReason)
-      .containsExactly(false, "The project is not bound to SonarQube 9.7+ or SonarCloud");
+      .containsExactly(false, "The project is not bound, please bind it to SonarQube 9.7+ or SonarCloud");
   }
 
   @Test
@@ -77,7 +110,7 @@ class HotspotLocalDetectionSupportMediumTests {
 
     assertThat(checkResponse)
       .extracting(CheckLocalDetectionSupportedResponse::isSupported, CheckLocalDetectionSupportedResponse::getReason)
-      .containsExactly(false, "The project is not bound to SonarQube 9.7+ or SonarCloud");
+      .containsExactly(false, "Security Hotspots detection is disabled with this version of SonarQube, please bind it to SonarQube 9.7+ or SonarCloud");
   }
 
   @Test
@@ -88,7 +121,7 @@ class HotspotLocalDetectionSupportMediumTests {
 
     assertThat(checkResponse)
       .extracting(CheckLocalDetectionSupportedResponse::isSupported, CheckLocalDetectionSupportedResponse::getReason)
-      .containsExactly(false, "The project is not bound to SonarQube 9.7+ or SonarCloud");
+      .containsExactly(false, "Security Hotspots detection is disabled with this version of SonarQube, please bind it to SonarQube 9.7+ or SonarCloud");
   }
 
   @Test

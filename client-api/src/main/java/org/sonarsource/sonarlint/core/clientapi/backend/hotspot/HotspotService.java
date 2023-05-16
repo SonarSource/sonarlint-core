@@ -28,6 +28,31 @@ public interface HotspotService {
   @JsonNotification
   void openHotspotInBrowser(OpenHotspotInBrowserParams params);
 
+  /**
+   * <p>Request if the local detection of hotspots is supported. It is the case when the configuration scope provided as a parameter:
+   * <ul>
+   *     <li>is bound to SonarCloud</li>
+   *     <li>is bound to SonarQube 9.7</li>
+   * </ul>
+   * For the latter, the check is made on the storage data, no query will be made to the server. If there is no storage, local detection is considered unsupported.
+   * </p>
+   * <p>
+   * In all other cases, local detection is not supported:
+   * <ul>
+   *     <li>the configuration scope is bound to SonarQube < 9.7</li>
+   *     <li>the configuration scope has no effective binding</li>
+   * </ul>
+   * The corresponding reason will be returned in the response.
+   * </p>
+   * <p>
+   * This method will fail if:
+   * <ul>
+   *   <li>the provided configuration scope is unknown</li>
+   *   <li>the configuration scope is bound to an unknown connection</li>
+   * </ul>
+   * In those cases, a failed future will be returned.
+   * </p>
+   */
   @JsonRequest
   CompletableFuture<CheckLocalDetectionSupportedResponse> checkLocalDetectionSupported(CheckLocalDetectionSupportedParams params);
 

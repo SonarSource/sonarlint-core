@@ -19,17 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.hotspot;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
-
 public class CheckLocalDetectionSupportedParams {
   private final String configScopeId;
 
-  public CheckLocalDetectionSupportedParams(@Nullable String configScopeId) {
+  public CheckLocalDetectionSupportedParams(String configScopeId) {
     this.configScopeId = configScopeId;
   }
 
-  @CheckForNull
   public String getConfigScopeId() {
     return configScopeId;
   }
