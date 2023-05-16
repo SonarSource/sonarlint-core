@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.StorageFixture;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -61,7 +60,7 @@ class ConnectionSyncMediumTests {
       .withJavaPlugin()
       .create(storageDir);
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", "http://foo")
+      .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withStorageRoot(storageDir.resolve("storage"))
       .withEnabledLanguage(Language.JAVA)

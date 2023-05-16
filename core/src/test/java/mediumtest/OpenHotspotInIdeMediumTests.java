@@ -107,7 +107,7 @@ class OpenHotspotInIdeMediumTests {
   void it_should_open_hotspot_in_ide_when_project_bound(@TempDir Path sonarlintUserHome) {
     var fakeClient = newFakeClient().build();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", serverWithHotspot.baseUrl())
+      .withSonarQubeConnection("connectionId", serverWithHotspot)
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withEmbeddedServer()
       .withSonarLintUserHome(sonarlintUserHome)
@@ -127,7 +127,7 @@ class OpenHotspotInIdeMediumTests {
   @Test
   void it_should_update_telemetry_data_when_opening_hotspot_in_ide(@TempDir Path sonarlintUserHome) {
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", serverWithHotspot.baseUrl())
+      .withSonarQubeConnection("connectionId", serverWithHotspot)
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withEmbeddedServer()
       .withSonarLintUserHome(sonarlintUserHome)
@@ -162,7 +162,7 @@ class OpenHotspotInIdeMediumTests {
   void it_should_assist_creating_the_binding_if_scope_not_bound(@TempDir Path sonarlintUserHome) {
     var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", "connectionId", serverWithHotspot.baseUrl(), "projectKey").build();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", serverWithHotspot.baseUrl())
+      .withSonarQubeConnection("connectionId", serverWithHotspot)
       .withUnboundConfigScope("scopeId")
       .withEmbeddedServer()
       .withSonarLintUserHome(sonarlintUserHome)
@@ -182,7 +182,7 @@ class OpenHotspotInIdeMediumTests {
   void it_should_display_a_message_when_failing_to_fetch_the_hotspot(@TempDir Path sonarlintUserHome) {
     var fakeClient = newFakeClient().build();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", serverWithoutHotspot.baseUrl())
+      .withSonarQubeConnection("connectionId", serverWithoutHotspot)
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withEmbeddedServer()
       .withSonarLintUserHome(sonarlintUserHome)

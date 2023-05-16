@@ -154,7 +154,7 @@ class BindingSuggestionsMediumTests {
       .build();
     backend = newBackend()
       .withSonarQubeConnection(MYSONAR, mockWebServerExtension.endpointParams().getBaseUrl())
-      .withSonarQubeConnection("another", "http://foo")
+      .withSonarQubeConnection("another")
       .build(fakeClient);
 
     mockWebServerExtension.addProtobufResponse("/api/components/show.protobuf?component=org.sonarsource.sonarlint%3Asonarlint-core-parent", Components.ShowWsResponse.newBuilder()

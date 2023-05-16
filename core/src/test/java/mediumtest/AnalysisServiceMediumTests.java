@@ -20,7 +20,6 @@
 package mediumtest;
 
 import java.nio.file.Path;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.StorageFixture;
 import org.junit.jupiter.api.AfterEach;
@@ -62,7 +61,7 @@ class AnalysisServiceMediumTests {
     backend = newBackend()
       .withStorageRoot(storagePath.resolve("storage"))
       .withSonarLintUserHome(storagePath.resolve("slHome"))
-      .withSonarQubeConnection("connectionId", "http://notused")
+      .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "branchName")
       .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
       .build();
@@ -83,7 +82,7 @@ class AnalysisServiceMediumTests {
     backend = newBackend()
       .withStorageRoot(storagePath.resolve("storage"))
       .withSonarLintUserHome(storagePath.resolve("slHome"))
-      .withSonarQubeConnection("connectionId", "http://notused")
+      .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "branchName")
       .withEnabledLanguage(Language.JAVA)
       .build();

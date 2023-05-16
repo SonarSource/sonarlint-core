@@ -60,7 +60,7 @@ class TelemetryMediumTests {
     System.setProperty("sonarlint.telemetry.disabled", "true");
     backend = newBackend()
       .withSonarLintUserHome(sonarlintUserHome)
-      .withSonarQubeConnection("connectionId", "http://localhost:12345")
+      .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .build();
 
@@ -75,7 +75,7 @@ class TelemetryMediumTests {
     System.clearProperty("sonarlint.telemetry.disabled");
     backend = newBackend()
       .withSonarLintUserHome(sonarlintUserHome)
-      .withSonarQubeConnection("connectionId", "http://localhost:12345")
+      .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .build();
 
@@ -90,7 +90,7 @@ class TelemetryMediumTests {
     System.clearProperty("sonarlint.telemetry.disabled");
     backend = newBackend()
       .withSonarLintUserHome(sonarlintUserHome)
-      .withSonarQubeConnection("connectionId", "http://localhost:12345")
+      .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .build();
 

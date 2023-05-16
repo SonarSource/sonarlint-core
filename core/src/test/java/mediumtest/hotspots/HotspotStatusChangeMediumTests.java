@@ -59,7 +59,7 @@ class HotspotStatusChangeMediumTests {
   void it_should_fail_the_future_when_the_server_returns_an_error() {
     server = newSonarQubeServer().withStatus(DOWN).start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server.baseUrl())
+      .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
@@ -109,7 +109,7 @@ class HotspotStatusChangeMediumTests {
   void it_should_update_the_status_on_sonarqube_through_the_web_api() {
     server = newSonarQubeServer().start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server.baseUrl())
+      .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
@@ -128,7 +128,7 @@ class HotspotStatusChangeMediumTests {
 //    newStorage("connectionId").withProject("projectKey", project -> project.withHotspot("hotspotKey")).create(storageDir);
     server = newSonarQubeServer().start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server.baseUrl())
+      .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
@@ -146,7 +146,7 @@ class HotspotStatusChangeMediumTests {
     server = newSonarQubeServer().start();
     backend = newBackend()
       .withSonarLintUserHome(sonarlintUserHome)
-      .withSonarQubeConnection("connectionId", server.baseUrl())
+      .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
