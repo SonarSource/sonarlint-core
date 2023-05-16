@@ -26,7 +26,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashSet;
+import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -43,6 +44,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.authentication.Authentic
 import org.sonarsource.sonarlint.core.clientapi.backend.branch.SonarProjectBranchService;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
@@ -126,13 +128,14 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     createFolderIfNeeded(sonarlintUserHome);
     createFolderIfNeeded(workDir);
     storageService.initialize(params.getStorageRoot(), workDir);
-    var enabledLanguagesInConnectedMode = new HashSet<>(params.getEnabledLanguagesInStandaloneMode());
+    var enabledLanguagesInStandaloneMode = toEnumSet(params.getEnabledLanguagesInStandaloneMode(), Language.class);
+    var enabledLanguagesInConnectedMode = EnumSet.copyOf(enabledLanguagesInStandaloneMode);
     enabledLanguagesInConnectedMode.addAll(params.getExtraEnabledLanguagesInConnectedMode());
     connectionService
       .initialize(params.getSonarQubeConnections(), params.getSonarCloudConnections());
     pluginsService.initialize(params.getEmbeddedPluginPaths(), params.getConnectedModeEmbeddedPluginPathsByKey(),
-      params.getEnabledLanguagesInStandaloneMode(), enabledLanguagesInConnectedMode);
-    rulesExtractionHelper.initialize(params.getEnabledLanguagesInStandaloneMode(), enabledLanguagesInConnectedMode, params.isEnableSecurityHotspots());
+      enabledLanguagesInStandaloneMode, enabledLanguagesInConnectedMode);
+    rulesExtractionHelper.initialize(enabledLanguagesInStandaloneMode, enabledLanguagesInConnectedMode, params.isEnableSecurityHotspots());
     rulesService.initialize(params.getStandaloneRuleConfigByKey());
     telemetryService.initialize(params.getTelemetryProductKey(), sonarlintUserHome);
     if (params.shouldManageLocalServer()) {
@@ -146,9 +149,13 @@ public class SonarLintBackendImpl implements SonarLintBackend {
       synchronizationServiceImpl.initialize(enabledLanguagesInConnectedMode, params.getConnectedModeEmbeddedPluginPathsByKey().keySet(),
         params.areTaintVulnerabilitiesEnabled());
     }
-    analysisService.initialize(params.getEnabledLanguagesInStandaloneMode(), enabledLanguagesInConnectedMode);
+    analysisService.initialize(enabledLanguagesInStandaloneMode, enabledLanguagesInConnectedMode);
 
     return CompletableFuture.completedFuture(null);
+  }
+
+  private static <T extends Enum<T>> EnumSet<T> toEnumSet(Collection<T> collection, Class<T> clazz) {
+    return collection.isEmpty() ? EnumSet.noneOf(clazz) : EnumSet.copyOf(collection);
   }
 
   private static void createFolderIfNeeded(Path path) {
