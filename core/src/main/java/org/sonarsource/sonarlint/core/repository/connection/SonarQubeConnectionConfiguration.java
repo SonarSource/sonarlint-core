@@ -19,50 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.repository.connection;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Objects;
-import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
-
-import static org.apache.commons.lang.StringUtils.removeEnd;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
 public class SonarQubeConnectionConfiguration extends AbstractConnectionConfiguration {
 
-  private final String serverUrl;
-
   public SonarQubeConnectionConfiguration(String connectionId, String serverUrl, boolean disableNotifications) {
-    super(connectionId, ConnectionKind.SONARQUBE, disableNotifications);
-    this.serverUrl = serverUrl;
-  }
-
-  public String getServerUrl() {
-    return serverUrl;
-  }
-
-  public boolean isSameServerUrl(String otherUrl) {
-    URI myUri;
-    URI otherUri;
-    try {
-      myUri = new URI(removeEnd(serverUrl, "/"));
-      otherUri = new URI(removeEnd(otherUrl, "/"));
-    } catch (URISyntaxException e) {
-      return false;
-    }
-    return Objects.equals(myUri, otherUri);
+    super(connectionId, ConnectionKind.SONARQUBE, disableNotifications, serverUrl);
   }
 
   @Override
-  public boolean equals(@Nullable Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-    var that = (SonarQubeConnectionConfiguration) o;
-    return Objects.equals(serverUrl, that.serverUrl);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(super.hashCode(), serverUrl);
+  public EndpointParams getEndpointParams() {
+    return new EndpointParams(getUrl(), false, null);
   }
 }
