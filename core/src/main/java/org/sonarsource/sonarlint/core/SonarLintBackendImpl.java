@@ -26,8 +26,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -44,12 +42,12 @@ import org.sonarsource.sonarlint.core.clientapi.backend.authentication.Authentic
 import org.sonarsource.sonarlint.core.clientapi.backend.branch.SonarProjectBranchService;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
-import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.hotspot.HotspotServiceImpl;
+import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsServiceImpl;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -83,6 +81,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   private final SynchronizationServiceImpl synchronizationServiceImpl;
   private final AnalysisServiceImpl analysisService;
   private final StorageService storageService;
+  private final LanguageSupportRepository languageSupportRepository;
 
   public SonarLintBackendImpl(SonarLintClient client) {
     EventBus clientEventBus = new AsyncEventBus("clientEvents", clientEventsExecutorService);
@@ -93,8 +92,9 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     this.connectionService = new ConnectionServiceImpl(clientEventBus, connectionConfigurationRepository);
     var pluginRepository = new PluginsRepository();
     this.storageService = new StorageService();
-    pluginsService = new PluginsServiceImpl(pluginRepository, storageService);
-    rulesExtractionHelper = new RulesExtractionHelper(pluginsService);
+    this.languageSupportRepository = new LanguageSupportRepository();
+    pluginsService = new PluginsServiceImpl(pluginRepository, languageSupportRepository, storageService);
+    rulesExtractionHelper = new RulesExtractionHelper(pluginsService, languageSupportRepository);
     var rulesRepository = new RulesRepository(rulesExtractionHelper);
     var serverApiProvider = new ServerApiProvider(connectionConfigurationRepository, client);
     rulesService = new RulesServiceImpl(serverApiProvider, configurationRepository, rulesRepository, storageService);
@@ -109,8 +109,9 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     smartNotifications = new SmartNotifications(configurationRepository, connectionConfigurationRepository, serverApiProvider, client, storageService, telemetryService);
     var sonarProjectBranchRepository = new ActiveSonarProjectBranchRepository();
     this.sonarProjectBranchService = new SonarProjectBranchServiceImpl(sonarProjectBranchRepository, configurationRepository, clientEventBus);
-    this.synchronizationServiceImpl = new SynchronizationServiceImpl(client, configurationRepository, sonarProjectBranchService, serverApiProvider, storageService);
-    this.analysisService = new AnalysisServiceImpl(configurationRepository, storageService);
+    this.synchronizationServiceImpl = new SynchronizationServiceImpl(client, configurationRepository, languageSupportRepository, sonarProjectBranchService, serverApiProvider,
+      storageService);
+    this.analysisService = new AnalysisServiceImpl(configurationRepository, languageSupportRepository, storageService);
     clientEventBus.register(bindingSuggestionProvider);
     clientEventBus.register(sonarProjectCache);
     clientEventBus.register(rulesRepository);
@@ -128,14 +129,11 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     createFolderIfNeeded(sonarlintUserHome);
     createFolderIfNeeded(workDir);
     storageService.initialize(params.getStorageRoot(), workDir);
-    var enabledLanguagesInStandaloneMode = toEnumSet(params.getEnabledLanguagesInStandaloneMode(), Language.class);
-    var enabledLanguagesInConnectedMode = EnumSet.copyOf(enabledLanguagesInStandaloneMode);
-    enabledLanguagesInConnectedMode.addAll(params.getExtraEnabledLanguagesInConnectedMode());
+    languageSupportRepository.initialize(params.getEnabledLanguagesInStandaloneMode(), params.getExtraEnabledLanguagesInConnectedMode());
     connectionService
       .initialize(params.getSonarQubeConnections(), params.getSonarCloudConnections());
-    pluginsService.initialize(params.getEmbeddedPluginPaths(), params.getConnectedModeEmbeddedPluginPathsByKey(),
-      enabledLanguagesInStandaloneMode, enabledLanguagesInConnectedMode);
-    rulesExtractionHelper.initialize(enabledLanguagesInStandaloneMode, enabledLanguagesInConnectedMode, params.isEnableSecurityHotspots());
+    pluginsService.initialize(params.getEmbeddedPluginPaths(), params.getConnectedModeEmbeddedPluginPathsByKey());
+    rulesExtractionHelper.initialize(params.isEnableSecurityHotspots());
     rulesService.initialize(params.getStandaloneRuleConfigByKey());
     telemetryService.initialize(params.getTelemetryProductKey(), sonarlintUserHome);
     if (params.shouldManageLocalServer()) {
@@ -146,16 +144,10 @@ public class SonarLintBackendImpl implements SonarLintBackend {
       smartNotifications.initialize();
     }
     if (params.shouldSynchronizeProjects()) {
-      synchronizationServiceImpl.initialize(enabledLanguagesInConnectedMode, params.getConnectedModeEmbeddedPluginPathsByKey().keySet(),
-        params.areTaintVulnerabilitiesEnabled());
+      synchronizationServiceImpl.initialize(params.getConnectedModeEmbeddedPluginPathsByKey().keySet());
     }
-    analysisService.initialize(enabledLanguagesInStandaloneMode, enabledLanguagesInConnectedMode);
 
     return CompletableFuture.completedFuture(null);
-  }
-
-  private static <T extends Enum<T>> EnumSet<T> toEnumSet(Collection<T> collection, Class<T> clazz) {
-    return collection.isEmpty() ? EnumSet.noneOf(clazz) : EnumSet.copyOf(collection);
   }
 
   private static void createFolderIfNeeded(Path path) {
@@ -228,7 +220,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   private static void shutdown(Runnable task) {
     try {
       task.run();
-    } catch(Exception e) {
+    } catch (Exception e) {
       LOG.error("Error when shutting down", e);
     }
   }
