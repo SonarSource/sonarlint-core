@@ -105,7 +105,6 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverapi.hotspot.GetSecurityHotspotRequestParams;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspotDetails;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
@@ -1030,8 +1029,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       analyzeMavenProject("sample-java-hotspot", PROJECT_KEY_JAVA_HOTSPOT);
       var securityHotspotsService = new ServerApi(endpointParams(ORCHESTRATOR), sqHttpClient()).hotspot();
 
-      var remoteHotspot = securityHotspotsService
-        .fetch(new GetSecurityHotspotRequestParams(getFirstHotspotKey(PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT));
+      var remoteHotspot = securityHotspotsService.fetch(getFirstHotspotKey(PROJECT_KEY_JAVA_HOTSPOT));
 
       assertThat(remoteHotspot).isNotEmpty();
       var actualHotspot = remoteHotspot.get();

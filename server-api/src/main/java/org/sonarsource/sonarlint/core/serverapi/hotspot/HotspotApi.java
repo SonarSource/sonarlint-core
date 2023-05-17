@@ -120,9 +120,9 @@ public class HotspotApi {
       + "&branch=" + urlEncode(branchName);
   }
 
-  public Optional<ServerHotspotDetails> fetch(GetSecurityHotspotRequestParams params) {
+  public Optional<ServerHotspotDetails> fetch(String hotspotKey) {
     Hotspots.ShowWsResponse response;
-    try (var wsResponse = helper.get(getShowUrl(params.hotspotKey, params.projectKey)); var is = wsResponse.bodyAsStream()) {
+    try (var wsResponse = helper.get(getShowUrl(hotspotKey)); var is = wsResponse.bodyAsStream()) {
       response = Hotspots.ShowWsResponse.parseFrom(is);
     } catch (Exception e) {
       LOG.error("Error while fetching security hotspot", e);
@@ -192,10 +192,9 @@ public class HotspotApi {
     return HotspotReviewStatus.TO_REVIEW;
   }
 
-  private static String getShowUrl(String hotspotKey, String projectKey) {
+  private static String getShowUrl(String hotspotKey) {
     return HOTSPOTS_SHOW_API_URL
-      + "?projectKey=" + urlEncode(projectKey)
-      + "&hotspot=" + urlEncode(hotspotKey);
+      + "?hotspot=" + urlEncode(hotspotKey);
   }
 
   private static TextRange convertTextRange(Common.TextRange textRange) {
