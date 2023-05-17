@@ -46,7 +46,6 @@ import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams
 import org.sonarsource.sonarlint.core.clientapi.client.message.MessageType;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.commons.TextRange;
-import org.sonarsource.sonarlint.core.serverapi.hotspot.GetSecurityHotspotRequestParams;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspotDetails;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
@@ -93,7 +92,7 @@ class ShowHotspotRequestHandler implements HttpRequestHandler {
       startFullBindingProcess();
       assistCreatingConnection(query.serverUrl)
         .thenCompose(response -> assistBinding(response.getNewConnectionId(), query.projectKey))
-        .thenAccept(response -> showHotspotForScope(response.connectionId, response.configurationScopeId, query.projectKey, query.hotspotKey))
+        .thenAccept(response -> showHotspotForScope(response.connectionId, response.configurationScopeId, query.hotspotKey))
         .whenComplete((v, e) -> endFullBindingProcess());
     } else {
       // we pick the first connection but this could lead to issues later if there were several matches (make the user select the right one?)
@@ -115,28 +114,28 @@ class ShowHotspotRequestHandler implements HttpRequestHandler {
     var scopes = configurationService.getConfigScopesWithBindingConfiguredTo(connectionId, projectKey);
     if (scopes.isEmpty()) {
       assistBinding(connectionId, projectKey)
-        .thenAccept(newBinding -> showHotspotForScope(connectionId, newBinding.configurationScopeId, projectKey, hotspotKey));
+        .thenAccept(newBinding -> showHotspotForScope(connectionId, newBinding.configurationScopeId, hotspotKey));
     } else {
       // we pick the first bound scope but this could lead to issues later if there were several matches (make the user select the right one?)
       var firstBoundScope = scopes.get(0);
-      showHotspotForScope(connectionId, firstBoundScope.getId(), projectKey, hotspotKey);
+      showHotspotForScope(connectionId, firstBoundScope.getId(), hotspotKey);
     }
   }
 
-  private void showHotspotForScope(String connectionId, String configurationScopeId, String projectKey, String hotspotKey) {
-    tryFetchHotspot(connectionId, projectKey, hotspotKey)
+  private void showHotspotForScope(String connectionId, String configurationScopeId, String hotspotKey) {
+    tryFetchHotspot(connectionId, hotspotKey)
       .ifPresentOrElse(
         hotspot -> client.showHotspot(new ShowHotspotParams(configurationScopeId, adapt(hotspotKey, hotspot))),
         () -> client.showMessage(new ShowMessageParams(MessageType.ERROR, "Could not show the hotspot. See logs for more details")));
   }
 
-  private Optional<ServerHotspotDetails> tryFetchHotspot(String connectionId, String projectKey, String hotspotKey) {
+  private Optional<ServerHotspotDetails> tryFetchHotspot(String connectionId, String hotspotKey) {
     var serverApi = serverApiProvider.getServerApi(connectionId);
     if (serverApi.isEmpty()) {
       // should not happen since we found the connection just before, improve the design ?
       return Optional.empty();
     }
-    return serverApi.get().hotspot().fetch(new GetSecurityHotspotRequestParams(hotspotKey, projectKey));
+    return serverApi.get().hotspot().fetch(hotspotKey);
   }
 
   private CompletableFuture<AssistCreatingConnectionResponse> assistCreatingConnection(String serverUrl) {

@@ -63,23 +63,23 @@ class HotspotApiTests {
 
   @Test
   void it_should_call_the_expected_api_endpoint_when_fetching_hotspot_details() {
-    underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
+    underTest.fetch("h");
 
     var recordedRequest = mockServer.takeRequest();
-    assertThat(recordedRequest.getPath()).isEqualTo("/api/hotspots/show.protobuf?projectKey=p&hotspot=h");
+    assertThat(recordedRequest.getPath()).isEqualTo("/api/hotspots/show.protobuf?hotspot=h");
   }
 
   @Test
   void it_should_urlencode_the_hotspot_and_project_keys_when_fetching_hotspot_details() {
-    underTest.fetch(new GetSecurityHotspotRequestParams("hot/spot", "pro/ject"));
+    underTest.fetch("hot/spot");
 
     var recordedRequest = mockServer.takeRequest();
-    assertThat(recordedRequest.getPath()).isEqualTo("/api/hotspots/show.protobuf?projectKey=pro%2Fject&hotspot=hot%2Fspot");
+    assertThat(recordedRequest.getPath()).isEqualTo("/api/hotspots/show.protobuf?hotspot=hot%2Fspot");
   }
 
   @Test
   void it_should_adapt_and_return_the_hotspot_details() {
-    mockServer.addProtobufResponse("/api/hotspots/show.protobuf?projectKey=p&hotspot=h", Hotspots.ShowWsResponse.newBuilder()
+    mockServer.addProtobufResponse("/api/hotspots/show.protobuf?hotspot=h", Hotspots.ShowWsResponse.newBuilder()
       .setMessage("message")
       .setComponent(Hotspots.Component.newBuilder().setPath("path").setKey("myproject:path"))
       .setTextRange(Common.TextRange.newBuilder().setStartLine(2).setStartOffset(7).setEndLine(4).setEndOffset(9).build())
@@ -97,7 +97,7 @@ class HotspotApiTests {
       .build());
     mockServer.addStringResponse("/api/sources/raw?key=" + UrlUtils.urlEncode("myproject:path"), "Even\nBefore My\n\tCode\n  Snippet And\n After");
 
-    var remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
+    var remoteHotspot = underTest.fetch("h");
 
     assertThat(remoteHotspot).isNotEmpty();
     var hotspot = remoteHotspot.get();
@@ -119,7 +119,7 @@ class HotspotApiTests {
 
   @Test
   void it_should_extract_single_line_snippet() {
-    mockServer.addProtobufResponse("/api/hotspots/show.protobuf?projectKey=p&hotspot=h", Hotspots.ShowWsResponse.newBuilder()
+    mockServer.addProtobufResponse("/api/hotspots/show.protobuf?hotspot=h", Hotspots.ShowWsResponse.newBuilder()
       .setMessage("message")
       .setComponent(Hotspots.Component.newBuilder().setPath("path").setKey("myproject:path"))
       .setTextRange(Common.TextRange.newBuilder().setStartLine(2).setStartOffset(7).setEndLine(2).setEndOffset(9).build())
@@ -137,7 +137,7 @@ class HotspotApiTests {
       .build());
     mockServer.addStringResponse("/api/sources/raw?key=" + UrlUtils.urlEncode("myproject:path"), "Even\nBefore My\n\tCode\n  Snippet And\n After");
 
-    var remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
+    var remoteHotspot = underTest.fetch("h");
 
     assertThat(remoteHotspot).isNotEmpty();
     var hotspot = remoteHotspot.get();
@@ -146,21 +146,20 @@ class HotspotApiTests {
 
   @Test
   void it_should_return_empty_optional_when_ws_client_throws_an_exception() {
-    var remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
+    var remoteHotspot = underTest.fetch("h");
     assertThat(remoteHotspot).isEmpty();
   }
 
   @Test
   void it_should_throw_when_parser_throws_an_exception() {
-    mockServer.addProtobufResponse("/api/hotspots/show.protobuf?projectKey=p&hotspot=h", Issues.SearchWsResponse.newBuilder().build());
+    mockServer.addProtobufResponse("/api/hotspots/show.protobuf?hotspot=h", Issues.SearchWsResponse.newBuilder().build());
 
-    var params = new GetSecurityHotspotRequestParams("h", "p");
-    assertThrows(IllegalArgumentException.class, () -> underTest.fetch(params));
+    assertThrows(IllegalArgumentException.class, () -> underTest.fetch("h"));
   }
 
   @Test
   void it_should_return_no_resolution_status_when_not_available() {
-    mockServer.addProtobufResponse("/api/hotspots/show.protobuf?projectKey=p&hotspot=h", Hotspots.ShowWsResponse.newBuilder()
+    mockServer.addProtobufResponse("/api/hotspots/show.protobuf?hotspot=h", Hotspots.ShowWsResponse.newBuilder()
       .setComponent(Hotspots.Component.newBuilder().setPath("path"))
       .setTextRange(Common.TextRange.newBuilder().setStartLine(1).setStartOffset(2).setEndLine(3).setEndOffset(4).build())
       .setStatus("TO_REVIEW")
@@ -174,7 +173,7 @@ class HotspotApiTests {
         .build())
       .build());
 
-    var remoteHotspot = underTest.fetch(new GetSecurityHotspotRequestParams("h", "p"));
+    var remoteHotspot = underTest.fetch("h");
 
     assertThat(remoteHotspot).isNotEmpty();
     var hotspot = remoteHotspot.get();
