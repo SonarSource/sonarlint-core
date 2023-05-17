@@ -47,6 +47,8 @@ public class InitializeParams {
   private final boolean shouldManageLocalServer;
   private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey;
   private final boolean shouldManageSmartNotifications;
+  @Deprecated
+  // not controllable anymore, it is the backend's responsibility to decide
   private final boolean taintVulnerabilitiesEnabled;
   private final boolean shouldSynchronizeProjects;
 
@@ -60,7 +62,7 @@ public class InitializeParams {
     Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> extraEnabledLanguagesInConnectedMode,
     boolean enableSecurityHotspots, List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections,
     @Nullable String sonarlintUserHome, boolean shouldManageLocalServer, Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey, boolean shouldManageSmartNotifications,
-    boolean taintVulnerabilitiesEnabled, boolean shouldSynchronizeProjects) {
+    @Deprecated boolean taintVulnerabilitiesEnabled, boolean shouldSynchronizeProjects) {
     this.hostInfo = hostInfo;
     this.telemetryProductKey = telemetryProductKey;
     this.storageRoot = storageRoot;
@@ -142,6 +144,11 @@ public class InitializeParams {
     return shouldManageSmartNotifications;
   }
 
+  /**
+   * @deprecated not used anymore. It is the backend's responsibility to decide based on enabled languages
+   * @return
+   */
+  @Deprecated
   public boolean areTaintVulnerabilitiesEnabled() {
     return taintVulnerabilitiesEnabled;
   }

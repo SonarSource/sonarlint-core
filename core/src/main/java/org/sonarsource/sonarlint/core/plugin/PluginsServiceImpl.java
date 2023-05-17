@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import org.sonarsource.sonarlint.core.clientapi.backend.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoadResult;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
@@ -33,29 +34,26 @@ import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 
 public class PluginsServiceImpl implements PluginsService {
   private final PluginsRepository pluginsRepository;
+  private final LanguageSupportRepository languageSupportRepository;
   private final StorageService storageService;
   private Set<Path> embeddedPluginPaths;
   private Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
-  private Set<Language> enabledLanguagesInStandaloneMode;
-  private Set<Language> enabledLanguagesInConnectedMode;
 
-  public PluginsServiceImpl(PluginsRepository pluginsRepository, StorageService storageService) {
+  public PluginsServiceImpl(PluginsRepository pluginsRepository, LanguageSupportRepository languageSupportRepository, StorageService storageService) {
     this.pluginsRepository = pluginsRepository;
+    this.languageSupportRepository = languageSupportRepository;
     this.storageService = storageService;
   }
 
-  public void initialize(Set<Path> embeddedPluginPaths, Map<String, Path> connectedModeEmbeddedPluginPathsByKey,
-    Set<Language> enabledLanguagesInStandaloneMode, Set<Language> enabledLanguagesInConnectedMode) {
+  public void initialize(Set<Path> embeddedPluginPaths, Map<String, Path> connectedModeEmbeddedPluginPathsByKey) {
     this.embeddedPluginPaths = embeddedPluginPaths;
     this.connectedModeEmbeddedPluginPathsByKey = connectedModeEmbeddedPluginPathsByKey;
-    this.enabledLanguagesInStandaloneMode = enabledLanguagesInStandaloneMode;
-    this.enabledLanguagesInConnectedMode = enabledLanguagesInConnectedMode;
   }
 
   public LoadedPlugins getEmbeddedPlugins() {
     var loadedEmbeddedPlugins = pluginsRepository.getLoadedEmbeddedPlugins();
     if (loadedEmbeddedPlugins == null) {
-      var result = loadPlugins(enabledLanguagesInStandaloneMode, embeddedPluginPaths);
+      var result = loadPlugins(languageSupportRepository.getEnabledLanguagesInStandaloneMode(), embeddedPluginPaths);
       loadedEmbeddedPlugins = result.getLoadedPlugins();
       pluginsRepository.setLoadedEmbeddedPlugins(loadedEmbeddedPlugins);
     }
@@ -82,7 +80,7 @@ public class PluginsServiceImpl implements PluginsService {
     pluginsToLoadByKey.putAll(connectedModeEmbeddedPluginPathsByKey);
     Set<Path> pluginPaths = new HashSet<>(pluginsToLoadByKey.values());
 
-    return loadPlugins(enabledLanguagesInConnectedMode, pluginPaths);
+    return loadPlugins(languageSupportRepository.getEnabledLanguagesInConnectedMode(), pluginPaths);
   }
 
   private static PluginsLoadResult loadPlugins(Set<Language> enabledLanguages, Set<Path> pluginPaths) {

@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.analysis.AnalysisService
 import org.sonarsource.sonarlint.core.clientapi.backend.analysis.GetSupportedFilePatternsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.analysis.GetSupportedFilePatternsResponse;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 
@@ -39,19 +40,13 @@ import static org.sonarsource.sonarlint.core.analysis.container.analysis.filesys
 public class AnalysisServiceImpl implements AnalysisService {
 
   private final ConfigurationRepository configurationRepository;
-
-  private Set<Language> enabledLanguagesInStandaloneMode;
-  private Set<Language> enabledLanguagesInConnectedMode;
+  private final LanguageSupportRepository languageSupportRepository;
   private final StorageService storageService;
 
-  public AnalysisServiceImpl(ConfigurationRepository configurationRepository, StorageService storageService) {
+  public AnalysisServiceImpl(ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository, StorageService storageService) {
     this.configurationRepository = configurationRepository;
+    this.languageSupportRepository = languageSupportRepository;
     this.storageService = storageService;
-  }
-
-  public void initialize(Set<Language> enabledLanguagesInStandaloneMode, Set<Language> enabledLanguagesInConnectedMode) {
-    this.enabledLanguagesInStandaloneMode = enabledLanguagesInStandaloneMode;
-    this.enabledLanguagesInConnectedMode = enabledLanguagesInConnectedMode;
   }
 
   @Override
@@ -62,10 +57,10 @@ public class AnalysisServiceImpl implements AnalysisService {
       Set<Language> enabledLanguages;
       Map<String, String> analysisSettings;
       if (effectiveBinding.isEmpty()) {
-        enabledLanguages = enabledLanguagesInStandaloneMode;
+        enabledLanguages = languageSupportRepository.getEnabledLanguagesInStandaloneMode();
         analysisSettings = Collections.emptyMap();
       } else {
-        enabledLanguages = enabledLanguagesInConnectedMode;
+        enabledLanguages = languageSupportRepository.getEnabledLanguagesInConnectedMode();
         analysisSettings = storageService.binding(effectiveBinding.get())
           .analyzerConfiguration().read().getSettings().getAll();
       }

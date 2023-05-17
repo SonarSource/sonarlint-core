@@ -32,9 +32,9 @@ import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchServiceImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.client.sync.DidSynchronizeConfigurationScopeParams;
-import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.ActiveSonarProjectBranchChanged;
+import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.progress.ProgressNotifier;
 import org.sonarsource.sonarlint.core.progress.TaskManager;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -52,29 +52,27 @@ public class SynchronizationServiceImpl {
 
   private final SonarLintClient client;
   private final ConfigurationRepository configurationRepository;
+  private final LanguageSupportRepository languageSupportRepository;
   private final SonarProjectBranchServiceImpl branchService;
   private final ServerApiProvider serverApiProvider;
   private final TaskManager taskManager;
   private final StorageService storageService;
   private ScheduledExecutorService scheduledSynchronizer;
-  private Set<Language> enabledLanguagesInConnectedMode;
   private Set<String> connectedModeEmbeddedPluginKeys;
-  private boolean taintVulnerabilitiesEnabled;
 
-  public SynchronizationServiceImpl(SonarLintClient client, ConfigurationRepository configurationRepository, SonarProjectBranchServiceImpl branchService,
-    ServerApiProvider serverApiProvider, StorageService storageService) {
+  public SynchronizationServiceImpl(SonarLintClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
+    SonarProjectBranchServiceImpl branchService, ServerApiProvider serverApiProvider, StorageService storageService) {
     this.client = client;
     this.configurationRepository = configurationRepository;
+    this.languageSupportRepository = languageSupportRepository;
     this.branchService = branchService;
     this.serverApiProvider = serverApiProvider;
     this.taskManager = new TaskManager(client);
     this.storageService = storageService;
   }
 
-  public void initialize(Set<Language> enabledLanguagesInConnectedMode, Set<String> connectedModeEmbeddedPluginKeys, boolean taintVulnerabilitiesEnabled) {
-    this.enabledLanguagesInConnectedMode = enabledLanguagesInConnectedMode;
+  public void initialize(Set<String> connectedModeEmbeddedPluginKeys) {
     this.connectedModeEmbeddedPluginKeys = connectedModeEmbeddedPluginKeys;
-    this.taintVulnerabilitiesEnabled = taintVulnerabilitiesEnabled;
     scheduledSynchronizer = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SonarLint Local Storage Synchronizer"));
     scheduledSynchronizer.scheduleAtFixedRate(this::safeAutoSync, 1L, 3600, TimeUnit.SECONDS);
   }
@@ -123,8 +121,8 @@ public class SynchronizationServiceImpl {
       return;
     }
     serverApiProvider.getServerApi(connectionId).ifPresent(serverApi -> {
-      var serverConnection = new ServerConnection(storageService.getStorageFacade(), connectionId, serverApi.isSonarCloud(), enabledLanguagesInConnectedMode,
-        connectedModeEmbeddedPluginKeys);
+      var serverConnection = new ServerConnection(storageService.getStorageFacade(), connectionId, serverApi.isSonarCloud(),
+        languageSupportRepository.getEnabledLanguagesInConnectedMode(), connectedModeEmbeddedPluginKeys);
       var subProgressGap = progressGap / boundConfigurationScopes.size();
       var subProgress = progress;
       for (BoundConfigurationScope scope : boundConfigurationScopes) {
@@ -139,7 +137,7 @@ public class SynchronizationServiceImpl {
     ServerConnection serverConnection, Set<String> synchronizedConfScopeIds) {
     branchService.getEffectiveActiveSonarProjectBranch(boundScope.configurationScopeId).ifPresent(branch -> {
       serverConnection.syncServerIssuesForProject(serverApi, boundScope.sonarProjectKey, branch);
-      if (taintVulnerabilitiesEnabled) {
+      if (languageSupportRepository.areTaintVulnerabilitiesSupported()) {
         serverConnection.syncServerTaintIssuesForProject(serverApi, boundScope.sonarProjectKey, branch);
       }
       synchronizedConfScopeIds.add(boundScope.configurationScopeId);
