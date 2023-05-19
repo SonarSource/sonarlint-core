@@ -43,7 +43,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSma
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
@@ -251,7 +251,7 @@ class SmartNotificationsMediumTests {
   private void writeFile(Path tmpDir, String connectionId, String projectKey) {
     var storageFile = tmpDir.resolve(encodeForFs(connectionId)).resolve("projects").resolve(encodeForFs(projectKey)).resolve("last_event_polling.pb");
     FileUtils.mkdirs(storageFile.getParent());
-    ProtobufUtil.writeToFile(Sonarlint.LastEventPolling.newBuilder()
+    ProtobufFileUtil.writeToFile(Sonarlint.LastEventPolling.newBuilder()
       .setLastEventPolling(STORED_DATE.toInstant().toEpochMilli())
       .build(), storageFile);
   }

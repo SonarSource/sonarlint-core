@@ -19,10 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.issue;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Message;
-import com.google.protobuf.Parser;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,6 +39,7 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Compon
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Issue;
 
 import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
+import static org.sonarsource.sonarlint.core.serverapi.util.ProtobufUtil.readMessages;
 
 public class IssueApi {
 
@@ -142,23 +139,6 @@ public class IssueApi {
 
   private static String getBatchIssuesUrl(String key) {
     return "/batch/issues?key=" + UrlUtils.urlEncode(key);
-  }
-
-  private static <T extends Message> List<T> readMessages(InputStream input, Parser<T> parser) {
-    List<T> list = new ArrayList<>();
-    while (true) {
-      T message;
-      try {
-        message = parser.parseDelimitedFrom(input);
-      } catch (InvalidProtocolBufferException e) {
-        throw new IllegalStateException("failed to parse protobuf message", e);
-      }
-      if (message == null) {
-        break;
-      }
-      list.add(message);
-    }
-    return list;
   }
 
   private static String getPullIssuesUrl(String projectKey, String branchName, Set<Language> enabledLanguages, @Nullable Long changedSince) {

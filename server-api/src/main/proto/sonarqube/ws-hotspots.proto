@@ -80,3 +80,30 @@ message Rule {
   optional string vulnerabilityDescription = 6 [deprecated=true];
   optional string fixRecommendations = 7 [deprecated=true];
 }
+
+// Response of GET api/hotspots/pull
+message HotspotPullQueryTimestamp {
+  required int64 queryTimestamp = 1;
+}
+
+message HotspotLite {
+  optional string key = 1;
+  optional string component = 2;
+  optional string project = 3;
+  optional string vulnerabilityProbability = 4;
+  optional string status = 5;
+  optional string message = 6;
+  optional string creationDate = 7;
+  optional TextRange textRange = 8;
+  optional string ruleKey = 9;
+  optional bool reviewedSafe = 10;
+  optional bool closed = 11;
+}
+
+message TextRange {
+  optional int32 startLine = 1;
+  optional int32 startLineOffset = 2;
+  optional int32 endLine = 3;
+  optional int32 endLineOffset = 4;
+  optional string hash = 5;
+}

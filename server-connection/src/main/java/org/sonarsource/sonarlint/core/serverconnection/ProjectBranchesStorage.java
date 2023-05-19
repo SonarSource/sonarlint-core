@@ -23,10 +23,10 @@ import java.nio.file.Path;
 import java.util.Set;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 import org.sonarsource.sonarlint.core.serverconnection.storage.RWLock;
 
-import static org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil.writeToFile;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil.writeToFile;
 
 public class ProjectBranchesStorage {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -45,7 +45,7 @@ public class ProjectBranchesStorage {
   }
 
   public ProjectBranches read() {
-    return adapt(rwLock.read(() -> ProtobufUtil.readFile(storageFilePath, Sonarlint.ProjectBranches.parser())));
+    return adapt(rwLock.read(() -> ProtobufFileUtil.readFile(storageFilePath, Sonarlint.ProjectBranches.parser())));
   }
 
   private static ProjectBranches adapt(Sonarlint.ProjectBranches projectBranches) {

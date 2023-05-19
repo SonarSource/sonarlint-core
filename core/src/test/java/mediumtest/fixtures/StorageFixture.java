@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.apache.commons.io.FileUtils;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 import testutils.PluginLocator;
 
 import static org.junit.jupiter.api.Assertions.fail;
@@ -129,7 +129,7 @@ public class StorageFixture {
 
     private void createServerInfo(Path connectionStorage) {
       if (serverVersion != null) {
-        ProtobufUtil.writeToFile(Sonarlint.ServerInfo.newBuilder().setVersion(serverVersion).build(), connectionStorage.resolve("server_info.pb"));
+        ProtobufFileUtil.writeToFile(Sonarlint.ServerInfo.newBuilder().setVersion(serverVersion).build(), connectionStorage.resolve("server_info.pb"));
       }
     }
 
@@ -154,7 +154,7 @@ public class StorageFixture {
         .setHash(plugin.hash)
         .setKey(plugin.key)
         .build()));
-      ProtobufUtil.writeToFile(builder.build(), pluginsFolderPath.resolve("plugin_references.pb"));
+      ProtobufFileUtil.writeToFile(builder.build(), pluginsFolderPath.resolve("plugin_references.pb"));
     }
 
     private static class Plugin {
