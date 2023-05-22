@@ -68,6 +68,14 @@ public interface ProjectServerIssueStore {
   void mergeTaintIssues(String branchName, List<ServerTaintIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp);
 
   /**
+   * Merge provided hotspots to stored ones for the given project:
+   *  - new hotspots are added
+   *  - existing hotspots are updated
+   *  - closed hotspots are removed from the store
+   */
+  void mergeHotspots(String branchName, List<ServerHotspot> hotspotsToMerge, Set<String> closedHotspotKeysToDelete, Instant syncTimestamp);
+
+  /**
    * Return the timestamp of the last issue sync for a given branch.
    * @return empty if the issues of the branch have never been pulled
    */
@@ -78,6 +86,12 @@ public interface ProjectServerIssueStore {
    * @return empty if the taint issues of the branch have never been pulled
    */
   Optional<Instant> getLastTaintSyncTimestamp(String branchName);
+
+  /**
+   * Return the timestamp of the last hotspot sync for a given branch.
+   * @return empty if the hotspots of the branch have never been pulled
+   */
+  Optional<Instant> getLastHotspotSyncTimestamp(String branchName);
 
   /**
    * Load issues stored for specified file.

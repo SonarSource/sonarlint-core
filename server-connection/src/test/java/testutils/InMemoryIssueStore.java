@@ -32,6 +32,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
+import org.sonarsource.sonarlint.core.serverconnection.ServerHotspotUpdater;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
@@ -41,6 +42,7 @@ import static java.util.Optional.ofNullable;
 public class InMemoryIssueStore implements ProjectServerIssueStore {
   private final Map<String, Map<String, List<ServerIssue>>> issuesByFileByBranch = new HashMap<>();
   private final Map<String, Map<String, Collection<ServerHotspot>>> hotspotsByFileByBranch = new HashMap<>();
+  private final Map<String, Instant> lastHotspotSyncByBranch = new HashMap<>();
   private final Map<String, ServerHotspot> hotspotsByKey = new HashMap<>();
   private final Map<String, Instant> lastIssueSyncByBranch = new HashMap<>();
   private final Map<String, ServerIssue> issuesByKey = new HashMap<>();
@@ -81,6 +83,18 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
+  public void mergeHotspots(String branchName, List<ServerHotspot> hotspotsToMerge, Set<String> closedHotspotKeysToDelete, Instant syncTimestamp) {
+    var hotspotsToMergeByFilePath = hotspotsToMerge.stream().collect(Collectors.groupingBy(ServerHotspot::getFilePath));
+    // does not handle hotspot moving file (e.g. file renaming)
+    hotspotsByFileByBranch
+      .computeIfAbsent(branchName, __ -> new HashMap<>())
+      .putAll(hotspotsToMergeByFilePath);
+    hotspotsToMerge.forEach(hotspot -> hotspotsByKey.put(hotspot.getKey(), hotspot));
+    closedHotspotKeysToDelete.forEach(hotspotsByKey::remove);
+    lastHotspotSyncByBranch.put(branchName, syncTimestamp);
+  }
+
+  @Override
   public Optional<Instant> getLastIssueSyncTimestamp(String branchName) {
     return ofNullable(lastIssueSyncByBranch.get(branchName));
   }
@@ -88,6 +102,11 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   @Override
   public Optional<Instant> getLastTaintSyncTimestamp(String branchName) {
     return ofNullable(lastTaintSyncByBranch.get(branchName));
+  }
+
+  @Override
+  public Optional<Instant> getLastHotspotSyncTimestamp(String branchName) {
+    return ofNullable(lastHotspotSyncByBranch.get(branchName));
   }
 
   @Override

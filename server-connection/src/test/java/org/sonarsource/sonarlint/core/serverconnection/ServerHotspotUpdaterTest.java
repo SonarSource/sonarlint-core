@@ -55,7 +55,7 @@ class ServerHotspotUpdaterTest {
     var projectStorage = mock(SonarProjectStorage.class);
     when(storage.project(PROJECT_KEY)).thenReturn(projectStorage);
     when(projectStorage.findings()).thenReturn(issueStore);
-    updater = new ServerHotspotUpdater(storage);
+    updater = new ServerHotspotUpdater(storage, null /* TODO */);
   }
 
   @Test
