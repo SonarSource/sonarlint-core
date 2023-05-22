@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.sonarsource.parent</groupId>
     <artifactId>parent</artifactId>
-    <version>66.0.234</version>
+    <version>68.0.0.247</version>
     <relativePath />
   </parent>
   <groupId>org.sonarsource.sonarlint.core</groupId>
