@@ -181,6 +181,30 @@ class HotspotApiTests {
   }
 
   @Test
+  void it_should_map_acknowledged_status_for_show() {
+    mockServer.addProtobufResponse("/api/hotspots/show.protobuf?hotspot=h", Hotspots.ShowWsResponse.newBuilder()
+      .setComponent(Hotspots.Component.newBuilder().setPath("path"))
+      .setTextRange(Common.TextRange.newBuilder().setStartLine(1).setStartOffset(2).setEndLine(3).setEndOffset(4).build())
+      .setStatus("REVIEWED")
+      .setResolution("ACKNOWLEDGED")
+      .setRule(Hotspots.Rule.newBuilder().setKey("key")
+        .setName("name")
+        .setSecurityCategory("category")
+        .setVulnerabilityProbability("HIGH")
+        .setRiskDescription("risk")
+        .setVulnerabilityDescription("vulnerability")
+        .setFixRecommendations("fix")
+        .build())
+      .build());
+
+    var remoteHotspot = underTest.fetch("h");
+
+    assertThat(remoteHotspot).isNotEmpty();
+    var hotspot = remoteHotspot.get();
+    assertThat(hotspot.resolution).isEqualTo(ServerHotspotDetails.Resolution.ACKNOWLEDGED);
+  }
+
+  @Test
   void it_should_fetch_project_hotspots() {
     mockServer.addProtobufResponse("/api/hotspots/search.protobuf?projectKey=p&branch=branch&ps=500&p=1", Hotspots.SearchWsResponse.newBuilder()
       .setPaging(Common.Paging.newBuilder().setTotal(1).build())
