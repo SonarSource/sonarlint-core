@@ -32,8 +32,8 @@
     </dependency>
     <dependency>
       <groupId>org.sonarsource.orchestrator</groupId>
-      <artifactId>sonar-orchestrator</artifactId>
-      <version>3.40.0.183</version>
+      <artifactId>sonar-orchestrator-junit5</artifactId>
+      <version>4.0.0.404</version>
       <scope>test</scope>
     </dependency>
     <dependency>

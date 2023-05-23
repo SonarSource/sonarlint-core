@@ -19,10 +19,10 @@
  */
 package its;
 
-import com.sonar.orchestrator.OnlyOnSonarQube;
-import com.sonar.orchestrator.OrchestratorExtension;
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.build.SonarScanner;
+import com.sonar.orchestrator.junit5.OnlyOnSonarQube;
+import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
 import its.utils.ConsoleConsumer;
@@ -83,7 +83,6 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
   public static final String XOO_PLUGIN_KEY = "xoo";
   @RegisterExtension
   static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
-    .keepBundledPlugins()
     .addPlugin(MavenLocation.of("org.sonarsource.sonarqube", "sonar-xoo-plugin", SONAR_VERSION))
     .addPlugin(FileLocation.of("../plugins/java-custom-rules/target/java-custom-rules-plugin.jar"))
     .setServerProperty("sonar.projectCreation.mainBranchName", MAIN_BRANCH_NAME)

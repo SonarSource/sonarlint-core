@@ -19,15 +19,16 @@
  */
 package its.utils;
 
-import com.sonar.orchestrator.Orchestrator;
-import com.sonar.orchestrator.OrchestratorBuilder;
+import com.sonar.orchestrator.junit5.OrchestratorExtension;
+import com.sonar.orchestrator.junit5.OrchestratorExtensionBuilder;
 
 import static its.utils.ItUtils.SONAR_VERSION;
 
 public class OrchestratorUtils {
-  public static OrchestratorBuilder defaultEnvBuilder() {
-    return Orchestrator.builderEnv()
+  public static OrchestratorExtensionBuilder defaultEnvBuilder() {
+    return OrchestratorExtension.builderEnv()
       .defaultForceAuthentication()
+      .keepBundledPlugins()
       .useDefaultAdminCredentialsForBuilds(true)
       .setSonarVersion(SONAR_VERSION);
   }

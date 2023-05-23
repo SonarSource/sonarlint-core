@@ -20,10 +20,10 @@
 package its;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.sonar.orchestrator.OnlyOnSonarQube;
-import com.sonar.orchestrator.OrchestratorExtension;
 import com.sonar.orchestrator.build.SonarScanner;
 import com.sonar.orchestrator.container.Edition;
+import com.sonar.orchestrator.junit5.OnlyOnSonarQube;
+import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
 import its.utils.OrchestratorUtils;
@@ -84,9 +84,9 @@ import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQ
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleDescriptionTabDto;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
-import org.sonarsource.sonarlint.core.clientapi.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
@@ -132,7 +132,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
     .setEdition(Edition.DEVELOPER)
     .activateLicense()
-    .keepBundledPlugins()
     .addPlugin(MavenLocation.of("org.sonarsource.sonarqube", "sonar-xoo-plugin", SONAR_VERSION))
     .addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
     .addPlugin(FileLocation.of("../plugins/custom-sensor-plugin/target/custom-sensor-plugin.jar"))
@@ -724,7 +723,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       } else {
         assertThat(
           adminWsClient.issues().search(new SearchRequest().setTypes(List.of("SECURITY_HOTSPOT")).setComponentKeys(List.of(PROJECT_KEY))).getIssuesList())
-            .isNotEmpty();
+          .isNotEmpty();
       }
     }
 
@@ -1096,7 +1095,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
         assertThat(serverHotspots)
           .extracting("ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "status")
-          .containsExactly(tuple("java:S4792", "Make sure that this logger's configuration is safe.", "ide/src/main/java/foo/Foo.java", 9, 4, 9, 45, HotspotReviewStatus.TO_REVIEW));
+          .containsExactly(
+            tuple("java:S4792", "Make sure that this logger's configuration is safe.", "ide/src/main/java/foo/Foo.java", 9, 4, 9, 45, HotspotReviewStatus.TO_REVIEW));
       } else {
         assertThat(serverHotspots).isEmpty();
       }
@@ -1113,7 +1113,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
         assertThat(serverHotspots)
           .extracting("ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "status")
-          .containsExactly(tuple("java:S4792", "Make sure that this logger's configuration is safe.", "ide/src/main/java/foo/Foo.java", 9, 4, 9, 45, HotspotReviewStatus.TO_REVIEW));
+          .containsExactly(
+            tuple("java:S4792", "Make sure that this logger's configuration is safe.", "ide/src/main/java/foo/Foo.java", 9, 4, 9, 45, HotspotReviewStatus.TO_REVIEW));
       } else {
         assertThat(serverHotspots).isEmpty();
       }
