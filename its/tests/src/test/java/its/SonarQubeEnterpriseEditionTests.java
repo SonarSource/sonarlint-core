@@ -19,9 +19,9 @@
  */
 package its;
 
-import com.sonar.orchestrator.OnlyOnSonarQube;
-import com.sonar.orchestrator.OrchestratorExtension;
 import com.sonar.orchestrator.container.Edition;
+import com.sonar.orchestrator.junit5.OnlyOnSonarQube;
+import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.locator.FileLocation;
 import its.utils.OrchestratorUtils;
 import its.utils.PluginLocator;
@@ -50,7 +50,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEng
 import org.sonarsource.sonarlint.core.commons.Language;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   private static final String PROJECT_KEY_COBOL = "sample-cobol";
@@ -62,7 +61,6 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
     .setEdition(Edition.ENTERPRISE)
     .activateLicense()
-    .keepBundledPlugins()
     .restoreProfileAtStartup(FileLocation.ofClasspath("/c-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/cobol-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/tsql-sonarlint.xml"))
