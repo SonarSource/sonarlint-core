@@ -64,6 +64,6 @@ public class ServerHotspotUpdater {
   public void sync(ServerApi serverApi, String projectKey, String branchName) {
     var lastSync = storage.project(projectKey).findings().getLastHotspotSyncTimestamp(branchName);
     var result = hotspotDownloader.downloadFromPull(serverApi, projectKey, branchName, lastSync);
-    storage.project(projectKey).findings().mergeHotspots(branchName, result.getChangedHotspots(), result.getClosedIssueKeys(), result.getQueryTimestamp());
+    storage.project(projectKey).findings().mergeHotspots(branchName, result.getChangedHotspots(), result.getClosedHotspotKeys(), result.getQueryTimestamp());
   }
 }

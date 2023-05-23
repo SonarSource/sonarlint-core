@@ -60,7 +60,7 @@ public class HotspotApi {
 
   private static final String HOTSPOTS_SEARCH_API_URL = "/api/hotspots/search.protobuf";
   private static final String HOTSPOTS_SHOW_API_URL = "/api/hotspots/show.protobuf";
-  private static final String HOTSPOTS_PULL_API_URL = "/api/hotspots/pull.protobuf";
+  private static final String HOTSPOTS_PULL_API_URL = "/api/hotspots/pull";
   private static final String PROJECT_KEY_QUERY_PARAM = "?projectKey=";
 
   private final ServerApiHelper helper;

@@ -68,12 +68,12 @@ public class HotspotDownloader {
   }
 
   private static ServerHotspot convertLiteHotspot(Hotspots.HotspotLite liteHotspotFromWs) {
-    var creationDate = Instant.parse(liteHotspotFromWs.getCreationDate());
+    var creationDate = Instant.ofEpochMilli(liteHotspotFromWs.getCreationDate());
     return new ServerHotspot(
       liteHotspotFromWs.getKey(),
       liteHotspotFromWs.getRuleKey(),
       liteHotspotFromWs.getMessage(),
-      liteHotspotFromWs.getComponent(),
+      liteHotspotFromWs.getFilePath(),
       toServerHotspotTextRange(liteHotspotFromWs.getTextRange()),
       creationDate,
       HotspotReviewStatus.valueOf(liteHotspotFromWs.getStatus()),
@@ -82,18 +82,24 @@ public class HotspotDownloader {
   }
 
   private static TextRangeWithHash toServerHotspotTextRange(Hotspots.TextRange textRange) {
-    return new TextRangeWithHash(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset(), textRange.getHash());
+    return new TextRangeWithHash(
+      textRange.getStartLine(),
+      textRange.getStartLineOffset(),
+      textRange.getEndLine(),
+      textRange.getEndLineOffset(),
+      textRange.getHash()
+    );
   }
 
   public static class PullResult {
     private final Instant queryTimestamp;
     private final List<ServerHotspot> changedHotspots;
-    private final Set<String> closedIssueKeys;
+    private final Set<String> closedHotspotKeys;
 
-    public PullResult(Instant queryTimestamp, List<ServerHotspot> changedHotspots, Set<String> closedIssueKeys) {
+    public PullResult(Instant queryTimestamp, List<ServerHotspot> changedHotspots, Set<String> closedHotspotKeys) {
       this.queryTimestamp = queryTimestamp;
       this.changedHotspots = changedHotspots;
-      this.closedIssueKeys = closedIssueKeys;
+      this.closedHotspotKeys = closedHotspotKeys;
     }
 
     public Instant getQueryTimestamp() {
@@ -104,8 +110,8 @@ public class HotspotDownloader {
       return changedHotspots;
     }
 
-    public Set<String> getClosedIssueKeys() {
-      return closedIssueKeys;
+    public Set<String> getClosedHotspotKeys() {
+      return closedHotspotKeys;
     }
   }
 

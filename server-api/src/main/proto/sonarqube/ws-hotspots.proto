@@ -88,16 +88,15 @@ message HotspotPullQueryTimestamp {
 
 message HotspotLite {
   optional string key = 1;
-  optional string component = 2;
-  optional string project = 3;
-  optional string vulnerabilityProbability = 4;
-  optional string status = 5;
-  optional string message = 6;
-  optional string creationDate = 7;
-  optional TextRange textRange = 8;
-  optional string ruleKey = 9;
-  optional bool reviewedSafe = 10;
-  optional bool closed = 11;
+  optional string filePath = 2;
+  optional string vulnerabilityProbability = 3;
+  optional string status = 4;
+  optional string message = 5;
+  optional int64 creationDate = 6;
+  optional TextRange textRange = 7;
+  optional string ruleKey = 8;
+  optional bool reviewedSafe = 9;
+  optional bool closed = 10;
 }
 
 message TextRange {
