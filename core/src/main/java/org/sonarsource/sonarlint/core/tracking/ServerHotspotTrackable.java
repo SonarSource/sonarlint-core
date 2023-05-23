@@ -73,7 +73,9 @@ public class ServerHotspotTrackable implements Trackable {
 
   @Override
   public TextRangeWithHash getTextRange() {
-    // no text range with hash for hotspots
+    if(serverHotspot.getTextRange().getHash() != null && !serverHotspot.getTextRange().getHash().isEmpty()) {
+      return serverHotspot.getTextRange();
+    }
     return null;
   }
 

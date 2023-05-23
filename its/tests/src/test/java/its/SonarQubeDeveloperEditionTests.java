@@ -103,6 +103,7 @@ import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspotDetails;
@@ -1034,7 +1035,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var actualHotspot = remoteHotspot.get();
       assertThat(actualHotspot.message).isEqualTo("Make sure that this logger's configuration is safe.");
       assertThat(actualHotspot.filePath).isEqualTo("src/main/java/foo/Foo.java");
-      assertThat(actualHotspot.textRange).usingRecursiveComparison().isEqualTo(new TextRange(9, 4, 9, 45));
+      assertThat(actualHotspot.textRange).usingRecursiveComparison().isEqualTo(new TextRangeWithHash(9, 4, 9, 45, ""));
       assertThat(actualHotspot.author).isEmpty();
       assertThat(actualHotspot.status).isEqualTo(ServerHotspotDetails.Status.TO_REVIEW);
       assertThat(actualHotspot.resolution).isNull();

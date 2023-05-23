@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -245,7 +245,8 @@ public class HotspotApi {
       convertTextRange(hotspot.getTextRange()),
       ServerApiUtils.parseOffsetDateTime(hotspot.getCreationDate()).toInstant(),
       getStatus(hotspot),
-      VulnerabilityProbability.valueOf(hotspot.getVulnerabilityProbability()));
+      VulnerabilityProbability.valueOf(hotspot.getVulnerabilityProbability()),
+      hotspot.getAssignee());
   }
 
   private static HotspotReviewStatus getStatus(Hotspots.SearchWsResponse.Hotspot hotspot) {
@@ -259,7 +260,7 @@ public class HotspotApi {
       + "?hotspot=" + urlEncode(hotspotKey);
   }
 
-  private static TextRange convertTextRange(Common.TextRange textRange) {
-    return new TextRange(textRange.getStartLine(), textRange.getStartOffset(), textRange.getEndLine(), textRange.getEndOffset());
+  private static TextRangeWithHash convertTextRange(Common.TextRange textRange) {
+    return new TextRangeWithHash(textRange.getStartLine(), textRange.getStartOffset(), textRange.getEndLine(), textRange.getEndOffset(), "");
   }
 }

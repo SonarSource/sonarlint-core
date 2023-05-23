@@ -20,8 +20,9 @@
 package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
 import java.time.Instant;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
-import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 
 public class ServerHotspot {
@@ -29,20 +30,22 @@ public class ServerHotspot {
   private final String ruleKey;
   private final String message;
   private String filePath;
-  private final TextRange textRange;
+  private final TextRangeWithHash textRange;
   private final Instant creationDate;
-  private final HotspotReviewStatus status;
-
+  private HotspotReviewStatus status;
   private final VulnerabilityProbability vulnerabilityProbability;
+  @Nullable
+  private String assignee;
 
   public ServerHotspot(String key,
     String ruleKey,
     String message,
     String filePath,
-    TextRange textRange,
+    TextRangeWithHash textRange,
     Instant creationDate,
     HotspotReviewStatus status,
-    VulnerabilityProbability vulnerabilityProbability) {
+    VulnerabilityProbability vulnerabilityProbability,
+    @Nullable String assignee) {
     this.key = key;
     this.ruleKey = ruleKey;
     this.message = message;
@@ -51,6 +54,7 @@ public class ServerHotspot {
     this.creationDate = creationDate;
     this.status = status;
     this.vulnerabilityProbability = vulnerabilityProbability;
+    this.assignee = assignee;
   }
 
   public void setFilePath(String filePath) {
@@ -73,7 +77,7 @@ public class ServerHotspot {
     return filePath;
   }
 
-  public TextRange getTextRange() {
+  public TextRangeWithHash getTextRange() {
     return textRange;
   }
 
@@ -86,10 +90,22 @@ public class ServerHotspot {
   }
 
   public ServerHotspot withStatus(HotspotReviewStatus newStatus) {
-    return new ServerHotspot(key, ruleKey, message, filePath, textRange, creationDate, newStatus, vulnerabilityProbability);
+    return new ServerHotspot(key, ruleKey, message, filePath, textRange, creationDate, newStatus, vulnerabilityProbability, assignee);
   }
 
   public VulnerabilityProbability getVulnerabilityProbability() {
     return vulnerabilityProbability;
+  }
+
+  public String getAssignee() {
+    return assignee;
+  }
+
+  public void setStatus(HotspotReviewStatus status) {
+    this.status = status;
+  }
+
+  public void setAssignee(String assignee) {
+    this.assignee = assignee;
   }
 }

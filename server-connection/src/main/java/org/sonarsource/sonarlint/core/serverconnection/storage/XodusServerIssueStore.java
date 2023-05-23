@@ -118,6 +118,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private static final String MESSAGE_BLOB_NAME = "message";
   private static final String FLOWS_BLOB_NAME = "flows";
   private static final String RULE_DESCRIPTION_CONTEXT_KEY_PROPERTY_NAME = "ruleDescriptionContextKey";
+  private static final String ASSIGNEE_PROPERTY_NAME = "assignee";
   private final PersistentEntityStore entityStore;
 
   private final Path backupFile;
@@ -236,8 +237,10 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     var startLineOffset = (Integer) storedHotspot.getProperty(START_LINE_OFFSET_PROPERTY_NAME);
     var endLine = (Integer) storedHotspot.getProperty(END_LINE_PROPERTY_NAME);
     var endLineOffset = (Integer) storedHotspot.getProperty(END_LINE_OFFSET_PROPERTY_NAME);
-    var textRange = new org.sonarsource.sonarlint.core.commons.TextRange(startLine, startLineOffset, endLine, endLineOffset);
+    var hash = (String) storedHotspot.getProperty(RANGE_HASH_PROPERTY_NAME);
+    var textRangeWithHash = new TextRangeWithHash(startLine, startLineOffset, endLine, endLineOffset, hash);
     var vulnerabilityProbability = VulnerabilityProbability.valueOf((String) storedHotspot.getProperty(VULNERABILITY_PROBABILITY_PROPERTY_NAME));
+    var assignee = (String) storedHotspot.getProperty(ASSIGNEE_PROPERTY_NAME);
     var status = (HotspotReviewStatus) storedHotspot.getProperty(REVIEW_STATUS_PROPERTY_NAME);
     if (status == null) {
       // backward compatibility. This should not happen as hotspots are all replaced during the sync
@@ -249,10 +252,11 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       (String) requireNonNull(storedHotspot.getProperty(RULE_KEY_PROPERTY_NAME)),
       requireNonNull(storedHotspot.getBlobString(MESSAGE_BLOB_NAME)),
       filePath,
-      textRange,
+      textRangeWithHash,
       (Instant) requireNonNull(storedHotspot.getProperty(CREATION_DATE_PROPERTY_NAME)),
       status,
-      vulnerabilityProbability);
+      vulnerabilityProbability,
+      assignee);
   }
 
   private static List<Flow> readFlows(@Nullable InputStream blob) {
@@ -454,6 +458,9 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     issueEntity.setProperty(CREATION_DATE_PROPERTY_NAME, hotspot.getCreationDate());
     issueEntity.setProperty(REVIEW_STATUS_PROPERTY_NAME, hotspot.getStatus());
     issueEntity.setProperty(VULNERABILITY_PROBABILITY_PROPERTY_NAME, hotspot.getVulnerabilityProbability().toString());
+    if(hotspot.getAssignee() != null) {
+      issueEntity.setProperty(ASSIGNEE_PROPERTY_NAME, hotspot.getAssignee());
+    }
   }
 
   private static void deleteAllHotspotsOfFile(@NotNull StoreTransaction txn, Entity fileEntity) {
@@ -678,8 +685,31 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
+  public void insert(String branchName, ServerHotspot hotspot) {
+    entityStore.executeInTransaction(txn -> findUnique(txn, HOTSPOT_ENTITY_TYPE, KEY_PROPERTY_NAME, hotspot.getKey())
+      .ifPresentOrElse(hotspotEntity -> LOG.error("Trying to store a hotspot that already exists"), () -> {
+        var branch = getOrCreateBranch(branchName, txn);
+        var fileEntity = getOrCreateFile(branch, hotspot.getFilePath(), txn);
+        updateOrCreateHotspot(fileEntity, hotspot, txn);
+      }));
+  }
+
+  @Override
   public void deleteTaintIssue(String issueKeyToDelete) {
     entityStore.executeInTransaction(txn -> removeTaint(issueKeyToDelete, txn));
+  }
+
+  @Override
+  public void deleteHotspot(String hotspotKey) {
+    entityStore.executeInTransaction(txn -> findUnique(txn, HOTSPOT_ENTITY_TYPE, KEY_PROPERTY_NAME, hotspotKey)
+      .ifPresent(hotspotEntity -> {
+        var fileEntity = hotspotEntity.getLink(ISSUE_TO_FILE_LINK_NAME);
+        if (fileEntity != null) {
+          fileEntity.deleteLink(FILE_TO_HOTSPOTS_LINK_NAME, hotspotEntity);
+        }
+        hotspotEntity.deleteLinks(ISSUE_TO_FILE_LINK_NAME);
+        hotspotEntity.delete();
+      }));
   }
 
   @Override
@@ -687,6 +717,16 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     backup();
     entityStore.close();
     FileUtils.deleteQuietly(xodusDbDir.toFile());
+  }
+
+  @Override
+  public void updateHotspot(String hotspotKey, Consumer<ServerHotspot> hotspotUpdater) {
+    entityStore.executeInTransaction(txn -> findUnique(txn, HOTSPOT_ENTITY_TYPE, KEY_PROPERTY_NAME, hotspotKey)
+      .ifPresent(hotspotEntity -> {
+        var currentHotspot = adaptHotspot(hotspotEntity);
+        hotspotUpdater.accept(currentHotspot);
+        updateHotspotEntity(hotspotEntity, currentHotspot);
+      }));
   }
 
   public void backup() {

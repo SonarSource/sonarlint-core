@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -103,7 +104,7 @@ class HotspotApiTests {
     var hotspot = remoteHotspot.get();
     assertThat(hotspot.message).isEqualTo("message");
     assertThat(hotspot.filePath).isEqualTo("path");
-    assertThat(hotspot.textRange).usingRecursiveComparison().isEqualTo(new TextRange(2, 7, 4, 9));
+    assertThat(hotspot.textRange).usingRecursiveComparison().isEqualTo(new TextRangeWithHash(2, 7, 4, 9, ""));
     assertThat(hotspot.author).isEqualTo("author");
     assertThat(hotspot.status).isEqualTo(ServerHotspotDetails.Status.REVIEWED);
     assertThat(hotspot.resolution).isEqualTo(ServerHotspotDetails.Resolution.SAFE);

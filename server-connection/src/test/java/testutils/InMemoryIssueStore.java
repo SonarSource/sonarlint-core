@@ -150,7 +150,8 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
       hotspot.getTextRange(),
       hotspot.getCreationDate(),
       newStatus,
-      hotspot.getVulnerabilityProbability())) != null;
+      hotspot.getVulnerabilityProbability(),
+      hotspot.getAssignee())) != null;
   }
 
   @Override
@@ -218,13 +219,38 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
+  public void insert(String branchName, ServerHotspot hotspot) {
+    hotspotsByFileByBranch
+      .computeIfAbsent(branchName, __ -> new HashMap<>())
+      .computeIfAbsent(hotspot.getFilePath(), __ -> new ArrayList<>())
+      .add(hotspot);
+  }
+
+  @Override
   public void deleteTaintIssue(String issueKeyToDelete) {
     taintIssuesByFileByBranch.forEach(
       (branchName, taintIssuesByFile) -> taintIssuesByFile.forEach((file, taintIssues) -> taintIssues.removeIf(taintIssue -> issueKeyToDelete.equals(taintIssue.getKey()))));
   }
 
   @Override
+  public void deleteHotspot(String hotspotKey) {
+    hotspotsByFileByBranch.forEach(
+      (branchName, hotspotsByFile) ->
+        hotspotsByFile.forEach((file, hotspots) -> hotspots.removeIf(hotspot -> hotspotKey.equals(hotspot.getKey()))));
+  }
+
+  @Override
   public void close() {
     // nothing to do
+  }
+
+  @Override
+  public void updateHotspot(String hotspotKey, Consumer<ServerHotspot> hotspotUpdater) {
+    hotspotsByFileByBranch.forEach(
+      (branchName, hotspotsByFile) -> hotspotsByFile.forEach((file, hotspots) -> hotspots.forEach(hotspot -> {
+        if (hotspot.getKey().equals(hotspotKey)) {
+          hotspotUpdater.accept(hotspot);
+        }
+      })));
   }
 }
