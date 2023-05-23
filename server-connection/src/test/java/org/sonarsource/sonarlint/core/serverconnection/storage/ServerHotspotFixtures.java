@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.serverconnection.storage;
 import java.time.Instant;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 
@@ -41,8 +42,9 @@ public class ServerHotspotFixtures {
       "repo:key",
       "message",
       filePath,
-      new TextRange(1, 2, 3, 4),
+      new TextRangeWithHash(1, 2, 3, 4, ""),
       Instant.now(),
-      HotspotReviewStatus.TO_REVIEW, VulnerabilityProbability.HIGH);
+      HotspotReviewStatus.TO_REVIEW, VulnerabilityProbability.HIGH,
+      "test@user.com");
   }
 }

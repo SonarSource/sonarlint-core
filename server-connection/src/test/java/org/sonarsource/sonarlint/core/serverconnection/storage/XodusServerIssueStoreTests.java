@@ -453,6 +453,42 @@ class XodusServerIssueStoreTests {
   }
 
   @Test
+  void should_update_hotspots() {
+    store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot()));
+
+    store.updateHotspot("key", hotspot -> hotspot.setStatus(HotspotReviewStatus.SAFE));
+
+    assertThat(store.loadHotspots("branch", "file/path"))
+      .extracting("status")
+      .containsExactly(HotspotReviewStatus.SAFE);
+  }
+
+  @Test
+  void should_remove_hotspot() {
+    store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot(), aServerHotspot("key2", "file2")));
+
+    store.deleteHotspot("key2");
+
+    assertThat(store.loadHotspots("branch", "file/path"))
+      .extracting("key")
+      .containsExactly("key");
+  }
+
+  @Test
+  void should_insert_hotspot() {
+    store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot()));
+
+    var newHotspot = aServerHotspot("key2", "file/path");
+    var newHotspot2 = aServerHotspot("key3", "file/path");
+
+    store.insert("branch", newHotspot);
+    store.insert("branch2", newHotspot2);
+
+    assertThat(store.loadHotspots("branch", "file/path")).hasSize(2);
+    assertThat(store.loadHotspots("branch2", "file/path")).hasSize(1);
+  }
+
+  @Test
   void should_get_empty_last_issue_sync_timestamp_if_no_branch() {
     store.replaceAllIssuesOfBranch("branch", List.of(aServerIssue()));
 

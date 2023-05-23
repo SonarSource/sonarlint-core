@@ -32,6 +32,9 @@ import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.EventParser;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.IssueChangedEventParser;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.RuleSetChangedEventParser;
+import org.sonarsource.sonarlint.core.serverapi.push.parsing.SecurityHotspotChangedEventParser;
+import org.sonarsource.sonarlint.core.serverapi.push.parsing.SecurityHotspotClosedEventParser;
+import org.sonarsource.sonarlint.core.serverapi.push.parsing.SecurityHotspotRaisedEventParser;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.TaintVulnerabilityClosedEventParser;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.TaintVulnerabilityRaisedEventParser;
 import org.sonarsource.sonarlint.core.serverapi.stream.Event;
@@ -45,7 +48,10 @@ public class PushApi {
     "RuleSetChanged", new RuleSetChangedEventParser(),
     "IssueChanged", new IssueChangedEventParser(),
     "TaintVulnerabilityRaised", new TaintVulnerabilityRaisedEventParser(),
-    "TaintVulnerabilityClosed", new TaintVulnerabilityClosedEventParser());
+    "TaintVulnerabilityClosed", new TaintVulnerabilityClosedEventParser(),
+    "SecurityHotspotRaised", new SecurityHotspotRaisedEventParser(),
+    "SecurityHotspotChanged", new SecurityHotspotChangedEventParser(),
+    "SecurityHotspotClosed", new SecurityHotspotClosedEventParser());
 
   private final ServerApiHelper helper;
 

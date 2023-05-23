@@ -149,8 +149,13 @@ public interface ProjectServerIssueStore {
   void updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater);
 
   void insert(String branchName, ServerTaintIssue taintIssue);
+  void insert(String branchName, ServerHotspot hotspot);
 
   void deleteTaintIssue(String issueKeyToDelete);
 
+  void deleteHotspot(String hotspotKey);
+
   void close();
+
+  void updateHotspot(String hotspotKey, Consumer<ServerHotspot> hotspotUpdater);
 }

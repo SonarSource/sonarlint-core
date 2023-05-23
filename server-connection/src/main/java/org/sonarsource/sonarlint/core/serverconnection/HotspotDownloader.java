@@ -75,7 +75,8 @@ public class HotspotDownloader {
       toServerHotspotTextRange(liteHotspotFromWs.getTextRange()),
       creationDate,
       fromHotspotLite(liteHotspotFromWs),
-      VulnerabilityProbability.valueOf(liteHotspotFromWs.getVulnerabilityProbability())
+      VulnerabilityProbability.valueOf(liteHotspotFromWs.getVulnerabilityProbability()),
+      liteHotspotFromWs.getAssignee()
     );
   }
 

@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 
@@ -34,7 +35,7 @@ class ServerHotspotTrackableTests {
   @Test
   void should_delegate_fields_to_server_issue() {
     var creationDate = Instant.now();
-    var trackable = new ServerHotspotTrackable(new ServerHotspot("key", "ruleKey", "message", "filePath", new TextRange(1, 2, 3, 4), creationDate, HotspotReviewStatus.SAFE, VulnerabilityProbability.LOW));
+    var trackable = new ServerHotspotTrackable(new ServerHotspot("key", "ruleKey", "message", "filePath", new TextRangeWithHash(1, 2, 3, 4, ""), creationDate, HotspotReviewStatus.SAFE, VulnerabilityProbability.LOW, null));
 
     assertThat(trackable.getServerIssueKey()).isEqualTo("key");
     assertThat(trackable.getMessage()).isEqualTo("message");
