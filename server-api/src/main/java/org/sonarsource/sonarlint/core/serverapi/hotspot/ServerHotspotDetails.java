@@ -108,7 +108,7 @@ public class ServerHotspotDetails {
 
   @Deprecated(forRemoval = true)
   public enum Resolution {
-    FIXED("fixed"), SAFE("safe");
+    FIXED("fixed"), SAFE("safe"), ACKNOWLEDGED("acknowledged");
 
     Resolution(String description) {
       this.description = description;
