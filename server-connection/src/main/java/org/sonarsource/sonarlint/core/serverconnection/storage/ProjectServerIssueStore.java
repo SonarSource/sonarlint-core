@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
@@ -145,6 +146,12 @@ public interface ProjectServerIssueStore {
    * @return true if the issue with the corresponding key exists in the store and has been updated
    */
   boolean updateIssue(String issueKey, Consumer<ServerIssue> issueUpdater);
+
+  /**
+   * Set the resolution status of a Issue (by its key) to true.
+   * @return true if the issue with the given key was found, else false
+   */
+  boolean markIssueAsResolved(String issueKey, boolean isTaintIssue);
 
   void updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater);
 

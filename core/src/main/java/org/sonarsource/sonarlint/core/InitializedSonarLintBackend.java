@@ -42,11 +42,13 @@ import org.sonarsource.sonarlint.core.clientapi.backend.authentication.Authentic
 import org.sonarsource.sonarlint.core.clientapi.backend.branch.SonarProjectBranchService;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueService;
 import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.hotspot.HotspotServiceImpl;
+import org.sonarsource.sonarlint.core.issue.IssueServiceImpl;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsServiceImpl;
@@ -67,6 +69,7 @@ public class InitializedSonarLintBackend implements SonarLintBackend {
   private final ConnectionServiceImpl connectionService;
   private final RulesServiceImpl rulesService;
   private final HotspotServiceImpl hotspotService;
+  private final IssueServiceImpl issueService;
   private final TelemetryServiceImpl telemetryService;
   private final EmbeddedServer embeddedServer;
 
@@ -109,6 +112,7 @@ public class InitializedSonarLintBackend implements SonarLintBackend {
     rulesService = new RulesServiceImpl(serverApiProvider, configurationRepository, rulesRepository, storageService, params.getStandaloneRuleConfigByKey());
     this.telemetryService = new TelemetryServiceImpl(params.getTelemetryProductKey(), sonarlintUserHome);
     this.hotspotService = new HotspotServiceImpl(client, storageService, configurationRepository, connectionConfigurationRepository, serverApiProvider, telemetryService);
+    this.issueService = new IssueServiceImpl(configurationRepository, serverApiProvider, storageService, telemetryService);
     var bindingClueProvider = new BindingClueProvider(connectionConfigurationRepository, client);
     var sonarProjectCache = new SonarProjectsCache(serverApiProvider);
     bindingSuggestionProvider = new BindingSuggestionProviderImpl(configurationRepository, connectionConfigurationRepository, client, bindingClueProvider, sonarProjectCache);
@@ -193,6 +197,11 @@ public class InitializedSonarLintBackend implements SonarLintBackend {
 
   public SonarProjectBranchService getSonarProjectBranchService() {
     return sonarProjectBranchService;
+  }
+
+  @Override
+  public IssueService getIssueService() {
+    return issueService;
   }
 
   @Override

@@ -48,6 +48,7 @@ public class TelemetryLocalStorage {
   private int taintVulnerabilitiesInvestigatedLocallyCount;
   private int taintVulnerabilitiesInvestigatedRemotelyCount;
   private int hotspotStatusChangedCount;
+  private int issueStatusChangedCount;
   private final Set<String> raisedIssuesRules;
   private final Set<String> quickFixesApplied;
   private final Map<String, TelemetryHelpAndFeedbackCounter> helpAndFeedbackLinkClickedCount;
@@ -142,6 +143,7 @@ public class TelemetryLocalStorage {
     taintVulnerabilitiesInvestigatedLocallyCount = 0;
     taintVulnerabilitiesInvestigatedRemotelyCount = 0;
     hotspotStatusChangedCount = 0;
+    issueStatusChangedCount = 0;
     raisedIssuesRules.clear();
     quickFixesApplied.clear();
     this.helpAndFeedbackLinkClickedCount.clear();
@@ -287,5 +289,14 @@ public class TelemetryLocalStorage {
 
   public int hotspotStatusChangedCount() {
     return hotspotStatusChangedCount;
+  }
+
+  public void incrementIssueStatusChangedCount() {
+    markSonarLintAsUsedToday();
+    issueStatusChangedCount++;
+  }
+
+  public int issueStatusChangedCount() {
+    return issueStatusChangedCount;
   }
 }

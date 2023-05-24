@@ -86,4 +86,10 @@ public class TelemetryServiceImpl implements TelemetryService {
       getTelemetryLocalStorageManager().tryUpdateAtomically(TelemetryLocalStorage::incrementHotspotStatusChangedCount);
     }
   }
+
+  public void issueStatusChanged() {
+    if (isEnabled()) {
+      getTelemetryLocalStorageManager().tryUpdateAtomically(TelemetryLocalStorage::incrementIssueStatusChangedCount);
+    }
+  }
 }

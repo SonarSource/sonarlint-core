@@ -94,6 +94,9 @@ public class TelemetryPayload {
   @SerializedName("hotspot")
   private final HotspotPayload hotspotPayload;
 
+  @SerializedName("issue")
+  private final IssuePayload issuePayload;
+
   @SerializedName("help_and_feedback")
   private final TelemetryHelpAndFeedbackPayload helpAndFeedbackPayload;
 
@@ -103,7 +106,7 @@ public class TelemetryPayload {
     boolean connectedMode, boolean connectedModeSonarcloud, OffsetDateTime systemTime, OffsetDateTime installTime, String os, String jre, @Nullable String nodejs,
     TelemetryAnalyzerPerformancePayload[] analyses, TelemetryNotificationsPayload notifications, ShowHotspotPayload showHotspotPayload,
     TaintVulnerabilitiesPayload taintVulnerabilitiesPayload, TelemetryRulesPayload telemetryRulesPayload, HotspotPayload hotspotPayload,
-    TelemetryHelpAndFeedbackPayload helpAndFeedbackPayload, Map<String, Object> additionalAttributes) {
+    IssuePayload issuePayload, TelemetryHelpAndFeedbackPayload helpAndFeedbackPayload, Map<String, Object> additionalAttributes) {
     this.daysSinceInstallation = daysSinceInstallation;
     this.daysOfUse = daysOfUse;
     this.product = product;
@@ -124,6 +127,7 @@ public class TelemetryPayload {
     this.taintVulnerabilitiesPayload = taintVulnerabilitiesPayload;
     this.telemetryRulesPayload = telemetryRulesPayload;
     this.hotspotPayload = hotspotPayload;
+    this.issuePayload = issuePayload;
     this.helpAndFeedbackPayload = helpAndFeedbackPayload;
     this.additionalAttributes = additionalAttributes;
   }
@@ -178,6 +182,10 @@ public class TelemetryPayload {
 
   public TelemetryHelpAndFeedbackPayload helpAndFeedbackPayload() {
     return helpAndFeedbackPayload;
+  }
+
+  public IssuePayload issuePayload() {
+    return issuePayload;
   }
 
   public Map<String, Object> additionalAttributes() {

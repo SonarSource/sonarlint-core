@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonar.scanner.protocol.input.ScannerInput;
@@ -38,6 +39,7 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Component;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Issue;
 
+import static org.sonarsource.sonarlint.core.commons.http.HttpClient.FORM_URL_ENCODED_CONTENT_TYPE;
 import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 import static org.sonarsource.sonarlint.core.serverapi.util.ProtobufUtil.readMessages;
 
@@ -207,6 +209,22 @@ public class IssueApi {
         return new TaintIssuesPullResult(timestamp, readMessages(input, Issues.TaintVulnerabilityLite.parser()));
       },
       duration -> LOG.debug("Pulled taint issues in {}ms", duration));
+  }
+
+  public CompletableFuture<Void> changeStatusAsync(String issueKey, String status) {
+    var body = "issue=" + urlEncode(issueKey) + "&transition=" + urlEncode(status);
+    return serverApiHelper.postAsync("/api/issues/do_transition", FORM_URL_ENCODED_CONTENT_TYPE, body)
+      .thenAccept(response -> {
+        // no data, return void
+      });
+  }
+
+  public CompletableFuture<Void> addComment(String issueKey, String text) {
+    var body = "issue=" + urlEncode(issueKey) + "&text=" + urlEncode(text);
+    return serverApiHelper.postAsync("/api/issues/add_comment", FORM_URL_ENCODED_CONTENT_TYPE, body)
+      .thenAccept(response -> {
+        // no data, return void
+      });
   }
 
   public static class TaintIssuesPullResult {

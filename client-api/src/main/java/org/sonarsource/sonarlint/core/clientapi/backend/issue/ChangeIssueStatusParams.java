@@ -17,28 +17,38 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.backend.hotspot;
+package org.sonarsource.sonarlint.core.clientapi.backend.issue;
 
-public class ChangeHotspotStatusParams {
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
+
+public class ChangeIssueStatusParams {
+
   private final String configurationScopeId;
-  private final String hotspotKey;
-  private final HotspotStatus newStatus;
+  private final String issueKey;
+  private final IssueStatus newStatus;
+  private final boolean isTaintIssue;
 
-  public ChangeHotspotStatusParams(String configurationScopeId, String hotspotKey, HotspotStatus newStatus) {
+  public ChangeIssueStatusParams(String configurationScopeId, String issueKey, IssueStatus newStatus,
+    boolean isTaintIssue) {
     this.configurationScopeId = configurationScopeId;
-    this.hotspotKey = hotspotKey;
+    this.issueKey = issueKey;
     this.newStatus = newStatus;
+    this.isTaintIssue = isTaintIssue;
   }
 
   public String getConfigurationScopeId() {
     return configurationScopeId;
   }
 
-  public String getHotspotKey() {
-    return hotspotKey;
+  public String getIssueKey() {
+    return issueKey;
   }
 
-  public HotspotStatus getNewStatus() {
+  public IssueStatus getNewStatus() {
     return newStatus;
+  }
+
+  public boolean isTaintIssue() {
+    return isTaintIssue;
   }
 }

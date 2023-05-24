@@ -19,13 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.hotspot;
 
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
-
 public class CheckStatusChangePermittedParams {
   private final String connectionId;
   private final String hotspotKey;
 
-  public CheckStatusChangePermittedParams(@NonNull String connectionId, String hotspotKey) {
+  public CheckStatusChangePermittedParams(String connectionId, String hotspotKey) {
     this.connectionId = connectionId;
     this.hotspotKey = hotspotKey;
   }
