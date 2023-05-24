@@ -25,9 +25,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension.httpClient;
 
 class DevelopersApiTests {
   @RegisterExtension
@@ -45,6 +47,15 @@ class DevelopersApiTests {
     var supported = underTest.isSupported();
 
     assertThat(supported).isFalse();
+  }
+
+  @Test
+  void should_consider_notifications_supported_if_sonarcloud() {
+    var api = new DevelopersApi(new ServerApiHelper(mockServer.endpointParams("orgKey"), httpClient()));
+
+    var supported = api.isSupported();
+
+    assertThat(supported).isTrue();
   }
 
   @Test
