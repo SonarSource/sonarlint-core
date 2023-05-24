@@ -68,8 +68,13 @@ public class ConnectionConfigurationRepository {
     // passed Origin
     // See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Origin
     return connectionsById.values().stream()
-      .anyMatch(connection -> connection.getUrl().startsWith(serverOrigin));
+      .anyMatch(connection -> ensureTrailingSlash(connection.getUrl()).startsWith(ensureTrailingSlash(serverOrigin)));
   }
+
+  private static String ensureTrailingSlash(String s) {
+    return !s.endsWith("/") ? (s + "/") : s;
+  }
+
 
   public List<AbstractConnectionConfiguration> findByUrl(String serverUrl) {
     return connectionsById.values().stream()
