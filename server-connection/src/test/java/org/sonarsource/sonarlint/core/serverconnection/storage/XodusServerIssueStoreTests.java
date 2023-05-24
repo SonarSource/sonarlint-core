@@ -608,6 +608,44 @@ class XodusServerIssueStoreTests {
   }
 
   @Test
+  void should_update_taint_issue_status() {
+    store.replaceAllTaintOfFile("branch", "file/path", List.of(aServerTaintIssue()));
+
+    store.markIssueAsResolved("key", true);
+
+    var taintIssues = store.loadTaint("branch", "file/path");
+    var issues = store.load("branch", "file/path");
+    assertThat(taintIssues)
+      .extracting("resolved")
+      .containsOnly(true);
+    assertThat(issues).isEmpty();
+  }
+
+  @Test
+  void should_update_non_taint_issue_status() {
+    store.replaceAllIssuesOfFile("branch", "file/path", List.of(aServerIssue()));
+
+    store.markIssueAsResolved("key", false);
+
+    var taintIssues = store.loadTaint("branch", "file/path");
+    var issues = store.load("branch", "file/path");
+    assertThat(issues)
+      .extracting("resolved")
+      .containsOnly(true);
+    assertThat(taintIssues).isEmpty();
+  }
+
+  @Test
+  void should_not_update_issue_status_if_issue_is_not_in_storage() {
+    store.markIssueAsResolved("key", false);
+
+    var taintIssues = store.loadTaint("branch", "file/path");
+    var issues = store.load("branch", "file/path");
+    assertThat(issues).isEmpty();
+    assertThat(taintIssues).isEmpty();
+  }
+
+  @Test
   void should_save_branch_hotspots_when_replacing_them_on_an_empty_store() {
     store.replaceAllHotspotsOfBranch("branch", List.of(aServerHotspot()));
 
