@@ -59,11 +59,20 @@ public class GeneratedUserTokenHandler implements HttpRequestHandler {
       return;
     }
 
-    awaitingUserTokenFutureRepository.consumeFutureResponse()
+    var originHeader = request.getHeader("Origin");
+    var origin = originHeader != null ? originHeader.getValue() : null;
+    if (origin == null) {
+      response.setCode(HttpStatus.SC_BAD_REQUEST);
+      return;
+    }
+
+    awaitingUserTokenFutureRepository.consumeFutureResponse(origin)
       .filter(not(CompletableFuture::isCancelled))
-      .ifPresent(pendingFuture -> pendingFuture.complete(new HelpGenerateUserTokenResponse(token)));
-    response.setCode(HttpStatus.SC_OK);
-    response.setEntity(new StringEntity("OK"));
+      .ifPresentOrElse(pendingFuture -> {
+        pendingFuture.complete(new HelpGenerateUserTokenResponse(token));
+        response.setCode(HttpStatus.SC_OK);
+        response.setEntity(new StringEntity("OK"));
+      }, () -> response.setCode(HttpStatus.SC_FORBIDDEN));
   }
 
   private static String extractAndValidateToken(ClassicHttpRequest request) throws IOException, ParseException {

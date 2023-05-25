@@ -71,7 +71,7 @@ public class AuthenticationHelperServiceImpl implements AuthenticationHelperServ
             client.openUrlInBrowser(new OpenUrlInBrowserParams(ServerApiHelper.concat(serverBaseUrl, getUserTokenGenerationRelativeUrlToOpen(automaticTokenGenerationSupported))));
             var shouldWaitIncomingToken = Boolean.TRUE.equals(automaticTokenGenerationSupported) && embeddedServer.isStarted();
             if (shouldWaitIncomingToken) {
-              awaitingUserTokenFutureRepository.setFutureResponse(futureTokenResponse);
+              awaitingUserTokenFutureRepository.addExpectedResponse(serverBaseUrl, futureTokenResponse);
             } else {
               futureTokenResponse.complete(new HelpGenerateUserTokenResponse(null));
             }

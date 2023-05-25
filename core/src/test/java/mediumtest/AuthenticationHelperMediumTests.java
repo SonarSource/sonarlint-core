@@ -25,20 +25,19 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
+
 import mediumtest.fixtures.ServerFixture;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.authentication.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.authentication.HelpGenerateUserTokenResponse;
-import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension.httpClient;
 
 class AuthenticationHelperMediumTests {
 
@@ -82,8 +81,8 @@ class AuthenticationHelperMediumTests {
   @Test
   void it_should_open_the_sonarlint_auth_url_for_sonarqube_9_7_plus() throws IOException, InterruptedException {
     var fakeClient = newFakeClient().withHostName("ClientName").build();
-    backend = newBackend().withEmbeddedServer().build(fakeClient);
     server = newSonarQubeServer("9.7").start();
+    backend = newBackend().withEmbeddedServer().withSonarQubeConnection("connectionId", server).build(fakeClient);
 
     var futureResponse = backend.getAuthenticationHelperService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
 
@@ -94,6 +93,7 @@ class AuthenticationHelperMediumTests {
     var request = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
       .header("Content-Type", "application/json; charset=utf-8")
+      .header("Origin", server.baseUrl())
       .POST(HttpRequest.BodyPublishers.ofString("{\"token\": \"value\"}")).build();
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
     assertThat(response.statusCode()).isEqualTo(200);
@@ -102,6 +102,47 @@ class AuthenticationHelperMediumTests {
       .succeedsWithin(Duration.ofSeconds(3))
       .extracting(HelpGenerateUserTokenResponse::getToken)
       .isEqualTo("value");
+  }
+
+  @Test
+  void it_should_reject_tokens_from_missing_origin() throws IOException, InterruptedException {
+    var fakeClient = newFakeClient().withHostName("ClientName").build();
+    server = newSonarQubeServer("9.7").start();
+    backend = newBackend().withEmbeddedServer().withSonarQubeConnection("connectionId", server).build(fakeClient);
+
+    backend.getAuthenticationHelperService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
+
+    await().atMost(Duration.ofSeconds(3)).until(() -> !fakeClient.getUrlsToOpen().isEmpty());
+    assertThat(fakeClient.getUrlsToOpen())
+            .containsExactly(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort()));
+
+    var request = HttpRequest.newBuilder()
+            .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
+            .header("Content-Type", "application/json; charset=utf-8")
+            .POST(HttpRequest.BodyPublishers.ofString("{\"token\": \"value\"}")).build();
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    assertThat(response.statusCode()).isEqualTo(400);
+  }
+
+  @Test
+  void it_should_reject_tokens_from_unexpected_origin() throws IOException, InterruptedException {
+    var fakeClient = newFakeClient().withHostName("ClientName").build();
+    server = newSonarQubeServer("9.7").start();
+    backend = newBackend().withEmbeddedServer().withSonarQubeConnection("connectionId", server).build(fakeClient);
+
+    backend.getAuthenticationHelperService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
+
+    await().atMost(Duration.ofSeconds(3)).until(() -> !fakeClient.getUrlsToOpen().isEmpty());
+    assertThat(fakeClient.getUrlsToOpen())
+            .containsExactly(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort()));
+
+    var request = HttpRequest.newBuilder()
+            .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
+            .header("Content-Type", "application/json; charset=utf-8")
+            .header("Origin", "https://unexpected.sonar")
+            .POST(HttpRequest.BodyPublishers.ofString("{\"token\": \"value\"}")).build();
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    assertThat(response.statusCode()).isEqualTo(403);
   }
 
   @Test
