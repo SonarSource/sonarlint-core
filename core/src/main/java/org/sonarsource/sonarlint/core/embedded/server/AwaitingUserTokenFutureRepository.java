@@ -21,20 +21,31 @@ package org.sonarsource.sonarlint.core.embedded.server;
 
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.sonarsource.sonarlint.core.clientapi.backend.authentication.HelpGenerateUserTokenResponse;
 
-public class AwaitingUserTokenFutureRepository {
-  private final AtomicReference<CompletableFuture<HelpGenerateUserTokenResponse>> futureResponse = new AtomicReference<>();
+import static org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository.haveSameOrigin;
 
-  public void setFutureResponse(CompletableFuture<HelpGenerateUserTokenResponse> futureResponse) {
-    var previousFuture = this.futureResponse.getAndSet(futureResponse);
+public class AwaitingUserTokenFutureRepository {
+  private final ConcurrentHashMap<String, CompletableFuture<HelpGenerateUserTokenResponse>> awaitingFuturesByServerUrl = new ConcurrentHashMap<>();
+
+  public void addExpectedResponse(String serverBaseUrl, CompletableFuture<HelpGenerateUserTokenResponse> futureResponse) {
+    var previousFuture = awaitingFuturesByServerUrl.put(serverBaseUrl, futureResponse);
     if (previousFuture != null) {
       previousFuture.cancel(false);
     }
   }
 
-  public Optional<CompletableFuture<HelpGenerateUserTokenResponse>> consumeFutureResponse() {
-    return Optional.ofNullable(futureResponse.getAndSet(null));
+  public Optional<CompletableFuture<HelpGenerateUserTokenResponse>> consumeFutureResponse(String serverOrigin) {
+    for (var iterator = awaitingFuturesByServerUrl.entrySet().iterator(); iterator.hasNext();) {
+      var entry = iterator.next();
+      if (haveSameOrigin(entry.getKey(), serverOrigin)) {
+        iterator.remove();
+        return Optional.of(entry.getValue());
+      }
+    }
+    return Optional.empty();
   }
+
 }
