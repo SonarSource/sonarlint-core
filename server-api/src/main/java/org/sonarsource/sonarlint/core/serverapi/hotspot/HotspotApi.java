@@ -144,6 +144,10 @@ public class HotspotApi {
     return url.toString();
   }
 
+  public boolean supportHotspotsPull(Supplier<Version> serverVersion) {
+    return supportHotspotsPull(helper.isSonarCloud(), serverVersion.get());
+  }
+
   public static boolean supportHotspotsPull(boolean isSonarCloud, Version serverVersion) {
     return !isSonarCloud && serverVersion.compareToIgnoreQualifier(HotspotApi.MIN_SQ_VERSION_SUPPORTING_PULL) >= 0;
   }
