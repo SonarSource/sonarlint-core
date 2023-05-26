@@ -32,11 +32,12 @@ public class TelemetryServiceImpl implements TelemetryService {
   static final String DISABLE_PROPERTY_KEY = "sonarlint.telemetry.disabled";
 
   @CheckForNull
-  private TelemetryLocalStorageManager telemetryLocalStorageManager;
+  private final TelemetryLocalStorageManager telemetryLocalStorageManager;
 
-  public void initialize(String productKey, Path sonarlintUserHome) {
+  public TelemetryServiceImpl(String productKey, Path sonarlintUserHome) {
     if (isDisabledBySystemProperty()) {
       LOG.info("Telemetry disabled by system property");
+      this.telemetryLocalStorageManager = null;
       return;
     }
     this.telemetryLocalStorageManager = new TelemetryLocalStorageManager(TelemetryPathManager.getPath(sonarlintUserHome, productKey));

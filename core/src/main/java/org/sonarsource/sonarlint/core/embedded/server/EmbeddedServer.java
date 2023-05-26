@@ -56,10 +56,11 @@ public class EmbeddedServer {
   private final BindingSuggestionProviderImpl bindingSuggestionProvider;
   private final ServerApiProvider serverApiProvider;
   private final TelemetryServiceImpl telemetryService;
+  private final HostInfoDto clientInfo;
 
   public EmbeddedServer(SonarLintClient client, ConnectionServiceImpl connectionService, AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository,
     ConfigurationServiceImpl configurationService, BindingSuggestionProviderImpl bindingSuggestionProvider, ServerApiProvider serverApiProvider,
-    TelemetryServiceImpl telemetryService) {
+    TelemetryServiceImpl telemetryService, HostInfoDto clientInfo) {
     this.client = client;
     this.connectionService = connectionService;
     this.awaitingUserTokenFutureRepository = awaitingUserTokenFutureRepository;
@@ -67,9 +68,10 @@ public class EmbeddedServer {
     this.bindingSuggestionProvider = bindingSuggestionProvider;
     this.serverApiProvider = serverApiProvider;
     this.telemetryService = telemetryService;
+    this.clientInfo = clientInfo;
   }
 
-  public void initialize(HostInfoDto clientInfo) {
+  public void start() {
     final var socketConfig = SocketConfig.custom()
       .setSoTimeout(15, TimeUnit.SECONDS)
       // let the port be bindable again immediately

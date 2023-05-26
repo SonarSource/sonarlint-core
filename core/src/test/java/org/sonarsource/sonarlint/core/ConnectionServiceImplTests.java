@@ -65,19 +65,18 @@ class ConnectionServiceImplTests {
   @BeforeEach
   public void setUp() {
     eventBus = mock(EventBus.class);
-    underTest = new ConnectionServiceImpl(eventBus, repository);
   }
 
   @Test
   void initialize_provide_connections() {
-    underTest.initialize(List.of(SQ_DTO_1, SQ_DTO_2), List.of(SC_DTO_1, SC_DTO_2));
+    underTest = new ConnectionServiceImpl(eventBus, repository, List.of(SQ_DTO_1, SQ_DTO_2), List.of(SC_DTO_1, SC_DTO_2));
 
     assertThat(repository.getConnectionsById()).containsOnlyKeys("sq1", "sq2", "sc1", "sc2");
   }
 
   @Test
   void add_new_connection_and_post_event() {
-    underTest.initialize(List.of(), List.of());
+    underTest = new ConnectionServiceImpl(eventBus, repository, List.of(), List.of());
 
     underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_1), List.of()));
     assertThat(repository.getConnectionsById()).containsOnlyKeys("sq1");
@@ -107,7 +106,7 @@ class ConnectionServiceImplTests {
 
   @Test
   void multiple_connections_with_same_id_should_log_and_ignore() {
-    underTest.initialize(List.of(), List.of());
+    underTest = new ConnectionServiceImpl(eventBus, repository, List.of(), List.of());
     underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_1), List.of()));
 
     underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_1, SQ_DTO_1_DUP), List.of()));
@@ -123,7 +122,7 @@ class ConnectionServiceImplTests {
 
   @Test
   void remove_connection() {
-    underTest.initialize(List.of(SQ_DTO_1), List.of(SC_DTO_1));
+    underTest = new ConnectionServiceImpl(eventBus, repository, List.of(SQ_DTO_1), List.of(SC_DTO_1));
     assertThat(repository.getConnectionsById()).containsKeys("sq1", "sc1");
 
     underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_1), List.of()));
@@ -142,7 +141,7 @@ class ConnectionServiceImplTests {
   @Test
   void remove_connection_should_log_if_unknown_connection_and_ignore() {
     var mockedRepo = mock(ConnectionConfigurationRepository.class);
-    underTest = new ConnectionServiceImpl(eventBus, mockedRepo);
+    underTest = new ConnectionServiceImpl(eventBus, mockedRepo, List.of(), List.of());
 
     // Emulate a race condition on the repository: the connection is gone between get and remove
     when(mockedRepo.getConnectionsById()).thenReturn(Map.of("id", new SonarQubeConnectionConfiguration("id", "http://foo", true)));
@@ -155,7 +154,7 @@ class ConnectionServiceImplTests {
 
   @Test
   void update_connection() {
-    underTest.initialize(List.of(SQ_DTO_1), List.of());
+    underTest = new ConnectionServiceImpl(eventBus, repository, List.of(SQ_DTO_1), List.of());
 
     underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_1_DUP), List.of()));
 
@@ -175,7 +174,7 @@ class ConnectionServiceImplTests {
   @Test
   void update_connection_should_log_if_unknown_connection_and_add() {
     var mockedRepo = mock(ConnectionConfigurationRepository.class);
-    underTest = new ConnectionServiceImpl(eventBus, mockedRepo);
+    underTest = new ConnectionServiceImpl(eventBus, mockedRepo, List.of(), List.of());
 
     // Emulate a race condition on the repository: the connection is gone between get and add
     when(mockedRepo.getConnectionsById()).thenReturn(Map.of(SQ_DTO_2.getConnectionId(), new SonarQubeConnectionConfiguration(SQ_DTO_2.getConnectionId(), "http://foo", true)));

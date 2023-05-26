@@ -47,8 +47,7 @@ class LastEventPollingTest {
     ProtobufFileUtil.writeToFile(Sonarlint.LastEventPolling.newBuilder()
       .setLastEventPolling(STORED_DATE.toInstant().toEpochMilli())
       .build(), storageFile);
-    var storage = new StorageService();
-    storage.initialize(tmpDir, tmpDir);
+    var storage = new StorageService(tmpDir, tmpDir);
     var lastEventPolling = new LastEventPolling(storage);
 
     var result = lastEventPolling.getLastEventPolling(CONNECTION_ID, PROJECT_KEY);
@@ -58,8 +57,7 @@ class LastEventPollingTest {
 
   @Test
   void should_store_last_event_polling(@TempDir Path tmpDir) {
-    var storage = new StorageService();
-    storage.initialize(tmpDir, tmpDir);
+    var storage = new StorageService(tmpDir, tmpDir);
     var lastEventPolling = new LastEventPolling(storage);
     lastEventPolling.setLastEventPolling(STORED_DATE, CONNECTION_ID, PROJECT_KEY);
 
@@ -70,8 +68,7 @@ class LastEventPollingTest {
 
   @Test
   void should_not_retrieve_stored_last_event_polling(@TempDir Path tmpDir) {
-    var storage = new StorageService();
-    storage.initialize(tmpDir, tmpDir);
+    var storage = new StorageService(tmpDir, tmpDir);
     var lastEventPolling = new LastEventPolling(storage);
 
     var result = lastEventPolling.getLastEventPolling(CONNECTION_ID, PROJECT_KEY);

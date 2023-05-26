@@ -46,9 +46,12 @@ public class ConnectionServiceImpl implements ConnectionService {
   private final EventBus clientEventBus;
   private final ConnectionConfigurationRepository repository;
 
-  public ConnectionServiceImpl(EventBus clientEventBus, ConnectionConfigurationRepository repository) {
+  public ConnectionServiceImpl(EventBus clientEventBus, ConnectionConfigurationRepository repository,
+    List<SonarQubeConnectionConfigurationDto> initSonarQubeConnections, List<SonarCloudConnectionConfigurationDto> initSonarCloudConnections) {
     this.clientEventBus = clientEventBus;
     this.repository = repository;
+    initSonarQubeConnections.forEach(c -> repository.addOrReplace(adapt(c)));
+    initSonarCloudConnections.forEach(c -> repository.addOrReplace(adapt(c)));
   }
 
   private static AbstractConnectionConfiguration adapt(SonarQubeConnectionConfigurationDto sqDto) {
@@ -63,11 +66,6 @@ public class ConnectionServiceImpl implements ConnectionService {
     if (map.put(config.getConnectionId(), config) != null) {
       LOG.error("Duplicate connection registered: {}", config.getConnectionId());
     }
-  }
-
-  public void initialize(List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections) {
-    sonarQubeConnections.forEach(c -> repository.addOrReplace(adapt(c)));
-    sonarCloudConnections.forEach(c -> repository.addOrReplace(adapt(c)));
   }
 
   @Override

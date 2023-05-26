@@ -64,14 +64,12 @@ public class RulesServiceImpl implements RulesService {
   private static final String COULD_NOT_FIND_RULE = "Could not find rule '";
   private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfig = new ConcurrentHashMap<>();
 
-  public RulesServiceImpl(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository, StorageService storageService) {
+  public RulesServiceImpl(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository, StorageService storageService,
+    Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
     this.serverApiProvider = serverApiProvider;
     this.configurationRepository = configurationRepository;
     this.rulesRepository = rulesRepository;
     this.storageService = storageService;
-  }
-
-  public void initialize(Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
     this.standaloneRuleConfig.putAll(standaloneRuleConfigByKey);
   }
 

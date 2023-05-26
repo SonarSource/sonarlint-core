@@ -19,21 +19,7 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import com.google.common.eventbus.AsyncEventBus;
-import com.google.common.eventbus.EventBus;
-import com.google.common.util.concurrent.MoreExecutors;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import org.sonarsource.sonarlint.core.analysis.AnalysisServiceImpl;
-import org.sonarsource.sonarlint.core.branch.SonarProjectBranchServiceImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
@@ -42,190 +28,84 @@ import org.sonarsource.sonarlint.core.clientapi.backend.authentication.Authentic
 import org.sonarsource.sonarlint.core.clientapi.backend.branch.SonarProjectBranchService;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
-import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
-import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
-import org.sonarsource.sonarlint.core.hotspot.HotspotServiceImpl;
-import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
-import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
-import org.sonarsource.sonarlint.core.plugin.PluginsServiceImpl;
-import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
-import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
-import org.sonarsource.sonarlint.core.repository.vcs.ActiveSonarProjectBranchRepository;
-import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
 import org.sonarsource.sonarlint.core.rules.RulesServiceImpl;
-import org.sonarsource.sonarlint.core.serverconnection.StorageService;
-import org.sonarsource.sonarlint.core.smartnotifications.SmartNotifications;
-import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
 public class SonarLintBackendImpl implements SonarLintBackend {
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private final ConfigurationServiceImpl configurationService;
-  private final ConnectionServiceImpl connectionService;
-  private final RulesServiceImpl rulesService;
-  private final HotspotServiceImpl hotspotService;
-  private final TelemetryServiceImpl telemetryService;
-  private final EmbeddedServer embeddedServer;
-
-  private final ExecutorService clientEventsExecutorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Client Events Processor"));
-
-  private final BindingSuggestionProviderImpl bindingSuggestionProvider;
-  private final PluginsServiceImpl pluginsService;
-  private final AuthenticationHelperServiceImpl authenticationHelperService;
-  private final RulesExtractionHelper rulesExtractionHelper;
-  private final SmartNotifications smartNotifications;
-  private final SonarProjectBranchServiceImpl sonarProjectBranchService;
-  private final SynchronizationServiceImpl synchronizationServiceImpl;
-  private final AnalysisServiceImpl analysisService;
-  private final StorageService storageService;
-  private final LanguageSupportRepository languageSupportRepository;
+  private final SonarLintClient client;
+  private InitializedSonarLintBackend sonarLintBackend;
 
   public SonarLintBackendImpl(SonarLintClient client) {
-    EventBus clientEventBus = new AsyncEventBus("clientEvents", clientEventsExecutorService);
-    var configurationRepository = new ConfigurationRepository();
-    this.configurationService = new ConfigurationServiceImpl(clientEventBus, configurationRepository);
-    var connectionConfigurationRepository = new ConnectionConfigurationRepository();
-    var awaitingUserTokenFutureRepository = new AwaitingUserTokenFutureRepository();
-    this.connectionService = new ConnectionServiceImpl(clientEventBus, connectionConfigurationRepository);
-    var pluginRepository = new PluginsRepository();
-    this.storageService = new StorageService();
-    this.languageSupportRepository = new LanguageSupportRepository();
-    pluginsService = new PluginsServiceImpl(pluginRepository, languageSupportRepository, storageService);
-    rulesExtractionHelper = new RulesExtractionHelper(pluginsService, languageSupportRepository);
-    var rulesRepository = new RulesRepository(rulesExtractionHelper);
-    var serverApiProvider = new ServerApiProvider(connectionConfigurationRepository, client);
-    rulesService = new RulesServiceImpl(serverApiProvider, configurationRepository, rulesRepository, storageService);
-    this.telemetryService = new TelemetryServiceImpl();
-    this.hotspotService = new HotspotServiceImpl(client, storageService, configurationRepository, connectionConfigurationRepository, serverApiProvider, telemetryService);
-    var bindingClueProvider = new BindingClueProvider(connectionConfigurationRepository, client);
-    var sonarProjectCache = new SonarProjectsCache(serverApiProvider);
-    bindingSuggestionProvider = new BindingSuggestionProviderImpl(configurationRepository, connectionConfigurationRepository, client, bindingClueProvider, sonarProjectCache);
-    this.embeddedServer = new EmbeddedServer(client, connectionService, awaitingUserTokenFutureRepository, configurationService, bindingSuggestionProvider, serverApiProvider,
-      telemetryService);
-    this.authenticationHelperService = new AuthenticationHelperServiceImpl(client, embeddedServer, awaitingUserTokenFutureRepository);
-    smartNotifications = new SmartNotifications(configurationRepository, connectionConfigurationRepository, serverApiProvider, client, storageService, telemetryService);
-    var sonarProjectBranchRepository = new ActiveSonarProjectBranchRepository();
-    this.sonarProjectBranchService = new SonarProjectBranchServiceImpl(sonarProjectBranchRepository, configurationRepository, clientEventBus);
-    this.synchronizationServiceImpl = new SynchronizationServiceImpl(client, configurationRepository, languageSupportRepository, sonarProjectBranchService, serverApiProvider,
-      storageService);
-    this.analysisService = new AnalysisServiceImpl(configurationRepository, languageSupportRepository, storageService);
-    clientEventBus.register(bindingSuggestionProvider);
-    clientEventBus.register(sonarProjectCache);
-    clientEventBus.register(rulesRepository);
-    clientEventBus.register(sonarProjectBranchService);
-    clientEventBus.register(synchronizationServiceImpl);
+    this.client = client;
   }
 
   @Override
   public CompletableFuture<Void> initialize(InitializeParams params) {
-    var sonarlintUserHome = Optional.ofNullable(params.getSonarlintUserHome()).map(Paths::get).orElse(SonarLintUserHome.get());
-    var workDir = params.getWorkDir();
-    if (workDir == null) {
-      workDir = sonarlintUserHome.resolve("work");
+    if (sonarLintBackend != null) {
+      return CompletableFuture.failedFuture(new UnsupportedOperationException("Already initialized"));
     }
-    createFolderIfNeeded(sonarlintUserHome);
-    createFolderIfNeeded(workDir);
-    storageService.initialize(params.getStorageRoot(), workDir);
-    languageSupportRepository.initialize(params.getEnabledLanguagesInStandaloneMode(), params.getExtraEnabledLanguagesInConnectedMode());
-    connectionService
-      .initialize(params.getSonarQubeConnections(), params.getSonarCloudConnections());
-    pluginsService.initialize(params.getEmbeddedPluginPaths(), params.getConnectedModeEmbeddedPluginPathsByKey());
-    rulesExtractionHelper.initialize(params.isEnableSecurityHotspots());
-    rulesService.initialize(params.getStandaloneRuleConfigByKey());
-    telemetryService.initialize(params.getTelemetryProductKey(), sonarlintUserHome);
-    if (params.shouldManageLocalServer()) {
-      embeddedServer.initialize(params.getHostInfo());
-    }
-    authenticationHelperService.initialize(params.getHostInfo().getName());
-    if (params.shouldManageSmartNotifications()) {
-      smartNotifications.initialize();
-    }
-    if (params.shouldSynchronizeProjects()) {
-      synchronizationServiceImpl.initialize(params.getConnectedModeEmbeddedPluginPathsByKey().keySet());
-    }
+    sonarLintBackend = new InitializedSonarLintBackend(client, params);
 
     return CompletableFuture.completedFuture(null);
   }
 
-  private static void createFolderIfNeeded(Path path) {
-    try {
-      Files.createDirectories(path);
-    } catch (IOException e) {
-      throw new IllegalStateException("Cannot create directory '" + path.toString() + "'", e);
+  private InitializedSonarLintBackend getInitializedBackend() {
+    if (sonarLintBackend == null) {
+      throw new IllegalStateException("Backend is not initialized");
     }
+    return sonarLintBackend;
   }
 
   @Override
   public ConnectionServiceImpl getConnectionService() {
-    return connectionService;
+    return getInitializedBackend().getConnectionService();
   }
 
   @Override
   public AuthenticationHelperService getAuthenticationHelperService() {
-    return authenticationHelperService;
+    return getInitializedBackend().getAuthenticationHelperService();
   }
 
   @Override
   public ConfigurationService getConfigurationService() {
-    return configurationService;
+    return getInitializedBackend().getConfigurationService();
   }
 
   @Override
   public HotspotService getHotspotService() {
-    return hotspotService;
+    return getInitializedBackend().getHotspotService();
   }
 
   @Override
   public TelemetryServiceImpl getTelemetryService() {
-    return telemetryService;
+    return getInitializedBackend().getTelemetryService();
   }
 
   @Override
   public AnalysisService getAnalysisService() {
-    return analysisService;
+    return getInitializedBackend().getAnalysisService();
   }
 
   @Override
   public RulesServiceImpl getRulesService() {
-    return rulesService;
+    return getInitializedBackend().getRulesService();
   }
 
   @Override
   public BindingSuggestionProviderImpl getBindingService() {
-    return bindingSuggestionProvider;
+    return getInitializedBackend().getBindingService();
   }
 
   public SonarProjectBranchService getSonarProjectBranchService() {
-    return sonarProjectBranchService;
+    return getInitializedBackend().getSonarProjectBranchService();
   }
 
   @Override
   public CompletableFuture<Void> shutdown() {
-    return CompletableFuture.runAsync(() -> {
-      var shutdownTasks = List.<Runnable>of(
-        () -> MoreExecutors.shutdownAndAwaitTermination(clientEventsExecutorService, 10, TimeUnit.SECONDS),
-        this.pluginsService::shutdown,
-        this.bindingSuggestionProvider::shutdown,
-        this.embeddedServer::shutdown,
-        this.smartNotifications::shutdown,
-        this.synchronizationServiceImpl::shutdown,
-        storageService::close);
-      shutdownTasks.forEach(SonarLintBackendImpl::shutdown);
-    });
-  }
-
-  private static void shutdown(Runnable task) {
-    try {
-      task.run();
-    } catch (Exception e) {
-      LOG.error("Error when shutting down", e);
-    }
+    return getInitializedBackend().shutdown();
   }
 
   public int getEmbeddedServerPort() {
-    return embeddedServer.getPort();
+    return getInitializedBackend().getEmbeddedServerPort();
   }
 }
