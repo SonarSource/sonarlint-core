@@ -54,11 +54,11 @@ class HotspotDownloaderTests {
   @Test
   void test_download_one_hotspot_pull_ws() {
     var timestamp = Hotspots.HotspotPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
-    var hotspot = Hotspots.HotspotLite.newBuilder()
+    var hotspot1 = Hotspots.HotspotLite.newBuilder()
       .setKey("someHotspotKey")
       .setFilePath("foo/bar/Hello.java")
       .setVulnerabilityProbability(VulnerabilityProbability.LOW.toString())
-      .setStatus(HotspotReviewStatus.TO_REVIEW.toString())
+      .setStatus("TO_REVIEW")
       .setMessage("This is security sensitive")
       .setCreationDate(123456789L)
       .setTextRange(Hotspots.TextRange.newBuilder()
@@ -69,28 +69,59 @@ class HotspotDownloaderTests {
         .setHash("clearly not a hash")
         .build())
       .setRuleKey("java:S123")
-      .setReviewedSafe(false)
+      .setClosed(false)
+      .build();
+    var hotspot2 = Hotspots.HotspotLite.newBuilder()
+      .setKey("otherHotspotKey")
+      .setFilePath("foo/bar/Hello.java")
+      .setVulnerabilityProbability(VulnerabilityProbability.LOW.toString())
+      .setStatus("REVIEWED")
+      .setResolution("SAFE")
+      .setMessage("This is security sensitive")
+      .setCreationDate(123456789L)
+      .setTextRange(Hotspots.TextRange.newBuilder()
+        .setStartLine(5)
+        .setStartLineOffset(6)
+        .setEndLine(7)
+        .setEndLineOffset(8)
+        .setHash("not a hash either")
+        .build())
+      .setRuleKey("java:S123")
       .setClosed(false)
       .build();
 
-    mockServer.addProtobufResponseDelimited("/api/hotspots/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, hotspot);
+    mockServer.addProtobufResponseDelimited("/api/hotspots/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, hotspot1, hotspot2);
 
     var result = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty());
-    assertThat(result.getChangedHotspots()).hasSize(1);
+    assertThat(result.getChangedHotspots()).hasSize(2);
     assertThat(result.getClosedHotspotKeys()).isEmpty();
 
-    var serverHotspot = result.getChangedHotspots().get(0);
-    assertThat(serverHotspot.getKey()).isEqualTo("someHotspotKey");
-    assertThat(serverHotspot.getFilePath()).isEqualTo("foo/bar/Hello.java");
-    assertThat(serverHotspot.getVulnerabilityProbability()).isEqualTo(VulnerabilityProbability.LOW);
-    assertThat(serverHotspot.getStatus()).isEqualTo(HotspotReviewStatus.TO_REVIEW);
-    assertThat(serverHotspot.getMessage()).isEqualTo("This is security sensitive");
-    assertThat(serverHotspot.getCreationDate()).isAfter(Instant.EPOCH);
-    assertThat(serverHotspot.getTextRange().getStartLine()).isEqualTo(1);
-    assertThat(serverHotspot.getTextRange().getStartLineOffset()).isEqualTo(2);
-    assertThat(serverHotspot.getTextRange().getEndLine()).isEqualTo(3);
-    assertThat(serverHotspot.getTextRange().getEndLineOffset()).isEqualTo(4);
-    assertThat(((TextRangeWithHash) serverHotspot.getTextRange()).getHash()).isEqualTo("clearly not a hash");
-    assertThat(serverHotspot.getRuleKey()).isEqualTo("java:S123");
+    var serverHotspot1 = result.getChangedHotspots().get(0);
+    assertThat(serverHotspot1.getKey()).isEqualTo("someHotspotKey");
+    assertThat(serverHotspot1.getFilePath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(serverHotspot1.getVulnerabilityProbability()).isEqualTo(VulnerabilityProbability.LOW);
+    assertThat(serverHotspot1.getStatus()).isEqualTo(HotspotReviewStatus.TO_REVIEW);
+    assertThat(serverHotspot1.getMessage()).isEqualTo("This is security sensitive");
+    assertThat(serverHotspot1.getCreationDate()).isAfter(Instant.EPOCH);
+    assertThat(serverHotspot1.getTextRange().getStartLine()).isEqualTo(1);
+    assertThat(serverHotspot1.getTextRange().getStartLineOffset()).isEqualTo(2);
+    assertThat(serverHotspot1.getTextRange().getEndLine()).isEqualTo(3);
+    assertThat(serverHotspot1.getTextRange().getEndLineOffset()).isEqualTo(4);
+    assertThat(((TextRangeWithHash) serverHotspot1.getTextRange()).getHash()).isEqualTo("clearly not a hash");
+    assertThat(serverHotspot1.getRuleKey()).isEqualTo("java:S123");
+
+    var serverHotspot2 = result.getChangedHotspots().get(1);
+    assertThat(serverHotspot2.getKey()).isEqualTo("otherHotspotKey");
+    assertThat(serverHotspot2.getFilePath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(serverHotspot2.getVulnerabilityProbability()).isEqualTo(VulnerabilityProbability.LOW);
+    assertThat(serverHotspot2.getStatus()).isEqualTo(HotspotReviewStatus.SAFE);
+    assertThat(serverHotspot2.getMessage()).isEqualTo("This is security sensitive");
+    assertThat(serverHotspot2.getCreationDate()).isAfter(Instant.EPOCH);
+    assertThat(serverHotspot2.getTextRange().getStartLine()).isEqualTo(5);
+    assertThat(serverHotspot2.getTextRange().getStartLineOffset()).isEqualTo(6);
+    assertThat(serverHotspot2.getTextRange().getEndLine()).isEqualTo(7);
+    assertThat(serverHotspot2.getTextRange().getEndLineOffset()).isEqualTo(8);
+    assertThat(((TextRangeWithHash) serverHotspot2.getTextRange()).getHash()).isEqualTo("not a hash either");
+    assertThat(serverHotspot2.getRuleKey()).isEqualTo("java:S123");
   }
 }

@@ -91,12 +91,13 @@ message HotspotLite {
   optional string filePath = 2;
   optional string vulnerabilityProbability = 3;
   optional string status = 4;
-  optional string message = 5;
-  optional int64 creationDate = 6;
-  optional TextRange textRange = 7;
-  optional string ruleKey = 8;
-  optional bool reviewedSafe = 9;
+  optional string resolution = 5;
+  optional string message = 6;
+  optional int64 creationDate = 7;
+  optional TextRange textRange = 8;
+  optional string ruleKey = 9;
   optional bool closed = 10;
+  optional string assignee = 11;
 }
 
 message TextRange {
