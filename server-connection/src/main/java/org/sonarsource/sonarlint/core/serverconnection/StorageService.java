@@ -24,9 +24,9 @@ import org.sonarsource.sonarlint.core.commons.Binding;
 
 public class StorageService {
 
-  private StorageFacade storageFacade;
+  private final StorageFacade storageFacade;
 
-  public void initialize(Path globalStorageRoot, Path workDir) {
+  public StorageService(Path globalStorageRoot, Path workDir) {
     storageFacade = StorageFacadeCache.get().getOrCreate(globalStorageRoot, workDir);
   }
 

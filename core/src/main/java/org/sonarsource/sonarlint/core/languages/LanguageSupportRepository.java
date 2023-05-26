@@ -26,10 +26,10 @@ import org.sonarsource.sonarlint.core.commons.Language;
 
 public class LanguageSupportRepository {
   private static final EnumSet<Language> LANGUAGES_RAISING_TAINT_VULNERABILITIES = EnumSet.of(Language.CS, Language.JAVA, Language.JS, Language.TS, Language.PHP, Language.PYTHON);
-  private EnumSet<Language> enabledLanguagesInStandaloneMode;
-  private EnumSet<Language> enabledLanguagesInConnectedMode;
+  private final EnumSet<Language> enabledLanguagesInStandaloneMode;
+  private final EnumSet<Language> enabledLanguagesInConnectedMode;
 
-  public void initialize(Set<Language> enabledLanguagesInStandaloneMode, Set<Language> extraEnabledLanguagesInConnectedMode) {
+  public LanguageSupportRepository(Set<Language> enabledLanguagesInStandaloneMode, Set<Language> extraEnabledLanguagesInConnectedMode) {
     this.enabledLanguagesInStandaloneMode = toEnumSet(enabledLanguagesInStandaloneMode, Language.class);
     this.enabledLanguagesInConnectedMode = EnumSet.copyOf(this.enabledLanguagesInStandaloneMode);
     this.enabledLanguagesInConnectedMode.addAll(extraEnabledLanguagesInConnectedMode);

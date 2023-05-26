@@ -57,11 +57,11 @@ public class SynchronizationServiceImpl {
   private final ServerApiProvider serverApiProvider;
   private final TaskManager taskManager;
   private final StorageService storageService;
+  private final Set<String> connectedModeEmbeddedPluginKeys;
   private ScheduledExecutorService scheduledSynchronizer;
-  private Set<String> connectedModeEmbeddedPluginKeys;
 
   public SynchronizationServiceImpl(SonarLintClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
-    SonarProjectBranchServiceImpl branchService, ServerApiProvider serverApiProvider, StorageService storageService) {
+    SonarProjectBranchServiceImpl branchService, ServerApiProvider serverApiProvider, StorageService storageService, Set<String> connectedModeEmbeddedPluginKeys) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
@@ -69,10 +69,10 @@ public class SynchronizationServiceImpl {
     this.serverApiProvider = serverApiProvider;
     this.taskManager = new TaskManager(client);
     this.storageService = storageService;
+    this.connectedModeEmbeddedPluginKeys = connectedModeEmbeddedPluginKeys;
   }
 
-  public void initialize(Set<String> connectedModeEmbeddedPluginKeys) {
-    this.connectedModeEmbeddedPluginKeys = connectedModeEmbeddedPluginKeys;
+  public void startScheduledSync() {
     scheduledSynchronizer = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SonarLint Local Storage Synchronizer"));
     scheduledSynchronizer.scheduleAtFixedRate(this::safeAutoSync, 1L, 3600, TimeUnit.SECONDS);
   }

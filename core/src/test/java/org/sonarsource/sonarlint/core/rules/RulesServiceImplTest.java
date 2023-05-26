@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.rules;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +47,7 @@ class RulesServiceImplTest {
   @Test
   void it_should_return_all_embedded_rules_from_the_repository() throws Exception {
     when(extractionHelper.extractEmbeddedRules()).thenReturn(List.of(aRule()));
-    var rulesService = new RulesServiceImpl(null, null, rulesRepository, null);
+    var rulesService = new RulesServiceImpl(null, null, rulesRepository, null, Map.of());
 
     var embeddedRules = rulesService.listAllStandaloneRulesDefinitions().get(1, TimeUnit.MINUTES).getRulesByKey().values();
 

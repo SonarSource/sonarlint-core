@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.authentication.AuthenticationHelperService;
 import org.sonarsource.sonarlint.core.clientapi.backend.authentication.HelpGenerateUserTokenParams;
@@ -31,8 +32,6 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
-import java.util.concurrent.CompletableFuture;
-
 import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 
 public class AuthenticationHelperServiceImpl implements AuthenticationHelperService {
@@ -41,15 +40,13 @@ public class AuthenticationHelperServiceImpl implements AuthenticationHelperServ
   private final SonarLintClient client;
   private final EmbeddedServer embeddedServer;
   private final AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository;
-  private String clientName;
+  private final String clientName;
 
-  public AuthenticationHelperServiceImpl(SonarLintClient client, EmbeddedServer embeddedServer, AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository) {
+  public AuthenticationHelperServiceImpl(SonarLintClient client, EmbeddedServer embeddedServer, AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository,
+    String clientName) {
     this.client = client;
     this.embeddedServer = embeddedServer;
     this.awaitingUserTokenFutureRepository = awaitingUserTokenFutureRepository;
-  }
-
-  public void initialize(String clientName) {
     this.clientName = clientName;
   }
 

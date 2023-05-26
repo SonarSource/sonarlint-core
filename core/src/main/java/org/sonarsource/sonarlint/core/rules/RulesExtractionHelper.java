@@ -33,14 +33,11 @@ public class RulesExtractionHelper {
   private final PluginsServiceImpl pluginsService;
   private final LanguageSupportRepository languageSupportRepository;
   private final RulesDefinitionExtractor ruleExtractor = new RulesDefinitionExtractor();
-  private boolean enableSecurityHotspots;
+  private final boolean enableSecurityHotspots;
 
-  public RulesExtractionHelper(PluginsServiceImpl pluginsService, LanguageSupportRepository languageSupportRepository) {
+  public RulesExtractionHelper(PluginsServiceImpl pluginsService, LanguageSupportRepository languageSupportRepository, boolean enableSecurityHotspots) {
     this.pluginsService = pluginsService;
     this.languageSupportRepository = languageSupportRepository;
-  }
-
-  public void initialize(boolean enableSecurityHotspots) {
     this.enableSecurityHotspots = enableSecurityHotspots;
   }
 

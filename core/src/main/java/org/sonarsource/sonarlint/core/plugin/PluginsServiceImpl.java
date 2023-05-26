@@ -36,16 +36,14 @@ public class PluginsServiceImpl implements PluginsService {
   private final PluginsRepository pluginsRepository;
   private final LanguageSupportRepository languageSupportRepository;
   private final StorageService storageService;
-  private Set<Path> embeddedPluginPaths;
-  private Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
+  private final Set<Path> embeddedPluginPaths;
+  private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
 
-  public PluginsServiceImpl(PluginsRepository pluginsRepository, LanguageSupportRepository languageSupportRepository, StorageService storageService) {
+  public PluginsServiceImpl(PluginsRepository pluginsRepository, LanguageSupportRepository languageSupportRepository, StorageService storageService,
+    Set<Path> embeddedPluginPaths, Map<String, Path> connectedModeEmbeddedPluginPathsByKey) {
     this.pluginsRepository = pluginsRepository;
     this.languageSupportRepository = languageSupportRepository;
     this.storageService = storageService;
-  }
-
-  public void initialize(Set<Path> embeddedPluginPaths, Map<String, Path> connectedModeEmbeddedPluginPathsByKey) {
     this.embeddedPluginPaths = embeddedPluginPaths;
     this.connectedModeEmbeddedPluginPathsByKey = connectedModeEmbeddedPluginPathsByKey;
   }
