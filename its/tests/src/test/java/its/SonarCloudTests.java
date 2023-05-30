@@ -90,7 +90,7 @@ class SonarCloudTests extends AbstractConnectedTests {
   private static final String PROJECT_KEY_XML = "sample-xml";
   private static final String PROJECT_KEY_JAVA_TAINT = "sample-java-taint";
 
-  private static final HttpClient SC_CLIENT = new JavaHttpClientAdapter(SHARED_CLIENT, SONARCLOUD_USER, SONARCLOUD_PASSWORD);
+  private static final HttpClient SC_CLIENT = httpClientWithCredentials(SONARCLOUD_USER, SONARCLOUD_PASSWORD);
 
   private final ProgressMonitor progress = new ProgressMonitor(null);
 

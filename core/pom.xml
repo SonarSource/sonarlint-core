@@ -89,6 +89,11 @@
       <artifactId>guava</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5</artifactId>
+      <version>5.2.1</version>
+    </dependency>
+    <dependency>
       <groupId>org.apache.httpcomponents.core5</groupId>
       <artifactId>httpcore5</artifactId>
       <version>5.2</version>
@@ -292,7 +297,7 @@
               <createSourcesJar>true</createSourcesJar>
               <relocations>
                 <relocation>
-                  <pattern></pattern>
+                  <pattern />
                   <shadedPattern>org.sonarsource.sonarlint.shaded.</shadedPattern>
                   <includes>
                     <include>org.apache.**</include>
@@ -301,6 +306,9 @@
                     <include>org.springframework.**</include>
                     <include>org.sonarqube.ws.**</include>
                   </includes>
+                  <excludes>
+                    <exclude>org.apache.hc.**</exclude>
+                  </excludes>
                 </relocation>
               </relocations>
               <artifactSet>
