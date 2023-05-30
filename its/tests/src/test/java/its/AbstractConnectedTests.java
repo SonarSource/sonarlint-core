@@ -36,6 +36,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
+import org.apache.hc.core5.reactor.IOReactorStatus;
 import org.assertj.core.internal.Failures;
 import org.sonarqube.ws.Issues;
 import org.sonarqube.ws.Qualityprofiles.SearchWsResponse.QualityProfile;
@@ -58,7 +61,7 @@ public abstract class AbstractConnectedTests {
   protected static final String SONARLINT_PWD = "sonarlintpwd";
   protected static final String MAIN_BRANCH_NAME = "master";
 
-  protected static final java.net.http.HttpClient SHARED_CLIENT = java.net.http.HttpClient.newBuilder().build();
+  protected static final CloseableHttpAsyncClient SHARED_CLIENT = HttpAsyncClientBuilder.create().build();
 
   protected static class SaveIssueListener implements IssueListener {
     List<Issue> issues = new LinkedList<>();
@@ -119,6 +122,9 @@ public abstract class AbstractConnectedTests {
   }
 
   public static HttpClient sqHttpClient() {
+    if (SHARED_CLIENT.getStatus() != IOReactorStatus.ACTIVE) {
+      SHARED_CLIENT.start();
+    }
     return new JavaHttpClientAdapter(SHARED_CLIENT, SONARLINT_USER, SONARLINT_PWD);
   }
 

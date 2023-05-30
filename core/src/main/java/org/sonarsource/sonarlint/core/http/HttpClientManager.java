@@ -20,9 +20,7 @@
 package org.sonarsource.sonarlint.core.http;
 
 import java.io.IOException;
-import java.net.Authenticator;
 import java.net.InetSocketAddress;
-import java.net.PasswordAuthentication;
 import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.SocketAddress;
@@ -31,6 +29,25 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
+import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.impl.routing.SystemDefaultRoutePlanner;
+import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
+import org.apache.hc.core5.http.EntityDetails;
+import org.apache.hc.core5.http.HttpException;
+import org.apache.hc.core5.http.HttpRequest;
+import org.apache.hc.core5.http.HttpResponse;
+import org.apache.hc.core5.http.HttpResponseInterceptor;
+import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.core5.http.Method;
+import org.apache.hc.core5.http.protocol.HttpContext;
+import org.apache.hc.core5.http.protocol.HttpCoreContext;
+import org.apache.hc.core5.http2.HttpVersionPolicy;
+import org.apache.hc.core5.reactor.ssl.TlsDetails;
+import org.apache.hc.core5.util.Timeout;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.TokenDto;
@@ -43,20 +60,34 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class HttpClientManager {
 
+
+  private static final Timeout CONNECTION_TIMEOUT = Timeout.ofSeconds(30);
+  private static final Timeout RESPONSE_TIMEOUT = Timeout.ofMinutes(10);
   private final SonarLintLogger logger = SonarLintLogger.get();
 
   private final SonarLintClient client;
-  private final java.net.http.HttpClient sharedClient;
+  private final CloseableHttpAsyncClient sharedClient;
 
   public HttpClientManager(SonarLintClient client) {
     this.client = client;
-    this.sharedClient = java.net.http.HttpClient.newBuilder()
-      .proxy(new ProxySelector() {
+    sharedClient = HttpAsyncClients.custom()
+      .setConnectionManager(
+        PoolingAsyncClientConnectionManagerBuilder.create()
+          .setTlsStrategy(ClientTlsStrategyBuilder.create()
+            .setTlsDetailsFactory(parameter -> new TlsDetails(parameter.getSession(), parameter.getApplicationProtocol())).build())
+          .build())
+      .addResponseInterceptorFirst(new RedirectInterceptor())
+      .setUserAgent("SonarLint")
+      // SLI-629 - Force HTTP/1
+      .setVersionPolicy(HttpVersionPolicy.FORCE_HTTP_1)
+      // proxy settings
+      .setRoutePlanner(new SystemDefaultRoutePlanner(new ProxySelector() {
         @Override
         public List<Proxy> select(URI uri) {
           try {
             return client.selectProxies(new SelectProxiesParams(uri.toString())).get().getProxies().stream()
-              .map(p -> p.getType() == Proxy.Type.DIRECT ? Proxy.NO_PROXY : new Proxy(p.getType(), new InetSocketAddress(p.getHostname(), p.getPort())))
+              .map(p -> p.getType() == Proxy.Type.DIRECT ? Proxy.NO_PROXY : new Proxy(p.getType(), new InetSocketAddress(p.getHostname(),
+                p.getPort())))
               .collect(Collectors.toList());
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -71,30 +102,33 @@ public class HttpClientManager {
         public void connectFailed(URI uri, SocketAddress sa, IOException ioe) {
 
         }
-      })
-      .authenticator(new Authenticator() {
-        @Override
-        protected PasswordAuthentication getPasswordAuthentication() {
-          if (getRequestorType() != RequestorType.PROXY) {
-            // We only handle proxy authentication here
-            return null;
+      }))
+      .setDefaultCredentialsProvider((authScope, httpContext) -> {
+        try {
+          var response = client.getProxyPasswordAuthentication(
+            new GetProxyPasswordAuthenticationParams(authScope.getHost(), authScope.getPort(), authScope.getProtocol(),
+              authScope.getRealm(), authScope.getSchemeName())).get();
+          if (response.getProxyUser() != null || response.getProxyPassword() != null) {
+            return new UsernamePasswordCredentials(response.getProxyUser(), response.getProxyPassword().toCharArray());
           }
-          try {
-            var response = client.getProxyPasswordAuthentication(
-              new GetProxyPasswordAuthenticationParams(getRequestingHost(), getRequestingPort(), getRequestingProtocol(), getRequestingPrompt(), getRequestingScheme())).get();
-            if (response.getProxyUser() != null || response.getProxyPassword() != null) {
-              return new PasswordAuthentication(response.getProxyUser(), response.getProxyPassword().toCharArray());
-            }
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            logger.warn("Interrupted!", e);
-          } catch (ExecutionException e) {
-            logger.warn("Unable to get proxy", e);
-          }
-          return null;
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          logger.warn("Interrupted!", e);
+        } catch (ExecutionException e) {
+          logger.warn("Unable to get proxy", e);
         }
+        return null;
       })
+
+      .setDefaultRequestConfig(
+        RequestConfig.copy(RequestConfig.DEFAULT)
+          .setConnectionRequestTimeout(CONNECTION_TIMEOUT)
+          .setResponseTimeout(RESPONSE_TIMEOUT)
+          .build()
+      )
       .build();
+
+    sharedClient.start();
   }
 
   public HttpClient getHttpClient() {
@@ -112,5 +146,32 @@ public class HttpClientManager {
       return new JavaHttpClientAdapter(sharedClient, null, null);
     }
   }
+
+  private static class RedirectInterceptor implements HttpResponseInterceptor {
+
+    @Override
+    public void process(HttpResponse response, EntityDetails entity, HttpContext context) throws HttpException, IOException {
+      alterResponseCodeIfNeeded(context, response);
+    }
+
+    private void alterResponseCodeIfNeeded(HttpContext context, HttpResponse response) {
+      if (isPost(context)) {
+        // Apache handles some redirect statuses by transforming the POST into a GET
+        // we force a different status to keep the request a POST
+        var code = response.getCode();
+        if (code == HttpStatus.SC_MOVED_PERMANENTLY) {
+          response.setCode(HttpStatus.SC_PERMANENT_REDIRECT);
+        } else if (code == HttpStatus.SC_MOVED_TEMPORARILY || code == HttpStatus.SC_SEE_OTHER) {
+          response.setCode(HttpStatus.SC_TEMPORARY_REDIRECT);
+        }
+      }
+    }
+
+    private boolean isPost(HttpContext context) {
+      var request = (HttpRequest) context.getAttribute(HttpCoreContext.HTTP_REQUEST);
+      return request != null && Method.POST.isSame(request.getMethod());
+    }
+  }
+
 
 }

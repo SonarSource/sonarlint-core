@@ -322,8 +322,8 @@ public class SonarLintBackendFixture {
     private final Map<String, ProgressReport> progressReportsByTaskId = new ConcurrentHashMap<>();
     private final Set<String> synchronizedConfigScopeIds = new HashSet<>();
     private final ProxyDto proxy;
+    private final GetProxyPasswordAuthenticationResponse proxyAuth;
     private SonarLintBackendImpl backend;
-    private GetProxyPasswordAuthenticationResponse proxyAuth;
 
     public FakeSonarLintClient(HostInfoDto clientInfo, List<FoundFileDto> foundFiles, String workspaceTitle,
       LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
