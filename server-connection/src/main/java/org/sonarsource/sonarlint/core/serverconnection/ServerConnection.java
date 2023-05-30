@@ -248,7 +248,7 @@ public class ServerConnection {
     var serverVersion = readOrSynchronizeServerVersion(serverApi);
     if (HotspotApi.supportHotspotsPull(isSonarCloud, serverVersion)) {
       LOG.info("[SYNC] Synchronizing hotspots for project '{}' on branch '{}'", projectKey, branchName);
-      hotspotsUpdater.sync(serverApi, projectKey, branchName);
+      hotspotsUpdater.sync(serverApi.hotspot(), projectKey, branchName);
     } else {
       LOG.debug("Incremental issue sync is not supported. Skipping.");
     }

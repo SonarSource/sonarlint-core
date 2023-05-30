@@ -92,7 +92,7 @@ class HotspotDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/api/hotspots/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, hotspot1, hotspot2);
 
-    var result = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty());
+    var result = underTest.downloadFromPull(serverApi.hotspot(), DUMMY_KEY, "myBranch", Optional.empty());
     assertThat(result.getChangedHotspots()).hasSize(2);
     assertThat(result.getClosedHotspotKeys()).isEmpty();
 

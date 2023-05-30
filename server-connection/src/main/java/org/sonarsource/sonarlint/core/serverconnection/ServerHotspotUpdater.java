@@ -23,7 +23,6 @@ import java.util.function.Supplier;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 
 public class ServerHotspotUpdater {
@@ -61,9 +60,9 @@ public class ServerHotspotUpdater {
     }
   }
 
-  public void sync(ServerApi serverApi, String projectKey, String branchName) {
+  public void sync(HotspotApi hotspotApi, String projectKey, String branchName) {
     var lastSync = storage.project(projectKey).findings().getLastHotspotSyncTimestamp(branchName);
-    var result = hotspotDownloader.downloadFromPull(serverApi, projectKey, branchName, lastSync);
+    var result = hotspotDownloader.downloadFromPull(hotspotApi, projectKey, branchName, lastSync);
     storage.project(projectKey).findings().mergeHotspots(branchName, result.getChangedHotspots(), result.getClosedHotspotKeys(), result.getQueryTimestamp());
   }
 }

@@ -28,7 +28,7 @@ import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
-import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
 
@@ -49,9 +49,7 @@ public class HotspotDownloader {
    * @param branchName name of the branch.
    * @return List of hotspots. It can be empty but never null.
    */
-  public PullResult downloadFromPull(ServerApi serverApi, String projectKey, String branchName, Optional<Instant> lastSync) {
-    var hotspotApi = serverApi.hotspot();
-
+  public PullResult downloadFromPull(HotspotApi hotspotApi, String projectKey, String branchName, Optional<Instant> lastSync) {
     var apiResult = hotspotApi.pullHotspots(projectKey, branchName, enabledLanguages, lastSync.map(Instant::toEpochMilli).orElse(null));
     var changedHotspots = apiResult.getHotspots()
       .stream()
