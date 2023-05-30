@@ -80,22 +80,9 @@ public class HotspotDownloader {
   }
 
   private static HotspotReviewStatus fromHotspotLite(Hotspots.HotspotLite hotspot) {
-    // TODO This should probably be refactored, see duplicate in org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi#getStatus
     var status = hotspot.getStatus();
-    if ("REVIEWED".equals(status) && hotspot.hasResolution()) {
-      var resolution = hotspot.getResolution();
-      switch (resolution) {
-        case "SAFE":
-          return HotspotReviewStatus.SAFE;
-        case "FIXED":
-          return HotspotReviewStatus.FIXED;
-        case "ACKNOWLEDGED":
-          return HotspotReviewStatus.ACKNOWLEDGED;
-        default:
-          return HotspotReviewStatus.TO_REVIEW;
-      }
-    }
-    return HotspotReviewStatus.TO_REVIEW;
+    var resolution = hotspot.hasResolution() ? hotspot.getResolution() : null;
+    return HotspotReviewStatus.fromStatusAndResolution(status, resolution);
   }
 
   private static TextRangeWithHash toServerHotspotTextRange(Hotspots.TextRange textRange) {

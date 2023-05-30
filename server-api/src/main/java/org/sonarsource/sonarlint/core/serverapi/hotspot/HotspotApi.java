@@ -250,20 +250,8 @@ public class HotspotApi {
 
   private static HotspotReviewStatus getStatus(Hotspots.SearchWsResponse.Hotspot hotspot) {
     var status = hotspot.getStatus();
-    if ("REVIEWED".equals(status) && hotspot.hasResolution()) {
-      var resolution = hotspot.getResolution();
-      switch (resolution) {
-        case "SAFE":
-          return HotspotReviewStatus.SAFE;
-        case "FIXED":
-          return HotspotReviewStatus.FIXED;
-        case "ACKNOWLEDGED":
-          return HotspotReviewStatus.ACKNOWLEDGED;
-        default:
-          LOG.error("Unknown hotspot resolution '" + resolution + "', will default to 'TO_REVIEW'");
-      }
-    }
-    return HotspotReviewStatus.TO_REVIEW;
+    var resolution = hotspot.hasResolution() ? hotspot.getResolution() : null;
+    return HotspotReviewStatus.fromStatusAndResolution(status, resolution);
   }
 
   private static String getShowUrl(String hotspotKey) {

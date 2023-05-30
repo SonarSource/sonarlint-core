@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 import static org.sonarsource.sonarlint.core.commons.ConnectionKind.SONARCLOUD;
 import static org.sonarsource.sonarlint.core.commons.ConnectionKind.SONARQUBE;
@@ -45,6 +46,22 @@ public enum HotspotReviewStatus {
   public boolean isResolved() {
     // ACKNOWLEDGED is considered as non-resolved because the hotspot is confirmed
     return equals(SAFE) || equals(FIXED);
+  }
+
+  public static HotspotReviewStatus fromStatusAndResolution(String status, @Nullable String resolution) {
+    if ("REVIEWED".equals(status) && resolution != null) {
+      switch (resolution) {
+        case "SAFE":
+          return HotspotReviewStatus.SAFE;
+        case "FIXED":
+          return HotspotReviewStatus.FIXED;
+        case "ACKNOWLEDGED":
+          return HotspotReviewStatus.ACKNOWLEDGED;
+        default:
+          return HotspotReviewStatus.TO_REVIEW;
+      }
+    }
+    return HotspotReviewStatus.TO_REVIEW;
   }
 
   private boolean isAllowedOn(ConnectionKind kind) {
