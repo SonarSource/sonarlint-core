@@ -26,7 +26,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
-import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
@@ -97,8 +96,7 @@ public interface ProjectServerIssueStore {
   /**
    * Load issues stored for specified file.
    *
-   *
-   * @param projectKey
+   * @param branchName
    * @param sqFilePath the relative path to the base of project, in SonarQube
    * @return issues, possibly empty
    */
@@ -148,10 +146,9 @@ public interface ProjectServerIssueStore {
   boolean updateIssue(String issueKey, Consumer<ServerIssue> issueUpdater);
 
   /**
-   * Set the resolution status of a Issue (by its key) to true.
-   * @return true if the issue with the given key was found, else false
+   * Set the resolution status of an Issue (by its key) to true.
    */
-  boolean markIssueAsResolved(String issueKey, boolean isTaintIssue);
+  void markIssueAsResolved(String issueKey, boolean isTaintIssue);
 
   void updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater);
 

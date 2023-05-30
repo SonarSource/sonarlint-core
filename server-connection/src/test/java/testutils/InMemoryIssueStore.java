@@ -201,11 +201,11 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public boolean markIssueAsResolved(String issueKey, boolean isTaintIssue) {
+  public void markIssueAsResolved(String issueKey, boolean isTaintIssue) {
     if (isTaintIssue) {
-      return taintIssuesByKey.computeIfPresent(issueKey, (s, serverIssue) ->  serverIssue.setResolved(true)) != null;
+      taintIssuesByKey.computeIfPresent(issueKey, (s, serverIssue) ->  serverIssue.setResolved(true));
     } else {
-      return issuesByKey.computeIfPresent(issueKey, (s, serverIssue) ->  serverIssue.setResolved(true)) != null;
+      issuesByKey.computeIfPresent(issueKey, (s, serverIssue) ->  serverIssue.setResolved(true));
     }
   }
 

@@ -28,6 +28,7 @@ import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.AddIssueCommentParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ChangeIssueStatusParams;
 import org.sonarsource.sonarlint.core.commons.IssueStatus;
+import org.sonarsource.sonarlint.core.issue.AddIssueCommentException;
 import org.sonarsource.sonarlint.core.issue.IssueStatusChangeException;
 
 import static mediumtest.fixtures.ServerFixture.ServerStatus.DOWN;
@@ -35,7 +36,7 @@ import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class IssuesStatusChangeMediumTests {
+class IssuesStatusChangeMediumTests {
 
   private SonarLintBackendImpl backend;
   private ServerFixture.Server server;
@@ -94,5 +95,23 @@ public class IssuesStatusChangeMediumTests {
     assertThat(lastRequest.getBody().readString(StandardCharsets.UTF_8)).isEqualTo("issue=myIssueKey&text=That%27s+serious+issue");
   }
 
+  @Test
+  void it_should_throw_if_server_response_is_not_OK_during_add_new_comment_to_issue() {
+    server = newSonarQubeServer().withStatus(DOWN).start();
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", server)
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .build();
+
+    var response = backend.getIssueService().addComment(new AddIssueCommentParams("configScopeId", "myIssueKey", "That's " +
+      "serious issue"));
+
+    assertThat(response)
+      .failsWithin(Duration.ofSeconds(2))
+      .withThrowableOfType(ExecutionException.class)
+      .havingCause()
+      .isInstanceOf(AddIssueCommentException.class)
+      .withMessage("Cannot add comment to the issue");
+  }
 
 }
