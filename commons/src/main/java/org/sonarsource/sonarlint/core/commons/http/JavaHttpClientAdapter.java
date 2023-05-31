@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.commons.http;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpRequest;
 import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
@@ -187,7 +188,14 @@ public class JavaHttpClientAdapter implements HttpClient {
       var httpFuture = javaClient.execute(httpRequest, new FutureCallback<>() {
         @Override
         public void completed(SimpleHttpResponse result) {
-          futureResponse.complete(new ApacheHttpResponse(httpRequest.getRequestUri(), result));
+          String uri;
+          // getRequestUri may be relative, so we prefer getUri
+          try {
+            uri = httpRequest.getUri().toString();
+          } catch (URISyntaxException e) {
+            uri = httpRequest.getRequestUri();
+          }
+          futureResponse.complete(new ApacheHttpResponse(uri, result));
         }
 
         @Override

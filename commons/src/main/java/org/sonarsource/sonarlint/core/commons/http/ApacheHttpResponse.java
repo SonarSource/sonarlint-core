@@ -60,4 +60,9 @@ public class ApacheHttpResponse implements HttpClient.Response {
   public String url() {
     return requestUrl;
   }
+
+  @Override
+  public String toString() {
+    return response.toString();
+  }
 }
