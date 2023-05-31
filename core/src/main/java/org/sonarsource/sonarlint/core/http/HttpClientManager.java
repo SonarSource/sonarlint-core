@@ -37,7 +37,6 @@ import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBu
 import org.apache.hc.client5.http.impl.routing.SystemDefaultRoutePlanner;
 import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
 import org.apache.hc.core5.http.EntityDetails;
-import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.HttpRequest;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.HttpResponseInterceptor;
@@ -60,16 +59,17 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class HttpClientManager {
 
-
   private static final Timeout CONNECTION_TIMEOUT = Timeout.ofSeconds(30);
   private static final Timeout RESPONSE_TIMEOUT = Timeout.ofMinutes(10);
   private final SonarLintLogger logger = SonarLintLogger.get();
-
   private final SonarLintClient client;
-  private final CloseableHttpAsyncClient sharedClient;
+  private CloseableHttpAsyncClient sharedClient;
 
   public HttpClientManager(SonarLintClient client) {
     this.client = client;
+  }
+
+  public void initialize(String userAgent) {
     sharedClient = HttpAsyncClients.custom()
       .setConnectionManager(
         PoolingAsyncClientConnectionManagerBuilder.create()
@@ -77,7 +77,7 @@ public class HttpClientManager {
             .setTlsDetailsFactory(parameter -> new TlsDetails(parameter.getSession(), parameter.getApplicationProtocol())).build())
           .build())
       .addResponseInterceptorFirst(new RedirectInterceptor())
-      .setUserAgent("SonarLint")
+      .setUserAgent(userAgent)
       // SLI-629 - Force HTTP/1
       .setVersionPolicy(HttpVersionPolicy.FORCE_HTTP_1)
       // proxy settings
@@ -119,7 +119,6 @@ public class HttpClientManager {
         }
         return null;
       })
-
       .setDefaultRequestConfig(
         RequestConfig.copy(RequestConfig.DEFAULT)
           .setConnectionRequestTimeout(CONNECTION_TIMEOUT)
@@ -150,7 +149,7 @@ public class HttpClientManager {
   private static class RedirectInterceptor implements HttpResponseInterceptor {
 
     @Override
-    public void process(HttpResponse response, EntityDetails entity, HttpContext context) throws HttpException, IOException {
+    public void process(HttpResponse response, EntityDetails entity, HttpContext context) {
       alterResponseCodeIfNeeded(context, response);
     }
 

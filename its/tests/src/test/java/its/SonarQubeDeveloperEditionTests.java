@@ -1154,7 +1154,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           new InitializeParams(new HostInfoDto("clientName"), "integrationTests", sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"), Collections.emptySet(),
             Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(), false,
             List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(), false,
-            Map.of(), false, true, false));
+            Map.of(), false, true, false, "SonarLint"));
       }
     }
 

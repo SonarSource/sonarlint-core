@@ -63,7 +63,9 @@ import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
 public class SonarLintBackendImpl implements SonarLintBackend {
+
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private final HttpClientManager httpClientManager;
   private final ConfigurationServiceImpl configurationService;
   private final ConnectionServiceImpl connectionService;
   private final RulesServiceImpl rulesService;
@@ -85,7 +87,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   private final LanguageSupportRepository languageSupportRepository;
 
   public SonarLintBackendImpl(SonarLintClient client) {
-    var httpClientManager = new HttpClientManager(client);
+    httpClientManager = new HttpClientManager(client);
     EventBus clientEventBus = new AsyncEventBus("clientEvents", clientEventsExecutorService);
     var configurationRepository = new ConfigurationRepository();
     this.configurationService = new ConfigurationServiceImpl(clientEventBus, configurationRepository);
@@ -123,6 +125,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
 
   @Override
   public CompletableFuture<Void> initialize(InitializeParams params) {
+    httpClientManager.initialize(params.getUserAgent());
     var sonarlintUserHome = Optional.ofNullable(params.getSonarlintUserHome()).map(Paths::get).orElse(SonarLintUserHome.get());
     var workDir = params.getWorkDir();
     if (workDir == null) {

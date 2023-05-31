@@ -76,7 +76,7 @@ class ProxyMediumTests {
   @BeforeEach
   void configureProxy(TestInfo info) {
     if (info.getTags().contains(PROXY_AUTH_ENABLED)) {
-      proxyMock.stubFor(get(urlEqualTo("/api/rules/show.protobuf?key=python:S139"))
+      proxyMock.stubFor(get(urlMatching(".*"))
         .inScenario("Proxy Auth")
         .whenScenarioStateIs(STARTED)
         .willReturn(aResponse()
@@ -85,7 +85,7 @@ class ProxyMediumTests {
         )
         .willSetStateTo("Challenge returned")
       );
-      proxyMock.stubFor(get(urlEqualTo("/api/rules/show.protobuf?key=python:S139"))
+      proxyMock.stubFor(get(urlMatching(".*"))
         .inScenario("Proxy Auth")
         .whenScenarioStateIs("Challenge returned")
         .willReturn(aResponse().proxiedFrom(sonarqubeMock.baseUrl())));

@@ -19,9 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.commons.http;
 
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.http.HttpRequest;
 import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -63,14 +61,19 @@ public class JavaHttpClientAdapter implements HttpClient {
 
   @Override
   public Response post(String url, String contentType, String bodyContent) {
-    var request = SimpleRequestBuilder.post(url)
-      .setBody(bodyContent, ContentType.parse(contentType))
-      .build();
     try {
-      return executeAsync(request).get();
+      return postAsync(url, contentType, bodyContent).get();
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @Override
+  public CompletableFuture<Response> postAsync(String url, String contentType, String body) {
+    var request = SimpleRequestBuilder.post(url)
+      .setBody(body, ContentType.parse(contentType))
+      .build();
+    return executeAsync(request);
   }
 
   @Override
@@ -220,18 +223,8 @@ public class JavaHttpClientAdapter implements HttpClient {
 
   private String basic(String username, String password) {
     var usernameAndPassword = String.format("%s:%s", username, password);
-    var encoded = Base64.getEncoder().encodeToString(usernameAndPassword.getBytes(StandardCharsets.ISO_8859_1));
+    var encoded = Base64.getEncoder().encodeToString(usernameAndPassword.getBytes(StandardCharsets.UTF_8));
     return String.format("Basic %s", encoded);
-  }
-
-  private HttpRequest.Builder requestBuilder(String url) {
-    var request = HttpRequest.newBuilder().uri(URI.create(url));
-    if (usernameOrToken != null) {
-      var plainCreds = usernameOrToken + ":" + (password != null ? password : "");
-      var encoded = new String(java.util.Base64.getEncoder().encode(plainCreds.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
-      request.header("Authorization", "Basic " + encoded);
-    }
-    return request;
   }
 
   public static class HttpAsyncRequest implements AsyncRequest {

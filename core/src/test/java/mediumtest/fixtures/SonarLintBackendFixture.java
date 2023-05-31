@@ -104,6 +104,7 @@ public class SonarLintBackendFixture {
     private boolean areSecurityHotspotsEnabled;
     private boolean synchronizeProjects;
     private boolean taintVulnerabilitiesEnabled = true;
+    private String userAgent;
 
     private final Map<String, StandaloneRuleConfigDto> standaloneConfigByKey = new HashMap<>();
 
@@ -229,6 +230,11 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintBackendBuilder withUserAgent() {
+      userAgent = "SonarLintBackendFixture";
+      return this;
+    }
+
     public SonarLintBackendBuilder withSmartNotifications() {
       manageSmartNotifications = true;
       return this;
@@ -240,8 +246,7 @@ public class SonarLintBackendFixture {
       sonarLintBackend
         .initialize(new InitializeParams(client.getClientInfo(), MEDIUM_TESTS_PRODUCT_KEY, storageRoot, null, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
           enabledLanguages, extraEnabledLanguagesInConnectedMode, areSecurityHotspotsEnabled, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
-          startEmbeddedServer,
-          standaloneConfigByKey, manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects));
+          startEmbeddedServer, standaloneConfigByKey, manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, userAgent));
       sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
       activeBranchPerScopeId.forEach(
         (scopeId, branch) -> sonarLintBackend.getSonarProjectBranchService().didChangeActiveSonarProjectBranch(new DidChangeActiveSonarProjectBranchParams(scopeId, branch)));
