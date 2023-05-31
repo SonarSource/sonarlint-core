@@ -140,6 +140,7 @@ public class SynchronizationServiceImpl {
       if (languageSupportRepository.areTaintVulnerabilitiesSupported()) {
         serverConnection.syncServerTaintIssuesForProject(serverApi, boundScope.sonarProjectKey, branch);
       }
+      serverConnection.syncServerHotspotsForProject(serverApi, boundScope.sonarProjectKey, branch);
       synchronizedConfScopeIds.add(boundScope.configurationScopeId);
     });
   }

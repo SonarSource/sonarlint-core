@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Server Connection
+ * SonarLint Core - Server API
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection.storage;
+package org.sonarsource.sonarlint.core.serverapi.util;
 
 import com.google.protobuf.Message;
 import com.google.protobuf.Parser;
@@ -27,22 +27,22 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
-import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil.readMessages;
+import static org.sonarsource.sonarlint.core.serverapi.util.ProtobufUtil.readMessages;
 
-class ProtobufUtilTests {
+public class ProtobufUtilTest {
 
-  private static final Sonarlint.PluginReferences SOME_MESSAGE = Sonarlint.PluginReferences.newBuilder().build();
-  private static final Parser<Sonarlint.PluginReferences> SOME_PARSER = Sonarlint.PluginReferences.parser();
+  private static final Common.Paging SOME_MESSAGE = Common.Paging.newBuilder().build();
+
+  private static final Parser<Common.Paging> SOME_PARSER = Common.Paging.parser();
 
   @Test
   void test_readMessages_empty() throws IOException {
@@ -53,11 +53,11 @@ class ProtobufUtilTests {
 
   @Test
   void test_readMessages_multiple() throws IOException {
-    var issue1 = SOME_MESSAGE;
-    var issue2 = SOME_MESSAGE;
+    var paging1 = SOME_MESSAGE;
+    var paging2 = SOME_MESSAGE;
 
-    try (InputStream inputStream = new ByteArrayInputStream(toByteArray(issue1, issue2))) {
-      assertThat(readMessages(inputStream, issue1.getParserForType())).containsOnly(issue1, issue2);
+    try (InputStream inputStream = new ByteArrayInputStream(toByteArray(paging1, paging2))) {
+      assertThat(readMessages(inputStream, paging1.getParserForType())).containsOnly(paging1, paging2);
     }
   }
 
@@ -67,20 +67,6 @@ class ProtobufUtilTests {
 
     var thrown = assertThrows(IllegalStateException.class, () -> readMessages(inputStream, SOME_PARSER));
     assertThat(thrown).hasMessage("failed to parse protobuf message");
-  }
-
-  @Test
-  void test_readFile_error() {
-    var p = Paths.get("invalid_non_existing_file");
-    var thrown = assertThrows(StorageException.class, () -> ProtobufUtil.readFile(p, SOME_PARSER));
-    assertThat(thrown).hasMessageStartingWith("Failed to read file");
-  }
-
-  @Test
-  void test_writeFile_error() {
-    var p = Paths.get("invalid", "non_existing", "file");
-    var thrown = assertThrows(StorageException.class, () -> ProtobufUtil.writeToFile(SOME_MESSAGE, p));
-    assertThat(thrown).hasMessageStartingWith("Unable to write protocol buffer data to file");
   }
 
   @Test

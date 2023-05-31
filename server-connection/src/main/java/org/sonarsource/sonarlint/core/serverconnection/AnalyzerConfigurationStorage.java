@@ -27,11 +27,11 @@ import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 import org.sonarsource.sonarlint.core.serverconnection.storage.RWLock;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 
-import static org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil.writeToFile;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil.writeToFile;
 
 public class AnalyzerConfigurationStorage {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -69,7 +69,7 @@ public class AnalyzerConfigurationStorage {
   }
 
   private static Sonarlint.AnalyzerConfiguration readConfiguration(Path projectFilePath) {
-    return ProtobufUtil.readFile(projectFilePath, Sonarlint.AnalyzerConfiguration.parser());
+    return ProtobufFileUtil.readFile(projectFilePath, Sonarlint.AnalyzerConfiguration.parser());
   }
 
   private static AnalyzerConfiguration adapt(Sonarlint.AnalyzerConfiguration analyzerConfiguration) {

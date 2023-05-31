@@ -85,6 +85,10 @@ public class ServerHotspot {
     return status;
   }
 
+  public ServerHotspot withStatus(HotspotReviewStatus newStatus) {
+    return new ServerHotspot(key, ruleKey, message, filePath, textRange, creationDate, newStatus, vulnerabilityProbability);
+  }
+
   public VulnerabilityProbability getVulnerabilityProbability() {
     return vulnerabilityProbability;
   }

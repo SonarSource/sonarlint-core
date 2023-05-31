@@ -174,6 +174,14 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
   void syncServerTaintIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor);
 
   /**
+   * Sync server hotspots incrementally for a given project (will only work for supported servers).
+   *
+   * @param endpoint from which to download issues
+   * @param projectKey   key of the project
+   */
+  void syncServerHotspots(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor);
+
+  /**
    * Download all hotspots, regardless of their status, from a project.
    * Download will be made only for servers that return enough data to achieve local hotspot tracking.
    */

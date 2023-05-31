@@ -29,7 +29,7 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint.PluginReferences;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static java.util.Collections.emptySet;
@@ -57,7 +57,7 @@ class PluginsSynchronizerTests {
     underTest = new PluginsSynchronizer(Set.of(Language.JAVA, Language.JS), new ConnectionStorage(dest, tmp, "connectionId"), emptySet());
     var anyPluginUpdated = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), new ProgressMonitor(null));
 
-    var references = ProtobufUtil.readFile(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb"), PluginReferences.parser());
+    var references = ProtobufFileUtil.readFile(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb"), PluginReferences.parser());
     assertThat(references.getPluginsByKeyMap().values()).extracting("key", "hash", "filename")
       .containsOnly(
         tuple("java", "de5308f43260d357acc97712ce4c5475", "sonar-java-plugin-5.13.1.18282.jar"),
@@ -101,7 +101,7 @@ class PluginsSynchronizerTests {
 
     var anyPluginUpdated = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), new ProgressMonitor(null));
 
-    var references = ProtobufUtil.readFile(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb"), PluginReferences.parser());
+    var references = ProtobufFileUtil.readFile(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb"), PluginReferences.parser());
     assertThat(references.getPluginsByKeyMap().values()).extracting("key", "hash", "filename")
       .containsOnly(
         tuple("java", "79dba9cab72d8d31767f47c03d169598", "sonar-java-plugin-5.14.0.18485.jar"));
@@ -177,7 +177,7 @@ class PluginsSynchronizerTests {
     underTest = new PluginsSynchronizer(Set.of(Language.JS), new ConnectionStorage(dest, tmp, "connectionId"), emptySet());
     var anyPluginUpdated = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), new ProgressMonitor(null));
 
-    var references = ProtobufUtil.readFile(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb"), PluginReferences.parser());
+    var references = ProtobufFileUtil.readFile(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb"), PluginReferences.parser());
     assertThat(references.getPluginsByKeyMap().values()).extracting("key", "hash", "filename")
       .containsOnly(
         tuple("java-custom", "de5308f43260d357acc97712ce4c5475", "java-custom-plugin-4.3.0.1456.jar"));
@@ -197,7 +197,7 @@ class PluginsSynchronizerTests {
     underTest = new PluginsSynchronizer(Set.of(Language.TS), new ConnectionStorage(dest, tmp, "connectionId"), emptySet());
     var anyPluginUpdated = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), new ProgressMonitor(null));
 
-    var references = ProtobufUtil.readFile(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb"), PluginReferences.parser());
+    var references = ProtobufFileUtil.readFile(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb"), PluginReferences.parser());
     assertThat(references.getPluginsByKeyMap().values()).extracting("key", "hash", "filename")
       .containsOnly(
         tuple("typescript", "de5308f43260d357acc97712ce4c5475", "sonar-typescript-plugin-1.9.0.3766.jar"));

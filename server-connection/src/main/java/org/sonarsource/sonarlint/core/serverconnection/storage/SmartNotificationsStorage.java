@@ -26,7 +26,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 
-import static org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil.writeToFile;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil.writeToFile;
 
 public class SmartNotificationsStorage {
 
@@ -48,7 +48,7 @@ public class SmartNotificationsStorage {
 
   public Optional<Long> readLastEventPolling() {
     return rwLock.read(() -> Files.exists(storageFilePath) ?
-      Optional.of(adapt(ProtobufUtil.readFile(storageFilePath, Sonarlint.LastEventPolling.parser()))) : Optional.empty());
+      Optional.of(adapt(ProtobufFileUtil.readFile(storageFilePath, Sonarlint.LastEventPolling.parser()))) : Optional.empty());
   }
 
   private static Sonarlint.LastEventPolling adapt(Long lastEventPolling) {

@@ -37,7 +37,7 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Qualityprofil
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Settings;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static java.util.Collections.emptySet;
@@ -76,7 +76,7 @@ class LocalStorageSynchronizerTests {
 
     var analyzerConfigFile = tmpDir.resolve("636f6e6e656374696f6e4964/projects/70726f6a6563744b6579/analyzer_config.pb");
     assertThat(analyzerConfigFile).exists();
-    var analyzerConfiguration = ProtobufUtil.readFile(analyzerConfigFile, Sonarlint.AnalyzerConfiguration.parser());
+    var analyzerConfiguration = ProtobufFileUtil.readFile(analyzerConfigFile, Sonarlint.AnalyzerConfiguration.parser());
     assertThat(analyzerConfiguration.getSettingsMap()).containsEntry("settingKey", "settingValue");
     var ruleSetsByLanguageKeyMap = analyzerConfiguration.getRuleSetsByLanguageKeyMap();
     assertThat(ruleSetsByLanguageKeyMap).containsKey(Language.JS.getLanguageKey());
@@ -90,7 +90,7 @@ class LocalStorageSynchronizerTests {
 
     var projectBranchesFile = tmpDir.resolve("636f6e6e656374696f6e4964/projects/70726f6a6563744b6579/project_branches.pb");
     assertThat(projectBranchesFile).exists();
-    var projectBranches = ProtobufUtil.readFile(projectBranchesFile, Sonarlint.ProjectBranches.parser());
+    var projectBranches = ProtobufFileUtil.readFile(projectBranchesFile, Sonarlint.ProjectBranches.parser());
     assertThat(projectBranches.getBranchNameList()).containsExactlyInAnyOrder("master", "feature/foo");
     assertThat(projectBranches.getMainBranchName()).isEqualTo("master");
   }
@@ -99,7 +99,7 @@ class LocalStorageSynchronizerTests {
   void should_synchronize_a_ruleset_if_missing_language(@TempDir Path tmpDir) {
     var storageFile = tmpDir.resolve("636f6e6e656374696f6e4964/projects/70726f6a6563744b6579/analyzer_config.pb");
     FileUtils.mkdirs(storageFile.getParent());
-    ProtobufUtil.writeToFile(Sonarlint.AnalyzerConfiguration.newBuilder()
+    ProtobufFileUtil.writeToFile(Sonarlint.AnalyzerConfiguration.newBuilder()
       .setSchemaVersion(AnalyzerConfiguration.CURRENT_SCHEMA_VERSION)
       // js is not part of profiles in the storage, so it should be sync
       .putAllRuleSetsByLanguageKey(Map.of(Language.JAVA.getLanguageKey(), Sonarlint.RuleSet.newBuilder()
@@ -119,7 +119,7 @@ class LocalStorageSynchronizerTests {
     synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor);
 
     assertThat(storageFile).exists();
-    var analyzerConfiguration = ProtobufUtil.readFile(storageFile, Sonarlint.AnalyzerConfiguration.parser());
+    var analyzerConfiguration = ProtobufFileUtil.readFile(storageFile, Sonarlint.AnalyzerConfiguration.parser());
     var ruleSetsByLanguageKeyMap = analyzerConfiguration.getRuleSetsByLanguageKeyMap();
     assertThat(ruleSetsByLanguageKeyMap).containsOnlyKeys(Language.JS.getLanguageKey(), Language.JAVA.getLanguageKey());
     var ruleSetJs = ruleSetsByLanguageKeyMap.get(Language.JS.getLanguageKey());
@@ -132,7 +132,7 @@ class LocalStorageSynchronizerTests {
   void should_not_synchronize_up_to_date_ruleset(@TempDir Path tmpDir) {
     var storageFile = tmpDir.resolve("636f6e6e656374696f6e4964/projects/70726f6a6563744b6579/analyzer_config.pb");
     FileUtils.mkdirs(storageFile.getParent());
-    ProtobufUtil.writeToFile(Sonarlint.AnalyzerConfiguration.newBuilder()
+    ProtobufFileUtil.writeToFile(Sonarlint.AnalyzerConfiguration.newBuilder()
       .setSchemaVersion(AnalyzerConfiguration.CURRENT_SCHEMA_VERSION)
       .putAllRuleSetsByLanguageKey(Map.of(Language.JAVA.getLanguageKey(), Sonarlint.RuleSet.newBuilder()
         .setLastModified(DATE_T0)
@@ -153,7 +153,7 @@ class LocalStorageSynchronizerTests {
     synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor);
 
     assertThat(storageFile).exists();
-    var analyzerConfiguration = ProtobufUtil.readFile(storageFile, Sonarlint.AnalyzerConfiguration.parser());
+    var analyzerConfiguration = ProtobufFileUtil.readFile(storageFile, Sonarlint.AnalyzerConfiguration.parser());
     var ruleSetsByLanguageKeyMap = analyzerConfiguration.getRuleSetsByLanguageKeyMap();
     assertThat(ruleSetsByLanguageKeyMap).containsOnlyKeys(Language.JS.getLanguageKey(), Language.JAVA.getLanguageKey());
     var ruleSetJs = ruleSetsByLanguageKeyMap.get(Language.JS.getLanguageKey());
@@ -166,7 +166,7 @@ class LocalStorageSynchronizerTests {
   void should_force_synchronization_of_outdated_ruleset(@TempDir Path tmpDir) {
     var storageFile = tmpDir.resolve("636f6e6e656374696f6e4964/projects/70726f6a6563744b6579/analyzer_config.pb");
     FileUtils.mkdirs(storageFile.getParent());
-    ProtobufUtil.writeToFile(Sonarlint.AnalyzerConfiguration.newBuilder()
+    ProtobufFileUtil.writeToFile(Sonarlint.AnalyzerConfiguration.newBuilder()
       // No schema version defined, this is equivalent to "0"
       .putAllRuleSetsByLanguageKey(Map.of(Language.JS.getLanguageKey(), Sonarlint.RuleSet.newBuilder()
         .setLastModified(DATE_T0)
@@ -183,7 +183,7 @@ class LocalStorageSynchronizerTests {
     synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor);
 
     assertThat(storageFile).exists();
-    var analyzerConfiguration = ProtobufUtil.readFile(storageFile, Sonarlint.AnalyzerConfiguration.parser());
+    var analyzerConfiguration = ProtobufFileUtil.readFile(storageFile, Sonarlint.AnalyzerConfiguration.parser());
     var ruleSetsByLanguageKeyMap = analyzerConfiguration.getRuleSetsByLanguageKeyMap();
     assertThat(ruleSetsByLanguageKeyMap).containsKey(Language.JS.getLanguageKey());
     var ruleSet = ruleSetsByLanguageKeyMap.get(Language.JS.getLanguageKey());

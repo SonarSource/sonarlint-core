@@ -31,7 +31,7 @@ import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -64,7 +64,7 @@ class ProjectStorageUpdateExecutorTests {
     when(projectFileListDownloader.get(eq(serverApi), eq("rootModule"), any(ProgressMonitor.class))).thenReturn(fileList);
     underTest.updateComponents(serverApi, "rootModule", tempDir, mock(ProgressMonitor.class));
 
-    var components = ProtobufUtil.readFile(tempDir.resolve(ComponentsStorage.COMPONENT_LIST_PB), Sonarlint.ProjectComponents.parser());
+    var components = ProtobufFileUtil.readFile(tempDir.resolve(ComponentsStorage.COMPONENT_LIST_PB), Sonarlint.ProjectComponents.parser());
     assertThat(components.getComponentList()).containsOnly(
       "pom.xml", "A/a.java", "B/b.java");
   }
@@ -83,7 +83,7 @@ class ProjectStorageUpdateExecutorTests {
     when(projectFileListDownloader.get(eq(serverApi), eq("rootModule"), any(ProgressMonitor.class))).thenReturn(fileList);
     underTest.update(serverApi, "rootModule", mock(ProgressMonitor.class));
 
-    var components = ProtobufUtil.readFile(storagePath.resolve("636f6e6e656374696f6e4964/projects/726f6f744d6f64756c65/" + ComponentsStorage.COMPONENT_LIST_PB), Sonarlint.ProjectComponents.parser());
+    var components = ProtobufFileUtil.readFile(storagePath.resolve("636f6e6e656374696f6e4964/projects/726f6f744d6f64756c65/" + ComponentsStorage.COMPONENT_LIST_PB), Sonarlint.ProjectComponents.parser());
     assertThat(components.getComponentList()).containsOnly(
       "pom.xml", "A/a.java", "B/b.java");
   }

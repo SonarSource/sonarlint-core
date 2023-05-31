@@ -19,13 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,15 +53,17 @@ class ServerHotspotUpdaterTest {
 
   private ServerHotspotUpdater updater;
   private HotspotApi hotspotApi;
+  private HotspotDownloader hotspotDownloader;
 
   @BeforeEach
   void setUp() {
     hotspotApi = mock(HotspotApi.class);
+    hotspotDownloader = mock(HotspotDownloader.class);
     ConnectionStorage storage = mock(ConnectionStorage.class);
     var projectStorage = mock(SonarProjectStorage.class);
     when(storage.project(PROJECT_KEY)).thenReturn(projectStorage);
     when(projectStorage.findings()).thenReturn(issueStore);
-    updater = new ServerHotspotUpdater(storage);
+    updater = new ServerHotspotUpdater(storage, hotspotDownloader);
   }
 
   @Test
@@ -107,5 +115,22 @@ class ServerHotspotUpdaterTest {
     updater.updateForFile(hotspotApi, projectBinding, "filePath", "branch", () -> null);
 
     verify(issueStore).replaceAllHotspotsOfFile("branch", "filePath", hotspots);
+  }
+
+  @Test
+  void should_sync_hotspots() {
+    var timestamp = Instant.ofEpochMilli(123456789L);
+    var hotspotKey = "hotspotKey";
+    var hotspots = List.of(aServerHotspot(hotspotKey));
+    when(hotspotDownloader.downloadFromPull(hotspotApi, PROJECT_KEY, "branch", Optional.empty()))
+      .thenReturn(new HotspotDownloader.PullResult(timestamp, hotspots, Set.of()));
+
+    updater.sync(hotspotApi, PROJECT_KEY, "branch");
+
+    var hotspotCaptor = ArgumentCaptor.forClass(List.class);
+    verify(issueStore).mergeHotspots(eq("branch"), hotspotCaptor.capture(), eq(Set.of()), eq(timestamp));
+    assertThat(hotspotCaptor.getValue()).hasSize(1);
+    var capturedHotspot = (ServerHotspot) (hotspotCaptor.getValue().get(0));
+    assertThat(capturedHotspot.getKey()).isEqualTo(hotspotKey);
   }
 }

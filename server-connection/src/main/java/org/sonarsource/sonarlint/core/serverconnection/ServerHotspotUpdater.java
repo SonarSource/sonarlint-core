@@ -30,9 +30,11 @@ public class ServerHotspotUpdater {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final ConnectionStorage storage;
+  private final HotspotDownloader hotspotDownloader;
 
-  public ServerHotspotUpdater(ConnectionStorage storage) {
+  public ServerHotspotUpdater(ConnectionStorage storage, HotspotDownloader hotspotDownloader) {
     this.storage = storage;
+    this.hotspotDownloader = hotspotDownloader;
   }
 
   public void updateAll(HotspotApi hotspotApi, String projectKey, String branchName, Supplier<Version> serverVersionSupplier, ProgressMonitor progress) {
@@ -56,5 +58,11 @@ public class ServerHotspotUpdater {
     } else {
       LOG.info("Skip downloading hotspots for file, not supported");
     }
+  }
+
+  public void sync(HotspotApi hotspotApi, String projectKey, String branchName) {
+    var lastSync = storage.project(projectKey).findings().getLastHotspotSyncTimestamp(branchName);
+    var result = hotspotDownloader.downloadFromPull(hotspotApi, projectKey, branchName, lastSync);
+    storage.project(projectKey).findings().mergeHotspots(branchName, result.getChangedHotspots(), result.getClosedHotspotKeys(), result.getQueryTimestamp());
   }
 }

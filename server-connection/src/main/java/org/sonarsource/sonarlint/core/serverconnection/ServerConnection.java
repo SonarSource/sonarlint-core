@@ -86,7 +86,7 @@ public class ServerConnection {
     this.storage = storageFacade.connection(connectionId);
     this.issueStoreReader = new IssueStoreReader(storage);
     this.issuesUpdater = new ServerIssueUpdater(storage, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
-    this.hotspotsUpdater = new ServerHotspotUpdater(storage);
+    this.hotspotsUpdater = new ServerHotspotUpdater(storage, new HotspotDownloader(enabledLanguagesToSync));
     serverInfoSynchronizer = new ServerInfoSynchronizer(storage);
     this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguagesToSync, embeddedPluginKeys, serverInfoSynchronizer, storage);
     this.projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(storage);
@@ -239,6 +239,21 @@ public class ServerConnection {
       LOG.debug("Incremental taint issue sync is not supported. Skipping.");
     }
   }
+
+  public void syncServerHotspotsForProject(EndpointParams endpoint, HttpClient client, String projectKey, String branchName) {
+    syncServerHotspotsForProject(new ServerApi(new ServerApiHelper(endpoint, client)), projectKey, branchName);
+  }
+
+  public void syncServerHotspotsForProject(ServerApi serverApi, String projectKey, String branchName) {
+    var serverVersion = readOrSynchronizeServerVersion(serverApi);
+    if (HotspotApi.supportHotspotsPull(isSonarCloud, serverVersion)) {
+      LOG.info("[SYNC] Synchronizing hotspots for project '{}' on branch '{}'", projectKey, branchName);
+      hotspotsUpdater.sync(serverApi.hotspot(), projectKey, branchName);
+    } else {
+      LOG.debug("Incremental hotspot sync is not supported. Skipping.");
+    }
+  }
+
 
   public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, ProgressMonitor monitor) {
     projectStorageUpdateExecutor.update(new ServerApi(new ServerApiHelper(endpoint, client)), projectKey, monitor);

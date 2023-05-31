@@ -26,7 +26,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 
 public class ProjectStorageUpdateExecutor {
   private final ProjectFileListDownloader projectFileListDownloader;
@@ -49,9 +49,7 @@ public class ProjectStorageUpdateExecutor {
       throw new IllegalStateException("Unable to create temp directory", e);
     }
     try {
-      FileUtils.replaceDir(dir -> {
-        updateComponents(serverApi, projectKey, dir, progress);
-      }, storage.project(projectKey).filePath(), temp);
+      FileUtils.replaceDir(dir -> updateComponents(serverApi, projectKey, dir, progress), storage.project(projectKey).filePath(), temp);
     } finally {
       org.apache.commons.io.FileUtils.deleteQuietly(temp.toFile());
     }
@@ -66,7 +64,7 @@ public class ProjectStorageUpdateExecutor {
       var relativePath = fileKey.substring(separatorIdx + 1);
       componentsBuilder.addComponent(relativePath);
     }
-    ProtobufUtil.writeToFile(componentsBuilder.build(), temp.resolve(ComponentsStorage.COMPONENT_LIST_PB));
+    ProtobufFileUtil.writeToFile(componentsBuilder.build(), temp.resolve(ComponentsStorage.COMPONENT_LIST_PB));
   }
 
 }

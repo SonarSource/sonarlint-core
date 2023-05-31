@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Server Connection
+ * SonarLint Core - Server API
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection.storage;
+package org.sonarsource.sonarlint.core.serverapi.util;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
@@ -25,30 +25,12 @@ import com.google.protobuf.Parser;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ProtobufUtil {
   private ProtobufUtil() {
     // only static stuff
-  }
-
-  public static <T extends Message> T readFile(Path file, Parser<T> parser) {
-    try (var input = Files.newInputStream(file)) {
-      return parser.parseFrom(input);
-    } catch (IOException e) {
-      throw new StorageException("Failed to read file: " + file, e);
-    }
-  }
-
-  public static void writeToFile(Message message, Path toFile) {
-    try (var out = Files.newOutputStream(toFile)) {
-      message.writeTo(out);
-    } catch (IOException e) {
-      throw new StorageException("Unable to write protocol buffer data to file " + toFile, e);
-    }
   }
 
   public static <T extends Message> List<T> readMessages(InputStream input, Parser<T> parser) {

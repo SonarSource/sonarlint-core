@@ -17,21 +17,32 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection;
+package org.sonarsource.sonarlint.core.serverconnection.storage;
 
+import com.google.protobuf.Message;
+import com.google.protobuf.Parser;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 
-public class ComponentsStorage {
-  public static final String COMPONENT_LIST_PB = "component_list.pb";
-  private final Path storageFilePath;
-
-  public ComponentsStorage(Path projectStorageRoot) {
-    this.storageFilePath = projectStorageRoot.resolve(COMPONENT_LIST_PB);
+public class ProtobufFileUtil {
+  private ProtobufFileUtil() {
+    // only static stuff
   }
 
-  public Sonarlint.ProjectComponents read() {
-    return ProtobufFileUtil.readFile(storageFilePath, Sonarlint.ProjectComponents.parser());
+  public static <T extends Message> T readFile(Path file, Parser<T> parser) {
+    try (var input = Files.newInputStream(file)) {
+      return parser.parseFrom(input);
+    } catch (IOException e) {
+      throw new StorageException("Failed to read file: " + file, e);
+    }
+  }
+
+  public static void writeToFile(Message message, Path toFile) {
+    try (var out = Files.newOutputStream(toFile)) {
+      message.writeTo(out);
+    } catch (IOException e) {
+      throw new StorageException("Unable to write protocol buffer data to file " + toFile, e);
+    }
   }
 }

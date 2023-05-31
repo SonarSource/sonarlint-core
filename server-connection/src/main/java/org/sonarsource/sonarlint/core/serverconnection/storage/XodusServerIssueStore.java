@@ -56,6 +56,7 @@ import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
+import org.sonarsource.sonarlint.core.serverapi.util.ProtobufUtil;
 import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
@@ -111,6 +112,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private static final String NAME_PROPERTY_NAME = "name";
   private static final String LAST_ISSUE_SYNC_PROPERTY_NAME = "lastIssueSync";
   private static final String LAST_TAINT_SYNC_PROPERTY_NAME = "lastTaintSync";
+  private static final String LAST_HOTSPOT_SYNC_PROPERTY_NAME = "lastHotspotSync";
   private static final String VERSION_PROPERTY_NAME = "version";
 
   private static final String MESSAGE_BLOB_NAME = "message";
@@ -335,6 +337,21 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
+  public void mergeHotspots(String branchName, List<ServerHotspot> hotspotsToMerge, Set<String> closedHotspotKeysToDelete, Instant syncTimestamp) {
+    var hotspotsByFilePath = hotspotsToMerge.stream().collect(Collectors.groupingBy(ServerHotspot::getFilePath));
+    timed("Merged " + hotspotsToMerge.size() + " issues in store. Closed " + closedHotspotKeysToDelete.size() + ".", () -> entityStore.executeInTransaction(txn -> {
+      var branch = getOrCreateBranch(branchName, txn);
+      hotspotsByFilePath.forEach((filePath, hotspots) -> {
+        var fileEntity = getOrCreateFile(branch, filePath, txn);
+        hotspots.forEach(hotspot -> updateOrCreateHotspot(fileEntity, hotspot, txn));
+        txn.flush();
+      });
+      closedHotspotKeysToDelete.forEach(hotspotKey -> removeHotspot(hotspotKey, txn));
+      branch.setProperty(LAST_HOTSPOT_SYNC_PROPERTY_NAME, syncTimestamp);
+    }));
+  }
+
+  @Override
   public Optional<Instant> getLastIssueSyncTimestamp(String branchName) {
     return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
       .map(branch -> (Instant) branch.getProperty(LAST_ISSUE_SYNC_PROPERTY_NAME)));
@@ -344,6 +361,12 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   public Optional<Instant> getLastTaintSyncTimestamp(String branchName) {
     return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
       .map(branch -> (Instant) branch.getProperty(LAST_TAINT_SYNC_PROPERTY_NAME)));
+  }
+
+  @Override
+  public Optional<Instant> getLastHotspotSyncTimestamp(String branchName) {
+    return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
+      .map(branch -> (Instant) branch.getProperty(LAST_HOTSPOT_SYNC_PROPERTY_NAME)));
   }
 
   @Override
@@ -604,6 +627,18 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
         }
         issueEntity.deleteLinks(TAINT_ISSUE_TO_BRANCH_LINK_NAME);
         issueEntity.delete();
+      });
+  }
+
+  private static void removeHotspot(String hotspotKey, @NotNull StoreTransaction txn) {
+    findUnique(txn, HOTSPOT_ENTITY_TYPE, KEY_PROPERTY_NAME, hotspotKey)
+      .ifPresent(hotspotEntity -> {
+        var fileEntity = hotspotEntity.getLink(ISSUE_TO_FILE_LINK_NAME);
+        if (fileEntity != null) {
+          fileEntity.deleteLink(FILE_TO_HOTSPOTS_LINK_NAME, hotspotEntity);
+        }
+        hotspotEntity.deleteLinks(ISSUE_TO_FILE_LINK_NAME);
+        hotspotEntity.delete();
       });
   }
 

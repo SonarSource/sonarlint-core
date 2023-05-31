@@ -23,13 +23,16 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
@@ -37,6 +40,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
+import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
@@ -44,6 +48,7 @@ import org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils;
 
 import static org.sonarsource.sonarlint.core.commons.http.HttpClient.FORM_URL_ENCODED_CONTENT_TYPE;
 import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
+import static org.sonarsource.sonarlint.core.serverapi.util.ProtobufUtil.readMessages;
 
 public class HotspotApi {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -51,9 +56,12 @@ public class HotspotApi {
   // the rule key is returned only on SQ, since 9.7
   // without that info, hotspot tracking is almost impossible
   public static final Version TRACKING_COMPATIBLE_MIN_SQ_VERSION = Version.create("9.7");
+  public static final Version MIN_SQ_VERSION_SUPPORTING_PULL = Version.create("10.1");
 
   private static final String HOTSPOTS_SEARCH_API_URL = "/api/hotspots/search.protobuf";
   private static final String HOTSPOTS_SHOW_API_URL = "/api/hotspots/show.protobuf";
+  private static final String HOTSPOTS_PULL_API_URL = "/api/hotspots/pull";
+  private static final String PROJECT_KEY_QUERY_PARAM = "?projectKey=";
 
   private final ServerApiHelper helper;
 
@@ -90,6 +98,60 @@ public class HotspotApi {
     return searchHotspots(getSearchUrl(projectKey, filePath, branchName), new ProgressMonitor(null));
   }
 
+  public HotspotApi.HotspotsPullResult pullHotspots(String projectKey, String branchName, Set<Language> enabledLanguages, @Nullable Long changedSince) {
+    return ServerApiHelper.processTimed(
+      () -> helper.get(getPullHotspotsUrl(projectKey, branchName, enabledLanguages, changedSince)),
+      response -> {
+        var input = response.bodyAsStream();
+        var timestamp = Hotspots.HotspotPullQueryTimestamp.parseDelimitedFrom(input);
+        return new HotspotApi.HotspotsPullResult(timestamp, readMessages(input, Hotspots.HotspotLite.parser()));
+      },
+      duration -> LOG.debug("Pulled issues in {}ms", duration));
+  }
+
+  public static class HotspotsPullResult {
+    private final Hotspots.HotspotPullQueryTimestamp timestamp;
+    private final List<Hotspots.HotspotLite> hotspots;
+
+    public HotspotsPullResult(Hotspots.HotspotPullQueryTimestamp timestamp, List<Hotspots.HotspotLite> hotspots) {
+      this.timestamp = timestamp;
+      this.hotspots = hotspots;
+    }
+
+    public Hotspots.HotspotPullQueryTimestamp getTimestamp() {
+      return timestamp;
+    }
+
+    public List<Hotspots.HotspotLite> getHotspots() {
+      return hotspots;
+    }
+  }
+
+  private static String getPullHotspotsUrl(String projectKey, String branchName, Set<Language> enabledLanguages, @Nullable Long changedSince) {
+    var enabledLanguageKeys = enabledLanguages.stream().map(Language::getLanguageKey).collect(Collectors.joining(","));
+    var url = new StringBuilder()
+      .append(HOTSPOTS_PULL_API_URL)
+      .append(PROJECT_KEY_QUERY_PARAM)
+      .append(UrlUtils.urlEncode(projectKey))
+      .append("&branchName=")
+      .append(UrlUtils.urlEncode(branchName));
+    if (!enabledLanguageKeys.isEmpty()) {
+      url.append("&languages=").append(enabledLanguageKeys);
+    }
+    if (changedSince != null) {
+      url.append("&changedSince=").append(changedSince);
+    }
+    return url.toString();
+  }
+
+  public boolean supportHotspotsPull(Supplier<Version> serverVersion) {
+    return supportHotspotsPull(helper.isSonarCloud(), serverVersion.get());
+  }
+
+  public static boolean supportHotspotsPull(boolean isSonarCloud, Version serverVersion) {
+    return !isSonarCloud && serverVersion.compareToIgnoreQualifier(HotspotApi.MIN_SQ_VERSION_SUPPORTING_PULL) >= 0;
+  }
+
   private Collection<ServerHotspot> searchHotspots(String searchUrl, ProgressMonitor progress) {
     Collection<ServerHotspot> hotspots = new ArrayList<>();
     Map<String, String> componentPathsByKey = new HashMap<>();
@@ -117,7 +179,7 @@ public class HotspotApi {
 
   private static String getSearchUrl(String projectKey, @Nullable String filePath, String branchName) {
     return HOTSPOTS_SEARCH_API_URL
-      + "?projectKey=" + urlEncode(projectKey)
+      + PROJECT_KEY_QUERY_PARAM + urlEncode(projectKey)
       + (filePath != null ? ("&files=" + urlEncode(filePath)) : "")
       + "&branch=" + urlEncode(branchName);
   }
@@ -188,20 +250,8 @@ public class HotspotApi {
 
   private static HotspotReviewStatus getStatus(Hotspots.SearchWsResponse.Hotspot hotspot) {
     var status = hotspot.getStatus();
-    if ("REVIEWED".equals(status) && hotspot.hasResolution()) {
-      var resolution = hotspot.getResolution();
-      switch (resolution) {
-        case "SAFE":
-          return HotspotReviewStatus.SAFE;
-        case "FIXED":
-          return HotspotReviewStatus.FIXED;
-        case "ACKNOWLEDGED":
-          return HotspotReviewStatus.ACKNOWLEDGED;
-        default:
-          LOG.error("Unknown hotspot resolution '" + resolution + "', will default to 'TO_REVIEW'");
-      }
-    }
-    return HotspotReviewStatus.TO_REVIEW;
+    var resolution = hotspot.hasResolution() ? hotspot.getResolution() : null;
+    return HotspotReviewStatus.fromStatusAndResolution(status, resolution);
   }
 
   private static String getShowUrl(String hotspotKey) {

@@ -37,6 +37,7 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
 import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
@@ -624,6 +625,47 @@ class XodusServerIssueStoreTests {
     assertThat(hotspots)
       .extracting("key", "filePath")
       .containsOnly(tuple("newHotspot", "new/path"));
+  }
+
+  @Test
+  void should_remove_closed_hotspots_by_key_when_merging() {
+    store.replaceAllHotspotsOfBranch("branch", List.of(
+      aServerHotspot("key1"),
+      aServerHotspot("key2"),
+      aServerHotspot("key3")));
+
+    store.mergeHotspots("branch", List.of(), Set.of("key1", "key3"), Instant.now());
+
+    assertThat(store.loadHotspots("branch", "file/path"))
+      .extracting(ServerHotspot::getKey)
+      .containsOnly("key2");
+  }
+
+  @Test
+  void should_add_new_hotspots_when_merging() {
+    store.mergeHotspots("branch", List.of(
+      aServerHotspot("key1"),
+      aServerHotspot("key2"),
+      aServerHotspot("key3")), Set.of(), Instant.now());
+
+    assertThat(store.loadHotspots("branch", "file/path"))
+      .extracting(ServerHotspot::getKey)
+      .containsOnly("key1", "key2", "key3");
+  }
+
+  @Test
+  void should_update_existing_hotspots_when_merging() {
+    store.replaceAllHotspotsOfBranch("branch", List.of(
+      aServerHotspot("key1"),
+      aServerHotspot("key2")));
+
+    store.mergeHotspots("branch", List.of(
+      aServerHotspot("key1"),
+      aServerHotspot("key2").withStatus(HotspotReviewStatus.SAFE)), Set.of(), Instant.now());
+
+    assertThat(store.loadHotspots("branch", "file/path"))
+      .extracting(ServerHotspot::getKey, ServerHotspot::getStatus)
+      .containsOnly(tuple("key1", HotspotReviewStatus.TO_REVIEW), tuple("key2", HotspotReviewStatus.SAFE));
   }
 
   @Test

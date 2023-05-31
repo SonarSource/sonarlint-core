@@ -27,7 +27,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
 import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 import org.sonarsource.sonarlint.core.smartnotifications.LastEventPolling;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,7 +44,7 @@ class LastEventPollingTest {
   void should_retrieve_stored_last_event_polling(@TempDir Path tmpDir) {
     var storageFile = tmpDir.resolve(encodeForFs(CONNECTION_ID)).resolve("projects").resolve(encodeForFs(PROJECT_KEY)).resolve(FILE_NAME);
     FileUtils.mkdirs(storageFile.getParent());
-    ProtobufUtil.writeToFile(Sonarlint.LastEventPolling.newBuilder()
+    ProtobufFileUtil.writeToFile(Sonarlint.LastEventPolling.newBuilder()
       .setLastEventPolling(STORED_DATE.toInstant().toEpochMilli())
       .build(), storageFile);
     var storage = new StorageService();

@@ -54,11 +54,11 @@ public class PluginsStorage {
       FileUtils.copyInputStreamToFile(pluginBinary, rootPath.resolve(plugin.getFilename()).toFile());
       var reference = adapt(plugin);
       rwLock.write(() -> {
-        var references = Files.exists(pluginReferencesFilePath) ? ProtobufUtil.readFile(pluginReferencesFilePath, Sonarlint.PluginReferences.parser())
+        var references = Files.exists(pluginReferencesFilePath) ? ProtobufFileUtil.readFile(pluginReferencesFilePath, Sonarlint.PluginReferences.parser())
           : Sonarlint.PluginReferences.newBuilder().build();
         var currentReferences = Sonarlint.PluginReferences.newBuilder(references);
         currentReferences.putPluginsByKey(plugin.getKey(), reference);
-        ProtobufUtil.writeToFile(currentReferences.build(), pluginReferencesFilePath);
+        ProtobufFileUtil.writeToFile(currentReferences.build(), pluginReferencesFilePath);
       });
     } catch (IOException e) {
       // XXX should we stop the whole sync ? just continue and log ?
@@ -67,7 +67,7 @@ public class PluginsStorage {
   }
 
   public List<StoredPlugin> getStoredPlugins() {
-    return rwLock.read(() -> Files.exists(pluginReferencesFilePath) ? ProtobufUtil.readFile(pluginReferencesFilePath, Sonarlint.PluginReferences.parser())
+    return rwLock.read(() -> Files.exists(pluginReferencesFilePath) ? ProtobufFileUtil.readFile(pluginReferencesFilePath, Sonarlint.PluginReferences.parser())
       : Sonarlint.PluginReferences.newBuilder().build()).getPluginsByKeyMap().values().stream().map(this::adapt).collect(Collectors.toList());
   }
 
