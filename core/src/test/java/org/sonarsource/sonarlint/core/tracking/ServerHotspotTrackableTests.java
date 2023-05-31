@@ -35,7 +35,8 @@ class ServerHotspotTrackableTests {
   @Test
   void should_delegate_fields_to_server_issue() {
     var creationDate = Instant.now();
-    var trackable = new ServerHotspotTrackable(new ServerHotspot("key", "ruleKey", "message", "filePath", new TextRangeWithHash(1, 2, 3, 4, ""), creationDate, HotspotReviewStatus.SAFE, VulnerabilityProbability.LOW, null));
+    var textRange = new TextRangeWithHash(1, 2, 3, 4, "realHash");
+    var trackable = new ServerHotspotTrackable(new ServerHotspot("key", "ruleKey", "message", "filePath", textRange, creationDate, HotspotReviewStatus.SAFE, VulnerabilityProbability.LOW, null));
 
     assertThat(trackable.getServerIssueKey()).isEqualTo("key");
     assertThat(trackable.getMessage()).isEqualTo("message");
@@ -46,7 +47,7 @@ class ServerHotspotTrackableTests {
     assertThat(trackable.getSeverity()).isNull();
     assertThat(trackable.getLine()).isEqualTo(1);
     assertThat(trackable.getType()).isEqualTo(RuleType.SECURITY_HOTSPOT);
-    assertThat(trackable.getTextRange()).isNull();
+    assertThat(trackable.getTextRange()).isEqualTo(textRange);
     assertThat(trackable.getReviewStatus()).isEqualTo(HotspotReviewStatus.SAFE);
   }
 }
