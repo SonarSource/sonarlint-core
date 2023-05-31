@@ -250,7 +250,7 @@ public class ServerConnection {
       LOG.info("[SYNC] Synchronizing hotspots for project '{}' on branch '{}'", projectKey, branchName);
       hotspotsUpdater.sync(serverApi.hotspot(), projectKey, branchName);
     } else {
-      LOG.debug("Incremental issue sync is not supported. Skipping.");
+      LOG.debug("Incremental hotspot sync is not supported. Skipping.");
     }
   }
 

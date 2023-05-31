@@ -365,7 +365,8 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
 
   @Override
   public Optional<Instant> getLastHotspotSyncTimestamp(String branchName) {
-    return Optional.empty();
+    return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
+      .map(branch -> (Instant) branch.getProperty(LAST_HOTSPOT_SYNC_PROPERTY_NAME)));
   }
 
   @Override
