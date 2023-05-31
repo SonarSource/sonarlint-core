@@ -238,7 +238,12 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     var endLine = (Integer) storedHotspot.getProperty(END_LINE_PROPERTY_NAME);
     var endLineOffset = (Integer) storedHotspot.getProperty(END_LINE_OFFSET_PROPERTY_NAME);
     var hash = (String) storedHotspot.getProperty(RANGE_HASH_PROPERTY_NAME);
-    var textRangeWithHash = new TextRangeWithHash(startLine, startLineOffset, endLine, endLineOffset, hash);
+    org.sonarsource.sonarlint.core.commons.TextRange textRange;
+    if(hash != null && !hash.isEmpty()) {
+      textRange = new TextRangeWithHash(startLine, startLineOffset, endLine, endLineOffset, hash);
+    } else {
+      textRange = new org.sonarsource.sonarlint.core.commons.TextRange(startLine, startLineOffset, endLine, endLineOffset);
+    }
     var vulnerabilityProbability = VulnerabilityProbability.valueOf((String) storedHotspot.getProperty(VULNERABILITY_PROBABILITY_PROPERTY_NAME));
     var assignee = (String) storedHotspot.getProperty(ASSIGNEE_PROPERTY_NAME);
     var status = (HotspotReviewStatus) storedHotspot.getProperty(REVIEW_STATUS_PROPERTY_NAME);
@@ -252,7 +257,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       (String) requireNonNull(storedHotspot.getProperty(RULE_KEY_PROPERTY_NAME)),
       requireNonNull(storedHotspot.getBlobString(MESSAGE_BLOB_NAME)),
       filePath,
-      textRangeWithHash,
+      textRange,
       (Instant) requireNonNull(storedHotspot.getProperty(CREATION_DATE_PROPERTY_NAME)),
       status,
       vulnerabilityProbability,

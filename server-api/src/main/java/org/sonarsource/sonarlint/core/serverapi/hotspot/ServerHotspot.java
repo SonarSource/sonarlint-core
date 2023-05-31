@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.serverapi.hotspot;
 import java.time.Instant;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
-import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 
 public class ServerHotspot {
@@ -30,7 +30,7 @@ public class ServerHotspot {
   private final String ruleKey;
   private final String message;
   private String filePath;
-  private final TextRangeWithHash textRange;
+  private final TextRange textRange;
   private final Instant creationDate;
   private HotspotReviewStatus status;
   private final VulnerabilityProbability vulnerabilityProbability;
@@ -41,7 +41,7 @@ public class ServerHotspot {
     String ruleKey,
     String message,
     String filePath,
-    TextRangeWithHash textRange,
+    TextRange textRange,
     Instant creationDate,
     HotspotReviewStatus status,
     VulnerabilityProbability vulnerabilityProbability,
@@ -77,7 +77,7 @@ public class ServerHotspot {
     return filePath;
   }
 
-  public TextRangeWithHash getTextRange() {
+  public TextRange getTextRange() {
     return textRange;
   }
 
