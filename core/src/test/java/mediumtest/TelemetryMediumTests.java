@@ -19,24 +19,20 @@
  */
 package mediumtest;
 
-import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
-import mediumtest.fixtures.SonarLintBackendFixture;
+import mediumtest.fixtures.SonarLintTestBackend;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.OpenHotspotInBrowserParams;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorageManager;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class TelemetryMediumTests {
 
-  private SonarLintBackendImpl backend;
+  private SonarLintTestBackend backend;
   private String oldValue;
 
   @BeforeEach
@@ -56,10 +52,9 @@ class TelemetryMediumTests {
   }
 
   @Test
-  void it_should_not_create_telemetry_file_if_telemetry_disabled_by_system_property(@TempDir Path sonarlintUserHome) throws ExecutionException, InterruptedException {
+  void it_should_not_create_telemetry_file_if_telemetry_disabled_by_system_property() throws ExecutionException, InterruptedException {
     System.setProperty("sonarlint.telemetry.disabled", "true");
     backend = newBackend()
-      .withSonarLintUserHome(sonarlintUserHome)
       .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .build();
@@ -67,14 +62,13 @@ class TelemetryMediumTests {
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isFalse();
 
     this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "master", "ab12ef45"));
-    assertThat(sonarlintUserHome.resolve("telemetry")).doesNotExist();
+    assertThat(backend.getTelemetryFilePath()).doesNotExist();
   }
 
   @Test
-  void it_should_create_telemetry_file_if_telemetry_enabled(@TempDir Path sonarlintUserHome) throws ExecutionException, InterruptedException {
+  void it_should_create_telemetry_file_if_telemetry_enabled() throws ExecutionException, InterruptedException {
     System.clearProperty("sonarlint.telemetry.disabled");
     backend = newBackend()
-      .withSonarLintUserHome(sonarlintUserHome)
       .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .build();
@@ -82,14 +76,13 @@ class TelemetryMediumTests {
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isTrue();
 
     this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "master", "ab12ef45"));
-    assertThat(sonarlintUserHome.resolve("telemetry/mediumTests/usage")).isNotEmptyFile();
+    assertThat(backend.getTelemetryFilePath()).isNotEmptyFile();
   }
 
   @Test
-  void it_should_consider_telemetry_status_in_file(@TempDir Path sonarlintUserHome) throws ExecutionException, InterruptedException {
+  void it_should_consider_telemetry_status_in_file() throws ExecutionException, InterruptedException {
     System.clearProperty("sonarlint.telemetry.disabled");
     backend = newBackend()
-      .withSonarLintUserHome(sonarlintUserHome)
       .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .build();
@@ -98,10 +91,10 @@ class TelemetryMediumTests {
 
     // Trigger any telemetry event to initialize the file
     this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "master", "ab12ef45"));
-    assertThat(sonarlintUserHome.resolve("telemetry/mediumTests/usage")).isNotEmptyFile();
+    assertThat(backend.getTelemetryFilePath()).isNotEmptyFile();
 
     // Emulate another process has disabled telemetry
-    var telemetryLocalStorageManager = new TelemetryLocalStorageManager(TelemetryPathManager.getPath(sonarlintUserHome, SonarLintBackendFixture.MEDIUM_TESTS_PRODUCT_KEY));
+    var telemetryLocalStorageManager = new TelemetryLocalStorageManager(backend.getTelemetryFilePath());
     telemetryLocalStorageManager.tryUpdateAtomically(data -> {
       data.setEnabled(false);
     });

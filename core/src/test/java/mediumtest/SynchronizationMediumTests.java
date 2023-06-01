@@ -25,11 +25,11 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.SonarLintBackendFixture.FakeSonarLintClient.ProgressReport;
 import mediumtest.fixtures.SonarLintBackendFixture.FakeSonarLintClient.ProgressStep;
+import mediumtest.fixtures.SonarLintTestBackend;
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.branch.DidChangeActiveSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 
@@ -52,14 +52,13 @@ class SynchronizationMediumTests {
       .start();
     backend = newBackend()
       .withStorageRoot(storagePath.resolve("storage"))
-      .withSonarLintUserHome(storagePath.resolve("slHome"))
       .withSonarQubeConnection("connectionId", serverWithIssues)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "branchName")
       .withProjectSynchronization()
       .build();
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
-      assertThat(storagePath.resolve("slHome").resolve("work")).isDirectoryContaining(path -> path.getFileName().toString().contains("xodus-issue-store"));
+      assertThat(backend.getWorkDir()).isDirectoryContaining(path -> path.getFileName().toString().contains("xodus-issue-store"));
     });
   }
 
@@ -74,7 +73,6 @@ class SynchronizationMediumTests {
       .start();
     backend = newBackend()
       .withStorageRoot(storagePath.resolve("storage"))
-      .withSonarLintUserHome(storagePath.resolve("slHome"))
       .withSonarQubeConnection("connectionId", serverWithIssues)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withProjectSynchronization()
@@ -96,7 +94,6 @@ class SynchronizationMediumTests {
       .start();
     backend = newBackend()
       .withStorageRoot(storagePath.resolve("storage"))
-      .withSonarLintUserHome(storagePath.resolve("slHome"))
       .withSonarQubeConnection("connectionId", serverWithIssues)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "branchName")
       .withBoundConfigScope("configScopeId2", "connectionId", "projectKey2", "branchName2")
@@ -124,7 +121,6 @@ class SynchronizationMediumTests {
       .start();
     backend = newBackend()
       .withStorageRoot(storagePath.resolve("storage"))
-      .withSonarLintUserHome(storagePath.resolve("slHome"))
       .withSonarQubeConnection("connectionId", serverWithIssues)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "branchName")
       .withBoundConfigScope("configScopeId2", "connectionId", "projectKey2", "branchName2")
@@ -155,5 +151,5 @@ class SynchronizationMediumTests {
     backend.shutdown().get();
   }
 
-  private SonarLintBackendImpl backend;
+  private SonarLintTestBackend backend;
 }

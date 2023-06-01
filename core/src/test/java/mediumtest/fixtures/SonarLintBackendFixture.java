@@ -19,6 +19,8 @@
  */
 package mediumtest.fixtures;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -92,7 +94,6 @@ public class SonarLintBackendFixture {
     private final Set<Language> enabledLanguages = new HashSet<>();
     private final Set<Language> extraEnabledLanguagesInConnectedMode = new HashSet<>();
     private Path storageRoot = Paths.get(".");
-    private Path sonarlintUserHome = Paths.get(".");
     private boolean startEmbeddedServer;
     private boolean manageSmartNotifications;
     private boolean areSecurityHotspotsEnabled;
@@ -167,11 +168,6 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintBackendBuilder withSonarLintUserHome(Path sonarlintUserHome) {
-      this.sonarlintUserHome = sonarlintUserHome;
-      return this;
-    }
-
     public SonarLintBackendBuilder withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin plugin) {
       return withStandaloneEmbeddedPlugin(plugin)
         .withEnabledLanguage(plugin.getLanguage());
@@ -218,21 +214,19 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintBackendBuilder withTaintVulnerabilitiesDisabled() {
-      taintVulnerabilitiesEnabled = false;
-      return this;
-    }
-
     public SonarLintBackendBuilder withSmartNotifications() {
       manageSmartNotifications = true;
       return this;
     }
 
-    public SonarLintBackendImpl build(FakeSonarLintClient client) {
-      var sonarLintBackend = new SonarLintBackendImpl(client);
+    public SonarLintTestBackend build(FakeSonarLintClient client) {
+      var telemetryProductKey = "mediumTests";
+      var sonarlintUserHome = tempDirectory("slUserHome");
+      var workDir = tempDirectory("work");
+      var sonarLintBackend = new SonarLintTestBackend(client);
       client.setBackend(sonarLintBackend);
       sonarLintBackend
-        .initialize(new InitializeParams(client.getClientInfo(), MEDIUM_TESTS_PRODUCT_KEY, storageRoot, null, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
+        .initialize(new InitializeParams(client.getClientInfo(), telemetryProductKey, storageRoot, workDir, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
           enabledLanguages, extraEnabledLanguagesInConnectedMode, areSecurityHotspotsEnabled, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
           startEmbeddedServer,
           standaloneConfigByKey, manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects));
@@ -242,7 +236,15 @@ public class SonarLintBackendFixture {
       return sonarLintBackend;
     }
 
-    public SonarLintBackendImpl build() {
+    private static Path tempDirectory(String prefix) {
+      try {
+        return Files.createTempDirectory(prefix);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    public SonarLintTestBackend build() {
       return build(newFakeClient().build());
     }
   }

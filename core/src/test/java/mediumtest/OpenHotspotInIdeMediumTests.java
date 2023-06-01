@@ -19,24 +19,20 @@
  */
 package mediumtest;
 
-import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import mediumtest.fixtures.ServerFixture;
-import mediumtest.fixtures.SonarLintBackendFixture;
+import mediumtest.fixtures.SonarLintTestBackend;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorageManager;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
 
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
@@ -51,7 +47,7 @@ class OpenHotspotInIdeMediumTests {
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester();
 
-  private SonarLintBackendImpl backend;
+  private SonarLintTestBackend backend;
   static ServerFixture.Server serverWithHotspot = newSonarQubeServer("1.2.3")
     .withProject("projectKey",
       project -> project.withDefaultBranch(branch -> branch.withHotspot("key",
@@ -111,13 +107,12 @@ class OpenHotspotInIdeMediumTests {
   }
 
   @Test
-  void it_should_open_hotspot_in_ide_when_project_bound(@TempDir Path sonarlintUserHome) {
+  void it_should_open_hotspot_in_ide_when_project_bound() {
     var fakeClient = newFakeClient().build();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", serverWithHotspot)
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withEmbeddedServer()
-      .withSonarLintUserHome(sonarlintUserHome)
       .build(fakeClient);
 
     var statusCode = requestOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
@@ -132,27 +127,25 @@ class OpenHotspotInIdeMediumTests {
   }
 
   @Test
-  void it_should_update_telemetry_data_when_opening_hotspot_in_ide(@TempDir Path sonarlintUserHome) {
+  void it_should_update_telemetry_data_when_opening_hotspot_in_ide() {
     backend = newBackend()
       .withSonarQubeConnection("connectionId", serverWithHotspot)
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withEmbeddedServer()
-      .withSonarLintUserHome(sonarlintUserHome)
       .build();
 
     requestOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
 
-    var telemetryLocalStorageManager = new TelemetryLocalStorageManager(TelemetryPathManager.getPath(sonarlintUserHome, SonarLintBackendFixture.MEDIUM_TESTS_PRODUCT_KEY));
+    var telemetryLocalStorageManager = new TelemetryLocalStorageManager(backend.getTelemetryFilePath());
     await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(telemetryLocalStorageManager.tryRead().showHotspotRequestsCount()).isEqualTo(1));
   }
 
   @Test
-  void it_should_assist_creating_the_connection_when_server_url_unknown(@TempDir Path sonarlintUserHome) {
+  void it_should_assist_creating_the_connection_when_server_url_unknown() {
     var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", "connectionId", serverWithHotspot.baseUrl(), "projectKey").build();
     backend = newBackend()
       .withUnboundConfigScope("scopeId")
       .withEmbeddedServer()
-      .withSonarLintUserHome(sonarlintUserHome)
       .build(fakeClient);
 
     var statusCode = requestOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
@@ -166,13 +159,12 @@ class OpenHotspotInIdeMediumTests {
   }
 
   @Test
-  void it_should_assist_creating_the_binding_if_scope_not_bound(@TempDir Path sonarlintUserHome) {
+  void it_should_assist_creating_the_binding_if_scope_not_bound() {
     var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", "connectionId", serverWithHotspot.baseUrl(), "projectKey").build();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", serverWithHotspot)
       .withUnboundConfigScope("scopeId")
       .withEmbeddedServer()
-      .withSonarLintUserHome(sonarlintUserHome)
       .build(fakeClient);
 
     var statusCode = requestOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
@@ -186,13 +178,12 @@ class OpenHotspotInIdeMediumTests {
   }
 
   @Test
-  void it_should_display_a_message_when_failing_to_fetch_the_hotspot(@TempDir Path sonarlintUserHome) {
+  void it_should_display_a_message_when_failing_to_fetch_the_hotspot() {
     var fakeClient = newFakeClient().build();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", serverWithoutHotspot)
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withEmbeddedServer()
-      .withSonarLintUserHome(sonarlintUserHome)
       .build(fakeClient);
 
     var statusCode = requestOpenHotspotWithParams("server=" + urlEncode(serverWithoutHotspot.baseUrl()) + "&project=projectKey&hotspot=key");

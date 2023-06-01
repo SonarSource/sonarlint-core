@@ -19,16 +19,12 @@
  */
 package mediumtest;
 
-import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
-import mediumtest.fixtures.SonarLintBackendFixture;
+import mediumtest.fixtures.SonarLintTestBackend;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.OpenHotspotInBrowserParams;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorageManager;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
@@ -36,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class OpenHotspotInBrowserMediumTests {
 
-  private SonarLintBackendImpl backend;
+  private SonarLintTestBackend backend;
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
@@ -44,14 +40,13 @@ class OpenHotspotInBrowserMediumTests {
   }
 
   @Test
-  void it_should_open_hotspot_in_sonarqube(@TempDir Path sonarlintUserHome) {
+  void it_should_open_hotspot_in_sonarqube() {
     var fakeClient = newFakeClient().build();
     backend = newBackend()
-      .withSonarLintUserHome(sonarlintUserHome)
       .withSonarQubeConnection("connectionId", "http://localhost:12345")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .build(fakeClient);
-    var telemetryLocalStorageManager = new TelemetryLocalStorageManager(TelemetryPathManager.getPath(sonarlintUserHome, SonarLintBackendFixture.MEDIUM_TESTS_PRODUCT_KEY));
+    var telemetryLocalStorageManager = new TelemetryLocalStorageManager(backend.getTelemetryFilePath());
     assertThat(telemetryLocalStorageManager.tryRead().openHotspotInBrowserCount()).isZero();
 
     this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "master", "ab12ef45"));

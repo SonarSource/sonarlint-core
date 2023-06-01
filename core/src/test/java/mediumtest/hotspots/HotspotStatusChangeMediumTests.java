@@ -25,12 +25,12 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.ServerFixture;
+import mediumtest.fixtures.SonarLintTestBackend;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.ChangeHotspotStatusParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.hotspot.HotspotStatusChangeException;
@@ -45,7 +45,7 @@ class HotspotStatusChangeMediumTests {
   @TempDir
   Path storageDir;
 
-  private SonarLintBackendImpl backend;
+  private SonarLintTestBackend backend;
   private ServerFixture.Server server;
   private String oldSonarCloudUrl;
 
@@ -163,10 +163,9 @@ class HotspotStatusChangeMediumTests {
   }
 
   @Test
-  void it_should_count_status_change_in_telemetry(@TempDir Path sonarlintUserHome) {
+  void it_should_count_status_change_in_telemetry() {
     server = newSonarQubeServer().start();
     backend = newBackend()
-      .withSonarLintUserHome(sonarlintUserHome)
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
@@ -174,7 +173,7 @@ class HotspotStatusChangeMediumTests {
     var response = setStatusToSafe("configScopeId", "hotspotKey");
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    assertThat(sonarlintUserHome.resolve("telemetry/mediumTests/usage"))
+    assertThat(backend.getTelemetryFilePath())
       .content().asBase64Decoded().contains("\"hotspotStatusChangedCount\":1".getBytes());
   }
 
