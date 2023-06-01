@@ -9,6 +9,10 @@
   <name>SonarLint Core - Implementation</name>
   <description>Common library used by some SonarLint flavors</description>
 
+  <properties>
+    <sslcontext-kickstart.version>8.0.0</sslcontext-kickstart.version>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
@@ -97,6 +101,16 @@
       <groupId>org.apache.httpcomponents.core5</groupId>
       <artifactId>httpcore5</artifactId>
       <version>5.2</version>
+    </dependency>
+    <dependency>
+      <groupId>io.github.hakky54</groupId>
+      <artifactId>sslcontext-kickstart</artifactId>
+      <version>${sslcontext-kickstart.version}</version>
+    </dependency>
+    <dependency>
+    <groupId>io.github.hakky54</groupId>
+      <artifactId>sslcontext-kickstart-for-apache5</artifactId>
+      <version>${sslcontext-kickstart.version}</version>
     </dependency>
     <dependency>
       <groupId>com.squareup.okhttp3</groupId>

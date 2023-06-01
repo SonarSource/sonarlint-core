@@ -19,8 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.http;
 
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.X509TrustManager;
+import nl.altindag.ssl.SSLFactory;
+import nl.altindag.ssl.apache5.util.Apache5SslUtils;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.config.TlsConfig;
@@ -57,7 +62,30 @@ public class HttpClientManager {
 
   public HttpClientManager(SonarLintClient client, String userAgent) {
     this.client = client;
+    var sslFactory = SSLFactory.builder()
+      .withDefaultTrustMaterial()
+      .withSystemTrustMaterial()
+      //.withTrustMaterial(Paths.get("/path/to/your/truststore.jks"), "password".toCharArray())
+      .withTrustMaterial(new X509TrustManager() {
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+          // Not implemented
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+
+        }
+
+        @Override
+        public X509Certificate[] getAcceptedIssuers() {
+          return new X509Certificate[0];
+        }
+      })
+      .build();
     var asyncConnectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
+      .setTlsStrategy(Apache5SslUtils.toTlsStrategy(sslFactory))
       .setDefaultTlsConfig(TlsConfig.custom()
         // Force HTTP/1 since we know SQ/SC don't support HTTP/2 ATM
         .setVersionPolicy(HttpVersionPolicy.FORCE_HTTP_1)
@@ -67,14 +95,15 @@ public class HttpClientManager {
       .setConnectionManager(asyncConnectionManager)
       .addResponseInterceptorFirst(new RedirectInterceptor())
       .setUserAgent(userAgent)
+      // SLI-629 - Force HTTP/1
+      .setVersionPolicy(HttpVersionPolicy.FORCE_HTTP_1)
       // proxy settings
-      .setRoutePlanner(new SystemDefaultRoutePlanner(new ClientProxySelector(this.client)))
+      .setRoutePlanner(new SystemDefaultRoutePlanner(new ClientProxySelector(client)))
       .setDefaultCredentialsProvider((authScope, httpContext) -> {
         try {
           var response = client.getProxyPasswordAuthentication(
             new GetProxyPasswordAuthenticationParams(authScope.getHost(), authScope.getPort(), authScope.getProtocol(),
-              authScope.getRealm(), authScope.getSchemeName()))
-            .get();
+              authScope.getRealm(), authScope.getSchemeName())).get();
           if (response.getProxyUser() != null || response.getProxyPassword() != null) {
             return new UsernamePasswordCredentials(response.getProxyUser(), response.getProxyPassword().toCharArray());
           }
@@ -90,7 +119,8 @@ public class HttpClientManager {
         RequestConfig.copy(RequestConfig.DEFAULT)
           .setConnectionRequestTimeout(CONNECTION_TIMEOUT)
           .setResponseTimeout(RESPONSE_TIMEOUT)
-          .build())
+          .build()
+      )
       .build();
 
     sharedClient.start();
@@ -137,5 +167,6 @@ public class HttpClientManager {
       return request != null && Method.POST.isSame(request.getMethod());
     }
   }
+
 
 }
