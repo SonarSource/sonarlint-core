@@ -19,19 +19,15 @@
  */
 package mediumtest;
 
-import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
-import mediumtest.fixtures.StorageFixture;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.analysis.GetSupportedFilePatternsParams;
 import org.sonarsource.sonarlint.core.commons.Language;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
-
 
 class AnalysisServiceMediumTests {
 
@@ -53,34 +49,25 @@ class AnalysisServiceMediumTests {
   }
 
   @Test
-  void it_should_return_default_supported_file_patterns_in_connected_mode_when_not_override_on_server(@TempDir Path storagePath) throws ExecutionException, InterruptedException {
-    StorageFixture.newStorage("connectionId")
-      .withJavaPlugin()
-      .withProject("projectKey")
-      .create(storagePath);
+  void it_should_return_default_supported_file_patterns_in_connected_mode_when_not_override_on_server() throws ExecutionException, InterruptedException {
     backend = newBackend()
-      .withStorageRoot(storagePath.resolve("storage"))
-      .withSonarQubeConnection("connectionId")
+      .withSonarQubeConnection("connectionId", storage -> storage.withJavaPlugin()
+        .withProject("projectKey"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "branchName")
       .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
       .build();
-
 
     var patterns = backend.getAnalysisService().getSupportedFilePatterns(new GetSupportedFilePatternsParams("configScopeId")).get().getPatterns();
     assertThat(patterns).containsOnly("**/*.java", "**/*.jav");
   }
 
   @Test
-  void it_should_return_supported_file_patterns_with_server_defined_file_suffixes(@TempDir Path storagePath) throws ExecutionException, InterruptedException {
-    StorageFixture.newStorage("connectionId")
-      .withJavaPlugin()
-      .withProject("projectKey", (projectStorageBuilder -> {
-        projectStorageBuilder.withSetting("sonar.java.file.suffixes", ".foo, .bar");
-      }))
-      .create(storagePath);
+  void it_should_return_supported_file_patterns_with_server_defined_file_suffixes() throws ExecutionException, InterruptedException {
     backend = newBackend()
-      .withStorageRoot(storagePath.resolve("storage"))
-      .withSonarQubeConnection("connectionId")
+      .withSonarQubeConnection("connectionId", storage -> storage.withJavaPlugin()
+        .withProject("projectKey", (projectStorageBuilder -> {
+          projectStorageBuilder.withSetting("sonar.java.file.suffixes", ".foo, .bar");
+        })))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "branchName")
       .withEnabledLanguage(Language.JAVA)
       .build();
@@ -88,6 +75,5 @@ class AnalysisServiceMediumTests {
     var patterns = backend.getAnalysisService().getSupportedFilePatterns(new GetSupportedFilePatternsParams("configScopeId")).get().getPatterns();
     assertThat(patterns).containsOnly("**/*.foo", "**/*.bar");
   }
-
 
 }

@@ -21,6 +21,7 @@ package mediumtest.fixtures;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -60,6 +61,7 @@ public class ProjectStorageFixture {
     private final String projectKey;
     private final List<RuleSetBuilder> ruleSets = new ArrayList<>();
     private final Map<String, String> projectSettings = new HashMap<>();
+    private ZonedDateTime lastSmartNotificationPoll;
 
     public ProjectStorageBuilder(String projectKey) {
       this.projectKey = projectKey;
@@ -84,6 +86,10 @@ public class ProjectStorageFixture {
     public ProjectStorageBuilder withHotspot(String key, String value) {
       projectSettings.put(key, value);
       return this;
+    }
+
+    public void withLastSmartNotificationPoll(ZonedDateTime dateTime) {
+      this.lastSmartNotificationPoll = dateTime;
     }
 
     ProjectStorage create(Path projectsRootPath) {
@@ -111,6 +117,12 @@ public class ProjectStorageFixture {
         .putAllSettings(projectSettings)
         .putAllRuleSetsByLanguageKey(protoRuleSets).build();
       ProtobufFileUtil.writeToFile(analyzerConfiguration, projectFolder.resolve("analyzer_config.pb"));
+      if (lastSmartNotificationPoll != null) {
+        var lastPoll = Sonarlint.LastEventPolling.newBuilder()
+          .setLastEventPolling(lastSmartNotificationPoll.toInstant().toEpochMilli())
+          .build();
+        ProtobufFileUtil.writeToFile(lastPoll, projectFolder.resolve("last_event_polling.pb"));
+      }
       return new ProjectStorage(projectFolder);
     }
 

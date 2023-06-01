@@ -19,14 +19,12 @@
  */
 package mediumtest;
 
-import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetStandaloneRuleDescriptionParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.ListAllStandaloneRulesDefinitionsResponse;
@@ -50,7 +48,6 @@ class StandaloneRulesMediumTests {
   @Test
   void it_should_return_only_embedded_rules_of_enabled_languages() {
     backend = newBackend()
-      .withStorageRoot(storageDir)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .withStandaloneEmbeddedPlugin(TestPlugin.PHP)
       .build();
@@ -63,7 +60,6 @@ class StandaloneRulesMediumTests {
   @Test
   void it_should_return_param_definition() {
     backend = newBackend()
-      .withStorageRoot(storageDir)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .build();
 
@@ -85,7 +81,6 @@ class StandaloneRulesMediumTests {
   @Test
   void it_should_return_rule_details_with_definition_and_description() throws ExecutionException, InterruptedException {
     backend = newBackend()
-      .withStorageRoot(storageDir)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .build();
 
@@ -101,7 +96,6 @@ class StandaloneRulesMediumTests {
   @Test
   void it_should_not_contain_rule_templates() {
     backend = newBackend()
-      .withStorageRoot(storageDir)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .build();
 
@@ -114,7 +108,6 @@ class StandaloneRulesMediumTests {
   @Test
   void it_should_not_contain_hotspots_by_default() {
     backend = newBackend()
-      .withStorageRoot(storageDir)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .build();
 
@@ -132,8 +125,6 @@ class StandaloneRulesMediumTests {
     }
   }
 
-  @TempDir
-  Path storageDir;
   private SonarLintBackendImpl backend;
 
 }

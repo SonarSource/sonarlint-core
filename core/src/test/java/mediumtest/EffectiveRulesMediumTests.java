@@ -19,19 +19,16 @@
  */
 package mediumtest;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import mediumtest.fixtures.StorageFixture;
 import mediumtest.fixtures.TestPlugin;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.EffectiveRuleParamDto;
@@ -53,9 +50,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 class EffectiveRulesMediumTests {
-
-  @TempDir
-  Path storageDir;
   private SonarLintBackend backend;
   @RegisterExtension
   private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
@@ -71,7 +65,6 @@ class EffectiveRulesMediumTests {
   void it_should_return_embedded_rule_when_project_is_not_bound() {
     backend = newBackend()
       .withUnboundConfigScope("scopeId")
-      .withStorageRoot(storageDir)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .build();
 
@@ -94,7 +87,6 @@ class EffectiveRulesMediumTests {
   void it_should_consider_standalone_rule_config_for_effective_parameter_values() {
     backend = newBackend()
       .withUnboundConfigScope("scopeId")
-      .withStorageRoot(storageDir)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .withStandaloneRuleConfig("python:S139", true, Map.of("legalTrailingCommentPattern", "initialValue"))
       .build();
@@ -125,7 +117,6 @@ class EffectiveRulesMediumTests {
   void it_should_fail_when_rule_key_unknown_and_project_is_not_bound() {
     backend = newBackend()
       .withUnboundConfigScope("scopeId")
-      .withStorageRoot(storageDir)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .build();
 
@@ -139,12 +130,9 @@ class EffectiveRulesMediumTests {
 
   @Test
   void it_should_return_rule_loaded_from_server_plugin_when_project_is_bound_and_project_storage_does_not_exist() {
-    StorageFixture.newStorage("connectionId")
-      .withJavaPlugin()
-      .create(storageDir);
     backend = newBackend()
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withStorageRoot(storageDir.resolve("storage"))
+      .withSonarQubeConnection("connectionId", storage -> storage.withJavaPlugin())
       .withEnabledLanguage(Language.JAVA)
       .build();
 
@@ -160,15 +148,11 @@ class EffectiveRulesMediumTests {
 
   @Test
   void it_should_merge_rule_from_storage_and_server_when_project_is_bound() {
-    StorageFixture.newStorage("connectionId")
-      .withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
-          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah"))))
-      .create(storageDir);
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withProject("projectKey",
+        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withStorageRoot(storageDir.resolve("storage"))
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
@@ -187,16 +171,12 @@ class EffectiveRulesMediumTests {
 
   @Test
   void it_should_merge_rule_from_storage_and_server_when_parent_project_is_bound() {
-    StorageFixture.newStorage("connectionId")
-      .withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
-          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah"))))
-      .create(storageDir);
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withProject("projectKey",
+        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withChildConfigScope("childScopeId", "scopeId")
-      .withStorageRoot(storageDir.resolve("storage"))
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
@@ -217,15 +197,11 @@ class EffectiveRulesMediumTests {
   void it_return_single_section_from_server_when_project_is_bound() {
     var name = "name";
     var desc = "desc";
-    StorageFixture.newStorage("connectionId")
-      .withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.JS.getLanguageKey(),
-          ruleSet -> ruleSet.withActiveRule("jssecurity:S5696", "BLOCKER")))
-      .create(storageDir);
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withProject("projectKey",
+        projectStorage -> projectStorage.withRuleSet(Language.JS.getLanguageKey(),
+          ruleSet -> ruleSet.withActiveRule("jssecurity:S5696", "BLOCKER"))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withStorageRoot(storageDir.resolve("storage"))
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=jssecurity:S5696", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName(name).setSeverity("BLOCKER").setType(Common.RuleType.VULNERABILITY).setLang("js")
@@ -250,14 +226,11 @@ class EffectiveRulesMediumTests {
 
   @Test
   void it_should_fail_to_merge_rule_from_storage_and_server_when_connection_is_unknown() {
-    StorageFixture.newStorage("connectionId")
-      .withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
-          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah"))))
-      .create(storageDir);
     backend = newBackend()
+      .withStorage("connectionId", storage -> storage.withProject("projectKey",
+        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withStorageRoot(storageDir.resolve("storage"))
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
@@ -273,15 +246,11 @@ class EffectiveRulesMediumTests {
 
   @Test
   void it_should_fail_to_merge_rule_from_storage_and_server_when_rule_does_not_exist_on_server() {
-    StorageFixture.newStorage("connectionId")
-      .withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
-          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah"))))
-      .create(storageDir);
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withProject("projectKey",
+        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withStorageRoot(storageDir.resolve("storage"))
       .build();
 
     var futureResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:S139"));
@@ -294,15 +263,11 @@ class EffectiveRulesMediumTests {
 
   @Test
   void it_should_merge_template_rule_from_storage_and_server_when_project_is_bound() {
-    StorageFixture.newStorage("connectionId")
-      .withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
-          ruleSet -> ruleSet.withCustomActiveRule("python:custom", "python:CommentRegularExpression", "INFO", Map.of("message", "msg", "regularExpression", "regExp"))))
-      .create(storageDir);
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withProject("projectKey",
+        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+          ruleSet -> ruleSet.withCustomActiveRule("python:custom", "python:CommentRegularExpression", "INFO", Map.of("message", "msg", "regularExpression", "regExp")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withStorageRoot(storageDir.resolve("storage"))
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:custom", Rules.ShowResponse.newBuilder()
@@ -320,15 +285,11 @@ class EffectiveRulesMediumTests {
 
   @Test
   void it_should_merge_rule_from_storage_and_server_rule_when_rule_is_unknown_in_loaded_plugins() {
-    StorageFixture.newStorage("connectionId")
-      .withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
-          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah"))))
-      .create(storageDir);
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withProject("projectKey",
+        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withStorageRoot(storageDir.resolve("storage"))
       .withEnabledLanguage(Language.PYTHON)
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
@@ -434,15 +395,11 @@ class EffectiveRulesMediumTests {
 
   @Test
   void it_should_add_a_more_info_tab_if_no_resource_section_exists_and_extended_description_exists() {
-    StorageFixture.newStorage("connectionId")
-      .withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
-          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah"))))
-      .create(storageDir);
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withProject("projectKey",
+        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withStorageRoot(storageDir.resolve("storage"))
       .withEnabledLanguage(Language.PYTHON)
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
@@ -500,7 +457,6 @@ class EffectiveRulesMediumTests {
     backend = newBackend()
       .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withStorageRoot(storageDir)
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .withSecurityHotspotsEnabled()
       .build();
@@ -515,15 +471,11 @@ class EffectiveRulesMediumTests {
   }
 
   private void prepareForRuleDescriptionSectionsAndContext() {
-    StorageFixture.newStorage("connectionId")
-      .withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
-          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah"))))
-      .create(storageDir);
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withProject("projectKey",
+        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withStorageRoot(storageDir.resolve("storage"))
       .withEnabledLanguage(Language.PYTHON)
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()

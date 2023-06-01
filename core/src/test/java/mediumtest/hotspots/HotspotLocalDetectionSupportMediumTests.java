@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
-import mediumtest.fixtures.StorageFixture;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -137,14 +136,10 @@ class HotspotLocalDetectionSupportMediumTests {
 
   private void bindToSonarQube(String configScopeId, @Nullable String serverVersion) {
     backend = newBackend()
-      .withSonarQubeConnection("connectionId")
+      .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion(serverVersion)
+        .withProject("projectKey"))
       .withBoundConfigScope(configScopeId, "connectionId", "projectKey")
-      .withStorageRoot(storageDir.resolve("storage"))
       .build();
-    StorageFixture.newStorage("connectionId")
-      .withServerVersion(serverVersion)
-      .withProject("projectKey")
-      .create(storageDir);
   }
 
   private CheckLocalDetectionSupportedResponse checkLocalDetectionSupported(String configScopeId) {
