@@ -60,7 +60,6 @@ class AnalysisServiceMediumTests {
       .create(storagePath);
     backend = newBackend()
       .withStorageRoot(storagePath.resolve("storage"))
-      .withSonarLintUserHome(storagePath.resolve("slHome"))
       .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "branchName")
       .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
@@ -81,7 +80,6 @@ class AnalysisServiceMediumTests {
       .create(storagePath);
     backend = newBackend()
       .withStorageRoot(storagePath.resolve("storage"))
-      .withSonarLintUserHome(storagePath.resolve("slHome"))
       .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "branchName")
       .withEnabledLanguage(Language.JAVA)
