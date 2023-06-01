@@ -23,11 +23,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.config.TlsConfig;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.impl.routing.SystemDefaultRoutePlanner;
-import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
 import org.apache.hc.core5.http.EntityDetails;
 import org.apache.hc.core5.http.HttpRequest;
 import org.apache.hc.core5.http.HttpResponse;
@@ -37,7 +37,6 @@ import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.http.protocol.HttpCoreContext;
 import org.apache.hc.core5.http2.HttpVersionPolicy;
-import org.apache.hc.core5.reactor.ssl.TlsDetails;
 import org.apache.hc.core5.util.Timeout;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
@@ -54,20 +53,20 @@ public class HttpClientManager {
   private static final Timeout RESPONSE_TIMEOUT = Timeout.ofMinutes(10);
   private final SonarLintLogger logger = SonarLintLogger.get();
   private final SonarLintClient client;
-  private CloseableHttpAsyncClient sharedClient;
+  private final CloseableHttpAsyncClient sharedClient;
 
   public HttpClientManager(SonarLintClient client, String userAgent) {
     this.client = client;
+    var asyncConnectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
+      .setDefaultTlsConfig(TlsConfig.custom()
+        // Force HTTP/1 since we know SQ/SC don't support HTTP/2 ATM
+        .setVersionPolicy(HttpVersionPolicy.FORCE_HTTP_1)
+        .build())
+      .build();
     this.sharedClient = HttpAsyncClients.custom()
-      .setConnectionManager(
-        PoolingAsyncClientConnectionManagerBuilder.create()
-          .setTlsStrategy(ClientTlsStrategyBuilder.create()
-            .setTlsDetailsFactory(parameter -> new TlsDetails(parameter.getSession(), parameter.getApplicationProtocol())).build())
-          .build())
+      .setConnectionManager(asyncConnectionManager)
       .addResponseInterceptorFirst(new RedirectInterceptor())
       .setUserAgent(userAgent)
-      // SLI-629 - Force HTTP/1
-      .setVersionPolicy(HttpVersionPolicy.FORCE_HTTP_1)
       // proxy settings
       .setRoutePlanner(new SystemDefaultRoutePlanner(new ClientProxySelector(this.client)))
       .setDefaultCredentialsProvider((authScope, httpContext) -> {
