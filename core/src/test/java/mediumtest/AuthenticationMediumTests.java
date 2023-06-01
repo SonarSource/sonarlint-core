@@ -33,13 +33,11 @@ import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.http.HttpClientManager;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
@@ -49,13 +47,10 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static testutils.TestUtils.protobufBody;
 
-class HttpClientManagerMediumTests {
+class AuthenticationMediumTests {
 
   @TempDir
   private Path storageDir;
-
-  @TempDir
-  private Path sonarlintUserHome;
 
   @RegisterExtension
   WireMockExtension sonarqubeMock = WireMockExtension.newInstance()
@@ -69,16 +64,6 @@ class HttpClientManagerMediumTests {
     if (backend != null) {
       backend.shutdown().get();
     }
-  }
-
-  @Test
-  void it_should_use_user_agent() {
-    var httpClientManager = new HttpClientManager(newFakeClient().build(), "SonarLint", sonarlintUserHome);
-
-    httpClientManager.getHttpClient().get(sonarqubeMock.url("/test"));
-
-    sonarqubeMock.verify(getRequestedFor(urlEqualTo("/test"))
-      .withHeader("User-Agent", equalTo("SonarLint")));
   }
 
   @Test
