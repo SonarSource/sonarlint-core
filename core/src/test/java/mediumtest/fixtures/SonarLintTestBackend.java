@@ -50,7 +50,7 @@ public class SonarLintTestBackend extends SonarLintBackendImpl {
     return workDir;
   }
 
-  public Path getTelemetryFilePath() {
+  public Path telemetryFilePath() {
     return telemetryFilePath;
   }
 

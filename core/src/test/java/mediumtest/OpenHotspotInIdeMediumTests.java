@@ -32,7 +32,6 @@ import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorageManager;
 
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
@@ -136,8 +135,11 @@ class OpenHotspotInIdeMediumTests {
 
     requestOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
 
-    var telemetryLocalStorageManager = new TelemetryLocalStorageManager(backend.getTelemetryFilePath());
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(telemetryLocalStorageManager.tryRead().showHotspotRequestsCount()).isEqualTo(1));
+    await().atMost(2, TimeUnit.SECONDS)
+      .untilAsserted(() ->
+        assertThat(backend.telemetryFilePath())
+          .content().asBase64Decoded().asString()
+          .contains("\"showHotspotRequestsCount\":1"));
   }
 
   @Test

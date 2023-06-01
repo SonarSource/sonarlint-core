@@ -62,7 +62,7 @@ class TelemetryMediumTests {
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isFalse();
 
     this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "master", "ab12ef45"));
-    assertThat(backend.getTelemetryFilePath()).doesNotExist();
+    assertThat(backend.telemetryFilePath()).doesNotExist();
   }
 
   @Test
@@ -76,7 +76,7 @@ class TelemetryMediumTests {
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isTrue();
 
     this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "master", "ab12ef45"));
-    assertThat(backend.getTelemetryFilePath()).isNotEmptyFile();
+    assertThat(backend.telemetryFilePath()).isNotEmptyFile();
   }
 
   @Test
@@ -91,10 +91,10 @@ class TelemetryMediumTests {
 
     // Trigger any telemetry event to initialize the file
     this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "master", "ab12ef45"));
-    assertThat(backend.getTelemetryFilePath()).isNotEmptyFile();
+    assertThat(backend.telemetryFilePath()).isNotEmptyFile();
 
     // Emulate another process has disabled telemetry
-    var telemetryLocalStorageManager = new TelemetryLocalStorageManager(backend.getTelemetryFilePath());
+    var telemetryLocalStorageManager = new TelemetryLocalStorageManager(backend.telemetryFilePath());
     telemetryLocalStorageManager.tryUpdateAtomically(data -> {
       data.setEnabled(false);
     });

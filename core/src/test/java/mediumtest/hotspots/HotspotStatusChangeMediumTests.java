@@ -173,8 +173,9 @@ class HotspotStatusChangeMediumTests {
     var response = setStatusToSafe("configScopeId", "hotspotKey");
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    assertThat(backend.getTelemetryFilePath())
-      .content().asBase64Decoded().contains("\"hotspotStatusChangedCount\":1".getBytes());
+    assertThat(backend.telemetryFilePath())
+      .content().asBase64Decoded().asString()
+      .contains("\"hotspotStatusChangedCount\":1");
   }
 
   private CompletableFuture<Void> setStatusToSafe(String configScopeId, String hotspotKey) {
