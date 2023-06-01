@@ -19,7 +19,6 @@
  */
 package mediumtest;
 
-import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -29,7 +28,6 @@ import mediumtest.fixtures.SonarLintTestBackend;
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.clientapi.backend.branch.DidChangeActiveSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 
@@ -43,7 +41,7 @@ import static org.awaitility.Awaitility.waitAtMost;
 class SynchronizationMediumTests {
 
   @Test
-  void it_should_automatically_synchronize_bound_projects_that_have_an_active_branch(@TempDir Path storagePath) {
+  void it_should_automatically_synchronize_bound_projects_that_have_an_active_branch() {
     var serverWithIssues = newSonarQubeServer("9.6")
       .withProject("projectKey",
         project -> project.withBranch("branchName",
@@ -51,7 +49,6 @@ class SynchronizationMediumTests {
       .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))
       .start();
     backend = newBackend()
-      .withStorageRoot(storagePath.resolve("storage"))
       .withSonarQubeConnection("connectionId", serverWithIssues)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "branchName")
       .withProjectSynchronization()
@@ -63,7 +60,7 @@ class SynchronizationMediumTests {
   }
 
   @Test
-  void it_should_automatically_synchronize_bound_projects_when_the_active_branch_changes(@TempDir Path storagePath) {
+  void it_should_automatically_synchronize_bound_projects_when_the_active_branch_changes() {
     var fakeClient = newFakeClient().build();
     var serverWithIssues = newSonarQubeServer("9.6")
       .withProject("projectKey",
@@ -72,7 +69,6 @@ class SynchronizationMediumTests {
       .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))
       .start();
     backend = newBackend()
-      .withStorageRoot(storagePath.resolve("storage"))
       .withSonarQubeConnection("connectionId", serverWithIssues)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withProjectSynchronization()
@@ -86,14 +82,13 @@ class SynchronizationMediumTests {
   }
 
   @Test
-  void it_should_report_progress_to_the_client_when_synchronizing(@TempDir Path storagePath) {
+  void it_should_report_progress_to_the_client_when_synchronizing() {
     var fakeClient = newFakeClient().build();
     var serverWithIssues = newSonarQubeServer("9.6")
       .withProject("projectKey", project -> project.withEmptyBranch("branchName"))
       .withProject("projectKey2", project -> project.withEmptyBranch("branchName2"))
       .start();
     backend = newBackend()
-      .withStorageRoot(storagePath.resolve("storage"))
       .withSonarQubeConnection("connectionId", serverWithIssues)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "branchName")
       .withBoundConfigScope("configScopeId2", "connectionId", "projectKey2", "branchName2")
@@ -113,14 +108,13 @@ class SynchronizationMediumTests {
   }
 
   @Test
-  void it_should_not_report_progress_to_the_client_when_synchronizing_if_client_rejects_progress(@TempDir Path storagePath) {
+  void it_should_not_report_progress_to_the_client_when_synchronizing_if_client_rejects_progress() {
     var fakeClient = newFakeClient().rejectingProgress().build();
     var serverWithIssues = newSonarQubeServer("9.6")
       .withProject("projectKey", project -> project.withEmptyBranch("branchName"))
       .withProject("projectKey2", project -> project.withEmptyBranch("branchName2"))
       .start();
     backend = newBackend()
-      .withStorageRoot(storagePath.resolve("storage"))
       .withSonarQubeConnection("connectionId", serverWithIssues)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "branchName")
       .withBoundConfigScope("configScopeId2", "connectionId", "projectKey2", "branchName2")

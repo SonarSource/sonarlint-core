@@ -19,14 +19,11 @@
  */
 package mediumtest;
 
-import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import mediumtest.fixtures.StorageFixture;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
@@ -40,9 +37,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 class ConnectionSyncMediumTests {
-
-  @TempDir
-  Path storageDir;
   private SonarLintBackend backend;
   @RegisterExtension
   public SonarLintLogTester logTester = new SonarLintLogTester();
@@ -56,13 +50,9 @@ class ConnectionSyncMediumTests {
 
   @Test
   void it_should_cache_extracted_rule_metadata_per_connection() {
-    StorageFixture.newStorage("connectionId")
-      .withJavaPlugin()
-      .create(storageDir);
     backend = newBackend()
-      .withSonarQubeConnection("connectionId")
+      .withSonarQubeConnection("connectionId", storage -> storage.withJavaPlugin())
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withStorageRoot(storageDir.resolve("storage"))
       .withEnabledLanguage(Language.JAVA)
       .build();
 

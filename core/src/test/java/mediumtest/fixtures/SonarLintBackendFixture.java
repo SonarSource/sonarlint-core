@@ -22,7 +22,6 @@ package mediumtest.fixtures;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,6 +34,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import javax.annotation.CheckForNull;
 import org.jetbrains.annotations.Nullable;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
@@ -72,9 +72,9 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import testutils.MockWebServerExtensionWithProtobuf;
 
-public class SonarLintBackendFixture {
+import static mediumtest.fixtures.StorageFixture.newStorage;
 
-  public static final String MEDIUM_TESTS_PRODUCT_KEY = "mediumTests";
+public class SonarLintBackendFixture {
 
   public static SonarLintBackendBuilder newBackend() {
     return new SonarLintBackendBuilder();
@@ -93,7 +93,6 @@ public class SonarLintBackendFixture {
     private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey = new HashMap<>();
     private final Set<Language> enabledLanguages = new HashSet<>();
     private final Set<Language> extraEnabledLanguagesInConnectedMode = new HashSet<>();
-    private Path storageRoot = Paths.get(".");
     private boolean startEmbeddedServer;
     private boolean manageSmartNotifications;
     private boolean areSecurityHotspotsEnabled;
@@ -101,29 +100,56 @@ public class SonarLintBackendFixture {
     private boolean taintVulnerabilitiesEnabled = true;
 
     private final Map<String, StandaloneRuleConfigDto> standaloneConfigByKey = new HashMap<>();
+    private final List<StorageFixture.StorageBuilder> storages = new ArrayList<>();
 
     public SonarLintBackendBuilder withSonarQubeConnection() {
       return withSonarQubeConnection("connectionId");
     }
 
     public SonarLintBackendBuilder withSonarQubeConnection(String connectionId) {
-      return withSonarQubeConnection(connectionId, "http://not-used", true);
+      return withSonarQubeConnection(connectionId, "http://not-used", true, null);
+    }
+
+    public SonarLintBackendBuilder withSonarQubeConnection(String connectionId, Consumer<StorageFixture.StorageBuilder> storageBuilder) {
+      return withSonarQubeConnection(connectionId, "http://not-used", true, storageBuilder);
     }
 
     public SonarLintBackendBuilder withSonarQubeConnection(String connectionId, String serverUrl) {
-      return withSonarQubeConnection(connectionId, serverUrl, true);
+      return withSonarQubeConnection(connectionId, serverUrl, true, null);
+    }
+
+    public SonarLintBackendBuilder withSonarQubeConnection(String connectionId, String serverUrl, Consumer<StorageFixture.StorageBuilder> storageBuilder) {
+      return withSonarQubeConnection(connectionId, serverUrl, true, storageBuilder);
     }
 
     public SonarLintBackendBuilder withSonarQubeConnection(String connectionId, ServerFixture.Server server) {
-      return withSonarQubeConnection(connectionId, server.baseUrl(), true);
+      return withSonarQubeConnection(connectionId, server.baseUrl(), true, null);
     }
 
     public SonarLintBackendBuilder withSonarQubeConnectionAndNotifications(String connectionId, String serverUrl) {
-      return withSonarQubeConnection(connectionId, serverUrl, false);
+      return withSonarQubeConnection(connectionId, serverUrl, false, null);
     }
 
-    private SonarLintBackendBuilder withSonarQubeConnection(String connectionId, String serverUrl, boolean disableNotifications) {
+    public SonarLintBackendBuilder withSonarQubeConnectionAndNotifications(String connectionId, String serverUrl, Consumer<StorageFixture.StorageBuilder> storageBuilder) {
+      return withSonarQubeConnection(connectionId, serverUrl, false, storageBuilder);
+    }
+
+    private SonarLintBackendBuilder withSonarQubeConnection(String connectionId, String serverUrl, boolean disableNotifications,
+      Consumer<StorageFixture.StorageBuilder> storageBuilder) {
+      if (storageBuilder != null) {
+        var storage = newStorage(connectionId);
+        storageBuilder.accept(storage);
+        storages.add(storage);
+      }
       sonarQubeConnections.add(new SonarQubeConnectionConfigurationDto(connectionId, serverUrl, disableNotifications));
+      return this;
+    }
+
+    // use only when the storage needs to be present but not the corresponding connection
+    public SonarLintBackendBuilder withStorage(String connectionId, Consumer<StorageFixture.StorageBuilder> storageBuilder) {
+      var storage = newStorage(connectionId);
+      storageBuilder.accept(storage);
+      storages.add(storage);
       return this;
     }
 
@@ -160,11 +186,6 @@ public class SonarLintBackendFixture {
 
     public SonarLintBackendBuilder withConfigScope(String configurationScopeId, String name, String parentScopeId, BindingConfigurationDto bindingConfiguration) {
       configurationScopes.add(new ConfigurationScopeDto(configurationScopeId, parentScopeId, true, name, bindingConfiguration));
-      return this;
-    }
-
-    public SonarLintBackendBuilder withStorageRoot(Path storageRoot) {
-      this.storageRoot = storageRoot;
       return this;
     }
 
@@ -223,10 +244,12 @@ public class SonarLintBackendFixture {
       var telemetryProductKey = "mediumTests";
       var sonarlintUserHome = tempDirectory("slUserHome");
       var workDir = tempDirectory("work");
+      var storageParentPath = tempDirectory("storage");
+      storages.forEach(storage -> storage.create(storageParentPath));
       var sonarLintBackend = new SonarLintTestBackend(client);
       client.setBackend(sonarLintBackend);
       sonarLintBackend
-        .initialize(new InitializeParams(client.getClientInfo(), telemetryProductKey, storageRoot, workDir, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
+        .initialize(new InitializeParams(client.getClientInfo(), telemetryProductKey, storageParentPath.resolve("storage"), workDir, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
           enabledLanguages, extraEnabledLanguagesInConnectedMode, areSecurityHotspotsEnabled, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
           startEmbeddedServer,
           standaloneConfigByKey, manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects));

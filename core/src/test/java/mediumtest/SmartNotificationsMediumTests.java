@@ -19,7 +19,6 @@
  */
 package mediumtest;
 
-import java.nio.file.Path;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -31,7 +30,6 @@ import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.ConfigurationScopeDto;
@@ -41,16 +39,12 @@ import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpd
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
-import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
-import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 
 class SmartNotificationsMediumTests {
 
@@ -89,8 +83,6 @@ class SmartNotificationsMediumTests {
   @RegisterExtension
   private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
   private SonarLintBackendImpl backend;
-  @TempDir
-  private Path tmpDir;
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
@@ -100,19 +92,16 @@ class SmartNotificationsMediumTests {
   @Test
   void it_should_send_notification_for_two_config_scope_with_same_binding() {
     var fakeClient = newFakeClient().build();
-
-    writeFile(tmpDir, CONNECTION_ID, PROJECT_KEY);
-
     mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
       UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
 
     backend = newBackend()
-      .withSonarQubeConnectionAndNotifications(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeConnectionAndNotifications(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage ->
+        storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
       .withSonarQubeConnectionAndNotifications(CONNECTION_ID_2, mockWebServerExtension.endpointParams().getBaseUrl())
       .withBoundConfigScope("scopeId", CONNECTION_ID, PROJECT_KEY)
       .withBoundConfigScope("scopeId2", CONNECTION_ID, PROJECT_KEY)
-      .withStorageRoot(tmpDir)
       .withSmartNotifications()
       .build(fakeClient);
 
@@ -126,11 +115,6 @@ class SmartNotificationsMediumTests {
   @Test
   void it_should_send_notification_for_different_bindings() {
     var fakeClient = newFakeClient().build();
-
-    writeFile(tmpDir, CONNECTION_ID, PROJECT_KEY);
-    writeFile(tmpDir, CONNECTION_ID_2, PROJECT_KEY_2);
-    writeFile(tmpDir, CONNECTION_ID, PROJECT_KEY_3);
-
     mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY_2 + "&from=" +
       UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_2);
@@ -139,13 +123,15 @@ class SmartNotificationsMediumTests {
       TWO_EVENTS_P1_P3);
 
     backend = newBackend()
-      .withSonarQubeConnectionAndNotifications(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl())
-      .withSonarQubeConnectionAndNotifications(CONNECTION_ID_2, mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeConnectionAndNotifications(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage ->
+        storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE))
+            .withProject(PROJECT_KEY_3, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
+      .withSonarQubeConnectionAndNotifications(CONNECTION_ID_2, mockWebServerExtension.endpointParams().getBaseUrl(), storage ->
+        storage.withProject(PROJECT_KEY_2, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
       .withBoundConfigScope("scopeId", CONNECTION_ID, PROJECT_KEY)
       .withBoundConfigScope("scopeId2", CONNECTION_ID, PROJECT_KEY)
       .withBoundConfigScope("scopeId3", CONNECTION_ID_2, PROJECT_KEY_2)
       .withBoundConfigScope("scopeId4", CONNECTION_ID, PROJECT_KEY_3)
-      .withStorageRoot(tmpDir)
       .withSmartNotifications()
       .build(fakeClient);
 
@@ -165,18 +151,15 @@ class SmartNotificationsMediumTests {
   @Test
   void it_should_not_send_notification_with_unbound_config_scope() {
     var fakeClient = newFakeClient().build();
-
-    writeFile(tmpDir, CONNECTION_ID, PROJECT_KEY);
-
     mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
       UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
 
     backend = newBackend()
-      .withSonarQubeConnectionAndNotifications(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeConnectionAndNotifications(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage ->
+        storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
       .withUnboundConfigScope("scopeId")
       .withBoundConfigScope("scopeId2", CONNECTION_ID, PROJECT_KEY)
-      .withStorageRoot(tmpDir)
       .withSmartNotifications()
       .build(fakeClient);
 
@@ -190,17 +173,14 @@ class SmartNotificationsMediumTests {
   @Test
   void it_should_send_notification_after_adding_removing_binding() {
     var fakeClient = newFakeClient().build();
-
-    writeFile(tmpDir, CONNECTION_ID, PROJECT_KEY);
-
     mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
       UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
 
     backend = newBackend()
-      .withSonarQubeConnectionAndNotifications(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeConnectionAndNotifications(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage ->
+        storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
       .withBoundConfigScope("scopeId", CONNECTION_ID, PROJECT_KEY)
-      .withStorageRoot(tmpDir)
       .withSmartNotifications()
       .build(fakeClient);
 
@@ -222,17 +202,14 @@ class SmartNotificationsMediumTests {
   @Test
   void it_should_send_notification_after_adding_removing_connection() {
     var fakeClient = newFakeClient().build();
-
-    writeFile(tmpDir, CONNECTION_ID, PROJECT_KEY);
-
     mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
       UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
 
     backend = newBackend()
-      .withSonarQubeConnectionAndNotifications(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeConnectionAndNotifications(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage ->
+        storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
       .withBoundConfigScope("scopeId", CONNECTION_ID, PROJECT_KEY)
-      .withStorageRoot(tmpDir)
       .withSmartNotifications()
       .build(fakeClient);
 
@@ -246,14 +223,6 @@ class SmartNotificationsMediumTests {
     var notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(1);
     assertThat(notificationsResult.get(0).getScopeIds()).hasSize(1).contains("scopeId");
-  }
-
-  private void writeFile(Path tmpDir, String connectionId, String projectKey) {
-    var storageFile = tmpDir.resolve(encodeForFs(connectionId)).resolve("projects").resolve(encodeForFs(projectKey)).resolve("last_event_polling.pb");
-    FileUtils.mkdirs(storageFile.getParent());
-    ProtobufFileUtil.writeToFile(Sonarlint.LastEventPolling.newBuilder()
-      .setLastEventPolling(STORED_DATE.toInstant().toEpochMilli())
-      .build(), storageFile);
   }
 
 }
