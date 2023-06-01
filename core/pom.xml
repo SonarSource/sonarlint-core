@@ -297,7 +297,7 @@
               <createSourcesJar>true</createSourcesJar>
               <relocations>
                 <relocation>
-                  <pattern></pattern>
+                  <pattern />
                   <shadedPattern>org.sonarsource.sonarlint.shaded.</shadedPattern>
                   <includes>
                     <include>org.apache.**</include>
@@ -306,6 +306,9 @@
                     <include>org.springframework.**</include>
                     <include>org.sonarqube.ws.**</include>
                   </includes>
+                  <excludes>
+                    <exclude>org.apache.hc.**</exclude>
+                  </excludes>
                 </relocation>
               </relocations>
               <artifactSet>

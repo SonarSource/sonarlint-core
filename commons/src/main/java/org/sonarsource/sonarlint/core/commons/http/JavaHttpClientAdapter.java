@@ -116,6 +116,7 @@ public class JavaHttpClientAdapter implements HttpClient {
       request.setHeader("Authorization", basic(usernameOrToken, Objects.requireNonNullElse(password, "")));
     }
     request.setHeader("Accept", "text/event-stream");
+    connected = false;
     var httpFuture = javaClient.execute(new BasicRequestProducer(request, null),
       new AbstractCharResponseConsumer<>() {
         @Override

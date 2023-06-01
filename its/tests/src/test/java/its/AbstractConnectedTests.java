@@ -121,6 +121,13 @@ public abstract class AbstractConnectedTests {
     return map;
   }
 
+  public static HttpClient httpClientWithCredentials(String user, String password) {
+    if (SHARED_CLIENT.getStatus() != IOReactorStatus.ACTIVE) {
+      SHARED_CLIENT.start();
+    }
+    return new JavaHttpClientAdapter(SHARED_CLIENT, user, password);
+  }
+
   public static HttpClient sqHttpClient() {
     if (SHARED_CLIENT.getStatus() != IOReactorStatus.ACTIVE) {
       SHARED_CLIENT.start();
