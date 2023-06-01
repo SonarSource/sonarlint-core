@@ -19,16 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.http;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
-import java.net.ProxySelector;
-import java.net.SocketAddress;
-import java.net.URI;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
@@ -52,7 +44,6 @@ import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentials
 import org.sonarsource.sonarlint.core.clientapi.client.connection.TokenDto;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.clientapi.client.http.GetProxyPasswordAuthenticationParams;
-import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.http.JavaHttpClientAdapter;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -81,33 +72,13 @@ public class HttpClientManager {
       // SLI-629 - Force HTTP/1
       .setVersionPolicy(HttpVersionPolicy.FORCE_HTTP_1)
       // proxy settings
-      .setRoutePlanner(new SystemDefaultRoutePlanner(new ProxySelector() {
-        @Override
-        public List<Proxy> select(URI uri) {
-          try {
-            return client.selectProxies(new SelectProxiesParams(uri.toString())).get().getProxies().stream()
-              .map(p -> p.getType() == Proxy.Type.DIRECT ? Proxy.NO_PROXY : new Proxy(p.getType(), new InetSocketAddress(p.getHostname(),
-                p.getPort())))
-              .collect(Collectors.toList());
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            logger.warn("Interrupted!", e);
-          } catch (ExecutionException e) {
-            logger.warn("Unable to get proxy", e);
-          }
-          return List.of();
-        }
-
-        @Override
-        public void connectFailed(URI uri, SocketAddress sa, IOException ioe) {
-
-        }
-      }))
+      .setRoutePlanner(new SystemDefaultRoutePlanner(new ClientProxySelector(this.client)))
       .setDefaultCredentialsProvider((authScope, httpContext) -> {
         try {
           var response = client.getProxyPasswordAuthentication(
             new GetProxyPasswordAuthenticationParams(authScope.getHost(), authScope.getPort(), authScope.getProtocol(),
-              authScope.getRealm(), authScope.getSchemeName())).get();
+              authScope.getRealm(), authScope.getSchemeName()))
+            .get();
           if (response.getProxyUser() != null || response.getProxyPassword() != null) {
             return new UsernamePasswordCredentials(response.getProxyUser(), response.getProxyPassword().toCharArray());
           }
@@ -123,8 +94,7 @@ public class HttpClientManager {
         RequestConfig.copy(RequestConfig.DEFAULT)
           .setConnectionRequestTimeout(CONNECTION_TIMEOUT)
           .setResponseTimeout(RESPONSE_TIMEOUT)
-          .build()
-      )
+          .build())
       .build();
 
     sharedClient.start();
@@ -171,6 +141,5 @@ public class HttpClientManager {
       return request != null && Method.POST.isSame(request.getMethod());
     }
   }
-
 
 }
