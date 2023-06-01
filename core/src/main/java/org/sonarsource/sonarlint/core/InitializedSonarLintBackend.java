@@ -106,7 +106,7 @@ public class InitializedSonarLintBackend implements SonarLintBackend {
       params.getConnectedModeEmbeddedPluginPathsByKey());
     rulesExtractionHelper = new RulesExtractionHelper(pluginsService, languageSupportRepository, params.isEnableSecurityHotspots());
     var rulesRepository = new RulesRepository(rulesExtractionHelper);
-    var httpClientManager = new HttpClientManager(client, params.getUserAgent());
+    var httpClientManager = new HttpClientManager(client, params.getUserAgent(), sonarlintUserHome);
     var serverApiProvider = new ServerApiProvider(connectionConfigurationRepository, httpClientManager);
     rulesService = new RulesServiceImpl(serverApiProvider, configurationRepository, rulesRepository, storageService, params.getStandaloneRuleConfigByKey());
     this.telemetryService = new TelemetryServiceImpl(params.getTelemetryProductKey(), sonarlintUserHome);

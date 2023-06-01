@@ -54,6 +54,9 @@ class HttpClientManagerMediumTests {
   @TempDir
   private Path storageDir;
 
+  @TempDir
+  private Path sonarlintUserHome;
+
   @RegisterExtension
   WireMockExtension sonarqubeMock = WireMockExtension.newInstance()
     .options(wireMockConfig().dynamicPort())
@@ -70,7 +73,7 @@ class HttpClientManagerMediumTests {
 
   @Test
   void it_should_use_user_agent() {
-    var httpClientManager = new HttpClientManager(newFakeClient().build(), "SonarLint");
+    var httpClientManager = new HttpClientManager(newFakeClient().build(), "SonarLint", sonarlintUserHome);
 
     httpClientManager.getHttpClient().get(sonarqubeMock.url("/test"));
 

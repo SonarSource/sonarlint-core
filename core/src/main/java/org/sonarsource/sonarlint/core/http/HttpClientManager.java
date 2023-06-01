@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.http;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.concurrent.ExecutionException;
@@ -60,12 +62,12 @@ public class HttpClientManager {
   private final SonarLintClient client;
   private final CloseableHttpAsyncClient sharedClient;
 
-  public HttpClientManager(SonarLintClient client, String userAgent) {
+  public HttpClientManager(SonarLintClient client, String userAgent, Path sonarlintUserHome) {
     this.client = client;
-    var sslFactory = SSLFactory.builder()
+    var sslFactoryBuilder = SSLFactory.builder()
       .withDefaultTrustMaterial()
       .withSystemTrustMaterial()
-      //.withTrustMaterial(Paths.get("/path/to/your/truststore.jks"), "password".toCharArray())
+
       .withTrustMaterial(new X509TrustManager() {
 
         @Override
@@ -82,10 +84,14 @@ public class HttpClientManager {
         public X509Certificate[] getAcceptedIssuers() {
           return new X509Certificate[0];
         }
-      })
-      .build();
+      });
+
+    var sonarlintTruststore = sonarlintUserHome.resolve("/ssl/truststore.jks");
+    if (Files.exists(sonarlintTruststore)) {
+      sslFactoryBuilder.withTrustMaterial(sonarlintTruststore, "changeit".toCharArray());
+    }
     var asyncConnectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
-      .setTlsStrategy(Apache5SslUtils.toTlsStrategy(sslFactory))
+      .setTlsStrategy(Apache5SslUtils.toTlsStrategy(sslFactoryBuilder.build()))
       .setDefaultTlsConfig(TlsConfig.custom()
         // Force HTTP/1 since we know SQ/SC don't support HTTP/2 ATM
         .setVersionPolicy(HttpVersionPolicy.FORCE_HTTP_1)
@@ -95,15 +101,14 @@ public class HttpClientManager {
       .setConnectionManager(asyncConnectionManager)
       .addResponseInterceptorFirst(new RedirectInterceptor())
       .setUserAgent(userAgent)
-      // SLI-629 - Force HTTP/1
-      .setVersionPolicy(HttpVersionPolicy.FORCE_HTTP_1)
       // proxy settings
       .setRoutePlanner(new SystemDefaultRoutePlanner(new ClientProxySelector(client)))
       .setDefaultCredentialsProvider((authScope, httpContext) -> {
         try {
           var response = client.getProxyPasswordAuthentication(
             new GetProxyPasswordAuthenticationParams(authScope.getHost(), authScope.getPort(), authScope.getProtocol(),
-              authScope.getRealm(), authScope.getSchemeName())).get();
+              authScope.getRealm(), authScope.getSchemeName()))
+            .get();
           if (response.getProxyUser() != null || response.getProxyPassword() != null) {
             return new UsernamePasswordCredentials(response.getProxyUser(), response.getProxyPassword().toCharArray());
           }
@@ -119,8 +124,7 @@ public class HttpClientManager {
         RequestConfig.copy(RequestConfig.DEFAULT)
           .setConnectionRequestTimeout(CONNECTION_TIMEOUT)
           .setResponseTimeout(RESPONSE_TIMEOUT)
-          .build()
-      )
+          .build())
       .build();
 
     sharedClient.start();
@@ -167,6 +171,5 @@ public class HttpClientManager {
       return request != null && Method.POST.isSame(request.getMethod());
     }
   }
-
 
 }
