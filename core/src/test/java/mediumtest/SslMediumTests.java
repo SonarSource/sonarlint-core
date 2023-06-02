@@ -22,6 +22,7 @@ package mediumtest;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.StorageFixture;
@@ -31,8 +32,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetEffectiveRuleDetailsParams;
+import org.sonarsource.sonarlint.core.clientapi.client.http.CheckServerTrustedParams;
+import org.sonarsource.sonarlint.core.clientapi.client.http.CheckServerTrustedResponse;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
@@ -45,6 +50,10 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static testutils.TestUtils.protobufBody;
 
 class SslMediumTests {
@@ -97,20 +106,28 @@ class SslMediumTests {
   void it_should_trust_user_certificate_after_asking_once() throws ExecutionException, InterruptedException {
     var fakeClient = newFakeClient()
       .build();
+    fakeClient = Mockito.spy(fakeClient);
     backend = newBackend()
-      .withSonarLintUserHome(sonarlintUserHome)
-      .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl())
+      .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
+        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withStorageRoot(storageDir.resolve("storage"))
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .build(fakeClient);
 
-    var future = this.backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:S139", null));
+    var captor = ArgumentCaptor.forClass(CheckServerTrustedParams.class);
 
+    when(fakeClient.checkServerTrusted(captor.capture()))
+      .thenReturn(CompletableFuture.completedFuture(new CheckServerTrustedResponse(true)));
+
+    // Two concurrent requests should only trigger checkServerTrusted once
+    var future = this.backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:S139", null));
     var future2 = this.backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:S139", null));
 
     future.get();
     future2.get();
+
+    verify(fakeClient, times(1)).checkServerTrusted(any());
   }
 
 }
