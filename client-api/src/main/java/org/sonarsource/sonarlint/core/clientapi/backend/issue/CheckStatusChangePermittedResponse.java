@@ -19,24 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.issue;
 
-public enum IssueStatus {
-  // order is important here, it will be applied in the UI
-  WONT_FIX("Won't Fix", "The issue is irrelevant in this context."),
-  FALSE_POSITIVE("False Positive", "The issue is not accurate.");
+import java.util.List;
 
-  private final String title;
-  private final String description;
+public class CheckStatusChangePermittedResponse {
+  private final List<IssueStatus> allowedStatuses;
 
-  IssueStatus(String title, String description) {
-    this.title = title;
-    this.description = description;
+  public CheckStatusChangePermittedResponse(List<IssueStatus> allowedStatuses) {
+    this.allowedStatuses = allowedStatuses;
   }
 
-  public String getTitle() {
-    return title;
-  }
-
-  public String getDescription() {
-    return description;
+  public List<IssueStatus> getAllowedStatuses() {
+    return allowedStatuses;
   }
 }

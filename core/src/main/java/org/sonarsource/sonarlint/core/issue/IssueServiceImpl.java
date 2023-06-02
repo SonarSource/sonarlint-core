@@ -19,11 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.issue;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.AddIssueCommentParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ChangeIssueStatusParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangePermittedParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueService;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
@@ -50,7 +54,7 @@ public class IssueServiceImpl implements IssueService {
     return optionalBinding
       .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
       .map(connection -> {
-        var reviewStatus = params.getNewStatus().getStatusValue();
+        var reviewStatus = toTransition(params.getNewStatus());
         return connection.issue().changeStatusAsync(params.getIssueKey(), reviewStatus)
           .thenAccept(nothing ->
           {
@@ -64,6 +68,26 @@ public class IssueServiceImpl implements IssueService {
           });
       })
       .orElseGet(() -> CompletableFuture.completedFuture(null));
+  }
+
+  private static String toTransition(IssueStatus status) {
+    if (status.equals(IssueStatus.WONT_FIX)) {
+      return "wontfix";
+    }
+    if (status.equals(IssueStatus.FALSE_POSITIVE)) {
+      return "falsepositive";
+    }
+    return "";
+  }
+
+  @Override
+  public CompletableFuture<CheckStatusChangePermittedResponse> checkStatusChangePermitted(CheckStatusChangePermittedParams params) {
+    var connectionId = params.getConnectionId();
+    var serverApiOpt = serverApiProvider.getServerApi(connectionId);
+    if (serverApiOpt.isEmpty()) {
+      return CompletableFuture.failedFuture(new IllegalArgumentException("Connection with ID '" + connectionId + "' does not exist"));
+    }
+    return CompletableFuture.completedFuture(new CheckStatusChangePermittedResponse(List.of(IssueStatus.WONT_FIX, IssueStatus.FALSE_POSITIVE)));
   }
 
   @Override

@@ -67,4 +67,17 @@ public interface IssueService {
    */
   @JsonRequest
   CompletableFuture<Void> addComment(AddIssueCommentParams params);
+
+  /**
+   * Checks if the user has permission to change the issue status. Also returns the list of allowed statuses.
+   * <p>
+   * This method will fail if:
+   * <ul>
+   *   <li>the connectionId provided as a parameter is unknown</li>
+   * </ul>
+   * In those cases, a failed future will be returned.
+   * </p>
+   */
+  @JsonRequest
+  CompletableFuture<CheckStatusChangePermittedResponse> checkStatusChangePermitted(CheckStatusChangePermittedParams params);
 }
