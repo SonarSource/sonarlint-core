@@ -308,7 +308,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
 
   @Override
   public void replaceAllIssuesOfFile(String branchName, String serverFilePath, List<ServerIssue> issues) {
-    timed("Wrote " + issues.size() + " issues in store", () -> entityStore.executeInTransaction(txn -> {
+    timed(wroteMessage(issues.size(), "issues"), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
       var fileEntity = getOrCreateFile(branch, serverFilePath, txn);
       replaceAllIssuesOfFile(issues, txn, fileEntity);
@@ -318,7 +318,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   @Override
   public void mergeIssues(String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp) {
     var issuesByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
-    timed("Merged " + issuesToMerge.size() + " issues in store. Closed " + closedIssueKeysToDelete.size() + ".", () -> entityStore.executeInTransaction(txn -> {
+    timed(mergedMessage(issuesToMerge.size(), closedIssueKeysToDelete.size(), "issues"), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
       issuesByFilePath.forEach((filePath, issues) -> {
         var fileEntity = getOrCreateFile(branch, filePath, txn);
@@ -333,7 +333,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   @Override
   public void mergeTaintIssues(String branchName, List<ServerTaintIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp) {
     var issuesByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerTaintIssue::getFilePath));
-    timed("Merged " + issuesToMerge.size() + " taint issues in store. Closed " + closedIssueKeysToDelete.size() + ".", () -> entityStore.executeInTransaction(txn -> {
+    timed(mergedMessage(issuesToMerge.size(), closedIssueKeysToDelete.size(), "taint issues"), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
       issuesByFilePath.forEach((filePath, issues) -> {
         var fileEntity = getOrCreateFile(branch, filePath, txn);
@@ -348,7 +348,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   @Override
   public void mergeHotspots(String branchName, List<ServerHotspot> hotspotsToMerge, Set<String> closedHotspotKeysToDelete, Instant syncTimestamp) {
     var hotspotsByFilePath = hotspotsToMerge.stream().collect(Collectors.groupingBy(ServerHotspot::getFilePath));
-    timed("Merged " + hotspotsToMerge.size() + " issues in store. Closed " + closedHotspotKeysToDelete.size() + ".", () -> entityStore.executeInTransaction(txn -> {
+    timed(mergedMessage(hotspotsToMerge.size(), closedHotspotKeysToDelete.size(), "hotspots"), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
       hotspotsByFilePath.forEach((filePath, hotspots) -> {
         var fileEntity = getOrCreateFile(branch, filePath, txn);
@@ -358,6 +358,14 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       closedHotspotKeysToDelete.forEach(hotspotKey -> removeHotspot(hotspotKey, txn));
       branch.setProperty(LAST_HOTSPOT_SYNC_PROPERTY_NAME, syncTimestamp);
     }));
+  }
+
+  private static String wroteMessage(int wrote, String itemName) {
+    return String.format("Wrote %d %s in store", wrote, itemName);
+  }
+
+  private static String mergedMessage(int merged, int closed, String itemName) {
+    return String.format("Merged %d %s in store. Closed %d.", merged, itemName, closed);
   }
 
   @Override
@@ -381,7 +389,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   @Override
   public void replaceAllIssuesOfBranch(String branchName, List<ServerIssue> issues) {
     var issuesByFile = issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
-    timed("Wrote " + issues.size() + " issues in store", () -> entityStore.executeInTransaction(txn -> {
+    timed(wroteMessage(issues.size(), "issues"), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
       branch.getLinks(BRANCH_TO_FILES_LINK_NAME).forEach(fileEntity -> {
         var entityFilePath = fileEntity.getProperty(PATH_PROPERTY_NAME);
@@ -401,7 +409,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   @Override
   public void replaceAllHotspotsOfBranch(String branchName, Collection<ServerHotspot> serverHotspots) {
     var hotspotsByFile = serverHotspots.stream().collect(Collectors.groupingBy(ServerHotspot::getFilePath));
-    timed("Wrote " + serverHotspots.size() + " hotspots in store", () -> entityStore.executeInTransaction(txn -> {
+    timed(wroteMessage(serverHotspots.size(), "hotspots"), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
       branch.getLinks(BRANCH_TO_FILES_LINK_NAME).forEach(fileEntity -> {
         var entityFilePath = fileEntity.getProperty(PATH_PROPERTY_NAME);
@@ -420,7 +428,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
 
   @Override
   public void replaceAllHotspotsOfFile(String branchName, String serverFilePath, Collection<ServerHotspot> serverHotspots) {
-    timed("Wrote " + serverHotspots.size() + " hotspots in store", () -> entityStore.executeInTransaction(txn -> {
+    timed(wroteMessage(serverHotspots.size(), "hotspots"), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
       var fileEntity = getOrCreateFile(branch, serverFilePath, txn);
       replaceAllHotspotsOfFile(serverHotspots, txn, fileEntity);

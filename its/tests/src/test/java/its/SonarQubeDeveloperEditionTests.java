@@ -1090,15 +1090,23 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     void downloadsServerHotspotsForProject() {
       updateProject(engine, PROJECT_KEY_JAVA_HOTSPOT);
 
-      engine.downloadAllServerHotspots(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVA_HOTSPOT, "master", null);
-
-      var serverHotspots = engine.getServerHotspots(new ProjectBinding(PROJECT_KEY_JAVA_HOTSPOT, "", "ide"), "master", "ide/src/main/java/foo/Foo.java");
-      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
+      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 1)) {
+        engine.syncServerHotspots(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVA_HOTSPOT, "master", null);
+        var serverHotspots = engine.getServerHotspots(new ProjectBinding(PROJECT_KEY_JAVA_HOTSPOT, "", "ide"), "master", "ide/src/main/java/foo/Foo.java");
+        assertThat(serverHotspots)
+          .extracting("ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "status")
+          .containsExactly(
+            tuple("java:S4792", "Make sure that this logger's configuration is safe.", "ide/src/main/java/foo/Foo.java", 9, 4, 9, 45, HotspotReviewStatus.TO_REVIEW));
+      } else if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
+        engine.downloadAllServerHotspots(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVA_HOTSPOT, "master", null);
+        var serverHotspots = engine.getServerHotspots(new ProjectBinding(PROJECT_KEY_JAVA_HOTSPOT, "", "ide"), "master", "ide/src/main/java/foo/Foo.java");
         assertThat(serverHotspots)
           .extracting("ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "status")
           .containsExactly(
             tuple("java:S4792", "Make sure that this logger's configuration is safe.", "ide/src/main/java/foo/Foo.java", 9, 4, 9, 45, HotspotReviewStatus.TO_REVIEW));
       } else {
+        engine.downloadAllServerHotspots(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVA_HOTSPOT, "master", null);
+        var serverHotspots = engine.getServerHotspots(new ProjectBinding(PROJECT_KEY_JAVA_HOTSPOT, "", "ide"), "master", "ide/src/main/java/foo/Foo.java");
         assertThat(serverHotspots).isEmpty();
       }
     }
@@ -1111,7 +1119,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       engine.downloadAllServerHotspotsForFile(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding, "ide/src/main/java/foo/Foo.java", "master", null);
 
       var serverHotspots = engine.getServerHotspots(projectBinding, "master", "ide/src/main/java/foo/Foo.java");
-      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
+      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)
+      && !ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 1)) {
         assertThat(serverHotspots)
           .extracting("ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "status")
           .containsExactly(

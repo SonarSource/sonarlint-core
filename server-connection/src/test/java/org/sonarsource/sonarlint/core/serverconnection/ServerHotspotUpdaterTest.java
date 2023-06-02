@@ -77,6 +77,16 @@ class ServerHotspotUpdaterTest {
   }
 
   @Test
+  void should_not_update_file_hotspots_when_sync_is_enabled() {
+    when(hotspotApi.supportHotspotsPull(any())).thenReturn(true);
+
+    updater.updateForFile(hotspotApi, projectBinding, "filePath", "branch", () -> null);
+
+    verifyNoInteractions(issueStore);
+    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).contains("Skip downloading file hotspots on SonarQube 10.1+");
+  }
+
+  @Test
   void should_not_update_file_hotspots_when_not_supported() {
     when(hotspotApi.permitsTracking(any())).thenReturn(false);
 
