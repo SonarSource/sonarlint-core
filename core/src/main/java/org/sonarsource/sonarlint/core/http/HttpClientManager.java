@@ -19,10 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.http;
 
-import java.nio.file.Files;
+import java.math.BigInteger;
 import java.nio.file.Path;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.Principal;
+import java.security.PublicKey;
+import java.security.SignatureException;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateExpiredException;
+import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
+import java.util.Date;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.X509TrustManager;
@@ -58,40 +69,183 @@ public class HttpClientManager {
 
   private static final Timeout CONNECTION_TIMEOUT = Timeout.ofSeconds(30);
   private static final Timeout RESPONSE_TIMEOUT = Timeout.ofMinutes(10);
+  public static final String KEYSTORE_PWD = "changeit";
+  public static final X509Certificate FAKE_CERTIFICATE = new X509Certificate() {
+    @Override
+    public void checkValidity() throws CertificateExpiredException, CertificateNotYetValidException {
+
+    }
+
+    @Override
+    public void checkValidity(Date date) throws CertificateExpiredException, CertificateNotYetValidException {
+
+    }
+
+    @Override
+    public int getVersion() {
+      return 0;
+    }
+
+    @Override
+    public BigInteger getSerialNumber() {
+      return null;
+    }
+
+    @Override
+    public Principal getIssuerDN() {
+      return null;
+    }
+
+    @Override
+    public Principal getSubjectDN() {
+      return null;
+    }
+
+    @Override
+    public Date getNotBefore() {
+      return null;
+    }
+
+    @Override
+    public Date getNotAfter() {
+      return null;
+    }
+
+    @Override
+    public byte[] getTBSCertificate() throws CertificateEncodingException {
+      return new byte[0];
+    }
+
+    @Override
+    public byte[] getSignature() {
+      return new byte[0];
+    }
+
+    @Override
+    public String getSigAlgName() {
+      return null;
+    }
+
+    @Override
+    public String getSigAlgOID() {
+      return null;
+    }
+
+    @Override
+    public byte[] getSigAlgParams() {
+      return new byte[0];
+    }
+
+    @Override
+    public boolean[] getIssuerUniqueID() {
+      return new boolean[0];
+    }
+
+    @Override
+    public boolean[] getSubjectUniqueID() {
+      return new boolean[0];
+    }
+
+    @Override
+    public boolean[] getKeyUsage() {
+      return new boolean[0];
+    }
+
+    @Override
+    public int getBasicConstraints() {
+      return 0;
+    }
+
+    @Override
+    public byte[] getEncoded() throws CertificateEncodingException {
+      return new byte[0];
+    }
+
+    @Override
+    public void verify(PublicKey key) throws CertificateException, NoSuchAlgorithmException, InvalidKeyException, NoSuchProviderException, SignatureException {
+
+    }
+
+    @Override
+    public void verify(PublicKey key, String sigProvider) throws CertificateException, NoSuchAlgorithmException, InvalidKeyException, NoSuchProviderException, SignatureException {
+
+    }
+
+    @Override
+    public String toString() {
+      return null;
+    }
+
+    @Override
+    public PublicKey getPublicKey() {
+      return null;
+    }
+
+    @Override
+    public boolean hasUnsupportedCriticalExtension() {
+      return false;
+    }
+
+    @Override
+    public Set<String> getCriticalExtensionOIDs() {
+      return null;
+    }
+
+    @Override
+    public Set<String> getNonCriticalExtensionOIDs() {
+      return null;
+    }
+
+    @Override
+    public byte[] getExtensionValue(String oid) {
+      return new byte[0];
+    }
+  };
   private final SonarLintLogger logger = SonarLintLogger.get();
   private final SonarLintClient client;
   private final CloseableHttpAsyncClient sharedClient;
 
   public HttpClientManager(SonarLintClient client, String userAgent, Path sonarlintUserHome) {
     this.client = client;
-    var sslFactoryBuilder = SSLFactory.builder()
+    var sonarlintTruststore = sonarlintUserHome.resolve("ssl/truststore.jks");
+    var confirmingTrustManager = new X509TrustManager() {
+
+      private MutableTrustManager mutableTrustManager = new MutableTrustManager(sonarlintTruststore.toAbsolutePath().toString(), KEYSTORE_PWD);
+
+      @Override
+      public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+        mutableTrustManager.checkClientTrusted(chain, authType);
+      }
+
+      @Override
+      public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+        synchronized (this) {
+          try {
+            mutableTrustManager.checkServerTrusted(chain, authType);
+          } catch (CertificateException e) {
+            final X509Certificate endPoint = chain[0];
+            var isTrustedByClient = false; // FIXME
+            if (isTrustedByClient) {
+              mutableTrustManager.addCertificate(endPoint);
+            } else {
+              throw e;
+            }
+          }
+        }
+      }
+
+      @Override
+      public X509Certificate[] getAcceptedIssuers() {
+        return new X509Certificate[] {FAKE_CERTIFICATE};
+      }
+    };
+    var sslFactory = SSLFactory.builder()
       .withDefaultTrustMaterial()
       .withSystemTrustMaterial()
-
-      .withTrustMaterial(new X509TrustManager() {
-
-        @Override
-        public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-          // Not implemented
-        }
-
-        @Override
-        public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-
-        }
-
-        @Override
-        public X509Certificate[] getAcceptedIssuers() {
-          return new X509Certificate[0];
-        }
-      });
-
-    var sonarlintTruststore = sonarlintUserHome.resolve("/ssl/truststore.jks");
-    if (Files.exists(sonarlintTruststore)) {
-      sslFactoryBuilder.withTrustMaterial(sonarlintTruststore, "changeit".toCharArray());
-    }
+      .withTrustMaterial(confirmingTrustManager)
+      .build();
     var asyncConnectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
-      .setTlsStrategy(Apache5SslUtils.toTlsStrategy(sslFactoryBuilder.build()))
+      .setTlsStrategy(Apache5SslUtils.toTlsStrategy(sslFactory))
       .setDefaultTlsConfig(TlsConfig.custom()
         // Force HTTP/1 since we know SQ/SC don't support HTTP/2 ATM
         .setVersionPolicy(HttpVersionPolicy.FORCE_HTTP_1)
