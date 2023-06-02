@@ -21,12 +21,18 @@ package mediumtest;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.nio.file.Path;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import mediumtest.fixtures.SonarLintTestBackend;
 import mediumtest.fixtures.StorageFixture;
 import mediumtest.fixtures.TestPlugin;
+import nl.altindag.ssl.util.CertificateUtils;
+import nl.altindag.ssl.util.KeyStoreUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,7 +72,7 @@ class SslMediumTests {
     .options(wireMockConfig().dynamicHttpsPort())
     .build();
 
-  private SonarLintBackend backend;
+  private SonarLintTestBackend backend;
 
   @BeforeEach
   void prepare() {
@@ -103,7 +109,7 @@ class SslMediumTests {
   }
 
   @Test
-  void it_should_trust_user_certificate_after_asking_once() throws ExecutionException, InterruptedException {
+  void it_should_trust_user_certificate_after_asking_once() throws ExecutionException, InterruptedException, KeyStoreException {
     var fakeClient = newFakeClient()
       .build();
     fakeClient = Mockito.spy(fakeClient);
@@ -128,6 +134,15 @@ class SslMediumTests {
     future2.get();
 
     verify(fakeClient, times(1)).checkServerTrusted(any());
+
+    var params = captor.getValue();
+
+    assertThat(params.getAuthType()).isEqualTo("UNKNOWN");
+    assertThat(params.getChain()).hasSize(1);
+
+    var keyStore = KeyStoreUtils.loadKeyStore(backend.getUserHome().resolve("ssl/truststore.jks"), "changeit".toCharArray());
+    assertThat(Collections.list(keyStore.aliases())).containsExactly("cn=tom-akehurst_ou=unknown_o=unknown_l=unknown_st=unknown_c=unknown");
+
   }
 
 }
