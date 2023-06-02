@@ -34,6 +34,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 
@@ -47,6 +48,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static testutils.TestUtils.protobufBody;
 
 class SslMediumTests {
+
+  @RegisterExtension
+  SonarLintLogTester logTester = new SonarLintLogTester(true);
 
   @RegisterExtension
   WireMockExtension sonarqubeMock = WireMockExtension.newInstance()
@@ -87,6 +91,26 @@ class SslMediumTests {
     var thrown = assertThrows(CompletionException.class, future::join);
     assertThat(thrown).hasRootCauseInstanceOf(java.security.cert.CertificateException.class).hasRootCauseMessage("None of the TrustManagers trust this certificate chain");
     assertThat(future).isCompletedExceptionally();
+  }
+
+  @Test
+  void it_should_trust_user_certificate_after_asking_once() throws ExecutionException, InterruptedException {
+    var fakeClient = newFakeClient()
+      .build();
+    backend = newBackend()
+      .withSonarLintUserHome(sonarlintUserHome)
+      .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl())
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withStorageRoot(storageDir.resolve("storage"))
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
+      .build(fakeClient);
+
+    var future = this.backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:S139", null));
+
+    var future2 = this.backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:S139", null));
+
+    future.get();
+    future2.get();
   }
 
 }
