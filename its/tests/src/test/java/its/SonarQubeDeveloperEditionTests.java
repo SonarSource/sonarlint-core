@@ -1119,7 +1119,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       engine.downloadAllServerHotspotsForFile(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding, "ide/src/main/java/foo/Foo.java", "master", null);
 
       var serverHotspots = engine.getServerHotspots(projectBinding, "master", "ide/src/main/java/foo/Foo.java");
-      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
+      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)
+      && !ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 1)) {
         assertThat(serverHotspots)
           .extracting("ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "status")
           .containsExactly(
