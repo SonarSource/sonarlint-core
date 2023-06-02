@@ -348,7 +348,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   @Override
   public void mergeHotspots(String branchName, List<ServerHotspot> hotspotsToMerge, Set<String> closedHotspotKeysToDelete, Instant syncTimestamp) {
     var hotspotsByFilePath = hotspotsToMerge.stream().collect(Collectors.groupingBy(ServerHotspot::getFilePath));
-    timed("Merged " + hotspotsToMerge.size() + " issues in store. Closed " + closedHotspotKeysToDelete.size() + ".", () -> entityStore.executeInTransaction(txn -> {
+    timed("Merged " + hotspotsToMerge.size() + " hotspots in store. Closed " + closedHotspotKeysToDelete.size() + ".", () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
       hotspotsByFilePath.forEach((filePath, hotspots) -> {
         var fileEntity = getOrCreateFile(branch, filePath, txn);

@@ -51,6 +51,10 @@ public class ServerHotspotUpdater {
     if (serverFilePath == null) {
       return;
     }
+    if (hotspotApi.supportHotspotsPull(serverVersionSupplier)) {
+      LOG.debug("Skip downloading file hotspots on SonarQube 10.1+");
+      return;
+    }
     if (hotspotApi.permitsTracking(serverVersionSupplier)) {
       var projectKey = projectBinding.projectKey();
       var projectHotspots = hotspotApi.getFromFile(projectKey, serverFilePath, branchName);
