@@ -129,7 +129,7 @@ public class HttpClientManager {
       alterResponseCodeIfNeeded(context, response);
     }
 
-    private void alterResponseCodeIfNeeded(HttpContext context, HttpResponse response) {
+    private static void alterResponseCodeIfNeeded(HttpContext context, HttpResponse response) {
       if (isPost(context)) {
         // Apache handles some redirect statuses by transforming the POST into a GET
         // we force a different status to keep the request a POST
@@ -142,7 +142,7 @@ public class HttpClientManager {
       }
     }
 
-    private boolean isPost(HttpContext context) {
+    private static boolean isPost(HttpContext context) {
       var request = (HttpRequest) context.getAttribute(HttpCoreContext.HTTP_REQUEST);
       return request != null && Method.POST.isSame(request.getMethod());
     }

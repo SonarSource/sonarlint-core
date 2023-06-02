@@ -32,9 +32,12 @@ import java.util.Arrays;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import javax.annotation.CheckForNull;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
+import nl.altindag.ssl.util.CertificateUtils;
+import nl.altindag.ssl.util.KeyStoreUtils;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 /**
@@ -79,14 +82,11 @@ public final class MutableTrustManager implements X509TrustManager {
     }
   }
 
+  @CheckForNull
   private static KeyStore createKeyStore(Path cacertsFile, String password) {
-    KeyStore keyStore;
     try {
-      keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
       if (Files.exists(cacertsFile)) {
-        try (var stream = Files.newInputStream(cacertsFile)) {
-          keyStore.load(stream, password.toCharArray());
-        }
+        return KeyStoreUtils.loadKeyStore(cacertsFile, password.toCharArray());
       } else {
         try {
           Files.createDirectories(cacertsFile.getParent());
@@ -95,13 +95,12 @@ public final class MutableTrustManager implements X509TrustManager {
           return null;
         }
 
-        keyStore.load(null, password.toCharArray());
+        return KeyStoreUtils.createKeyStore(password.toCharArray());
       }
     } catch (Exception e) {
       LOG.error("Cannot create key store", e);
       return null;
     }
-    return keyStore;
   }
 
   /**
@@ -116,7 +115,7 @@ public final class MutableTrustManager implements X509TrustManager {
       if (isBroken()) {
         return false;
       }
-      myKeyStore.setCertificateEntry(createAlias(certificate), certificate);
+      myKeyStore.setCertificateEntry(CertificateUtils.generateAlias(certificate), certificate);
       flushKeyStore();
       // trust manager should be updated each time its key store was modified
       myTrustManager = initFactoryAndGetManager();
@@ -127,10 +126,6 @@ public final class MutableTrustManager implements X509TrustManager {
     } finally {
       myWriteLock.unlock();
     }
-  }
-
-  private static String createAlias(X509Certificate certificate) {
-    return certificate.getSubjectX500Principal().getName();
   }
 
   @Override
