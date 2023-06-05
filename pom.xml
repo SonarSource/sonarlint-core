@@ -170,6 +170,16 @@
         <artifactId>mockwebserver3</artifactId>
         <version>${okhttp.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.apache.httpcomponents.client5</groupId>
+        <artifactId>httpclient5</artifactId>
+        <version>5.2.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>1.7.36</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
