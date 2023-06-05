@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import nl.altindag.ssl.SSLFactory;
-import nl.altindag.ssl.apache5.util.Apache5SslUtils;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.config.TlsConfig;
@@ -31,6 +30,7 @@ import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.impl.routing.SystemDefaultRoutePlanner;
+import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
 import org.apache.hc.core5.http.EntityDetails;
 import org.apache.hc.core5.http.HttpRequest;
 import org.apache.hc.core5.http.HttpResponse;
@@ -67,7 +67,7 @@ public class HttpClientManager {
       .withTrustMaterial(confirmingTrustManager)
       .build();
     var asyncConnectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
-      .setTlsStrategy(Apache5SslUtils.toTlsStrategy(sslFactory))
+      .setTlsStrategy(new DefaultClientTlsStrategy(sslFactory.getSslContext()))
       .setDefaultTlsConfig(TlsConfig.custom()
         // Force HTTP/1 since we know SQ/SC don't support HTTP/2 ATM
         .setVersionPolicy(HttpVersionPolicy.FORCE_HTTP_1)
