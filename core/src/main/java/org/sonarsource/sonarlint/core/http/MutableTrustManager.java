@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.http;
 
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -38,10 +39,12 @@ import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 import nl.altindag.ssl.util.CertificateUtils;
 import nl.altindag.ssl.util.KeyStoreUtils;
+import org.apache.commons.io.FileUtils;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 /**
- * Inspired by https://github.com/JetBrains/intellij-community/blob/f4fc17b0c44d38d65fb7ad47b968bed55c889609/platform/platform-api/src/com/intellij/util/net/ssl/ConfirmingTrustManager.java#L313
+ * Inspired by
+ * https://github.com/JetBrains/intellij-community/blob/f4fc17b0c44d38d65fb7ad47b968bed55c889609/platform/platform-api/src/com/intellij/util/net/ssl/ConfirmingTrustManager.java#L313
  * 
  */
 public final class MutableTrustManager implements X509TrustManager {
@@ -188,7 +191,7 @@ public final class MutableTrustManager implements X509TrustManager {
     return myKeyStore == null || myFactory == null || myTrustManager == null;
   }
 
-  private void flushKeyStore() throws Exception {
+  private void flushKeyStore() throws IOException, CertificateException, KeyStoreException, NoSuchAlgorithmException {
     try (var stream = new FileOutputStream(myPath.toFile())) {
       myKeyStore.store(stream, myPassword.toCharArray());
     }
