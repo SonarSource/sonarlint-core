@@ -122,6 +122,8 @@ public class HotspotServiceImpl implements HotspotService {
     return serverApiOpt.get().hotspot().show(params.getHotspotKey())
       .thenApply(hotspot -> {
         var allowedStatuses = HotspotReviewStatus.allowedStatusesOn(connection.getKind());
+        // canChangeStatus is false when the 'Administer Hotspots' permission is missing
+        // normally the 'Browse' permission is also required, but we assume it's present as the client knows the hotspot key
         return toResponse(hotspot.canChangeStatus, allowedStatuses);
       });
   }

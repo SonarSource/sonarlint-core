@@ -51,9 +51,15 @@ message Issue {
   optional string status = 12;
   optional string message = 13;
   optional string assignee = 15;
+  // the transitions allowed for the requesting user.
+  optional Transitions transitions = 20;
   optional string creationDate = 23;
   optional sonarqube.ws.commons.RuleType type = 27;
   optional string ruleDescriptionContextKey = 37;
+}
+
+message Transitions {
+  repeated string transitions = 1;
 }
 
 message Component {
@@ -114,5 +120,3 @@ message TaintVulnerabilityLite {
 message Flow {
   repeated Location locations = 1;
 }
-
-

@@ -19,7 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.issue;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.AddIssueCommentParams;
@@ -29,10 +31,19 @@ import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangeP
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueService;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
 public class IssueServiceImpl implements IssueService {
+
+  private static final String STATUS_CHANGE_PERMISSION_MISSING_REASON = "Changing an issue's status requires the 'Administer Issues' permission.";
+  private static final Map<String, IssueStatus> issuesStatusByTransition = Map.of(
+    "wontfix", IssueStatus.WONT_FIX,
+    "falsepositive", IssueStatus.FALSE_POSITIVE);
+  private static final Map<IssueStatus, String> transitionByIssueStatus = Map.of(
+    IssueStatus.WONT_FIX, "wontfix",
+    IssueStatus.FALSE_POSITIVE, "falsepositive");
 
   private final ConfigurationRepository configurationRepository;
   private final ServerApiProvider serverApiProvider;
@@ -54,10 +65,9 @@ public class IssueServiceImpl implements IssueService {
     return optionalBinding
       .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
       .map(connection -> {
-        var reviewStatus = toTransition(params.getNewStatus());
+        var reviewStatus = transitionByIssueStatus.get(params.getNewStatus());
         return connection.issue().changeStatusAsync(params.getIssueKey(), reviewStatus)
-          .thenAccept(nothing ->
-          {
+          .thenAccept(nothing -> {
             storageService.binding(optionalBinding.get())
               .findings()
               .markIssueAsResolved(params.getIssueKey(), params.isTaintIssue());
@@ -70,16 +80,6 @@ public class IssueServiceImpl implements IssueService {
       .orElseGet(() -> CompletableFuture.completedFuture(null));
   }
 
-  private static String toTransition(IssueStatus status) {
-    if (status.equals(IssueStatus.WONT_FIX)) {
-      return "wontfix";
-    }
-    if (status.equals(IssueStatus.FALSE_POSITIVE)) {
-      return "falsepositive";
-    }
-    return "";
-  }
-
   @Override
   public CompletableFuture<CheckStatusChangePermittedResponse> checkStatusChangePermitted(CheckStatusChangePermittedParams params) {
     var connectionId = params.getConnectionId();
@@ -87,7 +87,28 @@ public class IssueServiceImpl implements IssueService {
     if (serverApiOpt.isEmpty()) {
       return CompletableFuture.failedFuture(new IllegalArgumentException("Connection with ID '" + connectionId + "' does not exist"));
     }
-    return CompletableFuture.completedFuture(new CheckStatusChangePermittedResponse(List.of(IssueStatus.WONT_FIX, IssueStatus.FALSE_POSITIVE)));
+    return serverApiOpt.get().issue().searchByKey(params.getIssueKey())
+      .thenApply(IssueServiceImpl::toResponse);
+  }
+
+  private static CheckStatusChangePermittedResponse toResponse(Issues.Issue issue) {
+    var allowedStatuses = convert(issue.getTransitions());
+    // the 2 transitions are not available when the 'Administer Issues' permission is missing
+    // normally the 'Browse' permission is also required, but we assume it's present as the client knows the issue key
+    var permitted = !allowedStatuses.isEmpty();
+    return new CheckStatusChangePermittedResponse(permitted,
+      permitted ? null : STATUS_CHANGE_PERMISSION_MISSING_REASON,
+      allowedStatuses);
+  }
+
+  private static List<IssueStatus> convert(Issues.Transitions possibleTransitions) {
+    var statuses = new ArrayList<IssueStatus>();
+    possibleTransitions.getTransitionsList().forEach(transition -> {
+      if (issuesStatusByTransition.containsKey(transition)) {
+        statuses.add(issuesStatusByTransition.get(transition));
+      }
+    });
+    return statuses;
   }
 
   @Override

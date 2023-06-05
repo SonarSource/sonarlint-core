@@ -20,12 +20,27 @@
 package org.sonarsource.sonarlint.core.clientapi.backend.issue;
 
 import java.util.List;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
 public class CheckStatusChangePermittedResponse {
+  private final boolean permitted;
+  private final String notPermittedReason;
   private final List<IssueStatus> allowedStatuses;
 
-  public CheckStatusChangePermittedResponse(List<IssueStatus> allowedStatuses) {
+  public CheckStatusChangePermittedResponse(boolean permitted, @Nullable String notPermittedReason, List<IssueStatus> allowedStatuses) {
+    this.permitted = permitted;
+    this.notPermittedReason = notPermittedReason;
     this.allowedStatuses = allowedStatuses;
+  }
+
+  public boolean isPermitted() {
+    return permitted;
+  }
+
+  @CheckForNull
+  public String getNotPermittedReason() {
+    return notPermittedReason;
   }
 
   public List<IssueStatus> getAllowedStatuses() {

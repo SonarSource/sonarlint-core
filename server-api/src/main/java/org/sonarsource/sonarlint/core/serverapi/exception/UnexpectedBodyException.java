@@ -25,4 +25,8 @@ public class UnexpectedBodyException extends SonarLintException {
   public UnexpectedBodyException(Throwable cause) {
     super("Unexpected body received", cause);
   }
+
+  public UnexpectedBodyException(String message) {
+    super(message);
+  }
 }
