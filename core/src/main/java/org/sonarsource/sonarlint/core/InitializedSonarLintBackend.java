@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationServ
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueService;
 import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
+import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
@@ -86,6 +87,7 @@ public class InitializedSonarLintBackend implements SonarLintBackend {
   private final AnalysisServiceImpl analysisService;
   private final StorageService storageService;
   private final LanguageSupportRepository languageSupportRepository;
+  private final HttpClientManager httpClientManager;
 
   InitializedSonarLintBackend(SonarLintClient client, InitializeParams params) {
     var sonarlintUserHome = Optional.ofNullable(params.getSonarlintUserHome()).map(Paths::get).orElse(SonarLintUserHome.get());
@@ -109,7 +111,7 @@ public class InitializedSonarLintBackend implements SonarLintBackend {
       params.getConnectedModeEmbeddedPluginPathsByKey());
     rulesExtractionHelper = new RulesExtractionHelper(pluginsService, languageSupportRepository, params.isEnableSecurityHotspots());
     var rulesRepository = new RulesRepository(rulesExtractionHelper);
-    var httpClientManager = new HttpClientManager(client, params.getUserAgent(), sonarlintUserHome);
+    this.httpClientManager = new HttpClientManager(client, params.getUserAgent(), sonarlintUserHome);
     var serverApiProvider = new ServerApiProvider(connectionConfigurationRepository, httpClientManager);
     rulesService = new RulesServiceImpl(serverApiProvider, configurationRepository, rulesRepository, storageService, params.getStandaloneRuleConfigByKey());
     this.telemetryService = new TelemetryServiceImpl(params.getTelemetryProductKey(), sonarlintUserHome);
@@ -232,5 +234,15 @@ public class InitializedSonarLintBackend implements SonarLintBackend {
 
   public int getEmbeddedServerPort() {
     return embeddedServer.getPort();
+  }
+
+  @Override
+  public HttpClient getHttpClient(String connectionId) {
+    return httpClientManager.getHttpClient(connectionId);
+  }
+
+  @Override
+  public HttpClient getHttpClientNoAuth() {
+    return httpClientManager.getHttpClient();
   }
 }
