@@ -48,9 +48,9 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.hotspot.HotspotServiceImpl;
+import org.sonarsource.sonarlint.core.http.AskClientCertificatePredicate;
 import org.sonarsource.sonarlint.core.http.ClientProxyCredentialsProvider;
 import org.sonarsource.sonarlint.core.http.ClientProxySelector;
-import org.sonarsource.sonarlint.core.http.ConfirmingTrustManager;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
@@ -108,10 +108,11 @@ public class InitializedSonarLintBackend implements SonarLintBackend {
     this.configurationService = new ConfigurationServiceImpl(clientEventBus, configurationRepository);
     var connectionConfigurationRepository = new ConnectionConfigurationRepository();
     var awaitingUserTokenFutureRepository = new AwaitingUserTokenFutureRepository();
-    var confirmingTrustManager = new ConfirmingTrustManager(sonarlintUserHome, client);
     var clientProxySelector = new ClientProxySelector(client);
     var clientProxyCredentialsProvider = new ClientProxyCredentialsProvider(client);
-    this.httpClientProvider = new HttpClientProvider(params.getUserAgent(), confirmingTrustManager, clientProxySelector, clientProxyCredentialsProvider);
+    var askClientCertificatePredicate = new AskClientCertificatePredicate(client);
+    this.httpClientProvider = new HttpClientProvider(params.getUserAgent(), sonarlintUserHome, askClientCertificatePredicate, clientProxySelector,
+      clientProxyCredentialsProvider);
     this.connectionService = new ConnectionServiceImpl(clientEventBus, connectionConfigurationRepository, params.getSonarQubeConnections(), params.getSonarCloudConnections(),
       httpClientProvider);
     var pluginRepository = new PluginsRepository();
