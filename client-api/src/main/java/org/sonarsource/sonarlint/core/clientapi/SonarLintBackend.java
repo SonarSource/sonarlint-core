@@ -33,6 +33,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueService;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RulesService;
 import org.sonarsource.sonarlint.core.clientapi.backend.telemetry.TelemetryService;
+import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 
 public interface SonarLintBackend {
 
@@ -74,5 +75,19 @@ public interface SonarLintBackend {
 
   @JsonRequest
   CompletableFuture<Void> shutdown();
+
+  /**
+   * Used as a transition toward having the Http Client totally hidden in the backend.
+   * Client still using methods requiring an {@link HttpClient} ca use this methods to reuse the client managed by the backend.
+   */
+  @Deprecated
+  HttpClient getHttpClientNoAuth();
+
+  /**
+   * Used as a transition toward having the Http Client totally hidden in the backend.
+   * Client still using methods requiring an {@link HttpClient} ca use this methods to reuse the client managed by the backend.
+   */
+  @Deprecated
+  HttpClient getHttpClient(String connectionId);
 
 }
