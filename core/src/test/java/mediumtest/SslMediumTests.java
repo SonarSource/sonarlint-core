@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
+import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -151,6 +152,9 @@ class SslMediumTests {
 
     assertThat(params.getAuthType()).isEqualTo("UNKNOWN");
     assertThat(params.getChain()).hasSize(1);
+    var pems = CertificateUtils.parsePemCertificate(params.getChain().get(0).getPem());
+    assertThat(pems).hasSize(1);
+    assertThat(pems.get(0)).isInstanceOf(X509Certificate.class);
 
     var keyStore = KeyStoreUtils.loadKeyStore(backend.getUserHome().resolve("ssl/truststore.p12"), "sonarlint".toCharArray(), "PKCS12");
     assertThat(Collections.list(keyStore.aliases())).containsExactly("cn=localhost_o=sonarsource-sa_l=geneva_st=geneva_c=ch");
