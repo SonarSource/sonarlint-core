@@ -21,12 +21,18 @@ package org.sonarsource.sonarlint.core.clientapi.backend.issue;
 
 public class CheckStatusChangePermittedParams {
   private final String connectionId;
+  private final String issueKey;
 
-  public CheckStatusChangePermittedParams(String connectionId) {
+  public CheckStatusChangePermittedParams(String connectionId, String issueKey) {
     this.connectionId = connectionId;
+    this.issueKey = issueKey;
   }
 
   public String getConnectionId() {
     return connectionId;
+  }
+
+  public String getIssueKey() {
+    return issueKey;
   }
 }

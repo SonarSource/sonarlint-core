@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.issue;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,6 +36,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
+import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Component;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Issue;
@@ -224,6 +226,27 @@ public class IssueApi {
     return serverApiHelper.postAsync("/api/issues/add_comment", FORM_URL_ENCODED_CONTENT_TYPE, body)
       .thenAccept(response -> {
         // no data, return void
+      });
+  }
+
+  public CompletableFuture<Issue> searchByKey(String issueKey) {
+    var searchUrl = new StringBuilder();
+    searchUrl.append("/api/issues/search.protobuf?issue=").append(urlEncode(issueKey)).append("&additionalFields=transitions");
+    serverApiHelper.getOrganizationKey()
+      .ifPresent(org -> searchUrl.append("&organization=").append(UrlUtils.urlEncode(org)));
+    searchUrl.append("&ps=1&p=1");
+    return serverApiHelper.getAsync(searchUrl.toString())
+      .thenApply(rawResponse -> {
+        try (var body = rawResponse.bodyAsStream()) {
+          var wsResponse = Issues.SearchWsResponse.parseFrom(body);
+          if (wsResponse.getIssuesList().isEmpty()) {
+            throw new UnexpectedBodyException("No issue found with key '" + issueKey + "'");
+          }
+          return wsResponse.getIssuesList().get(0);
+        } catch (IOException e) {
+          LOG.error("Error when searching issue + '" + issueKey + "'", e);
+          throw new UnexpectedBodyException(e);
+        }
       });
   }
 
