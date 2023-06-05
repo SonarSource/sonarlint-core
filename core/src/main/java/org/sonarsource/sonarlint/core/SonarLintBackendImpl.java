@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.branch.SonarProjectBranc
 import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueService;
+import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.rules.RulesServiceImpl;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
@@ -119,5 +120,15 @@ public class SonarLintBackendImpl implements SonarLintBackend {
 
   public int getEmbeddedServerPort() {
     return getInitializedBackend().getEmbeddedServerPort();
+  }
+
+  @Override
+  public HttpClient getHttpClientNoAuth() {
+    return getInitializedBackend().getHttpClientNoAuth();
+  }
+
+  @Override
+  public HttpClient getHttpClient(String connectionId) {
+    return getInitializedBackend().getHttpClient(connectionId);
   }
 }
