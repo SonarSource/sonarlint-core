@@ -108,11 +108,6 @@
       <version>${sslcontext-kickstart.version}</version>
     </dependency>
     <dependency>
-    <groupId>io.github.hakky54</groupId>
-      <artifactId>sslcontext-kickstart-for-apache5</artifactId>
-      <version>${sslcontext-kickstart.version}</version>
-    </dependency>
-    <dependency>
       <groupId>com.squareup.okhttp3</groupId>
       <artifactId>okhttp</artifactId>
       <scope>test</scope>

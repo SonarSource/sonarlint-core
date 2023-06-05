@@ -20,7 +20,9 @@
 package mediumtest;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.util.Collections;
@@ -34,6 +36,7 @@ import mediumtest.fixtures.TestPlugin;
 import nl.altindag.ssl.util.CertificateUtils;
 import nl.altindag.ssl.util.KeyStoreUtils;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -64,12 +67,21 @@ import static testutils.TestUtils.protobufBody;
 
 class SslMediumTests {
 
+  public static final String KEYSTORE_PWD = "pwdServerP12";
+
+  SslMediumTests() throws URISyntaxException {
+  }
+
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester(true);
 
   @RegisterExtension
   WireMockExtension sonarqubeMock = WireMockExtension.newInstance()
-    .options(wireMockConfig().dynamicHttpsPort())
+    .options(wireMockConfig().dynamicHttpsPort().httpDisabled(true)
+      .keystoreType("p12")
+      .keystorePath(Paths.get(SslMediumTests.class.getResource("/ssl/server.p12").toURI()).toString())
+      .keystorePassword(KEYSTORE_PWD)
+      .keyManagerPassword(KEYSTORE_PWD))
     .build();
 
   private SonarLintTestBackend backend;
@@ -140,8 +152,8 @@ class SslMediumTests {
     assertThat(params.getAuthType()).isEqualTo("UNKNOWN");
     assertThat(params.getChain()).hasSize(1);
 
-    var keyStore = KeyStoreUtils.loadKeyStore(backend.getUserHome().resolve("ssl/truststore.jks"), "changeit".toCharArray());
-    assertThat(Collections.list(keyStore.aliases())).containsExactly("cn=tom-akehurst_ou=unknown_o=unknown_l=unknown_st=unknown_c=unknown");
+    var keyStore = KeyStoreUtils.loadKeyStore(backend.getUserHome().resolve("ssl/truststore.jks"), KEYSTORE_PWD.toCharArray());
+    assertThat(Collections.list(keyStore.aliases())).containsExactly("cn=localhost_o=sonarsource-sa_l=geneva_st=geneva_c=ch");
 
   }
 
