@@ -152,7 +152,7 @@ class SslMediumTests {
     assertThat(params.getAuthType()).isEqualTo("UNKNOWN");
     assertThat(params.getChain()).hasSize(1);
 
-    var keyStore = KeyStoreUtils.loadKeyStore(backend.getUserHome().resolve("ssl/truststore.jks"), KEYSTORE_PWD.toCharArray());
+    var keyStore = KeyStoreUtils.loadKeyStore(backend.getUserHome().resolve("ssl/truststore.p12"), "sonarlint".toCharArray(), "PKCS12");
     assertThat(Collections.list(keyStore.aliases())).containsExactly("cn=localhost_o=sonarsource-sa_l=geneva_st=geneva_c=ch");
 
   }

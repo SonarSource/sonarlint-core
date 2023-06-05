@@ -34,13 +34,13 @@ import org.sonarsource.sonarlint.core.clientapi.client.http.X509CertificateDto;
 class ConfirmingTrustManager implements X509TrustManager {
   private final MutableTrustManager mutableTrustManager;
 
-  private static final String KEYSTORE_PWD = "changeit";
+  private static final String KEYSTORE_PWD = "sonarlint";
   private static final X509Certificate FAKE_CERTIFICATE = new NoopX509Certificate();
   private final SonarLintClient client;
 
   public ConfirmingTrustManager(Path sonarlintUserHome, SonarLintClient client) {
     this.client = client;
-    var sonarlintTruststore = sonarlintUserHome.resolve("ssl/truststore.jks");
+    var sonarlintTruststore = sonarlintUserHome.resolve("ssl/truststore.p12");
     mutableTrustManager = new MutableTrustManager(sonarlintTruststore, KEYSTORE_PWD);
   }
 
