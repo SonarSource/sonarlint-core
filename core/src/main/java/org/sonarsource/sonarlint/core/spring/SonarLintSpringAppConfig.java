@@ -33,10 +33,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
-import javax.net.ssl.X509TrustManager;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
+import org.sonarsource.sonarlint.core.http.AskClientCertificatePredicate;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
@@ -85,9 +85,10 @@ public class SonarLintSpringAppConfig {
   }
 
   @Bean
-  HttpClientProvider provideHttpClientProvider(InitializeParams params, X509TrustManager confirmingTrustManager, ProxySelector proxySelector,
+  HttpClientProvider provideHttpClientProvider(InitializeParams params, @Named("userHome") Path sonarlintUserHome, AskClientCertificatePredicate askClientCertificatePredicate,
+    ProxySelector proxySelector,
     CredentialsProvider proxyCredentialsProvider) {
-    return new HttpClientProvider(params.getUserAgent(), confirmingTrustManager, proxySelector, proxyCredentialsProvider);
+    return new HttpClientProvider(params.getUserAgent(), sonarlintUserHome, askClientCertificatePredicate, proxySelector, proxyCredentialsProvider);
   }
 
   private static void createFolderIfNeeded(Path path) {
