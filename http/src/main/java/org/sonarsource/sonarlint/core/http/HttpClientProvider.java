@@ -20,10 +20,12 @@
 package org.sonarsource.sonarlint.core.http;
 
 import java.net.ProxySelector;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.cert.X509Certificate;
+import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
-import javax.net.ssl.X509TrustManager;
 import nl.altindag.ssl.SSLFactory;
-import nl.altindag.ssl.util.TrustManagerUtils;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.config.TlsConfig;
@@ -41,24 +43,27 @@ public class HttpClientProvider {
 
   private static final Timeout CONNECTION_TIMEOUT = Timeout.ofSeconds(30);
   private static final Timeout RESPONSE_TIMEOUT = Timeout.ofMinutes(10);
+  private static final char[] TRUSTSTORE_PWD = System.getProperty("sonarlint.ssl.trustStorePassword", "sonarlint").toCharArray();
   private final CloseableHttpAsyncClient sharedClient;
 
   /**
    * Return an {@link HttpClientProvider} made for testing, with a dummy user agent, and basic configuration regarding proxy/SSL
    */
   public static HttpClientProvider forTesting() {
-    return new HttpClientProvider("SonarLint tests", TrustManagerUtils.createDummyTrustManager(), ProxySelector.getDefault(), new BasicCredentialsProvider());
+    return new HttpClientProvider("SonarLint tests", null, null, ProxySelector.getDefault(), new BasicCredentialsProvider());
   }
 
-  public HttpClientProvider(String userAgent, X509TrustManager confirmingTrustManager, ProxySelector proxySelector,
-    CredentialsProvider proxyCredentialsProvider) {
-    var sslFactory = SSLFactory.builder()
+  public HttpClientProvider(String userAgent, Path sonarlintUserHome,
+    @Nullable BiPredicate<X509Certificate[], String> certificateAndAuthTypeTrustPredicate, ProxySelector proxySelector, CredentialsProvider proxyCredentialsProvider) {
+    var sslFactoryBuilder = SSLFactory.builder()
       .withDefaultTrustMaterial()
-      .withSystemTrustMaterial()
-      .withTrustMaterial(confirmingTrustManager)
-      .build();
+      .withSystemTrustMaterial();
+    if (certificateAndAuthTypeTrustPredicate != null) {
+      var truststorePath = System.getProperty("sonarlint.ssl.trustStorePath", sonarlintUserHome.resolve("ssl/truststore.p12").toString());
+      sslFactoryBuilder.withInflatableTrustMaterial(Paths.get(truststorePath), TRUSTSTORE_PWD, "PKCS12", certificateAndAuthTypeTrustPredicate);
+    }
     var asyncConnectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
-      .setTlsStrategy(new DefaultClientTlsStrategy(sslFactory.getSslContext()))
+      .setTlsStrategy(new DefaultClientTlsStrategy(sslFactoryBuilder.build().getSslContext()))
       .setDefaultTlsConfig(TlsConfig.custom()
         // Force HTTP/1 since we know SQ/SC don't support HTTP/2 ATM
         .setVersionPolicy(HttpVersionPolicy.FORCE_HTTP_1)
