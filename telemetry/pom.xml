@@ -57,6 +57,12 @@
       <artifactId>system-stubs-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- For Apache HTTPClient -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <profiles>
