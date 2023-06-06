@@ -23,6 +23,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.apache.hc.core5.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -31,6 +32,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -70,6 +73,45 @@ class HttpClientProviderTests {
     assertThat(future).isCancelled();
 
     assertThat(logTester.logs()).containsExactly("Request cancelled");
+  }
+
+  @Test
+  void it_should_preserve_post_on_permanent_moved_status() {
+    sonarqubeMock.stubFor(post("/afterMove").willReturn(aResponse()));
+    sonarqubeMock.stubFor(post("/permanentMoved")
+      .willReturn(aResponse()
+        .withStatus(HttpStatus.SC_MOVED_PERMANENTLY)
+        .withHeader("Location", sonarqubeMock.url("/afterMove"))));
+
+    HttpClientProvider.forTesting().getHttpClient().post(sonarqubeMock.url("/permanentMoved"), "text/html", "Foo");
+
+    sonarqubeMock.verify(postRequestedFor(urlEqualTo("/afterMove")));
+  }
+
+  @Test
+  void it_should_preserve_post_on_temporarily_moved_status() {
+    sonarqubeMock.stubFor(post("/afterMove").willReturn(aResponse()));
+    sonarqubeMock.stubFor(post("/tempMoved")
+      .willReturn(aResponse()
+        .withStatus(HttpStatus.SC_MOVED_TEMPORARILY)
+        .withHeader("Location", sonarqubeMock.url("/afterMove"))));
+
+    HttpClientProvider.forTesting().getHttpClient().post(sonarqubeMock.url("/tempMoved"), "text/html", "Foo");
+
+    sonarqubeMock.verify(postRequestedFor(urlEqualTo("/afterMove")));
+  }
+
+  @Test
+  void it_should_preserve_post_on_see_other_status() {
+    sonarqubeMock.stubFor(post("/afterMove").willReturn(aResponse()));
+    sonarqubeMock.stubFor(post("/seeOther")
+      .willReturn(aResponse()
+        .withStatus(HttpStatus.SC_SEE_OTHER)
+        .withHeader("Location", sonarqubeMock.url("/afterMove"))));
+
+    HttpClientProvider.forTesting().getHttpClient().post(sonarqubeMock.url("/seeOther"), "text/html", "Foo");
+
+    sonarqubeMock.verify(postRequestedFor(urlEqualTo("/afterMove")));
   }
 
 }
