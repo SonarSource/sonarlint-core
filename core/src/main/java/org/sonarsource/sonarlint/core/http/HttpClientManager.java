@@ -40,6 +40,7 @@ import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.http.protocol.HttpCoreContext;
 import org.apache.hc.core5.http2.HttpVersionPolicy;
+import org.apache.hc.core5.reactor.ssl.SSLBufferMode;
 import org.apache.hc.core5.util.Timeout;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
@@ -67,7 +68,8 @@ public class HttpClientManager {
       .withTrustMaterial(confirmingTrustManager)
       .build();
     var asyncConnectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
-      .setTlsStrategy(new DefaultClientTlsStrategy(sslFactory.getSslContext()))
+      .setTlsStrategy(new DefaultClientTlsStrategy(sslFactory.getSslContext(), sslFactory.getSslParameters().getProtocols(), sslFactory.getSslParameters().getCipherSuites(),
+        SSLBufferMode.STATIC, sslFactory.getHostnameVerifier()))
       .setDefaultTlsConfig(TlsConfig.custom()
         // Force HTTP/1 since we know SQ/SC don't support HTTP/2 ATM
         .setVersionPolicy(HttpVersionPolicy.FORCE_HTTP_1)
