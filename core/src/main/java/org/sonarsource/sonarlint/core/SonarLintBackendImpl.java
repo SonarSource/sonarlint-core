@@ -28,6 +28,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.authentication.Authentic
 import org.sonarsource.sonarlint.core.clientapi.backend.branch.SonarProjectBranchService;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueService;
 import org.sonarsource.sonarlint.core.rules.RulesServiceImpl;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
@@ -98,6 +99,11 @@ public class SonarLintBackendImpl implements SonarLintBackend {
 
   public SonarProjectBranchService getSonarProjectBranchService() {
     return getInitializedBackend().getSonarProjectBranchService();
+  }
+
+  @Override
+  public IssueService getIssueService() {
+    return getInitializedBackend().getIssueService();
   }
 
   @Override

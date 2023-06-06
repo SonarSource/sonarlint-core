@@ -17,22 +17,25 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.backend.hotspot;
+package org.sonarsource.sonarlint.core.clientapi.backend.issue;
 
-public class CheckStatusChangePermittedParams {
-  private final String connectionId;
-  private final String hotspotKey;
+public enum IssueStatus {
+  FALSE_POSITIVE("False positive", "falsepositive"),
+  WONT_FIX("Won't fix", "wontfix");
 
-  public CheckStatusChangePermittedParams(String connectionId, String hotspotKey) {
-    this.connectionId = connectionId;
-    this.hotspotKey = hotspotKey;
+  private final String title;
+  private final String statusValue;
+
+  IssueStatus(String title, String statusValue) {
+    this.title = title;
+    this.statusValue = statusValue;
   }
 
-  public String getConnectionId() {
-    return connectionId;
+  public String getTitle() {
+    return title;
   }
 
-  public String getHotspotKey() {
-    return hotspotKey;
+  public String getStatusValue() {
+    return statusValue;
   }
 }

@@ -96,8 +96,7 @@ public interface ProjectServerIssueStore {
   /**
    * Load issues stored for specified file.
    *
-   *
-   * @param projectKey
+   * @param branchName
    * @param sqFilePath the relative path to the base of project, in SonarQube
    * @return issues, possibly empty
    */
@@ -145,6 +144,11 @@ public interface ProjectServerIssueStore {
    * @return true if the issue with the corresponding key exists in the store and has been updated
    */
   boolean updateIssue(String issueKey, Consumer<ServerIssue> issueUpdater);
+
+  /**
+   * Set the resolution status of an Issue (by its key) to true.
+   */
+  void markIssueAsResolved(String issueKey, boolean isTaintIssue);
 
   void updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater);
 

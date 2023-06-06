@@ -201,6 +201,15 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
+  public void markIssueAsResolved(String issueKey, boolean isTaintIssue) {
+    if (isTaintIssue) {
+      taintIssuesByKey.computeIfPresent(issueKey, (s, serverIssue) ->  serverIssue.setResolved(true));
+    } else {
+      issuesByKey.computeIfPresent(issueKey, (s, serverIssue) ->  serverIssue.setResolved(true));
+    }
+  }
+
+  @Override
   public void updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater) {
     taintIssuesByFileByBranch.forEach(
       (branchName, taintIssuesByFile) -> taintIssuesByFile.forEach((file, taintIssues) -> taintIssues.forEach(taintIssue -> {

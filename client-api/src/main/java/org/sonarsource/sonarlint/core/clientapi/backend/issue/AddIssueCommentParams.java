@@ -17,22 +17,29 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.backend.hotspot;
+package org.sonarsource.sonarlint.core.clientapi.backend.issue;
 
-public class CheckStatusChangePermittedParams {
-  private final String connectionId;
-  private final String hotspotKey;
+public class AddIssueCommentParams {
 
-  public CheckStatusChangePermittedParams(String connectionId, String hotspotKey) {
-    this.connectionId = connectionId;
-    this.hotspotKey = hotspotKey;
+  private final String configurationScopeId;
+  private final String issueKey;
+  private final String text;
+
+  public AddIssueCommentParams(String configurationScopeId, String issueKey, String text) {
+    this.configurationScopeId = configurationScopeId;
+    this.issueKey = issueKey;
+    this.text = text;
   }
 
-  public String getConnectionId() {
-    return connectionId;
+  public String getConfigurationScopeId() {
+    return configurationScopeId;
   }
 
-  public String getHotspotKey() {
-    return hotspotKey;
+  public String getIssueKey() {
+    return issueKey;
+  }
+
+  public String getText() {
+    return text;
   }
 }

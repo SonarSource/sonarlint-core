@@ -79,9 +79,9 @@ public interface HotspotService {
   /**
    * <p>This method achieves several things:
    * <ul>
-   *   <li>Changes the hotspot status on the SonarQube bound to the provided configuration scope</li>
+   *   <li>Changes the hotspot status on the SonarQube/SonarCloud bound to the provided configuration scope</li>
    *   <li>Updates the hotspot status in the local storage</li>
-   *   <li>Increment the 'hotspot.status_changed_count' counter for telemetry</li>
+   *   <li>Increments the 'hotspot.status_changed_count' counter for telemetry</li>
    * </ul>
    *</p>
    * <p>
@@ -98,7 +98,7 @@ public interface HotspotService {
    *   <li>the connection bound to the configuration scope is unknown</li>
    *   <li>the hotspotKey is not found in the local storage</li>
    * </ul>
-   * In those cases a completed future will be returned.
+   * In those cases, a completed future will be returned.
    * </p>
    */
   @JsonRequest

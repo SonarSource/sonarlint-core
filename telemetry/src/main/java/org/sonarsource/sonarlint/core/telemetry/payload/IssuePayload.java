@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Telemetry
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,22 +17,19 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.backend.hotspot;
+package org.sonarsource.sonarlint.core.telemetry.payload;
 
-public class CheckStatusChangePermittedParams {
-  private final String connectionId;
-  private final String hotspotKey;
+import com.google.gson.annotations.SerializedName;
 
-  public CheckStatusChangePermittedParams(String connectionId, String hotspotKey) {
-    this.connectionId = connectionId;
-    this.hotspotKey = hotspotKey;
+public class IssuePayload {
+  @SerializedName("status_changed_count")
+  public final int statusChangedCount;
+
+  public IssuePayload(int statusChangedCount) {
+    this.statusChangedCount = statusChangedCount;
   }
 
-  public String getConnectionId() {
-    return connectionId;
-  }
-
-  public String getHotspotKey() {
-    return hotspotKey;
+  public int getStatusChangedCount() {
+    return statusChangedCount;
   }
 }

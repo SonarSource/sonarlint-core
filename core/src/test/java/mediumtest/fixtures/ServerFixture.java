@@ -321,6 +321,16 @@ public class ServerFixture {
     private void registerIssuesApiResponses() {
       registerApiIssuesPullResponses();
       registerApiIssuesPullTaintResponses();
+      registerIssuesStatusChangeApiResponses();
+      registerAddIssueCommentApiResponses();
+    }
+
+    private void registerIssuesStatusChangeApiResponses() {
+      mockWebServer.addResponse("/api/issues/do_transition", new MockResponse().setResponseCode(200));
+    }
+
+    private void registerAddIssueCommentApiResponses() {
+      mockWebServer.addResponse("/api/issues/add_comment", new MockResponse().setResponseCode(200));
     }
 
     private void registerApiIssuesPullResponses() {

@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.telemetry.payload.HotspotPayload;
+import org.sonarsource.sonarlint.core.telemetry.payload.IssuePayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.ShowHotspotPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.TaintVulnerabilitiesPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryHelpAndFeedbackPayload;
@@ -88,6 +89,7 @@ public class TelemetryHttpClient {
     var hotspotPayload = new HotspotPayload(data.openHotspotInBrowserCount(), data.hotspotStatusChangedCount());
     var taintVulnerabilitiesPayload = new TaintVulnerabilitiesPayload(data.taintVulnerabilitiesInvestigatedLocallyCount(),
       data.taintVulnerabilitiesInvestigatedRemotelyCount());
+    var issuePayload = new IssuePayload(data.issueStatusChangedCount());
     var os = System.getProperty("os.name");
     var jre = System.getProperty("java.version");
     var telemetryRulesPayload = new TelemetryRulesPayload(attributesProvider.getNonDefaultEnabledRules(),
@@ -97,7 +99,7 @@ public class TelemetryHttpClient {
       attributesProvider.usesConnectedMode(), attributesProvider.useSonarCloud(), systemTime, data.installTime(), os, jre,
       attributesProvider.nodeVersion().orElse(null), analyzers, notifications, showHotspotPayload,
       taintVulnerabilitiesPayload, telemetryRulesPayload,
-      hotspotPayload, helpAndFeedbackPayload, attributesProvider.additionalAttributes());
+      hotspotPayload, issuePayload, helpAndFeedbackPayload, attributesProvider.additionalAttributes());
   }
 
   private void sendDelete(TelemetryPayload payload) {
