@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Commons
+ * SonarLint Core - HTTP
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,13 +17,13 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons.http;
+package org.sonarsource.sonarlint.core.http;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
 
-public class ApacheHttpResponse implements HttpClient.Response {
+class ApacheHttpResponse implements HttpClient.Response {
 
   private String requestUrl;
   private SimpleHttpResponse response;

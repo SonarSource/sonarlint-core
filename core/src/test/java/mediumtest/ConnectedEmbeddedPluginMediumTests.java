@@ -26,11 +26,15 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import mediumtest.ConnectedIssueMediumTests.StoreIssueListener;
+import mediumtest.fixtures.SonarLintTestBackend;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -50,23 +54,25 @@ import testutils.MockWebServerExtensionWithProtobuf;
 import testutils.PluginLocator;
 import testutils.TestUtils;
 
+import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static mediumtest.fixtures.StorageFixture.newStorage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension.httpClient;
 
 class ConnectedEmbeddedPluginMediumTests {
 
   @RegisterExtension
   private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
 
-  private static final String SERVER_ID = StringUtils.repeat("very-long-id", 30);
+  private static final String CONNECTION_ID = StringUtils.repeat("very-long-id", 30);
   private static final String JAVA_MODULE_KEY = "test-project-2";
   private static ConnectedSonarLintEngineImpl sonarlint;
+  private SonarLintTestBackend backend;
 
   @BeforeAll
   static void prepare(@TempDir Path slHome) {
-    var storage = newStorage(SERVER_ID)
+    var storage = newStorage(CONNECTION_ID)
       .withServerVersion("9.8")
       .withJSPlugin()
       .withJavaPlugin()
@@ -86,7 +92,7 @@ class ConnectedEmbeddedPluginMediumTests {
     nodeJsHelper.detect(null);
 
     var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
-      .setConnectionId(SERVER_ID)
+      .setConnectionId(CONNECTION_ID)
       .setSonarLintUserHome(slHome)
       .setStorageRoot(storage.getPath())
       .setLogOutput((m, l) -> System.out.println(m))
@@ -103,6 +109,22 @@ class ConnectedEmbeddedPluginMediumTests {
     if (sonarlint != null) {
       sonarlint.stop(true);
       sonarlint = null;
+    }
+  }
+
+  @BeforeEach
+  void prepareBackend() {
+    var fakeClient = newFakeClient()
+      .build();
+    backend = newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.url("/"))
+      .build(fakeClient);
+  }
+
+  @AfterEach
+  void stopBackend() throws ExecutionException, InterruptedException {
+    if (backend != null) {
+      backend.shutdown().get();
     }
   }
 
@@ -171,14 +193,14 @@ class ConnectedEmbeddedPluginMediumTests {
           .setSeverity("MINOR").setType(RuleType.CODE_SMELL))
         .build());
 
-    ConnectedRuleDetails s106RuleDetails = sonarlint.getActiveRuleDetails(mockWebServerExtension.endpointParams(), httpClient(), "java:S106", JAVA_MODULE_KEY).get();
+    ConnectedRuleDetails s106RuleDetails = sonarlint.getActiveRuleDetails(mockWebServerExtension.endpointParams(), backend.getHttpClient(CONNECTION_ID), "java:S106", JAVA_MODULE_KEY).get();
     assertThat(s106RuleDetails.getDefaultSeverity()).isEqualTo(IssueSeverity.BLOCKER);
     assertThat(s106RuleDetails.getLanguage()).isEqualTo(Language.JAVA);
     assertThat(s106RuleDetails.getType()).isEqualTo(org.sonarsource.sonarlint.core.commons.RuleType.CODE_SMELL);
     assertThat(s106RuleDetails.getHtmlDescription()).contains("<p>When logging a message there are several important requirements");
     assertThat(s106RuleDetails.getExtendedDescription()).isEqualTo("S106 Extended rule description");
 
-    ConnectedRuleDetails myCustomRuleDetails = sonarlint.getActiveRuleDetails(mockWebServerExtension.endpointParams(), httpClient(), "java:myCustomRule", JAVA_MODULE_KEY).get();
+    ConnectedRuleDetails myCustomRuleDetails = sonarlint.getActiveRuleDetails(mockWebServerExtension.endpointParams(), backend.getHttpClient(CONNECTION_ID), "java:myCustomRule", JAVA_MODULE_KEY).get();
     assertThat(myCustomRuleDetails.getDefaultSeverity()).isEqualTo(IssueSeverity.MAJOR);
     assertThat(s106RuleDetails.getLanguage()).isEqualTo(Language.JAVA);
     assertThat(myCustomRuleDetails.getHtmlDescription()).isEqualTo("My custom rule template desc");

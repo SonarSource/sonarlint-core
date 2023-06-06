@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.tracking;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.issuetracking.CachingIssueTracker;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverconnection.DownloadException;
@@ -52,7 +52,7 @@ class ServerIssueTrackerTests {
 
   @Test
   void should_download_issues_from_engine() {
-    var client = MockWebServerExtension.httpClient();
+    var client = HttpClientProvider.forTesting().getHttpClient();
     tracker.update(endpoint, client, engine, projectBinding, Collections.singleton(filePath), null);
     verify(engine).downloadAllServerIssuesForFile(endpoint, client, projectBinding, filePath, null, null);
     verify(engine).getServerIssues(projectBinding, null, filePath);
@@ -63,7 +63,7 @@ class ServerIssueTrackerTests {
 
   @Test
   void should_get_issues_from_engine_if_download_failed() {
-    var client = MockWebServerExtension.httpClient();
+    var client = HttpClientProvider.forTesting().getHttpClient();
     doThrow(DownloadException.class).when(engine).downloadAllServerIssuesForFile(endpoint, client, projectBinding, filePath, null, null);
     doThrow(DownloadException.class).when(engine).downloadAllServerHotspotsForFile(endpoint, client, projectBinding, filePath, null, null);
     tracker.update(endpoint, client, engine, projectBinding, Collections.singleton(filePath), null);

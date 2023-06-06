@@ -35,6 +35,7 @@ class TelemetryMediumTests {
   private SonarLintTestBackend backend;
   private String oldValue;
 
+
   @BeforeEach
   void saveTelemetryFlag() {
     oldValue = System.getProperty("sonarlint.telemetry.disabled");
