@@ -23,22 +23,23 @@
   </issueManagement>
 
   <modules>
+    <module>analysis-engine</module>
+    <module>client-api</module>
     <module>commons</module>
     <module>core</module>
-    <module>plugin-api</module>
-    <module>slf4j-sonar-log</module>
-    <module>server-api</module>
-    <module>telemetry</module>
+    <module>http</module>
     <module>issue-tracking</module>
+    <module>plugin-api</module>
+    <module>server-api</module>
+    <module>slf4j-sonar-log</module>
+    <module>telemetry</module>
+    <module>osgi</module>
     <module>plugin-commons</module>
     <module>rule-extractor</module>
     <module>rule-extractor-cli</module>
-    <module>analysis-engine</module>
-    <module>osgi</module>
     <module>report-aggregate</module>
-    <module>vcs</module>
     <module>server-connection</module>
-    <module>client-api</module>
+    <module>vcs</module>
   </modules>
 
   <properties>
@@ -156,6 +157,11 @@
         <version>1</version>
       </dependency>
       <dependency>
+        <groupId>javax.annotation</groupId>
+        <artifactId>javax.annotation-api</artifactId>
+        <version>1.3.2</version>
+      </dependency>
+      <dependency>
         <groupId>uk.org.webcompere</groupId>
         <artifactId>system-stubs-jupiter</artifactId>
         <version>2.0.1</version>
@@ -176,9 +182,19 @@
         <version>5.2.1</version>
       </dependency>
       <dependency>
+        <groupId>io.github.hakky54</groupId>
+        <artifactId>sslcontext-kickstart</artifactId>
+        <version>8.0.0</version>
+      </dependency>
+      <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-simple</artifactId>
         <version>1.7.36</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.tomakehurst</groupId>
+        <artifactId>wiremock-jre8</artifactId>
+        <version>2.35.0</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

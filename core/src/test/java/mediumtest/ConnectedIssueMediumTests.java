@@ -26,10 +26,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import mediumtest.fixtures.SonarLintTestBackend;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -56,6 +60,8 @@ import testutils.MockWebServerExtensionWithProtobuf;
 import testutils.OnDiskTestClientInputFile;
 import testutils.TestUtils;
 
+import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static mediumtest.fixtures.StorageFixture.newStorage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -63,7 +69,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.sonarsource.sonarlint.core.client.api.common.ClientFileSystemFixtures.aClientFileSystemWith;
 import static org.sonarsource.sonarlint.core.client.api.common.ClientFileSystemFixtures.anEmptyClientFileSystem;
-import static org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension.httpClient;
 import static testutils.TestUtils.createNoOpLogOutput;
 
 class ConnectedIssueMediumTests {
@@ -110,6 +115,24 @@ class ConnectedIssueMediumTests {
     }
   }
 
+  private SonarLintTestBackend backend;
+
+  @BeforeEach
+  void prepareBackend() {
+    var fakeClient = newFakeClient()
+      .build();
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.url("/"))
+      .build(fakeClient);
+  }
+
+  @AfterEach
+  void stopBackend() throws ExecutionException, InterruptedException {
+    if (backend != null) {
+      backend.shutdown().get();
+    }
+  }
+
   @Test
   void testContainerInfo() {
     assertThat(sonarlint.getPluginDetails()).extracting("key").containsOnly("java", "javascript");
@@ -130,7 +153,7 @@ class ConnectedIssueMediumTests {
 
     // Severity of java:S1481 changed to BLOCKER in the quality profile
     assertThat(sonarlint.getActiveRuleDetails(null, null, "java:S1481", null).get().getDefaultSeverity()).isEqualTo(IssueSeverity.MINOR);
-    assertThat(sonarlint.getActiveRuleDetails(mockWebServerExtension.endpointParams(), httpClient(), "java:S1481", JAVA_MODULE_KEY).get().getDefaultSeverity())
+    assertThat(sonarlint.getActiveRuleDetails(mockWebServerExtension.endpointParams(), backend.getHttpClient("connectionId"), "java:S1481", JAVA_MODULE_KEY).get().getDefaultSeverity())
       .isEqualTo(IssueSeverity.BLOCKER);
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()

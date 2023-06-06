@@ -25,13 +25,17 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import javax.net.ssl.X509TrustManager;
 import nl.altindag.ssl.util.CertificateUtils;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.client.http.CheckServerTrustedParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.X509CertificateDto;
 
-class ConfirmingTrustManager implements X509TrustManager {
+@Named
+@Singleton
+public class ConfirmingTrustManager implements X509TrustManager {
   private final MutableTrustManager mutableTrustManager;
 
   private static final String KEYSTORE_PWD = System.getProperty("sonarlint.ssl.trustStorePassword", "sonarlint");
@@ -39,7 +43,7 @@ class ConfirmingTrustManager implements X509TrustManager {
 
   private final SonarLintClient client;
 
-  public ConfirmingTrustManager(Path sonarlintUserHome, SonarLintClient client) {
+  public ConfirmingTrustManager(@Named("userHome") Path sonarlintUserHome, SonarLintClient client) {
     this.client = client;
     var sonarlintTruststore = sonarlintUserHome.resolve("ssl/truststore.p12");
     mutableTrustManager = new MutableTrustManager(sonarlintTruststore, KEYSTORE_PWD);

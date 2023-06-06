@@ -28,10 +28,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
-import org.sonarsource.sonarlint.core.commons.http.HttpClient;
-import org.sonarsource.sonarlint.core.commons.http.HttpConnectionListener;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.http.HttpClient;
+import org.sonarsource.sonarlint.core.http.HttpConnectionListener;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;

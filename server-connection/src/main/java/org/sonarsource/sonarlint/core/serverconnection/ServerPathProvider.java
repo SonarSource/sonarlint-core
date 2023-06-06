@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.commons.http.HttpClient;
+import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -38,14 +38,12 @@ public class ServerPathProvider {
   public static CompletableFuture<String> getServerUrlForTokenGeneration(EndpointParams endpoint, HttpClient client,
     int port, String ideName) {
     var serverApi = new ServerApi(endpoint, client);
-    return serverApi.system().getStatus().thenApply(systemInfo ->
-      buildServerPath(endpoint.getBaseUrl(), systemInfo.getVersion(), port, ideName, endpoint.isSonarCloud()));
+    return serverApi.system().getStatus().thenApply(systemInfo -> buildServerPath(endpoint.getBaseUrl(), systemInfo.getVersion(), port, ideName, endpoint.isSonarCloud()));
   }
 
   public static CompletableFuture<String> getFallbackServerUrlForTokenGeneration(EndpointParams endpoint, HttpClient client, String ideName) {
     var serverApi = new ServerApi(endpoint, client);
-    return serverApi.system().getStatus().thenApply(systemInfo ->
-      buildServerPath(endpoint.getBaseUrl(), systemInfo.getVersion(), null, ideName, endpoint.isSonarCloud()));
+    return serverApi.system().getStatus().thenApply(systemInfo -> buildServerPath(endpoint.getBaseUrl(), systemInfo.getVersion(), null, ideName, endpoint.isSonarCloud()));
   }
 
   static String buildServerPath(String baseUrl, String serverVersionStr, @Nullable Integer port, String ideName, boolean isSonarCloud) {

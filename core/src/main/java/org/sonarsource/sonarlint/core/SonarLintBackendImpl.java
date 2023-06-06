@@ -34,9 +34,9 @@ import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueService;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RulesService;
 import org.sonarsource.sonarlint.core.clientapi.backend.telemetry.TelemetryService;
-import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
-import org.sonarsource.sonarlint.core.http.HttpClientManager;
+import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
+import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.spring.SonarLintSpringAppConfig;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -136,11 +136,11 @@ public class SonarLintBackendImpl implements SonarLintBackend {
 
   @Override
   public HttpClient getHttpClientNoAuth() {
-    return getInitializedApplicationContext().getBean(HttpClientManager.class).getHttpClient();
+    return getInitializedApplicationContext().getBean(ConnectionAwareHttpClientProvider.class).getHttpClient();
   }
 
   @Override
   public HttpClient getHttpClient(String connectionId) {
-    return getInitializedApplicationContext().getBean(HttpClientManager.class).getHttpClient(connectionId);
+    return getInitializedApplicationContext().getBean(ConnectionAwareHttpClientProvider.class).getHttpClient(connectionId);
   }
 }

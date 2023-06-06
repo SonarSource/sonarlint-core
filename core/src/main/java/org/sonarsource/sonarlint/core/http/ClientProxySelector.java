@@ -28,11 +28,15 @@ import java.net.URI;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
-class ClientProxySelector extends ProxySelector {
+@Named
+@Singleton
+public class ClientProxySelector extends ProxySelector {
 
   private final SonarLintLogger logger = SonarLintLogger.get();
   private final SonarLintClient client;

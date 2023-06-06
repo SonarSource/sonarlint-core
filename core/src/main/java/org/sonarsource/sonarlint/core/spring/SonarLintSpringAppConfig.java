@@ -23,6 +23,7 @@ import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.io.IOException;
+import java.net.ProxySelector;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -32,8 +33,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
+import javax.net.ssl.X509TrustManager;
+import org.apache.hc.client5.http.auth.CredentialsProvider;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
+import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 import org.springframework.context.annotation.Bean;
@@ -78,6 +82,12 @@ public class SonarLintSpringAppConfig {
     var workDir = Optional.ofNullable(params.getWorkDir()).orElse(sonarlintUserHome.resolve("work"));
     createFolderIfNeeded(workDir);
     return workDir;
+  }
+
+  @Bean
+  HttpClientProvider provideHttpClientProvider(InitializeParams params, X509TrustManager confirmingTrustManager, ProxySelector proxySelector,
+    CredentialsProvider proxyCredentialsProvider) {
+    return new HttpClientProvider(params.getUserAgent(), confirmingTrustManager, proxySelector, proxyCredentialsProvider);
   }
 
   private static void createFolderIfNeeded(Path path) {
