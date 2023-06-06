@@ -19,16 +19,23 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.util.Optional;
-import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.delete;
+import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -38,7 +45,9 @@ class TelemetryHttpClientTests {
   private TelemetryHttpClient underTest;
 
   @RegisterExtension
-  static MockWebServerExtension mockServer = new MockWebServerExtension();
+  static WireMockExtension sonarqubeMock = WireMockExtension.newInstance()
+    .options(wireMockConfig().dynamicPort())
+    .build();
 
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester();
@@ -48,43 +57,55 @@ class TelemetryHttpClientTests {
   @BeforeEach
   void setUp() {
     when(attributes.nodeVersion()).thenReturn(Optional.empty());
-    underTest = new TelemetryHttpClient("product", "version", "ideversion", "platform", "architecture", HttpClientProvider.forTesting().getHttpClient(), mockServer.url("/"));
+    underTest = new TelemetryHttpClient("product", "version", "ideversion", "platform", "architecture", HttpClientProvider.forTesting().getHttpClient(), sonarqubeMock.baseUrl());
   }
 
   @Test
   void opt_out() {
-    mockServer.addResponse("/", new MockResponse());
+    sonarqubeMock.stubFor(delete("/")
+      .willReturn(aResponse()));
+
     underTest.optOut(new TelemetryLocalStorage(), attributes);
-    var takeRequest = mockServer.takeRequest();
-    assertThat(takeRequest.getMethod()).isEqualTo("DELETE");
-    assertThat(takeRequest.getBody().readUtf8())
-      .matches(
-        "\\{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"platform\",\"architecture\":\"architecture\",.*}");
+
+    sonarqubeMock.verify(deleteRequestedFor(urlEqualTo("/"))
+      .withRequestBody(
+        equalToJson(
+          "{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"platform\",\"architecture\":\"architecture\"}",
+          true, true)));
   }
 
   @Test
   void upload() {
-    mockServer.addResponse("/", new MockResponse());
+    sonarqubeMock.stubFor(post("/")
+      .willReturn(aResponse()));
+
     underTest.upload(new TelemetryLocalStorage(), attributes);
-    var takeRequest = mockServer.takeRequest();
-    assertThat(takeRequest.getMethod()).isEqualTo("POST");
-    assertThat(takeRequest.getBody().readUtf8())
-      .matches(
-        "\\{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"platform\",\"architecture\":\"architecture\",.*}");
+
+    sonarqubeMock.verify(postRequestedFor(urlEqualTo("/"))
+      .withRequestBody(
+        equalToJson(
+          "{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"platform\",\"architecture\":\"architecture\"}",
+          true, true)));
   }
 
   @Test
   void should_not_crash_when_cannot_upload() {
+    sonarqubeMock.stubFor(post("/")
+      .willReturn(aResponse().withStatus(500)));
+
     underTest.upload(new TelemetryLocalStorage(), attributes);
-    var takeRequest = mockServer.takeRequest();
-    assertThat(takeRequest.getMethod()).isEqualTo("POST");
+
+    sonarqubeMock.verify(postRequestedFor(urlEqualTo("/")));
   }
 
   @Test
   void should_not_crash_when_cannot_opt_out() {
+    sonarqubeMock.stubFor(delete("/")
+      .willReturn(aResponse().withStatus(500)));
+
     underTest.optOut(new TelemetryLocalStorage(), attributes);
-    var takeRequest = mockServer.takeRequest();
-    assertThat(takeRequest.getMethod()).isEqualTo("DELETE");
+
+    sonarqubeMock.verify(deleteRequestedFor(urlEqualTo("/")));
   }
 
   @Test
@@ -93,7 +114,7 @@ class TelemetryHttpClientTests {
 
     underTest.upload(new TelemetryLocalStorage(), attributes);
 
-    assertThat(mockServer.getRequestCount()).isZero();
+    assertThat(sonarqubeMock.getAllServeEvents()).isEmpty();
   }
 
   @Test
@@ -102,7 +123,7 @@ class TelemetryHttpClientTests {
 
     underTest.optOut(new TelemetryLocalStorage(), attributes);
 
-    assertThat(mockServer.getRequestCount()).isZero();
+    assertThat(sonarqubeMock.getAllServeEvents()).isEmpty();
   }
 
   @Test
