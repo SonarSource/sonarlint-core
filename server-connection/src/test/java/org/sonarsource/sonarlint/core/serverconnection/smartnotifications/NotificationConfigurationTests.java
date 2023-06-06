@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.serverconnection.smartnotifications;
 
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.commons.http.HttpClient;
+import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
 import static org.assertj.core.api.Assertions.assertThat;

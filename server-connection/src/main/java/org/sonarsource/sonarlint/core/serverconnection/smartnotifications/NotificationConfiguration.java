@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.serverconnection.smartnotifications;
 
 import java.util.function.Supplier;
-import org.sonarsource.sonarlint.core.commons.http.HttpClient;
+import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
 public class NotificationConfiguration {

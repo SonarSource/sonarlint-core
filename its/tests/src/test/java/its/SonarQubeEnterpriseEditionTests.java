@@ -30,8 +30,14 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import org.apache.commons.io.FileUtils;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,14 +50,42 @@ import org.sonarqube.ws.client.permissions.RemoveGroupRequest;
 import org.sonarqube.ws.client.settings.SetRequest;
 import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
+import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
+import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
+import org.sonarsource.sonarlint.core.clientapi.backend.HostInfoDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.SuggestBindingParams;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionParams;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.UsernamePasswordDto;
+import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
+import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
+import org.sonarsource.sonarlint.core.clientapi.client.http.ProxyDto;
+import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesParams;
+import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
+import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
+import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressParams;
+import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
+import org.sonarsource.sonarlint.core.clientapi.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.commons.Language;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
+  public static final String CONNECTION_ID = "orchestrator";
   private static final String PROJECT_KEY_COBOL = "sample-cobol";
   private static final String PROJECT_KEY_C = "sample-c";
   private static final String PROJECT_KEY_TSQL = "sample-tsql";
@@ -71,6 +105,23 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
   @TempDir
   private static Path sonarUserHome;
+
+  private static SonarLintBackend backend;
+
+  @BeforeAll
+  static void startBackend() {
+    backend = new SonarLintBackendImpl(newDummySonarLintClient());
+    backend.initialize(
+      new InitializeParams(new HostInfoDto("clientName"), "integrationTests", sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"), Collections.emptySet(),
+        Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(), false,
+        List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(), false,
+        Map.of(), false, true, false, "SonarLint"));
+  }
+
+  @AfterAll
+  static void stopBackend() throws ExecutionException, InterruptedException {
+    backend.shutdown().get();
+  }
 
   private ConnectedSonarLintEngine engine;
   private static String singlePointOfExitRuleKey;
@@ -125,7 +176,6 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
         .setLogOutput((msg, level) -> System.out.println(msg))
         .build());
     }
-
 
     @Test
     void analysisC_old_build_wrapper_prop(@TempDir File buildWrapperOutput) throws Exception {
@@ -269,13 +319,91 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   }
 
   private void updateProject(String projectKey) {
-    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, null);
-    engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(projectKey), null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), projectKey, null);
+    engine.sync(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), Set.of(projectKey), null);
   }
 
   private static void removeGroupPermission(String groupName, String permission) {
     adminWsClient.permissions().removeGroup(new RemoveGroupRequest()
       .setGroupName(groupName)
       .setPermission(permission));
+  }
+
+  private static SonarLintClient newDummySonarLintClient() {
+    return new SonarLintClient() {
+      @Override
+      public void suggestBinding(SuggestBindingParams params) {
+
+      }
+
+      @Override
+      public CompletableFuture<FindFileByNamesInScopeResponse> findFileByNamesInScope(FindFileByNamesInScopeParams params) {
+        return CompletableFuture.completedFuture(new FindFileByNamesInScopeResponse(Collections.emptyList()));
+      }
+
+      @Override
+      public void openUrlInBrowser(OpenUrlInBrowserParams params) {
+
+      }
+
+      @Override
+      public void showMessage(ShowMessageParams params) {
+
+      }
+
+      @Override
+      public void showSmartNotification(ShowSmartNotificationParams params) {
+
+      }
+
+      @Override
+      public CompletableFuture<GetHostInfoResponse> getHostInfo() {
+        return CompletableFuture.completedFuture(new GetHostInfoResponse(""));
+      }
+
+      @Override
+      public void showHotspot(ShowHotspotParams params) {
+
+      }
+
+      @Override
+      public CompletableFuture<AssistCreatingConnectionResponse> assistCreatingConnection(AssistCreatingConnectionParams params) {
+        return null;
+      }
+
+      @Override
+      public CompletableFuture<AssistBindingResponse> assistBinding(AssistBindingParams params) {
+        return null;
+      }
+
+      @Override
+      public CompletableFuture<Void> startProgress(StartProgressParams params) {
+        return CompletableFuture.completedFuture(null);
+      }
+
+      @Override
+      public void reportProgress(ReportProgressParams params) {
+
+      }
+
+      @Override
+      public void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params) {
+
+      }
+
+      public CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params) {
+        if (params.getConnectionId().equals(CONNECTION_ID)) {
+          return CompletableFuture.completedFuture(new GetCredentialsResponse(new UsernamePasswordDto(SONARLINT_USER, SONARLINT_PWD)));
+        } else {
+          return CompletableFuture.failedFuture(new IllegalArgumentException("Unknown connection: " + params.getConnectionId()));
+        }
+      }
+
+      @Override
+      public CompletableFuture<SelectProxiesResponse> selectProxies(SelectProxiesParams params) {
+        return CompletableFuture.completedFuture(new SelectProxiesResponse(List.of(ProxyDto.NO_PROXY)));
+      }
+
+    };
   }
 }

@@ -25,9 +25,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
@@ -51,15 +53,40 @@ import org.sonarqube.ws.client.settings.ResetRequest;
 import org.sonarqube.ws.client.settings.SetRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
+import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectionValidator;
+import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
+import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
+import org.sonarsource.sonarlint.core.clientapi.backend.HostInfoDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.SuggestBindingParams;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionParams;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.UsernamePasswordDto;
+import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
+import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
+import org.sonarsource.sonarlint.core.clientapi.client.http.ProxyDto;
+import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesParams;
+import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
+import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
+import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressParams;
+import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
+import org.sonarsource.sonarlint.core.clientapi.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
-import org.sonarsource.sonarlint.core.commons.http.HttpClient;
-import org.sonarsource.sonarlint.core.commons.http.JavaHttpClientAdapter;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -90,7 +117,7 @@ class SonarCloudTests extends AbstractConnectedTests {
   private static final String PROJECT_KEY_XML = "sample-xml";
   private static final String PROJECT_KEY_JAVA_TAINT = "sample-java-taint";
 
-  private static final HttpClient SC_CLIENT = httpClientWithCredentials(SONARCLOUD_USER, SONARCLOUD_PASSWORD);
+  public static final String CONNECTION_ID = "sonarcloud";
 
   private final ProgressMonitor progress = new ProgressMonitor(null);
 
@@ -102,8 +129,17 @@ class SonarCloudTests extends AbstractConnectedTests {
 
   private static int randomPositiveInt;
 
+  private static SonarLintBackend backend;
+
   @BeforeAll
   static void prepare() throws Exception {
+    backend = new SonarLintBackendImpl(newDummySonarLintClient());
+    backend.initialize(
+      new InitializeParams(new HostInfoDto("clientName"), "integrationTests", sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"), Collections.emptySet(),
+        Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(), false,
+        List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, SONARCLOUD_STAGING_URL, true)), Collections.emptyList(), sonarUserHome.toString(), false,
+        Map.of(), false, true, false, "SonarLint"));
+
     randomPositiveInt = new Random().nextInt() & Integer.MAX_VALUE;
 
     adminWsClient = newAdminWsClient();
@@ -157,7 +193,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     nodeJsHelper.detect(null);
 
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarCloudBuilder()
-      .setConnectionId("sonarcloud")
+      .setConnectionId(CONNECTION_ID)
       .enableHotspots()
       .setSonarLintUserHome(sonarUserHome)
       .addEnabledLanguage(Language.JAVA)
@@ -186,12 +222,12 @@ class SonarCloudTests extends AbstractConnectedTests {
       projectKey(PROJECT_KEY_XML),
       projectKey(PROJECT_KEY_JAVA_TAINT));
 
-    ALL_PROJECTS.forEach(p -> engine.updateProject(sonarcloudEndpointITOrg(), SC_CLIENT, p, null));
-    engine.sync(sonarcloudEndpointITOrg(), SC_CLIENT, ALL_PROJECTS, null);
+    ALL_PROJECTS.forEach(p -> engine.updateProject(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), p, null));
+    engine.sync(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), ALL_PROJECTS, null);
   }
 
   @AfterAll
-  static void cleanup() {
+  static void cleanup() throws Exception {
     var request = new PostRequest("api/projects/bulk_delete");
     request.setParam("q", "-" + randomPositiveInt);
     request.setParam("organization", SONARCLOUD_ORGANIZATION);
@@ -204,6 +240,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     } catch (Exception e) {
       // Ignore
     }
+    backend.shutdown().get();
   }
 
   private static void associateProjectToQualityProfile(String projectKey, String language, String profileName) {
@@ -248,7 +285,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     adminWsClient.settings().reset(new ResetRequest()
       .setKeys(Collections.singletonList(SONAR_JAVA_FILE_SUFFIXES))
       .setComponent(projectKey(PROJECT_KEY_JAVA)));
-    engine.sync(sonarcloudEndpointITOrg(), SC_CLIENT, Set.of(projectKey(PROJECT_KEY_JAVA)), null);
+    engine.sync(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), Set.of(projectKey(PROJECT_KEY_JAVA)), null);
 
     // This profile is altered in a test
     restoreProfile("java-sonarlint.xml");
@@ -264,7 +301,7 @@ class SonarCloudTests extends AbstractConnectedTests {
   void downloadProjects() {
     provisionProject("foo-bar", "Foo");
     waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
-      assertThat(engine.downloadAllProjects(sonarcloudEndpointITOrg(), SC_CLIENT, null)).containsKeys(projectKey("foo-bar"),
+      assertThat(engine.downloadAllProjects(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), null)).containsKeys(projectKey("foo-bar"),
         projectKey(PROJECT_KEY_JAVA),
         projectKey(PROJECT_KEY_PHP));
     });
@@ -273,8 +310,8 @@ class SonarCloudTests extends AbstractConnectedTests {
   @Test
   void testRuleDescription() throws Exception {
     assertThat(
-      engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), SC_CLIENT, "java:S106", projectKey(PROJECT_KEY_JAVA)).get().getHtmlDescription())
-        .contains("When logging a message there are");
+      engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), "java:S106", projectKey(PROJECT_KEY_JAVA)).get().getHtmlDescription())
+      .contains("When logging a message there are");
   }
 
   @Test
@@ -292,8 +329,8 @@ class SonarCloudTests extends AbstractConnectedTests {
     }
 
     assertThat(
-      engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), SC_CLIENT, ruleKey, projectKey(PROJECT_KEY_JAVA)).get().getExtendedDescription())
-        .isEqualTo(extendedDescription);
+      engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), ruleKey, projectKey(PROJECT_KEY_JAVA)).get().getExtendedDescription())
+      .isEqualTo(extendedDescription);
   }
 
   @Test
@@ -339,7 +376,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
   @Test
   void loadHotspotRuleDescription() throws Exception {
-    var ruleDetails = engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), SC_CLIENT, "java:S4792", projectKey(PROJECT_KEY_JAVA_HOTSPOT)).get();
+    var ruleDetails = engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), "java:S4792", projectKey(PROJECT_KEY_JAVA_HOTSPOT)).get();
 
     assertThat(ruleDetails.getName()).isEqualTo("Configuring loggers is security-sensitive");
     // HTML description is null for security hotspots when accessed through the deprecated engine API
@@ -350,7 +387,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
   @Test
   void downloadsServerHotspotsForProject() {
-    engine.downloadAllServerHotspots(sonarcloudEndpointITOrg(), SC_CLIENT, projectKey(PROJECT_KEY_JAVA_HOTSPOT), "master", null);
+    engine.downloadAllServerHotspots(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), projectKey(PROJECT_KEY_JAVA_HOTSPOT), "master", null);
 
     var serverHotspots = engine.getServerHotspots(new ProjectBinding(projectKey(PROJECT_KEY_JAVA_HOTSPOT), "", "ide"), "master", "ide/src/main/java/foo/Foo.java");
     assertThat(serverHotspots)
@@ -362,7 +399,7 @@ class SonarCloudTests extends AbstractConnectedTests {
   void downloadsServerHotspotsForFile() {
     var projectBinding = new ProjectBinding(projectKey(PROJECT_KEY_JAVA_HOTSPOT), "", "ide");
 
-    engine.downloadAllServerHotspotsForFile(sonarcloudEndpointITOrg(), SC_CLIENT, projectBinding, "ide/src/main/java/foo/Foo.java", "master", null);
+    engine.downloadAllServerHotspotsForFile(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), projectBinding, "ide/src/main/java/foo/Foo.java", "master", null);
 
     var serverHotspots = engine.getServerHotspots(projectBinding, "master", "ide/src/main/java/foo/Foo.java");
     assertThat(serverHotspots)
@@ -382,7 +419,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     // Override default file suffixes in project props so that input file is not considered as a Java file
     setSettingsMultiValue(projectKey(PROJECT_KEY_JAVA), SONAR_JAVA_FILE_SUFFIXES, ".foo");
 
-    engine.sync(sonarcloudEndpointITOrg(), SC_CLIENT, Set.of(projectKey(PROJECT_KEY_JAVA)), null);
+    engine.sync(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), Set.of(projectKey(PROJECT_KEY_JAVA)), null);
 
     issueListener.clear();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA), PROJECT_KEY_JAVA,
@@ -394,13 +431,13 @@ class SonarCloudTests extends AbstractConnectedTests {
 
   @Test
   void downloadUserOrganizations() {
-    var helper = new ServerApi(sonarcloudEndpointITOrg(), SC_CLIENT).organization();
+    var helper = new ServerApi(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID)).organization();
     assertThat(helper.listUserOrganizations(progress)).hasSize(1);
   }
 
   @Test
   void getOrganization() {
-    var helper = new ServerApi(sonarcloudEndpoint(null), SC_CLIENT).organization();
+    var helper = new ServerApi(sonarcloudEndpoint(null), backend.getHttpClient(CONNECTION_ID)).organization();
     var org = helper.getOrganization(SONARCLOUD_ORGANIZATION, progress);
     assertThat(org).isPresent();
     assertThat(org.get().getKey()).isEqualTo(SONARCLOUD_ORGANIZATION);
@@ -409,7 +446,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
   @Test
   void getProject() {
-    var api = new ServerApi(sonarcloudEndpointITOrg(), SC_CLIENT).component();
+    var api = new ServerApi(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID)).component();
     assertThat(api.getProject(projectKey("foo"))).isNotPresent();
     assertThat(api.getProject(projectKey(PROJECT_KEY_RUBY))).isPresent();
   }
@@ -445,14 +482,14 @@ class SonarCloudTests extends AbstractConnectedTests {
   @Test
   void testConnection() throws ExecutionException, InterruptedException {
     assertThat(
-      new ConnectionValidator(new ServerApiHelper(sonarcloudEndpoint(SONARCLOUD_ORGANIZATION), SC_CLIENT)).validateConnection().get().success())
-        .isTrue();
+      new ConnectionValidator(new ServerApiHelper(sonarcloudEndpoint(SONARCLOUD_ORGANIZATION), backend.getHttpClient(CONNECTION_ID))).validateConnection().get().success())
+      .isTrue();
     assertThat(
-      new ConnectionValidator(new ServerApiHelper(sonarcloudEndpoint(null), SC_CLIENT)).validateConnection().get().success())
-        .isTrue();
+      new ConnectionValidator(new ServerApiHelper(sonarcloudEndpoint(null), backend.getHttpClient(CONNECTION_ID))).validateConnection().get().success())
+      .isTrue();
     assertThat(
-      new ConnectionValidator(new ServerApiHelper(sonarcloudEndpoint("not-exists"), SC_CLIENT)).validateConnection().get().success())
-        .isFalse();
+      new ConnectionValidator(new ServerApiHelper(sonarcloudEndpoint("not-exists"), backend.getHttpClient(CONNECTION_ID))).validateConnection().get().success())
+      .isFalse();
   }
 
   @Test
@@ -460,7 +497,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     ProjectBinding projectBinding = new ProjectBinding(projectKey(PROJECT_KEY_JAVA_TAINT), "", "");
 
-    engine.downloadAllServerTaintIssuesForFile(sonarcloudEndpointITOrg(), SC_CLIENT, projectBinding, "src/main/java/foo/DbHelper.java", MAIN_BRANCH_NAME,
+    engine.downloadAllServerTaintIssuesForFile(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), projectBinding, "src/main/java/foo/DbHelper.java", MAIN_BRANCH_NAME,
       null);
 
     var sinkIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java");
@@ -532,5 +569,83 @@ class SonarCloudTests extends AbstractConnectedTests {
       .withFailMessage(() -> "Expected an HTTP call to have an OK code, got: " + code)
       // This is an approximation for "non error codes" - 200, 201, 204... + possible redirects
       .isBetween(200, 399);
+  }
+
+  private static SonarLintClient newDummySonarLintClient() {
+    return new SonarLintClient() {
+      @Override
+      public void suggestBinding(SuggestBindingParams params) {
+
+      }
+
+      @Override
+      public CompletableFuture<FindFileByNamesInScopeResponse> findFileByNamesInScope(FindFileByNamesInScopeParams params) {
+        return CompletableFuture.completedFuture(new FindFileByNamesInScopeResponse(Collections.emptyList()));
+      }
+
+      @Override
+      public void openUrlInBrowser(OpenUrlInBrowserParams params) {
+
+      }
+
+      @Override
+      public void showMessage(ShowMessageParams params) {
+
+      }
+
+      @Override
+      public void showSmartNotification(ShowSmartNotificationParams params) {
+
+      }
+
+      @Override
+      public CompletableFuture<GetHostInfoResponse> getHostInfo() {
+        return CompletableFuture.completedFuture(new GetHostInfoResponse(""));
+      }
+
+      @Override
+      public void showHotspot(ShowHotspotParams params) {
+
+      }
+
+      @Override
+      public CompletableFuture<AssistCreatingConnectionResponse> assistCreatingConnection(AssistCreatingConnectionParams params) {
+        return null;
+      }
+
+      @Override
+      public CompletableFuture<AssistBindingResponse> assistBinding(AssistBindingParams params) {
+        return null;
+      }
+
+      @Override
+      public CompletableFuture<Void> startProgress(StartProgressParams params) {
+        return CompletableFuture.completedFuture(null);
+      }
+
+      @Override
+      public void reportProgress(ReportProgressParams params) {
+
+      }
+
+      @Override
+      public void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params) {
+
+      }
+
+      public CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params) {
+        if (params.getConnectionId().equals(CONNECTION_ID)) {
+          return CompletableFuture.completedFuture(new GetCredentialsResponse(new UsernamePasswordDto(SONARCLOUD_USER, SONARCLOUD_PASSWORD)));
+        } else {
+          return CompletableFuture.failedFuture(new IllegalArgumentException("Unknown connection: " + params.getConnectionId()));
+        }
+      }
+
+      @Override
+      public CompletableFuture<SelectProxiesResponse> selectProxies(SelectProxiesParams params) {
+        return CompletableFuture.completedFuture(new SelectProxiesResponse(List.of(ProxyDto.NO_PROXY)));
+      }
+
+    };
   }
 }

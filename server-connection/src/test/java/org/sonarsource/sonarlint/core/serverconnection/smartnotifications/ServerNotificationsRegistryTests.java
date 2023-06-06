@@ -24,7 +24,7 @@ import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -77,7 +77,7 @@ class ServerNotificationsRegistryTests {
   void testIsSupported() {
     mockServer.addResponse("/api/developers/search_events?projects=&from=", new MockResponse());
 
-    assertThat(ServerNotificationsRegistry.isSupported(mockServer.endpointParams(), MockWebServerExtension.httpClient())).isTrue();
+    assertThat(ServerNotificationsRegistry.isSupported(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient())).isTrue();
   }
 
 }

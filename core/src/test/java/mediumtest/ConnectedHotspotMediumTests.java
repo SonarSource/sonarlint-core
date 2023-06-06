@@ -27,9 +27,12 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import mediumtest.fixtures.SonarLintTestBackend;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -50,20 +53,41 @@ import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 import testutils.MockWebServerExtensionWithProtobuf;
 import testutils.TestUtils;
 
+import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static mediumtest.fixtures.StorageFixture.newStorage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.mock;
-import static org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension.httpClient;
 import static testutils.TestUtils.createNoOpLogOutput;
 
 class ConnectedHotspotMediumTests {
+
+  public static final String CONNECTION_ID = "connectionId";
 
   @AfterEach
   void stop() {
     if (sonarlint != null) {
       sonarlint.stop(true);
       sonarlint = null;
+    }
+  }
+
+  private SonarLintTestBackend backend;
+
+  @BeforeEach
+  void prepareBackend() {
+    var fakeClient = newFakeClient()
+      .build();
+    backend = newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, mockWebServer.url("/"))
+      .build(fakeClient);
+  }
+
+  @AfterEach
+  void stopBackend() throws ExecutionException, InterruptedException {
+    if (backend != null) {
+      backend.shutdown().get();
     }
   }
 
@@ -136,7 +160,7 @@ class ConnectedHotspotMediumTests {
         .build())
       .addComponents(Hotspots.Component.newBuilder().setKey("component:file/path").setPath("file/path").build())
       .build());
-    sonarlint.downloadAllServerHotspots(mockWebServer.endpointParams(), httpClient(), JAVA_MODULE_KEY, "master", null);
+    sonarlint.downloadAllServerHotspots(mockWebServer.endpointParams(), backend.getHttpClient(CONNECTION_ID), JAVA_MODULE_KEY, "master", null);
 
     var serverHotspots = sonarlint.getServerHotspots(new ProjectBinding(JAVA_MODULE_KEY, "", ""), "master", "file/path");
 
@@ -165,7 +189,7 @@ class ConnectedHotspotMediumTests {
       .addComponents(Hotspots.Component.newBuilder().setKey("component:file/path").setPath("file/path").build())
       .build());
     var projectBinding = new ProjectBinding(JAVA_MODULE_KEY, "", "");
-    sonarlint.downloadAllServerHotspotsForFile(mockWebServer.endpointParams(), httpClient(), projectBinding, "file/path", "master", null);
+    sonarlint.downloadAllServerHotspotsForFile(mockWebServer.endpointParams(), backend.getHttpClient(CONNECTION_ID), projectBinding, "file/path", "master", null);
 
     var serverHotspots = sonarlint.getServerHotspots(projectBinding, "master", "file/path");
 

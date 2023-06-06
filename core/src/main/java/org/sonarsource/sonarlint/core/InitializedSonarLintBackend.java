@@ -44,12 +44,16 @@ import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationServ
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueService;
 import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
-import org.sonarsource.sonarlint.core.commons.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.hotspot.HotspotServiceImpl;
-import org.sonarsource.sonarlint.core.http.HttpClientManager;
+import org.sonarsource.sonarlint.core.http.ClientProxyCredentialsProvider;
+import org.sonarsource.sonarlint.core.http.ClientProxySelector;
+import org.sonarsource.sonarlint.core.http.ConfirmingTrustManager;
+import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
+import org.sonarsource.sonarlint.core.http.HttpClient;
+import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.issue.IssueServiceImpl;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
@@ -87,7 +91,8 @@ public class InitializedSonarLintBackend implements SonarLintBackend {
   private final AnalysisServiceImpl analysisService;
   private final StorageService storageService;
   private final LanguageSupportRepository languageSupportRepository;
-  private final HttpClientManager httpClientManager;
+  private final HttpClientProvider httpClientProvider;
+  private final ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider;
 
   InitializedSonarLintBackend(SonarLintClient client, InitializeParams params) {
     var sonarlintUserHome = Optional.ofNullable(params.getSonarlintUserHome()).map(Paths::get).orElse(SonarLintUserHome.get());
@@ -111,8 +116,12 @@ public class InitializedSonarLintBackend implements SonarLintBackend {
       params.getConnectedModeEmbeddedPluginPathsByKey());
     rulesExtractionHelper = new RulesExtractionHelper(pluginsService, languageSupportRepository, params.isEnableSecurityHotspots());
     var rulesRepository = new RulesRepository(rulesExtractionHelper);
-    this.httpClientManager = new HttpClientManager(client, params.getUserAgent(), sonarlintUserHome);
-    var serverApiProvider = new ServerApiProvider(connectionConfigurationRepository, httpClientManager);
+    var confirmingTrustManager = new ConfirmingTrustManager(sonarlintUserHome, client);
+    var clientProxySelector = new ClientProxySelector(client);
+    var clientProxyCredentialsProvider = new ClientProxyCredentialsProvider(client);
+    this.httpClientProvider = new HttpClientProvider(params.getUserAgent(), confirmingTrustManager, clientProxySelector, clientProxyCredentialsProvider);
+    this.connectionAwareHttpClientProvider = new ConnectionAwareHttpClientProvider(client, httpClientProvider);
+    var serverApiProvider = new ServerApiProvider(connectionConfigurationRepository, connectionAwareHttpClientProvider);
     rulesService = new RulesServiceImpl(serverApiProvider, configurationRepository, rulesRepository, storageService, params.getStandaloneRuleConfigByKey());
     this.telemetryService = new TelemetryServiceImpl(params.getTelemetryProductKey(), sonarlintUserHome);
     this.hotspotService = new HotspotServiceImpl(client, storageService, configurationRepository, connectionConfigurationRepository, serverApiProvider, telemetryService);
@@ -123,7 +132,7 @@ public class InitializedSonarLintBackend implements SonarLintBackend {
     this.embeddedServer = new EmbeddedServer(client, connectionService, awaitingUserTokenFutureRepository, configurationService, bindingSuggestionProvider, serverApiProvider,
       telemetryService, params.getHostInfo());
     this.authenticationHelperService = new AuthenticationHelperServiceImpl(client, embeddedServer, awaitingUserTokenFutureRepository, params.getHostInfo().getName(),
-      httpClientManager);
+      httpClientProvider);
     smartNotifications = new SmartNotifications(configurationRepository, connectionConfigurationRepository, serverApiProvider, client, storageService, telemetryService);
     var sonarProjectBranchRepository = new ActiveSonarProjectBranchRepository();
     this.sonarProjectBranchService = new SonarProjectBranchServiceImpl(sonarProjectBranchRepository, configurationRepository, clientEventBus);
@@ -219,7 +228,8 @@ public class InitializedSonarLintBackend implements SonarLintBackend {
         this.embeddedServer::shutdown,
         this.smartNotifications::shutdown,
         this.synchronizationServiceImpl::shutdown,
-        storageService::close);
+        this.storageService::close,
+        this.httpClientProvider::close);
       shutdownTasks.forEach(InitializedSonarLintBackend::shutdown);
     });
   }
@@ -238,11 +248,11 @@ public class InitializedSonarLintBackend implements SonarLintBackend {
 
   @Override
   public HttpClient getHttpClient(String connectionId) {
-    return httpClientManager.getHttpClient(connectionId);
+    return connectionAwareHttpClientProvider.getHttpClient(connectionId);
   }
 
   @Override
   public HttpClient getHttpClientNoAuth() {
-    return httpClientManager.getHttpClient();
+    return connectionAwareHttpClientProvider.getHttpClient();
   }
 }

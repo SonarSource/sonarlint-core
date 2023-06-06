@@ -25,7 +25,7 @@ import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations;
@@ -44,7 +44,7 @@ class OrganizationApiTests {
 
   @Test
   void testListUserOrganizationWithMoreThan20Pages() {
-    var underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams("myOrg"), MockWebServerExtension.httpClient()));
+    var underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams("myOrg"), HttpClientProvider.forTesting().getHttpClient()));
 
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"UP\"}");
 
@@ -71,7 +71,7 @@ class OrganizationApiTests {
         .build())
       .build());
     mockServer.addProtobufResponse("/api/organizations/search.protobuf?organizations=org%3Akey&ps=500&p=2", SearchWsResponse.newBuilder().build());
-    var underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtension.httpClient()));
+    var underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()));
 
     var organization = underTest.getOrganization("org:key", progressMonitor);
 

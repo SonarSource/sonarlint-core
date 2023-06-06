@@ -124,14 +124,15 @@ import static its.utils.ItUtils.SONAR_VERSION;
 import static java.util.Collections.singletonList;
 import static org.apache.commons.lang3.StringUtils.abbreviate;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.waitAtMost;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
   public static final String CONNECTION_ID = "orchestrator";
+  public static final String CONNECTION_ID_WRONG_CREDENTIALS = "wrong-credentials";
 
   @RegisterExtension
   static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
@@ -154,6 +155,26 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   static void createSonarLintUser() {
     adminWsClient = newAdminWsClient(ORCHESTRATOR);
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
+  }
+
+  private static SonarLintBackend backend;
+
+  @TempDir
+  private static Path sonarUserHome;
+
+  @BeforeAll
+  static void start() {
+    backend = new SonarLintBackendImpl(newDummySonarLintClient());
+    backend.initialize(
+      new InitializeParams(new HostInfoDto("clientName"), "integrationTests", sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"), Collections.emptySet(),
+        Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(), false,
+        List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(), false,
+        Map.of(), false, true, false, "SonarLint"));
+  }
+
+  @AfterAll
+  static void stop() throws ExecutionException, InterruptedException {
+    backend.shutdown().get();
   }
 
   @Nested
@@ -214,22 +235,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     // TODO should be moved to a separate class, not related to analysis
-    @Test
-    void updateNoAuth() {
-      var projectKey = "noAuth";
-      provisionProject(ORCHESTRATOR, projectKey, "Sample Javascript");
-
-      adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("true"));
-      try {
-        engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClientNoAuth(), projectKey, null);
-        fail("Exception expected");
-      } catch (Exception e) {
-        assertThat(e).hasMessage("Not authorized. Please check server credentials.");
-      } finally {
-        adminWsClient.settings().reset(new ResetRequest().setKeys(List.of("sonar.forceAuthentication")));
-      }
-    }
-
     @Test
     void shouldRaiseIssuesOnAJavaScriptProject() throws Exception {
       var projectKey = "sample-javascript";
@@ -468,7 +473,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
         assertThat(issueListener.getIssues()).hasSize(3);
 
-        assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey("myrule"), projectKey).get().getHtmlDescription())
+        assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), javaRuleKey("myrule"), projectKey).get().getHtmlDescription())
           .contains("my_rule_description");
 
       } finally {
@@ -607,7 +612,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       updateProject(engine, projectKey);
       Deque<ServerEvent> events = new ConcurrentLinkedDeque<>();
-      engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(projectKey), events::add, null);
+      engine.subscribeForEvents(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), Set.of(projectKey), events::add, null);
       var qualityProfile = getQualityProfile(adminWsClient, "SonarLint IT Java");
       deactivateRule(adminWsClient, qualityProfile, "java:S106");
       waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
@@ -639,7 +644,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       analyzeMavenProject("sample-java", projectKey);
       updateProject(engine, projectKey);
       Deque<ServerEvent> events = new ConcurrentLinkedDeque<>();
-      engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(projectKey), events::add, null);
+      engine.subscribeForEvents(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), Set.of(projectKey), events::add, null);
       var issueKey = getIssueKeys(adminWsClient, "java:S106").get(0);
       resolveIssueAsWontFix(adminWsClient, issueKey);
 
@@ -693,7 +698,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/xoo-sonarlint.xml"));
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY, "xoo", "SonarLint IT Xoo");
 
-      engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, null);
+      engine.updateProject(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), PROJECT_KEY, null);
 
       // main branch
       analyzeProject("sample-xoo-v1");
@@ -739,7 +744,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     @Test
     void shouldSyncBranchesFromServer() {
-      engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY), null);
+      engine.sync(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), Set.of(PROJECT_KEY), null);
 
       // Starting from SQ 8.1, concept of short vs long living branch has been removed
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 1)) {
@@ -752,7 +757,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     @Test
     void shouldSyncIssuesFromBranch() {
-      engine.downloadAllServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY, LONG_BRANCH, null);
+      engine.downloadAllServerIssues(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), PROJECT_KEY, LONG_BRANCH, null);
 
       var file1Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), LONG_BRANCH, "src/500lines.xoo");
       var file2Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), LONG_BRANCH, "src/10000lines.xoo");
@@ -827,12 +832,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var projectBinding = new ProjectBinding(PROJECT_KEY_JAVA_TAINT, "", "");
 
-      engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVA_TAINT, null);
+      engine.updateProject(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), PROJECT_KEY_JAVA_TAINT, null);
 
       // For SQ 9.6+
-      engine.syncServerTaintIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVA_TAINT, MAIN_BRANCH_NAME, null);
+      engine.syncServerTaintIssues(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), PROJECT_KEY_JAVA_TAINT, MAIN_BRANCH_NAME, null);
       // For SQ < 9.6
-      engine.downloadAllServerTaintIssuesForFile(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding, "src/main/java/foo/DbHelper.java", MAIN_BRANCH_NAME, null);
+      engine.downloadAllServerTaintIssuesForFile(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), projectBinding, "src/main/java/foo/DbHelper.java",
+        MAIN_BRANCH_NAME, null);
 
       var sinkIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java");
 
@@ -865,9 +871,9 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     @Test
     @OnlyOnSonarQube(from = "9.6")
     void shouldUpdateTaintVulnerabilityInLocalStorageWhenChangedOnServer() {
-      engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVA_TAINT, null);
+      engine.updateProject(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), PROJECT_KEY_JAVA_TAINT, null);
       Deque<ServerEvent> events = new ConcurrentLinkedDeque<>();
-      engine.subscribeForEvents(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVA_TAINT), events::add, null);
+      engine.subscribeForEvents(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), Set.of(PROJECT_KEY_JAVA_TAINT), events::add, null);
       var projectBinding = new ProjectBinding(PROJECT_KEY_JAVA_TAINT, "", "");
       assertThat(engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java")).isEmpty();
 
@@ -1031,7 +1037,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     @OnlyOnSonarQube(from = "8.6")
     void canFetchHotspot() throws InvalidProtocolBufferException {
       analyzeMavenProject("sample-java-hotspot", PROJECT_KEY_JAVA_HOTSPOT);
-      var securityHotspotsService = new ServerApi(endpointParams(ORCHESTRATOR), sqHttpClient()).hotspot();
+      var securityHotspotsService = new ServerApi(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID)).hotspot();
 
       var remoteHotspot = securityHotspotsService.fetch(getFirstHotspotKey(PROJECT_KEY_JAVA_HOTSPOT));
 
@@ -1081,7 +1087,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     void loadHotspotRuleDescription() throws Exception {
       updateProject(engine, PROJECT_KEY_JAVA_HOTSPOT);
 
-      var ruleDetails = engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey(ORCHESTRATOR, "S4792"), PROJECT_KEY_JAVA_HOTSPOT).get();
+      var ruleDetails = engine
+        .getActiveRuleDetails(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), javaRuleKey(ORCHESTRATOR, "S4792"), PROJECT_KEY_JAVA_HOTSPOT).get();
 
       assertThat(ruleDetails.getName()).isEqualTo("Configuring loggers is security-sensitive");
       // HTML description is null for security hotspots when accessed through the deprecated engine API
@@ -1095,21 +1102,21 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       updateProject(engine, PROJECT_KEY_JAVA_HOTSPOT);
 
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 1)) {
-        engine.syncServerHotspots(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVA_HOTSPOT, "master", null);
+        engine.syncServerHotspots(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), PROJECT_KEY_JAVA_HOTSPOT, "master", null);
         var serverHotspots = engine.getServerHotspots(new ProjectBinding(PROJECT_KEY_JAVA_HOTSPOT, "", "ide"), "master", "ide/src/main/java/foo/Foo.java");
         assertThat(serverHotspots)
           .extracting("ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "status")
           .containsExactly(
             tuple("java:S4792", "Make sure that this logger's configuration is safe.", "ide/src/main/java/foo/Foo.java", 9, 4, 9, 45, HotspotReviewStatus.TO_REVIEW));
       } else if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
-        engine.downloadAllServerHotspots(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVA_HOTSPOT, "master", null);
+        engine.downloadAllServerHotspots(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), PROJECT_KEY_JAVA_HOTSPOT, "master", null);
         var serverHotspots = engine.getServerHotspots(new ProjectBinding(PROJECT_KEY_JAVA_HOTSPOT, "", "ide"), "master", "ide/src/main/java/foo/Foo.java");
         assertThat(serverHotspots)
           .extracting("ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "status")
           .containsExactly(
             tuple("java:S4792", "Make sure that this logger's configuration is safe.", "ide/src/main/java/foo/Foo.java", 9, 4, 9, 45, HotspotReviewStatus.TO_REVIEW));
       } else {
-        engine.downloadAllServerHotspots(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVA_HOTSPOT, "master", null);
+        engine.downloadAllServerHotspots(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), PROJECT_KEY_JAVA_HOTSPOT, "master", null);
         var serverHotspots = engine.getServerHotspots(new ProjectBinding(PROJECT_KEY_JAVA_HOTSPOT, "", "ide"), "master", "ide/src/main/java/foo/Foo.java");
         assertThat(serverHotspots).isEmpty();
       }
@@ -1120,11 +1127,11 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       updateProject(engine, PROJECT_KEY_JAVA_HOTSPOT);
       var projectBinding = new ProjectBinding(PROJECT_KEY_JAVA_HOTSPOT, "", "ide");
 
-      engine.downloadAllServerHotspotsForFile(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding, "ide/src/main/java/foo/Foo.java", "master", null);
+      engine.downloadAllServerHotspotsForFile(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), projectBinding, "ide/src/main/java/foo/Foo.java", "master", null);
 
       var serverHotspots = engine.getServerHotspots(projectBinding, "master", "ide/src/main/java/foo/Foo.java");
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)
-      && !ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 1)) {
+        && !ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 1)) {
         assertThat(serverHotspots)
           .extracting("ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "status")
           .containsExactly(
@@ -1137,16 +1144,10 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
   @Nested
   class RuleDescription {
-    static final String USE_NEW_CLIENT_API = "use_new_client_api";
-
     private ConnectedSonarLintEngine engine;
-    private SonarLintBackend backend;
-
-    @TempDir
-    private Path sonarUserHome;
 
     @BeforeEach
-    void start(TestInfo testInfo) {
+    void start() {
       var globalConfig = ConnectedGlobalConfiguration.sonarQubeBuilder()
         .setConnectionId(CONNECTION_ID)
         .setSonarLintUserHome(sonarUserHome)
@@ -1156,23 +1157,29 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         })
         .build();
       engine = new ConnectedSonarLintEngineImpl(globalConfig);
-
-      if (testInfo.getTags().contains(USE_NEW_CLIENT_API)) {
-        backend = new SonarLintBackendImpl(newDummySonarLintClient());
-        backend.initialize(
-          new InitializeParams(new HostInfoDto("clientName"), "integrationTests", sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"), Collections.emptySet(),
-            Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(), false,
-            List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(), false,
-            Map.of(), false, true, false, "SonarLint"));
-      }
     }
 
     @AfterEach
-    void stop(TestInfo testInfo) throws ExecutionException, InterruptedException {
-      if (testInfo.getTags().contains(USE_NEW_CLIENT_API)) {
-        backend.shutdown().get();
-      }
+    void stop() throws ExecutionException, InterruptedException {
       engine.stop(true);
+    }
+
+    @Test
+    void shouldFailIfNotAuthenticated() {
+      var projectKey = "noAuth";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample Javascript");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Java");
+      updateProject(engine, projectKey);
+
+      adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("true"));
+      try {
+        var ex = assertThrows(ExecutionException.class,
+          () -> engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID_WRONG_CREDENTIALS), javaRuleKey("S106"), projectKey).get());
+        assertThat(ex.getCause()).hasMessage("Not authorized. Please check server credentials.");
+      } finally {
+        adminWsClient.settings().reset(new ResetRequest().setKeys(List.of("sonar.forceAuthentication")));
+      }
     }
 
     @Test
@@ -1184,7 +1191,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Java");
       updateProject(engine, projectKey);
 
-      assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey("S106"), projectKey).get().getExtendedDescription()).isEmpty();
+      assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), javaRuleKey("S106"), projectKey).get().getExtendedDescription())
+        .isEmpty();
 
       var extendedDescription = " = Title\n*my dummy extended description*";
 
@@ -1202,7 +1210,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         // For some reason, there is an extra line break in the generated HTML
         expected = "<h1>Title\n</h1><strong>my dummy extended description</strong>";
       }
-      assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), javaRuleKey("S106"), projectKey).get().getExtendedDescription())
+      assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), javaRuleKey("S106"), projectKey).get().getExtendedDescription())
         .isEqualTo(expected);
     }
 
@@ -1215,13 +1223,12 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Java Markdown");
       updateProject(engine, projectKey);
 
-      assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), sqHttpClient(), "mycompany-java:markdown", projectKey).get().getHtmlDescription())
+      assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), "mycompany-java:markdown", projectKey).get().getHtmlDescription())
         .isEqualTo("<h1>Title</h1><ul><li>one</li>\n"
           + "<li>two</li></ul>");
     }
 
     @Test
-    @Tag(USE_NEW_CLIENT_API)
     void shouldReturnAllContextsWithOthersSelectedIfNoContextProvided() throws ExecutionException, InterruptedException {
       var projectKey = "sample-java-taint-new-backend";
 
@@ -1262,7 +1269,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    @Tag(USE_NEW_CLIENT_API)
     void shouldReturnAllContextsWithTheMatchingOneSelectedIfContextProvided() throws ExecutionException, InterruptedException {
       var projectKey = "sample-java-taint-rule-context-new-backend";
 
@@ -1314,7 +1320,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    @Tag(USE_NEW_CLIENT_API)
     @OnlyOnSonarQube(from = "9.7")
     void shouldEmulateDescriptionSectionsForHotspotRules() throws ExecutionException, InterruptedException {
       var projectKey = "sample-java-hotspot-new-backend";
@@ -1358,83 +1363,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       return result;
     }
 
-    private SonarLintClient newDummySonarLintClient() {
-      return new SonarLintClient() {
-        @Override
-        public void suggestBinding(SuggestBindingParams params) {
-
-        }
-
-        @Override
-        public CompletableFuture<FindFileByNamesInScopeResponse> findFileByNamesInScope(FindFileByNamesInScopeParams params) {
-          return CompletableFuture.completedFuture(new FindFileByNamesInScopeResponse(Collections.emptyList()));
-        }
-
-        @Override
-        public void openUrlInBrowser(OpenUrlInBrowserParams params) {
-
-        }
-
-        @Override
-        public void showMessage(ShowMessageParams params) {
-
-        }
-
-        @Override
-        public void showSmartNotification(ShowSmartNotificationParams params) {
-
-        }
-
-        @Override
-        public CompletableFuture<GetHostInfoResponse> getHostInfo() {
-          return CompletableFuture.completedFuture(new GetHostInfoResponse(""));
-        }
-
-        @Override
-        public void showHotspot(ShowHotspotParams params) {
-
-        }
-
-        @Override
-        public CompletableFuture<AssistCreatingConnectionResponse> assistCreatingConnection(AssistCreatingConnectionParams params) {
-          return null;
-        }
-
-        @Override
-        public CompletableFuture<AssistBindingResponse> assistBinding(AssistBindingParams params) {
-          return null;
-        }
-
-        @Override
-        public CompletableFuture<Void> startProgress(StartProgressParams params) {
-          return CompletableFuture.completedFuture(null);
-        }
-
-        @Override
-        public void reportProgress(ReportProgressParams params) {
-
-        }
-
-        @Override
-        public void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params) {
-
-        }
-
-        public CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params) {
-          if (params.getConnectionId().equals(CONNECTION_ID)) {
-            return CompletableFuture.completedFuture(new GetCredentialsResponse(new UsernamePasswordDto(SONARLINT_USER, SONARLINT_PWD)));
-          } else {
-            return CompletableFuture.failedFuture(new IllegalArgumentException("Unknown connection: " + params.getConnectionId()));
-          }
-        }
-
-        @Override
-        public CompletableFuture<SelectProxiesResponse> selectProxies(SelectProxiesParams params) {
-          return CompletableFuture.completedFuture(new SelectProxiesResponse(List.of(ProxyDto.NO_PROXY)));
-        }
-
-      };
-    }
   }
 
   @Nested
@@ -1445,7 +1373,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var projectKey = "sample-project";
       provisionProject(ORCHESTRATOR, projectKey, "Sample Project");
 
-      var api = new ServerApi(endpointParams(ORCHESTRATOR), sqHttpClient()).component();
+      var api = new ServerApi(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID)).component();
       assertThat(api.getProject("non-existing")).isNotPresent();
       assertThat(api.getProject(projectKey)).isPresent();
     }
@@ -1460,7 +1388,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         .setSonarLintUserHome(sonarUserHome)
         .build();
       var engine = new ConnectedSonarLintEngineImpl(globalConfig);
-      assertThat(engine.downloadAllProjects(endpointParams(ORCHESTRATOR), sqHttpClient(), null)).containsKeys("foo-bar1", "foo-bar2", "foo-bar3");
+      assertThat(engine.downloadAllProjects(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), null)).containsKeys("foo-bar1", "foo-bar2", "foo-bar3");
     }
 
   }
@@ -1478,12 +1406,92 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   }
 
   private static void updateProject(ConnectedSonarLintEngine engine, String projectKey) {
-    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, null);
-    engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(projectKey), null);
-    engine.syncServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, MAIN_BRANCH_NAME, null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), projectKey, null);
+    engine.sync(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), Set.of(projectKey), null);
+    engine.syncServerIssues(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), projectKey, MAIN_BRANCH_NAME, null);
   }
 
   private static void analyzeMavenProject(String projectDirName, String projectKey) {
     analyzeMavenProject(ORCHESTRATOR, projectDirName, Map.of("sonar.projectKey", projectKey));
+  }
+
+  private static SonarLintClient newDummySonarLintClient() {
+    return new SonarLintClient() {
+      @Override
+      public void suggestBinding(SuggestBindingParams params) {
+
+      }
+
+      @Override
+      public CompletableFuture<FindFileByNamesInScopeResponse> findFileByNamesInScope(FindFileByNamesInScopeParams params) {
+        return CompletableFuture.completedFuture(new FindFileByNamesInScopeResponse(Collections.emptyList()));
+      }
+
+      @Override
+      public void openUrlInBrowser(OpenUrlInBrowserParams params) {
+
+      }
+
+      @Override
+      public void showMessage(ShowMessageParams params) {
+
+      }
+
+      @Override
+      public void showSmartNotification(ShowSmartNotificationParams params) {
+
+      }
+
+      @Override
+      public CompletableFuture<GetHostInfoResponse> getHostInfo() {
+        return CompletableFuture.completedFuture(new GetHostInfoResponse(""));
+      }
+
+      @Override
+      public void showHotspot(ShowHotspotParams params) {
+
+      }
+
+      @Override
+      public CompletableFuture<AssistCreatingConnectionResponse> assistCreatingConnection(AssistCreatingConnectionParams params) {
+        return null;
+      }
+
+      @Override
+      public CompletableFuture<AssistBindingResponse> assistBinding(AssistBindingParams params) {
+        return null;
+      }
+
+      @Override
+      public CompletableFuture<Void> startProgress(StartProgressParams params) {
+        return CompletableFuture.completedFuture(null);
+      }
+
+      @Override
+      public void reportProgress(ReportProgressParams params) {
+
+      }
+
+      @Override
+      public void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params) {
+
+      }
+
+      public CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params) {
+        if (params.getConnectionId().equals(CONNECTION_ID)) {
+          return CompletableFuture.completedFuture(new GetCredentialsResponse(new UsernamePasswordDto(SONARLINT_USER, SONARLINT_PWD)));
+        } else if (params.getConnectionId().equals(CONNECTION_ID_WRONG_CREDENTIALS)) {
+          return CompletableFuture.completedFuture(new GetCredentialsResponse(new UsernamePasswordDto("foo", "bar")));
+        } else {
+          return CompletableFuture.failedFuture(new IllegalArgumentException("Unknown connection: " + params.getConnectionId()));
+        }
+      }
+
+      @Override
+      public CompletableFuture<SelectProxiesResponse> selectProxies(SelectProxiesParams params) {
+        return CompletableFuture.completedFuture(new SelectProxiesResponse(List.of(ProxyDto.NO_PROXY)));
+      }
+
+    };
   }
 }
