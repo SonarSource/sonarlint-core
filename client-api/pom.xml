@@ -22,7 +22,7 @@
     <!-- TODO remove this dependency once we remove the getHttpClient method -->
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>sonarlint-commons</artifactId>
+      <artifactId>sonarlint-http</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

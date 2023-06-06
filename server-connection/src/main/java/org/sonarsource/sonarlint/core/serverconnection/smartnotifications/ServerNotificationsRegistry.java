@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.serverconnection.smartnotifications;
 import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.CopyOnWriteArrayList;
-import org.sonarsource.sonarlint.core.commons.http.HttpClient;
+import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 

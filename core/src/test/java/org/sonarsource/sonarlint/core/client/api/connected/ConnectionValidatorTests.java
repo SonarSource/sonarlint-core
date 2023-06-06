@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutionException;
 import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.serverconnection.ServerVersionAndStatusChecker;
@@ -42,7 +42,7 @@ class ConnectionValidatorTests {
 
   @Test
   void testConnection_ok() throws ExecutionException, InterruptedException {
-    var underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtension.httpClient()));
+    var underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()));
 
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"UP\"}");
     mockServer.addStringResponse("/api/authentication/validate?format=json", "{\"valid\": true}");
@@ -57,7 +57,7 @@ class ConnectionValidatorTests {
 
   @Test
   void testConnectionOrganizationNotFound() throws Exception {
-    var underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams("myOrg"), MockWebServerExtension.httpClient()));
+    var underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams("myOrg"), HttpClientProvider.forTesting().getHttpClient()));
 
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"UP\"}");
     mockServer.addStringResponse("/api/authentication/validate?format=json", "{\"valid\": true}");
@@ -72,7 +72,7 @@ class ConnectionValidatorTests {
 
   @Test
   void testConnection_ok_with_org() throws Exception {
-    var underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams("henryju-github"), MockWebServerExtension.httpClient()));
+    var underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams("henryju-github"), HttpClientProvider.forTesting().getHttpClient()));
 
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"UP\"}");
     mockServer.addStringResponse("/api/authentication/validate?format=json", "{\"valid\": true}");
@@ -87,7 +87,7 @@ class ConnectionValidatorTests {
 
   @Test
   void testUnsupportedServer() throws ExecutionException, InterruptedException {
-    var underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtension.httpClient()));
+    var underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()));
 
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
 
@@ -102,7 +102,7 @@ class ConnectionValidatorTests {
 
   @Test
   void testClientError() throws ExecutionException, InterruptedException {
-    var underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtension.httpClient()));
+    var underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()));
 
     var mockResponse = new MockResponse();
     mockResponse.setResponseCode(400);
@@ -117,7 +117,7 @@ class ConnectionValidatorTests {
 
   @Test
   void testResponseError() throws ExecutionException, InterruptedException {
-    var underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtension.httpClient()));
+    var underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()));
 
     mockServer.addStringResponse("/api/system/status", "{\"id\": }");
 

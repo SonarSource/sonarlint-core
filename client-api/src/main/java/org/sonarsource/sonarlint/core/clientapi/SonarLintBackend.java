@@ -33,7 +33,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueService;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RulesService;
 import org.sonarsource.sonarlint.core.clientapi.backend.telemetry.TelemetryService;
-import org.sonarsource.sonarlint.core.commons.http.HttpClient;
+import org.sonarsource.sonarlint.core.http.HttpClient;
 
 public interface SonarLintBackend {
 

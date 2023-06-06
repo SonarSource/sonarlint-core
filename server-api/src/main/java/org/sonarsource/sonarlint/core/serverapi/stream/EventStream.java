@@ -27,10 +27,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.http.HttpClient;
-import org.sonarsource.sonarlint.core.commons.http.HttpConnectionListener;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.http.HttpClient;
+import org.sonarsource.sonarlint.core.http.HttpConnectionListener;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
