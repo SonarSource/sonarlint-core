@@ -49,7 +49,7 @@ import static testutils.TestUtils.protobufBody;
 class AuthenticationMediumTests {
 
   @RegisterExtension
-  WireMockExtension sonarqubeMock = WireMockExtension.newInstance()
+  static WireMockExtension sonarqubeMock = WireMockExtension.newInstance()
     .options(wireMockConfig().dynamicPort())
     .build();
 
