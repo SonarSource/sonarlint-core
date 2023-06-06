@@ -36,9 +36,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
-import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
-import org.apache.hc.core5.reactor.IOReactorStatus;
 import org.assertj.core.internal.Failures;
 import org.sonarqube.ws.Issues;
 import org.sonarqube.ws.Qualityprofiles.SearchWsResponse.QualityProfile;
@@ -50,8 +47,6 @@ import org.sonarqube.ws.client.qualityprofiles.SearchRequest;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.commons.http.HttpClient;
-import org.sonarsource.sonarlint.core.commons.http.JavaHttpClientAdapter;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -60,8 +55,6 @@ public abstract class AbstractConnectedTests {
   protected static final String SONARLINT_USER = "sonarlint";
   protected static final String SONARLINT_PWD = "sonarlintpwd";
   protected static final String MAIN_BRANCH_NAME = "master";
-
-  protected static final CloseableHttpAsyncClient SHARED_CLIENT = HttpAsyncClientBuilder.create().build();
 
   protected static class SaveIssueListener implements IssueListener {
     List<Issue> issues = new LinkedList<>();
@@ -119,24 +112,6 @@ public abstract class AbstractConnectedTests {
       map.put(key, value);
     }
     return map;
-  }
-
-  public static HttpClient httpClientWithCredentials(String user, String password) {
-    if (SHARED_CLIENT.getStatus() != IOReactorStatus.ACTIVE) {
-      SHARED_CLIENT.start();
-    }
-    return new JavaHttpClientAdapter(SHARED_CLIENT, user, password);
-  }
-
-  public static HttpClient sqHttpClient() {
-    if (SHARED_CLIENT.getStatus() != IOReactorStatus.ACTIVE) {
-      SHARED_CLIENT.start();
-    }
-    return new JavaHttpClientAdapter(SHARED_CLIENT, SONARLINT_USER, SONARLINT_PWD);
-  }
-
-  public static HttpClient sqHttpClientNoAuth() {
-    return new JavaHttpClientAdapter(SHARED_CLIENT, null, null);
   }
 
   protected static EndpointParams endpointParams(Orchestrator orchestrator) {

@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Commons
+ * SonarLint Core - HTTP
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons.http;
+package org.sonarsource.sonarlint.core.http;
 
 import java.net.URISyntaxException;
 import java.nio.CharBuffer;
@@ -42,7 +42,7 @@ import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.nio.support.BasicRequestProducer;
 import org.apache.hc.core5.util.Timeout;
 
-public class JavaHttpClientAdapter implements HttpClient {
+class ApacheHttpClientAdapter implements HttpClient {
 
   private static final Timeout STREAM_CONNECTION_REQUEST_TIMEOUT = Timeout.ofSeconds(10);
   private static final Timeout STREAM_CONNECTION_TIMEOUT = Timeout.ofMinutes(1);
@@ -53,7 +53,7 @@ public class JavaHttpClientAdapter implements HttpClient {
   private final String password;
   private boolean connected = false;
 
-  public JavaHttpClientAdapter(CloseableHttpAsyncClient javaClient, @Nullable String usernameOrToken, @Nullable String password) {
+  ApacheHttpClientAdapter(CloseableHttpAsyncClient javaClient, @Nullable String usernameOrToken, @Nullable String password) {
     this.javaClient = javaClient;
     this.usernameOrToken = usernameOrToken;
     this.password = password;

@@ -21,9 +21,13 @@ package mediumtest;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import mediumtest.fixtures.SonarLintTestBackend;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -33,11 +37,12 @@ import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import testutils.MockWebServerExtensionWithProtobuf;
 
+import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static mediumtest.fixtures.StorageFixture.newStorage;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.mockito.Mockito.mock;
@@ -48,13 +53,13 @@ class NotebookLanguageMediumTests {
   @RegisterExtension
   private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
 
-  private static final String SERVER_ID = StringUtils.repeat("very-long-id", 30);
+  private static final String CONNECTION_ID = StringUtils.repeat("very-long-id", 30);
   private static final String JAVA_MODULE_KEY = "test-project-2";
   private static ConnectedSonarLintEngineImpl sonarlint;
 
   @BeforeAll
   static void prepare(@TempDir Path slHome) {
-    var storage = newStorage(SERVER_ID)
+    var storage = newStorage(CONNECTION_ID)
       .withJSPlugin()
       .withJavaPlugin()
       .withProject("test-project")
@@ -65,7 +70,7 @@ class NotebookLanguageMediumTests {
     nodeJsHelper.detect(null);
 
     var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
-      .setConnectionId(SERVER_ID)
+      .setConnectionId(CONNECTION_ID)
       .setSonarLintUserHome(slHome)
       .setStorageRoot(storage.getPath())
       .setLogOutput(createNoOpLogOutput())
@@ -81,6 +86,24 @@ class NotebookLanguageMediumTests {
     if (sonarlint != null) {
       sonarlint.stop(true);
       sonarlint = null;
+    }
+  }
+
+  private SonarLintTestBackend backend;
+
+  @BeforeEach
+  void prepareBackend() {
+    var fakeClient = newFakeClient()
+      .build();
+    backend = newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.url("/"))
+      .build(fakeClient);
+  }
+
+  @AfterEach
+  void stopBackend() throws ExecutionException, InterruptedException {
+    if (backend != null) {
+      backend.shutdown().get();
     }
   }
 
@@ -102,7 +125,7 @@ class NotebookLanguageMediumTests {
 
 
     assertThatCode(() -> sonarlint.downloadAllServerIssues(mockWebServerExtension.endpointParams(),
-      MockWebServerExtension.httpClient(), "test-project", "master",null)).doesNotThrowAnyException();
+      backend.getHttpClient(CONNECTION_ID), "test-project", "master",null)).doesNotThrowAnyException();
   }
 
 }

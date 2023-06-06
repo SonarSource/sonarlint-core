@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,7 +63,7 @@ class ServerPathProviderTests {
   @Test
   void should_provide_token_generation_path_for_base_server_url() throws ExecutionException, InterruptedException {
     mockWebServerExtension.addStringResponse("/api/system/status", "{\"status\": \"UP\", \"version\": \"9.6\", \"id\": \"xzy\"}");
-    var client = MockWebServerExtension.httpClient();
+    var client = HttpClientProvider.forTesting().getHttpClient();
     var baseUrl = mockWebServerExtension.url("");
 
     var serverUrl = ServerPathProvider.getServerUrlForTokenGeneration(mockWebServerExtension.endpointParams(), client, 1234, "My IDE").get();
@@ -74,7 +74,7 @@ class ServerPathProviderTests {
   @Test
   void should_provide_token_generation_fallback_path_for_base_server_url() throws ExecutionException, InterruptedException {
     mockWebServerExtension.addStringResponse("/api/system/status", "{\"status\": \"UP\", \"version\": \"9.6\", \"id\": \"xzy\"}");
-    var client = MockWebServerExtension.httpClient();
+    var client = HttpClientProvider.forTesting().getHttpClient();
     var baseUrl = mockWebServerExtension.url("");
 
     var serverUrl = ServerPathProvider.getFallbackServerUrlForTokenGeneration(mockWebServerExtension.endpointParams(), client, "My IDE").get();

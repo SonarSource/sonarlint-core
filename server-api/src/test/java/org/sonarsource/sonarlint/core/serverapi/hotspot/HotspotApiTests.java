@@ -27,13 +27,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
-import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -59,7 +59,7 @@ class HotspotApiTests {
 
   @BeforeEach
   void setUp() {
-    underTest = new ServerApi(mockServer.endpointParams(), MockWebServerExtension.httpClient()).hotspot();
+    underTest = new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()).hotspot();
   }
 
   @Test
@@ -339,7 +339,7 @@ class HotspotApiTests {
 
   @Test
   void sonar_cloud_should_not_permit_tracking_hotspots() {
-    var hotspotApi = new HotspotApi(new ServerApiHelper(new EndpointParams("https://sonarcloud.io", true, "org"), MockWebServerExtension.httpClient()));
+    var hotspotApi = new HotspotApi(new ServerApiHelper(new EndpointParams("https://sonarcloud.io", true, "org"), HttpClientProvider.forTesting().getHttpClient()));
 
     var permitsTracking = hotspotApi.permitsTracking(null);
 
@@ -348,7 +348,7 @@ class HotspotApiTests {
 
   @Test
   void sonar_qube_prior_to_9_7_should_not_permit_tracking_hotspots() {
-    var hotspotApi = new HotspotApi(new ServerApiHelper(new EndpointParams("http://my.sonar.qube", false, null), MockWebServerExtension.httpClient()));
+    var hotspotApi = new HotspotApi(new ServerApiHelper(new EndpointParams("http://my.sonar.qube", false, null), HttpClientProvider.forTesting().getHttpClient()));
 
     var permitsTracking = hotspotApi.permitsTracking(() -> Version.create("9.6.0"));
 
@@ -357,7 +357,7 @@ class HotspotApiTests {
 
   @Test
   void sonar_qube_9_7_plus_should_permit_tracking_hotspots() {
-    var hotspotApi = new HotspotApi(new ServerApiHelper(new EndpointParams("http://my.sonar.qube", false, null), MockWebServerExtension.httpClient()));
+    var hotspotApi = new HotspotApi(new ServerApiHelper(new EndpointParams("http://my.sonar.qube", false, null), HttpClientProvider.forTesting().getHttpClient()));
 
     var permitsTracking = hotspotApi.permitsTracking(() -> Version.create("9.7.0"));
 
