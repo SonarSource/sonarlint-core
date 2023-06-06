@@ -20,29 +20,56 @@
 package org.sonarsource.sonarlint.core.http;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class HttpClientProviderTests {
 
   @RegisterExtension
-  WireMockExtension sonarqubeMock = WireMockExtension.newInstance()
+  SonarLintLogTester logTester = new SonarLintLogTester();
+
+  @RegisterExtension
+  static WireMockExtension sonarqubeMock = WireMockExtension.newInstance()
     .options(wireMockConfig().dynamicPort())
     .build();
 
   @Test
   void it_should_use_user_agent() {
-    var httpClientManager = HttpClientProvider.forTesting();
+    var underTest = HttpClientProvider.forTesting();
 
-    httpClientManager.getHttpClient().get(sonarqubeMock.url("/test"));
+    underTest.getHttpClient().get(sonarqubeMock.url("/test"));
 
     sonarqubeMock.verify(getRequestedFor(urlEqualTo("/test"))
       .withHeader("User-Agent", equalTo("SonarLint tests")));
+  }
+
+  @Test
+  void it_should_support_cancellation() {
+    sonarqubeMock.stubFor(get("/delayed")
+      .willReturn(aResponse()
+        .withFixedDelay(20000)));
+
+    var underTest = HttpClientProvider.forTesting();
+
+    var future = underTest.getHttpClient().getAsync(sonarqubeMock.url("/delayed"));
+    assertThrows(TimeoutException.class, () -> future.get(100, TimeUnit.MILLISECONDS));
+    assertThat(future.cancel(true)).isTrue();
+    assertThat(future).isCancelled();
+
+    assertThat(logTester.logs()).containsExactly("Request cancelled");
   }
 
 }

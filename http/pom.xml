@@ -66,4 +66,28 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <profiles>
+    <!-- Workaround for https://issues.apache.org/jira/projects/MJAR/issues/MJAR-138 -->
+    <profile>
+      <id>conditionally-add-commons-tests-if-tests-not-skipped</id>
+      <activation>
+        <property>
+          <name>maven.test.skip</name>
+          <value>!true</value>
+        </property>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>sonarlint-commons</artifactId>
+          <version>${project.version}</version>
+          <classifier>tests</classifier>
+          <type>test-jar</type>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+
 </project>
