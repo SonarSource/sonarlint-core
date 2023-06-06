@@ -19,6 +19,7 @@
  */
 package mediumtest;
 
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -41,13 +42,16 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Components;
-import testutils.MockWebServerExtensionWithProtobuf;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
+import static testutils.TestUtils.protobufBody;
 
 class BindingSuggestionsMediumTests {
 
@@ -58,8 +62,11 @@ class BindingSuggestionsMediumTests {
   public static final String CONFIG_SCOPE_ID = "myProject1";
   public static final String SLCORE_PROJECT_KEY = "org.sonarsource.sonarlint:sonarlint-core-parent";
   public static final String SLCORE_PROJECT_NAME = "SonarLint Core";
+
   @RegisterExtension
-  private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
+  static WireMockExtension sonarqubeMock = WireMockExtension.newInstance()
+    .options(wireMockConfig().dynamicPort())
+    .build();
 
   private SonarLintBackendImpl backend;
 
@@ -82,7 +89,7 @@ class BindingSuggestionsMediumTests {
     await().until(() -> logTester.logs(), logs -> logs.contains("No connections configured, skipping binding suggestions."));
 
     backend.getConnectionService()
-      .didUpdateConnections(new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto(MYSONAR, mockWebServerExtension.endpointParams().getBaseUrl(), true)), List.of()));
+      .didUpdateConnections(new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto(MYSONAR, sonarqubeMock.baseUrl(), true)), List.of()));
 
     await().atMost(Duration.of(5, ChronoUnit.SECONDS)).until(fakeClient::hasReceivedSuggestions);
     var bindingSuggestions = fakeClient.getBindingSuggestions();
@@ -98,16 +105,17 @@ class BindingSuggestionsMediumTests {
       .build(fakeClient);
     await().until(() -> logTester.logs(), logs -> logs.contains("No connections configured, skipping binding suggestions."));
 
-    mockWebServerExtension.addProtobufResponse("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1", Components.SearchWsResponse.newBuilder()
-      .addComponents(Components.Component.newBuilder()
-        .setKey(SLCORE_PROJECT_KEY)
-        .setName(SLCORE_PROJECT_NAME)
-        .build())
-      .setPaging(Common.Paging.newBuilder().setTotal(1).build())
-      .build());
+    sonarqubeMock.stubFor(get("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1")
+      .willReturn(aResponse().withResponseBody(protobufBody(Components.SearchWsResponse.newBuilder()
+        .addComponents(Components.Component.newBuilder()
+          .setKey(SLCORE_PROJECT_KEY)
+          .setName(SLCORE_PROJECT_NAME)
+          .build())
+        .setPaging(Common.Paging.newBuilder().setTotal(1).build())
+        .build()))));
 
     backend.getConnectionService()
-      .didUpdateConnections(new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto(MYSONAR, mockWebServerExtension.endpointParams().getBaseUrl(), true)), List.of()));
+      .didUpdateConnections(new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto(MYSONAR, sonarqubeMock.baseUrl(), true)), List.of()));
 
     await().atMost(Duration.of(5, ChronoUnit.SECONDS)).until(fakeClient::hasReceivedSuggestions);
     var bindingSuggestions = fakeClient.getBindingSuggestions();
@@ -121,16 +129,17 @@ class BindingSuggestionsMediumTests {
   void test_project_added_should_suggest_binding_with_matches() {
     var fakeClient = newFakeClient().build();
     backend = newBackend()
-      .withSonarQubeConnection(MYSONAR, mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeConnection(MYSONAR, sonarqubeMock.baseUrl())
       .build(fakeClient);
 
-    mockWebServerExtension.addProtobufResponse("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1", Components.SearchWsResponse.newBuilder()
-      .addComponents(Components.Component.newBuilder()
-        .setKey(SLCORE_PROJECT_KEY)
-        .setName(SLCORE_PROJECT_NAME)
-        .build())
-      .setPaging(Common.Paging.newBuilder().setTotal(1).build())
-      .build());
+    sonarqubeMock.stubFor(get("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1")
+      .willReturn(aResponse().withResponseBody(protobufBody(Components.SearchWsResponse.newBuilder()
+        .addComponents(Components.Component.newBuilder()
+          .setKey(SLCORE_PROJECT_KEY)
+          .setName(SLCORE_PROJECT_NAME)
+          .build())
+        .setPaging(Common.Paging.newBuilder().setTotal(1).build())
+        .build()))));
 
     backend.getConfigurationService()
       .didAddConfigurationScopes(
@@ -150,19 +159,20 @@ class BindingSuggestionsMediumTests {
   void test_uses_binding_clues() {
     var fakeClient = newFakeClient()
       .withFoundFile("sonar-project.properties", "/home/user/Project/sonar-project.properties",
-        "sonar.host.url=" + mockWebServerExtension.endpointParams().getBaseUrl() + "\nsonar.projectKey=" + SLCORE_PROJECT_KEY)
+        "sonar.host.url=" + sonarqubeMock.baseUrl() + "\nsonar.projectKey=" + SLCORE_PROJECT_KEY)
       .build();
     backend = newBackend()
-      .withSonarQubeConnection(MYSONAR, mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeConnection(MYSONAR, sonarqubeMock.baseUrl())
       .withSonarQubeConnection("another")
       .build(fakeClient);
 
-    mockWebServerExtension.addProtobufResponse("/api/components/show.protobuf?component=org.sonarsource.sonarlint%3Asonarlint-core-parent", Components.ShowWsResponse.newBuilder()
-      .setComponent(Components.Component.newBuilder()
-        .setKey(SLCORE_PROJECT_KEY)
-        .setName(SLCORE_PROJECT_NAME)
-        .build())
-      .build());
+    sonarqubeMock.stubFor(get("/api/components/show.protobuf?component=org.sonarsource.sonarlint%3Asonarlint-core-parent")
+      .willReturn(aResponse().withResponseBody(protobufBody(Components.ShowWsResponse.newBuilder()
+        .setComponent(Components.Component.newBuilder()
+          .setKey(SLCORE_PROJECT_KEY)
+          .setName(SLCORE_PROJECT_NAME)
+          .build())
+        .build()))));
 
     backend.getConfigurationService()
       .didAddConfigurationScopes(
@@ -182,16 +192,17 @@ class BindingSuggestionsMediumTests {
   void test_binding_suggestion_via_service() throws ExecutionException, InterruptedException {
     var fakeClient = newFakeClient().build();
     backend = newBackend()
-      .withSonarQubeConnection(MYSONAR, mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeConnection(MYSONAR, sonarqubeMock.baseUrl())
       .build(fakeClient);
 
-    mockWebServerExtension.addProtobufResponse("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1", Components.SearchWsResponse.newBuilder()
-      .addComponents(Components.Component.newBuilder()
-        .setKey(SLCORE_PROJECT_KEY)
-        .setName(SLCORE_PROJECT_NAME)
-        .build())
-      .setPaging(Common.Paging.newBuilder().setTotal(1).build())
-      .build());
+    sonarqubeMock.stubFor(get("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1")
+      .willReturn(aResponse().withResponseBody(protobufBody(Components.SearchWsResponse.newBuilder()
+        .addComponents(Components.Component.newBuilder()
+          .setKey(SLCORE_PROJECT_KEY)
+          .setName(SLCORE_PROJECT_NAME)
+          .build())
+        .setPaging(Common.Paging.newBuilder().setTotal(1).build())
+        .build()))));
 
     backend.getConfigurationService()
       .didAddConfigurationScopes(
@@ -200,8 +211,7 @@ class BindingSuggestionsMediumTests {
             new BindingConfigurationDto(null, null, false)))));
 
     await().atMost(Duration.of(5, ChronoUnit.SECONDS)).until(fakeClient::hasReceivedSuggestions);
-    var bindingParamsCompletableFuture =
-      backend.getBindingService().getBindingSuggestions(new GetBindingSuggestionParams(CONFIG_SCOPE_ID, MYSONAR));
+    var bindingParamsCompletableFuture = backend.getBindingService().getBindingSuggestions(new GetBindingSuggestionParams(CONFIG_SCOPE_ID, MYSONAR));
     var bindingSuggestions = bindingParamsCompletableFuture.get().getSuggestions();
     assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
