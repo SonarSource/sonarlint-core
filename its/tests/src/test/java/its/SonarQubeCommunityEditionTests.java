@@ -25,6 +25,7 @@ import com.sonar.orchestrator.junit5.OnlyOnSonarQube;
 import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
+import its.utils.ConsoleConsumer;
 import its.utils.ItUtils;
 import its.utils.OrchestratorUtils;
 import java.io.File;
@@ -32,15 +33,20 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.SystemUtils;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,9 +65,36 @@ import org.sonarqube.ws.client.issues.SetTypeRequest;
 import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
+import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
+import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
+import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
+import org.sonarsource.sonarlint.core.clientapi.backend.HostInfoDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.SuggestBindingParams;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionParams;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.UsernamePasswordDto;
+import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
+import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
+import org.sonarsource.sonarlint.core.clientapi.client.http.ProxyDto;
+import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesParams;
+import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
+import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
+import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressParams;
+import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
+import org.sonarsource.sonarlint.core.clientapi.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -74,8 +107,10 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
+  public static final String CONNECTION_ID = "orchestrator";
 
   public static final String XOO_PLUGIN_KEY = "xoo";
   @RegisterExtension
@@ -86,6 +121,26 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     .build();
 
   private static WsClient adminWsClient;
+
+  @TempDir
+  private static Path sonarUserHome;
+
+  private static SonarLintBackend backend;
+
+  @BeforeAll
+  static void startBackend() {
+    backend = new SonarLintBackendImpl(newDummySonarLintClient());
+    backend.initialize(
+      new InitializeParams(new HostInfoDto("clientName"), "integrationTests", sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"), Collections.emptySet(),
+        Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(), false,
+        List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(), false,
+        Map.of(), false, true, false, "SonarLint"));
+  }
+
+  @AfterAll
+  static void stopBackend() throws ExecutionException, InterruptedException {
+    backend.shutdown().get();
+  }
 
   @BeforeAll
   static void createSonarLintUser() {
@@ -160,9 +215,9 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
     @Test
     void download_all_issues_not_limited_to_10k() {
-      engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), XOO_PROJECT_KEY, null);
+      engine.updateProject(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), XOO_PROJECT_KEY, null);
 
-      engine.downloadAllServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), XOO_PROJECT_KEY, MAIN_BRANCH_NAME, null);
+      engine.downloadAllServerIssues(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), XOO_PROJECT_KEY, MAIN_BRANCH_NAME, null);
 
       var file1Issues = engine.getServerIssues(new ProjectBinding(XOO_PROJECT_KEY, "", ""), MAIN_BRANCH_NAME, "src/500lines.xoo");
       var file2Issues = engine.getServerIssues(new ProjectBinding(XOO_PROJECT_KEY, "", ""), MAIN_BRANCH_NAME, "src/10000lines.xoo");
@@ -198,7 +253,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
       @Test
       void should_apply_path_prefixes_when_importing_entire_project() throws IOException {
-        engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), MULTI_MODULE_PROJECT_KEY, null);
+        engine.updateProject(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), MULTI_MODULE_PROJECT_KEY, null);
 
         // entire project imported in IDE
         var projectDir = Paths.get("projects/multi-modules-sample").toAbsolutePath();
@@ -209,7 +264,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
         var projectBinding = engine.calculatePathPrefixes(MULTI_MODULE_PROJECT_KEY, ideFiles);
         assertThat(projectBinding.serverPathPrefix()).isEmpty();
         assertThat(projectBinding.idePathPrefix()).isEmpty();
-        engine.downloadAllServerIssuesForFile(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding,
+        engine.downloadAllServerIssuesForFile(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), projectBinding,
           "module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java", MAIN_BRANCH_NAME, null);
         var serverIssues = engine.getServerIssues(projectBinding, MAIN_BRANCH_NAME, "module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
         if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6)) {
@@ -218,7 +273,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
         } else {
           assertThat(serverIssues).hasSize(2);
         }
-        engine.syncServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), MULTI_MODULE_PROJECT_KEY, MAIN_BRANCH_NAME, null);
+        engine.syncServerIssues(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), MULTI_MODULE_PROJECT_KEY, MAIN_BRANCH_NAME, null);
         if (!ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6)) {
           assertThat(logs).contains("Incremental issue sync is not supported. Skipping.");
         }
@@ -228,7 +283,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
       @Test
       void should_apply_path_prefixes_when_importing_module() throws IOException {
-        engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), MULTI_MODULE_PROJECT_KEY, null);
+        engine.updateProject(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), MULTI_MODULE_PROJECT_KEY, null);
 
         // only module B1 imported in IDE
         var projectDirB1 = Paths.get("projects/multi-modules-sample/module_b/module_b1").toAbsolutePath();
@@ -239,7 +294,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
         var projectBinding = engine.calculatePathPrefixes(MULTI_MODULE_PROJECT_KEY, ideFiles);
         assertThat(projectBinding.serverPathPrefix()).isEqualTo("module_b/module_b1");
         assertThat(projectBinding.idePathPrefix()).isEmpty();
-        engine.downloadAllServerIssuesForFile(endpointParams(ORCHESTRATOR), sqHttpClient(), projectBinding,
+        engine.downloadAllServerIssuesForFile(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), projectBinding,
           "src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java", MAIN_BRANCH_NAME, null);
         var serverIssues = engine.getServerIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
         if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6)) {
@@ -248,7 +303,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
         } else {
           assertThat(serverIssues).hasSize(2);
         }
-        engine.syncServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), MULTI_MODULE_PROJECT_KEY, MAIN_BRANCH_NAME, null);
+        engine.syncServerIssues(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), MULTI_MODULE_PROJECT_KEY, MAIN_BRANCH_NAME, null);
         if (!ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6)) {
           assertThat(logs).contains("Incremental issue sync is not supported. Skipping.");
         }
@@ -299,7 +354,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     // SonarQube should support pulling issues
     @OnlyOnSonarQube(from = "9.6")
     void sync_all_issues_of_enabled_languages() {
-      engineWithJavaOnly.syncServerIssues(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_LANGUAGE_MIX, MAIN_BRANCH_NAME, null);
+      engineWithJavaOnly.syncServerIssues(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), PROJECT_KEY_LANGUAGE_MIX, MAIN_BRANCH_NAME, null);
 
       var javaIssues = engineWithJavaOnly.getServerIssues(new ProjectBinding(PROJECT_KEY_LANGUAGE_MIX, "", ""), MAIN_BRANCH_NAME, "src/main/java/foo/Foo.java");
       var pythonIssues = engineWithJavaOnly.getServerIssues(new ProjectBinding(PROJECT_KEY_LANGUAGE_MIX, "", ""), MAIN_BRANCH_NAME, "src/main/java/foo/main.py");
@@ -367,7 +422,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     @Test
     void dontDownloadPluginIfNotEnabledLanguage() {
       engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP, Language.TS));
-      engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), emptySet(), null);
+      engine.sync(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), emptySet(), null);
       assertThat(logs).contains("[SYNC] Code analyzer 'java' is disabled in SonarLint (language not enabled). Skip downloading it.");
       // TypeScript plugin has been merged in SonarJS in SQ 8.5
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 5)) {
@@ -382,7 +437,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     @Test
     void dontFailIfMissingDependentPlugin() {
       engine = createEngine(e -> e.addEnabledLanguages(Language.PHP));
-      engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), emptySet(), null);
+      engine.sync(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), emptySet(), null);
       assertThat(logs).contains("Plugin 'Java Custom Rules Plugin' dependency on 'java' is unsatisfied. Skip loading it.");
       assertThat(engine.getPluginDetails()).extracting(PluginDetails::key, PluginDetails::skipReason)
         .contains(tuple(CUSTOM_JAVA_PLUGIN_KEY, Optional.of(new SkipReason.UnsatisfiedDependency("java"))));
@@ -391,7 +446,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     @Test
     void dontLoadExcludedPlugin() {
       engine = createEngine(e -> e.addEnabledLanguages(Language.JAVA, Language.JS, Language.PHP));
-      engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), emptySet(), null);
+      engine.sync(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), emptySet(), null);
       assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains(Language.JAVA.getPluginKey());
       engine.stop(false);
 
@@ -408,15 +463,53 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     @Test
     void analysisJavascriptWithoutTypescript() throws Exception {
       engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP));
-      engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVASCRIPT), null);
+      engine.sync(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), Set.of(PROJECT_KEY_JAVASCRIPT), null);
       assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains("javascript");
       assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).doesNotContain(OLD_SONARTS_PLUGIN_KEY);
 
-      engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVASCRIPT, null);
-      engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVASCRIPT), null);
+      engine.updateProject(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), PROJECT_KEY_JAVASCRIPT, null);
+      engine.sync(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), Set.of(PROJECT_KEY_JAVASCRIPT), null);
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, PROJECT_KEY_JAVASCRIPT, "src/Person.js"), issueListener, null, null);
       assertThat(issueListener.getIssues()).hasSize(1);
+    }
+
+    /**
+     *  SLCORE-259
+     *  SonarTS has been merged into SonarJS. It means excluding the typescript plugin is not enough to prevent TS analysis.
+     *  For backward compatibility, we "hacked" the core to prevent typescript analysis through SonarJS when typescript language is not enabled.
+     */
+    @Test
+    void dontAnalyzeTypescriptIfExcluded() throws Exception {
+      var tsAnalysisConfig = createAnalysisConfiguration(PROJECT_KEY_TYPESCRIPT, PROJECT_KEY_TYPESCRIPT, "src/Person.ts");
+
+      var pb = new ProcessBuilder("npm" + (SystemUtils.IS_OS_WINDOWS ? ".cmd" : ""), "install")
+        .directory(tsAnalysisConfig.baseDir().toFile())
+        .redirectErrorStream(true);
+      var process = pb.start();
+      new Thread(new ConsoleConsumer(process)).start();
+      if (process.waitFor() != 0) {
+        fail("Unable to run npm install");
+      }
+
+      Map<String, String> extraProperties = new HashMap<>();
+      extraProperties.put("sonar.typescript.internal.typescriptLocation", tsAnalysisConfig.baseDir().resolve("node_modules").toString());
+      engine = createEngine(e -> e
+        .setExtraProperties(extraProperties)
+        .addEnabledLanguages(Language.JS, Language.PHP));
+      engine.sync(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), Set.of(PROJECT_KEY_JAVASCRIPT), null);
+      assertThat(logs).doesNotContain("Code analyzer 'SonarJS' is transitively excluded in this version of SonarLint. Skip loading it.");
+      assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains(Language.JS.getPluginKey());
+
+      engine.updateProject(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), PROJECT_KEY_TYPESCRIPT, null);
+      engine.sync(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), Set.of(PROJECT_KEY_TYPESCRIPT), null);
+      var issueListenerTs = new SaveIssueListener();
+      engine.analyze(tsAnalysisConfig, issueListenerTs, null, null);
+      assertThat(issueListenerTs.getIssues()).hasSize(0);
+      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 0)) {
+        assertThat(logs).contains("TypeScript sensor excluded");
+      }
+      assertThat(logs).doesNotContain("Execute Sensor: ESLint-based TypeScript analysis");
     }
   }
 
@@ -427,5 +520,83 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
       .setSourceDirs("src")
       .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
       .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
+  }
+
+  private static SonarLintClient newDummySonarLintClient() {
+    return new SonarLintClient() {
+      @Override
+      public void suggestBinding(SuggestBindingParams params) {
+
+      }
+
+      @Override
+      public CompletableFuture<FindFileByNamesInScopeResponse> findFileByNamesInScope(FindFileByNamesInScopeParams params) {
+        return CompletableFuture.completedFuture(new FindFileByNamesInScopeResponse(Collections.emptyList()));
+      }
+
+      @Override
+      public void openUrlInBrowser(OpenUrlInBrowserParams params) {
+
+      }
+
+      @Override
+      public void showMessage(ShowMessageParams params) {
+
+      }
+
+      @Override
+      public void showSmartNotification(ShowSmartNotificationParams params) {
+
+      }
+
+      @Override
+      public CompletableFuture<GetHostInfoResponse> getHostInfo() {
+        return CompletableFuture.completedFuture(new GetHostInfoResponse(""));
+      }
+
+      @Override
+      public void showHotspot(ShowHotspotParams params) {
+
+      }
+
+      @Override
+      public CompletableFuture<AssistCreatingConnectionResponse> assistCreatingConnection(AssistCreatingConnectionParams params) {
+        return null;
+      }
+
+      @Override
+      public CompletableFuture<AssistBindingResponse> assistBinding(AssistBindingParams params) {
+        return null;
+      }
+
+      @Override
+      public CompletableFuture<Void> startProgress(StartProgressParams params) {
+        return CompletableFuture.completedFuture(null);
+      }
+
+      @Override
+      public void reportProgress(ReportProgressParams params) {
+
+      }
+
+      @Override
+      public void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params) {
+
+      }
+
+      public CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params) {
+        if (params.getConnectionId().equals(CONNECTION_ID)) {
+          return CompletableFuture.completedFuture(new GetCredentialsResponse(new UsernamePasswordDto(SONARLINT_USER, SONARLINT_PWD)));
+        } else {
+          return CompletableFuture.failedFuture(new IllegalArgumentException("Unknown connection: " + params.getConnectionId()));
+        }
+      }
+
+      @Override
+      public CompletableFuture<SelectProxiesResponse> selectProxies(SelectProxiesParams params) {
+        return CompletableFuture.completedFuture(new SelectProxiesResponse(List.of(ProxyDto.NO_PROXY)));
+      }
+
+    };
   }
 }

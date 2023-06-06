@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - HTTP
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -20,14 +20,11 @@
 package org.sonarsource.sonarlint.core.http;
 
 import java.security.PublicKey;
-import java.security.cert.CertificateEncodingException;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
-class NoopX509CertificateTest {
+class NoopX509CertificateTests {
 
   @Test
   void dummyCoverage() throws Exception {

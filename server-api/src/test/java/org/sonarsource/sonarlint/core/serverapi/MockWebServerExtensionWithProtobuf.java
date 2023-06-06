@@ -27,7 +27,12 @@ import java.util.Iterator;
 import javax.annotation.Nullable;
 import mockwebserver3.MockResponse;
 import okio.Buffer;
+import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
+import org.apache.hc.core5.reactor.IOReactorStatus;
+import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -68,7 +73,7 @@ public class MockWebServerExtensionWithProtobuf extends MockWebServerExtension {
   }
 
   public ServerApiHelper serverApiHelper(@Nullable String organizationKey) {
-    return new ServerApiHelper(endpointParams(organizationKey), httpClient());
+    return new ServerApiHelper(endpointParams(organizationKey), HttpClientProvider.forTesting().getHttpClient());
   }
 
   public EndpointParams endpointParams() {
@@ -78,5 +83,6 @@ public class MockWebServerExtensionWithProtobuf extends MockWebServerExtension {
   public EndpointParams endpointParams(@Nullable String organizationKey) {
     return new EndpointParams(url("/"), organizationKey != null, organizationKey);
   }
+
 
 }

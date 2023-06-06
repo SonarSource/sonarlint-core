@@ -28,6 +28,7 @@ import javax.annotation.Nullable;
 import mockwebserver3.MockResponse;
 import okio.Buffer;
 import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
@@ -70,7 +71,7 @@ public class MockWebServerExtensionWithProtobuf extends MockWebServerExtension {
   }
 
   public ServerApiHelper serverApiHelper(@Nullable String organizationKey) {
-    return new ServerApiHelper(endpointParams(organizationKey), httpClient());
+    return new ServerApiHelper(endpointParams(organizationKey), HttpClientProvider.forTesting().getHttpClient());
   }
 
   public EndpointParams endpointParams() {
