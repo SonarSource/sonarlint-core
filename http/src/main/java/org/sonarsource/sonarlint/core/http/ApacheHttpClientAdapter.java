@@ -24,7 +24,6 @@ import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Objects;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -41,12 +40,15 @@ import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.nio.support.BasicRequestProducer;
 import org.apache.hc.core5.util.Timeout;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 class ApacheHttpClientAdapter implements HttpClient {
 
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
+
   private static final Timeout STREAM_CONNECTION_REQUEST_TIMEOUT = Timeout.ofSeconds(10);
   private static final Timeout STREAM_CONNECTION_TIMEOUT = Timeout.ofMinutes(1);
-  private final CloseableHttpAsyncClient javaClient;
+  private final CloseableHttpAsyncClient apacheClient;
   @Nullable
   private final String usernameOrToken;
   @Nullable
@@ -54,7 +56,7 @@ class ApacheHttpClientAdapter implements HttpClient {
   private boolean connected = false;
 
   ApacheHttpClientAdapter(CloseableHttpAsyncClient javaClient, @Nullable String usernameOrToken, @Nullable String password) {
-    this.javaClient = javaClient;
+    this.apacheClient = javaClient;
     this.usernameOrToken = usernameOrToken;
     this.password = password;
   }
@@ -117,7 +119,7 @@ class ApacheHttpClientAdapter implements HttpClient {
     }
     request.setHeader("Accept", "text/event-stream");
     connected = false;
-    var httpFuture = javaClient.execute(new BasicRequestProducer(request, null),
+    var httpFuture = apacheClient.execute(new BasicRequestProducer(request, null),
       new AbstractCharResponseConsumer<>() {
         @Override
         public void releaseResources() {
@@ -183,13 +185,12 @@ class ApacheHttpClientAdapter implements HttpClient {
     return new HttpAsyncRequest(httpFuture);
   }
 
-  private CompletableFuture<Response> executeAsync(SimpleHttpRequest httpRequest) {
-    try {
-      if (usernameOrToken != null) {
-        httpRequest.setHeader("Authorization", basic(usernameOrToken, Objects.requireNonNullElse(password, "")));
-      }
-      var futureResponse = new CompletableFuture<Response>();
-      var httpFuture = javaClient.execute(httpRequest, new FutureCallback<>() {
+  private class CompletableFutureWrappingFuture extends CompletableFuture<HttpClient.Response> {
+
+    private final Future<SimpleHttpResponse> wrapped;
+
+    private CompletableFutureWrappingFuture(SimpleHttpRequest httpRequest) {
+      this.wrapped = apacheClient.execute(httpRequest, new FutureCallback<>() {
         @Override
         public void completed(SimpleHttpResponse result) {
           String uri;
@@ -199,24 +200,39 @@ class ApacheHttpClientAdapter implements HttpClient {
           } catch (URISyntaxException e) {
             uri = httpRequest.getRequestUri();
           }
-          futureResponse.complete(new ApacheHttpResponse(uri, result));
+          CompletableFutureWrappingFuture.this.complete(new ApacheHttpResponse(uri, result));
         }
 
         @Override
         public void failed(Exception ex) {
-          futureResponse.completeExceptionally(ex);
+          LOG.debug("Request failed", ex);
+          CompletableFutureWrappingFuture.this.completeExceptionally(ex);
         }
 
         @Override
         public void cancelled() {
-          futureResponse.cancel(true);
+          LOG.debug("Request cancelled");
+          CompletableFutureWrappingFuture.this.cancel();
         }
       });
-      return futureResponse.whenComplete((ignore, error) -> {
-        if (error instanceof CancellationException) {
-          httpFuture.cancel(false);
-        }
-      });
+    }
+
+    private void cancel() {
+      super.cancel(true);
+    }
+
+    @Override
+    public boolean cancel(boolean mayInterruptIfRunning) {
+      return wrapped.cancel(mayInterruptIfRunning);
+    }
+  }
+
+  private CompletableFuture<Response> executeAsync(SimpleHttpRequest httpRequest) {
+    try {
+      if (usernameOrToken != null) {
+        httpRequest.setHeader("Authorization", basic(usernameOrToken, Objects.requireNonNullElse(password, "")));
+      }
+      return new CompletableFutureWrappingFuture(httpRequest);
     } catch (Exception e) {
       throw new IllegalStateException("Unable to execute request: " + e.getMessage(), e);
     }
