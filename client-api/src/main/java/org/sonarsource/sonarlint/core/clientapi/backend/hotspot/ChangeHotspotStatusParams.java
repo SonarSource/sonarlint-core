@@ -19,12 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.hotspot;
 
+import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
+
 public class ChangeHotspotStatusParams {
   private final String configurationScopeId;
   private final String hotspotKey;
   private final HotspotStatus newStatus;
 
-  public ChangeHotspotStatusParams(String configurationScopeId, String hotspotKey, HotspotStatus newStatus) {
+  public ChangeHotspotStatusParams(@NonNull String configurationScopeId, @NonNull String hotspotKey, @NonNull HotspotStatus newStatus) {
     this.configurationScopeId = configurationScopeId;
     this.hotspotKey = hotspotKey;
     this.newStatus = newStatus;

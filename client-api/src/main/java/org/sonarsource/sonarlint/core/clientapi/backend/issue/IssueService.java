@@ -24,11 +24,46 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 
 public interface IssueService {
 
+  /**
+   * <p> It changes a status of an existing issues. In detail, it is responsible for:
+   * <ul>
+   *   <li>Changes the status of an existing issue (identified by {@link ChangeIssueStatusParams#getIssueKey()} )}</li>
+   *   <li>Updates the issue status in the local storage</li>
+   *   <li>Increments the 'issue.status_changed_count' counter for telemetry</li>
+   * </ul>
+   *</p>
+   * It silently deals with the following conditions:
+   * <ul>
+   *   <li>the provided configuration scope (identified by {@link ChangeIssueStatusParams#getConfigurationScopeId()} is unknown</li>
+   *   <li>the connection bound to the configuration scope is unknown</li>
+   *   <li>the issueKey is not found in the local storage</li>
+   * </ul>
+   * In those cases a completed future will be returned.
+   * </p>
+   * <p>
+   * It returns a failed future if:
+   * <ul>
+   *   <li>there is a communication problem with the server: network outage, server is down, unauthorized</li>
+   * </ul>
+   * </p>
+   */
   @JsonRequest
   CompletableFuture<Void> changeStatus(ChangeIssueStatusParams params);
 
   /**
-   * Adds a new comment to an issue (specified by {@link AddIssueCommentParams#getIssueKey()})
+   * <p>
+   * Adds a new comment to an existing issue (identified by {@link AddIssueCommentParams#getIssueKey()})
+   * </p>
+   * <p>
+   * If no binding is found for the provided configuration scope (identified by {@link AddIssueCommentParams#getConfigurationScopeId()})
+   * then returns a future completed with <code>null</code>
+   * </p>
+   * <p>
+   * It returns a failed future if:
+   * <ul>
+   *   <li>there is a communication problem with the server: network outage, server is down, unauthorized</li>
+   * </ul>
+   * </p>
    */
   @JsonRequest
   CompletableFuture<Void> addComment(AddIssueCommentParams params);

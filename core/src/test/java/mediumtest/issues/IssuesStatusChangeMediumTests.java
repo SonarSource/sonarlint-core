@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.AddIssueCommentParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ChangeIssueStatusParams;
-import org.sonarsource.sonarlint.core.commons.IssueStatus;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
 import org.sonarsource.sonarlint.core.issue.AddIssueCommentException;
 import org.sonarsource.sonarlint.core.issue.IssueStatusChangeException;
 

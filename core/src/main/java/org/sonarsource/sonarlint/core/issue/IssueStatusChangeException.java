@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.issue;
 
-public class IssueStatusChangeException extends RuntimeException{
+public class IssueStatusChangeException extends RuntimeException {
   public IssueStatusChangeException(Throwable cause) {
     super("Cannot change status on the issue", cause);
   }

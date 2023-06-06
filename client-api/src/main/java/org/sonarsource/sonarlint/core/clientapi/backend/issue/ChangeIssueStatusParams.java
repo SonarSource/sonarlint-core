@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.issue;
 
-import org.sonarsource.sonarlint.core.commons.IssueStatus;
-
 public class ChangeIssueStatusParams {
 
   private final String configurationScopeId;

@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Commons
+ * SonarLint Core - Client API
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,19 +17,11 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons;
+package org.sonarsource.sonarlint.core.clientapi.backend.issue;
 
 public enum IssueStatus {
-  CONFIRM("Confirm", "confirm"),
-  UN_CONFIRM("Unconfirm", "unconfirm"),
-  REOPEN("Reopen", "reopen"),
-  RESOLVE("Resolve", "resolve"),
   FALSE_POSITIVE("False positive", "falsepositive"),
-  WONT_FIX("Won't fix", "wontfix"),
-  CLOSE("Close", "close"),
-  SET_IN_REVIEW("In Review", "setinreview"),
-  RESOLVE_AS_REVIEWED("Reviewed", "resolveasreviewed"),
-  RESET_AS_TO_REVIEW("To Review", "resetastoreview");
+  WONT_FIX("Won't fix", "wontfix");
 
   private final String title;
   private final String statusValue;
