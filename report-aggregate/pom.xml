@@ -75,6 +75,11 @@
       <artifactId>sonarlint-client-api</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>sonarlint-http</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
   
   <build>

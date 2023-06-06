@@ -32,7 +32,7 @@ import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
-class ClientProxySelector extends ProxySelector {
+public class ClientProxySelector extends ProxySelector {
 
   private final SonarLintLogger logger = SonarLintLogger.get();
   private final SonarLintClient client;

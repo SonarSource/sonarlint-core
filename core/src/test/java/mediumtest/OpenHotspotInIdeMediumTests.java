@@ -39,10 +39,10 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
-import static org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension.httpClient;
 import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 
 class OpenHotspotInIdeMediumTests {
+  public static final String CONNECTION_ID = "connectionId";
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester();
 
@@ -109,8 +109,8 @@ class OpenHotspotInIdeMediumTests {
   void it_should_open_hotspot_in_ide_when_project_bound() {
     var fakeClient = newFakeClient().build();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", serverWithHotspot)
-      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withSonarQubeConnection(CONNECTION_ID, serverWithHotspot)
+      .withBoundConfigScope("scopeId", CONNECTION_ID, "projectKey")
       .withEmbeddedServer()
       .build(fakeClient);
 
@@ -128,8 +128,8 @@ class OpenHotspotInIdeMediumTests {
   @Test
   void it_should_update_telemetry_data_when_opening_hotspot_in_ide() {
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", serverWithHotspot)
-      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withSonarQubeConnection(CONNECTION_ID, serverWithHotspot)
+      .withBoundConfigScope("scopeId", CONNECTION_ID, "projectKey")
       .withEmbeddedServer()
       .build();
 
@@ -144,7 +144,7 @@ class OpenHotspotInIdeMediumTests {
 
   @Test
   void it_should_assist_creating_the_connection_when_server_url_unknown() {
-    var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", "connectionId", serverWithHotspot.baseUrl(), "projectKey").build();
+    var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", CONNECTION_ID, serverWithHotspot.baseUrl(), "projectKey").build();
     backend = newBackend()
       .withUnboundConfigScope("scopeId")
       .withEmbeddedServer()
@@ -162,9 +162,9 @@ class OpenHotspotInIdeMediumTests {
 
   @Test
   void it_should_assist_creating_the_binding_if_scope_not_bound() {
-    var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", "connectionId", serverWithHotspot.baseUrl(), "projectKey").build();
+    var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", CONNECTION_ID, serverWithHotspot.baseUrl(), "projectKey").build();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", serverWithHotspot)
+      .withSonarQubeConnection(CONNECTION_ID, serverWithHotspot)
       .withUnboundConfigScope("scopeId")
       .withEmbeddedServer()
       .build(fakeClient);
@@ -183,8 +183,8 @@ class OpenHotspotInIdeMediumTests {
   void it_should_display_a_message_when_failing_to_fetch_the_hotspot() {
     var fakeClient = newFakeClient().build();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", serverWithoutHotspot)
-      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withSonarQubeConnection(CONNECTION_ID, serverWithoutHotspot)
+      .withBoundConfigScope("scopeId", CONNECTION_ID, "projectKey")
       .withEmbeddedServer()
       .build(fakeClient);
 
@@ -200,7 +200,7 @@ class OpenHotspotInIdeMediumTests {
 
   private int requestOpenHotspotWithParams(String query) {
     var embeddedServerPort = backend.getEmbeddedServerPort();
-    var response = httpClient().get("http://localhost:" + embeddedServerPort + "/sonarlint/api/hotspots/show?" + query);
+    var response = backend.getHttpClient(CONNECTION_ID).get("http://localhost:" + embeddedServerPort + "/sonarlint/api/hotspots/show?" + query);
     var statusCode = response.code();
     response.close();
     return statusCode;

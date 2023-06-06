@@ -27,6 +27,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -47,7 +48,7 @@ class TelemetryHttpClientTests {
   @BeforeEach
   void setUp() {
     when(attributes.nodeVersion()).thenReturn(Optional.empty());
-    underTest = new TelemetryHttpClient("product", "version", "ideversion", "platform", "architecture", MockWebServerExtension.httpClient(), mockServer.url("/"));
+    underTest = new TelemetryHttpClient("product", "version", "ideversion", "platform", "architecture", HttpClientProvider.forTesting().getHttpClient(), mockServer.url("/"));
   }
 
   @Test
@@ -57,7 +58,8 @@ class TelemetryHttpClientTests {
     var takeRequest = mockServer.takeRequest();
     assertThat(takeRequest.getMethod()).isEqualTo("DELETE");
     assertThat(takeRequest.getBody().readUtf8())
-      .matches("\\{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"platform\",\"architecture\":\"architecture\",.*}");
+      .matches(
+        "\\{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"platform\",\"architecture\":\"architecture\",.*}");
   }
 
   @Test
@@ -67,7 +69,8 @@ class TelemetryHttpClientTests {
     var takeRequest = mockServer.takeRequest();
     assertThat(takeRequest.getMethod()).isEqualTo("POST");
     assertThat(takeRequest.getBody().readUtf8())
-      .matches("\\{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"platform\",\"architecture\":\"architecture\",.*}");
+      .matches(
+        "\\{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"platform\",\"architecture\":\"architecture\",.*}");
   }
 
   @Test

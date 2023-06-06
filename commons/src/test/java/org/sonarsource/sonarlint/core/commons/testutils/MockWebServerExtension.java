@@ -27,14 +27,9 @@ import mockwebserver3.MockResponse;
 import mockwebserver3.MockWebServer;
 import mockwebserver3.RecordedRequest;
 import okio.Buffer;
-import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
-import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
-import org.apache.hc.core5.reactor.IOReactorStatus;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.sonarsource.sonarlint.core.commons.http.HttpClient;
-import org.sonarsource.sonarlint.core.commons.http.JavaHttpClientAdapter;
 
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -117,16 +112,6 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
     } catch (IOException e) {
       fail(e);
     }
-  }
-
-  private static final CloseableHttpAsyncClient SHARED_CLIENT = HttpAsyncClientBuilder.create().build();
-
-  @Deprecated
-  public static HttpClient httpClient() {
-    if (SHARED_CLIENT.getStatus() != IOReactorStatus.ACTIVE) {
-      SHARED_CLIENT.start();
-    }
-    return new JavaHttpClientAdapter(SHARED_CLIENT, null, null);
   }
 
 }
