@@ -155,7 +155,7 @@ class ApacheHttpClientAdapter implements HttpClient {
 
         @Override
         public void failed(Exception cause) {
-          System.out.println(cause);
+          LOG.error(cause.getMessage(), cause);
         }
       }, new FutureCallback<>() {
 
@@ -178,7 +178,7 @@ class ApacheHttpClientAdapter implements HttpClient {
 
         @Override
         public void cancelled() {
-          // nothing to do, the completable future is already canceled
+          LOG.debug("Stream has been cancelled");
         }
       });
 
