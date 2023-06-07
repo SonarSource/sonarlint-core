@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.client.http;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
 public class GetProxyPasswordAuthenticationResponse {
@@ -31,10 +32,12 @@ public class GetProxyPasswordAuthenticationResponse {
     this.proxyPassword = proxyPassword;
   }
 
+  @CheckForNull
   public String getProxyUser() {
     return proxyUser;
   }
 
+  @CheckForNull
   public String getProxyPassword() {
     return proxyPassword;
   }
