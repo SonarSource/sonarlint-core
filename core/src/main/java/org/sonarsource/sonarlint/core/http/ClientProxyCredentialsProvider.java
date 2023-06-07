@@ -45,14 +45,16 @@ public class ClientProxyCredentialsProvider implements CredentialsProvider {
         new GetProxyPasswordAuthenticationParams(authScope.getHost(), authScope.getPort(), authScope.getProtocol(),
           authScope.getRealm(), authScope.getSchemeName()))
         .get();
-      if (response.getProxyUser() != null || response.getProxyPassword() != null) {
-        return new UsernamePasswordCredentials(response.getProxyUser(), response.getProxyPassword().toCharArray());
+      var proxyUser = response.getProxyUser();
+      if (proxyUser != null) {
+        var proxyPassword = response.getProxyPassword();
+        return new UsernamePasswordCredentials(proxyUser, proxyPassword != null ? proxyPassword.toCharArray() : null);
       }
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       logger.warn("Interrupted!", e);
     } catch (ExecutionException e) {
-      logger.warn("Unable to get proxy", e);
+      logger.warn("Unable to get proxy credentials from the client", e);
     }
     return null;
   }

@@ -21,30 +21,27 @@ package mediumtest;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.SonarLintTestBackend;
-import mediumtest.fixtures.StorageFixture;
 import mediumtest.fixtures.TestPlugin;
 import nl.altindag.ssl.util.CertificateUtils;
 import nl.altindag.ssl.util.KeyStoreUtils;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.CheckServerTrustedParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.CheckServerTrustedResponse;
@@ -70,20 +67,25 @@ class SslMediumTests {
 
   public static final String KEYSTORE_PWD = "pwdServerP12";
 
-  SslMediumTests() throws URISyntaxException {
-  }
-
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester(true);
 
   @RegisterExtension
-  WireMockExtension sonarqubeMock = WireMockExtension.newInstance()
+  static WireMockExtension sonarqubeMock = WireMockExtension.newInstance()
     .options(wireMockConfig().dynamicHttpsPort().httpDisabled(true)
       .keystoreType("p12")
-      .keystorePath(Paths.get(SslMediumTests.class.getResource("/ssl/server.p12").toURI()).toString())
+      .keystorePath(toPath(Objects.requireNonNull(SslMediumTests.class.getResource("/ssl/server.p12"))).toString())
       .keystorePassword(KEYSTORE_PWD)
       .keyManagerPassword(KEYSTORE_PWD))
     .build();
+
+  private static Path toPath(URL url) {
+    try {
+      return Paths.get(url.toURI());
+    } catch (URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
+  }
 
   private SonarLintTestBackend backend;
 
