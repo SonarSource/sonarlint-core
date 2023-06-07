@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.clientapi.backend.hotspot;
 
 import java.util.Arrays;
+import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 
 public enum HotspotStatus {
   // order is important here, it will be applied in the UI
@@ -48,4 +49,9 @@ public enum HotspotStatus {
     return Arrays.stream(HotspotStatus.values()).filter(hotspotStatus -> hotspotStatus.getTitle().equals(title)).findFirst()
       .orElseThrow(() -> new IllegalArgumentException("There is no such title of the hotspot status: " + title));
   }
+
+  public static HotspotStatus valueOfHotspotReviewStatus(HotspotReviewStatus reviewStatus) {
+    return HotspotStatus.valueOf(reviewStatus.name());
+  }
+
 }

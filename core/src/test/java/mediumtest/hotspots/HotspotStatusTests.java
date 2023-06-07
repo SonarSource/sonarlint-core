@@ -21,6 +21,7 @@ package mediumtest.hotspots;
 
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotStatus;
+import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -36,4 +37,12 @@ class HotspotStatusTests {
     var thrown = assertThrows(IllegalArgumentException.class, ()-> HotspotStatus.valueOfTitle("Unknown"));
     assertThat(thrown).hasMessage("There is no such title of the hotspot status: Unknown");
   }
+
+  @Test
+  void valueOfHotspotReviewStatusTest() {
+    for (HotspotReviewStatus value : HotspotReviewStatus.values()) {
+      assertThat(HotspotStatus.valueOfHotspotReviewStatus(value)).isEqualTo(HotspotStatus.valueOf(value.name()));
+    }
+  }
+
 }
