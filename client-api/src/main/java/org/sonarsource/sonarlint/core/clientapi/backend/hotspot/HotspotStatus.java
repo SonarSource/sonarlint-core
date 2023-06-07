@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.hotspot;
 
+import java.util.Arrays;
+
 public enum HotspotStatus {
   // order is important here, it will be applied in the UI
   TO_REVIEW("To Review", "This Security Hotspot needs to be reviewed to assess whether the code poses a risk."),
@@ -40,5 +42,10 @@ public enum HotspotStatus {
 
   public String getDescription() {
     return description;
+  }
+
+  public static HotspotStatus valueOfTitle(String title) {
+    return Arrays.stream(HotspotStatus.values()).filter(hotspotStatus -> hotspotStatus.getTitle().equals(title)).findFirst()
+      .orElseThrow(() -> new IllegalArgumentException("There is no such title of the hotspot status: " + title));
   }
 }
