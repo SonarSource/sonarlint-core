@@ -17,25 +17,17 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.client.connection;
+package org.sonarsource.sonarlint.core.clientapi.common;
 
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.sonarsource.sonarlint.core.clientapi.common.TokenDto;
-import org.sonarsource.sonarlint.core.clientapi.common.UsernamePasswordDto;
+public class TokenDto {
 
-public class GetCredentialsResponse {
+  private final String token;
 
-  private final Either<TokenDto, UsernamePasswordDto> credentials;
-
-  public GetCredentialsResponse(TokenDto token) {
-    this.credentials = Either.forLeft(token);
+  public TokenDto(String token) {
+    this.token = token;
   }
 
-  public GetCredentialsResponse(UsernamePasswordDto usernamePassword) {
-    this.credentials = Either.forRight(usernamePassword);
-  }
-
-  public Either<TokenDto, UsernamePasswordDto> getCredentials() {
-    return credentials;
+  public String getToken() {
+    return token;
   }
 }

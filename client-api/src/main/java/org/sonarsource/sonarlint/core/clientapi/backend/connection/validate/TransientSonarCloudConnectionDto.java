@@ -17,22 +17,26 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.client.connection;
+package org.sonarsource.sonarlint.core.clientapi.backend.connection.validate;
 
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.clientapi.common.TokenDto;
 import org.sonarsource.sonarlint.core.clientapi.common.UsernamePasswordDto;
 
-public class GetCredentialsResponse {
+public class TransientSonarCloudConnectionDto {
+
+  private final String organization;
 
   private final Either<TokenDto, UsernamePasswordDto> credentials;
 
-  public GetCredentialsResponse(TokenDto token) {
-    this.credentials = Either.forLeft(token);
+
+  public TransientSonarCloudConnectionDto(String organization, Either<TokenDto, UsernamePasswordDto> credentials) {
+    this.organization = organization;
+    this.credentials = credentials;
   }
 
-  public GetCredentialsResponse(UsernamePasswordDto usernamePassword) {
-    this.credentials = Either.forRight(usernamePassword);
+  public String getOrganization() {
+    return organization;
   }
 
   public Either<TokenDto, UsernamePasswordDto> getCredentials() {
