@@ -23,6 +23,7 @@ import com.google.common.eventbus.EventBus;
 import java.util.List;
 import java.util.Map;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -30,12 +31,18 @@ import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.TransientSonarCloudConnectionDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.TransientSonarQubeConnectionDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.ValidateConnectionParams;
+import org.sonarsource.sonarlint.core.clientapi.common.TokenDto;
+import org.sonarsource.sonarlint.core.clientapi.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
+import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
@@ -69,14 +76,14 @@ class ConnectionServiceImplTests {
 
   @Test
   void initialize_provide_connections() {
-    underTest = new ConnectionServiceImpl(eventBus, repository, List.of(SQ_DTO_1, SQ_DTO_2), List.of(SC_DTO_1, SC_DTO_2));
+    underTest = new ConnectionServiceImpl(eventBus, repository, List.of(SQ_DTO_1, SQ_DTO_2), List.of(SC_DTO_1, SC_DTO_2), null);
 
     assertThat(repository.getConnectionsById()).containsOnlyKeys("sq1", "sq2", "sc1", "sc2");
   }
 
   @Test
   void add_new_connection_and_post_event() {
-    underTest = new ConnectionServiceImpl(eventBus, repository, List.of(), List.of());
+    underTest = new ConnectionServiceImpl(eventBus, repository, List.of(), List.of(), null);
 
     underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_1), List.of()));
     assertThat(repository.getConnectionsById()).containsOnlyKeys("sq1");
@@ -106,7 +113,7 @@ class ConnectionServiceImplTests {
 
   @Test
   void multiple_connections_with_same_id_should_log_and_ignore() {
-    underTest = new ConnectionServiceImpl(eventBus, repository, List.of(), List.of());
+    underTest = new ConnectionServiceImpl(eventBus, repository, List.of(), List.of(), null);
     underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_1), List.of()));
 
     underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_1, SQ_DTO_1_DUP), List.of()));
@@ -122,7 +129,7 @@ class ConnectionServiceImplTests {
 
   @Test
   void remove_connection() {
-    underTest = new ConnectionServiceImpl(eventBus, repository, List.of(SQ_DTO_1), List.of(SC_DTO_1));
+    underTest = new ConnectionServiceImpl(eventBus, repository, List.of(SQ_DTO_1), List.of(SC_DTO_1), null);
     assertThat(repository.getConnectionsById()).containsKeys("sq1", "sc1");
 
     underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_1), List.of()));
@@ -141,7 +148,7 @@ class ConnectionServiceImplTests {
   @Test
   void remove_connection_should_log_if_unknown_connection_and_ignore() {
     var mockedRepo = mock(ConnectionConfigurationRepository.class);
-    underTest = new ConnectionServiceImpl(eventBus, mockedRepo, List.of(), List.of());
+    underTest = new ConnectionServiceImpl(eventBus, mockedRepo, List.of(), List.of(), null);
 
     // Emulate a race condition on the repository: the connection is gone between get and remove
     when(mockedRepo.getConnectionsById()).thenReturn(Map.of("id", new SonarQubeConnectionConfiguration("id", "http://foo", true)));
@@ -154,7 +161,7 @@ class ConnectionServiceImplTests {
 
   @Test
   void update_connection() {
-    underTest = new ConnectionServiceImpl(eventBus, repository, List.of(SQ_DTO_1), List.of());
+    underTest = new ConnectionServiceImpl(eventBus, repository, List.of(SQ_DTO_1), List.of(), null);
 
     underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_1_DUP), List.of()));
 
@@ -174,7 +181,7 @@ class ConnectionServiceImplTests {
   @Test
   void update_connection_should_log_if_unknown_connection_and_add() {
     var mockedRepo = mock(ConnectionConfigurationRepository.class);
-    underTest = new ConnectionServiceImpl(eventBus, mockedRepo, List.of(), List.of());
+    underTest = new ConnectionServiceImpl(eventBus, mockedRepo, List.of(), List.of(), null);
 
     // Emulate a race condition on the repository: the connection is gone between get and add
     when(mockedRepo.getConnectionsById()).thenReturn(Map.of(SQ_DTO_2.getConnectionId(), new SonarQubeConnectionConfiguration(SQ_DTO_2.getConnectionId(), "http://foo", true)));
@@ -183,5 +190,26 @@ class ConnectionServiceImplTests {
     underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_2), List.of()));
 
     assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).containsExactly("Attempt to update connection 'sq2' that was not registered. Possibly a race condition?");
+  }
+
+  @Test
+  void buildServerApiHelperForSonarQubeWithUsernamePassword() {
+    var httpClientProvider = mock(HttpClientProvider.class);
+    underTest = new ConnectionServiceImpl(null, null, List.of(), List.of(), httpClientProvider);
+
+    underTest.buildServerApiHelper(new ValidateConnectionParams(
+      new TransientSonarQubeConnectionDto("http://notexists", Either.forRight(new UsernamePasswordDto("user", "pwd")))));
+
+    verify(httpClientProvider).getHttpClientWithPreemptiveAuth("user", "pwd");
+  }
+
+  @Test
+  void buildServerApiHelperForSonarCloudWithToken() {
+    var httpClientProvider = mock(HttpClientProvider.class);
+    underTest = new ConnectionServiceImpl(null, null, List.of(), List.of(), httpClientProvider);
+
+    underTest.buildServerApiHelper(new ValidateConnectionParams(new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto("foo")))));
+
+    verify(httpClientProvider).getHttpClientWithPreemptiveAuth("foo", null);
   }
 }

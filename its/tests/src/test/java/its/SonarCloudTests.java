@@ -35,11 +35,14 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarqube.ws.MediaTypes;
 import org.sonarqube.ws.client.GetRequest;
@@ -56,12 +59,13 @@ import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectionValidator;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.HostInfoDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.TransientSonarCloudConnectionDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResponse;
@@ -70,7 +74,6 @@ import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreating
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsResponse;
-import org.sonarsource.sonarlint.core.clientapi.client.connection.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
@@ -83,6 +86,8 @@ import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressPa
 import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.clientapi.client.sync.DidSynchronizeConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.clientapi.common.TokenDto;
+import org.sonarsource.sonarlint.core.clientapi.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
@@ -90,7 +95,6 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -106,7 +110,6 @@ class SonarCloudTests extends AbstractConnectedTests {
   private static final String SONARCLOUD_PASSWORD = System.getenv("SONARCLOUD_IT_PASSWORD");
 
   private static final String PROJECT_KEY_JAVA = "sample-java";
-  private static final String PROJECT_KEY_JAVA_HOTSPOT = "sample-java-hotspot";
   private static final String PROJECT_KEY_PHP = "sample-php";
   private static final String PROJECT_KEY_JAVASCRIPT = "sample-javascript";
   private static final String PROJECT_KEY_PYTHON = "sample-python";
@@ -115,7 +118,6 @@ class SonarCloudTests extends AbstractConnectedTests {
   private static final String PROJECT_KEY_RUBY = "sample-ruby";
   private static final String PROJECT_KEY_SCALA = "sample-scala";
   private static final String PROJECT_KEY_XML = "sample-xml";
-  private static final String PROJECT_KEY_JAVA_TAINT = "sample-java-taint";
 
   public static final String CONNECTION_ID = "sonarcloud";
 
@@ -133,11 +135,12 @@ class SonarCloudTests extends AbstractConnectedTests {
 
   @BeforeAll
   static void prepare() throws Exception {
+    System.setProperty("sonarlint.internal.sonarcloud.url", SONARCLOUD_STAGING_URL);
     backend = new SonarLintBackendImpl(newDummySonarLintClient());
     backend.initialize(
       new InitializeParams(new HostInfoDto("clientName"), "integrationTests", sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"), Collections.emptySet(),
         Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(), false,
-        List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, SONARCLOUD_STAGING_URL, true)), Collections.emptyList(), sonarUserHome.toString(), false,
+        Collections.emptyList(), List.of(new SonarCloudConnectionConfigurationDto(CONNECTION_ID, SONARCLOUD_ORGANIZATION, true)), sonarUserHome.toString(), false,
         Map.of(), false, true, false, "SonarLint"));
 
     randomPositiveInt = new Random().nextInt() & Integer.MAX_VALUE;
@@ -157,7 +160,6 @@ class SonarCloudTests extends AbstractConnectedTests {
     restoreProfile("java-sonarlint-with-taint.xml");
 
     provisionProject(PROJECT_KEY_JAVA, "Sample Java");
-    provisionProject(PROJECT_KEY_JAVA_HOTSPOT, "Sample Java Hotspot");
     provisionProject(PROJECT_KEY_PHP, "Sample PHP");
     provisionProject(PROJECT_KEY_JAVASCRIPT, "Sample Javascript");
     provisionProject(PROJECT_KEY_PYTHON, "Sample Python");
@@ -166,10 +168,8 @@ class SonarCloudTests extends AbstractConnectedTests {
     provisionProject(PROJECT_KEY_KOTLIN, "Sample Kotlin");
     provisionProject(PROJECT_KEY_SCALA, "Sample Scala");
     provisionProject(PROJECT_KEY_XML, "Sample XML");
-    provisionProject(PROJECT_KEY_JAVA_TAINT, "Java With Taint Vulnerabilities");
 
     associateProjectToQualityProfile(PROJECT_KEY_JAVA, "java", "SonarLint IT Java");
-    associateProjectToQualityProfile(PROJECT_KEY_JAVA_HOTSPOT, "java", "SonarLint IT Java Hotspot");
     associateProjectToQualityProfile(PROJECT_KEY_PHP, "php", "SonarLint IT PHP");
     associateProjectToQualityProfile(PROJECT_KEY_JAVASCRIPT, "js", "SonarLint IT Javascript");
     associateProjectToQualityProfile(PROJECT_KEY_PYTHON, "py", "SonarLint IT Python");
@@ -178,13 +178,9 @@ class SonarCloudTests extends AbstractConnectedTests {
     associateProjectToQualityProfile(PROJECT_KEY_KOTLIN, "kotlin", "SonarLint IT Kotlin");
     associateProjectToQualityProfile(PROJECT_KEY_SCALA, "scala", "SonarLint IT Scala");
     associateProjectToQualityProfile(PROJECT_KEY_XML, "xml", "SonarLint IT XML");
-    associateProjectToQualityProfile(PROJECT_KEY_JAVA_TAINT, "java", "SonarLint Taint Java");
 
     // Build project to have bytecode
     runMaven(Paths.get("projects/sample-java"), "clean", "compile");
-
-    analyzeMavenProject(projectKey(PROJECT_KEY_JAVA_TAINT), PROJECT_KEY_JAVA_TAINT);
-    analyzeMavenProject(projectKey(PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT);
 
     Map<String, String> globalProps = new HashMap<>();
     globalProps.put("sonar.global.label", "It works");
@@ -211,7 +207,6 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     var ALL_PROJECTS = Set.of(
       projectKey(PROJECT_KEY_JAVA),
-      projectKey(PROJECT_KEY_JAVA_HOTSPOT),
       projectKey(PROJECT_KEY_PHP),
       projectKey(PROJECT_KEY_JAVASCRIPT),
       projectKey(PROJECT_KEY_PYTHON),
@@ -219,8 +214,7 @@ class SonarCloudTests extends AbstractConnectedTests {
       projectKey(PROJECT_KEY_KOTLIN),
       projectKey(PROJECT_KEY_RUBY),
       projectKey(PROJECT_KEY_SCALA),
-      projectKey(PROJECT_KEY_XML),
-      projectKey(PROJECT_KEY_JAVA_TAINT));
+      projectKey(PROJECT_KEY_XML));
 
     ALL_PROJECTS.forEach(p -> engine.updateProject(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), p, null));
     engine.sync(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), ALL_PROJECTS, null);
@@ -362,52 +356,6 @@ class SonarCloudTests extends AbstractConnectedTests {
   }
 
   @Test
-  void reportHotspots() throws Exception {
-    var issueListener = new SaveIssueListener();
-    engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT,
-      "src/main/java/foo/Foo.java",
-      "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath()),
-      issueListener, null, null);
-
-    assertThat(issueListener.getIssues()).hasSize(1)
-      .extracting(org.sonarsource.sonarlint.core.client.api.common.analysis.Issue::getRuleKey, org.sonarsource.sonarlint.core.client.api.common.analysis.Issue::getType)
-      .containsExactly(tuple("java:S4792", RuleType.SECURITY_HOTSPOT));
-  }
-
-  @Test
-  void loadHotspotRuleDescription() throws Exception {
-    var ruleDetails = engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), "java:S4792", projectKey(PROJECT_KEY_JAVA_HOTSPOT)).get();
-
-    assertThat(ruleDetails.getName()).isEqualTo("Configuring loggers is security-sensitive");
-    // HTML description is null for security hotspots when accessed through the deprecated engine API
-    // When accessed through the backend service, the rule descriptions are split into sections
-    // see its.ConnectedModeBackendTest.returnConvertedDescriptionSectionsForHotspotRules
-    assertThat(ruleDetails.getHtmlDescription()).isNull();
-  }
-
-  @Test
-  void downloadsServerHotspotsForProject() {
-    engine.downloadAllServerHotspots(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), projectKey(PROJECT_KEY_JAVA_HOTSPOT), "master", null);
-
-    var serverHotspots = engine.getServerHotspots(new ProjectBinding(projectKey(PROJECT_KEY_JAVA_HOTSPOT), "", "ide"), "master", "ide/src/main/java/foo/Foo.java");
-    assertThat(serverHotspots)
-      .extracting("ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "status")
-      .containsExactly(tuple("java:S4792", "Make sure that this logger's configuration is safe.", "ide/src/main/java/foo/Foo.java", 9, 4, 9, 45, HotspotReviewStatus.TO_REVIEW));
-  }
-
-  @Test
-  void downloadsServerHotspotsForFile() {
-    var projectBinding = new ProjectBinding(projectKey(PROJECT_KEY_JAVA_HOTSPOT), "", "ide");
-
-    engine.downloadAllServerHotspotsForFile(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), projectBinding, "ide/src/main/java/foo/Foo.java", "master", null);
-
-    var serverHotspots = engine.getServerHotspots(projectBinding, "master", "ide/src/main/java/foo/Foo.java");
-    assertThat(serverHotspots)
-      .extracting("ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "status")
-      .containsExactly(tuple("java:S4792", "Make sure that this logger's configuration is safe.", "ide/src/main/java/foo/Foo.java", 9, 4, 9, 45, HotspotReviewStatus.TO_REVIEW));
-  }
-
-  @Test
   void analysisUseConfiguration() throws Exception {
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA), PROJECT_KEY_JAVA,
@@ -481,38 +429,126 @@ class SonarCloudTests extends AbstractConnectedTests {
 
   @Test
   void testConnection() throws ExecutionException, InterruptedException {
-    assertThat(
-      new ConnectionValidator(new ServerApiHelper(sonarcloudEndpoint(SONARCLOUD_ORGANIZATION), backend.getHttpClient(CONNECTION_ID))).validateConnection().get().success())
-      .isTrue();
-    assertThat(
-      new ConnectionValidator(new ServerApiHelper(sonarcloudEndpoint(null), backend.getHttpClient(CONNECTION_ID))).validateConnection().get().success())
-      .isTrue();
-    assertThat(
-      new ConnectionValidator(new ServerApiHelper(sonarcloudEndpoint("not-exists"), backend.getHttpClient(CONNECTION_ID))).validateConnection().get().success())
-      .isFalse();
+    var successResponse = backend.getConnectionService()
+      .validateConnection(
+        new ValidateConnectionParams(new TransientSonarCloudConnectionDto(SONARCLOUD_ORGANIZATION, Either.forRight(new UsernamePasswordDto(SONARCLOUD_USER, SONARCLOUD_PASSWORD)))))
+      .get();
+    assertThat(successResponse.isSuccess()).isTrue();
+    assertThat(successResponse.getMessage()).isEqualTo("Authentication successful");
+
+    var failIfWrongOrg = backend.getConnectionService().validateConnection(
+      new ValidateConnectionParams(new TransientSonarCloudConnectionDto("not-exists", Either.forRight(new UsernamePasswordDto(SONARCLOUD_USER, SONARCLOUD_PASSWORD))))).get();
+    assertThat(failIfWrongOrg.isSuccess()).isFalse();
+    assertThat(failIfWrongOrg.getMessage()).isEqualTo("No organizations found for key: not-exists");
+
+    var failIfWrongCredentials = backend.getConnectionService()
+      .validateConnection(new ValidateConnectionParams(new TransientSonarCloudConnectionDto(SONARCLOUD_ORGANIZATION, Either.forLeft(new TokenDto("foo"))))).get();
+    assertThat(failIfWrongCredentials.isSuccess()).isFalse();
+    assertThat(failIfWrongCredentials.getMessage()).isEqualTo("Authentication failed");
   }
 
-  @Test
-  void download_taint_vulnerabilities_for_file() throws Exception {
+  @Nested
+  // TODO Can be removed when switching to Java 16+ and changing prepare() to static
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  class Hotspots {
+    private static final String PROJECT_KEY_JAVA_HOTSPOT = "sample-java-hotspot";
 
-    ProjectBinding projectBinding = new ProjectBinding(projectKey(PROJECT_KEY_JAVA_TAINT), "", "");
+    @BeforeAll
+    void prepare() throws Exception {
+      provisionProject(PROJECT_KEY_JAVA_HOTSPOT, "Sample Java Hotspot");
+      associateProjectToQualityProfile(PROJECT_KEY_JAVA_HOTSPOT, "java", "SonarLint IT Java Hotspot");
+      analyzeMavenProject(projectKey(PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT);
 
-    engine.downloadAllServerTaintIssuesForFile(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), projectBinding, "src/main/java/foo/DbHelper.java", MAIN_BRANCH_NAME,
-      null);
+      engine.updateProject(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), projectKey(PROJECT_KEY_JAVA_HOTSPOT), null);
+      engine.sync(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), Set.of(projectKey(PROJECT_KEY_JAVA_HOTSPOT)), null);
+    }
 
-    var sinkIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java");
+    @Test
+    void reportHotspots() throws Exception {
+      var issueListener = new SaveIssueListener();
+      engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT,
+        "src/main/java/foo/Foo.java",
+        "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath()),
+        issueListener, null, null);
 
-    assertThat(sinkIssues).hasSize(1);
+      assertThat(issueListener.getIssues()).hasSize(1)
+        .extracting(org.sonarsource.sonarlint.core.client.api.common.analysis.Issue::getRuleKey, org.sonarsource.sonarlint.core.client.api.common.analysis.Issue::getType)
+        .containsExactly(tuple("java:S4792", RuleType.SECURITY_HOTSPOT));
+    }
 
-    var taintIssue = sinkIssues.get(0);
-    assertThat(taintIssue.getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
-    assertThat(taintIssue.getSeverity()).isEqualTo(IssueSeverity.MAJOR);
-    assertThat(taintIssue.getType()).isEqualTo(RuleType.VULNERABILITY);
-    assertThat(taintIssue.getFlows()).isNotEmpty();
-    var flow = taintIssue.getFlows().get(0);
-    assertThat(flow.locations()).isNotEmpty();
-    assertThat(flow.locations().get(0).getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
-    assertThat(flow.locations().get(flow.locations().size() - 1).getTextRange().getHash()).isIn(hash("request.getParameter(\"user\")"), hash("request.getParameter(\"pass\")"));
+    @Test
+    void loadHotspotRuleDescription() throws Exception {
+      var ruleDetails = engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), "java:S4792", projectKey(PROJECT_KEY_JAVA_HOTSPOT)).get();
+
+      assertThat(ruleDetails.getName()).isEqualTo("Configuring loggers is security-sensitive");
+      // HTML description is null for security hotspots when accessed through the deprecated engine API
+      // When accessed through the backend service, the rule descriptions are split into sections
+      // see its.ConnectedModeBackendTest.returnConvertedDescriptionSectionsForHotspotRules
+      assertThat(ruleDetails.getHtmlDescription()).isNull();
+    }
+
+    @Test
+    void downloadsServerHotspotsForProject() {
+      engine.downloadAllServerHotspots(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), projectKey(PROJECT_KEY_JAVA_HOTSPOT), "master", null);
+
+      var serverHotspots = engine.getServerHotspots(new ProjectBinding(projectKey(PROJECT_KEY_JAVA_HOTSPOT), "", "ide"), "master", "ide/src/main/java/foo/Foo.java");
+      assertThat(serverHotspots)
+        .extracting("ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "status")
+        .containsExactly(tuple("java:S4792", "Make sure that this logger's configuration is safe.", "ide/src/main/java/foo/Foo.java", 9, 4, 9, 45, HotspotReviewStatus.TO_REVIEW));
+    }
+
+    @Test
+    void downloadsServerHotspotsForFile() {
+      var projectBinding = new ProjectBinding(projectKey(PROJECT_KEY_JAVA_HOTSPOT), "", "ide");
+
+      engine.downloadAllServerHotspotsForFile(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), projectBinding, "ide/src/main/java/foo/Foo.java", "master", null);
+
+      var serverHotspots = engine.getServerHotspots(projectBinding, "master", "ide/src/main/java/foo/Foo.java");
+      assertThat(serverHotspots)
+        .extracting("ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "status")
+        .containsExactly(tuple("java:S4792", "Make sure that this logger's configuration is safe.", "ide/src/main/java/foo/Foo.java", 9, 4, 9, 45, HotspotReviewStatus.TO_REVIEW));
+    }
+  }
+
+  @Nested
+  // TODO Can be removed when switching to Java 16+ and changing prepare() to static
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  class TaintVulnerabilities {
+    private static final String PROJECT_KEY_JAVA_TAINT = "sample-java-taint";
+
+    @BeforeAll
+    void prepare() throws Exception {
+      provisionProject(PROJECT_KEY_JAVA_TAINT, "Java With Taint Vulnerabilities");
+      associateProjectToQualityProfile(PROJECT_KEY_JAVA_TAINT, "java", "SonarLint Taint Java");
+      analyzeMavenProject(projectKey(PROJECT_KEY_JAVA_TAINT), PROJECT_KEY_JAVA_TAINT);
+
+      engine.updateProject(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), projectKey(PROJECT_KEY_JAVA_TAINT), null);
+      engine.sync(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), Set.of(projectKey(PROJECT_KEY_JAVA_TAINT)), null);
+    }
+
+    @Test
+    void download_taint_vulnerabilities_for_file() throws Exception {
+
+      ProjectBinding projectBinding = new ProjectBinding(projectKey(PROJECT_KEY_JAVA_TAINT), "", "");
+
+      engine.downloadAllServerTaintIssuesForFile(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), projectBinding, "src/main/java/foo/DbHelper.java",
+        MAIN_BRANCH_NAME,
+        null);
+
+      var sinkIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java");
+
+      assertThat(sinkIssues).hasSize(1);
+
+      var taintIssue = sinkIssues.get(0);
+      assertThat(taintIssue.getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
+      assertThat(taintIssue.getSeverity()).isEqualTo(IssueSeverity.MAJOR);
+      assertThat(taintIssue.getType()).isEqualTo(RuleType.VULNERABILITY);
+      assertThat(taintIssue.getFlows()).isNotEmpty();
+      var flow = taintIssue.getFlows().get(0);
+      assertThat(flow.locations()).isNotEmpty();
+      assertThat(flow.locations().get(0).getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
+      assertThat(flow.locations().get(flow.locations().size() - 1).getTextRange().getHash()).isIn(hash("request.getParameter(\"user\")"), hash("request.getParameter(\"pass\")"));
+    }
   }
 
   private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {

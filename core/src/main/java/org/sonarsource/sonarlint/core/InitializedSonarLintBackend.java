@@ -108,7 +108,12 @@ public class InitializedSonarLintBackend implements SonarLintBackend {
     this.configurationService = new ConfigurationServiceImpl(clientEventBus, configurationRepository);
     var connectionConfigurationRepository = new ConnectionConfigurationRepository();
     var awaitingUserTokenFutureRepository = new AwaitingUserTokenFutureRepository();
-    this.connectionService = new ConnectionServiceImpl(clientEventBus, connectionConfigurationRepository, params.getSonarQubeConnections(), params.getSonarCloudConnections());
+    var confirmingTrustManager = new ConfirmingTrustManager(sonarlintUserHome, client);
+    var clientProxySelector = new ClientProxySelector(client);
+    var clientProxyCredentialsProvider = new ClientProxyCredentialsProvider(client);
+    this.httpClientProvider = new HttpClientProvider(params.getUserAgent(), confirmingTrustManager, clientProxySelector, clientProxyCredentialsProvider);
+    this.connectionService = new ConnectionServiceImpl(clientEventBus, connectionConfigurationRepository, params.getSonarQubeConnections(), params.getSonarCloudConnections(),
+      httpClientProvider);
     var pluginRepository = new PluginsRepository();
     this.storageService = new StorageService(params.getStorageRoot(), workDir);
     this.languageSupportRepository = new LanguageSupportRepository(params.getEnabledLanguagesInStandaloneMode(), params.getExtraEnabledLanguagesInConnectedMode());
@@ -116,10 +121,6 @@ public class InitializedSonarLintBackend implements SonarLintBackend {
       params.getConnectedModeEmbeddedPluginPathsByKey());
     rulesExtractionHelper = new RulesExtractionHelper(pluginsService, languageSupportRepository, params.isEnableSecurityHotspots());
     var rulesRepository = new RulesRepository(rulesExtractionHelper);
-    var confirmingTrustManager = new ConfirmingTrustManager(sonarlintUserHome, client);
-    var clientProxySelector = new ClientProxySelector(client);
-    var clientProxyCredentialsProvider = new ClientProxyCredentialsProvider(client);
-    this.httpClientProvider = new HttpClientProvider(params.getUserAgent(), confirmingTrustManager, clientProxySelector, clientProxyCredentialsProvider);
     this.connectionAwareHttpClientProvider = new ConnectionAwareHttpClientProvider(client, httpClientProvider);
     var serverApiProvider = new ServerApiProvider(connectionConfigurationRepository, connectionAwareHttpClientProvider);
     rulesService = new RulesServiceImpl(serverApiProvider, configurationRepository, rulesRepository, storageService, params.getStandaloneRuleConfigByKey());

@@ -24,18 +24,28 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import org.jetbrains.annotations.NotNull;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectionValidator;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.ConnectionService;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.TransientSonarCloudConnectionDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.TransientSonarQubeConnectionDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.ValidateConnectionParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.ValidateConnectionResponse;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
+import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -45,11 +55,14 @@ public class ConnectionServiceImpl implements ConnectionService {
 
   private final EventBus clientEventBus;
   private final ConnectionConfigurationRepository repository;
+  private final HttpClientProvider httpClientProvider;
 
   public ConnectionServiceImpl(EventBus clientEventBus, ConnectionConfigurationRepository repository,
-    List<SonarQubeConnectionConfigurationDto> initSonarQubeConnections, List<SonarCloudConnectionConfigurationDto> initSonarCloudConnections) {
+    List<SonarQubeConnectionConfigurationDto> initSonarQubeConnections, List<SonarCloudConnectionConfigurationDto> initSonarCloudConnections,
+    HttpClientProvider httpClientProvider) {
     this.clientEventBus = clientEventBus;
     this.repository = repository;
+    this.httpClientProvider = httpClientProvider;
     initSonarQubeConnections.forEach(c -> repository.addOrReplace(adapt(c)));
     initSonarCloudConnections.forEach(c -> repository.addOrReplace(adapt(c)));
   }
@@ -114,7 +127,26 @@ public class ConnectionServiceImpl implements ConnectionService {
     } else {
       clientEventBus.post(new ConnectionConfigurationUpdatedEvent(connectionConfiguration.getConnectionId()));
     }
+  }
 
+  @Override
+  public CompletableFuture<ValidateConnectionResponse> validateConnection(ValidateConnectionParams params) {
+    var helper = buildServerApiHelper(params);
+    var connectionValidator = new ConnectionValidator(helper);
+    return connectionValidator.validateConnection().thenApply(r -> new ValidateConnectionResponse(r.success(), r.message()));
+  }
+
+  @NotNull
+  ServerApiHelper buildServerApiHelper(ValidateConnectionParams params) {
+    var endpointParams = params.getTransientConnection().map(
+      sq -> new EndpointParams(sq.getServerUrl(), false, null),
+      sc -> new EndpointParams(SonarCloudConnectionConfiguration.getSonarCloudUrl(), true, sc.getOrganization()));
+    var httpClient = params.getTransientConnection()
+      .map(TransientSonarQubeConnectionDto::getCredentials, TransientSonarCloudConnectionDto::getCredentials)
+      .map(
+        tokenDto -> httpClientProvider.getHttpClientWithPreemptiveAuth(tokenDto.getToken(), null),
+        userPass -> httpClientProvider.getHttpClientWithPreemptiveAuth(userPass.getUsername(), userPass.getPassword()));
+    return new ServerApiHelper(endpointParams, httpClient);
   }
 
   public List<AbstractConnectionConfiguration> findByUrl(String serverUrl) {
