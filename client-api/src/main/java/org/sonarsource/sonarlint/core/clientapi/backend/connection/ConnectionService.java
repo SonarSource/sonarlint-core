@@ -19,9 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.connection;
 
+import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
+import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.ValidateConnectionParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.ValidateConnectionResponse;
 
 /**
  * The client is the source of truth for connection configuration, but the backend also need to be kept in sync.
@@ -41,5 +45,20 @@ public interface ConnectionService {
    */
   @JsonNotification
   void didUpdateConnections(DidUpdateConnectionsParams params);
+
+  /**
+   * Validate that connection is valid:
+   * <ul>
+   * <li>check that the server is reachable</li>
+   * <li>check that the server minimal version is satisfied</li>
+   * <li>check that the credentials are valid</li>
+   * <li>check that the organization exists (for SonarCloud)</li>
+   * </ul>
+   *
+   * @param params
+   * @return
+   */
+  @JsonRequest
+  CompletableFuture<ValidateConnectionResponse> validateConnection(ValidateConnectionParams params);
 
 }
