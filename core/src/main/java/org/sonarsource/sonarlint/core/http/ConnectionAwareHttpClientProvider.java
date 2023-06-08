@@ -24,8 +24,6 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
-import org.sonarsource.sonarlint.core.clientapi.client.connection.TokenDto;
-import org.sonarsource.sonarlint.core.clientapi.client.connection.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 @Named
@@ -47,10 +45,10 @@ public class ConnectionAwareHttpClientProvider {
 
   public HttpClient getHttpClient(String connectionId) {
     try {
-      var creds = client.getCredentials(new GetCredentialsParams(connectionId)).get(1, TimeUnit.MINUTES);
-      return httpClientProvider.getHttpClientWithPreemptiveAuth(
-        creds.getCredentials().map(TokenDto::getToken, UsernamePasswordDto::getUsername),
-        creds.getCredentials().map(t -> null, UsernamePasswordDto::getPassword));
+      var response = client.getCredentials(new GetCredentialsParams(connectionId)).get(1, TimeUnit.MINUTES);
+      return response.getCredentials().map(
+        tokenDto -> httpClientProvider.getHttpClientWithPreemptiveAuth(tokenDto.getToken(), null),
+        userPass -> httpClientProvider.getHttpClientWithPreemptiveAuth(userPass.getUsername(), userPass.getPassword()));
     } catch (Exception e) {
       logger.error("Unable to get credentials for connection {}", connectionId);
       return httpClientProvider.getHttpClient();
