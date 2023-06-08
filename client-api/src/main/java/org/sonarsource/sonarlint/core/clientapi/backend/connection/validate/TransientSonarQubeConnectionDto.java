@@ -17,23 +17,28 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.client.connection;
+package org.sonarsource.sonarlint.core.clientapi.backend.connection.validate;
 
-public class UsernamePasswordDto {
-  
-  private final String username;
-  private final String password;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.sonarsource.sonarlint.core.clientapi.common.TokenDto;
+import org.sonarsource.sonarlint.core.clientapi.common.UsernamePasswordDto;
 
-  public UsernamePasswordDto(String username, String password) {
-    this.username = username;
-    this.password = password;
+public class TransientSonarQubeConnectionDto {
+
+  private final String serverUrl;
+
+  private final Either<TokenDto, UsernamePasswordDto> credentials;
+
+  public TransientSonarQubeConnectionDto(String serverUrl, Either<TokenDto, UsernamePasswordDto> credentials) {
+    this.serverUrl = serverUrl;
+    this.credentials = credentials;
   }
 
-  public String getUsername() {
-    return username;
+  public String getServerUrl() {
+    return serverUrl;
   }
 
-  public String getPassword() {
-    return password;
+  public Either<TokenDto, UsernamePasswordDto> getCredentials() {
+    return credentials;
   }
 }
