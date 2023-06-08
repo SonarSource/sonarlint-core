@@ -17,17 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.client.connection;
+package org.sonarsource.sonarlint.core.clientapi.backend.connection.validate;
 
-public class TokenDto {
+public class ValidateConnectionResponse {
 
-  private final String token;
+  private final boolean success;
 
-  public TokenDto(String token) {
-    this.token = token;
+  private final String message;
+
+  public ValidateConnectionResponse(boolean success, String message) {
+    this.success = success;
+    this.message = message;
   }
 
-  public String getToken() {
-    return token;
+  public boolean isSuccess() {
+    return success;
+  }
+
+  public String getMessage() {
+    return message;
   }
 }
