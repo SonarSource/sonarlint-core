@@ -17,25 +17,27 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.client.connection;
+package org.sonarsource.sonarlint.core.clientapi.backend.connection.validate;
 
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.sonarsource.sonarlint.core.clientapi.common.TokenDto;
-import org.sonarsource.sonarlint.core.clientapi.common.UsernamePasswordDto;
 
-public class GetCredentialsResponse {
+public class ValidateConnectionParams {
 
-  private final Either<TokenDto, UsernamePasswordDto> credentials;
+  private final Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection;
 
-  public GetCredentialsResponse(TokenDto token) {
-    this.credentials = Either.forLeft(token);
+  private ValidateConnectionParams(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection) {
+    this.transientConnection = transientConnection;
   }
 
-  public GetCredentialsResponse(UsernamePasswordDto usernamePassword) {
-    this.credentials = Either.forRight(usernamePassword);
+  public ValidateConnectionParams(TransientSonarQubeConnectionDto transientConnection) {
+    this.transientConnection = Either.forLeft(transientConnection);
   }
 
-  public Either<TokenDto, UsernamePasswordDto> getCredentials() {
-    return credentials;
+  public ValidateConnectionParams(TransientSonarCloudConnectionDto transientConnection) {
+    this.transientConnection = Either.forRight(transientConnection);
+  }
+
+  public Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> getTransientConnection() {
+    return transientConnection;
   }
 }

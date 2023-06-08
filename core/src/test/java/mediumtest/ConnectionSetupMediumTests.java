@@ -25,13 +25,16 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
-
 import mediumtest.fixtures.ServerFixture;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.authentication.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.authentication.HelpGenerateUserTokenResponse;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.TransientSonarQubeConnectionDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.ValidateConnectionParams;
+import org.sonarsource.sonarlint.core.clientapi.common.TokenDto;
 
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
@@ -39,7 +42,7 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-class AuthenticationHelperMediumTests {
+class ConnectionSetupMediumTests {
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
@@ -114,12 +117,12 @@ class AuthenticationHelperMediumTests {
 
     await().atMost(Duration.ofSeconds(3)).until(() -> !fakeClient.getUrlsToOpen().isEmpty());
     assertThat(fakeClient.getUrlsToOpen())
-            .containsExactly(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort()));
+      .containsExactly(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort()));
 
     var request = HttpRequest.newBuilder()
-            .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
-            .header("Content-Type", "application/json; charset=utf-8")
-            .POST(HttpRequest.BodyPublishers.ofString("{\"token\": \"value\"}")).build();
+      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
+      .header("Content-Type", "application/json; charset=utf-8")
+      .POST(HttpRequest.BodyPublishers.ofString("{\"token\": \"value\"}")).build();
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
     assertThat(response.statusCode()).isEqualTo(400);
   }
@@ -134,13 +137,13 @@ class AuthenticationHelperMediumTests {
 
     await().atMost(Duration.ofSeconds(3)).until(() -> !fakeClient.getUrlsToOpen().isEmpty());
     assertThat(fakeClient.getUrlsToOpen())
-            .containsExactly(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort()));
+      .containsExactly(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort()));
 
     var request = HttpRequest.newBuilder()
-            .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
-            .header("Content-Type", "application/json; charset=utf-8")
-            .header("Origin", "https://unexpected.sonar")
-            .POST(HttpRequest.BodyPublishers.ofString("{\"token\": \"value\"}")).build();
+      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
+      .header("Content-Type", "application/json; charset=utf-8")
+      .header("Origin", "https://unexpected.sonar")
+      .POST(HttpRequest.BodyPublishers.ofString("{\"token\": \"value\"}")).build();
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
     assertThat(response.statusCode()).isEqualTo(403);
   }
@@ -185,6 +188,18 @@ class AuthenticationHelperMediumTests {
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
     assertThat(response.statusCode()).isEqualTo(400);
+  }
+
+  @Test
+  void it_should_fails_to_validate_connection_if_host_not_found() throws IOException, InterruptedException, ExecutionException {
+    var fakeClient = newFakeClient().build();
+    backend = newBackend().build(fakeClient);
+
+    var connectionResponse = backend.getConnectionService()
+      .validateConnection(new ValidateConnectionParams(new TransientSonarQubeConnectionDto("http://notexists", Either.forLeft(new TokenDto("foo"))))).get();
+
+    assertThat(connectionResponse.isSuccess()).isFalse();
+    assertThat(connectionResponse.getMessage()).contains("notexists");
   }
 
   private SonarLintBackendImpl backend;
