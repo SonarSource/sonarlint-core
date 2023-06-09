@@ -134,7 +134,7 @@ class CheckIssueStatusChangePermittedMediumTests {
       .succeedsWithin(Duration.ofSeconds(2))
       .extracting(CheckStatusChangePermittedResponse::isPermitted, CheckStatusChangePermittedResponse::getNotPermittedReason,
         CheckStatusChangePermittedResponse::getAllowedStatuses)
-      .containsExactly(false, "Changing an issue's status requires the 'Administer Issues' permission.", List.of(IssueStatus.WONT_FIX, IssueStatus.FALSE_POSITIVE));
+      .containsExactly(false, "Marking an issue as resolved requires the 'Administer Issues' permission", List.of(IssueStatus.WONT_FIX, IssueStatus.FALSE_POSITIVE));
   }
 
   @Test
