@@ -19,9 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.issue;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.AddIssueCommentParams;
@@ -38,12 +39,11 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 public class IssueServiceImpl implements IssueService {
 
   private static final String STATUS_CHANGE_PERMISSION_MISSING_REASON = "Changing an issue's status requires the 'Administer Issues' permission.";
-  private static final Map<String, IssueStatus> issuesStatusByTransition = Map.of(
-    "wontfix", IssueStatus.WONT_FIX,
-    "falsepositive", IssueStatus.FALSE_POSITIVE);
   private static final Map<IssueStatus, String> transitionByIssueStatus = Map.of(
     IssueStatus.WONT_FIX, "wontfix",
     IssueStatus.FALSE_POSITIVE, "falsepositive");
+
+  private static final Set<String> requiredTransitions = new HashSet<>(transitionByIssueStatus.values());
 
   private final ConfigurationRepository configurationRepository;
   private final ServerApiProvider serverApiProvider;
@@ -92,23 +92,18 @@ public class IssueServiceImpl implements IssueService {
   }
 
   private static CheckStatusChangePermittedResponse toResponse(Issues.Issue issue) {
-    var allowedStatuses = convert(issue.getTransitions());
-    // the 2 transitions are not available when the 'Administer Issues' permission is missing
-    // normally the 'Browse' permission is also required, but we assume it's present as the client knows the issue key
-    var permitted = !allowedStatuses.isEmpty();
+    var permitted = hasChangePermission(issue);
     return new CheckStatusChangePermittedResponse(permitted,
       permitted ? null : STATUS_CHANGE_PERMISSION_MISSING_REASON,
-      allowedStatuses);
+      // even if not permitted, return the possible statuses, if clients still want to show users what's supported
+      Arrays.asList(IssueStatus.values()));
   }
 
-  private static List<IssueStatus> convert(Issues.Transitions possibleTransitions) {
-    var statuses = new ArrayList<IssueStatus>();
-    possibleTransitions.getTransitionsList().forEach(transition -> {
-      if (issuesStatusByTransition.containsKey(transition)) {
-        statuses.add(issuesStatusByTransition.get(transition));
-      }
-    });
-    return statuses;
+  private static boolean hasChangePermission(Issues.Issue issue) {
+    // the 2 required transitions are not available when the 'Administer Issues' permission is missing
+    // normally the 'Browse' permission is also required, but we assume it's present as the client knows the issue key
+    var possibleTransitions = new HashSet<>(issue.getTransitions().getTransitionsList());
+    return possibleTransitions.containsAll(requiredTransitions);
   }
 
   @Override
