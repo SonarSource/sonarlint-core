@@ -122,7 +122,7 @@ class CheckIssueStatusChangePermittedMediumTests {
   }
 
   @Test
-  void it_should_allow_no_statuses_when_user_has_no_permission() {
+  void it_should_not_permit_status_change_when_issue_misses_required_transitions() {
     fakeServerWithIssue("issueKey", List.of("confirm"));
     backend = newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
@@ -134,7 +134,7 @@ class CheckIssueStatusChangePermittedMediumTests {
       .succeedsWithin(Duration.ofSeconds(2))
       .extracting(CheckStatusChangePermittedResponse::isPermitted, CheckStatusChangePermittedResponse::getNotPermittedReason,
         CheckStatusChangePermittedResponse::getAllowedStatuses)
-      .containsExactly(false, "Changing an issue's status requires the 'Administer Issues' permission.", List.of());
+      .containsExactly(false, "Changing an issue's status requires the 'Administer Issues' permission.", List.of(IssueStatus.WONT_FIX, IssueStatus.FALSE_POSITIVE));
   }
 
   @Test
