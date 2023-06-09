@@ -21,8 +21,8 @@ package org.sonarsource.sonarlint.core.clientapi.backend.issue;
 
 public enum IssueStatus {
   // order is important here, it will be applied in the UI
-  WONT_FIX("Won't Fix", "The issue is irrelevant in this context."),
-  FALSE_POSITIVE("False Positive", "The issue is not accurate.");
+  WONT_FIX("Won't Fix", "The issue is valid but does not need fixing. It represents accepted technical debt."),
+  FALSE_POSITIVE("False Positive", "The issue is raised unexpectedly on code that should not trigger an issue.");
 
   private final String title;
   private final String description;

@@ -97,8 +97,8 @@ class CheckIssueStatusChangePermittedMediumTests {
       .asInstanceOf(InstanceOfAssertFactories.list(IssueStatus.class))
       .extracting(IssueStatus::getTitle, IssueStatus::getDescription)
       .containsExactly(
-        tuple("Won't Fix", "The issue is irrelevant in this context."),
-        tuple("False Positive", "The issue is not accurate."));
+        tuple("Won't Fix", "The issue is valid but does not need fixing. It represents accepted technical debt."),
+        tuple("False Positive", "The issue is raised unexpectedly on code that should not trigger an issue."));
   }
 
   @Test
@@ -117,8 +117,8 @@ class CheckIssueStatusChangePermittedMediumTests {
       .asInstanceOf(InstanceOfAssertFactories.list(IssueStatus.class))
       .extracting(IssueStatus::getTitle, IssueStatus::getDescription)
       .containsExactly(
-        tuple("Won't Fix", "The issue is irrelevant in this context."),
-        tuple("False Positive", "The issue is not accurate."));
+        tuple("Won't Fix", "The issue is valid but does not need fixing. It represents accepted technical debt."),
+        tuple("False Positive", "The issue is raised unexpectedly on code that should not trigger an issue."));
   }
 
   @Test
