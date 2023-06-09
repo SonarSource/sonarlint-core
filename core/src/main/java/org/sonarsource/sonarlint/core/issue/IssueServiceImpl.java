@@ -38,7 +38,7 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
 public class IssueServiceImpl implements IssueService {
 
-  private static final String STATUS_CHANGE_PERMISSION_MISSING_REASON = "Changing an issue's status requires the 'Administer Issues' permission.";
+  private static final String STATUS_CHANGE_PERMISSION_MISSING_REASON = "Marking an issue as resolved requires the 'Administer Issues' permission";
   private static final Map<IssueStatus, String> transitionByIssueStatus = Map.of(
     IssueStatus.WONT_FIX, "wontfix",
     IssueStatus.FALSE_POSITIVE, "falsepositive");
