@@ -248,11 +248,15 @@ public class SonarLintBackendFixture {
       storages.forEach(storage -> storage.create(storageParentPath));
       var sonarLintBackend = new SonarLintTestBackend(client);
       client.setBackend(sonarLintBackend);
-      sonarLintBackend
-        .initialize(new InitializeParams(client.getClientInfo(), telemetryProductKey, storageParentPath.resolve("storage"), workDir, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
-          enabledLanguages, extraEnabledLanguagesInConnectedMode, areSecurityHotspotsEnabled, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
-          startEmbeddedServer,
-          standaloneConfigByKey, manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects));
+      try {
+        sonarLintBackend
+          .initialize(new InitializeParams(client.getClientInfo(), telemetryProductKey, storageParentPath.resolve("storage"), workDir, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
+            enabledLanguages, extraEnabledLanguagesInConnectedMode, areSecurityHotspotsEnabled, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
+            startEmbeddedServer,
+            standaloneConfigByKey, manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects)).get();
+      } catch (Exception e) {
+        throw new IllegalStateException("Cannot initialize the backend", e);
+      }
       sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
       activeBranchPerScopeId.forEach(
         (scopeId, branch) -> sonarLintBackend.getSonarProjectBranchService().didChangeActiveSonarProjectBranch(new DidChangeActiveSonarProjectBranchParams(scopeId, branch)));

@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
@@ -34,6 +35,7 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
 public class SonarLintBackendImpl implements SonarLintBackend {
   private final SonarLintClient client;
+  private final AtomicBoolean initialized = new AtomicBoolean(false);
   private InitializedSonarLintBackend sonarLintBackend;
 
   public SonarLintBackendImpl(SonarLintClient client) {
@@ -42,16 +44,17 @@ public class SonarLintBackendImpl implements SonarLintBackend {
 
   @Override
   public CompletableFuture<Void> initialize(InitializeParams params) {
-    if (sonarLintBackend != null) {
-      return CompletableFuture.failedFuture(new UnsupportedOperationException("Already initialized"));
-    }
-    sonarLintBackend = new InitializedSonarLintBackend(client, params);
-
-    return CompletableFuture.completedFuture(null);
+    return CompletableFuture.runAsync(() -> {
+      if (initialized.compareAndSet(false, true)) {
+        sonarLintBackend = new InitializedSonarLintBackend(client, params);
+      } else {
+        throw new UnsupportedOperationException("Already initialized");
+      }
+    });
   }
 
   private InitializedSonarLintBackend getInitializedBackend() {
-    if (sonarLintBackend == null) {
+    if (!initialized.get()) {
       throw new IllegalStateException("Backend is not initialized");
     }
     return sonarLintBackend;
@@ -108,6 +111,9 @@ public class SonarLintBackendImpl implements SonarLintBackend {
 
   @Override
   public CompletableFuture<Void> shutdown() {
+    if (!initialized.get()) {
+      return CompletableFuture.completedFuture(null);
+    }
     return getInitializedBackend().shutdown();
   }
 
