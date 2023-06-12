@@ -22,17 +22,21 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 import java.util.concurrent.ExecutionException;
 import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.serverconnection.ServerVersionAndStatusChecker;
 import testutils.MockWebServerExtensionWithProtobuf;
+import testutils.TakeThreadDumpAfter;
+import testutils.ThreadDumpExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@ExtendWith({ThreadDumpExtension.class})
 class ConnectionValidatorTests {
 
   @RegisterExtension
@@ -41,6 +45,7 @@ class ConnectionValidatorTests {
   private final ServerVersionAndStatusChecker serverChecker = mock(ServerVersionAndStatusChecker.class);
 
   @Test
+  @TakeThreadDumpAfter(seconds=20)
   void testConnection_ok() throws ExecutionException, InterruptedException {
     var underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()));
 
@@ -56,6 +61,7 @@ class ConnectionValidatorTests {
   }
 
   @Test
+  @TakeThreadDumpAfter(seconds=20)
   void testConnectionOrganizationNotFound() throws Exception {
     var underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams("myOrg"), HttpClientProvider.forTesting().getHttpClient()));
 
@@ -71,6 +77,7 @@ class ConnectionValidatorTests {
   }
 
   @Test
+  @TakeThreadDumpAfter(seconds=20)
   void testConnection_ok_with_org() throws Exception {
     var underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams("henryju-github"), HttpClientProvider.forTesting().getHttpClient()));
 
@@ -86,6 +93,7 @@ class ConnectionValidatorTests {
   }
 
   @Test
+  @TakeThreadDumpAfter(seconds=20)
   void testUnsupportedServer() throws ExecutionException, InterruptedException {
     var underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()));
 
@@ -101,6 +109,7 @@ class ConnectionValidatorTests {
   }
 
   @Test
+  @TakeThreadDumpAfter(seconds=20)
   void testClientError() throws ExecutionException, InterruptedException {
     var underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()));
 
@@ -116,6 +125,7 @@ class ConnectionValidatorTests {
   }
 
   @Test
+  @TakeThreadDumpAfter(seconds=20)
   void testResponseError() throws ExecutionException, InterruptedException {
     var underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()));
 
