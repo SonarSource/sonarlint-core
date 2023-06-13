@@ -231,7 +231,7 @@ public class IssueApi {
 
   public CompletableFuture<Issue> searchByKey(String issueKey) {
     var searchUrl = new StringBuilder();
-    searchUrl.append("/api/issues/search.protobuf?issue=").append(urlEncode(issueKey)).append("&additionalFields=transitions");
+    searchUrl.append("/api/issues/search.protobuf?issues=").append(urlEncode(issueKey)).append("&additionalFields=transitions");
     serverApiHelper.getOrganizationKey()
       .ifPresent(org -> searchUrl.append("&organization=").append(UrlUtils.urlEncode(org)));
     searchUrl.append("&ps=1&p=1");

@@ -197,13 +197,16 @@ class CheckIssueStatusChangePermittedMediumTests {
   }
 
   private void fakeServerWithResponse(String issueKey, @Nullable String orgKey, Message response) {
-    var orgParam = orgKey == null ? "" : "&organization=" + orgKey;
-    mockWebServerExtension.addProtobufResponse("/api/issues/search.protobuf?issue=" + issueKey + "&additionalFields=transitions" + orgParam + "&ps=1&p=1", response);
+    mockWebServerExtension.addProtobufResponse(apiIssueSearchPath(issueKey, orgKey), response);
   }
 
   private void fakeServerWithWrongBody(String issueKey) {
-    mockWebServerExtension.addResponse("/api/issues/search.protobuf?issue=" + issueKey + "&additionalFields=transitions&ps=1&p=1",
-      new MockResponse().setBody("wrong body"));
+    mockWebServerExtension.addResponse(apiIssueSearchPath(issueKey, null), new MockResponse().setBody("wrong body"));
+  }
+
+  private static String apiIssueSearchPath(String issueKey, @Nullable String orgKey) {
+    var orgParam = orgKey == null ? "" : "&organization=" + orgKey;
+    return "/api/issues/search.protobuf?issues=" + issueKey + "&additionalFields=transitions" + orgParam + "&ps=1&p=1";
   }
 
   private CompletableFuture<CheckStatusChangePermittedResponse> checkStatusChangePermitted(String connectionId, String issueKey) {
