@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.commons.Language;
 
 import static java.nio.file.Files.createDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,7 +38,6 @@ class AnalysisEngineConfigurationTests {
       .build();
     assertThat(config.getWorkDir()).isNull();
     assertThat(config.getEffectiveSettings()).isEmpty();
-    assertThat(config.getEnabledLanguages()).isEmpty();
     assertThat(config.getClientPid()).isZero();
   }
 
@@ -71,15 +69,6 @@ class AnalysisEngineConfigurationTests {
       .setWorkDir(work)
       .build();
     assertThat(config.getWorkDir()).isEqualTo(work);
-  }
-
-  @Test
-  void configureLanguages() {
-    var config = AnalysisEngineConfiguration.builder()
-      .addEnabledLanguage(Language.JAVA)
-      .addEnabledLanguages(Language.JS, Language.TS)
-      .build();
-    assertThat(config.getEnabledLanguages()).containsExactly(Language.JAVA, Language.JS, Language.TS);
   }
 
   @Test

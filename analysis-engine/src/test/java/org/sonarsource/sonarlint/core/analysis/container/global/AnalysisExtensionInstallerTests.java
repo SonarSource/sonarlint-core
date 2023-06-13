@@ -30,10 +30,8 @@ import org.sonar.api.batch.sensor.SensorDescriptor;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.utils.Version;
 import org.sonarsource.api.sonarlint.SonarLintSide;
-import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
-import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
@@ -49,8 +47,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class AnalysisExtensionInstallerTests {
-
-  private static final String JAVASCRIPT_PLUGIN_KEY = "javascript";
   private static final String FAKE_PLUGIN_KEY = "foo";
   private static final String JAVA_PLUGIN_KEY = "java";
 
@@ -69,7 +65,7 @@ class AnalysisExtensionInstallerTests {
   void prepare() {
     loadedPlugins = mock(LoadedPlugins.class);
     container = mock(SpringComponentContainer.class);
-    underTest = new AnalysisExtensionInstaller(RUNTIME, loadedPlugins, EMPTY_CONFIG, AnalysisEngineConfiguration.builder().build());
+    underTest = new AnalysisExtensionInstaller(RUNTIME, loadedPlugins, EMPTY_CONFIG);
   }
 
   @Test
@@ -154,49 +150,11 @@ class AnalysisExtensionInstallerTests {
   }
 
   @Test
-  void install_typescript_sensor_if_typescript_language_enabled_in_connected_mode() {
-    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(JAVASCRIPT_PLUGIN_KEY, new FakePlugin()));
-
-    underTest = new AnalysisExtensionInstaller(RUNTIME, loadedPlugins, EMPTY_CONFIG, AnalysisEngineConfiguration.builder()
-      .addEnabledLanguage(Language.TS).build());
-
-    underTest.install(container, ContainerLifespan.ANALYSIS);
-
-    verify(container).addExtension(JAVASCRIPT_PLUGIN_KEY, TypeScriptSensor.class);
-  }
-
-  @Test
-  void dont_install_typescript_sensor_if_typescript_language_not_enabled_in_connected_mode() {
-    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin()));
-
-    underTest = new AnalysisExtensionInstaller(RUNTIME, loadedPlugins, EMPTY_CONFIG, AnalysisEngineConfiguration.builder()
-      .addEnabledLanguage(Language.JS).build());
-
-    underTest.install(container, ContainerLifespan.ANALYSIS);
-
-    verify(container, never()).addExtension(FAKE_PLUGIN_KEY, TypeScriptSensor.class);
-
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).contains("TypeScript sensor excluded");
-  }
-
-  @Test
-  void install_typescript_sensor_if_typescript_language_enabled_in_standalone() {
-    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(JAVASCRIPT_PLUGIN_KEY, new FakePlugin()));
-
-    underTest = new AnalysisExtensionInstaller(RUNTIME, loadedPlugins, EMPTY_CONFIG, AnalysisEngineConfiguration.builder()
-      .addEnabledLanguage(Language.TS).build());
-
-    underTest.install(container, ContainerLifespan.ANALYSIS);
-
-    verify(container).addExtension(JAVASCRIPT_PLUGIN_KEY, TypeScriptSensor.class);
-  }
-
-  @Test
   void provide_sonarlint_context_for_plugin_definition() {
     var pluginInstance = new PluginStoringSonarLintPluginApiVersion();
     when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, pluginInstance));
 
-    underTest = new AnalysisExtensionInstaller(RUNTIME, loadedPlugins, EMPTY_CONFIG, AnalysisEngineConfiguration.builder().build());
+    underTest = new AnalysisExtensionInstaller(RUNTIME, loadedPlugins, EMPTY_CONFIG);
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
 
@@ -208,7 +166,7 @@ class AnalysisExtensionInstallerTests {
   void log_when_plugin_throws() {
     when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new ThrowingPlugin()));
 
-    underTest = new AnalysisExtensionInstaller(RUNTIME, loadedPlugins, EMPTY_CONFIG, AnalysisEngineConfiguration.builder().build());
+    underTest = new AnalysisExtensionInstaller(RUNTIME, loadedPlugins, EMPTY_CONFIG);
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
 
@@ -230,7 +188,6 @@ class AnalysisExtensionInstallerTests {
     public void define(Context context) {
       context.addExtension(component);
       context.addExtension(FakeSensor.class);
-      context.addExtension(TypeScriptSensor.class);
     }
 
   }
@@ -278,18 +235,6 @@ class AnalysisExtensionInstallerTests {
   }
 
   private static class FakeSensor implements Sensor {
-
-    @Override
-    public void describe(SensorDescriptor descriptor) {
-
-    }
-
-    @Override
-    public void execute(SensorContext context) {
-    }
-  }
-
-  private static class TypeScriptSensor implements Sensor {
 
     @Override
     public void describe(SensorDescriptor descriptor) {
