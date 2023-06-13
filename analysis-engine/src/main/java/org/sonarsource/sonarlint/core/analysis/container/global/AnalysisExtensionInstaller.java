@@ -19,15 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.global;
 
-import java.util.Set;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.utils.AnnotationUtils;
 import org.sonarsource.api.sonarlint.SonarLintSide;
-import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.commons.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.plugin.commons.ExtensionUtils;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
@@ -36,17 +33,11 @@ import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
 
 public class AnalysisExtensionInstaller extends ExtensionInstaller {
 
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
-
-  private final Set<Language> enabledLanguages;
-
   private final LoadedPlugins loadedPlugins;
 
-  public AnalysisExtensionInstaller(SonarLintRuntime sonarRuntime, LoadedPlugins loadedPlugins, Configuration bootConfiguration,
-                                    AnalysisEngineConfiguration analysisEngineConfig) {
+  public AnalysisExtensionInstaller(SonarLintRuntime sonarRuntime, LoadedPlugins loadedPlugins, Configuration bootConfiguration) {
     super(sonarRuntime, bootConfiguration);
     this.loadedPlugins = loadedPlugins;
-    enabledLanguages = analysisEngineConfig.getEnabledLanguages();
   }
 
   public AnalysisExtensionInstaller install(ExtensionContainer container, ContainerLifespan lifespan) {
@@ -72,21 +63,12 @@ public class AnalysisExtensionInstaller extends ExtensionInstaller {
     return null;
   }
 
-  private boolean onlySonarSourceSensor(String pluginKey, Object extension) {
-    // SLCORE-259
-    if (!enabledLanguages.contains(Language.TS) && className(extension).contains("TypeScriptSensor")) {
-      LOG.debug("TypeScript sensor excluded");
-      return false;
-    }
+  private static boolean onlySonarSourceSensor(String pluginKey, Object extension) {
     return Language.containsPlugin(pluginKey) || isNotSensor(extension);
   }
 
   private static boolean isNotSensor(Object extension) {
     return !ExtensionUtils.isType(extension, Sensor.class);
-  }
-
-  private static String className(Object extension) {
-    return extension instanceof Class ? ((Class) extension).getName() : extension.getClass().getName();
   }
 
 }

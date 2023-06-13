@@ -73,7 +73,6 @@ class AnalysisEngineMediumTests {
   void prepare(@TempDir Path workDir) throws IOException {
     var enabledLanguages = Set.of(Language.PYTHON);
     var analysisGlobalConfig = AnalysisEngineConfiguration.builder()
-      .addEnabledLanguages(enabledLanguages)
       .setClientPid(1234L)
       .setWorkDir(workDir)
       .build();

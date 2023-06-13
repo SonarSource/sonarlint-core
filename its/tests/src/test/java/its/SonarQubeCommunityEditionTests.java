@@ -25,7 +25,6 @@ import com.sonar.orchestrator.junit5.OnlyOnSonarQube;
 import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
-import its.utils.ConsoleConsumer;
 import its.utils.ItUtils;
 import its.utils.OrchestratorUtils;
 import java.io.File;
@@ -42,7 +41,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.SystemUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -76,7 +74,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.junit.jupiter.api.Assertions.fail;
 
 class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
@@ -420,44 +417,6 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, PROJECT_KEY_JAVASCRIPT, "src/Person.js"), issueListener, null, null);
       assertThat(issueListener.getIssues()).hasSize(1);
-    }
-
-    /**
-     *  SLCORE-259
-     *  SonarTS has been merged into SonarJS. It means excluding the typescript plugin is not enough to prevent TS analysis.
-     *  For backward compatibility, we "hacked" the core to prevent typescript analysis through SonarJS when typescript language is not enabled.
-     */
-    @Test
-    void dontAnalyzeTypescriptIfExcluded() throws Exception {
-      var tsAnalysisConfig = createAnalysisConfiguration(PROJECT_KEY_TYPESCRIPT, PROJECT_KEY_TYPESCRIPT, "src/Person.ts");
-
-      var pb = new ProcessBuilder("npm" + (SystemUtils.IS_OS_WINDOWS ? ".cmd" : ""), "install")
-        .directory(tsAnalysisConfig.baseDir().toFile())
-        .redirectErrorStream(true);
-      var process = pb.start();
-      new Thread(new ConsoleConsumer(process)).start();
-      if (process.waitFor() != 0) {
-        fail("Unable to run npm install");
-      }
-
-      Map<String, String> extraProperties = new HashMap<>();
-      extraProperties.put("sonar.typescript.internal.typescriptLocation", tsAnalysisConfig.baseDir().resolve("node_modules").toString());
-      engine = createEngine(e -> e
-        .setExtraProperties(extraProperties)
-        .addEnabledLanguages(Language.JS, Language.PHP));
-      engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_JAVASCRIPT), null);
-      assertThat(logs).doesNotContain("Code analyzer 'SonarJS' is transitively excluded in this version of SonarLint. Skip loading it.");
-      assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains(Language.JS.getPluginKey());
-
-      engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_TYPESCRIPT, null);
-      engine.sync(endpointParams(ORCHESTRATOR), sqHttpClient(), Set.of(PROJECT_KEY_TYPESCRIPT), null);
-      var issueListenerTs = new SaveIssueListener();
-      engine.analyze(tsAnalysisConfig, issueListenerTs, null, null);
-      assertThat(issueListenerTs.getIssues()).hasSize(0);
-      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 0)) {
-        assertThat(logs).contains("TypeScript sensor excluded");
-      }
-      assertThat(logs).doesNotContain("Execute Sensor: ESLint-based TypeScript analysis");
     }
   }
 

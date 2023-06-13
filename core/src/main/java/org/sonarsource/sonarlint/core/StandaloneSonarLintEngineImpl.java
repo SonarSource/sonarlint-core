@@ -70,7 +70,6 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
     allRulesDefinitionsByKey = loadPluginMetadata(loadingResult.getLoadedPlugins(), globalConfig.getEnabledLanguages(), false, false);
 
     var analysisGlobalConfig = AnalysisEngineConfiguration.builder()
-      .addEnabledLanguages(globalConfig.getEnabledLanguages())
       .setClientPid(globalConfig.getClientPid())
       .setExtraProperties(globalConfig.extraProperties())
       .setNodeJs(globalConfig.getNodeJsPath())

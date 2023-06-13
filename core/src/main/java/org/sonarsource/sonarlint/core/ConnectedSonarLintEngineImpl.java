@@ -120,7 +120,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     var allRulesDefinitionsByKey = loadPluginMetadata(loadingResult.getLoadedPlugins(), globalConfig.getEnabledLanguages(), true, globalConfig.isHotspotsEnabled());
 
     var analysisGlobalConfig = AnalysisEngineConfiguration.builder()
-      .addEnabledLanguages(globalConfig.getEnabledLanguages())
       .setClientPid(globalConfig.getClientPid())
       .setExtraProperties(globalConfig.extraProperties())
       .setNodeJs(globalConfig.getNodeJsPath())
