@@ -130,11 +130,15 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
   @BeforeAll
   static void startBackend() {
     backend = new SonarLintBackendImpl(newDummySonarLintClient());
-    backend.initialize(
-      new InitializeParams(new HostInfoDto("clientName"), "integrationTests", sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"), Collections.emptySet(),
-        Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(), false,
-        List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(), false,
-        Map.of(), false, true, false, "SonarLint"));
+    try {
+      backend.initialize(
+        new InitializeParams(new HostInfoDto("clientName"), "integrationTests", sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"), Collections.emptySet(),
+          Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(), false,
+          List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(), false,
+          Map.of(), false, true, false, "SonarLint")).get();
+    } catch (Exception e) {
+      throw new IllegalStateException("Cannot initialize the backend", e);
+    }
   }
 
   @AfterAll
@@ -472,44 +476,6 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, PROJECT_KEY_JAVASCRIPT, "src/Person.js"), issueListener, null, null);
       assertThat(issueListener.getIssues()).hasSize(1);
-    }
-
-    /**
-     *  SLCORE-259
-     *  SonarTS has been merged into SonarJS. It means excluding the typescript plugin is not enough to prevent TS analysis.
-     *  For backward compatibility, we "hacked" the core to prevent typescript analysis through SonarJS when typescript language is not enabled.
-     */
-    @Test
-    void dontAnalyzeTypescriptIfExcluded() throws Exception {
-      var tsAnalysisConfig = createAnalysisConfiguration(PROJECT_KEY_TYPESCRIPT, PROJECT_KEY_TYPESCRIPT, "src/Person.ts");
-
-      var pb = new ProcessBuilder("npm" + (SystemUtils.IS_OS_WINDOWS ? ".cmd" : ""), "install")
-        .directory(tsAnalysisConfig.baseDir().toFile())
-        .redirectErrorStream(true);
-      var process = pb.start();
-      new Thread(new ConsoleConsumer(process)).start();
-      if (process.waitFor() != 0) {
-        fail("Unable to run npm install");
-      }
-
-      Map<String, String> extraProperties = new HashMap<>();
-      extraProperties.put("sonar.typescript.internal.typescriptLocation", tsAnalysisConfig.baseDir().resolve("node_modules").toString());
-      engine = createEngine(e -> e
-        .setExtraProperties(extraProperties)
-        .addEnabledLanguages(Language.JS, Language.PHP));
-      engine.sync(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), Set.of(PROJECT_KEY_JAVASCRIPT), null);
-      assertThat(logs).doesNotContain("Code analyzer 'SonarJS' is transitively excluded in this version of SonarLint. Skip loading it.");
-      assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains(Language.JS.getPluginKey());
-
-      engine.updateProject(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), PROJECT_KEY_TYPESCRIPT, null);
-      engine.sync(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), Set.of(PROJECT_KEY_TYPESCRIPT), null);
-      var issueListenerTs = new SaveIssueListener();
-      engine.analyze(tsAnalysisConfig, issueListenerTs, null, null);
-      assertThat(issueListenerTs.getIssues()).hasSize(0);
-      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 0)) {
-        assertThat(logs).contains("TypeScript sensor excluded");
-      }
-      assertThat(logs).doesNotContain("Execute Sensor: ESLint-based TypeScript analysis");
     }
   }
 

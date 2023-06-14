@@ -165,11 +165,15 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   @BeforeAll
   static void start() {
     backend = new SonarLintBackendImpl(newDummySonarLintClient());
-    backend.initialize(
-      new InitializeParams(new HostInfoDto("clientName"), "integrationTests", sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"), Collections.emptySet(),
-        Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(), false,
-        List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(), false,
-        Map.of(), false, true, false, "SonarLint"));
+    try {
+      backend.initialize(
+        new InitializeParams(new HostInfoDto("clientName"), "integrationTests", sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"), Collections.emptySet(),
+          Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(), false,
+          List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(), false,
+          Map.of(), false, true, false, "SonarLint")).get();
+    } catch (Exception e) {
+      throw new IllegalStateException("Cannot initialize the backend", e);
+    }
   }
 
   @AfterAll
