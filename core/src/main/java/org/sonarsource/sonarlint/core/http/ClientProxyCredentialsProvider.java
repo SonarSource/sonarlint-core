@@ -19,16 +19,25 @@
  */
 package org.sonarsource.sonarlint.core.http;
 
+import java.net.URISyntaxException;
 import java.util.concurrent.ExecutionException;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.Credentials;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.core5.http.URIScheme;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.client.http.GetProxyPasswordAuthenticationParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
+/**
+ * Inspired by {@link org.apache.hc.client5.http.impl.auth.SystemDefaultCredentialsProvider} but asking client instead of
+ * asking JDK
+ */
 public class ClientProxyCredentialsProvider implements CredentialsProvider {
 
   private final SonarLintLogger logger = SonarLintLogger.get();
@@ -39,11 +48,17 @@ public class ClientProxyCredentialsProvider implements CredentialsProvider {
   }
 
   @Override
-  public Credentials getCredentials(AuthScope authScope, HttpContext context) {
+  public Credentials getCredentials(AuthScope authScope, @Nullable HttpContext context) {
+    var host = authScope.getHost();
+    if (host == null) {
+      return null;
+    }
+    var targetHostURL = getTargetHostURL(context);
+    var protocol = getProtocol(authScope);
     try {
       var response = client.getProxyPasswordAuthentication(
-        new GetProxyPasswordAuthenticationParams(authScope.getHost(), authScope.getPort(), authScope.getProtocol(),
-          authScope.getRealm(), authScope.getSchemeName()))
+        new GetProxyPasswordAuthenticationParams(authScope.getHost(), authScope.getPort(), protocol,
+          authScope.getRealm(), authScope.getSchemeName(), targetHostURL))
         .get();
       var proxyUser = response.getProxyUser();
       if (proxyUser != null) {
@@ -57,5 +72,29 @@ public class ClientProxyCredentialsProvider implements CredentialsProvider {
       logger.warn("Unable to get proxy credentials from the client", e);
     }
     return null;
+  }
+
+  private static String getProtocol(AuthScope authScope) {
+    String protocol;
+    if (authScope.getProtocol() != null) {
+      protocol = authScope.getProtocol();
+    } else {
+      protocol = (authScope.getPort() == 443 ? URIScheme.HTTPS.id : URIScheme.HTTP.id);
+    }
+    return protocol;
+  }
+
+  @CheckForNull
+  private static String getTargetHostURL(@Nullable HttpContext context) {
+    var clientContext = context != null ? HttpClientContext.adapt(context) : null;
+    var request = context != null ? clientContext.getRequest() : null;
+    String targetHostURL;
+    try {
+      var uri = request != null ? request.getUri() : null;
+      targetHostURL = uri != null ? uri.toString() : null;
+    } catch (final URISyntaxException ignore) {
+      targetHostURL = null;
+    }
+    return targetHostURL;
   }
 }
