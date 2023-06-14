@@ -104,8 +104,7 @@ public class ServerApiHelper {
     var url = buildEndpointUrl(relativePath);
 
     var response = client.get(url);
-    var duration = Duration.between(startTime, Instant.now());
-    LOG.debug("{} {} {} | response time={}ms", "GET", response.code(), url, duration.toMillis());
+    logTime(startTime, url, response.code());
     return response;
   }
 
