@@ -34,12 +34,15 @@ public class GetProxyPasswordAuthenticationParams {
   private final String prompt;
   private final String scheme;
 
-  public GetProxyPasswordAuthenticationParams(String host, int port, String protocol, String prompt, String scheme) {
+  private final String targetHostURL;
+
+  public GetProxyPasswordAuthenticationParams(String host, int port, String protocol, String prompt, String scheme, String targetHostURL) {
     this.host = host;
     this.port = port;
     this.protocol = protocol;
     this.prompt = prompt;
     this.scheme = scheme;
+    this.targetHostURL = targetHostURL;
   }
 
   public String getHost() {
@@ -60,5 +63,9 @@ public class GetProxyPasswordAuthenticationParams {
 
   public String getScheme() {
     return scheme;
+  }
+
+  public String getTargetHostURL() {
+    return targetHostURL;
   }
 }

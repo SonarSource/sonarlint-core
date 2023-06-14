@@ -21,9 +21,11 @@ package org.sonarsource.sonarlint.core.clientapi;
 
 import java.net.Authenticator;
 import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.URI;
+import java.net.URL;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
@@ -136,8 +138,15 @@ public interface SonarLintClient {
 
   @JsonRequest
   default CompletableFuture<GetProxyPasswordAuthenticationResponse> getProxyPasswordAuthentication(GetProxyPasswordAuthenticationParams params) {
+    // use null addr, because the authentication fails if it does not exactly match the expected realm's host
+    URL targetHostUrl;
+    try {
+      targetHostUrl = new URL(params.getTargetHostURL());
+    } catch (MalformedURLException e) {
+      return CompletableFuture.failedFuture(e);
+    }
     var passwordAuthentication = Authenticator.requestPasswordAuthentication(params.getHost(), null, params.getPort(), params.getProtocol(), params.getPrompt(), params.getScheme(),
-      null, Authenticator.RequestorType.PROXY);
+      targetHostUrl, Authenticator.RequestorType.PROXY);
     var response = new GetProxyPasswordAuthenticationResponse(passwordAuthentication != null ? passwordAuthentication.getUserName() : null,
       passwordAuthentication != null ? new String(passwordAuthentication.getPassword()) : null);
     return CompletableFuture.completedFuture(response);
