@@ -20,11 +20,8 @@
 package org.sonarsource.sonarlint.core.http;
 
 import java.util.concurrent.TimeUnit;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
-import org.sonarsource.sonarlint.core.clientapi.common.TokenDto;
-import org.sonarsource.sonarlint.core.clientapi.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class ConnectionAwareHttpClientProvider {
@@ -45,14 +42,22 @@ public class ConnectionAwareHttpClientProvider {
   public HttpClient getHttpClient(String connectionId) {
     try {
       var response = client.getCredentials(new GetCredentialsParams(connectionId)).get(1, TimeUnit.MINUTES);
-      return response.getCredentials().map(
-        tokenDto -> httpClientProvider.getHttpClientWithPreemptiveAuth(tokenDto.getToken(), null),
-        userPass -> httpClientProvider.getHttpClientWithPreemptiveAuth(userPass.getUsername(), userPass.getPassword())
-      );
+      var credentials = response.getCredentials();
+      if (credentials == null) {
+        logger.debug("No credentials for connection {}", connectionId);
+      } else {
+        return credentials.map(
+          tokenDto -> httpClientProvider.getHttpClientWithPreemptiveAuth(tokenDto.getToken(), null),
+          userPass -> httpClientProvider.getHttpClientWithPreemptiveAuth(userPass.getUsername(), userPass.getPassword()));
+      }
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      logger.debug("Interrupted!", e);
     } catch (Exception e) {
-      logger.error("Unable to get credentials for connection {}", connectionId);
-      return httpClientProvider.getHttpClient();
+      logger.error("Error getting credentials for connection {}", connectionId, e);
     }
+    // Fallback on client with no authentication
+    return httpClientProvider.getHttpClient();
   }
 
 }

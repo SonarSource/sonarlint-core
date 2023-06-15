@@ -25,16 +25,16 @@ public class ValidateConnectionParams {
 
   private final Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection;
 
-  private ValidateConnectionParams(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection) {
+  public ValidateConnectionParams(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection) {
     this.transientConnection = transientConnection;
   }
 
   public ValidateConnectionParams(TransientSonarQubeConnectionDto transientConnection) {
-    this.transientConnection = Either.forLeft(transientConnection);
+    this(Either.forLeft(transientConnection));
   }
 
   public ValidateConnectionParams(TransientSonarCloudConnectionDto transientConnection) {
-    this.transientConnection = Either.forRight(transientConnection);
+    this(Either.forRight(transientConnection));
   }
 
   public Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> getTransientConnection() {

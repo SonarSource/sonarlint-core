@@ -126,13 +126,9 @@ public interface SonarLintClient {
     if (proxy.type() == Proxy.Type.DIRECT) {
       return ProxyDto.NO_PROXY;
     }
-    var address = proxy.address();
-    if (!(address instanceof InetSocketAddress)) {
-      throw new IllegalArgumentException("Unsupported address type:" + address.getClass());
-    }
-
-    var server = ((InetSocketAddress) address).getHostString();
-    var port = ((InetSocketAddress) address).getPort();
+    var address = (InetSocketAddress) proxy.address();
+    var server = address.getHostString();
+    var port = address.getPort();
     return new ProxyDto(proxy.type(), server, port);
   }
 

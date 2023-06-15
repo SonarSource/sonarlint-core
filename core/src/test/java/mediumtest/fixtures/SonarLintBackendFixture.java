@@ -37,6 +37,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import javax.annotation.CheckForNull;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.jetbrains.annotations.Nullable;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
@@ -60,7 +61,6 @@ import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreating
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsResponse;
-import org.sonarsource.sonarlint.core.clientapi.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FoundFileDto;
@@ -77,6 +77,8 @@ import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressPa
 import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.clientapi.client.sync.DidSynchronizeConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.clientapi.common.TokenDto;
+import org.sonarsource.sonarlint.core.clientapi.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.commons.Language;
 
 import static mediumtest.fixtures.StorageFixture.newStorage;
@@ -268,10 +270,12 @@ public class SonarLintBackendFixture {
       client.setBackend(sonarLintBackend);
       try {
         sonarLintBackend
-          .initialize(new InitializeParams(client.getClientInfo(), telemetryProductKey, storageParentPath.resolve("storage"), workDir, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
+          .initialize(new InitializeParams(client.getClientInfo(), telemetryProductKey, storageParentPath.resolve("storage"), workDir, embeddedPluginPaths,
+            connectedModeEmbeddedPluginPathsByKey,
             enabledLanguages, extraEnabledLanguagesInConnectedMode, areSecurityHotspotsEnabled, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
             startEmbeddedServer,
-            standaloneConfigByKey, manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, userAgent)).get();
+            standaloneConfigByKey, manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, userAgent))
+          .get();
       } catch (Exception e) {
         throw new IllegalStateException("Cannot initialize the backend", e);
       }
@@ -305,7 +309,7 @@ public class SonarLintBackendFixture {
 
     private ProxyDto proxy;
     private GetProxyPasswordAuthenticationResponse proxyAuth;
-    private Map<String, UsernamePasswordDto> creds = new HashMap<>();
+    private Map<String, Either<TokenDto, UsernamePasswordDto>> creds = new HashMap<>();
 
     public SonarLintClientBuilder withFoundFile(String name, String path, String content) {
       foundFiles.add(new FoundFileDto(name, path, content));
@@ -328,7 +332,12 @@ public class SonarLintBackendFixture {
     }
 
     public SonarLintClientBuilder withCredentials(String connectionId, String user, String password) {
-      creds.put(connectionId, new UsernamePasswordDto(user, password));
+      creds.put(connectionId, Either.forRight(new UsernamePasswordDto(user, password)));
+      return this;
+    }
+
+    public SonarLintClientBuilder withToken(String connectionId, String token) {
+      creds.put(connectionId, Either.forLeft(new TokenDto(token)));
       return this;
     }
 
@@ -371,13 +380,13 @@ public class SonarLintBackendFixture {
     private final Set<String> synchronizedConfigScopeIds = new HashSet<>();
     private final ProxyDto proxy;
     private final GetProxyPasswordAuthenticationResponse proxyAuth;
-    private final Map<String, UsernamePasswordDto> creds;
+    private final Map<String, Either<TokenDto, UsernamePasswordDto>> creds;
     private SonarLintBackendImpl backend;
 
     public FakeSonarLintClient(HostInfoDto clientInfo, List<FoundFileDto> foundFiles, String workspaceTitle,
       LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
       LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, boolean rejectingProgress, @Nullable ProxyDto proxy,
-      @Nullable GetProxyPasswordAuthenticationResponse proxyAuth, Map<String, UsernamePasswordDto> creds) {
+      @Nullable GetProxyPasswordAuthenticationResponse proxyAuth, Map<String, Either<TokenDto, UsernamePasswordDto>> creds) {
       this.clientInfo = clientInfo;
       this.foundFiles = foundFiles;
       this.workspaceTitle = workspaceTitle;
@@ -491,8 +500,7 @@ public class SonarLintBackendFixture {
     }
 
     public CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params) {
-      var usernamePasswordDto = creds.get(params.getConnectionId());
-      var response = new GetCredentialsResponse(usernamePasswordDto != null ? usernamePasswordDto : new UsernamePasswordDto(null, null));
+      var response = new GetCredentialsResponse(creds.get(params.getConnectionId()));
       return CompletableFuture.completedFuture(response);
     }
 

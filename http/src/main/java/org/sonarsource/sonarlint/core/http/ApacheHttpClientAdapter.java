@@ -238,7 +238,7 @@ class ApacheHttpClientAdapter implements HttpClient {
     }
   }
 
-  private String basic(String username, String password) {
+  private static String basic(String username, String password) {
     var usernameAndPassword = String.format("%s:%s", username, password);
     var encoded = Base64.getEncoder().encodeToString(usernameAndPassword.getBytes(StandardCharsets.UTF_8));
     return String.format("Basic %s", encoded);
