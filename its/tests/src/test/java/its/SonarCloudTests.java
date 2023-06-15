@@ -63,8 +63,9 @@ import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.HostInfoDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.check.CheckSmartNotificationsSupportedParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.TransientSonarCloudConnectionDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
@@ -447,6 +448,16 @@ class SonarCloudTests extends AbstractConnectedTests {
     assertThat(failIfWrongCredentials.getMessage()).isEqualTo("Authentication failed");
   }
 
+  @Test
+  void testSmartNotifications() throws ExecutionException, InterruptedException {
+    var successResponse = backend.getConnectionService()
+      .checkSmartNotificationsSupported(
+        new CheckSmartNotificationsSupportedParams(new TransientSonarCloudConnectionDto(SONARCLOUD_ORGANIZATION,
+          Either.forRight(new UsernamePasswordDto(SONARCLOUD_USER, SONARCLOUD_PASSWORD)))))
+      .get();
+    assertThat(successResponse).isTrue();
+  }
+
   @Nested
   // TODO Can be removed when switching to Java 16+ and changing prepare() to static
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -527,8 +538,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     }
 
     @Test
-    void download_taint_vulnerabilities_for_file() throws Exception {
-
+    void download_taint_vulnerabilities_for_file() {
       ProjectBinding projectBinding = new ProjectBinding(projectKey(PROJECT_KEY_JAVA_TAINT), "", "");
 
       engine.downloadAllServerTaintIssuesForFile(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), projectBinding, "src/main/java/foo/DbHelper.java",

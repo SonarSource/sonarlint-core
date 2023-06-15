@@ -26,6 +26,7 @@ import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
+@Deprecated(forRemoval = true)
 public class ServerNotificationsRegistry {
   static final int DELAY = 60_000;
 

@@ -27,6 +27,7 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.developers.DevelopersApi;
 
+@Deprecated(forRemoval = true)
 class NotificationChecker {
   private final DevelopersApi developersApi;
 

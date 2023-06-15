@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection.smartnotifications;
 
+@Deprecated(forRemoval = true)
 public interface ServerNotificationListener {
   void handle(ServerNotification notification);
 }

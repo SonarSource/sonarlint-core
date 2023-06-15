@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
+@Deprecated(forRemoval = true)
 public class NotificationConfiguration {
   private final ServerNotificationListener listener;
   private final LastNotificationTime lastNotificationTime;

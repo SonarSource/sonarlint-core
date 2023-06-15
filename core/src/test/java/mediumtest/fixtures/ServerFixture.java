@@ -30,7 +30,9 @@ import mockwebserver3.MockResponse;
 import mockwebserver3.RecordedRequest;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
+import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
@@ -270,6 +272,7 @@ public class ServerFixture {
         registerHotspotsApiResponses();
         registerIssuesApiResponses();
         registerSourceApiResponses();
+        registerDevelopersApiResponses();
       }
     }
 
@@ -370,6 +373,16 @@ public class ServerFixture {
 
     private void registerSourceApiResponses() {
       sourceFileByComponentKey.forEach((componentKey, sourceFile) -> mockWebServer.addStringResponse("/api/sources/raw?key=" + UrlUtils.urlEncode(componentKey), sourceFile.code));
+    }
+
+    private void registerDevelopersApiResponses() {
+      if (version != null) {
+        var serverVersion = Version.create(version);
+        // Simplified for testing purposes
+        if (serverVersion.compareToIgnoreQualifier(Version.create("8.7")) >= 0) {
+          mockWebServer.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
+        }
+      }
     }
 
     public void shutdown() {

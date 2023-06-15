@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.serverconnection.smartnotifications;
 
 import java.time.ZonedDateTime;
 
+@Deprecated(forRemoval = true)
 public interface LastNotificationTime {
   /**
    * Get the time the last notification was received.
