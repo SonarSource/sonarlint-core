@@ -39,7 +39,6 @@ import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurat
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.developers.DevelopersApi;
 import org.sonarsource.sonarlint.core.serverconnection.StorageService;
-import org.sonarsource.sonarlint.core.serverconnection.smartnotifications.ServerNotification;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
 public class SmartNotifications {
