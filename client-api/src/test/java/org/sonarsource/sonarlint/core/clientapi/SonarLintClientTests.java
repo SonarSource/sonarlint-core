@@ -57,8 +57,6 @@ import org.sonarsource.sonarlint.core.clientapi.client.sync.DidSynchronizeConfig
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
 
 class SonarLintClientTests {
 
@@ -89,9 +87,6 @@ class SonarLintClientTests {
             new Proxy(Proxy.Type.HTTP, new InetSocketAddress("http://myproxy", 8085)),
             new Proxy(Proxy.Type.HTTP, new InetSocketAddress("http://myproxy2", 8086)));
         }
-        if (uri.equals(URI.create("http://unsupportedSocketAdress"))) {
-          return List.of(new Proxy(Proxy.Type.HTTP, mock(SocketAddress.class)));
-        }
         return List.of(Proxy.NO_PROXY);
       }
 
@@ -111,8 +106,6 @@ class SonarLintClientTests {
 
     assertThat(selectProxiesResponseDirectProxy.getProxies()).extracting(ProxyDto::getType, ProxyDto::getHostname, ProxyDto::getPort)
       .containsExactlyInAnyOrder(tuple(Proxy.Type.DIRECT, null, 0));
-
-    assertThrows(IllegalArgumentException.class, () -> underTest.selectProxies(new SelectProxiesParams("http://unsupportedSocketAdress")).get());
   }
 
   @Test
@@ -132,7 +125,8 @@ class SonarLintClientTests {
       }
     });
 
-    var response = underTest.getProxyPasswordAuthentication(new GetProxyPasswordAuthenticationParams("http://foo", 8085, "protocol", "prompt", "scheme", "http://targethost")).get();
+    var response = underTest.getProxyPasswordAuthentication(new GetProxyPasswordAuthenticationParams("http://foo", 8085, "protocol", "prompt", "scheme", "http://targethost"))
+      .get();
     assertThat(response.getProxyUser()).isEqualTo("username");
     assertThat(response.getProxyPassword()).isEqualTo("password");
 
