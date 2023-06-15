@@ -31,8 +31,8 @@ import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.TransientSonarCloudConnectionDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.TransientSonarQubeConnectionDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.common.TransientSonarCloudConnectionDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.common.TransientSonarQubeConnectionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.common.TokenDto;
 import org.sonarsource.sonarlint.core.clientapi.common.UsernamePasswordDto;
@@ -197,8 +197,9 @@ class ConnectionServiceImplTests {
     var httpClientProvider = mock(HttpClientProvider.class);
     underTest = new ConnectionServiceImpl(null, null, List.of(), List.of(), httpClientProvider);
 
-    underTest.buildServerApiHelper(new ValidateConnectionParams(
-      new TransientSonarQubeConnectionDto("http://notexists", Either.forRight(new UsernamePasswordDto("user", "pwd")))));
+    var connectionsParams = new ValidateConnectionParams(
+      new TransientSonarQubeConnectionDto("http://notexists", Either.forRight(new UsernamePasswordDto("user", "pwd"))));
+    underTest.buildServerApiHelper(connectionsParams.getTransientConnection());
 
     verify(httpClientProvider).getHttpClientWithPreemptiveAuth("user", "pwd");
   }
@@ -208,7 +209,8 @@ class ConnectionServiceImplTests {
     var httpClientProvider = mock(HttpClientProvider.class);
     underTest = new ConnectionServiceImpl(null, null, List.of(), List.of(), httpClientProvider);
 
-    underTest.buildServerApiHelper(new ValidateConnectionParams(new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto("foo")))));
+    var connectionsParams = new ValidateConnectionParams(new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto("foo"))));
+    underTest.buildServerApiHelper(connectionsParams.getTransientConnection());
 
     verify(httpClientProvider).getHttpClientWithPreemptiveAuth("foo", null);
   }
