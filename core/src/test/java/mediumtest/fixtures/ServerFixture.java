@@ -30,7 +30,9 @@ import mockwebserver3.MockResponse;
 import mockwebserver3.RecordedRequest;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
+import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
@@ -59,10 +61,11 @@ public class ServerFixture {
 
   public static class ServerBuilder {
     private final ServerKind serverKind;
-    private ServerStatus serverStatus = ServerStatus.UP;
     private final String version;
     private final Map<String, ServerProjectBuilder> projectByProjectKey = new HashMap<>();
     private final Map<String, ServerSourceFileBuilder> sourceFileByComponentKey = new HashMap<>();
+    private ServerStatus serverStatus = ServerStatus.UP;
+    private boolean smartNotificationsSupported;
 
     public ServerBuilder(ServerKind serverKind, @Nullable String version) {
       this.serverKind = serverKind;
@@ -86,8 +89,13 @@ public class ServerFixture {
       return this;
     }
 
+    public ServerBuilder withSmartNotificationsSupported(boolean smartNotificationsSupported) {
+      this.smartNotificationsSupported = smartNotificationsSupported;
+      return this;
+    }
+
     public Server start() {
-      var server = new Server(serverKind, serverStatus, version, projectByProjectKey, sourceFileByComponentKey);
+      var server = new Server(serverKind, serverStatus, version, projectByProjectKey, sourceFileByComponentKey, smartNotificationsSupported);
       server.start();
       return server;
     }
@@ -248,15 +256,17 @@ public class ServerFixture {
     private final String version;
     private final Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey;
     private final Map<String, ServerBuilder.ServerSourceFileBuilder> sourceFileByComponentKey;
+    private final boolean smartNotificationsSupported;
 
     public Server(ServerKind serverKind, ServerStatus serverStatus, @Nullable String version,
       Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey,
-      Map<String, ServerBuilder.ServerSourceFileBuilder> sourceFileByComponentKey) {
+      Map<String, ServerBuilder.ServerSourceFileBuilder> sourceFileByComponentKey, boolean smartNotificationsSupported) {
       this.serverKind = serverKind;
       this.serverStatus = serverStatus;
       this.version = version;
       this.projectsByProjectKey = projectsByProjectKey;
       this.sourceFileByComponentKey = sourceFileByComponentKey;
+      this.smartNotificationsSupported = smartNotificationsSupported;
     }
 
     public void start() {
@@ -270,6 +280,7 @@ public class ServerFixture {
         registerHotspotsApiResponses();
         registerIssuesApiResponses();
         registerSourceApiResponses();
+        registerDevelopersApiResponses();
       }
     }
 
@@ -370,6 +381,12 @@ public class ServerFixture {
 
     private void registerSourceApiResponses() {
       sourceFileByComponentKey.forEach((componentKey, sourceFile) -> mockWebServer.addStringResponse("/api/sources/raw?key=" + UrlUtils.urlEncode(componentKey), sourceFile.code));
+    }
+
+    private void registerDevelopersApiResponses() {
+      if (smartNotificationsSupported) {
+        mockWebServer.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
+      }
     }
 
     public void shutdown() {
