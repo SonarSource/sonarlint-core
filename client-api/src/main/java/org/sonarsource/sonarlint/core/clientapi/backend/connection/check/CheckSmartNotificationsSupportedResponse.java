@@ -17,28 +17,17 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.backend.connection.validate;
+package org.sonarsource.sonarlint.core.clientapi.backend.connection.check;
 
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.sonarsource.sonarlint.core.clientapi.common.TokenDto;
-import org.sonarsource.sonarlint.core.clientapi.common.UsernamePasswordDto;
+public class CheckSmartNotificationsSupportedResponse {
 
-public class TransientSonarQubeConnectionDto {
+  private final boolean success;
 
-  private final String serverUrl;
-
-  private final Either<TokenDto, UsernamePasswordDto> credentials;
-
-  public TransientSonarQubeConnectionDto(String serverUrl, Either<TokenDto, UsernamePasswordDto> credentials) {
-    this.serverUrl = serverUrl;
-    this.credentials = credentials;
+  public CheckSmartNotificationsSupportedResponse(boolean success) {
+    this.success = success;
   }
 
-  public String getServerUrl() {
-    return serverUrl;
-  }
-
-  public Either<TokenDto, UsernamePasswordDto> getCredentials() {
-    return credentials;
+  public boolean isSuccess() {
+    return success;
   }
 }

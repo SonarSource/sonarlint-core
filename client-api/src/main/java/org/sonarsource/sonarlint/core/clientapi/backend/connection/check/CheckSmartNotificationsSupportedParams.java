@@ -17,25 +17,25 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.backend.connection.validate;
+package org.sonarsource.sonarlint.core.clientapi.backend.connection.check;
 
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.common.TransientSonarQubeConnectionDto;
 
-public class ValidateConnectionParams {
+public class CheckSmartNotificationsSupportedParams {
 
   private final Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection;
 
-  public ValidateConnectionParams(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection) {
+  public CheckSmartNotificationsSupportedParams(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection) {
     this.transientConnection = transientConnection;
   }
 
-  public ValidateConnectionParams(TransientSonarQubeConnectionDto transientConnection) {
+  public CheckSmartNotificationsSupportedParams(TransientSonarQubeConnectionDto transientConnection) {
     this(Either.forLeft(transientConnection));
   }
 
-  public ValidateConnectionParams(TransientSonarCloudConnectionDto transientConnection) {
+  public CheckSmartNotificationsSupportedParams(TransientSonarCloudConnectionDto transientConnection) {
     this(Either.forRight(transientConnection));
   }
 
