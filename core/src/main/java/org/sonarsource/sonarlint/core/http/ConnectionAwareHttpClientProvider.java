@@ -46,13 +46,22 @@ public class ConnectionAwareHttpClientProvider {
   public HttpClient getHttpClient(String connectionId) {
     try {
       var response = client.getCredentials(new GetCredentialsParams(connectionId)).get(1, TimeUnit.MINUTES);
-      return response.getCredentials().map(
-        tokenDto -> httpClientProvider.getHttpClientWithPreemptiveAuth(tokenDto.getToken(), null),
-        userPass -> httpClientProvider.getHttpClientWithPreemptiveAuth(userPass.getUsername(), userPass.getPassword()));
+      var credentials = response.getCredentials();
+      if (credentials == null) {
+        logger.debug("No credentials for connection {}", connectionId);
+      } else {
+        return credentials.map(
+          tokenDto -> httpClientProvider.getHttpClientWithPreemptiveAuth(tokenDto.getToken(), null),
+          userPass -> httpClientProvider.getHttpClientWithPreemptiveAuth(userPass.getUsername(), userPass.getPassword()));
+      }
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      logger.debug("Interrupted!", e);
     } catch (Exception e) {
-      logger.error("Unable to get credentials for connection {}", connectionId);
-      return httpClientProvider.getHttpClient();
+      logger.error("Error getting credentials for connection {}", connectionId, e);
     }
+    // Fallback on client with no authentication
+    return httpClientProvider.getHttpClient();
   }
 
 }
