@@ -32,7 +32,9 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.authentication.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.authentication.HelpGenerateUserTokenResponse;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.TransientSonarQubeConnectionDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.check.CheckSmartNotificationsSupportedParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.common.TransientSonarCloudConnectionDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.common.TransientSonarQubeConnectionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.common.TokenDto;
 
@@ -191,7 +193,7 @@ class ConnectionSetupMediumTests {
   }
 
   @Test
-  void it_should_fails_to_validate_connection_if_host_not_found() throws IOException, InterruptedException, ExecutionException {
+  void it_should_fail_to_validate_connection_if_host_not_found() throws InterruptedException, ExecutionException {
     var fakeClient = newFakeClient().build();
     backend = newBackend().build(fakeClient);
 
@@ -200,6 +202,44 @@ class ConnectionSetupMediumTests {
 
     assertThat(connectionResponse.isSuccess()).isFalse();
     assertThat(connectionResponse.getMessage()).contains("notexists");
+  }
+
+  @Test
+  void it_should_support_notifications_if_sonarcloud() throws ExecutionException, InterruptedException {
+    var fakeClient = newFakeClient().build();
+    backend = newBackend().build(fakeClient);
+
+    var connectionResponse = backend.getConnectionService()
+      .checkSmartNotificationsSupported(new CheckSmartNotificationsSupportedParams(
+        new TransientSonarCloudConnectionDto("https://sonarcloud.io", Either.forLeft(new TokenDto("foo"))))).get();
+
+    assertThat(connectionResponse.isSuccess()).isTrue();
+  }
+
+  @Test
+  void it_should_support_notifications_if_sonarqube_supports() throws ExecutionException, InterruptedException {
+    var fakeClient = newFakeClient().build();
+    server = newSonarQubeServer().withSmartNotificationsSupported(true).start();
+    backend = newBackend().withEmbeddedServer().withSonarQubeConnection("connectionId", server).build(fakeClient);
+
+    var connectionResponse = backend.getConnectionService()
+      .checkSmartNotificationsSupported(new CheckSmartNotificationsSupportedParams(
+        new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto("foo"))))).get();
+
+    assertThat(connectionResponse.isSuccess()).isTrue();
+  }
+
+  @Test
+  void it_should_not_support_notifications_if_sonarqube_does_not_support() throws ExecutionException, InterruptedException {
+    var fakeClient = newFakeClient().build();
+    server = newSonarQubeServer().withSmartNotificationsSupported(false).start();
+    backend = newBackend().withEmbeddedServer().withSonarQubeConnection("connectionId", server).build(fakeClient);
+
+    var connectionResponse = backend.getConnectionService()
+      .checkSmartNotificationsSupported(new CheckSmartNotificationsSupportedParams(
+        new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto("foo"))))).get();
+
+    assertThat(connectionResponse.isSuccess()).isFalse();
   }
 
   private SonarLintBackendImpl backend;

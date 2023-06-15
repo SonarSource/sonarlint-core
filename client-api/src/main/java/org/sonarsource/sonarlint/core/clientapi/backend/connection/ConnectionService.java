@@ -23,6 +23,8 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.check.CheckSmartNotificationsSupportedParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.check.CheckSmartNotificationsSupportedResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.ValidateConnectionResponse;
@@ -60,5 +62,15 @@ public interface ConnectionService {
    */
   @JsonRequest
   CompletableFuture<ValidateConnectionResponse> validateConnection(ValidateConnectionParams params);
+
+  /**
+   * Check that smart notifications are supported by the server by sending a GET request to /api/developers/search_events?projects=&from=
+   * It is successfully when response code is >= 200 and < 300
+   *
+   * @param params
+   * @return
+   */
+  @JsonRequest
+  CompletableFuture<CheckSmartNotificationsSupportedResponse> checkSmartNotificationsSupported(CheckSmartNotificationsSupportedParams params);
 
 }
