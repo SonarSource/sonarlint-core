@@ -193,7 +193,7 @@ class ConnectionSetupMediumTests {
   }
 
   @Test
-  void it_should_fails_to_validate_connection_if_host_not_found() throws InterruptedException, ExecutionException {
+  void it_should_fail_to_validate_connection_if_host_not_found() throws InterruptedException, ExecutionException {
     var fakeClient = newFakeClient().build();
     backend = newBackend().build(fakeClient);
 
@@ -213,33 +213,33 @@ class ConnectionSetupMediumTests {
       .checkSmartNotificationsSupported(new CheckSmartNotificationsSupportedParams(
         new TransientSonarCloudConnectionDto("https://sonarcloud.io", Either.forLeft(new TokenDto("foo"))))).get();
 
-    assertThat(connectionResponse).isTrue();
+    assertThat(connectionResponse.isSuccess()).isTrue();
   }
 
   @Test
-  void it_should_support_notifications_if_sonarqube_9_7() throws ExecutionException, InterruptedException {
+  void it_should_support_notifications_if_sonarqube_supports() throws ExecutionException, InterruptedException {
     var fakeClient = newFakeClient().build();
-    server = newSonarQubeServer("9.7").start();
+    server = newSonarQubeServer().withSmartNotificationsSupported(true).start();
     backend = newBackend().withEmbeddedServer().withSonarQubeConnection("connectionId", server).build(fakeClient);
 
     var connectionResponse = backend.getConnectionService()
       .checkSmartNotificationsSupported(new CheckSmartNotificationsSupportedParams(
         new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto("foo"))))).get();
 
-    assertThat(connectionResponse).isTrue();
+    assertThat(connectionResponse.isSuccess()).isTrue();
   }
 
   @Test
-  void it_should_not_support_notifications_if_sonarqube_7_9() throws ExecutionException, InterruptedException {
+  void it_should_not_support_notifications_if_sonarqube_does_not_support() throws ExecutionException, InterruptedException {
     var fakeClient = newFakeClient().build();
-    server = newSonarQubeServer("7.9").start();
+    server = newSonarQubeServer().withSmartNotificationsSupported(false).start();
     backend = newBackend().withEmbeddedServer().withSonarQubeConnection("connectionId", server).build(fakeClient);
 
     var connectionResponse = backend.getConnectionService()
       .checkSmartNotificationsSupported(new CheckSmartNotificationsSupportedParams(
         new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto("foo"))))).get();
 
-    assertThat(connectionResponse).isFalse();
+    assertThat(connectionResponse.isSuccess()).isFalse();
   }
 
   private SonarLintBackendImpl backend;

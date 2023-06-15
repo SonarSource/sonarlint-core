@@ -61,10 +61,11 @@ public class ServerFixture {
 
   public static class ServerBuilder {
     private final ServerKind serverKind;
-    private ServerStatus serverStatus = ServerStatus.UP;
     private final String version;
     private final Map<String, ServerProjectBuilder> projectByProjectKey = new HashMap<>();
     private final Map<String, ServerSourceFileBuilder> sourceFileByComponentKey = new HashMap<>();
+    private ServerStatus serverStatus = ServerStatus.UP;
+    private boolean smartNotificationsSupported;
 
     public ServerBuilder(ServerKind serverKind, @Nullable String version) {
       this.serverKind = serverKind;
@@ -88,8 +89,13 @@ public class ServerFixture {
       return this;
     }
 
+    public ServerBuilder withSmartNotificationsSupported(boolean smartNotificationsSupported) {
+      this.smartNotificationsSupported = smartNotificationsSupported;
+      return this;
+    }
+
     public Server start() {
-      var server = new Server(serverKind, serverStatus, version, projectByProjectKey, sourceFileByComponentKey);
+      var server = new Server(serverKind, serverStatus, version, projectByProjectKey, sourceFileByComponentKey, smartNotificationsSupported);
       server.start();
       return server;
     }
@@ -250,15 +256,17 @@ public class ServerFixture {
     private final String version;
     private final Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey;
     private final Map<String, ServerBuilder.ServerSourceFileBuilder> sourceFileByComponentKey;
+    private final boolean smartNotificationsSupported;
 
     public Server(ServerKind serverKind, ServerStatus serverStatus, @Nullable String version,
       Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey,
-      Map<String, ServerBuilder.ServerSourceFileBuilder> sourceFileByComponentKey) {
+      Map<String, ServerBuilder.ServerSourceFileBuilder> sourceFileByComponentKey, boolean smartNotificationsSupported) {
       this.serverKind = serverKind;
       this.serverStatus = serverStatus;
       this.version = version;
       this.projectsByProjectKey = projectsByProjectKey;
       this.sourceFileByComponentKey = sourceFileByComponentKey;
+      this.smartNotificationsSupported = smartNotificationsSupported;
     }
 
     public void start() {
@@ -376,12 +384,8 @@ public class ServerFixture {
     }
 
     private void registerDevelopersApiResponses() {
-      if (version != null) {
-        var serverVersion = Version.create(version);
-        // Simplified for testing purposes
-        if (serverVersion.compareToIgnoreQualifier(Version.create("8.7")) >= 0) {
-          mockWebServer.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
-        }
+      if (smartNotificationsSupported) {
+        mockWebServer.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
       }
     }
 

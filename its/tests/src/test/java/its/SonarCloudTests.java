@@ -448,16 +448,6 @@ class SonarCloudTests extends AbstractConnectedTests {
     assertThat(failIfWrongCredentials.getMessage()).isEqualTo("Authentication failed");
   }
 
-  @Test
-  void testSmartNotifications() throws ExecutionException, InterruptedException {
-    var successResponse = backend.getConnectionService()
-      .checkSmartNotificationsSupported(
-        new CheckSmartNotificationsSupportedParams(new TransientSonarCloudConnectionDto(SONARCLOUD_ORGANIZATION,
-          Either.forRight(new UsernamePasswordDto(SONARCLOUD_USER, SONARCLOUD_PASSWORD)))))
-      .get();
-    assertThat(successResponse).isTrue();
-  }
-
   @Nested
   // TODO Can be removed when switching to Java 16+ and changing prepare() to static
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)

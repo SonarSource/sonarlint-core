@@ -30,6 +30,7 @@ import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectionValidator;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.ConnectionService;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.check.CheckSmartNotificationsSupportedParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.check.CheckSmartNotificationsSupportedResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
@@ -140,10 +141,10 @@ public class ConnectionServiceImpl implements ConnectionService {
   }
 
   @Override
-  public CompletableFuture<Boolean> checkSmartNotificationsSupported(CheckSmartNotificationsSupportedParams params) {
+  public CompletableFuture<CheckSmartNotificationsSupportedResponse> checkSmartNotificationsSupported(CheckSmartNotificationsSupportedParams params) {
     var helper = buildServerApiHelper(params.getTransientConnection());
     var developersApi = new ServerApi(helper).developers();
-    return CompletableFuture.supplyAsync(developersApi::isSupported);
+    return CompletableFuture.supplyAsync(() -> new CheckSmartNotificationsSupportedResponse(developersApi.isSupported()));
   }
 
   @NotNull
