@@ -19,22 +19,33 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.client.connection;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.clientapi.common.TokenDto;
 import org.sonarsource.sonarlint.core.clientapi.common.UsernamePasswordDto;
 
 public class GetCredentialsResponse {
 
+  @Nullable
   private final Either<TokenDto, UsernamePasswordDto> credentials;
 
+  public GetCredentialsResponse(Either<TokenDto, UsernamePasswordDto> credentials) {
+    this.credentials = credentials;
+  }
+
   public GetCredentialsResponse(TokenDto token) {
-    this.credentials = Either.forLeft(token);
+    this(Either.forLeft(token));
   }
 
   public GetCredentialsResponse(UsernamePasswordDto usernamePassword) {
-    this.credentials = Either.forRight(usernamePassword);
+    this(Either.forRight(usernamePassword));
   }
 
+  /**
+   * @return @{@code null} if no credentials defined for this connection
+   */
+  @CheckForNull
   public Either<TokenDto, UsernamePasswordDto> getCredentials() {
     return credentials;
   }
