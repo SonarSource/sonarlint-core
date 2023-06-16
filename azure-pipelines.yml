@@ -250,7 +250,7 @@ stages:
         artifact: 'JaCoCo vcs Report'
       - template: mend-with-maven-repox.yml@commonTemplates
         parameters:
-          productName : 'SonarLint/Core'
+          productName : 'SonarSource/sonarlint-core'
           mavenRepositoryPath: '$(Pipeline.Workspace)/.m2/repository'
           mavenSettingsFilePath: '$(mavenSettings.secureFilePath)'
 
