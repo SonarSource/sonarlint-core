@@ -29,10 +29,14 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.Binding;
 
 import static java.util.Objects.requireNonNull;
 
+@Named
+@Singleton
 public class ConfigurationRepository {
 
   private final Map<String, ConfigurationScope> configScopePerId = new HashMap<>();

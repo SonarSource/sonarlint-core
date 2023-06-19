@@ -24,6 +24,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.CheckForNull;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingConfigurationDto;
@@ -39,6 +41,8 @@ import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 
+@Named
+@Singleton
 public class ConfigurationServiceImpl implements ConfigurationService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();

@@ -21,6 +21,10 @@ package org.sonarsource.sonarlint.core.embedded.server;
 
 import java.net.InetAddress;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import org.apache.hc.core5.http.ConnectionReuseStrategy;
 import org.apache.hc.core5.http.HttpRequest;
 import org.apache.hc.core5.http.HttpResponse;
@@ -35,9 +39,12 @@ import org.sonarsource.sonarlint.core.ConnectionServiceImpl;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.HostInfoDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
+@Named
+@Singleton
 public class EmbeddedServer {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
@@ -57,10 +64,11 @@ public class EmbeddedServer {
   private final ServerApiProvider serverApiProvider;
   private final TelemetryServiceImpl telemetryService;
   private final HostInfoDto clientInfo;
+  private final boolean enabled;
 
   public EmbeddedServer(SonarLintClient client, ConnectionServiceImpl connectionService, AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository,
     ConfigurationServiceImpl configurationService, BindingSuggestionProviderImpl bindingSuggestionProvider, ServerApiProvider serverApiProvider,
-    TelemetryServiceImpl telemetryService, HostInfoDto clientInfo) {
+    TelemetryServiceImpl telemetryService, InitializeParams params) {
     this.client = client;
     this.connectionService = connectionService;
     this.awaitingUserTokenFutureRepository = awaitingUserTokenFutureRepository;
@@ -68,10 +76,15 @@ public class EmbeddedServer {
     this.bindingSuggestionProvider = bindingSuggestionProvider;
     this.serverApiProvider = serverApiProvider;
     this.telemetryService = telemetryService;
-    this.clientInfo = clientInfo;
+    this.clientInfo = params.getHostInfo();
+    this.enabled = params.shouldManageLocalServer();
   }
 
+  @PostConstruct
   public void start() {
+    if (!enabled) {
+      return;
+    }
     final var socketConfig = SocketConfig.custom()
       .setSoTimeout(15, TimeUnit.SECONDS)
       // let the port be bindable again immediately
@@ -122,6 +135,7 @@ public class EmbeddedServer {
     return server != null;
   }
 
+  @PreDestroy
   public void shutdown() {
     if (isStarted()) {
       server.close(CloseMode.GRACEFUL);

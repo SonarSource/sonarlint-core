@@ -24,6 +24,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import javax.inject.Named;
+import javax.inject.Singleton;
+import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
@@ -32,6 +35,8 @@ import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoadResult;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
 import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 
+@Named
+@Singleton
 public class PluginsServiceImpl implements PluginsService {
   private final PluginsRepository pluginsRepository;
   private final LanguageSupportRepository languageSupportRepository;
@@ -39,13 +44,12 @@ public class PluginsServiceImpl implements PluginsService {
   private final Set<Path> embeddedPluginPaths;
   private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
 
-  public PluginsServiceImpl(PluginsRepository pluginsRepository, LanguageSupportRepository languageSupportRepository, StorageService storageService,
-    Set<Path> embeddedPluginPaths, Map<String, Path> connectedModeEmbeddedPluginPathsByKey) {
+  public PluginsServiceImpl(PluginsRepository pluginsRepository, LanguageSupportRepository languageSupportRepository, StorageService storageService, InitializeParams params) {
     this.pluginsRepository = pluginsRepository;
     this.languageSupportRepository = languageSupportRepository;
     this.storageService = storageService;
-    this.embeddedPluginPaths = embeddedPluginPaths;
-    this.connectedModeEmbeddedPluginPathsByKey = connectedModeEmbeddedPluginPathsByKey;
+    this.embeddedPluginPaths = params.getEmbeddedPluginPaths();
+    this.connectedModeEmbeddedPluginPathsByKey = params.getConnectedModeEmbeddedPluginPathsByKey();
   }
 
   public LoadedPlugins getEmbeddedPlugins() {
@@ -87,7 +91,4 @@ public class PluginsServiceImpl implements PluginsService {
     return new PluginsLoader().load(config);
   }
 
-  public void shutdown() {
-    pluginsRepository.getAllLoadedPlugins().forEach(LoadedPlugins::unload);
-  }
 }

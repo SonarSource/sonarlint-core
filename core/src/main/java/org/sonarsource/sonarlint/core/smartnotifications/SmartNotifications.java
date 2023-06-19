@@ -30,8 +30,13 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
+import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -41,6 +46,8 @@ import org.sonarsource.sonarlint.core.serverapi.developers.DevelopersApi;
 import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
+@Named
+@Singleton
 public class SmartNotifications {
 
   private final SonarLintLogger logger = SonarLintLogger.get();
@@ -50,22 +57,28 @@ public class SmartNotifications {
   private final ServerApiProvider serverApiProvider;
   private final SonarLintClient client;
   private final TelemetryServiceImpl telemetryService;
+  private final InitializeParams params;
   private final Map<String, Boolean> isConnectionIdSupported;
   private final LastEventPolling lastEventPollingService;
   private ScheduledExecutorService smartNotificationsPolling;
 
   public SmartNotifications(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository,
-    ServerApiProvider serverApiProvider, SonarLintClient client, StorageService storageService, TelemetryServiceImpl telemetryService) {
+    ServerApiProvider serverApiProvider, SonarLintClient client, StorageService storageService, TelemetryServiceImpl telemetryService, InitializeParams params) {
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
     this.serverApiProvider = serverApiProvider;
     this.client = client;
     this.telemetryService = telemetryService;
+    this.params = params;
     isConnectionIdSupported = new HashMap<>();
     lastEventPollingService = new LastEventPolling(storageService);
   }
 
+  @PostConstruct
   public void initialize() {
+    if (!params.shouldManageSmartNotifications()) {
+      return;
+    }
     smartNotificationsPolling = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "Smart Notifications Polling"));
     smartNotificationsPolling.scheduleAtFixedRate(this::poll, 1, 60, TimeUnit.SECONDS);
   }
@@ -108,6 +121,7 @@ public class SmartNotifications {
     }
   }
 
+  @PreDestroy
   public void shutdown() {
     if (smartNotificationsPolling != null && !MoreExecutors.shutdownAndAwaitTermination(smartNotificationsPolling, 5, TimeUnit.SECONDS)) {
       logger.warn("Unable to stop smart notifications executor service in a timely manner");

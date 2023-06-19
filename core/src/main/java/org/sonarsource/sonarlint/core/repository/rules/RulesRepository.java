@@ -25,11 +25,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
 
+@Named
+@Singleton
 public class RulesRepository {
 
   private final SonarLintLogger logger = SonarLintLogger.get();

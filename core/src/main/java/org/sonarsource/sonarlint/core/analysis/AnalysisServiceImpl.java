@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.MultivalueProperty;
 import org.sonarsource.sonarlint.core.clientapi.backend.analysis.AnalysisService;
@@ -37,6 +39,8 @@ import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 
 import static org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.LanguageDetection.sanitizeExtension;
 
+@Named
+@Singleton
 public class AnalysisServiceImpl implements AnalysisService {
 
   private final ConfigurationRepository configurationRepository;

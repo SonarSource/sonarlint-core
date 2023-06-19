@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.branch;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import java.util.Optional;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.clientapi.backend.branch.DidChangeActiveSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.branch.SonarProjectBranchService;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
@@ -29,6 +31,8 @@ import org.sonarsource.sonarlint.core.event.ActiveSonarProjectBranchChanged;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.vcs.ActiveSonarProjectBranchRepository;
 
+@Named
+@Singleton
 public class SonarProjectBranchServiceImpl implements SonarProjectBranchService {
   private final ActiveSonarProjectBranchRepository activeSonarProjectBranchRepository;
   private final ConfigurationRepository configurationRepository;

@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.hotspot;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.ChangeHotspotStatusParams;
@@ -48,6 +50,8 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
 import static org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi.TRACKING_COMPATIBLE_MIN_SQ_VERSION;
 
+@Named
+@Singleton
 public class HotspotServiceImpl implements HotspotService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();

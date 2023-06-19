@@ -52,7 +52,7 @@ import static org.awaitility.Awaitility.await;
 class BindingSuggestionsMediumTests {
 
   @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester();
+  SonarLintLogTester logTester = new SonarLintLogTester(true);
 
   public static final String MYSONAR = "mysonar";
   public static final String CONFIG_SCOPE_ID = "myProject1";
