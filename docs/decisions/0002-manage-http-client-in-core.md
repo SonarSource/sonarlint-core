@@ -2,7 +2,7 @@
 
 ## Why
 
-At the moment, the core declare a Java interface for HttpClient, that should be implemented by each client, and passed to several APIs. It is the responsibility of the client side to implement this interface, by choosing an HTTPClient implementation, and configuring it (SSL, proxy, timeouts, credentials, ...).
+At the moment, the core declares a Java interface for HttpClient, that should be implemented by each client, and passed to several APIs. It is the responsibility of the client side to implement this interface, by choosing an HTTPClient implementation, and configuring it (SSL, proxy, timeouts, credentials, ...).
 The idea is to move the management of this HTTPClient to the core. 
 
 ### Decision Drivers
