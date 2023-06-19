@@ -35,13 +35,17 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.annotation.PreDestroy;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.binding.BindingService;
 import org.sonarsource.sonarlint.core.clientapi.backend.binding.GetBindingSuggestionParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingSuggestionDto;
-import org.sonarsource.sonarlint.core.clientapi.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.GetBindingSuggestionsResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
@@ -58,6 +62,8 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singlePlural;
 
+@Named
+@Singleton
 public class BindingSuggestionProviderImpl implements BindingService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -69,10 +75,16 @@ public class BindingSuggestionProviderImpl implements BindingService {
   private final ExecutorService executorService;
   private final AtomicBoolean enabled = new AtomicBoolean(true);
 
+  @Inject
   public BindingSuggestionProviderImpl(ConfigurationRepository configRepository, ConnectionConfigurationRepository connectionRepository, SonarLintClient client,
     BindingClueProvider bindingClueProvider, SonarProjectsCache sonarProjectsCache) {
-    this(configRepository, connectionRepository, client, bindingClueProvider, sonarProjectsCache, new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
-      new LinkedBlockingQueue<>(), r -> new Thread(r, "Binding Suggestion Provider")));
+    this.configRepository = configRepository;
+    this.connectionRepository = connectionRepository;
+    this.client = client;
+    this.bindingClueProvider = bindingClueProvider;
+    this.sonarProjectsCache = sonarProjectsCache;
+    this.executorService = new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
+      new LinkedBlockingQueue<>(), r -> new Thread(r, "Binding Suggestion Provider"));
   }
 
   BindingSuggestionProviderImpl(ConfigurationRepository configRepository, ConnectionConfigurationRepository connectionRepository, SonarLintClient client,
@@ -166,8 +178,7 @@ public class BindingSuggestionProviderImpl implements BindingService {
     try {
       for (var configScopeId : eligibleConfigScopesForBindingSuggestion) {
         var scopeSuggestions = suggestBindingForEligibleScope(configScopeId, candidateConnectionIds);
-        LOG.debug("Found {} {} for configuration scope '{}'", scopeSuggestions.size(), singlePlural(scopeSuggestions.size(), "suggestion"
-          , "suggestions"), configScopeId);
+        LOG.debug("Found {} {} for configuration scope '{}'", scopeSuggestions.size(), singlePlural(scopeSuggestions.size(), "suggestion", "suggestions"), configScopeId);
         suggestions.put(configScopeId, scopeSuggestions);
       }
     } catch (InterruptedException e) {
@@ -257,8 +268,11 @@ public class BindingSuggestionProviderImpl implements BindingService {
       .orElse(false);
   }
 
+  @PreDestroy
   public void shutdown() {
-    MoreExecutors.shutdownAndAwaitTermination(executorService, 1, TimeUnit.SECONDS);
+    if (!MoreExecutors.shutdownAndAwaitTermination(executorService, 1, TimeUnit.SECONDS)) {
+      LOG.warn("Unable to stop binding suggestions executor service in a timely manner");
+    }
   }
 
   public void disable() {

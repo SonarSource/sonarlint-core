@@ -20,12 +20,17 @@
 package org.sonarsource.sonarlint.core.rules;
 
 import java.util.List;
+import javax.inject.Named;
+import javax.inject.Singleton;
+import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsServiceImpl;
 import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 
+@Named
+@Singleton
 public class RulesExtractionHelper {
 
   private final SonarLintLogger logger = SonarLintLogger.get();
@@ -35,10 +40,10 @@ public class RulesExtractionHelper {
   private final RulesDefinitionExtractor ruleExtractor = new RulesDefinitionExtractor();
   private final boolean enableSecurityHotspots;
 
-  public RulesExtractionHelper(PluginsServiceImpl pluginsService, LanguageSupportRepository languageSupportRepository, boolean enableSecurityHotspots) {
+  public RulesExtractionHelper(PluginsServiceImpl pluginsService, LanguageSupportRepository languageSupportRepository, InitializeParams params) {
     this.pluginsService = pluginsService;
     this.languageSupportRepository = languageSupportRepository;
-    this.enableSecurityHotspots = enableSecurityHotspots;
+    this.enableSecurityHotspots = params.isEnableSecurityHotspots();
   }
 
   public List<SonarLintRuleDefinition> extractEmbeddedRules() {

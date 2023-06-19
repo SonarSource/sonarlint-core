@@ -26,17 +26,24 @@ import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.clientapi.backend.authentication.AuthenticationHelperService;
+import org.sonarsource.sonarlint.core.clientapi.backend.binding.BindingService;
 import org.sonarsource.sonarlint.core.clientapi.backend.branch.SonarProjectBranchService;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationService;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.ConnectionService;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueService;
-import org.sonarsource.sonarlint.core.rules.RulesServiceImpl;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.RulesService;
+import org.sonarsource.sonarlint.core.clientapi.backend.telemetry.TelemetryService;
+import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
+import org.sonarsource.sonarlint.core.spring.SonarLintSpringAppConfig;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 public class SonarLintBackendImpl implements SonarLintBackend {
   private final SonarLintClient client;
+  private final AtomicBoolean initializeCalled = new AtomicBoolean(false);
   private final AtomicBoolean initialized = new AtomicBoolean(false);
-  private InitializedSonarLintBackend sonarLintBackend;
+  private final AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
 
   public SonarLintBackendImpl(SonarLintClient client) {
     this.client = client;
@@ -45,79 +52,83 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   @Override
   public CompletableFuture<Void> initialize(InitializeParams params) {
     return CompletableFuture.runAsync(() -> {
-      if (initialized.compareAndSet(false, true)) {
-        sonarLintBackend = new InitializedSonarLintBackend(client, params);
+      if (initializeCalled.compareAndSet(false, true) && !initialized.get()) {
+        applicationContext.register(SonarLintSpringAppConfig.class);
+        applicationContext.registerBean("sonarlintClient", SonarLintClient.class, () -> client);
+        applicationContext.registerBean("initializeParams", InitializeParams.class, () -> params);
+        applicationContext.refresh();
+        initialized.set(true);
       } else {
         throw new UnsupportedOperationException("Already initialized");
       }
     });
   }
 
-  private InitializedSonarLintBackend getInitializedBackend() {
+  private ConfigurableApplicationContext getInitializedApplicationContext() {
     if (!initialized.get()) {
       throw new IllegalStateException("Backend is not initialized");
     }
-    return sonarLintBackend;
+    return applicationContext;
   }
 
   @Override
-  public ConnectionServiceImpl getConnectionService() {
-    return getInitializedBackend().getConnectionService();
+  public ConnectionService getConnectionService() {
+    return getInitializedApplicationContext().getBean(ConnectionService.class);
   }
 
   @Override
   public AuthenticationHelperService getAuthenticationHelperService() {
-    return getInitializedBackend().getAuthenticationHelperService();
+    return getInitializedApplicationContext().getBean(AuthenticationHelperService.class);
   }
 
   @Override
   public ConfigurationService getConfigurationService() {
-    return getInitializedBackend().getConfigurationService();
+    return getInitializedApplicationContext().getBean(ConfigurationService.class);
   }
 
   @Override
   public HotspotService getHotspotService() {
-    return getInitializedBackend().getHotspotService();
+    return getInitializedApplicationContext().getBean(HotspotService.class);
   }
 
   @Override
-  public TelemetryServiceImpl getTelemetryService() {
-    return getInitializedBackend().getTelemetryService();
+  public TelemetryService getTelemetryService() {
+    return getInitializedApplicationContext().getBean(TelemetryService.class);
   }
 
   @Override
   public AnalysisService getAnalysisService() {
-    return getInitializedBackend().getAnalysisService();
+    return getInitializedApplicationContext().getBean(AnalysisService.class);
   }
 
   @Override
-  public RulesServiceImpl getRulesService() {
-    return getInitializedBackend().getRulesService();
+  public RulesService getRulesService() {
+    return getInitializedApplicationContext().getBean(RulesService.class);
   }
 
   @Override
-  public BindingSuggestionProviderImpl getBindingService() {
-    return getInitializedBackend().getBindingService();
+  public BindingService getBindingService() {
+    return getInitializedApplicationContext().getBean(BindingService.class);
   }
 
   public SonarProjectBranchService getSonarProjectBranchService() {
-    return getInitializedBackend().getSonarProjectBranchService();
+    return getInitializedApplicationContext().getBean(SonarProjectBranchService.class);
   }
 
   @Override
   public IssueService getIssueService() {
-    return getInitializedBackend().getIssueService();
+    return getInitializedApplicationContext().getBean(IssueService.class);
   }
 
   @Override
   public CompletableFuture<Void> shutdown() {
-    if (!initialized.get()) {
-      return CompletableFuture.completedFuture(null);
-    }
-    return getInitializedBackend().shutdown();
+    return CompletableFuture.runAsync(() -> {
+      initialized.set(false);
+      applicationContext.close();
+    });
   }
 
   public int getEmbeddedServerPort() {
-    return getInitializedBackend().getEmbeddedServerPort();
+    return getInitializedApplicationContext().getBean(EmbeddedServer.class).getPort();
   }
 }

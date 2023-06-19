@@ -28,9 +28,14 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchServiceImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
+import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.ActiveSonarProjectBranchChanged;
@@ -47,6 +52,8 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 
+@Named
+@Singleton
 public class SynchronizationServiceImpl {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
@@ -58,10 +65,11 @@ public class SynchronizationServiceImpl {
   private final TaskManager taskManager;
   private final StorageService storageService;
   private final Set<String> connectedModeEmbeddedPluginKeys;
+  private final InitializeParams params;
   private ScheduledExecutorService scheduledSynchronizer;
 
   public SynchronizationServiceImpl(SonarLintClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
-    SonarProjectBranchServiceImpl branchService, ServerApiProvider serverApiProvider, StorageService storageService, Set<String> connectedModeEmbeddedPluginKeys) {
+    SonarProjectBranchServiceImpl branchService, ServerApiProvider serverApiProvider, StorageService storageService, InitializeParams params) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
@@ -69,10 +77,15 @@ public class SynchronizationServiceImpl {
     this.serverApiProvider = serverApiProvider;
     this.taskManager = new TaskManager(client);
     this.storageService = storageService;
-    this.connectedModeEmbeddedPluginKeys = connectedModeEmbeddedPluginKeys;
+    this.connectedModeEmbeddedPluginKeys = params.getConnectedModeEmbeddedPluginPathsByKey().keySet();
+    this.params = params;
   }
 
+  @PostConstruct
   public void startScheduledSync() {
+    if (!params.shouldSynchronizeProjects()) {
+      return;
+    }
     scheduledSynchronizer = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SonarLint Local Storage Synchronizer"));
     scheduledSynchronizer.scheduleAtFixedRate(this::safeAutoSync, 1L, 3600, TimeUnit.SECONDS);
   }
@@ -152,6 +165,7 @@ public class SynchronizationServiceImpl {
       List.of(new BoundConfigurationScope(configurationScopeId, binding.getSonarProjectKey())))));
   }
 
+  @PreDestroy
   public void shutdown() {
     if (scheduledSynchronizer != null && !MoreExecutors.shutdownAndAwaitTermination(scheduledSynchronizer, 5, TimeUnit.SECONDS)) {
       LOG.warn("Unable to stop synchronizer executor service in a timely manner");

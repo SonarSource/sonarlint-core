@@ -24,8 +24,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.CheckForNull;
+import javax.annotation.PreDestroy;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
-
+@Named
+@Singleton
 public class PluginsRepository {
   private LoadedPlugins loadedEmbeddedPlugins;
   private final Map<String, LoadedPlugins> loadedPluginsByConnectionId = new HashMap<>();
@@ -34,6 +38,7 @@ public class PluginsRepository {
     this.loadedEmbeddedPlugins = loadedEmbeddedPlugins;
   }
 
+  @CheckForNull
   public LoadedPlugins getLoadedEmbeddedPlugins() {
     return loadedEmbeddedPlugins;
   }
@@ -47,12 +52,13 @@ public class PluginsRepository {
     loadedPluginsByConnectionId.put(connectionId, loadedPlugins);
   }
 
-  public List<LoadedPlugins> getAllLoadedPlugins() {
-    var loadedPlugins = new ArrayList<LoadedPlugins>();
+  @PreDestroy
+  public void unloadAllPlugins() {
     if (loadedEmbeddedPlugins != null) {
-      loadedPlugins.add(loadedEmbeddedPlugins);
+      loadedEmbeddedPlugins.unload();
+      loadedEmbeddedPlugins = null;
     }
-    loadedPlugins.addAll(loadedPluginsByConnectionId.values());
-    return loadedPlugins;
+    loadedPluginsByConnectionId.values().forEach(LoadedPlugins::unload);
+    loadedPluginsByConnectionId.clear();
   }
 }

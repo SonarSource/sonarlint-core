@@ -17,29 +17,29 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.repository.vcs;
+package org.sonarsource.sonarlint.core.spring;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import javax.inject.Named;
-import javax.inject.Singleton;
+import com.google.common.eventbus.EventBus;
+import javax.inject.Inject;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.stereotype.Component;
 
-@Named
-@Singleton
-public class ActiveSonarProjectBranchRepository {
-  private final Map<String, String> branchNameByConfigScopeId = new ConcurrentHashMap<>();
+@Component
+public class EventBusListenersRegistererBeanPostProcessor implements BeanPostProcessor {
 
+  @Inject
+  private EventBus bus;
 
-  public String setActiveBranchName(String configScopeId, String newBranchName) {
-    return branchNameByConfigScopeId.put(configScopeId, newBranchName);
+  @Override
+  public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+    return bean;
   }
 
-  public Optional<String> getActiveSonarProjectBranch(String configScopeId) {
-    return Optional.ofNullable(branchNameByConfigScopeId.get(configScopeId));
-  }
+  @Override
+  public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+    bus.register(bean);
 
-  public void clearActiveProjectBranch(String configScopeId) {
-    branchNameByConfigScopeId.remove(configScopeId);
+    return bean;
   }
 }

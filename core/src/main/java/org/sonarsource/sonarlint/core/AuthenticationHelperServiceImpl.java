@@ -20,7 +20,10 @@
 package org.sonarsource.sonarlint.core;
 
 import java.util.concurrent.CompletableFuture;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
+import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.authentication.AuthenticationHelperService;
 import org.sonarsource.sonarlint.core.clientapi.backend.authentication.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.authentication.HelpGenerateUserTokenResponse;
@@ -34,6 +37,8 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 
+@Named
+@Singleton
 public class AuthenticationHelperServiceImpl implements AuthenticationHelperService {
   private static final Version MIN_SQ_VERSION_SUPPORTING_AUTOMATIC_TOKEN_GENERATION = Version.create("9.7");
 
@@ -43,11 +48,11 @@ public class AuthenticationHelperServiceImpl implements AuthenticationHelperServ
   private final String clientName;
 
   public AuthenticationHelperServiceImpl(SonarLintClient client, EmbeddedServer embeddedServer, AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository,
-    String clientName) {
+    InitializeParams params) {
     this.client = client;
     this.embeddedServer = embeddedServer;
     this.awaitingUserTokenFutureRepository = awaitingUserTokenFutureRepository;
-    this.clientName = clientName;
+    this.clientName = params.getHostInfo().getName();
   }
 
   @Override

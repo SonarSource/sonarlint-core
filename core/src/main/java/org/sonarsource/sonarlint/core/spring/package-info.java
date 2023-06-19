@@ -17,29 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.repository.vcs;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.spring;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import javax.inject.Named;
-import javax.inject.Singleton;
-
-@Named
-@Singleton
-public class ActiveSonarProjectBranchRepository {
-  private final Map<String, String> branchNameByConfigScopeId = new ConcurrentHashMap<>();
-
-
-  public String setActiveBranchName(String configScopeId, String newBranchName) {
-    return branchNameByConfigScopeId.put(configScopeId, newBranchName);
-  }
-
-  public Optional<String> getActiveSonarProjectBranch(String configScopeId) {
-    return Optional.ofNullable(branchNameByConfigScopeId.get(configScopeId));
-  }
-
-  public void clearActiveProjectBranch(String configScopeId) {
-    branchNameByConfigScopeId.remove(configScopeId);
-  }
-}
+import javax.annotation.ParametersAreNonnullByDefault;

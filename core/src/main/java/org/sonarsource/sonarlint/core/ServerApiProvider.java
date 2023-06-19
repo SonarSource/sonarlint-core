@@ -20,11 +20,15 @@
 package org.sonarsource.sonarlint.core;
 
 import java.util.Optional;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 
+@Named
+@Singleton
 public class ServerApiProvider {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();

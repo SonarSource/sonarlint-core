@@ -24,6 +24,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.ConnectionService;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
@@ -39,6 +43,8 @@ import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionC
 
 import static java.util.stream.Collectors.toMap;
 
+@Named
+@Singleton
 public class ConnectionServiceImpl implements ConnectionService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -46,7 +52,12 @@ public class ConnectionServiceImpl implements ConnectionService {
   private final EventBus clientEventBus;
   private final ConnectionConfigurationRepository repository;
 
-  public ConnectionServiceImpl(EventBus clientEventBus, ConnectionConfigurationRepository repository,
+  @Inject
+  public ConnectionServiceImpl(EventBus clientEventBus, ConnectionConfigurationRepository repository, InitializeParams params) {
+    this(clientEventBus, repository, params.getSonarQubeConnections(), params.getSonarCloudConnections());
+  }
+
+  ConnectionServiceImpl(EventBus clientEventBus, ConnectionConfigurationRepository repository,
     List<SonarQubeConnectionConfigurationDto> initSonarQubeConnections, List<SonarCloudConnectionConfigurationDto> initSonarCloudConnections) {
     this.clientEventBus = clientEventBus;
     this.repository = repository;

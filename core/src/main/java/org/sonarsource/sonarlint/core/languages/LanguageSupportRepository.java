@@ -22,17 +22,22 @@ package org.sonarsource.sonarlint.core.languages;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Set;
+import javax.inject.Named;
+import javax.inject.Singleton;
+import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.Language;
 
+@Named
+@Singleton
 public class LanguageSupportRepository {
   private static final EnumSet<Language> LANGUAGES_RAISING_TAINT_VULNERABILITIES = EnumSet.of(Language.CS, Language.JAVA, Language.JS, Language.TS, Language.PHP, Language.PYTHON);
   private final EnumSet<Language> enabledLanguagesInStandaloneMode;
   private final EnumSet<Language> enabledLanguagesInConnectedMode;
 
-  public LanguageSupportRepository(Set<Language> enabledLanguagesInStandaloneMode, Set<Language> extraEnabledLanguagesInConnectedMode) {
-    this.enabledLanguagesInStandaloneMode = toEnumSet(enabledLanguagesInStandaloneMode, Language.class);
+  public LanguageSupportRepository(InitializeParams params) {
+    this.enabledLanguagesInStandaloneMode = toEnumSet(params.getEnabledLanguagesInStandaloneMode(), Language.class);
     this.enabledLanguagesInConnectedMode = EnumSet.copyOf(this.enabledLanguagesInStandaloneMode);
-    this.enabledLanguagesInConnectedMode.addAll(extraEnabledLanguagesInConnectedMode);
+    this.enabledLanguagesInConnectedMode.addAll(params.getExtraEnabledLanguagesInConnectedMode());
   }
 
   private static <T extends Enum<T>> EnumSet<T> toEnumSet(Collection<T> collection, Class<T> clazz) {
