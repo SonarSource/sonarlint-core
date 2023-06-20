@@ -39,7 +39,7 @@ import static org.awaitility.Awaitility.await;
 class ConnectionSyncMediumTests {
   private SonarLintBackend backend;
   @RegisterExtension
-  public SonarLintLogTester logTester = new SonarLintLogTester();
+  public SonarLintLogTester logTester = new SonarLintLogTester(true);
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
@@ -56,7 +56,9 @@ class ConnectionSyncMediumTests {
       .withEnabledLanguage(Language.JAVA)
       .build();
 
-    assertThat(logTester.logs()).isEmpty();
+    await().untilAsserted(() -> assertThat(logTester.logs()).contains("Binding suggestion computation queued for config scopes 'scopeId'..."));
+
+    assertThat(logTester.logs()).doesNotContain("Extracting rules metadata for connection 'connectionId'");
 
     // Trigger lazy initialization of the rules metadata
     getEffectiveRuleDetails("scopeId", "java:S106");
