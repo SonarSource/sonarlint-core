@@ -22,10 +22,10 @@ package org.sonarsource.sonarlint.core.http;
 import java.net.ProxySelector;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.cert.X509Certificate;
-import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import nl.altindag.ssl.SSLFactory;
+import nl.altindag.ssl.model.TrustManagerParameters;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
 import org.apache.hc.client5.http.config.TlsConfig;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
@@ -52,13 +52,13 @@ public class HttpClientProvider {
   }
 
   public HttpClientProvider(String userAgent, @Nullable Path sonarlintUserHome,
-    @Nullable BiPredicate<X509Certificate[], String> certificateAndAuthTypeTrustPredicate, ProxySelector proxySelector, CredentialsProvider proxyCredentialsProvider) {
+    @Nullable Predicate<TrustManagerParameters> trustManagerParametersPredicate, ProxySelector proxySelector, CredentialsProvider proxyCredentialsProvider) {
     var sslFactoryBuilder = SSLFactory.builder()
       .withDefaultTrustMaterial()
       .withSystemTrustMaterial();
-    if (certificateAndAuthTypeTrustPredicate != null) {
+    if (trustManagerParametersPredicate != null) {
       var truststorePath = System.getProperty("sonarlint.ssl.trustStorePath", requireNonNull(sonarlintUserHome).resolve("ssl/truststore.p12").toString());
-      sslFactoryBuilder.withInflatableTrustMaterial(Paths.get(truststorePath), TRUSTSTORE_PWD, "PKCS12", certificateAndAuthTypeTrustPredicate);
+      sslFactoryBuilder.withInflatableTrustMaterial(Paths.get(truststorePath), TRUSTSTORE_PWD, "PKCS12", trustManagerParametersPredicate);
     }
     var asyncConnectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
       .setTlsStrategy(new DefaultClientTlsStrategy(sslFactoryBuilder.build().getSslContext()))

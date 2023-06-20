@@ -19,17 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.http;
 
-import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
-import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import nl.altindag.ssl.model.TrustManagerParameters;
 import nl.altindag.ssl.util.CertificateUtils;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.client.http.CheckServerTrustedParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.X509CertificateDto;
 
-public class AskClientCertificatePredicate implements BiPredicate<X509Certificate[], String> {
+public class AskClientCertificatePredicate implements Predicate<TrustManagerParameters> {
 
   private final SonarLintClient client;
 
@@ -38,13 +38,13 @@ public class AskClientCertificatePredicate implements BiPredicate<X509Certificat
   }
 
   @Override
-  public boolean test(X509Certificate[] chain, String authType) {
+  public boolean test(TrustManagerParameters trustManagerParameters) {
     try {
       return client
         .checkServerTrusted(new CheckServerTrustedParams(
-          Arrays.stream(chain)
+          Arrays.stream(trustManagerParameters.getChain())
             .map(c -> new X509CertificateDto(CertificateUtils.convertToPem(c))).collect(Collectors.toList()),
-          authType))
+          trustManagerParameters.getAuthType()))
         .get()
         .isTrusted();
     } catch (InterruptedException ex) {
