@@ -8,7 +8,7 @@ The 2 main entry points are StandaloneSonarLintEngine and ConnectedSonarLintEngi
 There are also a lot of small utility classes that are used by IDEs without using the "engines".
 
 The problems:
-1. API STABILITY: different sub-teams are consumer of SonarLint Core, having a very unstable API is not comfortable
+1. API STABILITY: different squads are consumer of SonarLint Core, having a very unstable API is not comfortable
 2. DUPLICATION: latest added features require an overall view of the "engines", so we had no choice but to put the logic in each IDEs. Exemple, when an open hotspot request arrives, we need to find the connection it refers to. This logic can't happen in the core today.
   => lot of duplicated logic:
     * open hotspots
@@ -25,7 +25,7 @@ hiring would be more attractive if a big part of the codebase was in modern Java
 we could kill IDE performances, and this is hard for us to measure
 4. TESTABILITY: SonarLint Core has always been intensively tested. Headless testing is much cheaper than IDE UI tests. On the IDE side, it was accepted to have low automated coverage test, relying on manual testing, dogfooding and community to find UI bugs. Now that we put more and more logic in IDEs, where the coverage is low (or absent), there is a higher risk of regressions.
 5. CONSISTENCY: We agreed a long time ago to not focus too much on having the same experience in all IDEs. It was considered better to have a "native" experience. Still we are now in a situation where the UX is different between IDEs, with no good reasons.
-6. OWNERSHIP of the project. In a situation where there will be one bubble per IDE, "consuming" SLCORE, who would be responsible to maintain it (checking failing ITs, updating dependencies, …) and who is allowed to introduce functional changes? Today it is not clear.
+6. OWNERSHIP of the project. In a situation where there will be one squad per IDE, "consuming" SLCORE, who would be responsible to maintain it (checking failing ITs, updating dependencies, …) and who is allowed to introduce functional changes? Today it is not clear.
 
 # Why Not?
 
@@ -34,7 +34,7 @@ Possible reasons for not doing anything (or even putting more in IDEs):
 1. RIGIDITY: we will force the same behavior in all IDEs. In the past, it has been considered as bad. SonarLint should integrate "natively" is IDEs, which means following IDE "patterns".
 the configuration and UI will stay under control of the IDE side
 the part we should put in the core should be the "original" SonarLint experience (analysis, issue tracking, connected mode) so it should not suffer from comparison with existing IDE features
-2. SHARED RESPONSIBILITY: having a shared component between multiple teams or bubbles is difficult in terms of organization.
+2. SHARED RESPONSIBILITY: having a shared component between multiple teams or squads is difficult in terms of organization.
 I guess sonar-security or sonar-analyzer-common libraries are in the same situation, we could learn from the LT experience.
 3. PERFORMANCE: having SLCORE embedded into SLE/SLI allows to share Java objects/integrate into IDE VFS. By running out of process, we will probably have to duplicate objects in memory. The RPC communication will also be slower than "in-JVM" communication.
 we should design the API to limit number of RPC calls
@@ -48,7 +48,7 @@ we should pay attention to memory consumption, but it will be easy to monitor si
 3. RUNTIME: design SLCORE as a standalone process that communicates with IDE using RPC (like SLLS) . The API should support that (no more full Java objects leaking between IDE and Core, avoid too granular/frequent calls). IDE specific code can stay longer with old runtime compatibility.
 4. TESTABILITY: we should be able to write a lot of new tests, concerning advanced interactions between components (connected mode storage, VCS, …). For example: user switches its project branch, that should recompute the matching SQ branch, then sync issues, and report to IDE
 5. CONSISTENCY: find the right boundaries between IDE specific behavior and common part. Don't allow too much "customization" of the backend to avoid testability hell and no consistency. Document intended IDE specific behavior.
-6. OWNERSHIP: if we take inspiration from the SonarQube team organization, we don't think having a dedicated isolated bubble owning SLCORE is a good solution. We think most of the functional changes should be driven by IDEs. We will form squads composed of IDE specialists (= frontend) + SLCORE specialists (= backend).
+6. OWNERSHIP: if we take inspiration from the SonarQube team organization, we don't think having a dedicated isolated squad owning SLCORE is a good solution. We think most of the functional changes should be driven by IDEs. We will form squads composed of IDE specialists (= frontend) + SLCORE specialists (= backend).
 
 ## What should stay in each IDE?
 IDEs should keep control on the configuration:
