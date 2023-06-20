@@ -25,7 +25,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
@@ -63,11 +62,7 @@ class ApacheHttpClientAdapter implements HttpClient {
 
   @Override
   public Response post(String url, String contentType, String bodyContent) {
-    try {
-      return postAsync(url, contentType, bodyContent).get();
-    } catch (InterruptedException | ExecutionException e) {
-      throw new RuntimeException(e);
-    }
+    return waitFor(postAsync(url, contentType, bodyContent));
   }
 
   @Override
@@ -80,11 +75,7 @@ class ApacheHttpClientAdapter implements HttpClient {
 
   @Override
   public Response get(String url) {
-    try {
-      return getAsync(url).get();
-    } catch (InterruptedException | ExecutionException e) {
-      throw new RuntimeException(e);
-    }
+    return waitFor(getAsync(url));
   }
 
   @Override
@@ -98,11 +89,11 @@ class ApacheHttpClientAdapter implements HttpClient {
       .delete(url)
       .setBody(bodyContent, ContentType.parse(contentType))
       .build();
-    try {
-      return executeAsync(httpRequest).get();
-    } catch (InterruptedException | ExecutionException e) {
-      throw new RuntimeException(e);
-    }
+    return waitFor(executeAsync(httpRequest));
+  }
+
+  private static Response waitFor(CompletableFuture<Response> f) {
+    return f.join();
   }
 
   @Override
