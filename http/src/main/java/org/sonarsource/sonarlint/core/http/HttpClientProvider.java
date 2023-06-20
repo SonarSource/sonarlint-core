@@ -28,7 +28,6 @@ import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import nl.altindag.ssl.SSLFactory;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
-import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.config.TlsConfig;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
@@ -38,12 +37,11 @@ import org.apache.hc.client5.http.impl.routing.SystemDefaultRoutePlanner;
 import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
 import org.apache.hc.core5.http2.HttpVersionPolicy;
 import org.apache.hc.core5.io.CloseMode;
-import org.apache.hc.core5.util.Timeout;
+
+import static java.util.Objects.requireNonNull;
 
 public class HttpClientProvider {
 
-  private static final Timeout CONNECTION_TIMEOUT = Timeout.ofSeconds(30);
-  private static final Timeout RESPONSE_TIMEOUT = Timeout.ofMinutes(10);
   private static final char[] TRUSTSTORE_PWD = System.getProperty("sonarlint.ssl.trustStorePassword", "sonarlint").toCharArray();
   private final CloseableHttpAsyncClient sharedClient;
 
@@ -54,13 +52,13 @@ public class HttpClientProvider {
     return new HttpClientProvider("SonarLint tests", null, null, ProxySelector.getDefault(), new BasicCredentialsProvider());
   }
 
-  public HttpClientProvider(String userAgent, Path sonarlintUserHome,
+  public HttpClientProvider(String userAgent, @Nullable Path sonarlintUserHome,
     @Nullable BiPredicate<X509Certificate[], String> certificateAndAuthTypeTrustPredicate, ProxySelector proxySelector, CredentialsProvider proxyCredentialsProvider) {
     var sslFactoryBuilder = SSLFactory.builder()
       .withDefaultTrustMaterial()
       .withSystemTrustMaterial();
     if (certificateAndAuthTypeTrustPredicate != null) {
-      var truststorePath = System.getProperty("sonarlint.ssl.trustStorePath", sonarlintUserHome.resolve("ssl/truststore.p12").toString());
+      var truststorePath = System.getProperty("sonarlint.ssl.trustStorePath", requireNonNull(sonarlintUserHome).resolve("ssl/truststore.p12").toString());
       sslFactoryBuilder.withInflatableTrustMaterial(Paths.get(truststorePath), TRUSTSTORE_PWD, "PKCS12", certificateAndAuthTypeTrustPredicate);
     }
     var asyncConnectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
@@ -77,11 +75,6 @@ public class HttpClientProvider {
       // proxy settings
       .setRoutePlanner(new SystemDefaultRoutePlanner(proxySelector))
       .setDefaultCredentialsProvider(proxyCredentialsProvider)
-      .setDefaultRequestConfig(
-        RequestConfig.copy(RequestConfig.DEFAULT)
-          .setConnectionRequestTimeout(CONNECTION_TIMEOUT)
-          .setResponseTimeout(RESPONSE_TIMEOUT)
-          .build())
       .build();
 
     sharedClient.start();

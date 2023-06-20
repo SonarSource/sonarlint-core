@@ -54,8 +54,8 @@ class ApacheHttpClientAdapter implements HttpClient {
   private final String password;
   private boolean connected = false;
 
-  ApacheHttpClientAdapter(CloseableHttpAsyncClient javaClient, @Nullable String usernameOrToken, @Nullable String password) {
-    this.apacheClient = javaClient;
+  ApacheHttpClientAdapter(CloseableHttpAsyncClient apacheClient, @Nullable String usernameOrToken, @Nullable String password) {
+    this.apacheClient = apacheClient;
     this.usernameOrToken = usernameOrToken;
     this.password = password;
   }
@@ -184,14 +184,13 @@ class ApacheHttpClientAdapter implements HttpClient {
       this.wrapped = apacheClient.execute(httpRequest, new FutureCallback<>() {
         @Override
         public void completed(SimpleHttpResponse result) {
-          String uri;
           // getRequestUri may be relative, so we prefer getUri
           try {
-            uri = httpRequest.getUri().toString();
+            var uri = httpRequest.getUri().toString();
+            CompletableFutureWrappingFuture.this.completeAsync(() -> new ApacheHttpResponse(uri, result));
           } catch (URISyntaxException e) {
-            uri = httpRequest.getRequestUri();
+            CompletableFutureWrappingFuture.this.completeAsync(() -> new ApacheHttpResponse(httpRequest.getRequestUri(), result));
           }
-          CompletableFutureWrappingFuture.this.complete(new ApacheHttpResponse(uri, result));
         }
 
         @Override
