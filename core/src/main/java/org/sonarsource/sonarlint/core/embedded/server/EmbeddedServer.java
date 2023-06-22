@@ -41,6 +41,7 @@ import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.HostInfoDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
 @Named
@@ -57,7 +58,7 @@ public class EmbeddedServer {
   private int port;
 
   private final SonarLintClient client;
-  private final ConnectionServiceImpl connectionService;
+  private final ConnectionConfigurationRepository repository;
   private final AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository;
   private final ConfigurationServiceImpl configurationService;
   private final BindingSuggestionProviderImpl bindingSuggestionProvider;
@@ -66,11 +67,11 @@ public class EmbeddedServer {
   private final HostInfoDto clientInfo;
   private final boolean enabled;
 
-  public EmbeddedServer(SonarLintClient client, ConnectionServiceImpl connectionService, AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository,
+  public EmbeddedServer(SonarLintClient client, ConnectionConfigurationRepository repository, AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository,
     ConfigurationServiceImpl configurationService, BindingSuggestionProviderImpl bindingSuggestionProvider, ServerApiProvider serverApiProvider,
     TelemetryServiceImpl telemetryService, InitializeParams params) {
     this.client = client;
-    this.connectionService = connectionService;
+    this.repository = repository;
     this.awaitingUserTokenFutureRepository = awaitingUserTokenFutureRepository;
     this.configurationService = configurationService;
     this.bindingSuggestionProvider = bindingSuggestionProvider;
@@ -103,10 +104,10 @@ public class EmbeddedServer {
           .setListenerPort(triedPort)
           .setSocketConfig(socketConfig)
           .addFilterFirst("CORS", new CorsFilter())
-          .register("/sonarlint/api/status", new StatusRequestHandler(client, connectionService, clientInfo))
+          .register("/sonarlint/api/status", new StatusRequestHandler(client, repository, clientInfo))
           .register("/sonarlint/api/token", new GeneratedUserTokenHandler(awaitingUserTokenFutureRepository))
           .register("/sonarlint/api/hotspots/show",
-            new ShowHotspotRequestHandler(client, connectionService, configurationService, bindingSuggestionProvider, serverApiProvider, telemetryService))
+            new ShowHotspotRequestHandler(client, repository, configurationService, bindingSuggestionProvider, serverApiProvider, telemetryService))
           .create();
         startedServer.start();
         port = triedPort;

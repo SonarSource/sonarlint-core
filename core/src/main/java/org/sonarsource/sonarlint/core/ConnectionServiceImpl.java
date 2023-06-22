@@ -33,6 +33,8 @@ import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectionValidator;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.ConnectionService;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.auth.HelpGenerateUserTokenParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.auth.HelpGenerateUserTokenResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.check.CheckSmartNotificationsSupportedParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.check.CheckSmartNotificationsSupportedResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.common.TransientSonarCloudConnectionDto;
@@ -66,19 +68,21 @@ public class ConnectionServiceImpl implements ConnectionService {
   private final EventBus clientEventBus;
   private final ConnectionConfigurationRepository repository;
   private final HttpClientProvider httpClientProvider;
+  private final TokenGeneratorHelper tokenGeneratorHelper;
 
   @Inject
   public ConnectionServiceImpl(EventBus clientEventBus, ConnectionConfigurationRepository repository, InitializeParams params,
-    HttpClientProvider httpClientProvider) {
-    this(clientEventBus, repository, params.getSonarQubeConnections(), params.getSonarCloudConnections(), httpClientProvider);
+    HttpClientProvider httpClientProvider, TokenGeneratorHelper tokenGeneratorHelper) {
+    this(clientEventBus, repository, params.getSonarQubeConnections(), params.getSonarCloudConnections(), httpClientProvider, tokenGeneratorHelper);
   }
 
   ConnectionServiceImpl(EventBus clientEventBus, ConnectionConfigurationRepository repository,
     List<SonarQubeConnectionConfigurationDto> initSonarQubeConnections, List<SonarCloudConnectionConfigurationDto> initSonarCloudConnections,
-    HttpClientProvider httpClientProvider) {
+    HttpClientProvider httpClientProvider, TokenGeneratorHelper tokenGeneratorHelper) {
     this.clientEventBus = clientEventBus;
     this.repository = repository;
     this.httpClientProvider = httpClientProvider;
+    this.tokenGeneratorHelper = tokenGeneratorHelper;
     initSonarQubeConnections.forEach(c -> repository.addOrReplace(adapt(c)));
     initSonarCloudConnections.forEach(c -> repository.addOrReplace(adapt(c)));
   }
@@ -172,11 +176,8 @@ public class ConnectionServiceImpl implements ConnectionService {
     return new ServerApiHelper(endpointParams, httpClient);
   }
 
-  public List<AbstractConnectionConfiguration> findByUrl(String serverUrl) {
-    return repository.findByUrl(serverUrl);
-  }
-
-  public boolean hasConnectionWithOrigin(String serverOrigin) {
-    return repository.hasConnectionWithOrigin(serverOrigin);
+  @Override
+  public CompletableFuture<HelpGenerateUserTokenResponse> helpGenerateUserToken(HelpGenerateUserTokenParams params) {
+    return tokenGeneratorHelper.helpGenerateUserToken(params);
   }
 }

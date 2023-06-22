@@ -17,17 +17,23 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.backend.authentication;
+package org.sonarsource.sonarlint.core.clientapi.backend.connection.auth;
 
-import java.util.concurrent.CompletableFuture;
-import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
-public interface AuthenticationHelperService {
-  /**
-   * @param params url of the server on which to create the token
-   * @return For servers that support automatic token generation, will return the token in the response. Else no token will be returned.
-   * If the local server is not started or the server URL can not be reached, the future will fail
-   */
-  @JsonRequest
-  CompletableFuture<HelpGenerateUserTokenResponse> helpGenerateUserToken(HelpGenerateUserTokenParams params);
+/**
+ * For older SQ servers or SC, automatic token generation is not supported. In this case a null token will be returned.
+ */
+public class HelpGenerateUserTokenResponse {
+  private final String token;
+
+  public HelpGenerateUserTokenResponse(@Nullable String token) {
+    this.token = token;
+  }
+
+  @CheckForNull
+  public String getToken() {
+    return token;
+  }
 }

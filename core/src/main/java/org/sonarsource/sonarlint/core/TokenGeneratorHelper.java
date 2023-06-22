@@ -24,9 +24,8 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.authentication.AuthenticationHelperService;
-import org.sonarsource.sonarlint.core.clientapi.backend.authentication.HelpGenerateUserTokenParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.authentication.HelpGenerateUserTokenResponse;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.auth.HelpGenerateUserTokenParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.auth.HelpGenerateUserTokenResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
@@ -40,7 +39,7 @@ import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 
 @Named
 @Singleton
-public class AuthenticationHelperServiceImpl implements AuthenticationHelperService {
+public class TokenGeneratorHelper {
   private static final Version MIN_SQ_VERSION_SUPPORTING_AUTOMATIC_TOKEN_GENERATION = Version.create("9.7");
 
   private final SonarLintClient client;
@@ -50,7 +49,7 @@ public class AuthenticationHelperServiceImpl implements AuthenticationHelperServ
   private final HttpClientProvider httpClientProvider;
   private final String clientName;
 
-  public AuthenticationHelperServiceImpl(SonarLintClient client, EmbeddedServer embeddedServer, AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository,
+  public TokenGeneratorHelper(SonarLintClient client, EmbeddedServer embeddedServer, AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository,
     InitializeParams params, HttpClientProvider httpClientProvider) {
     this.client = client;
     this.embeddedServer = embeddedServer;
@@ -59,7 +58,6 @@ public class AuthenticationHelperServiceImpl implements AuthenticationHelperServ
     this.httpClientProvider = httpClientProvider;
   }
 
-  @Override
   public CompletableFuture<HelpGenerateUserTokenResponse> helpGenerateUserToken(HelpGenerateUserTokenParams params) {
     var futureTokenResponse = new CompletableFuture<HelpGenerateUserTokenResponse>();
 

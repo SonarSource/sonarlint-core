@@ -24,7 +24,6 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonDelegate;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.analysis.AnalysisService;
-import org.sonarsource.sonarlint.core.clientapi.backend.authentication.AuthenticationHelperService;
 import org.sonarsource.sonarlint.core.clientapi.backend.binding.BindingService;
 import org.sonarsource.sonarlint.core.clientapi.backend.branch.SonarProjectBranchService;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationService;
@@ -45,9 +44,6 @@ public interface SonarLintBackend {
 
   @JsonDelegate
   ConnectionService getConnectionService();
-
-  @JsonDelegate
-  AuthenticationHelperService getAuthenticationHelperService();
 
   @JsonDelegate
   ConfigurationService getConfigurationService();
