@@ -63,16 +63,15 @@ build_task:
     ARTIFACTORY_DEPLOY_PASSWORD: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-qa-deployer access_token]
     SIGN_KEY: VAULT[development/kv/data/sign data.key]
     PGP_PASSPHRASE: VAULT[development/kv/data/sign data.passphrase]
-
   eks_container:
     <<: *CONTAINER_DEFINITION
+    memory: 1G
   maven_cache:
     folder: ${CIRRUS_WORKING_DIR}/.m2/repository
   build_script:
     - source cirrus-env BUILD
     - regular_mvn_build_deploy_analyze -Dmaven.test.skip=true -Dsonar.skip=true
   cleanup_before_cache_script: cleanup_maven_repository
-
 
 test_linux_task:
   # Run unit tests on Linux with Java 11 and SonarQube analysis on Next
@@ -102,6 +101,8 @@ test_windows_task:
   <<: *ONLY_IF
   ec2_instance:
     <<: *WINVM_DEFINITION
+  env:
+    MAVEN_OPTS: '-Xmx4G'
   maven_cache:
     folder: ${CIRRUS_WORKING_DIR}/.m2/repository
   script:
@@ -147,7 +148,7 @@ qa_task:
   env:
     ARTIFACTORY_API_KEY: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-private-reader access_token]
     GITHUB_TOKEN: VAULT[development/github/token/licenses-ro token]
-    MAVEN_OPTS: '-Xmx5632m'
+    MAVEN_OPTS: '-Xmx4G'
   matrix:
       -  env:
           SQ_VERSION: "SonarCloud"
@@ -178,11 +179,18 @@ qa_task:
   eks_container:
     <<: *CONTAINER_DEFINITION
     cpu: 4
-    memory: 6G
-  qa_script:
-    - source cirrus-env QA
-    - source set_maven_build_version $BUILD_NUMBER
-    - mvn -f its/pom.xml -Dsonar.runtimeVersion=${SQ_VERSION} ${CATEGORY} -B -e -V verify surefire-report:report
+    memory: 8G
+  maven_cache:
+    folder: ${CIRRUS_WORKING_DIR}/.m2/repository
+  qa_script: |
+    source cirrus-env QA
+    source set_maven_build_version $BUILD_NUMBER
+    if [[ ${CIRRUS_PR:-} != "" || $CIRRUS_BRANCH == 'master' || $CIRRUS_BRANCH =~ "branch-".* || $CIRRUS_BRANCH =~ "dogfood-on-".* ]]; then
+      mvn -f its/pom.xml -Dsonar.runtimeVersion=${SQ_VERSION} ${CATEGORY} -B -e -V verify surefire-report:report
+    else
+      mvn clean install -DskipTests
+      mvn -rf its -Pits -Dsonar.runtimeVersion=${SQ_VERSION} ${CATEGORY} -B -e -V verify surefire-report:report
+    fi
   cleanup_before_cache_script:
     - cleanup_maven_repository
   on_failure:
