@@ -55,7 +55,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @Named
 @Singleton
-class ShowHotspotRequestHandler implements HttpRequestHandler {
+public class ShowHotspotRequestHandler implements HttpRequestHandler {
 
   private final SonarLintClient client;
   private final ConnectionConfigurationRepository repository;
