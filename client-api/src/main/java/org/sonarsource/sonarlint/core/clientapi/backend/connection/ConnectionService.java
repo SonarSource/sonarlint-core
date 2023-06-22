@@ -28,6 +28,10 @@ import org.sonarsource.sonarlint.core.clientapi.backend.connection.auth.HelpGene
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.check.CheckSmartNotificationsSupportedParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.check.CheckSmartNotificationsSupportedResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.GetOrganizationParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.GetOrganizationResponse;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.ListUserOrganizationsParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.ListUserOrganizationsResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.ValidateConnectionResponse;
 
@@ -66,9 +70,6 @@ public interface ConnectionService {
    * <li>check that the credentials are valid</li>
    * <li>check that the organization exists (for SonarCloud)</li>
    * </ul>
-   *
-   * @param params
-   * @return
    */
   @JsonRequest
   CompletableFuture<ValidateConnectionResponse> validateConnection(ValidateConnectionParams params);
@@ -76,11 +77,17 @@ public interface ConnectionService {
   /**
    * Check that smart notifications are supported by the server by sending a GET request to /api/developers/search_events?projects=&from=
    * It is successfully when response code is >= 200 and < 300
-   *
-   * @param params
-   * @return
    */
   @JsonRequest
   CompletableFuture<CheckSmartNotificationsSupportedResponse> checkSmartNotificationsSupported(CheckSmartNotificationsSupportedParams params);
+
+  @JsonRequest
+  CompletableFuture<ListUserOrganizationsResponse> listUserOrganizations(ListUserOrganizationsParams params);
+
+  /**
+   * Find an organization by key. If not found the response will contain null.
+   */
+  @JsonRequest
+  CompletableFuture<GetOrganizationResponse> getOrganization(GetOrganizationParams params);
 
 }
