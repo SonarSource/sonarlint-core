@@ -25,6 +25,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpException;
@@ -51,6 +53,8 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+@Named
+@Singleton
 class ShowHotspotRequestHandler implements HttpRequestHandler {
 
   private final SonarLintClient client;

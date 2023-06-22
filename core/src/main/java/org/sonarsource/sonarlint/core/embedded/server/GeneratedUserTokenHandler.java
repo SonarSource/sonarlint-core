@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.embedded.server;
 import com.google.gson.Gson;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpException;
@@ -37,6 +39,8 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 import static java.util.function.Predicate.not;
 
+@Named
+@Singleton
 public class GeneratedUserTokenHandler implements HttpRequestHandler {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
