@@ -30,8 +30,8 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
-import org.sonarsource.sonarlint.core.clientapi.backend.authentication.HelpGenerateUserTokenParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.authentication.HelpGenerateUserTokenResponse;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.auth.HelpGenerateUserTokenParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.auth.HelpGenerateUserTokenResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.check.CheckSmartNotificationsSupportedParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.common.TransientSonarQubeConnectionDto;
@@ -59,7 +59,7 @@ class ConnectionSetupMediumTests {
     var fakeClient = newFakeClient().build();
     backend = newBackend().build(fakeClient);
 
-    var futureResponse = backend.getAuthenticationHelperService().helpGenerateUserToken(new HelpGenerateUserTokenParams("https://sonarcloud.io", true));
+    var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams("https://sonarcloud.io", true));
 
     assertThat(futureResponse)
       .succeedsWithin(Duration.ofSeconds(3))
@@ -74,7 +74,7 @@ class ConnectionSetupMediumTests {
     backend = newBackend().build(fakeClient);
     server = newSonarQubeServer("9.6").start();
 
-    var futureResponse = backend.getAuthenticationHelperService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
+    var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
 
     assertThat(futureResponse)
       .succeedsWithin(Duration.ofSeconds(3))
@@ -89,7 +89,7 @@ class ConnectionSetupMediumTests {
     server = newSonarQubeServer("9.7").start();
     backend = newBackend().withEmbeddedServer().withSonarQubeConnection("connectionId", server).build(fakeClient);
 
-    var futureResponse = backend.getAuthenticationHelperService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
+    var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
 
     await().atMost(Duration.ofSeconds(3)).until(() -> !fakeClient.getUrlsToOpen().isEmpty());
     assertThat(fakeClient.getUrlsToOpen())
@@ -115,7 +115,7 @@ class ConnectionSetupMediumTests {
     server = newSonarQubeServer("9.7").start();
     backend = newBackend().withEmbeddedServer().withSonarQubeConnection("connectionId", server).build(fakeClient);
 
-    backend.getAuthenticationHelperService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
+    backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
 
     await().atMost(Duration.ofSeconds(3)).until(() -> !fakeClient.getUrlsToOpen().isEmpty());
     assertThat(fakeClient.getUrlsToOpen())
@@ -135,7 +135,7 @@ class ConnectionSetupMediumTests {
     server = newSonarQubeServer("9.7").start();
     backend = newBackend().withEmbeddedServer().withSonarQubeConnection("connectionId", server).build(fakeClient);
 
-    backend.getAuthenticationHelperService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
+    backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
 
     await().atMost(Duration.ofSeconds(3)).until(() -> !fakeClient.getUrlsToOpen().isEmpty());
     assertThat(fakeClient.getUrlsToOpen())
@@ -156,7 +156,7 @@ class ConnectionSetupMediumTests {
     backend = newBackend().build(fakeClient);
     server = newSonarQubeServer("9.7").start();
 
-    var futureResponse = backend.getAuthenticationHelperService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
+    var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
 
     assertThat(futureResponse)
       .succeedsWithin(Duration.ofSeconds(3))
@@ -211,7 +211,8 @@ class ConnectionSetupMediumTests {
 
     var connectionResponse = backend.getConnectionService()
       .checkSmartNotificationsSupported(new CheckSmartNotificationsSupportedParams(
-        new TransientSonarCloudConnectionDto("https://sonarcloud.io", Either.forLeft(new TokenDto("foo"))))).get();
+        new TransientSonarCloudConnectionDto("https://sonarcloud.io", Either.forLeft(new TokenDto("foo")))))
+      .get();
 
     assertThat(connectionResponse.isSuccess()).isTrue();
   }
@@ -224,7 +225,8 @@ class ConnectionSetupMediumTests {
 
     var connectionResponse = backend.getConnectionService()
       .checkSmartNotificationsSupported(new CheckSmartNotificationsSupportedParams(
-        new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto("foo"))))).get();
+        new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto("foo")))))
+      .get();
 
     assertThat(connectionResponse.isSuccess()).isTrue();
   }
@@ -237,7 +239,8 @@ class ConnectionSetupMediumTests {
 
     var connectionResponse = backend.getConnectionService()
       .checkSmartNotificationsSupported(new CheckSmartNotificationsSupportedParams(
-        new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto("foo"))))).get();
+        new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto("foo")))))
+      .get();
 
     assertThat(connectionResponse.isSuccess()).isFalse();
   }
