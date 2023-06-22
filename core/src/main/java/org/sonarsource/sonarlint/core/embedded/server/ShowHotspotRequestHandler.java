@@ -35,7 +35,6 @@ import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.net.URIBuilder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProviderImpl;
 import org.sonarsource.sonarlint.core.ConfigurationServiceImpl;
-import org.sonarsource.sonarlint.core.ConnectionServiceImpl;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
@@ -46,6 +45,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams
 import org.sonarsource.sonarlint.core.clientapi.client.message.MessageType;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspotDetails;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
@@ -54,16 +54,16 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 class ShowHotspotRequestHandler implements HttpRequestHandler {
 
   private final SonarLintClient client;
-  private final ConnectionServiceImpl connectionService;
+  private final ConnectionConfigurationRepository repository;
   private final ConfigurationServiceImpl configurationService;
   private final BindingSuggestionProviderImpl bindingSuggestionProvider;
   private final ServerApiProvider serverApiProvider;
   private final TelemetryServiceImpl telemetryService;
 
-  public ShowHotspotRequestHandler(SonarLintClient client, ConnectionServiceImpl connectionService, ConfigurationServiceImpl configurationService,
+  public ShowHotspotRequestHandler(SonarLintClient client, ConnectionConfigurationRepository repository, ConfigurationServiceImpl configurationService,
     BindingSuggestionProviderImpl bindingSuggestionProvider, ServerApiProvider serverApiProvider, TelemetryServiceImpl telemetryService) {
     this.client = client;
-    this.connectionService = connectionService;
+    this.repository = repository;
     this.configurationService = configurationService;
     this.bindingSuggestionProvider = bindingSuggestionProvider;
     this.serverApiProvider = serverApiProvider;
@@ -87,7 +87,7 @@ class ShowHotspotRequestHandler implements HttpRequestHandler {
   private void showHotspot(ShowHotspotQuery query) {
     telemetryService.showHotspotRequestReceived();
 
-    var connectionsMatchingOrigin = connectionService.findByUrl(query.serverUrl);
+    var connectionsMatchingOrigin = repository.findByUrl(query.serverUrl);
     if (connectionsMatchingOrigin.isEmpty()) {
       startFullBindingProcess();
       assistCreatingConnection(query.serverUrl)
@@ -102,7 +102,8 @@ class ShowHotspotRequestHandler implements HttpRequestHandler {
 
   private void startFullBindingProcess() {
     // we don't want binding suggestions to appear in the middle of a full binding creation process (connection + binding)
-    // the other possibility would be to still notify the client anyway and let it handle UI interactions one at a time (assists, messages, suggestions, ...)
+    // the other possibility would be to still notify the client anyway and let it handle UI interactions one at a time (assists, messages,
+    // suggestions, ...)
     bindingSuggestionProvider.disable();
   }
 

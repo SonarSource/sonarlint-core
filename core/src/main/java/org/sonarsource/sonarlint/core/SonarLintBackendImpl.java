@@ -25,7 +25,6 @@ import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.analysis.AnalysisService;
-import org.sonarsource.sonarlint.core.clientapi.backend.authentication.AuthenticationHelperService;
 import org.sonarsource.sonarlint.core.clientapi.backend.binding.BindingService;
 import org.sonarsource.sonarlint.core.clientapi.backend.branch.SonarProjectBranchService;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationService;
@@ -76,11 +75,6 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   @Override
   public ConnectionService getConnectionService() {
     return getInitializedApplicationContext().getBean(ConnectionService.class);
-  }
-
-  @Override
-  public AuthenticationHelperService getAuthenticationHelperService() {
-    return getInitializedApplicationContext().getBean(AuthenticationHelperService.class);
   }
 
   @Override

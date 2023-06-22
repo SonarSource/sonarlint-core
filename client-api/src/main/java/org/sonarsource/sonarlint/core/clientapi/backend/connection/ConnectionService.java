@@ -23,6 +23,8 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.auth.HelpGenerateUserTokenParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.auth.HelpGenerateUserTokenResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.check.CheckSmartNotificationsSupportedParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.check.CheckSmartNotificationsSupportedResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
@@ -47,6 +49,14 @@ public interface ConnectionService {
    */
   @JsonNotification
   void didUpdateConnections(DidUpdateConnectionsParams params);
+
+  /**
+   * @param params url of the server on which to create the token
+   * @return For servers that support automatic token generation, will return the token in the response. Else no token will be returned.
+   * If the local server is not started or the server URL can not be reached, the future will fail
+   */
+  @JsonRequest
+  CompletableFuture<HelpGenerateUserTokenResponse> helpGenerateUserToken(HelpGenerateUserTokenParams params);
 
   /**
    * Validate that connection is valid:
