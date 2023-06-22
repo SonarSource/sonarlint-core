@@ -63,9 +63,10 @@ import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.HostInfoDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.check.CheckSmartNotificationsSupportedParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.common.TransientSonarCloudConnectionDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.GetOrganizationParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.ListUserOrganizationsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
@@ -379,18 +380,20 @@ class SonarCloudTests extends AbstractConnectedTests {
   }
 
   @Test
-  void downloadUserOrganizations() {
-    var helper = new ServerApi(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID)).organization();
-    assertThat(helper.listUserOrganizations(progress)).hasSize(1);
+  void downloadUserOrganizations() throws ExecutionException, InterruptedException {
+    var response = backend.getConnectionService()
+      .listUserOrganizations(new ListUserOrganizationsParams(Either.forRight(new UsernamePasswordDto(SONARCLOUD_USER, SONARCLOUD_PASSWORD)))).get();
+    assertThat(response.getUserOrganizations()).hasSize(1);
   }
 
   @Test
-  void getOrganization() {
-    var helper = new ServerApi(sonarcloudEndpoint(null), backend.getHttpClient(CONNECTION_ID)).organization();
-    var org = helper.getOrganization(SONARCLOUD_ORGANIZATION, progress);
-    assertThat(org).isPresent();
-    assertThat(org.get().getKey()).isEqualTo(SONARCLOUD_ORGANIZATION);
-    assertThat(org.get().getName()).isEqualTo("SonarLint IT Tests");
+  void getOrganization() throws ExecutionException, InterruptedException {
+    var response = backend.getConnectionService()
+      .getOrganization(new GetOrganizationParams(Either.forRight(new UsernamePasswordDto(SONARCLOUD_USER, SONARCLOUD_PASSWORD)), SONARCLOUD_ORGANIZATION)).get();
+    var org = response.getOrganization();
+    assertThat(org).isNotNull();
+    assertThat(org.getKey()).isEqualTo(SONARCLOUD_ORGANIZATION);
+    assertThat(org.getName()).isEqualTo("SonarLint IT Tests");
   }
 
   @Test
