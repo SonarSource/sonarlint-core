@@ -33,16 +33,8 @@ import org.apache.hc.core5.http.impl.bootstrap.ServerBootstrap;
 import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.io.CloseMode;
-import org.sonarsource.sonarlint.core.BindingSuggestionProviderImpl;
-import org.sonarsource.sonarlint.core.ConfigurationServiceImpl;
-import org.sonarsource.sonarlint.core.ConnectionServiceImpl;
-import org.sonarsource.sonarlint.core.ServerApiProvider;
-import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.backend.HostInfoDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
 @Named
 @Singleton
@@ -56,29 +48,17 @@ public class EmbeddedServer {
 
   private HttpServer server;
   private int port;
-
-  private final SonarLintClient client;
-  private final ConnectionConfigurationRepository repository;
-  private final AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository;
-  private final ConfigurationServiceImpl configurationService;
-  private final BindingSuggestionProviderImpl bindingSuggestionProvider;
-  private final ServerApiProvider serverApiProvider;
-  private final TelemetryServiceImpl telemetryService;
-  private final HostInfoDto clientInfo;
   private final boolean enabled;
+  private final StatusRequestHandler statusRequestHandler;
+  private final GeneratedUserTokenHandler generatedUserTokenHandler;
+  private final ShowHotspotRequestHandler showHotspotRequestHandler;
 
-  public EmbeddedServer(SonarLintClient client, ConnectionConfigurationRepository repository, AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository,
-    ConfigurationServiceImpl configurationService, BindingSuggestionProviderImpl bindingSuggestionProvider, ServerApiProvider serverApiProvider,
-    TelemetryServiceImpl telemetryService, InitializeParams params) {
-    this.client = client;
-    this.repository = repository;
-    this.awaitingUserTokenFutureRepository = awaitingUserTokenFutureRepository;
-    this.configurationService = configurationService;
-    this.bindingSuggestionProvider = bindingSuggestionProvider;
-    this.serverApiProvider = serverApiProvider;
-    this.telemetryService = telemetryService;
-    this.clientInfo = params.getHostInfo();
+  public EmbeddedServer(InitializeParams params, StatusRequestHandler statusRequestHandler, GeneratedUserTokenHandler generatedUserTokenHandler,
+    ShowHotspotRequestHandler showHotspotRequestHandler) {
     this.enabled = params.shouldManageLocalServer();
+    this.statusRequestHandler = statusRequestHandler;
+    this.generatedUserTokenHandler = generatedUserTokenHandler;
+    this.showHotspotRequestHandler = showHotspotRequestHandler;
   }
 
   @PostConstruct
@@ -104,10 +84,9 @@ public class EmbeddedServer {
           .setListenerPort(triedPort)
           .setSocketConfig(socketConfig)
           .addFilterFirst("CORS", new CorsFilter())
-          .register("/sonarlint/api/status", new StatusRequestHandler(client, repository, clientInfo))
-          .register("/sonarlint/api/token", new GeneratedUserTokenHandler(awaitingUserTokenFutureRepository))
-          .register("/sonarlint/api/hotspots/show",
-            new ShowHotspotRequestHandler(client, repository, configurationService, bindingSuggestionProvider, serverApiProvider, telemetryService))
+          .register("/sonarlint/api/status", statusRequestHandler)
+          .register("/sonarlint/api/token", generatedUserTokenHandler)
+          .register("/sonarlint/api/hotspots/show", showHotspotRequestHandler)
           .create();
         startedServer.start();
         port = triedPort;
