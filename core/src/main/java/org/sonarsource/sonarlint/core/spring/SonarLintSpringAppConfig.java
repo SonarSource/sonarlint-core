@@ -34,18 +34,83 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
+import org.sonarsource.sonarlint.core.BindingClueProvider;
+import org.sonarsource.sonarlint.core.BindingSuggestionProviderImpl;
+import org.sonarsource.sonarlint.core.ConfigurationServiceImpl;
+import org.sonarsource.sonarlint.core.ConnectionServiceImpl;
+import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.SonarProjectsCache;
+import org.sonarsource.sonarlint.core.TokenGeneratorHelper;
+import org.sonarsource.sonarlint.core.analysis.AnalysisServiceImpl;
+import org.sonarsource.sonarlint.core.branch.SonarProjectBranchServiceImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
+import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
+import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
+import org.sonarsource.sonarlint.core.embedded.server.GeneratedUserTokenHandler;
+import org.sonarsource.sonarlint.core.embedded.server.ShowHotspotRequestHandler;
+import org.sonarsource.sonarlint.core.embedded.server.StatusRequestHandler;
+import org.sonarsource.sonarlint.core.hotspot.HotspotServiceImpl;
 import org.sonarsource.sonarlint.core.http.AskClientCertificatePredicate;
+import org.sonarsource.sonarlint.core.http.ClientProxyCredentialsProvider;
+import org.sonarsource.sonarlint.core.http.ClientProxySelector;
+import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
+import org.sonarsource.sonarlint.core.issue.IssueServiceImpl;
+import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
+import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
+import org.sonarsource.sonarlint.core.plugin.PluginsServiceImpl;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
+import org.sonarsource.sonarlint.core.repository.vcs.ActiveSonarProjectBranchRepository;
+import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
+import org.sonarsource.sonarlint.core.rules.RulesServiceImpl;
 import org.sonarsource.sonarlint.core.serverconnection.StorageService;
+import org.sonarsource.sonarlint.core.smartnotifications.SmartNotifications;
+import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 @Configuration
-@ComponentScan(basePackages = "org.sonarsource.sonarlint.core")
+// FIXME can't use classpath scanning in OSGi, so waiting to move out of process, we have to declare our bean manually
+// @ComponentScan(basePackages = "org.sonarsource.sonarlint.core")
+@Import({
+  EventBusListenersRegistererBeanPostProcessor.class,
+  AskClientCertificatePredicate.class,
+  ClientProxySelector.class,
+  ClientProxyCredentialsProvider.class,
+  ConnectionAwareHttpClientProvider.class,
+  ConfigurationServiceImpl.class,
+  ConfigurationRepository.class,
+  RulesServiceImpl.class,
+  ServerApiProvider.class,
+  ConnectionConfigurationRepository.class,
+  RulesRepository.class,
+  RulesExtractionHelper.class,
+  PluginsServiceImpl.class,
+  PluginsRepository.class,
+  LanguageSupportRepository.class,
+  ConnectionServiceImpl.class,
+  TokenGeneratorHelper.class,
+  EmbeddedServer.class,
+  StatusRequestHandler.class,
+  GeneratedUserTokenHandler.class,
+  AwaitingUserTokenFutureRepository.class,
+  ShowHotspotRequestHandler.class,
+  BindingSuggestionProviderImpl.class,
+  BindingClueProvider.class,
+  SonarProjectsCache.class,
+  SonarProjectBranchServiceImpl.class,
+  ActiveSonarProjectBranchRepository.class,
+  SynchronizationServiceImpl.class,
+  HotspotServiceImpl.class,
+  IssueServiceImpl.class,
+  AnalysisServiceImpl.class,
+  SmartNotifications.class
+})
 public class SonarLintSpringAppConfig {
 
   private final ExecutorService eventExecutorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Client Events Processor"));
