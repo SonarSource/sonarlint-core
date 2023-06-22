@@ -24,6 +24,8 @@ import com.google.gson.annotations.Expose;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.ContentType;
@@ -34,19 +36,22 @@ import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.HostInfoDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 
+@Named
+@Singleton
 public class StatusRequestHandler implements HttpRequestHandler {
 
   private final SonarLintClient client;
   private final ConnectionConfigurationRepository repository;
   private final HostInfoDto clientInfo;
 
-  public StatusRequestHandler(SonarLintClient client, ConnectionConfigurationRepository repository, HostInfoDto clientInfo) {
+  public StatusRequestHandler(SonarLintClient client, ConnectionConfigurationRepository repository, InitializeParams params) {
     this.client = client;
     this.repository = repository;
-    this.clientInfo = clientInfo;
+    this.clientInfo = params.getHostInfo();
   }
 
   @Override
