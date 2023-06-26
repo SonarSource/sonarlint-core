@@ -72,7 +72,7 @@ build_task:
     - source cirrus-env BUILD
     - regular_mvn_build_deploy_analyze -Dmaven.test.skip=true -Dsonar.skip=true
   prepare_cache_script:
-    - mvn -B test # includes test deps in the cache before running UTs
+    - mvn -Dmaven.test.skip test-compile jar:test-jar install # includes test deps in the cache before running UTs
   cleanup_before_cache_script: cleanup_maven_repository
 
 test_linux_task:
