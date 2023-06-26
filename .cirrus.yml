@@ -80,12 +80,9 @@ build_task:
   build_script:
     - source cirrus-env BUILD
     - regular_mvn_build_deploy_analyze -Dmaven.test.skip=true -Dsonar.skip=true
-
+  cleanup_before_cache_script: cleanup_maven_repository
   upload_caches:
     - maven
-
-  cleanup_before_cache_script: cleanup_maven_repository
-
 test_linux_task:
   # Run unit tests on Linux with Java 11 and SonarQube analysis on Next
   depends_on:
