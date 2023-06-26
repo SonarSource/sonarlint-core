@@ -68,12 +68,20 @@ build_task:
     memory: 1G
   maven_cache:
     folder: ${CIRRUS_WORKING_DIR}/.m2/repository
-    reupload_on_changes: true
+    fingerprint_script:
+      - echo $CIRRUS_OS
+      - echo $CIRRUS_BUILD_ID
+      - cat */**/pom.xml
+    populate_script:
+      - mvn -B -Pits dependency:go-offline # populate cache including ITs deps too
+
   build_script:
     - source cirrus-env BUILD
     - regular_mvn_build_deploy_analyze -Dmaven.test.skip=true -Dsonar.skip=true
-  prepare_cache_script:
-    - mvn -B -Pits -rf its dependency:go-offline # includes ITs deps in cache
+
+  upload_caches:
+    - maven_cache
+
   cleanup_before_cache_script: cleanup_maven_repository
 
 test_linux_task:
