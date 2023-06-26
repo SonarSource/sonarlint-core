@@ -155,27 +155,27 @@ qa_task:
           JDK_VERSION: "11"
           CATEGORY: "-Dgroups=SonarCloud"
           SONARCLOUD_IT_PASSWORD: VAULT[development/team/sonarlint/kv/data/sonarcloud-it data.password]
-          QA_CATEGORY: Run ITs for SonarCloud
+          QA_CATEGORY: SonarCloud
       -  env:
           SQ_VERSION: "DEV"
           JDK_VERSION: "17"
           CATEGORY: "-DexcludedGroups=SonarCloud"
-          QA_CATEGORY: Run ITs for SQ Dogfood
+          QA_CATEGORY: SQDogfood
       -  env:
           SQ_VERSION: "LATEST_RELEASE"
           JDK_VERSION: "17"
           CATEGORY: "-DexcludedGroups=SonarCloud"
-          QA_CATEGORY: Run ITs for SQ Latest
+          QA_CATEGORY: SQLatest
       -  env:
           SQ_VERSION: "LATEST_RELEASE[8.9]"
           JDK_VERSION: "11"
           CATEGORY: "-DexcludedGroups=SonarCloud"
-          QA_CATEGORY: Run ITs for SQ Lts89
+          QA_CATEGORY: SQLts89
       -  env:
           SQ_VERSION: "LATEST_RELEASE[7.9]"
           JDK_VERSION: "11"
           CATEGORY: "-DexcludedGroups=SonarCloud"
-          QA_CATEGORY: Run ITs for SQ Lts79
+          QA_CATEGORY: SQLts79
   eks_container:
     <<: *CONTAINER_DEFINITION
     cpu: 4
