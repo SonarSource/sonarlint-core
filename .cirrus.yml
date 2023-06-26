@@ -29,6 +29,16 @@ only_main_branches: &ONLY_MAIN_BRANCHES
 skip_ci: &SKIP_CI
   skip: "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')"
 
+maven_cache_definition: &MAVEN_CACHE_DEFINITION
+  maven_cache:
+    folder: ${CIRRUS_WORKING_DIR}/.m2/repository
+    fingerprint_script:
+      - echo $CIRRUS_OS
+      - echo $CIRRUS_BUILD_ID
+      - cat */**/pom.xml
+    populate_script:
+      - mvn -B -Pits dependency:go-offline # populate cache including ITs deps too
+
 eks_container: &CONTAINER_DEFINITION
   dockerfile: .cirrus/Dockerfile
   docker_arguments:
@@ -66,15 +76,7 @@ build_task:
   eks_container:
     <<: *CONTAINER_DEFINITION
     memory: 1G
-  maven_cache:
-    folder: ${CIRRUS_WORKING_DIR}/.m2/repository
-    fingerprint_script:
-      - echo $CIRRUS_OS
-      - echo $CIRRUS_BUILD_ID
-      - cat */**/pom.xml
-    populate_script:
-      - mvn -B -Pits dependency:go-offline # populate cache including ITs deps too
-
+  <<: *MAVEN_CACHE_DEFINITION
   build_script:
     - source cirrus-env BUILD
     - regular_mvn_build_deploy_analyze -Dmaven.test.skip=true -Dsonar.skip=true
@@ -94,8 +96,7 @@ test_linux_task:
   env:
     JDK_VERSION: "11"
     DEPLOY_PULL_REQUEST: "false"
-  maven_cache:
-    folder: ${CIRRUS_WORKING_DIR}/.m2/repository
+  <<: *MAVEN_CACHE_DEFINITION
   script:
     - source cirrus-env QA
     - PULL_REQUEST_SHA=$GIT_SHA1 regular_mvn_build_deploy_analyze -P-deploy-sonarsource,-release,-sign -Dcommercial -Dmaven.install.skip=true -Dmaven.deploy.skip=true
@@ -114,8 +115,7 @@ test_windows_task:
     <<: *WINVM_DEFINITION
   env:
     MAVEN_OPTS: '-Xmx4G'
-  maven_cache:
-    folder: ${CIRRUS_WORKING_DIR}/.m2/repository
+  <<: *MAVEN_CACHE_DEFINITION
   script:
     - source cirrus-env QA
     - source set_maven_build_version $BUILD_NUMBER
@@ -138,8 +138,7 @@ mend_scan_task:
     WS_APIKEY: VAULT[development/kv/data/mend data.apikey]
     WS_PRODUCTNAME: SonarLint/Core
     JDK_VERSION: "11"
-  maven_cache:
-    folder: ${CIRRUS_WORKING_DIR}/.m2/repository
+  <<: *MAVEN_CACHE_DEFINITION
   whitesource_script:
     - if [[ $CIRRUS_CRON == 'nightly-mend-scan' ]]; then source cirrus-env BUILD-PRIVATE; else source cirrus-env QA; fi
     - source set_maven_build_version $BUILD_NUMBER
@@ -191,8 +190,7 @@ qa_task:
     <<: *CONTAINER_DEFINITION
     cpu: 4
     memory: 8G
-  maven_cache:
-    folder: ${CIRRUS_WORKING_DIR}/.m2/repository
+  <<: *MAVEN_CACHE_DEFINITION
   qa_script: |
     source cirrus-env QA
     source set_maven_build_version $BUILD_NUMBER
@@ -230,7 +228,6 @@ promote_task:
       GITHUB_TOKEN: VAULT[development/github/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-promotion token]
       # artifacts which will have downloadable links in burgr
       ARTIFACTS: org.sonarsource.sonarlint.core:sonarlint-core:jar
-  maven_cache:
-    folder: ${CIRRUS_WORKING_DIR}/.m2/repository
+  <<: *MAVEN_CACHE_DEFINITION
   script: cirrus_promote_maven
   cleanup_before_cache_script: cleanup_maven_repository
