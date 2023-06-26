@@ -80,7 +80,7 @@ build_task:
     - regular_mvn_build_deploy_analyze -Dmaven.test.skip=true -Dsonar.skip=true
 
   upload_caches:
-    - maven_cache
+    - maven
 
   cleanup_before_cache_script: cleanup_maven_repository
 
