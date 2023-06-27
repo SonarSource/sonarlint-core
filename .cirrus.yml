@@ -32,6 +32,7 @@ skip_ci: &SKIP_CI
 maven_cache_definition: &MAVEN_CACHE_DEFINITION
   maven_cache:
     folder: ${CIRRUS_WORKING_DIR}/.m2/repository
+    reupload_on_changes: false
     fingerprint_script:
       - echo $CIRRUS_OS
       - echo $CIRRUS_BUILD_ID
@@ -81,8 +82,8 @@ build_task:
     - source cirrus-env BUILD
     - regular_mvn_build_deploy_analyze -Dmaven.test.skip=true -Dsonar.skip=true
   cleanup_before_cache_script: cleanup_maven_repository
-  upload_caches:
-    - maven
+#  upload_caches:
+#    - maven
 test_linux_task:
   # Run unit tests on Linux with Java 11 and SonarQube analysis on Next
   depends_on:
