@@ -34,7 +34,7 @@ maven_cache_definition: &MAVEN_CACHE_DEFINITION
     folder: ${CIRRUS_WORKING_DIR}/.m2/repository
     reupload_on_changes: false
     fingerprint_script:
-      - echo $CIRRUS_OS
+#      - echo $CIRRUS_OS
       - echo $CIRRUS_BUILD_ID
       - cat */**/pom.xml
     populate_script:
