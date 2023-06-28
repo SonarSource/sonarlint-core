@@ -583,7 +583,9 @@ class SonarCloudTests extends AbstractConnectedTests {
       "-Dsonar.host.url=" + SONARCLOUD_STAGING_URL,
       "-Dsonar.organization=" + SONARCLOUD_ORGANIZATION,
       "-Dsonar.login=" + SONARCLOUD_USER,
-      "-Dsonar.password=" + SONARCLOUD_PASSWORD);
+      "-Dsonar.password=" + SONARCLOUD_PASSWORD,
+      "-Dsonar.scm.disabled=true",
+      "-Dsonar.branch.autoconfig.disabled=true");
 
     waitAtMost(1, TimeUnit.MINUTES).until(() -> {
       var request = new GetRequest("api/analysis_reports/is_queue_empty");
