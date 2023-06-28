@@ -16,9 +16,11 @@ auto_cancellation: $CIRRUS_BRANCH != 'master'
 
 only_if_base: &ONLY_IF
   only_if: $CIRRUS_USER_COLLABORATOR == 'true' && $CIRRUS_TAG == ""
+  skip: "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')"
 
 only_if_with_nightly: &ONLY_IF_WITH_NIGHTLY
   only_if: ($CIRRUS_USER_COLLABORATOR == 'true' || $CIRRUS_CRON == 'nightly-mend-scan') && $CIRRUS_TAG == ""
+  skip: "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')"
 
 only_pr_and_maintained_branches: &ONLY_PR_AND_MAINTAINED_BRANCHES
   only_if: $CIRRUS_PR != "" || $CIRRUS_BRANCH == 'master' || $CIRRUS_BRANCH =~ "branch-.*" || $CIRRUS_BRANCH =~ "dogfood-on-.*"
@@ -26,19 +28,11 @@ only_pr_and_maintained_branches: &ONLY_PR_AND_MAINTAINED_BRANCHES
 only_main_branches: &ONLY_MAIN_BRANCHES
   only_if: $CIRRUS_BRANCH == "master" || $CIRRUS_BRANCH =~ "branch-.*"
 
-skip_ci: &SKIP_CI
-  skip: "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')"
-
 maven_cache_definition: &MAVEN_CACHE_DEFINITION
   maven_cache:
     folder: ${CIRRUS_WORKING_DIR}/.m2/repository
-    reupload_on_changes: false
     fingerprint_script:
-#      - echo $CIRRUS_OS
-      - echo $CIRRUS_BUILD_ID
-      - cat */**/pom.xml
-    populate_script:
-      - mvn -B -Pits dependency:go-offline # populate cache including ITs deps too
+      - find . -name pom.xml -not -path './its/*' -exec cat {} \+
 
 eks_container: &CONTAINER_DEFINITION
   dockerfile: .cirrus/Dockerfile
@@ -65,7 +59,7 @@ ec2_instance: &WINVM_DEFINITION
 
 build_task:
   # Build and Stage to repox
-  <<: *SKIP_CI
+  <<: *ONLY_IF
   env:
     JDK_VERSION: "11"
     DEPLOY_PULL_REQUEST: "true"
@@ -81,9 +75,10 @@ build_task:
   build_script:
     - source cirrus-env BUILD
     - regular_mvn_build_deploy_analyze -Dmaven.test.skip=true -Dsonar.skip=true
+  cache_script:
+    - mvn -B -e -V -Pits dependency:go-offline # populate cache including ITs deps too
   cleanup_before_cache_script: cleanup_maven_repository
-#  upload_caches:
-#    - maven
+
 test_linux_task:
   # Run unit tests on Linux with Java 11 and SonarQube analysis on Next
   depends_on:
@@ -113,7 +108,8 @@ test_windows_task:
     <<: *WINVM_DEFINITION
   env:
     MAVEN_OPTS: '-Xmx4G'
-  <<: *MAVEN_CACHE_DEFINITION
+  maven_cache:
+    folder: ${CIRRUS_WORKING_DIR}/.m2/repository
   script:
     - source cirrus-env QA
     - source set_maven_build_version $BUILD_NUMBER
@@ -153,6 +149,11 @@ qa_task:
   depends_on:
     - build
     - test_windows
+  <<: *ONLY_IF
+  eks_container:
+    <<: *CONTAINER_DEFINITION
+    cpu: 4
+    memory: 8G
   env:
     ARTIFACTORY_API_KEY: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-private-reader access_token]
     GITHUB_TOKEN: VAULT[development/github/token/licenses-ro token]
@@ -184,10 +185,6 @@ qa_task:
           JDK_VERSION: "11"
           CATEGORY: "-DexcludedGroups=SonarCloud"
           QA_CATEGORY: SQLts79
-  eks_container:
-    <<: *CONTAINER_DEFINITION
-    cpu: 4
-    memory: 8G
   <<: *MAVEN_CACHE_DEFINITION
   qa_script: |
     source cirrus-env QA

@@ -597,6 +597,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
   private static void runMaven(Path workDir, String... args) throws IOException {
     var cmdLine = CommandLine.parse("mvn");
+    cmdLine.addArguments(new String[]{"--batch-mode", "--show-version", "--errors"});
     cmdLine.addArguments(args);
     var executor = new DefaultExecutor();
     executor.setWorkingDirectory(workDir.toFile());
