@@ -17,21 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package mediumtest;
+package mediumtest.http;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import mediumtest.fixtures.SonarLintTestBackend;
 import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.commons.Language;
@@ -44,47 +43,20 @@ import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static testutils.TestUtils.protobufBody;
 
-class ProxyMediumTests {
-
-  public static final String PROXY_AUTH_ENABLED = "proxy-auth";
-  private SonarLintTestBackend backend;
+class AuthenticationMediumTests {
 
   @RegisterExtension
   static WireMockExtension sonarqubeMock = WireMockExtension.newInstance()
     .options(wireMockConfig().dynamicPort())
     .build();
 
-  @RegisterExtension
-  static WireMockExtension proxyMock = WireMockExtension.newInstance()
-    .options(wireMockConfig().dynamicPort())
-    .build();
-
-  @BeforeEach
-  void configureProxy(TestInfo info) {
-    if (info.getTags().contains(PROXY_AUTH_ENABLED)) {
-      proxyMock.stubFor(get(urlMatching(".*"))
-        .inScenario("Proxy Auth")
-        .whenScenarioStateIs(STARTED)
-        .willReturn(aResponse()
-          .withStatus(407)
-          .withHeader("Proxy-Authenticate", "Basic realm=\"Access to the proxy\""))
-        .willSetStateTo("Challenge returned"));
-      proxyMock.stubFor(get(urlMatching(".*"))
-        .inScenario("Proxy Auth")
-        .whenScenarioStateIs("Challenge returned")
-        .willReturn(aResponse().proxiedFrom(sonarqubeMock.baseUrl())));
-    } else {
-      proxyMock.stubFor(get(urlMatching(".*")).willReturn(aResponse().proxiedFrom(sonarqubeMock.baseUrl())));
-    }
-  }
+  private SonarLintBackend backend;
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
@@ -94,9 +66,9 @@ class ProxyMediumTests {
   }
 
   @Test
-  void it_should_honor_http_proxy_settings() {
+  void it_should_authenticate_preemptively_on_sonarqube_with_login_password() {
     var fakeClient = newFakeClient()
-      .withHttpProxy("localhost", proxyMock.getPort())
+      .withCredentials("connectionId", "myLogin", "myPassword")
       .build();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
@@ -115,17 +87,14 @@ class ProxyMediumTests {
 
     assertThat(details.getDescription().getLeft().getHtmlContent()).contains("extendedDesc from server");
 
-    proxyMock.verify(getRequestedFor(urlEqualTo("/api/rules/show.protobuf?key=python:S139")));
+    sonarqubeMock.verify(getRequestedFor(urlEqualTo("/api/rules/show.protobuf?key=python:S139"))
+      .withHeader("Authorization", equalTo("Basic " + Base64.getEncoder().encodeToString("myLogin:myPassword".getBytes(StandardCharsets.UTF_8)))));
   }
 
   @Test
-  @Tag(PROXY_AUTH_ENABLED)
-  void it_should_honor_http_proxy_authentication() {
-    var proxyLogin = "proxyLogin";
-    var proxyPassword = "proxyPassword";
+  void it_should_authenticate_preemptively_on_sonarqube_with_token() {
     var fakeClient = newFakeClient()
-      .withHttpProxy("localhost", proxyMock.getPort())
-      .withHttpProxyAuth(proxyLogin, proxyPassword)
+      .withToken("connectionId", "myToken")
       .build();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
@@ -144,37 +113,8 @@ class ProxyMediumTests {
 
     assertThat(details.getDescription().getLeft().getHtmlContent()).contains("extendedDesc from server");
 
-    proxyMock.verify(getRequestedFor(urlEqualTo("/api/rules/show.protobuf?key=python:S139"))
-      .withHeader("Proxy-Authorization", equalTo("Basic " + Base64.getEncoder().encodeToString((proxyLogin + ":" + proxyPassword).getBytes(StandardCharsets.UTF_8)))));
-  }
-
-  @Test
-  @Tag(PROXY_AUTH_ENABLED)
-  void it_should_honor_http_proxy_authentication_with_null_password() {
-    var proxyLogin = "proxyLogin";
-    var fakeClient = newFakeClient()
-      .withHttpProxy("localhost", proxyMock.getPort())
-      .withHttpProxyAuth(proxyLogin, null)
-      .build();
-    backend = newBackend()
-      .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
-          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
-      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
-      .build(fakeClient);
-    sonarqubeMock.stubFor(get("/api/rules/show.protobuf?key=python:S139")
-      .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Rules.ShowResponse.newBuilder()
-        .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc(
-          "desc").setHtmlNote("extendedDesc from server").build())
-        .build()))));
-
-    var details = getEffectiveRuleDetails("scopeId", "python:S139");
-
-    assertThat(details.getDescription().getLeft().getHtmlContent()).contains("extendedDesc from server");
-
-    proxyMock.verify(getRequestedFor(urlEqualTo("/api/rules/show.protobuf?key=python:S139"))
-      .withHeader("Proxy-Authorization", equalTo("Basic " + Base64.getEncoder().encodeToString((proxyLogin + ":").getBytes(StandardCharsets.UTF_8)))));
+    sonarqubeMock.verify(getRequestedFor(urlEqualTo("/api/rules/show.protobuf?key=python:S139"))
+      .withHeader("Authorization", equalTo("Basic " + Base64.getEncoder().encodeToString("myToken:".getBytes(StandardCharsets.UTF_8)))));
   }
 
   private EffectiveRuleDetailsDto getEffectiveRuleDetails(String configScopeId, String ruleKey) {
