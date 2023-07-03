@@ -12,21 +12,24 @@ env:
   SONAR_HOST_URL: VAULT[development/kv/data/next data.url]
   SONAR_TOKEN: VAULT[development/kv/data/next data.token]
 
-auto_cancellation: $CIRRUS_BRANCH != 'master'
+auto_cancellation: $CIRRUS_BRANCH != $CIRRUS_DEFAULT_BRANCH
 
-only_if_base: &ONLY_IF
+only_if_with_nightly: &ONLY_IF
+  skip: "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')"
   only_if: $CIRRUS_USER_COLLABORATOR == 'true' && $CIRRUS_TAG == ""
-  skip: "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')"
 
-only_if_with_nightly: &ONLY_IF_WITH_NIGHTLY
-  only_if: ($CIRRUS_USER_COLLABORATOR == 'true' || $CIRRUS_CRON == 'nightly-mend-scan') && $CIRRUS_TAG == ""
+only_if_except_nightly: &ONLY_IF_EXCEPT_NIGHTLY
   skip: "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')"
+  only_if: $CIRRUS_USER_COLLABORATOR == 'true' && $CIRRUS_TAG == "" && $CIRRUS_BUILD_SOURCE != "cron"
 
 only_pr_and_maintained_branches: &ONLY_PR_AND_MAINTAINED_BRANCHES
-  only_if: $CIRRUS_PR != "" || $CIRRUS_BRANCH == 'master' || $CIRRUS_BRANCH =~ "branch-.*" || $CIRRUS_BRANCH =~ "dogfood-on-.*"
+  skip: "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')"
+  only_if: $CIRRUS_USER_COLLABORATOR == 'true' && $CIRRUS_TAG == "" && $CIRRUS_BUILD_SOURCE != "cron"
+    && ($CIRRUS_PR != "" || $CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-.*" || $CIRRUS_BRANCH =~ "dogfood-on-.*")
 
 only_main_branches: &ONLY_MAIN_BRANCHES
-  only_if: $CIRRUS_BRANCH == "master" || $CIRRUS_BRANCH =~ "branch-.*"
+  skip: "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')"
+  only_if: $CIRRUS_USER_COLLABORATOR == 'true' && $CIRRUS_TAG == "" && ($CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-.*")
 
 maven_cache_definition: &MAVEN_CACHE_DEFINITION
   maven_cache:
@@ -83,7 +86,7 @@ test_linux_task:
   # Run unit tests on Linux with Java 11 and SonarQube analysis on Next
   depends_on:
     - build
-  <<: *ONLY_IF
+  <<: *ONLY_IF_EXCEPT_NIGHTLY
   eks_container:
     <<: *CONTAINER_DEFINITION
   env:
@@ -103,7 +106,7 @@ test_windows_task:
   # Run UTs on Windows (Java 17)
   depends_on:
     - build
-  <<: *ONLY_IF
+  <<: *ONLY_IF_EXCEPT_NIGHTLY
   ec2_instance:
     <<: *WINVM_DEFINITION
   env:
@@ -124,17 +127,15 @@ mend_scan_task:
   # Run Mend analysis
   depends_on:
     - build
-  <<: *ONLY_IF_WITH_NIGHTLY
   <<: *ONLY_MAIN_BRANCHES
   eks_container:
     <<: *CONTAINER_DEFINITION
   env:
     WS_APIKEY: VAULT[development/kv/data/mend data.apikey]
-    WS_PRODUCTNAME: SonarLint/Core
     JDK_VERSION: "11"
   <<: *MAVEN_CACHE_DEFINITION
   whitesource_script:
-    - if [[ $CIRRUS_CRON == 'nightly-mend-scan' ]]; then source cirrus-env BUILD-PRIVATE; else source cirrus-env QA; fi
+    - source cirrus-env QA
     - source set_maven_build_version $BUILD_NUMBER
     - mvn clean install -DskipTests
     - source ws_scan.sh
@@ -149,7 +150,7 @@ qa_task:
   depends_on:
     - build
     - test_windows
-  <<: *ONLY_IF
+  <<: *ONLY_IF_EXCEPT_NIGHTLY
   eks_container:
     <<: *CONTAINER_DEFINITION
     cpu: 4
@@ -189,7 +190,7 @@ qa_task:
   qa_script: |
     source cirrus-env QA
     source set_maven_build_version $BUILD_NUMBER
-    if [[ ${CIRRUS_PR:-} != "" || $CIRRUS_BRANCH == 'master' || $CIRRUS_BRANCH =~ "branch-".* || $CIRRUS_BRANCH =~ "dogfood-on-".* ]]; then
+    if [[ ${CIRRUS_PR:-} != "" || $CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-".* || $CIRRUS_BRANCH =~ "dogfood-on-".* ]]; then
       mvn -f its/pom.xml -Dsonar.runtimeVersion=${SQ_VERSION} ${CATEGORY} -B -e -V verify surefire-report:report
     else
       mvn clean install -DskipTests
@@ -210,7 +211,6 @@ promote_task:
     - test_windows
     - mend_scan
     - qa
-  <<: *ONLY_IF
   <<: *ONLY_PR_AND_MAINTAINED_BRANCHES
   eks_container:
     <<: *CONTAINER_DEFINITION
