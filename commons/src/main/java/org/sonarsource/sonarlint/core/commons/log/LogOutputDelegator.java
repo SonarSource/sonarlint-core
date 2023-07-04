@@ -21,14 +21,21 @@ package org.sonarsource.sonarlint.core.commons.log;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
 
 class LogOutputDelegator {
+
+  /**
+   * In case we can't find a logger in the current Thread hierarchy, fallback on the first ClientLogOutput that has been passed
+   */
+  private static AtomicReference<ClientLogOutput> fallback = new AtomicReference<>();
   private final InheritableThreadLocal<ClientLogOutput> target = new InheritableThreadLocal<>();
 
   void log(String formattedMessage, Level level) {
-    var output = target.get();
+    var output = Optional.ofNullable(target.get()).orElse(fallback.get());
     if (output != null) {
       output.log(formattedMessage, level);
     }
@@ -48,6 +55,7 @@ class LogOutputDelegator {
   }
 
   void setTarget(@Nullable ClientLogOutput target) {
+    fallback.compareAndSet(null, target);
     this.target.set(target);
   }
 }
