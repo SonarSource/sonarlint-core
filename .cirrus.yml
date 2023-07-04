@@ -149,7 +149,6 @@ qa_task:
   # Run ITs
   depends_on:
     - build
-    - test_windows
   <<: *ONLY_IF_EXCEPT_NIGHTLY
   eks_container:
     <<: *CONTAINER_DEFINITION
