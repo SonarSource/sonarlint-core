@@ -180,7 +180,7 @@ class DefaultSonarLintIssueTests {
   }
 
   @Test
-  void build_project_issue() throws IOException {
+  void build_project_issue() {
     var storage = mock(SensorStorage.class);
     var issue = new DefaultSonarLintIssue(project, baseDir, storage)
       .at(new DefaultSonarLintIssueLocation()
@@ -197,6 +197,20 @@ class DefaultSonarLintIssueTests {
     issue.save();
 
     verify(storage).store(issue);
+  }
+
+  @Test
+  void does_not_support_variants() {
+    var storage = mock(SensorStorage.class);
+    var issue = (DefaultSonarLintIssue) new DefaultSonarLintIssue(project, baseDir, storage)
+      .at(new DefaultSonarLintIssueLocation()
+        .on(project)
+        .message("Wrong way!"))
+      .forRule(RuleKey.of("repo", "rule"))
+      .setCodeVariants(List.of("variant1", "variant2"))
+      .gap(10.0);
+
+    assertThat(issue.codeVariants()).isEmpty();
   }
 
 }

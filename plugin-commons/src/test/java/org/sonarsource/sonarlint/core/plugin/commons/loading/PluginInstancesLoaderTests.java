@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -32,7 +31,7 @@ import org.assertj.core.data.MapEntry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonar.api.SonarPlugin;
+import org.sonar.api.Plugin;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -176,23 +175,23 @@ class PluginInstancesLoaderTests {
       entry("fooExtension1", "org.foo.Extension1Plugin"));
   }
 
-  public static class FakePlugin extends SonarPlugin {
+  public static class FakePlugin implements Plugin {
     @Override
-    public List getExtensions() {
-      return Collections.emptyList();
+    public void define(Context context) {
+      // no extensions
     }
   }
 
   /**
    * No public empty-param constructor
    */
-  public static class IncorrectPlugin extends SonarPlugin {
+  public static class IncorrectPlugin implements Plugin {
     public IncorrectPlugin(String s) {
     }
 
     @Override
-    public List getExtensions() {
-      return Collections.emptyList();
+    public void define(Context context) {
+      // no extensions
     }
   }
 

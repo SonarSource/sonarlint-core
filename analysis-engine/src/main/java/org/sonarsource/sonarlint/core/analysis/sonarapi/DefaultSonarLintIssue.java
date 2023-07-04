@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.sonar.api.batch.fs.InputDir;
@@ -69,6 +70,12 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
   @Override
   public NewIssue setRuleDescriptionContextKey(@Nullable String ruleDescriptionContextKey) {
     this.ruleDescriptionContextKey = Optional.ofNullable(ruleDescriptionContextKey);
+    return this;
+  }
+
+  @Override
+  public NewIssue setCodeVariants(@Nullable Iterable<String> iterable) {
+    // not implemented
     return this;
   }
 
@@ -193,6 +200,12 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
   @Override
   public List<QuickFix> quickFixes() {
     return Collections.unmodifiableList(quickFixes);
+  }
+
+  @CheckForNull
+  @Override
+  public List<String> codeVariants() {
+    return Collections.emptyList();
   }
 
   @Override
