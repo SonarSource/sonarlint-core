@@ -75,8 +75,8 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.backend.HostInfoDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.initialize.ClientInfoDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.DidAddConfigurationScopesParams;
@@ -167,7 +167,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     backend = new SonarLintBackendImpl(newDummySonarLintClient());
     try {
       backend.initialize(
-        new InitializeParams(new HostInfoDto("clientName"), "integrationTests", sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"), Collections.emptySet(),
+        new InitializeParams(IT_CLIENT_INFO, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"), Collections.emptySet(),
           Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(), false,
           List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(), false,
           Map.of(), false, true, false, "SonarLint")).get();

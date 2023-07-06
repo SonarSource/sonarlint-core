@@ -43,7 +43,7 @@ import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.TokenGeneratorHelper;
 import org.sonarsource.sonarlint.core.analysis.AnalysisServiceImpl;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchServiceImpl;
-import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
@@ -132,7 +132,7 @@ public class SonarLintSpringAppConfig {
 
   @Bean
   TelemetryServiceImpl provideTelemetryService(InitializeParams params, @Named("userHome") Path sonarlintUserHome) {
-    return new TelemetryServiceImpl(params.getTelemetryProductKey(), sonarlintUserHome);
+    return new TelemetryServiceImpl(params.getClientInfo().getTelemetryProductKey(), sonarlintUserHome);
   }
 
   @Bean(name = "userHome")

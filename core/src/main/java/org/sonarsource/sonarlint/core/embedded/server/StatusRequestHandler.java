@@ -35,8 +35,8 @@ import org.apache.hc.core5.http.io.HttpRequestHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.backend.HostInfoDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.initialize.ClientInfoDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 
@@ -46,12 +46,12 @@ public class StatusRequestHandler implements HttpRequestHandler {
 
   private final SonarLintClient client;
   private final ConnectionConfigurationRepository repository;
-  private final HostInfoDto clientInfo;
+  private final ClientInfoDto clientInfo;
 
   public StatusRequestHandler(SonarLintClient client, ConnectionConfigurationRepository repository, InitializeParams params) {
     this.client = client;
     this.repository = repository;
-    this.clientInfo = params.getHostInfo();
+    this.clientInfo = params.getClientInfo();
   }
 
   @Override

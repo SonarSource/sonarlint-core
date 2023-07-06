@@ -18,7 +18,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 @ParametersAreNonnullByDefault
-package org.sonarsource.sonarlint.core.clientapi.backend;
+package org.sonarsource.sonarlint.core.clientapi.backend.initialize;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 

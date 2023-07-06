@@ -41,8 +41,6 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.jetbrains.annotations.Nullable;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.backend.HostInfoDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.branch.DidChangeActiveSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingSuggestionDto;
@@ -52,6 +50,8 @@ import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.DidAddConfi
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.initialize.ClientInfoDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
@@ -261,7 +261,6 @@ public class SonarLintBackendFixture {
     }
 
     public SonarLintTestBackend build(FakeSonarLintClient client) {
-      var telemetryProductKey = "mediumTests";
       var sonarlintUserHome = tempDirectory("slUserHome");
       var workDir = tempDirectory("work");
       var storageParentPath = tempDirectory("storage");
@@ -270,7 +269,7 @@ public class SonarLintBackendFixture {
       client.setBackend(sonarLintBackend);
       try {
         sonarLintBackend
-          .initialize(new InitializeParams(client.getClientInfo(), telemetryProductKey, storageParentPath.resolve("storage"), workDir, embeddedPluginPaths,
+          .initialize(new InitializeParams(client.getClientInfo(), storageParentPath.resolve("storage"), workDir, embeddedPluginPaths,
             connectedModeEmbeddedPluginPathsByKey,
             enabledLanguages, extraEnabledLanguagesInConnectedMode, areSecurityHotspotsEnabled, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
             startEmbeddedServer,
@@ -358,7 +357,8 @@ public class SonarLintBackendFixture {
     }
 
     public FakeSonarLintClient build() {
-      return new FakeSonarLintClient(new HostInfoDto(hostName), foundFiles, hostDescription, cannedAssistCreatingSonarQubeConnectionByBaseUrl, cannedBindingAssistByProjectKey,
+      return new FakeSonarLintClient(new ClientInfoDto(hostName, "mediumTests"), foundFiles, hostDescription, cannedAssistCreatingSonarQubeConnectionByBaseUrl,
+        cannedBindingAssistByProjectKey,
         rejectingProgress, proxy, proxyAuth, creds);
     }
   }
@@ -369,7 +369,7 @@ public class SonarLintBackendFixture {
     private final List<String> urlsToOpen = new ArrayList<>();
     private final List<ShowMessageParams> messagesToShow = new ArrayList<>();
     private final List<ShowSmartNotificationParams> smartNotificationsToShow = new ArrayList<>();
-    private final HostInfoDto clientInfo;
+    private final ClientInfoDto clientInfo;
     private final List<FoundFileDto> foundFiles;
     private final String workspaceTitle;
     private final LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl;
@@ -383,7 +383,7 @@ public class SonarLintBackendFixture {
     private final Map<String, Either<TokenDto, UsernamePasswordDto>> creds;
     private SonarLintBackendImpl backend;
 
-    public FakeSonarLintClient(HostInfoDto clientInfo, List<FoundFileDto> foundFiles, String workspaceTitle,
+    public FakeSonarLintClient(ClientInfoDto clientInfo, List<FoundFileDto> foundFiles, String workspaceTitle,
       LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
       LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, boolean rejectingProgress, @Nullable ProxyDto proxy,
       @Nullable GetProxyPasswordAuthenticationResponse proxyAuth, Map<String, Either<TokenDto, UsernamePasswordDto>> creds) {
@@ -402,7 +402,7 @@ public class SonarLintBackendFixture {
       this.backend = backend;
     }
 
-    public HostInfoDto getClientInfo() {
+    public ClientInfoDto getClientInfo() {
       return clientInfo;
     }
 

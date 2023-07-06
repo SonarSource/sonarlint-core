@@ -25,8 +25,8 @@ import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
-import org.sonarsource.sonarlint.core.clientapi.backend.HostInfoDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.initialize.ClientInfoDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -51,7 +51,7 @@ class InitializationMediumTests {
       .build();
 
     var future = backend
-      .initialize(new InitializeParams(new HostInfoDto("name"), "productKey", Path.of("unused"), Path.of("unused"), emptySet(), emptyMap(), emptySet(), emptySet(), false,
+      .initialize(new InitializeParams(new ClientInfoDto("name", "productKey"), Path.of("unused"), Path.of("unused"), emptySet(), emptyMap(), emptySet(), emptySet(), false,
         emptyList(), emptyList(), "home", false, emptyMap(), false, false, false, "userAgent"));
 
     assertThat(future)

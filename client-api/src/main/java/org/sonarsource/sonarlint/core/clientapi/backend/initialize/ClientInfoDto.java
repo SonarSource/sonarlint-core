@@ -17,22 +17,33 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.backend;
+package org.sonarsource.sonarlint.core.clientapi.backend.initialize;
 
 import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
-/**
- * The data from this class will be used outside the IDE, e.g. for the sonarlint/api/status endpoint or when opening the page to generate the user token
- */
-public class HostInfoDto {
+public class ClientInfoDto {
+  /**
+   * Name of the client, that could be used outside the IDE, e.g. for the sonarlint/api/status endpoint or when opening the page to generate the user token
+   */
   private final String name;
 
-  public HostInfoDto(@NonNull String name) {
+  /**
+   * SonarLint product key (vscode, idea, eclipse, ...)
+   */
+  private final String telemetryProductKey;
+
+
+  public ClientInfoDto(@NonNull String name, @NonNull String telemetryProductKey) {
     this.name = name;
+    this.telemetryProductKey = telemetryProductKey;
   }
 
   @NonNull
   public String getName() {
     return name;
+  }
+
+  public String getTelemetryProductKey() {
+    return telemetryProductKey;
   }
 }
