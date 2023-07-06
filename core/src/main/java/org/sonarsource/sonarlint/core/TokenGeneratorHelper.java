@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.auth.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.auth.HelpGenerateUserTokenResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
@@ -54,7 +54,7 @@ public class TokenGeneratorHelper {
     this.client = client;
     this.embeddedServer = embeddedServer;
     this.awaitingUserTokenFutureRepository = awaitingUserTokenFutureRepository;
-    this.clientName = params.getHostInfo().getName();
+    this.clientName = params.getClientInfo().getName();
     this.httpClientProvider = httpClientProvider;
   }
 

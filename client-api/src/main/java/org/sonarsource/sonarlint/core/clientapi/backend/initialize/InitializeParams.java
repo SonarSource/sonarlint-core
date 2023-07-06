@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.backend;
+package org.sonarsource.sonarlint.core.clientapi.backend.initialize;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -31,8 +31,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.rules.StandaloneRuleConf
 import org.sonarsource.sonarlint.core.commons.Language;
 
 public class InitializeParams {
-  private final HostInfoDto hostInfo;
-  private final String telemetryProductKey;
+  private final ClientInfoDto clientInfo;
   private final Path storageRoot;
   @Nullable
   private final Path workDir;
@@ -54,18 +53,16 @@ public class InitializeParams {
   private final String userAgent;
 
   /**
-   * @param telemetryProductKey       SonarLint product key (vscode, idea, eclipse, ...)
    * @param sonarlintUserHome         Path to SonarLint user home directory. If null, will default to ~/.sonarlint
    * @param workDir                   Path to work directory. If null, will default to [sonarlintUserHome]/work
    * @param standaloneRuleConfigByKey Local rule configuration for standalone analysis. This configuration will override defaults rule activation and parameters.
    */
-  public InitializeParams(HostInfoDto hostInfo, String telemetryProductKey, Path storageRoot, @Nullable Path workDir, Set<Path> embeddedPluginPaths,
+  public InitializeParams(ClientInfoDto clientInfo, Path storageRoot, @Nullable Path workDir, Set<Path> embeddedPluginPaths,
     Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> extraEnabledLanguagesInConnectedMode,
     boolean enableSecurityHotspots, List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections,
     @Nullable String sonarlintUserHome, boolean shouldManageLocalServer, Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey, boolean shouldManageSmartNotifications,
     @Deprecated boolean taintVulnerabilitiesEnabled, boolean shouldSynchronizeProjects, String userAgent) {
-    this.hostInfo = hostInfo;
-    this.telemetryProductKey = telemetryProductKey;
+    this.clientInfo = clientInfo;
     this.storageRoot = storageRoot;
     this.workDir = workDir;
     this.embeddedPluginPaths = embeddedPluginPaths;
@@ -84,12 +81,8 @@ public class InitializeParams {
     this.userAgent = userAgent;
   }
 
-  public HostInfoDto getHostInfo() {
-    return hostInfo;
-  }
-
-  public String getTelemetryProductKey() {
-    return telemetryProductKey;
+  public ClientInfoDto getClientInfo() {
+    return clientInfo;
   }
 
   public Path getStorageRoot() {

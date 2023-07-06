@@ -24,7 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import org.apache.commons.io.FileUtils;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.backend.InitializeParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
 
 import static java.util.Objects.requireNonNull;
@@ -42,7 +42,7 @@ public class SonarLintTestBackend extends SonarLintBackendImpl {
   public CompletableFuture<Void> initialize(InitializeParams params) {
     this.userHome = Path.of(requireNonNull(params.getSonarlintUserHome()));
     this.workDir = requireNonNull(params.getWorkDir());
-    this.telemetryFilePath = TelemetryPathManager.getPath(userHome, params.getTelemetryProductKey());
+    this.telemetryFilePath = TelemetryPathManager.getPath(userHome, params.getClientInfo().getTelemetryProductKey());
     return super.initialize(params);
   }
 
