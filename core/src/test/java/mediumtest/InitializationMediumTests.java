@@ -26,6 +26,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.initialize.ClientInfoDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 
 import static java.util.Collections.emptyList;
@@ -51,8 +52,10 @@ class InitializationMediumTests {
       .build();
 
     var future = backend
-      .initialize(new InitializeParams(new ClientInfoDto("name", "productKey", "userAgent"), Path.of("unused"), Path.of("unused"), emptySet(), emptyMap(), emptySet(), emptySet(), false,
-        emptyList(), emptyList(), "home", false, emptyMap(), false, false, false));
+      .initialize(new InitializeParams(new ClientInfoDto("name", "productKey", "userAgent"), new FeatureFlagsDto(false, false, false, false, false),
+        Path.of("unused"), Path.of("unused"),
+        emptySet(), emptyMap(), emptySet(), emptySet(),
+        emptyList(), emptyList(), "home", emptyMap()));
 
     assertThat(future)
       .failsWithin(Duration.ofSeconds(1))

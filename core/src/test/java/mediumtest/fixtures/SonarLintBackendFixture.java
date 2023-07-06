@@ -51,6 +51,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpd
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.initialize.ClientInfoDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
@@ -64,7 +65,6 @@ import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentials
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FoundFileDto;
-import org.sonarsource.sonarlint.core.clientapi.client.info.GetClientInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.GetProxyPasswordAuthenticationParams;
@@ -72,6 +72,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.http.GetProxyPasswordAuth
 import org.sonarsource.sonarlint.core.clientapi.client.http.ProxyDto;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.info.GetClientInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressParams;
@@ -273,13 +274,14 @@ public class SonarLintBackendFixture {
       storages.forEach(storage -> storage.create(storageParentPath));
       var sonarLintBackend = new SonarLintTestBackend(client);
       client.setBackend(sonarLintBackend);
+      var clientInfo = new ClientInfoDto(clientName, "mediumTests", userAgent);
+      var featureFlags = new FeatureFlagsDto(manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, startEmbeddedServer, areSecurityHotspotsEnabled);
       try {
         sonarLintBackend
-          .initialize(new InitializeParams(new ClientInfoDto(clientName, "mediumTests", userAgent), storageParentPath.resolve("storage"), workDir, embeddedPluginPaths,
-            connectedModeEmbeddedPluginPathsByKey,
-            enabledLanguages, extraEnabledLanguagesInConnectedMode, areSecurityHotspotsEnabled, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
-            startEmbeddedServer,
-            standaloneConfigByKey, manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects))
+          .initialize(new InitializeParams(clientInfo, featureFlags,
+            storageParentPath.resolve("storage"), workDir, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
+            enabledLanguages, extraEnabledLanguagesInConnectedMode, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
+            standaloneConfigByKey))
           .get();
       } catch (Exception e) {
         throw new IllegalStateException("Cannot initialize the backend", e);

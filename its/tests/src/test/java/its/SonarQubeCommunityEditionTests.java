@@ -69,8 +69,9 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.initialize.FeatureFlagsDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResponse;
@@ -79,19 +80,19 @@ import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreating
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsResponse;
-import org.sonarsource.sonarlint.core.clientapi.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
-import org.sonarsource.sonarlint.core.clientapi.client.info.GetClientInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.ProxyDto;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.info.GetClientInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.clientapi.client.sync.DidSynchronizeConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.clientapi.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -104,7 +105,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.junit.jupiter.api.Assertions.fail;
 
 class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
   public static final String CONNECTION_ID = "orchestrator";
@@ -129,10 +129,11 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     backend = new SonarLintBackendImpl(newDummySonarLintClient());
     try {
       backend.initialize(
-        new InitializeParams(IT_CLIENT_INFO, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"), Collections.emptySet(),
-          Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(), false,
-          List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(), false,
-          Map.of(), false, true, false)).get();
+        new InitializeParams(IT_CLIENT_INFO, new FeatureFlagsDto(false, true, false, false, false), sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
+          Collections.emptySet(), Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(),
+          List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(),
+          Map.of()))
+        .get();
     } catch (Exception e) {
       throw new IllegalStateException("Cannot initialize the backend", e);
     }

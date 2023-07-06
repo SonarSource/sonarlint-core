@@ -61,12 +61,13 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.GetOrganizationParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.ListUserOrganizationsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.ValidateConnectionParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.initialize.FeatureFlagsDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResponse;
@@ -77,11 +78,11 @@ import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentials
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
-import org.sonarsource.sonarlint.core.clientapi.client.info.GetClientInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.ProxyDto;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.info.GetClientInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressParams;
@@ -139,10 +140,10 @@ class SonarCloudTests extends AbstractConnectedTests {
     System.setProperty("sonarlint.internal.sonarcloud.url", SONARCLOUD_STAGING_URL);
     backend = new SonarLintBackendImpl(newDummySonarLintClient());
     backend.initialize(
-      new InitializeParams(IT_CLIENT_INFO, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"), Collections.emptySet(),
-        Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(), false,
-        Collections.emptyList(), List.of(new SonarCloudConnectionConfigurationDto(CONNECTION_ID, SONARCLOUD_ORGANIZATION, true)), sonarUserHome.toString(), false,
-        Map.of(), false, true, false));
+      new InitializeParams(IT_CLIENT_INFO, new FeatureFlagsDto(false, true, false, false, false), sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
+        Collections.emptySet(), Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(),
+        Collections.emptyList(), List.of(new SonarCloudConnectionConfigurationDto(CONNECTION_ID, SONARCLOUD_ORGANIZATION, true)), sonarUserHome.toString(),
+        Map.of()));
 
     randomPositiveInt = new Random().nextInt() & Integer.MAX_VALUE;
 
@@ -596,7 +597,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
   private static void runMaven(Path workDir, String... args) throws IOException {
     var cmdLine = CommandLine.parse("mvn");
-    cmdLine.addArguments(new String[]{"--batch-mode", "--show-version", "--errors"});
+    cmdLine.addArguments(new String[] {"--batch-mode", "--show-version", "--errors"});
     cmdLine.addArguments(args);
     var executor = new DefaultExecutor();
     executor.setWorkingDirectory(workDir.toFile());

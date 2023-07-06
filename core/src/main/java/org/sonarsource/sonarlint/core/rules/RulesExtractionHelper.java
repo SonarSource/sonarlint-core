@@ -43,7 +43,7 @@ public class RulesExtractionHelper {
   public RulesExtractionHelper(PluginsServiceImpl pluginsService, LanguageSupportRepository languageSupportRepository, InitializeParams params) {
     this.pluginsService = pluginsService;
     this.languageSupportRepository = languageSupportRepository;
-    this.enableSecurityHotspots = params.isEnableSecurityHotspots();
+    this.enableSecurityHotspots = params.getFeatureFlags().isEnableSecurityHotspots();
   }
 
   public List<SonarLintRuleDefinition> extractEmbeddedRules() {
