@@ -69,7 +69,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.backend.initialize.ClientInfoDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
@@ -83,7 +82,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentials
 import org.sonarsource.sonarlint.core.clientapi.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
-import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.info.GetClientInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.ProxyDto;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesParams;
@@ -133,7 +132,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
         new InitializeParams(IT_CLIENT_INFO, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"), Collections.emptySet(),
           Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(), false,
           List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(), false,
-          Map.of(), false, true, false, "SonarLint")).get();
+          Map.of(), false, true, false)).get();
     } catch (Exception e) {
       throw new IllegalStateException("Cannot initialize the backend", e);
     }
@@ -514,8 +513,8 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
       }
 
       @Override
-      public CompletableFuture<GetHostInfoResponse> getHostInfo() {
-        return CompletableFuture.completedFuture(new GetHostInfoResponse(""));
+      public CompletableFuture<GetClientInfoResponse> getClientInfo() {
+        return CompletableFuture.completedFuture(new GetClientInfoResponse(""));
       }
 
       @Override

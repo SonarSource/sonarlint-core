@@ -37,7 +37,7 @@ import org.apache.hc.core5.http.protocol.HttpContext;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.initialize.ClientInfoDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.info.GetClientInfoResponse;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 
 @Named
@@ -67,7 +67,7 @@ public class StatusRequestHandler implements HttpRequestHandler {
 
   private CompletableFuture<String> getDescription(boolean trustedServer) {
     if (trustedServer) {
-      return client.getHostInfo().thenApply(GetHostInfoResponse::getDescription);
+      return client.getClientInfo().thenApply(GetClientInfoResponse::getDescription);
     }
     return CompletableFuture.completedFuture("");
   }

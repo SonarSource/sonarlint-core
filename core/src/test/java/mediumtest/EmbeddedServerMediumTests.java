@@ -41,8 +41,8 @@ class EmbeddedServerMediumTests {
 
   @Test
   void it_should_return_the_ide_name_and_empty_description_if_the_origin_is_not_trusted() throws IOException, InterruptedException {
-    var fakeClient = newFakeClient().withHostName("ClientName").build();
-    backend = newBackend().withEmbeddedServer().build(fakeClient);
+    var fakeClient = newFakeClient().build();
+    backend = newBackend().withEmbeddedServer().withClientName("ClientName").build(fakeClient);
 
     var request = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/status"))
@@ -56,24 +56,24 @@ class EmbeddedServerMediumTests {
 
   @Test
   void it_should_not_trust_origin_having_known_connection_prefix() throws IOException, InterruptedException {
-    var fakeClient = newFakeClient().withHostName("ClientName").withHostDescription("WorkspaceTitle").build();
-    backend = newBackend().withEmbeddedServer().withSonarQubeConnection("connectionId", "https://sonar.my").build(fakeClient);
+    var fakeClient = newFakeClient().withClientDescription("WorkspaceTitle").build();
+    backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").build(fakeClient);
 
     var request = HttpRequest.newBuilder()
-            .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/status"))
-            .header("Origin", "https://sonar")
-            .GET().build();
+      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/status"))
+      .header("Origin", "https://sonar")
+      .GET().build();
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
     assertThat(response)
-            .extracting(HttpResponse::statusCode, HttpResponse::body)
-            .containsExactly(200, "{\"ideName\":\"ClientName\",\"description\":\"\"}");
+      .extracting(HttpResponse::statusCode, HttpResponse::body)
+      .containsExactly(200, "{\"ideName\":\"ClientName\",\"description\":\"\"}");
   }
 
   @Test
   void it_should_return_the_ide_name_and_full_description_if_the_origin_is_trusted() throws IOException, InterruptedException {
-    var fakeClient = newFakeClient().withHostName("ClientName").withHostDescription("WorkspaceTitle").build();
-    backend = newBackend().withEmbeddedServer().withSonarQubeConnection("connectionId", "https://sonar.my").build(fakeClient);
+    var fakeClient = newFakeClient().withClientDescription("WorkspaceTitle").build();
+    backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").build(fakeClient);
 
     var request = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/status"))

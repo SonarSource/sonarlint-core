@@ -20,7 +20,11 @@
 package org.sonarsource.sonarlint.core.clientapi.backend.initialize;
 
 import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
+import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 
+/**
+ * Static information to describe the client. Dynamic information will be provided when needed by calling {@link SonarLintClient#getClientInfo()}
+ */
 public class ClientInfoDto {
   /**
    * Name of the client, that could be used outside the IDE, e.g. for the sonarlint/api/status endpoint or when opening the page to generate the user token
@@ -32,10 +36,15 @@ public class ClientInfoDto {
    */
   private final String telemetryProductKey;
 
+  /**
+   * User agent used for all HTTP requests made by the backend
+   */
+  private final String userAgent;
 
-  public ClientInfoDto(@NonNull String name, @NonNull String telemetryProductKey) {
+  public ClientInfoDto(@NonNull String name, @NonNull String telemetryProductKey, @NonNull String userAgent) {
     this.name = name;
     this.telemetryProductKey = telemetryProductKey;
+    this.userAgent = userAgent;
   }
 
   @NonNull
@@ -45,5 +54,9 @@ public class ClientInfoDto {
 
   public String getTelemetryProductKey() {
     return telemetryProductKey;
+  }
+
+  public String getUserAgent() {
+    return userAgent;
   }
 }

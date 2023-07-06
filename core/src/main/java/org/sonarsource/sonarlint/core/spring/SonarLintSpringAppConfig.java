@@ -153,7 +153,7 @@ public class SonarLintSpringAppConfig {
   HttpClientProvider provideHttpClientProvider(InitializeParams params, @Named("userHome") Path sonarlintUserHome, AskClientCertificatePredicate askClientCertificatePredicate,
     ProxySelector proxySelector,
     CredentialsProvider proxyCredentialsProvider) {
-    return new HttpClientProvider(params.getUserAgent(), sonarlintUserHome, askClientCertificatePredicate, proxySelector, proxyCredentialsProvider);
+    return new HttpClientProvider(params.getClientInfo().getUserAgent(), sonarlintUserHome, askClientCertificatePredicate, proxySelector, proxyCredentialsProvider);
   }
 
   private static void createFolderIfNeeded(Path path) {

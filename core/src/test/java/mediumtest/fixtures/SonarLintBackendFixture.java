@@ -64,7 +64,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentials
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FoundFileDto;
-import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.info.GetClientInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.GetProxyPasswordAuthenticationParams;
@@ -107,7 +107,8 @@ public class SonarLintBackendFixture {
     private boolean areSecurityHotspotsEnabled;
     private boolean synchronizeProjects;
     private boolean taintVulnerabilitiesEnabled = true;
-    private String userAgent;
+    private String userAgent = "SonarLintBackendFixture";
+    private String clientName = "SonarLint Backend Fixture";
 
     private final Map<String, StandaloneRuleConfigDto> standaloneConfigByKey = new HashMap<>();
     private final List<StorageFixture.StorageBuilder> storages = new ArrayList<>();
@@ -250,8 +251,13 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintBackendBuilder withUserAgent() {
-      userAgent = "SonarLintBackendFixture";
+    public SonarLintBackendBuilder withUserAgent(String userAgent) {
+      this.userAgent = userAgent;
+      return this;
+    }
+
+    public SonarLintBackendBuilder withClientName(String clientName) {
+      this.clientName = clientName;
       return this;
     }
 
@@ -269,11 +275,11 @@ public class SonarLintBackendFixture {
       client.setBackend(sonarLintBackend);
       try {
         sonarLintBackend
-          .initialize(new InitializeParams(client.getClientInfo(), storageParentPath.resolve("storage"), workDir, embeddedPluginPaths,
+          .initialize(new InitializeParams(new ClientInfoDto(clientName, "mediumTests", userAgent), storageParentPath.resolve("storage"), workDir, embeddedPluginPaths,
             connectedModeEmbeddedPluginPathsByKey,
             enabledLanguages, extraEnabledLanguagesInConnectedMode, areSecurityHotspotsEnabled, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
             startEmbeddedServer,
-            standaloneConfigByKey, manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, userAgent))
+            standaloneConfigByKey, manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects))
           .get();
       } catch (Exception e) {
         throw new IllegalStateException("Cannot initialize the backend", e);
@@ -300,8 +306,7 @@ public class SonarLintBackendFixture {
 
   public static class SonarLintClientBuilder {
     private final List<FoundFileDto> foundFiles = new ArrayList<>();
-    private String hostDescription = "";
-    private String hostName = "";
+    private String clientDescription = "";
     private final LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl = new LinkedHashMap<>();
     private final LinkedHashMap<String, ConfigurationScopeDto> cannedBindingAssistByProjectKey = new LinkedHashMap<>();
     private boolean rejectingProgress;
@@ -315,13 +320,8 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintClientBuilder withHostDescription(String hostDescription) {
-      this.hostDescription = hostDescription;
-      return this;
-    }
-
-    public SonarLintClientBuilder withHostName(String hostName) {
-      this.hostName = hostName;
+    public SonarLintClientBuilder withClientDescription(String clientDescription) {
+      this.clientDescription = clientDescription;
       return this;
     }
 
@@ -357,7 +357,7 @@ public class SonarLintBackendFixture {
     }
 
     public FakeSonarLintClient build() {
-      return new FakeSonarLintClient(new ClientInfoDto(hostName, "mediumTests"), foundFiles, hostDescription, cannedAssistCreatingSonarQubeConnectionByBaseUrl,
+      return new FakeSonarLintClient(foundFiles, clientDescription, cannedAssistCreatingSonarQubeConnectionByBaseUrl,
         cannedBindingAssistByProjectKey,
         rejectingProgress, proxy, proxyAuth, creds);
     }
@@ -369,9 +369,8 @@ public class SonarLintBackendFixture {
     private final List<String> urlsToOpen = new ArrayList<>();
     private final List<ShowMessageParams> messagesToShow = new ArrayList<>();
     private final List<ShowSmartNotificationParams> smartNotificationsToShow = new ArrayList<>();
-    private final ClientInfoDto clientInfo;
     private final List<FoundFileDto> foundFiles;
-    private final String workspaceTitle;
+    private final String clientDescription;
     private final LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl;
     private final LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey;
     private final boolean rejectingProgress;
@@ -383,13 +382,12 @@ public class SonarLintBackendFixture {
     private final Map<String, Either<TokenDto, UsernamePasswordDto>> creds;
     private SonarLintBackendImpl backend;
 
-    public FakeSonarLintClient(ClientInfoDto clientInfo, List<FoundFileDto> foundFiles, String workspaceTitle,
+    public FakeSonarLintClient(List<FoundFileDto> foundFiles, String clientDescription,
       LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
       LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, boolean rejectingProgress, @Nullable ProxyDto proxy,
       @Nullable GetProxyPasswordAuthenticationResponse proxyAuth, Map<String, Either<TokenDto, UsernamePasswordDto>> creds) {
-      this.clientInfo = clientInfo;
       this.foundFiles = foundFiles;
-      this.workspaceTitle = workspaceTitle;
+      this.clientDescription = clientDescription;
       this.cannedAssistCreatingSonarQubeConnectionByBaseUrl = cannedAssistCreatingSonarQubeConnectionByBaseUrl;
       this.bindingAssistResponseByProjectKey = bindingAssistResponseByProjectKey;
       this.rejectingProgress = rejectingProgress;
@@ -400,10 +398,6 @@ public class SonarLintBackendFixture {
 
     public void setBackend(SonarLintBackendImpl backend) {
       this.backend = backend;
-    }
-
-    public ClientInfoDto getClientInfo() {
-      return clientInfo;
     }
 
     @Override
@@ -432,8 +426,8 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public CompletableFuture<GetHostInfoResponse> getHostInfo() {
-      return CompletableFuture.completedFuture(new GetHostInfoResponse(workspaceTitle));
+    public CompletableFuture<GetClientInfoResponse> getClientInfo() {
+      return CompletableFuture.completedFuture(new GetClientInfoResponse(clientDescription));
     }
 
     @Override

@@ -50,7 +50,6 @@ public class InitializeParams {
   // not controllable anymore, it is the backend's responsibility to decide
   private final boolean taintVulnerabilitiesEnabled;
   private final boolean shouldSynchronizeProjects;
-  private final String userAgent;
 
   /**
    * @param sonarlintUserHome         Path to SonarLint user home directory. If null, will default to ~/.sonarlint
@@ -61,7 +60,7 @@ public class InitializeParams {
     Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> extraEnabledLanguagesInConnectedMode,
     boolean enableSecurityHotspots, List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections,
     @Nullable String sonarlintUserHome, boolean shouldManageLocalServer, Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey, boolean shouldManageSmartNotifications,
-    @Deprecated boolean taintVulnerabilitiesEnabled, boolean shouldSynchronizeProjects, String userAgent) {
+    @Deprecated boolean taintVulnerabilitiesEnabled, boolean shouldSynchronizeProjects) {
     this.clientInfo = clientInfo;
     this.storageRoot = storageRoot;
     this.workDir = workDir;
@@ -78,7 +77,6 @@ public class InitializeParams {
     this.shouldManageSmartNotifications = shouldManageSmartNotifications;
     this.taintVulnerabilitiesEnabled = taintVulnerabilitiesEnabled;
     this.shouldSynchronizeProjects = shouldSynchronizeProjects;
-    this.userAgent = userAgent;
   }
 
   public ClientInfoDto getClientInfo() {
@@ -152,7 +150,4 @@ public class InitializeParams {
     return shouldSynchronizeProjects;
   }
 
-  public String getUserAgent() {
-    return userAgent;
-  }
 }

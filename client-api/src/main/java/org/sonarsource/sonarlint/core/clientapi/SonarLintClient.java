@@ -30,6 +30,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
+import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResponse;
@@ -40,7 +41,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentials
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
-import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.info.GetClientInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.CheckServerTrustedParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.CheckServerTrustedResponse;
@@ -76,8 +77,12 @@ public interface SonarLintClient {
   @JsonNotification
   void showSmartNotification(ShowSmartNotificationParams params);
 
+  /**
+   * Ask the client to provide the dynamic information that can change during the runtime. Static information are provided during {@link SonarLintBackend#initialize(InitializeParams)}
+   * in {@link org.sonarsource.sonarlint.core.clientapi.backend.initialize.ClientInfoDto}
+   */
   @JsonRequest
-  CompletableFuture<GetHostInfoResponse> getHostInfo();
+  CompletableFuture<GetClientInfoResponse> getClientInfo();
 
   @JsonNotification
   void showHotspot(ShowHotspotParams params);

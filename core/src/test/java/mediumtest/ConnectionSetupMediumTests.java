@@ -85,9 +85,9 @@ class ConnectionSetupMediumTests {
 
   @Test
   void it_should_open_the_sonarlint_auth_url_for_sonarqube_9_7_plus() throws IOException, InterruptedException {
-    var fakeClient = newFakeClient().withHostName("ClientName").build();
+    var fakeClient = newFakeClient().build();
     server = newSonarQubeServer("9.7").start();
-    backend = newBackend().withEmbeddedServer().withSonarQubeConnection("connectionId", server).build(fakeClient);
+    backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", server).build(fakeClient);
 
     var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
 
@@ -111,9 +111,9 @@ class ConnectionSetupMediumTests {
 
   @Test
   void it_should_reject_tokens_from_missing_origin() throws IOException, InterruptedException {
-    var fakeClient = newFakeClient().withHostName("ClientName").build();
+    var fakeClient = newFakeClient().build();
     server = newSonarQubeServer("9.7").start();
-    backend = newBackend().withEmbeddedServer().withSonarQubeConnection("connectionId", server).build(fakeClient);
+    backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", server).build(fakeClient);
 
     backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
 
@@ -131,9 +131,9 @@ class ConnectionSetupMediumTests {
 
   @Test
   void it_should_reject_tokens_from_unexpected_origin() throws IOException, InterruptedException {
-    var fakeClient = newFakeClient().withHostName("ClientName").build();
+    var fakeClient = newFakeClient().build();
     server = newSonarQubeServer("9.7").start();
-    backend = newBackend().withEmbeddedServer().withSonarQubeConnection("connectionId", server).build(fakeClient);
+    backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", server).build(fakeClient);
 
     backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
 
@@ -152,8 +152,8 @@ class ConnectionSetupMediumTests {
 
   @Test
   void it_should_open_the_sonarlint_auth_url_without_port_for_sonarqube_9_7_plus_when_server_is_not_started() {
-    var fakeClient = newFakeClient().withHostName("ClientName").build();
-    backend = newBackend().build(fakeClient);
+    var fakeClient = newFakeClient().build();
+    backend = newBackend().withClientName("ClientName").build(fakeClient);
     server = newSonarQubeServer("9.7").start();
 
     var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
