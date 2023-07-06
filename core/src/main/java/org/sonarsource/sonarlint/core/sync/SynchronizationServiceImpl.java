@@ -83,7 +83,7 @@ public class SynchronizationServiceImpl {
 
   @PostConstruct
   public void startScheduledSync() {
-    if (!params.shouldSynchronizeProjects()) {
+    if (!params.getFeatureFlags().shouldSynchronizeProjects()) {
       return;
     }
     scheduledSynchronizer = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SonarLint Local Storage Synchronizer"));

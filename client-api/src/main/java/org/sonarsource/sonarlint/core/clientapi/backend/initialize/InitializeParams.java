@@ -32,6 +32,7 @@ import org.sonarsource.sonarlint.core.commons.Language;
 
 public class InitializeParams {
   private final ClientInfoDto clientInfo;
+  private final FeatureFlagsDto featureFlags;
   private final Path storageRoot;
   @Nullable
   private final Path workDir;
@@ -39,48 +40,40 @@ public class InitializeParams {
   private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
   private final Set<Language> enabledLanguagesInStandaloneMode;
   private final Set<Language> extraEnabledLanguagesInConnectedMode;
-  private final boolean enableSecurityHotspots;
   private final List<SonarQubeConnectionConfigurationDto> sonarQubeConnections;
   private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections;
   private final String sonarlintUserHome;
-  private final boolean shouldManageLocalServer;
   private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey;
-  private final boolean shouldManageSmartNotifications;
-  @Deprecated
-  // not controllable anymore, it is the backend's responsibility to decide
-  private final boolean taintVulnerabilitiesEnabled;
-  private final boolean shouldSynchronizeProjects;
 
   /**
    * @param sonarlintUserHome         Path to SonarLint user home directory. If null, will default to ~/.sonarlint
    * @param workDir                   Path to work directory. If null, will default to [sonarlintUserHome]/work
    * @param standaloneRuleConfigByKey Local rule configuration for standalone analysis. This configuration will override defaults rule activation and parameters.
    */
-  public InitializeParams(ClientInfoDto clientInfo, Path storageRoot, @Nullable Path workDir, Set<Path> embeddedPluginPaths,
+  public InitializeParams(ClientInfoDto clientInfo, FeatureFlagsDto featureFlags, Path storageRoot, @Nullable Path workDir, Set<Path> embeddedPluginPaths,
     Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> extraEnabledLanguagesInConnectedMode,
-    boolean enableSecurityHotspots, List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections,
-    @Nullable String sonarlintUserHome, boolean shouldManageLocalServer, Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey, boolean shouldManageSmartNotifications,
-    @Deprecated boolean taintVulnerabilitiesEnabled, boolean shouldSynchronizeProjects) {
+    List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections,
+    @Nullable String sonarlintUserHome, Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
     this.clientInfo = clientInfo;
+    this.featureFlags = featureFlags;
     this.storageRoot = storageRoot;
     this.workDir = workDir;
     this.embeddedPluginPaths = embeddedPluginPaths;
     this.connectedModeEmbeddedPluginPathsByKey = connectedModeEmbeddedPluginPathsByKey;
     this.enabledLanguagesInStandaloneMode = enabledLanguagesInStandaloneMode;
     this.extraEnabledLanguagesInConnectedMode = extraEnabledLanguagesInConnectedMode;
-    this.enableSecurityHotspots = enableSecurityHotspots;
     this.sonarQubeConnections = sonarQubeConnections;
     this.sonarCloudConnections = sonarCloudConnections;
     this.sonarlintUserHome = sonarlintUserHome;
-    this.shouldManageLocalServer = shouldManageLocalServer;
     this.standaloneRuleConfigByKey = standaloneRuleConfigByKey;
-    this.shouldManageSmartNotifications = shouldManageSmartNotifications;
-    this.taintVulnerabilitiesEnabled = taintVulnerabilitiesEnabled;
-    this.shouldSynchronizeProjects = shouldSynchronizeProjects;
   }
 
   public ClientInfoDto getClientInfo() {
     return clientInfo;
+  }
+
+  public FeatureFlagsDto getFeatureFlags() {
+    return featureFlags;
   }
 
   public Path getStorageRoot() {
@@ -108,10 +101,6 @@ public class InitializeParams {
     return extraEnabledLanguagesInConnectedMode;
   }
 
-  public boolean isEnableSecurityHotspots() {
-    return enableSecurityHotspots;
-  }
-
   public List<SonarQubeConnectionConfigurationDto> getSonarQubeConnections() {
     return sonarQubeConnections;
   }
@@ -125,29 +114,8 @@ public class InitializeParams {
     return sonarlintUserHome;
   }
 
-  public boolean shouldManageLocalServer() {
-    return shouldManageLocalServer;
-  }
-
   public Map<String, StandaloneRuleConfigDto> getStandaloneRuleConfigByKey() {
     return standaloneRuleConfigByKey;
-  }
-
-  public boolean shouldManageSmartNotifications() {
-    return shouldManageSmartNotifications;
-  }
-
-  /**
-   * @deprecated not used anymore. It is the backend's responsibility to decide based on enabled languages
-   * @return
-   */
-  @Deprecated
-  public boolean areTaintVulnerabilitiesEnabled() {
-    return taintVulnerabilitiesEnabled;
-  }
-
-  public boolean shouldSynchronizeProjects() {
-    return shouldSynchronizeProjects;
   }
 
 }

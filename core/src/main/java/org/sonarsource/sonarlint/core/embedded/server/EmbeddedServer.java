@@ -55,7 +55,7 @@ public class EmbeddedServer {
 
   public EmbeddedServer(InitializeParams params, StatusRequestHandler statusRequestHandler, GeneratedUserTokenHandler generatedUserTokenHandler,
     ShowHotspotRequestHandler showHotspotRequestHandler) {
-    this.enabled = params.shouldManageLocalServer();
+    this.enabled = params.getFeatureFlags().shouldManageLocalServer();
     this.statusRequestHandler = statusRequestHandler;
     this.generatedUserTokenHandler = generatedUserTokenHandler;
     this.showHotspotRequestHandler = showHotspotRequestHandler;

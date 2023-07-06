@@ -76,7 +76,7 @@ public class SmartNotifications {
 
   @PostConstruct
   public void initialize() {
-    if (!params.shouldManageSmartNotifications()) {
+    if (!params.getFeatureFlags().shouldManageSmartNotifications()) {
       return;
     }
     smartNotificationsPolling = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "Smart Notifications Polling"));
