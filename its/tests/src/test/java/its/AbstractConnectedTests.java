@@ -53,7 +53,7 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class AbstractConnectedTests {
-  public static final ClientInfoDto IT_CLIENT_INFO = new ClientInfoDto("clientName", "integrationTests");
+  public static final ClientInfoDto IT_CLIENT_INFO = new ClientInfoDto("clientName", "integrationTests", "SonarLint ITs");
   protected static final String SONARLINT_USER = "sonarlint";
   protected static final String SONARLINT_PWD = "sonarlintpwd";
   protected static final String MAIN_BRANCH_NAME = "master";

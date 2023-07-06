@@ -51,8 +51,8 @@ class InitializationMediumTests {
       .build();
 
     var future = backend
-      .initialize(new InitializeParams(new ClientInfoDto("name", "productKey"), Path.of("unused"), Path.of("unused"), emptySet(), emptyMap(), emptySet(), emptySet(), false,
-        emptyList(), emptyList(), "home", false, emptyMap(), false, false, false, "userAgent"));
+      .initialize(new InitializeParams(new ClientInfoDto("name", "productKey", "userAgent"), Path.of("unused"), Path.of("unused"), emptySet(), emptyMap(), emptySet(), emptySet(), false,
+        emptyList(), emptyList(), "home", false, emptyMap(), false, false, false));
 
     assertThat(future)
       .failsWithin(Duration.ofSeconds(1))

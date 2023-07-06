@@ -17,12 +17,17 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.client.host;
+package org.sonarsource.sonarlint.core.clientapi.client.info;
 
-public class GetHostInfoResponse {
+public class GetClientInfoResponse {
+
+  /**
+   * The description of the client. For clients that support multiple instances, the description should be specific enough to identify the instance
+   * (example: Eclipse Workspace, IntelliJ flavor, ...). Still be careful to not expose sensitive data, as the content may be accessed externally.
+   */
   private final String description;
 
-  public GetHostInfoResponse(String description) {
+  public GetClientInfoResponse(String description) {
     this.description = description;
   }
 

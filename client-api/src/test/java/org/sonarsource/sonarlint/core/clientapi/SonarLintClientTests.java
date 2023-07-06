@@ -44,7 +44,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentials
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
-import org.sonarsource.sonarlint.core.clientapi.client.host.GetHostInfoResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.info.GetClientInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.GetProxyPasswordAuthenticationParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.ProxyDto;
@@ -167,7 +167,7 @@ class SonarLintClientTests {
     }
 
     @Override
-    public CompletableFuture<GetHostInfoResponse> getHostInfo() {
+    public CompletableFuture<GetClientInfoResponse> getClientInfo() {
       return null;
     }
 
