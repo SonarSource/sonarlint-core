@@ -1,5 +1,5 @@
 /*
- * SonarLint Issue Tracking
+ * SonarLint Core - Client API
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,53 +17,46 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.issuetracking;
+package org.sonarsource.sonarlint.core.clientapi.backend.tracking;
 
 import javax.annotation.CheckForNull;
-import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
-import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 
-public interface Trackable<G> {
+public class TrackedIssueDto {
+  private final String key;
+  private final long introductionDate;
+  private final boolean resolved;
+  private final IssueSeverity overriddenSeverity;
+  private final RuleType type;
 
-  G getClientObject();
+  public TrackedIssueDto(String key, long introductionDate, boolean resolved, @Nullable IssueSeverity overriddenSeverity, RuleType type) {
+    this.key = key;
+    this.introductionDate = introductionDate;
+    this.resolved = resolved;
+    this.overriddenSeverity = overriddenSeverity;
+    this.type = type;
+  }
 
-  String getRuleKey();
+  public String getKey() {
+    return key;
+  }
 
-  @CheckForNull
-  IssueSeverity getSeverity();
+  public long getIntroductionDate() {
+    return introductionDate;
+  }
 
-  String getMessage();
-
-  @CheckForNull
-  RuleType getType();
-
-  /**
-   * The line index, starting with 1. Null means that
-   * issue does not relate to a line (file issue for example).
-   */
-  @CheckForNull
-  Integer getLine();
-
-  @CheckForNull
-  String getLineHash();
-
-  @CheckForNull
-  TextRangeWithHash getTextRange();
-
-  @CheckForNull
-  Long getCreationDate();
+  public boolean isResolved() {
+    return resolved;
+  }
 
   @CheckForNull
-  String getServerIssueKey();
+  public IssueSeverity getOverriddenSeverity() {
+    return overriddenSeverity;
+  }
 
-  boolean isResolved();
-
-  /**
-   * Should only return something for trackables tracking a hotspot
-   */
-  @CheckForNull
-  HotspotReviewStatus getReviewStatus();
-
+  public RuleType getType() {
+    return type;
+  }
 }

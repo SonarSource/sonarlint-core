@@ -176,6 +176,11 @@ public class ServerConnection {
     issuesUpdater.updateFileIssues(serverApi, projectBinding, ideFilePath, branchName, isSonarCloud, serverVersion);
   }
 
+  public void downloadServerIssuesForFile(ServerApi serverApi, String projectKey, String serverFileRelativePath, String branchName) {
+    var serverVersion = readOrSynchronizeServerVersion(serverApi);
+    issuesUpdater.updateFileIssues(serverApi, projectKey, serverFileRelativePath, branchName, isSonarCloud, serverVersion);
+  }
+
   public void downloadServerTaintIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
     ProgressMonitor progress) {
     var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
@@ -188,7 +193,10 @@ public class ServerConnection {
   }
 
   public void downloadServerIssuesForProject(EndpointParams endpoint, HttpClient client, String projectKey, String branchName) {
-    var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
+    downloadServerIssuesForProject(new ServerApi(new ServerApiHelper(endpoint, client)), projectKey, branchName);
+  }
+
+  public void downloadServerIssuesForProject(ServerApi serverApi, String projectKey, String branchName) {
     var serverVersion = readOrSynchronizeServerVersion(serverApi);
     issuesUpdater.update(serverApi, projectKey, branchName, isSonarCloud, serverVersion);
   }

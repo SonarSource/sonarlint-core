@@ -58,7 +58,7 @@ public class Tracker<R extends Trackable, B extends Trackable> {
     // 6. match issues with same rule, same line and same line hash
     match(tracking, LineAndLineHashKeyFactory.INSTANCE);
 
-    // 7. match issues with same rule and same same line hash
+    // 7. match issues with same rule and same line hash
     match(tracking, LineHashKeyFactory.INSTANCE);
 
     return tracking;

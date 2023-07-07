@@ -70,6 +70,7 @@ import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 import org.sonarsource.sonarlint.core.smartnotifications.SmartNotifications;
 import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
+import org.sonarsource.sonarlint.core.tracking.IssueTrackingServiceImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -109,7 +110,8 @@ import org.springframework.context.annotation.Import;
   HotspotServiceImpl.class,
   IssueServiceImpl.class,
   AnalysisServiceImpl.class,
-  SmartNotifications.class
+  SmartNotifications.class,
+  IssueTrackingServiceImpl.class
 })
 public class SonarLintSpringAppConfig {
 

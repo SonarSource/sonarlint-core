@@ -25,14 +25,18 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import mockwebserver3.MockResponse;
 import mockwebserver3.RecordedRequest;
+import org.sonar.scanner.protocol.Constants;
+import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
+import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
-import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
+import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
@@ -253,7 +257,7 @@ public class ServerFixture {
     private final ServerKind serverKind;
     private final ServerStatus serverStatus;
     @Nullable
-    private final String version;
+    private final Version version;
     private final Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey;
     private final Map<String, ServerBuilder.ServerSourceFileBuilder> sourceFileByComponentKey;
     private final boolean smartNotificationsSupported;
@@ -263,7 +267,7 @@ public class ServerFixture {
       Map<String, ServerBuilder.ServerSourceFileBuilder> sourceFileByComponentKey, boolean smartNotificationsSupported) {
       this.serverKind = serverKind;
       this.serverStatus = serverStatus;
-      this.version = version;
+      this.version = version != null ? Version.create(version) : null;
       this.projectsByProjectKey = projectsByProjectKey;
       this.sourceFileByComponentKey = sourceFileByComponentKey;
       this.smartNotificationsSupported = smartNotificationsSupported;
@@ -330,10 +334,44 @@ public class ServerFixture {
     }
 
     private void registerIssuesApiResponses() {
-      registerApiIssuesPullResponses();
-      registerApiIssuesPullTaintResponses();
+      if (version != null && version.satisfiesMinRequirement(IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL)) {
+        registerApiIssuesPullResponses();
+        registerApiIssuesPullTaintResponses();
+      } else {
+        registerBatchIssuesResponses();
+      }
       registerIssuesStatusChangeApiResponses();
       registerAddIssueCommentApiResponses();
+    }
+
+    private void registerBatchIssuesResponses() {
+      projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
+        var allBranchIssues = new ArrayList<Message>();
+        branch.issues.stream().collect(Collectors.groupingBy(i -> i.filePath)).forEach((filePath, issues) -> {
+          var messages = issues.stream().map(issue -> {
+            var ruleKey = RuleKey.parse(issue.ruleKey);
+            var serverIssue = ScannerInput.ServerIssue.newBuilder()
+              .setKey(issue.issueKey)
+              .setRuleRepository(ruleKey.repository())
+              .setRuleKey(ruleKey.rule())
+              .setChecksum("hash")
+              .setMsg(issue.message)
+              .setLine(issue.textRange.getStartLine())
+              .setCreationDate(123456789L)
+              .setPath(issue.filePath)
+              .setType("BUG")
+              .setManualSeverity(false)
+              .setSeverity(Constants.Severity.BLOCKER)
+              .build();
+            allBranchIssues.add(serverIssue);
+            return serverIssue;
+          }).toArray(Message[]::new);
+          var branchParameter = branchName == null ? "" : "&branch=" + UrlUtils.urlEncode(branchName);
+          mockWebServer.addProtobufResponseDelimited("/batch/issues?key=" + UrlUtils.urlEncode(projectKey + ':' + filePath) + branchParameter, messages);
+        });
+        var branchParameter = branchName == null ? "" : "&branch=" + UrlUtils.urlEncode(branchName);
+        mockWebServer.addProtobufResponseDelimited("/batch/issues?key=" + UrlUtils.urlEncode(projectKey) + branchParameter, allBranchIssues.toArray(new Message[0]));
+      }));
     }
 
     private void registerIssuesStatusChangeApiResponses() {
