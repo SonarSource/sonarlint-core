@@ -19,90 +19,88 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
+import org.jetbrains.annotations.Nullable;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LocallyTrackedIssueDto;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
-import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
-import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
-import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 
-public class ServerIssueTrackable implements Trackable {
+public class LocallyTrackedIssueTrackable implements Trackable {
+  private final LocallyTrackedIssueDto locallyTrackedIssue;
 
-  private final ServerIssue serverIssue;
+  public LocallyTrackedIssueTrackable(LocallyTrackedIssueDto locallyTrackedIssue) {
+    this.locallyTrackedIssue = locallyTrackedIssue;
+  }
 
-  public ServerIssueTrackable(ServerIssue serverIssue) {
-    this.serverIssue = serverIssue;
+  public LocallyTrackedIssueDto getLocallyTrackedIssue() {
+    return locallyTrackedIssue;
   }
 
   @Override
   public Object getClientObject() {
-    throw new UnsupportedOperationException();
+    return null;
   }
 
   @Override
   public String getRuleKey() {
-    return serverIssue.getRuleKey();
+    return locallyTrackedIssue.getRuleKey();
   }
 
   @Override
   public IssueSeverity getSeverity() {
-    return serverIssue.getUserSeverity();
-  }
-
-  @Override
-  public RuleType getType() {
-    return serverIssue.getType();
+    return null;
   }
 
   @Override
   public String getMessage() {
-    return serverIssue.getMessage();
+    return locallyTrackedIssue.getMessage();
   }
 
+  @Nullable
+  @Override
+  public RuleType getType() {
+    return null;
+  }
+
+  @Nullable
   @Override
   public Integer getLine() {
-    if (serverIssue instanceof LineLevelServerIssue) {
-      return ((LineLevelServerIssue) serverIssue).getLine();
-    }
-    if (serverIssue instanceof RangeLevelServerIssue) {
-      return ((RangeLevelServerIssue) serverIssue).getTextRange().getStartLine();
-    }
-    return null;
+    return locallyTrackedIssue.getLineWithHash().getNumber();
   }
 
+  @Nullable
   @Override
   public String getLineHash() {
-    if (serverIssue instanceof LineLevelServerIssue) {
-      return ((LineLevelServerIssue) serverIssue).getLineHash();
-    }
-    return null;
+    return locallyTrackedIssue.getLineWithHash().getHash();
   }
 
+  @Nullable
   @Override
   public TextRangeWithHash getTextRange() {
-    if (serverIssue instanceof RangeLevelServerIssue) {
-      return ((RangeLevelServerIssue) serverIssue).getTextRange();
-    }
+    var issueRange = locallyTrackedIssue.getTextRangeWithHash();
+    return new TextRangeWithHash(issueRange.getStartLine(), issueRange.getStartLineOffset(), issueRange.getEndLine(), issueRange.getEndLineOffset(), issueRange.getHash());
+  }
+
+  @Nullable
+  @Override
+  public Long getCreationDate() {
     return null;
   }
 
-  @Override
-  public Long getCreationDate() {
-    return serverIssue.getCreationDate().toEpochMilli();
-  }
-
+  @Nullable
   @Override
   public String getServerIssueKey() {
-    return serverIssue.getKey();
+    return locallyTrackedIssue.getKey();
   }
 
   @Override
   public boolean isResolved() {
-    return serverIssue.isResolved();
+    return false;
   }
 
+  @Nullable
   @Override
   public HotspotReviewStatus getReviewStatus() {
     return null;

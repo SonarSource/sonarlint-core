@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.ServerFixture;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.AddIssueCommentParams;
@@ -40,6 +41,15 @@ class IssuesStatusChangeMediumTests {
 
   private SonarLintBackendImpl backend;
   private ServerFixture.Server server;
+
+  @AfterEach
+  void tearDown() throws ExecutionException, InterruptedException {
+    backend.shutdown().get();
+    if (server != null) {
+      server.shutdown();
+      server = null;
+    }
+  }
 
   @Test
   void it_should_update_the_status_on_sonarqube_through_the_web_api() {

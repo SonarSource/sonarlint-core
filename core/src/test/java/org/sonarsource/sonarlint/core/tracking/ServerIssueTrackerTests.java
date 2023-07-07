@@ -39,36 +39,30 @@ class ServerIssueTrackerTests {
   private final ProjectBinding projectBinding = new ProjectBinding(projectKey, "", "");
   private final ConnectedSonarLintEngine engine = mock(ConnectedSonarLintEngine.class);
   private final EndpointParams endpoint = mock(EndpointParams.class);
-  private final ServerIssueTracker tracker = new ServerIssueTracker(mock(CachingIssueTracker.class), mock(CachingIssueTracker.class));
+  private final ServerIssueTracker tracker = new ServerIssueTracker(mock(CachingIssueTracker.class));
 
   @Test
-  void should_get_issues_from_engine_without_downloading() {
-    var tracker = new ServerIssueTracker(mock(CachingIssueTracker.class), mock(CachingIssueTracker.class));
+  void should_get_hotspots_from_engine_without_downloading() {
+    var tracker = new ServerIssueTracker(mock(CachingIssueTracker.class));
     tracker.update(engine, projectBinding, "branch", Collections.singleton(filePath));
-    verify(engine).getServerIssues(projectBinding, "branch", filePath);
     verify(engine).getServerHotspots(projectBinding, "branch", filePath);
     verifyNoMoreInteractions(engine);
   }
 
   @Test
-  void should_download_issues_from_engine() {
+  void should_download_hotspots_from_engine() {
     var client = HttpClientProvider.forTesting().getHttpClient();
     tracker.update(endpoint, client, engine, projectBinding, Collections.singleton(filePath), null);
-    verify(engine).downloadAllServerIssuesForFile(endpoint, client, projectBinding, filePath, null, null);
-    verify(engine).getServerIssues(projectBinding, null, filePath);
     verify(engine).downloadAllServerHotspotsForFile(endpoint, client, projectBinding, filePath, null, null);
     verify(engine).getServerHotspots(projectBinding, null, filePath);
     verifyNoMoreInteractions(engine);
   }
 
   @Test
-  void should_get_issues_from_engine_if_download_failed() {
+  void should_get_hotspots_from_engine_if_download_failed() {
     var client = HttpClientProvider.forTesting().getHttpClient();
-    doThrow(DownloadException.class).when(engine).downloadAllServerIssuesForFile(endpoint, client, projectBinding, filePath, null, null);
     doThrow(DownloadException.class).when(engine).downloadAllServerHotspotsForFile(endpoint, client, projectBinding, filePath, null, null);
     tracker.update(endpoint, client, engine, projectBinding, Collections.singleton(filePath), null);
-    verify(engine).downloadAllServerIssuesForFile(endpoint, client, projectBinding, filePath, null, null);
-    verify(engine).getServerIssues(projectBinding, null, filePath);
     verify(engine).downloadAllServerHotspotsForFile(endpoint, client, projectBinding, filePath, null, null);
     verify(engine).getServerHotspots(projectBinding, null, filePath);
     verifyNoMoreInteractions(engine);
