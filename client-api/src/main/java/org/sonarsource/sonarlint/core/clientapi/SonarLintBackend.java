@@ -32,6 +32,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueService;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RulesService;
 import org.sonarsource.sonarlint.core.clientapi.backend.telemetry.TelemetryService;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.IssueTrackingService;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 
 public interface SonarLintBackend {
@@ -68,6 +69,9 @@ public interface SonarLintBackend {
 
   @JsonDelegate
   IssueService getIssueService();
+
+  @JsonDelegate
+  IssueTrackingService getIssueTrackingService();
 
   @JsonRequest
   CompletableFuture<Void> shutdown();
