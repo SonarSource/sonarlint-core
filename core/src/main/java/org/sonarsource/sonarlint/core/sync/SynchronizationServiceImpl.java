@@ -37,6 +37,7 @@ import org.sonarsource.sonarlint.core.branch.SonarProjectBranchServiceImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.sync.DidSynchronizeConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.ActiveSonarProjectBranchChanged;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
@@ -163,6 +164,22 @@ public class SynchronizationServiceImpl {
     var configurationScopeId = changedEvent.getConfigurationScopeId();
     configurationRepository.getEffectiveBinding(configurationScopeId).ifPresent(binding -> autoSync(Map.of(requireNonNull(binding.getConnectionId()),
       List.of(new BoundConfigurationScope(configurationScopeId, binding.getSonarProjectKey())))));
+  }
+
+  public void fetchProjectIssues(Binding binding, String activeBranch) {
+    serverApiProvider.getServerApi(binding.getConnectionId()).ifPresent(serverApi -> {
+      var serverConnection = new ServerConnection(storageService.getStorageFacade(), binding.getConnectionId(), serverApi.isSonarCloud(),
+        languageSupportRepository.getEnabledLanguagesInConnectedMode(), connectedModeEmbeddedPluginKeys);
+      serverConnection.downloadServerIssuesForProject(serverApi, binding.getSonarProjectKey(), activeBranch);
+    });
+  }
+
+  public void fetchFileIssues(Binding binding, String serverFileRelativePath, String activeBranch) {
+    serverApiProvider.getServerApi(binding.getConnectionId()).ifPresent(serverApi -> {
+      var serverConnection = new ServerConnection(storageService.getStorageFacade(), binding.getConnectionId(), serverApi.isSonarCloud(),
+        languageSupportRepository.getEnabledLanguagesInConnectedMode(), connectedModeEmbeddedPluginKeys);
+      serverConnection.downloadServerIssuesForFile(serverApi, binding.getSonarProjectKey(), serverFileRelativePath, activeBranch);
+    });
   }
 
   @PreDestroy

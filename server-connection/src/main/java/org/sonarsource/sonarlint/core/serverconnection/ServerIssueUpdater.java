@@ -85,7 +85,11 @@ public class ServerIssueUpdater {
     if (serverFilePath == null) {
       return;
     }
-    var fileKey = IssueStorePaths.componentKey(projectBinding, serverFilePath);
+    updateFileIssues(serverApi, projectBinding.projectKey(), serverFilePath, branchName, isSonarCloud, serverVersion);
+  }
+
+  public void updateFileIssues(ServerApi serverApi, String projectKey, String serverFileRelativePath, String branchName, boolean isSonarCloud, Version serverVersion) {
+    var fileKey = IssueStorePaths.componentKey(projectKey, serverFileRelativePath);
     if (!IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
       List<ServerIssue> issues = new ArrayList<>();
       try {
@@ -94,7 +98,7 @@ public class ServerIssueUpdater {
         // null as cause so that it doesn't get wrapped
         throw new DownloadException("Failed to update file issues: " + e.getMessage(), null);
       }
-      storage.project(projectBinding.projectKey()).findings().replaceAllIssuesOfFile(branchName, serverFilePath, issues);
+      storage.project(projectKey).findings().replaceAllIssuesOfFile(branchName, serverFileRelativePath, issues);
     } else {
       LOG.debug("Skip downloading file issues on SonarQube " + IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL + "+");
     }

@@ -206,7 +206,7 @@ public class ProjectStorageFixture {
           });
       }));
       try {
-        CompressBackupUtil.backup(entityStore, xodusBackupPath.toFile(),false);
+        CompressBackupUtil.backup(entityStore, xodusBackupPath.toFile(), false);
       } catch (Exception e) {
         throw new IllegalStateException("Unable to backup server issue database", e);
       }
