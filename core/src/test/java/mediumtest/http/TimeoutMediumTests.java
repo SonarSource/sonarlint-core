@@ -20,9 +20,9 @@
 package mediumtest.http;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import java.net.SocketTimeoutException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -90,8 +90,9 @@ class TimeoutMediumTests {
     var future = this.backend.getConnectionService().getOrganization(new GetOrganizationParams(Either.forLeft(new TokenDto("token")), "myOrg"));
 
     assertThat(future)
-      .failsWithin(1, TimeUnit.SECONDS)
-      .withThrowableOfType(TimeoutException.class);
+      .failsWithin(2, TimeUnit.SECONDS)
+      .withThrowableOfType(ExecutionException.class)
+      .withCauseExactlyInstanceOf(SocketTimeoutException.class);
   }
 
 }
