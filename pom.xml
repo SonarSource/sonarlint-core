@@ -58,7 +58,7 @@
     <kotlin.version>1.6.21</kotlin.version>
     <lsp4j.version>0.19.0</lsp4j.version>
 
-    <version.surefire.plugin>3.0.0</version.surefire.plugin>
+    <version.surefire.plugin>3.1.2</version.surefire.plugin>
   </properties>
 
   <dependencyManagement>
