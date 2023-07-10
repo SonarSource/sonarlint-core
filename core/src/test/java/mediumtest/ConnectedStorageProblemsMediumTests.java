@@ -40,7 +40,7 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 import testutils.TestUtils;
 
-import static mediumtest.fixtures.StorageFixture.newStorage;
+import static mediumtest.fixtures.storage.StorageFixture.newStorage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 

@@ -26,7 +26,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import mediumtest.fixtures.ProjectStorageFixture;
+import mediumtest.fixtures.storage.ProjectStorageFixture;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -42,7 +42,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.commons.Language;
 import testutils.TestUtils;
 
-import static mediumtest.fixtures.StorageFixture.newStorage;
+import static mediumtest.fixtures.storage.StorageFixture.newStorage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static testutils.TestUtils.createNoOpLogOutput;

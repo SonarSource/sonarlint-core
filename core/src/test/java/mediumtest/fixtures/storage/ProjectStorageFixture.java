@@ -17,19 +17,30 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package mediumtest.fixtures;
+package mediumtest.fixtures.storage;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import jetbrains.exodus.entitystore.PersistentEntityStores;
+import jetbrains.exodus.env.Environments;
+import jetbrains.exodus.util.CompressBackupUtil;
 import org.apache.commons.io.FileUtils;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.serverconnection.storage.InstantBinding;
+import org.sonarsource.sonarlint.core.serverconnection.storage.IssueSeverityBinding;
+import org.sonarsource.sonarlint.core.serverconnection.storage.IssueTypeBinding;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 
@@ -60,15 +71,12 @@ public class ProjectStorageFixture {
   public static class ProjectStorageBuilder {
     private final String projectKey;
     private final List<RuleSetBuilder> ruleSets = new ArrayList<>();
+    private final List<BranchBuilder> branches = new ArrayList<>();
     private final Map<String, String> projectSettings = new HashMap<>();
     private ZonedDateTime lastSmartNotificationPoll;
 
     public ProjectStorageBuilder(String projectKey) {
       this.projectKey = projectKey;
-    }
-
-    String getProjectKey() {
-      return projectKey;
     }
 
     public ProjectStorageBuilder withRuleSet(String languageKey, Consumer<RuleSetBuilder> consumer) {
@@ -83,8 +91,14 @@ public class ProjectStorageFixture {
       return this;
     }
 
-    public ProjectStorageBuilder withHotspot(String key, String value) {
-      projectSettings.put(key, value);
+    public ProjectStorageBuilder withDefaultBranch(Consumer<BranchBuilder> consumer) {
+      return withBranch("main", consumer);
+    }
+
+    public ProjectStorageBuilder withBranch(String name, Consumer<BranchBuilder> consumer) {
+      var branchBuilder = new BranchBuilder(name);
+      consumer.accept(branchBuilder);
+      branches.add(branchBuilder);
       return this;
     }
 
@@ -100,6 +114,23 @@ public class ProjectStorageFixture {
         throw new IllegalStateException(e);
       }
 
+      createAnalyzerConfig(projectFolder);
+      createSmartNotificationPoll(projectFolder);
+      createFindings(projectFolder);
+
+      return new ProjectStorage(projectFolder);
+    }
+
+    private void createSmartNotificationPoll(Path projectFolder) {
+      if (lastSmartNotificationPoll != null) {
+        var lastPoll = Sonarlint.LastEventPolling.newBuilder()
+          .setLastEventPolling(lastSmartNotificationPoll.toInstant().toEpochMilli())
+          .build();
+        ProtobufFileUtil.writeToFile(lastPoll, projectFolder.resolve("last_event_polling.pb"));
+      }
+    }
+
+    private void createAnalyzerConfig(Path projectFolder) {
       Map<String, Sonarlint.RuleSet> protoRuleSets = new HashMap<>();
       ruleSets.forEach(ruleSet -> {
         var ruleSetBuilder = Sonarlint.RuleSet.newBuilder();
@@ -117,13 +148,68 @@ public class ProjectStorageFixture {
         .putAllSettings(projectSettings)
         .putAllRuleSetsByLanguageKey(protoRuleSets).build();
       ProtobufFileUtil.writeToFile(analyzerConfiguration, projectFolder.resolve("analyzer_config.pb"));
-      if (lastSmartNotificationPoll != null) {
-        var lastPoll = Sonarlint.LastEventPolling.newBuilder()
-          .setLastEventPolling(lastSmartNotificationPoll.toInstant().toEpochMilli())
-          .build();
-        ProtobufFileUtil.writeToFile(lastPoll, projectFolder.resolve("last_event_polling.pb"));
+    }
+
+    private void createFindings(Path projectFolder) {
+      if (branches.isEmpty()) {
+        return;
       }
-      return new ProjectStorage(projectFolder);
+      var xodusTempDbPath = projectFolder.resolve("xodus_temp_db");
+      var xodusBackupPath = projectFolder.resolve("issues").resolve("backup.tar.gz");
+      try {
+        Files.createDirectories(xodusBackupPath.getParent());
+      } catch (IOException e) {
+        throw new IllegalStateException("Unable to create the Xodus backup parent folders", e);
+      }
+      var environment = Environments.newInstance(xodusTempDbPath.toAbsolutePath().toFile());
+      var entityStore = PersistentEntityStores.newInstance(environment);
+      entityStore.executeInTransaction(txn -> branches.forEach(branch -> {
+        entityStore.registerCustomPropertyType(txn, IssueSeverity.class, new IssueSeverityBinding());
+        entityStore.registerCustomPropertyType(txn, RuleType.class, new IssueTypeBinding());
+        entityStore.registerCustomPropertyType(txn, Instant.class, new InstantBinding());
+        var branchEntity = txn.newEntity("Branch");
+        branchEntity.setProperty("name", branch.name);
+        branch.serverIssues.stream()
+          .map(ServerIssueFixtures.ServerIssueBuilder::build)
+          .collect(Collectors.groupingBy(ServerIssueFixtures.ServerIssue::getFilePath))
+          .forEach((filePath, issues) -> {
+            var fileEntity = txn.newEntity("File");
+            fileEntity.setProperty("path", filePath);
+            branchEntity.addLink("files", fileEntity);
+            issues.forEach(issue -> {
+              var issueEntity = txn.newEntity("Issue");
+              issueEntity.setProperty("key", issue.key);
+              issueEntity.setProperty("type", issue.ruleType);
+              issueEntity.setProperty("resolved", issue.resolved);
+              issueEntity.setProperty("ruleKey", issue.ruleKey);
+              issueEntity.setBlobString("message", issue.message);
+              issueEntity.setProperty("creationDate", issue.introductionDate);
+              var userSeverity = issue.userSeverity;
+              if (userSeverity != null) {
+                issueEntity.setProperty("userSeverity", userSeverity);
+              }
+              if (issue.lineNumber != null && issue.lineHash != null) {
+                issueEntity.setBlobString("lineHash", issue.lineHash);
+                issueEntity.setProperty("startLine", issue.lineNumber);
+              } else if (issue.textRangeWithHash != null) {
+                var textRange = issue.textRangeWithHash;
+                issueEntity.setProperty("startLine", textRange.getStartLine());
+                issueEntity.setProperty("startLineOffset", textRange.getStartLineOffset());
+                issueEntity.setProperty("endLine", textRange.getEndLine());
+                issueEntity.setProperty("endLineOffset", textRange.getEndLineOffset());
+                issueEntity.setBlobString("rangeHash", textRange.getHash());
+              }
+
+              issueEntity.setLink("file", fileEntity);
+              fileEntity.addLink("issues", issueEntity);
+            });
+          });
+      }));
+      try {
+        CompressBackupUtil.backup(entityStore, xodusBackupPath.toFile(),false);
+      } catch (Exception e) {
+        throw new IllegalStateException("Unable to backup server issue database", e);
+      }
     }
 
     public static class RuleSetBuilder {
@@ -145,6 +231,20 @@ public class ProjectStorageFixture {
 
       public RuleSetBuilder withCustomActiveRule(String ruleKey, String templateKey, String severity, Map<String, String> params) {
         activeRules.add(new ActiveRule(ruleKey, severity, templateKey, params));
+        return this;
+      }
+    }
+
+    public static class BranchBuilder {
+      private final List<ServerIssueFixtures.ServerIssueBuilder> serverIssues = new ArrayList<>();
+      private final String name;
+
+      public BranchBuilder(String name) {
+        this.name = name;
+      }
+
+      public BranchBuilder withIssue(ServerIssueFixtures.ServerIssueBuilder serverIssueBuilder) {
+        serverIssues.add(serverIssueBuilder);
         return this;
       }
     }

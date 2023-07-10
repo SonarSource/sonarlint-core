@@ -43,7 +43,7 @@ import testutils.MockWebServerExtensionWithProtobuf;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
-import static mediumtest.fixtures.StorageFixture.newStorage;
+import static mediumtest.fixtures.storage.StorageFixture.newStorage;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.mockito.Mockito.mock;
 import static testutils.TestUtils.createNoOpLogOutput;
