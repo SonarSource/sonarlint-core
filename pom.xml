@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.sonarsource.parent</groupId>
     <artifactId>parent</artifactId>
-    <version>68.0.0.247</version>
+    <version>69.0.0.256</version>
     <relativePath />
   </parent>
   <groupId>org.sonarsource.sonarlint.core</groupId>
@@ -57,8 +57,6 @@
     <mockito.version>4.9.0</mockito.version>
     <kotlin.version>1.6.21</kotlin.version>
     <lsp4j.version>0.19.0</lsp4j.version>
-
-    <version.surefire.plugin>3.1.2</version.surefire.plugin>
   </properties>
 
   <dependencyManagement>
