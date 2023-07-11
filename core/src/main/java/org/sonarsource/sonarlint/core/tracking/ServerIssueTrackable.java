@@ -36,6 +36,10 @@ public class ServerIssueTrackable implements Trackable {
     this.serverIssue = serverIssue;
   }
 
+  public ServerIssue getServerIssue() {
+    return serverIssue;
+  }
+
   @Override
   public Object getClientObject() {
     throw new UnsupportedOperationException();

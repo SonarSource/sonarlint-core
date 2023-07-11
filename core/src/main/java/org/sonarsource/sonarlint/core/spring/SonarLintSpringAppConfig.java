@@ -71,6 +71,7 @@ import org.sonarsource.sonarlint.core.smartnotifications.SmartNotifications;
 import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 import org.sonarsource.sonarlint.core.tracking.IssueTrackingServiceImpl;
+import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -111,7 +112,8 @@ import org.springframework.context.annotation.Import;
   IssueServiceImpl.class,
   AnalysisServiceImpl.class,
   SmartNotifications.class,
-  IssueTrackingServiceImpl.class
+  IssueTrackingServiceImpl.class,
+  LocalOnlyIssueRepository.class
 })
 public class SonarLintSpringAppConfig {
 

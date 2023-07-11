@@ -19,5 +19,26 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.tracking;
 
-public class NotTrackedIssueDto {
+import java.util.UUID;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
+
+public class LocalOnlyIssueDto {
+  private final UUID id;
+  private final IssueStatus resolutionStatus;
+
+  public LocalOnlyIssueDto(UUID id, @Nullable IssueStatus resolutionStatus) {
+    this.id = id;
+    this.resolutionStatus = resolutionStatus;
+  }
+
+  public UUID getId() {
+    return id;
+  }
+
+  @CheckForNull
+  public IssueStatus getResolutionStatus() {
+    return resolutionStatus;
+  }
 }
