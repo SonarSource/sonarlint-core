@@ -24,13 +24,13 @@ import java.util.Map;
 
 public class TrackWithServerIssuesParams {
   private final String configurationScopeId;
-  private final Map<String, List<LocallyTrackedIssueDto>> locallyTrackedIssuesByServerRelativePath;
+  private final Map<String, List<ClientTrackedIssueDto>> clientTrackedIssuesByServerRelativePath;
   private final boolean shouldFetchIssuesFromServer;
 
-  public TrackWithServerIssuesParams(String configurationScopeId, Map<String, List<LocallyTrackedIssueDto>> locallyTrackedIssuesByServerRelativePath,
+  public TrackWithServerIssuesParams(String configurationScopeId, Map<String, List<ClientTrackedIssueDto>> clientTrackedIssuesByServerRelativePath,
     boolean shouldFetchIssuesFromServer) {
     this.configurationScopeId = configurationScopeId;
-    this.locallyTrackedIssuesByServerRelativePath = locallyTrackedIssuesByServerRelativePath;
+    this.clientTrackedIssuesByServerRelativePath = clientTrackedIssuesByServerRelativePath;
     this.shouldFetchIssuesFromServer = shouldFetchIssuesFromServer;
   }
 
@@ -38,8 +38,8 @@ public class TrackWithServerIssuesParams {
     return configurationScopeId;
   }
 
-  public Map<String, List<LocallyTrackedIssueDto>> getLocallyTrackedIssuesByServerRelativePath() {
-    return locallyTrackedIssuesByServerRelativePath;
+  public Map<String, List<ClientTrackedIssueDto>> getClientTrackedIssuesByServerRelativePath() {
+    return clientTrackedIssuesByServerRelativePath;
   }
 
   public boolean shouldFetchIssuesFromServer() {
