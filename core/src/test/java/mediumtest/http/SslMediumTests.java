@@ -27,28 +27,32 @@ import java.nio.file.Paths;
 import java.security.KeyStoreException;
 import java.security.cert.X509Certificate;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import javax.net.ssl.SSLHandshakeException;
 import mediumtest.fixtures.SonarLintTestBackend;
-import mediumtest.fixtures.TestPlugin;
 import nl.altindag.ssl.util.CertificateUtils;
 import nl.altindag.ssl.util.KeyStoreUtils;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetEffectiveRuleDetailsParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.GetOrganizationParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.CheckServerTrustedParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.CheckServerTrustedResponse;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.clientapi.common.TokenDto;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
-import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -70,33 +74,7 @@ class SslMediumTests {
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester(true);
 
-  @RegisterExtension
-  static WireMockExtension sonarqubeMock = WireMockExtension.newInstance()
-    .options(wireMockConfig().dynamicHttpsPort().httpDisabled(true)
-      .keystoreType("p12")
-      .keystorePath(toPath(Objects.requireNonNull(SslMediumTests.class.getResource("/ssl/server.p12"))).toString())
-      .keystorePassword(KEYSTORE_PWD)
-      .keyManagerPassword(KEYSTORE_PWD))
-    .build();
-
-  private static Path toPath(URL url) {
-    try {
-      return Paths.get(url.toURI());
-    } catch (URISyntaxException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   private SonarLintTestBackend backend;
-
-  @BeforeEach
-  void prepare() {
-    sonarqubeMock.stubFor(get("/api/rules/show.protobuf?key=python:S139")
-      .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Rules.ShowResponse.newBuilder()
-        .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc(
-          "desc").setHtmlNote("extendedDesc from server").build())
-        .build()))));
-  }
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
@@ -105,62 +83,181 @@ class SslMediumTests {
     }
   }
 
-  @Test
-  void it_should_not_trust_self_signed_certificate() {
-    var fakeClient = newFakeClient()
-      .build();
-    backend = newBackend()
-      .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
-          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
-      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
-      .build(fakeClient);
-
-    var future = this.backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:S139", null));
-    var thrown = assertThrows(CompletionException.class, future::join);
-    assertThat(thrown).hasRootCauseInstanceOf(java.security.cert.CertificateException.class).hasRootCauseMessage("None of the TrustManagers trust this certificate chain");
-    assertThat(future).isCompletedExceptionally();
+  @AfterAll
+  static void clearSonarCloudUrl() {
+    System.clearProperty("sonarlint.internal.sonarcloud.url");
   }
 
-  @Test
-  void it_should_trust_user_certificate_after_asking_once() throws ExecutionException, InterruptedException, KeyStoreException {
-    var fakeClient = newFakeClient()
+  @Nested
+  // TODO Can be removed when switching to Java 16+ and changing sonarcloudMock and mockSonarCloudUrl() to static
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  class ServerCertificate {
+
+    @RegisterExtension
+    WireMockExtension sonarcloudMock = WireMockExtension.newInstance()
+      .options(wireMockConfig().dynamicHttpsPort().httpDisabled(true)
+        .keystoreType("pkcs12")
+        .keystorePath(toPath(Objects.requireNonNull(SslMediumTests.class.getResource("/ssl/server.p12"))).toString())
+        .keystorePassword(KEYSTORE_PWD)
+        .keyManagerPassword(KEYSTORE_PWD))
       .build();
-    fakeClient = Mockito.spy(fakeClient);
-    backend = newBackend()
-      .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
-          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
-      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
-      .build(fakeClient);
 
-    var captor = ArgumentCaptor.forClass(CheckServerTrustedParams.class);
+    @BeforeAll
+    void mockSonarCloudUrl() {
+      System.setProperty("sonarlint.internal.sonarcloud.url", sonarcloudMock.baseUrl());
+    }
 
-    when(fakeClient.checkServerTrusted(captor.capture()))
-      .thenReturn(CompletableFuture.completedFuture(new CheckServerTrustedResponse(true)));
+    @BeforeEach
+    void prepare() {
+      sonarcloudMock.stubFor(get("/api/organizations/search.protobuf?organizations=myOrg&ps=500&p=1")
+        .willReturn(aResponse().withStatus(200)
+          .withResponseBody(protobufBody(Organizations.SearchWsResponse.newBuilder()
+            .addOrganizations(Organizations.Organization.newBuilder()
+              .setKey("myCustom")
+              .setName("orgName")
+              .setDescription("orgDesc")
+              .build())
+            .setPaging(Common.Paging.newBuilder()
+              .setTotal(1)
+              .setPageSize(1)
+              .setPageIndex(1)
+              .build())
+            .build()))));
+    }
 
-    // Two concurrent requests should only trigger checkServerTrusted once
-    var future = this.backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:S139", null));
-    var future2 = this.backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:S139", null));
+    @Test
+    void it_should_not_trust_server_self_signed_certificate_by_default() {
+      var fakeClient = newFakeClient().build();
+      backend = newBackend().build(fakeClient);
 
-    future.get();
-    future2.get();
+      var future = backend.getConnectionService().getOrganization(new GetOrganizationParams(Either.forLeft(new TokenDto("token")), "myOrg"));
+      var thrown = assertThrows(CompletionException.class, future::join);
+      assertThat(thrown).hasRootCauseInstanceOf(java.security.cert.CertificateException.class).hasRootCauseMessage("None of the TrustManagers trust this certificate chain");
+      assertThat(future).isCompletedExceptionally();
+    }
 
-    verify(fakeClient, times(1)).checkServerTrusted(any());
+    @Test
+    void it_should_ask_user_only_once_if_server_certificate_is_trusted() throws ExecutionException, InterruptedException, KeyStoreException {
+      var fakeClient = newFakeClient().build();
+      fakeClient = Mockito.spy(fakeClient);
+      backend = newBackend().build(fakeClient);
 
-    var params = captor.getValue();
+      var captor = ArgumentCaptor.forClass(CheckServerTrustedParams.class);
 
-    assertThat(params.getAuthType()).isEqualTo("UNKNOWN");
-    assertThat(params.getChain()).hasSize(1);
-    var pems = CertificateUtils.parsePemCertificate(params.getChain().get(0).getPem());
-    assertThat(pems).hasSize(1);
-    assertThat(pems.get(0)).isInstanceOf(X509Certificate.class);
+      when(fakeClient.checkServerTrusted(captor.capture()))
+        .thenReturn(CompletableFuture.completedFuture(new CheckServerTrustedResponse(true)));
 
-    var keyStore = KeyStoreUtils.loadKeyStore(backend.getUserHome().resolve("ssl/truststore.p12"), "sonarlint".toCharArray(), "PKCS12");
-    assertThat(Collections.list(keyStore.aliases())).containsExactly("cn=localhost_o=sonarsource-sa_l=geneva_st=geneva_c=ch");
+      // Two concurrent requests should only trigger checkServerTrusted once
+      var future = backend.getConnectionService().getOrganization(new GetOrganizationParams(Either.forLeft(new TokenDto("token")), "myOrg"));
+      var future2 = backend.getConnectionService().getOrganization(new GetOrganizationParams(Either.forLeft(new TokenDto("token")), "myOrg"));
 
+      future.get();
+      future2.get();
+
+      verify(fakeClient, times(1)).checkServerTrusted(any());
+
+      var params = captor.getValue();
+
+      assertThat(params.getAuthType()).isEqualTo("UNKNOWN");
+      assertThat(params.getChain()).hasSize(1);
+      var pems = CertificateUtils.parsePemCertificate(params.getChain().get(0).getPem());
+      assertThat(pems).hasSize(1);
+      assertThat(pems.get(0)).isInstanceOf(X509Certificate.class);
+
+      var keyStore = KeyStoreUtils.loadKeyStore(backend.getUserHome().resolve("ssl/truststore.p12"), "sonarlint".toCharArray(), "PKCS12");
+      assertThat(Collections.list(keyStore.aliases())).containsExactly("cn=localhost_o=sonarsource-sa_l=geneva_st=geneva_c=ch");
+
+    }
+
+  }
+
+  @Nested
+  // TODO Can be removed when switching to Java 16+ and changing sonarcloudMock and mockSonarCloudUrl() to static
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  class ClientCertificate {
+    @RegisterExtension
+    WireMockExtension sonarcloudMock = WireMockExtension.newInstance()
+      .options(wireMockConfig().dynamicHttpsPort().httpDisabled(true)
+        .keystoreType("pkcs12")
+        .keystorePath(toPath(Objects.requireNonNull(SslMediumTests.class.getResource("/ssl/server.p12"))).toString())
+        .keystorePassword(KEYSTORE_PWD)
+        .keyManagerPassword(KEYSTORE_PWD)
+        .needClientAuth(true)
+        .trustStoreType("pkcs12")
+        .trustStorePath(toPath(Objects.requireNonNull(SslMediumTests.class.getResource("/ssl/server-with-client-ca.p12"))).toString())
+        .trustStorePassword("pwdServerWithClientCA"))
+      .build();
+
+    @BeforeAll
+    void mockSonarCloudUrl() {
+      System.setProperty("sonarlint.internal.sonarcloud.url", sonarcloudMock.baseUrl());
+    }
+
+    @BeforeEach
+    void prepare() {
+      sonarcloudMock.stubFor(get("/api/organizations/search.protobuf?organizations=myOrg&ps=500&p=1")
+        .willReturn(aResponse().withStatus(200)
+          .withResponseBody(protobufBody(Organizations.SearchWsResponse.newBuilder()
+            .addOrganizations(Organizations.Organization.newBuilder()
+              .setKey("myCustom")
+              .setName("orgName")
+              .setDescription("orgDesc")
+              .build())
+            .setPaging(Common.Paging.newBuilder()
+              .setTotal(1)
+              .setPageSize(1)
+              .setPageIndex(1)
+              .build())
+            .build()))));
+    }
+
+    @AfterEach
+    void cleanup() {
+      System.clearProperty("sonarlint.ssl.keyStorePath");
+    }
+
+    @Test
+    void it_should_fail_if_client_certificate_not_provided() {
+      var fakeClient = newFakeClient().build();
+      fakeClient = Mockito.spy(fakeClient);
+      backend = newBackend().build(fakeClient);
+
+      when(fakeClient.checkServerTrusted(any()))
+        .thenReturn(CompletableFuture.completedFuture(new CheckServerTrustedResponse(true)));
+
+      var future = backend.getConnectionService().getOrganization(new GetOrganizationParams(Either.forLeft(new TokenDto("token")), "myOrg"));
+
+      var thrown = assertThrows(CompletionException.class, future::join);
+      assertThat(thrown).hasRootCauseInstanceOf(SSLHandshakeException.class).hasRootCauseMessage("Received fatal alert: bad_certificate");
+      assertThat(future).isCompletedExceptionally();
+
+    }
+
+    @Test
+    void it_should_succeed_if_client_certificate_provided() throws ExecutionException, InterruptedException {
+
+      System.setProperty("sonarlint.ssl.keyStorePath", toPath(Objects.requireNonNull(SslMediumTests.class.getResource("/ssl/client.p12"))).toString());
+      System.setProperty("sonarlint.ssl.keyStorePassword", "pwdClientCertP12");
+
+      var fakeClient = newFakeClient().build();
+      fakeClient = Mockito.spy(fakeClient);
+      backend = newBackend().build(fakeClient);
+
+      when(fakeClient.checkServerTrusted(any()))
+        .thenReturn(CompletableFuture.completedFuture(new CheckServerTrustedResponse(true)));
+
+      var future = backend.getConnectionService().getOrganization(new GetOrganizationParams(Either.forLeft(new TokenDto("token")), "myOrg"));
+
+      future.get();
+    }
+  }
+
+  private static Path toPath(URL url) {
+    try {
+      return Paths.get(url.toURI());
+    } catch (URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
   }
 
 }

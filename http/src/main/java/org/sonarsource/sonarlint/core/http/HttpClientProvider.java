@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.http;
 
 import java.net.ProxySelector;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -44,11 +45,8 @@ import org.apache.hc.core5.http2.HttpVersionPolicy;
 import org.apache.hc.core5.io.CloseMode;
 import org.apache.hc.core5.util.Timeout;
 
-import static java.util.Objects.requireNonNull;
-
 public class HttpClientProvider {
 
-  private static final char[] TRUSTSTORE_PWD = System.getProperty("sonarlint.ssl.trustStorePassword", "sonarlint").toCharArray();
   private final CloseableHttpAsyncClient sharedClient;
 
   /**
@@ -63,10 +61,9 @@ public class HttpClientProvider {
     var sslFactoryBuilder = SSLFactory.builder()
       .withDefaultTrustMaterial()
       .withSystemTrustMaterial();
-    if (trustManagerParametersPredicate != null) {
-      var truststorePath = System.getProperty("sonarlint.ssl.trustStorePath", requireNonNull(sonarlintUserHome).resolve("ssl/truststore.p12").toString());
-      sslFactoryBuilder.withInflatableTrustMaterial(Paths.get(truststorePath), TRUSTSTORE_PWD, "PKCS12", trustManagerParametersPredicate);
-    }
+    var sonarlintUserHomeOpt = Optional.ofNullable(sonarlintUserHome);
+    configureKeyStore(sslFactoryBuilder, sonarlintUserHomeOpt);
+    configureTrustStore(trustManagerParametersPredicate, sslFactoryBuilder, sonarlintUserHomeOpt);
     var connectionConfigBuilder = ConnectionConfig.custom();
     getTimeoutFromSystemProp("sonarlint.http.connectTimeout").ifPresent(connectionConfigBuilder::setConnectTimeout);
     getTimeoutFromSystemProp("sonarlint.http.socketTimeout").ifPresent(connectionConfigBuilder::setSocketTimeout);
@@ -94,6 +91,29 @@ public class HttpClientProvider {
       .build();
 
     sharedClient.start();
+  }
+
+  private static void configureTrustStore(@Nullable Predicate<TrustManagerParameters> trustManagerParametersPredicate, SSLFactory.Builder sslFactoryBuilder,
+    Optional<Path> sonarlintUserHomeOpt) {
+    if (trustManagerParametersPredicate != null) {
+      var truststorePath = Optional.ofNullable(System.getProperty("sonarlint.ssl.trustStorePath")).map(Paths::get)
+        .orElse(sonarlintUserHomeOpt.map(p -> p.resolve("ssl/truststore.p12")).orElse(null));
+      if (truststorePath != null) {
+        var trustStorePwd = System.getProperty("sonarlint.ssl.trustStorePassword", "sonarlint").toCharArray();
+        var trustStoreType = System.getProperty("sonarlint.ssl.trustStoreType", "PKCS12");
+        sslFactoryBuilder.withInflatableTrustMaterial(truststorePath, trustStorePwd, trustStoreType, trustManagerParametersPredicate);
+      }
+    }
+  }
+
+  private static void configureKeyStore(SSLFactory.Builder sslFactoryBuilder, Optional<Path> sonarlintUserHomeOpt) {
+    var keystorePath = Optional.ofNullable(System.getProperty("sonarlint.ssl.keyStorePath")).map(Paths::get)
+      .orElse(sonarlintUserHomeOpt.map(p -> p.resolve("ssl/keystore.p12")).orElse(null));
+    if (keystorePath != null && Files.exists(keystorePath)) {
+      var keyStorePwd = System.getProperty("sonarlint.ssl.keyStorePassword", "sonarlint").toCharArray();
+      var keyStoreType = System.getProperty("sonarlint.ssl.keyStoreType", "PKCS12");
+      sslFactoryBuilder.withIdentityMaterial(keystorePath, keyStorePwd, keyStoreType);
+    }
   }
 
   private static Optional<Timeout> getTimeoutFromSystemProp(String key) {
