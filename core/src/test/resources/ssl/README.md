@@ -282,3 +282,110 @@ The password of the PKCS12 file is `pwdServerP12`
 
 The `server.p12` file can now be used to start a TLS server.
 
+### Create a certificate that will be used to authenticate a user
+
+The principle is the same we'll have a CA authority signing certificates that will be sent by the user to the server.
+In this case the server will have to host the CA authority in its TrustedKeyStore while the client will host his certificate in is KeyStore.
+In this use case, the extensions are not the same, so we'll use openssl-client-auth.conf
+
+#### Generation of CA
+
+One line to generate both the key `ca-lient-auth.key` and the CA certificate `ca-client-auth.crt`
+
+```bash
+openssl req -newkey rsa:4096 -nodes -keyout ca-client-auth.key -new -x509 -days 3650 -sha256 -extensions ca_extensions -out ca-client-auth.crt -subj '/C=CH/ST=Geneva/L=Geneva/O=SonarSource SA/CN=SonarSource/' -config ./openssl-client-auth.conf
+Generating a 4096 bit RSA private key
+...................................++
+............................................................................................................................................................................................................................................................++
+writing new private key to 'ca-client-auth.key'
+-----
+
+```
+
+For the certificate, the Common Name is used to identify the user
+```bash
+$ openssl req -new -keyout client.key -out client.csr -nodes -newkey rsa:4096 -subj '/C=CH/ST=Geneva/L=Geneva/O=SonarSource SA/CN=Julien Henry/' -config ./openssl-client-auth.conf
+Generating a 4096 bit RSA private key
+..............................................++
+................++
+writing new private key to 'client.key'
+-----
+```
+
+Let's sign this certificate
+```bash
+$ openssl x509 -req -days 3650 -in client.csr -CA ca-client-auth.crt -CAkey ca-client-auth.key -CAcreateserial -out client.pem -sha256
+Signature ok
+subject=C = CH, ST = Geneva, L = Geneva, O = SonarSource SA, CN = Julien Henry
+Getting CA Private Key
+```
+
+Let's create the pkcs12 store containing the client certificate
+
+```bash
+$ openssl pkcs12 -export -in client.pem -inkey client.key -name julienhenry -out client.p12
+Enter Export Password: pwdClientCertP12
+Verifying - Enter Export Password: pwdClientCertP12
+```
+
+This will go to client keyStore.
+Now we'll generate the `server-with-client-ca.p12` file that will have the CA certificate. Since we don't need to add the key of the certificate (only required to sign, not to verify), we can import it directly with keytool.
+
+```bash
+$ keytool -import -trustcacerts -alias client-ca -keystore server-with-client-ca.p12 -file ca-client-auth.crt
+Enter keystore password: pwdServerWithClientCA 
+Re-enter new password: pwdServerWithClientCA
+Owner: CN=SonarSource, O=SonarSource SA, L=Geneva, ST=Geneva, C=CH
+Issuer: CN=SonarSource, O=SonarSource SA, L=Geneva, ST=Geneva, C=CH
+Serial number: ed8bcadd4888ffac
+Valid from: Sat Sep 15 08:10:22 CEST 2018 until: Tue Sep 12 08:10:22 CEST 2028
+Certificate fingerprints:
+	 MD5:  25:38:06:14:D0:B3:36:81:65:FC:44:CA:E3:BA:57:12
+	 SHA1: 77:56:EF:C7:2F:5A:29:D1:A0:54:5F:F8:B4:19:60:91:7B:71:E4:2C
+	 SHA256: 1D:2D:E5:52:21:60:75:08:F3:0A:B3:93:CF:38:F6:30:88:56:28:73:20:BA:76:9A:C0:A1:D7:8C:4D:D3:84:AA
+Signature algorithm name: SHA256withRSA
+Subject Public Key Algorithm: 4096-bit RSA key
+Version: 3
+
+Extensions: 
+
+#1: ObjectId: 2.5.29.35 Criticality=false
+AuthorityKeyIdentifier [
+KeyIdentifier [
+0000: 87 B9 C1 23 E2 F1 A3 68   BD D6 44 99 0E AD FC FC  ...#...h..D.....
+0010: A5 31 90 D4                                        .1..
+]
+]
+
+#2: ObjectId: 2.5.29.19 Criticality=true
+BasicConstraints:[
+  CA:true
+  PathLen:2147483647
+]
+
+#3: ObjectId: 2.5.29.37 Criticality=false
+ExtendedKeyUsages [
+  serverAuth
+]
+
+#4: ObjectId: 2.5.29.15 Criticality=false
+KeyUsage [
+  DigitalSignature
+  Key_Encipherment
+  Data_Encipherment
+  Key_CertSign
+  Crl_Sign
+]
+
+#5: ObjectId: 2.5.29.14 Criticality=false
+SubjectKeyIdentifier [
+KeyIdentifier [
+0000: 87 B9 C1 23 E2 F1 A3 68   BD D6 44 99 0E AD FC FC  ...#...h..D.....
+0010: A5 31 90 D4                                        .1..
+]
+]
+
+Trust this certificate? [no]:  yes
+Certificate was added to keystore
+
+```
