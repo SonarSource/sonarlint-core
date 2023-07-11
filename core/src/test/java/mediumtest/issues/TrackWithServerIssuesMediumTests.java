@@ -32,13 +32,13 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedIssueDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LocallyTrackedIssueDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.NotTrackedIssueDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LocalOnlyIssueDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ServerMatchedIssueDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TextRangeWithHashDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TrackWithServerIssuesParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TrackWithServerIssuesResponse;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TrackedIssueDto;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
@@ -68,7 +68,7 @@ class TrackWithServerIssuesMediumTests {
       .build();
 
     var response = trackWithServerIssues(
-      new TrackWithServerIssuesParams("configScopeId", Map.of("filePath", List.of(new LocallyTrackedIssueDto(null, null, null, "ruleKey", "message"))), false));
+      new TrackWithServerIssuesParams("configScopeId", Map.of("filePath", List.of(new ClientTrackedIssueDto(null, null, null, null, "ruleKey", "message"))), false));
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
@@ -84,7 +84,7 @@ class TrackWithServerIssuesMediumTests {
       .build();
 
     var response = trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new LocallyTrackedIssueDto(null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of("file/path", List.of(new ClientTrackedIssueDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
     assertThat(response)
@@ -101,7 +101,7 @@ class TrackWithServerIssuesMediumTests {
       .build();
 
     var response = trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new LocallyTrackedIssueDto(null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of("file/path", List.of(new ClientTrackedIssueDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
     assertThat(response)
@@ -120,14 +120,14 @@ class TrackWithServerIssuesMediumTests {
       .build();
 
     var response = trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new LocallyTrackedIssueDto(null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of("file/path", List.of(new ClientTrackedIssueDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
-        .hasEntrySatisfying("file/path", issues -> assertThat(issues).usingRecursiveComparison()
-          .isEqualTo(List.of(Either.<TrackedIssueDto, NotTrackedIssueDto>forLeft(new TrackedIssueDto("issueKey", 1000L, false, null, RuleType.BUG))))));
+        .hasEntrySatisfying("file/path", issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("left.id")
+          .isEqualTo(List.of(Either.<ServerMatchedIssueDto, LocalOnlyIssueDto>forLeft(new ServerMatchedIssueDto(null, "issueKey", 1000L, false, null, RuleType.BUG))))));
   }
 
   @Test
@@ -140,14 +140,14 @@ class TrackWithServerIssuesMediumTests {
       .build();
 
     var response = trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new LocallyTrackedIssueDto(null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "rule:key", "message"))),
+      Map.of("file/path", List.of(new ClientTrackedIssueDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "rule:key", "message"))),
       true));
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
-        .hasEntrySatisfying("file/path", issues -> assertThat(issues).usingRecursiveComparison()
-          .isEqualTo(List.of(Either.<TrackedIssueDto, NotTrackedIssueDto>forLeft(new TrackedIssueDto("issueKey", 123456789L, false, null, RuleType.BUG))))));
+        .hasEntrySatisfying("file/path", issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("left.id")
+          .isEqualTo(List.of(Either.<ServerMatchedIssueDto, LocalOnlyIssueDto>forLeft(new ServerMatchedIssueDto(null, "issueKey", 123456789L, false, null, RuleType.BUG))))));
   }
 
   @Test
@@ -158,8 +158,8 @@ class TrackWithServerIssuesMediumTests {
       .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage.withServerVersion("9.5"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
       .build();
-    var issuesByServerRelativePath = IntStream.rangeClosed(1, 11).boxed().collect(Collectors.<Integer, String, List<LocallyTrackedIssueDto>>toMap(index -> "file/path" + index,
-      i -> List.of(new LocallyTrackedIssueDto(null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "rule:key", "message"))));
+    var issuesByServerRelativePath = IntStream.rangeClosed(1, 11).boxed().collect(Collectors.<Integer, String, List<ClientTrackedIssueDto>>toMap(index -> "file/path" + index,
+      i -> List.of(new ClientTrackedIssueDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "rule:key", "message"))));
 
     var response = trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId", issuesByServerRelativePath, true));
 

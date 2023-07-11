@@ -20,22 +20,22 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import org.jetbrains.annotations.Nullable;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LocallyTrackedIssueDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedIssueDto;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 
-public class LocallyTrackedIssueTrackable implements Trackable {
-  private final LocallyTrackedIssueDto locallyTrackedIssue;
+public class ClientTrackedIssueTrackable implements Trackable {
+  private final ClientTrackedIssueDto clientTrackedIssue;
 
-  public LocallyTrackedIssueTrackable(LocallyTrackedIssueDto locallyTrackedIssue) {
-    this.locallyTrackedIssue = locallyTrackedIssue;
+  public ClientTrackedIssueTrackable(ClientTrackedIssueDto clientTrackedIssue) {
+    this.clientTrackedIssue = clientTrackedIssue;
   }
 
-  public LocallyTrackedIssueDto getLocallyTrackedIssue() {
-    return locallyTrackedIssue;
+  public ClientTrackedIssueDto getClientTrackedIssue() {
+    return clientTrackedIssue;
   }
 
   @Override
@@ -45,7 +45,7 @@ public class LocallyTrackedIssueTrackable implements Trackable {
 
   @Override
   public String getRuleKey() {
-    return locallyTrackedIssue.getRuleKey();
+    return clientTrackedIssue.getRuleKey();
   }
 
   @Override
@@ -55,7 +55,7 @@ public class LocallyTrackedIssueTrackable implements Trackable {
 
   @Override
   public String getMessage() {
-    return locallyTrackedIssue.getMessage();
+    return clientTrackedIssue.getMessage();
   }
 
   @Nullable
@@ -67,20 +67,23 @@ public class LocallyTrackedIssueTrackable implements Trackable {
   @Nullable
   @Override
   public Integer getLine() {
-    return locallyTrackedIssue.getLineWithHash().getNumber();
+    var lineWithHash = clientTrackedIssue.getLineWithHash();
+    return lineWithHash == null ? null : lineWithHash.getNumber();
   }
 
   @Nullable
   @Override
   public String getLineHash() {
-    return locallyTrackedIssue.getLineWithHash().getHash();
+    var lineWithHash = clientTrackedIssue.getLineWithHash();
+    return lineWithHash == null ? null : lineWithHash.getHash();
   }
 
   @Nullable
   @Override
   public TextRangeWithHash getTextRange() {
-    var issueRange = locallyTrackedIssue.getTextRangeWithHash();
-    return new TextRangeWithHash(issueRange.getStartLine(), issueRange.getStartLineOffset(), issueRange.getEndLine(), issueRange.getEndLineOffset(), issueRange.getHash());
+    var issueRange = clientTrackedIssue.getTextRangeWithHash();
+    return issueRange == null ? null
+      : new TextRangeWithHash(issueRange.getStartLine(), issueRange.getStartLineOffset(), issueRange.getEndLine(), issueRange.getEndLineOffset(), issueRange.getHash());
   }
 
   @Nullable
@@ -92,7 +95,7 @@ public class LocallyTrackedIssueTrackable implements Trackable {
   @Nullable
   @Override
   public String getServerIssueKey() {
-    return locallyTrackedIssue.getKey();
+    return clientTrackedIssue.getServerKey();
   }
 
   @Override

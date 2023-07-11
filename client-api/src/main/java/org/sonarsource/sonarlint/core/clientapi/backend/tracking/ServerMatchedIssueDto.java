@@ -19,28 +19,36 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.tracking;
 
+import java.util.UUID;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 
-public class TrackedIssueDto {
-  private final String key;
+public class ServerMatchedIssueDto {
+  private final UUID id;
+  private final String serverKey;
   private final long introductionDate;
   private final boolean resolved;
   private final IssueSeverity overriddenSeverity;
   private final RuleType type;
 
-  public TrackedIssueDto(String key, long introductionDate, boolean resolved, @Nullable IssueSeverity overriddenSeverity, RuleType type) {
-    this.key = key;
+  public ServerMatchedIssueDto(UUID id, @Nullable String serverKey, long introductionDate, boolean resolved, @Nullable IssueSeverity overriddenSeverity, RuleType type) {
+    this.id = id;
+    this.serverKey = serverKey;
     this.introductionDate = introductionDate;
     this.resolved = resolved;
     this.overriddenSeverity = overriddenSeverity;
     this.type = type;
   }
 
-  public String getKey() {
-    return key;
+  public UUID getId() {
+    return id;
+  }
+
+  @CheckForNull
+  public String getServerKey() {
+    return serverKey;
   }
 
   public long getIntroductionDate() {
