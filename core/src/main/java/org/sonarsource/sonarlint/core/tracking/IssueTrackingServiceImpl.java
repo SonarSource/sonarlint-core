@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -38,13 +39,12 @@ import javax.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.jetbrains.annotations.NotNull;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedIssueDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.IssueTrackingService;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LocallyTrackedIssueDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.NotTrackedIssueDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LocalOnlyIssueDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ServerMatchedIssueDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TrackWithServerIssuesParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TrackWithServerIssuesResponse;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TrackedIssueDto;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
@@ -55,7 +55,6 @@ import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
 
-import static java.util.Objects.requireNonNull;
 import static org.sonarsource.sonarlint.core.utils.FutureUtils.waitForTask;
 import static org.sonarsource.sonarlint.core.utils.FutureUtils.waitForTasks;
 
@@ -68,14 +67,16 @@ public class IssueTrackingServiceImpl implements IssueTrackingService {
   private final StorageService storageService;
   private final ActiveSonarProjectBranchRepository activeSonarProjectBranchRepository;
   private final SynchronizationServiceImpl synchronizationService;
+  private final LocalOnlyIssueRepository localOnlyIssueRepository;
   private final ExecutorService executorService;
 
   public IssueTrackingServiceImpl(ConfigurationRepository configurationRepository, StorageService storageService,
-    ActiveSonarProjectBranchRepository activeSonarProjectBranchRepository, SynchronizationServiceImpl synchronizationService) {
+    ActiveSonarProjectBranchRepository activeSonarProjectBranchRepository, SynchronizationServiceImpl synchronizationService, LocalOnlyIssueRepository localOnlyIssueRepository) {
     this.configurationRepository = configurationRepository;
     this.storageService = storageService;
     this.activeSonarProjectBranchRepository = activeSonarProjectBranchRepository;
     this.synchronizationService = synchronizationService;
+    this.localOnlyIssueRepository = localOnlyIssueRepository;
     this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-server-tracking-issue-updater"));
   }
 
@@ -85,9 +86,9 @@ public class IssueTrackingServiceImpl implements IssueTrackingService {
       var effectiveBindingOpt = configurationRepository.getEffectiveBinding(params.getConfigurationScopeId());
       var activeBranchOpt = activeSonarProjectBranchRepository.getActiveSonarProjectBranch(params.getConfigurationScopeId());
       if (effectiveBindingOpt.isEmpty() || activeBranchOpt.isEmpty()) {
-        return new TrackWithServerIssuesResponse(params.getLocallyTrackedIssuesByServerRelativePath().entrySet().stream()
-          .map(e -> Map.entry(e.getKey(),
-            e.getValue().stream().<Either<TrackedIssueDto, NotTrackedIssueDto>>map(issue -> Either.forRight(new NotTrackedIssueDto())).collect(Collectors.toList())))
+        return new TrackWithServerIssuesResponse(params.getClientTrackedIssuesByServerRelativePath().entrySet().stream()
+          .map(e -> Map.entry(e.getKey(), e.getValue().stream()
+            .<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>map(issue -> Either.forRight(new LocalOnlyIssueDto(UUID.randomUUID(), null))).collect(Collectors.toList())))
           .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
       }
       var binding = effectiveBindingOpt.get();
@@ -95,19 +96,29 @@ public class IssueTrackingServiceImpl implements IssueTrackingService {
       if (params.shouldFetchIssuesFromServer()) {
         refreshServerIssues(cancelChecker, binding, activeBranch, params);
       }
-      var rawIssuesByServerRelativePath = params.getLocallyTrackedIssuesByServerRelativePath();
-      return new TrackWithServerIssuesResponse(rawIssuesByServerRelativePath.entrySet().stream().map(e -> {
-        var serverIssues = storageService.binding(binding).findings().load(activeBranch, e.getKey());
-        var rawIssues = e.getValue();
-        var rawIssueTrackables = toTrackables(rawIssues);
-        var trackedIssues = getTrackedIssues(serverIssues, rawIssueTrackables);
-        return Map.entry(e.getKey(), trackedIssues);
+      var clientTrackedIssuesByServerRelativePath = params.getClientTrackedIssuesByServerRelativePath();
+      return new TrackWithServerIssuesResponse(clientTrackedIssuesByServerRelativePath.entrySet().stream().map(e -> {
+        var serverRelativePath = e.getKey();
+        var serverIssues = storageService.binding(binding).findings().load(activeBranch, serverRelativePath);
+        var clientIssueTrackables = toTrackables(e.getValue());
+        var matches = matchIssues(serverRelativePath, serverIssues, clientIssueTrackables).stream().<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>map(result -> {
+          if (result.isLeft()) {
+            var serverIssue = result.getLeft();
+            return Either.forLeft(new ServerMatchedIssueDto(UUID.randomUUID(), serverIssue.getKey(), serverIssue.getCreationDate().toEpochMilli(), serverIssue.isResolved(),
+              serverIssue.getUserSeverity(), serverIssue.getType()));
+          } else {
+            var localOnlyIssue = result.getRight();
+            var resolution = localOnlyIssue.getResolution();
+            return Either.forRight(new LocalOnlyIssueDto(localOnlyIssue.getId(), resolution == null ? null : resolution.getStatus()));
+          }
+        }).collect(Collectors.toList());
+        return Map.entry(serverRelativePath, matches);
       }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
     });
   }
 
   private void refreshServerIssues(CancelChecker cancelChecker, Binding binding, String activeBranch, TrackWithServerIssuesParams params) {
-    var serverFileRelativePaths = params.getLocallyTrackedIssuesByServerRelativePath().keySet();
+    var serverFileRelativePaths = params.getClientTrackedIssuesByServerRelativePath().keySet();
     var downloadAllIssuesAtOnce = serverFileRelativePaths.size() > FETCH_ALL_ISSUES_THRESHOLD;
     var fetchTasks = new LinkedList<Future<?>>();
     if (downloadAllIssuesAtOnce) {
@@ -121,23 +132,29 @@ public class IssueTrackingServiceImpl implements IssueTrackingService {
     waitForTask(cancelChecker, waitForTasksTask, "Wait for server issues (global timeout)", Duration.ofSeconds(60));
   }
 
-  @NotNull
-  private static List<Either<TrackedIssueDto, NotTrackedIssueDto>> getTrackedIssues(List<ServerIssue> serverIssues,
-    Collection<LocallyTrackedIssueTrackable> locallyTrackedIssueTrackables) {
+  private List<Either<ServerIssue, LocalOnlyIssue>> matchIssues(String serverRelativePath, List<ServerIssue> serverIssues,
+    Collection<ClientTrackedIssueTrackable> clientTrackedIssueTrackables) {
     var tracker = new Tracker<>();
-    var trackingResult = tracker.track(() -> new ArrayList<>(locallyTrackedIssueTrackables), () -> toServerIssueTrackables(serverIssues));
-    return locallyTrackedIssueTrackables.stream().<Either<TrackedIssueDto, NotTrackedIssueDto>>map(locallyTrackedIssueTrackable -> {
-      var match = trackingResult.getMatch(locallyTrackedIssueTrackable);
+    // TODO read local only resolved issues from the storage by server relative path, and include them in the tracking
+    var trackingResult = tracker.track(() -> new ArrayList<>(clientTrackedIssueTrackables), () -> toServerIssueTrackables(serverIssues));
+    var matches = clientTrackedIssueTrackables.stream().<Either<ServerIssue, LocalOnlyIssue>>map(clientTrackedIssueTrackable -> {
+      var match = trackingResult.getMatch(clientTrackedIssueTrackable);
+      // TODO modify this if to check if matched with server issue, should use next branch for local only resolved issues
       if (match != null) {
-        return Either.forLeft(new TrackedIssueDto(match.getServerIssueKey(), requireNonNull(match.getCreationDate()), match.isResolved(), match.getSeverity(), match.getType()));
+        return Either.forLeft(((ServerIssueTrackable) match).getServerIssue());
       } else {
-        return Either.forRight(new NotTrackedIssueDto());
+        var clientTrackedIssue = clientTrackedIssueTrackable.getClientTrackedIssue();
+        return Either.forRight(new LocalOnlyIssue(UUID.randomUUID(), serverRelativePath, clientTrackedIssue.getTextRangeWithHash(), clientTrackedIssue.getLineWithHash(),
+          clientTrackedIssue.getRuleKey(), clientTrackedIssue.getMessage(), null));
       }
     }).collect(Collectors.toList());
+    var localOnlyIssues = matches.stream().filter(Either::isRight).map(Either::getRight).collect(Collectors.toList());
+    localOnlyIssueRepository.save(serverRelativePath, localOnlyIssues);
+    return matches;
   }
 
-  private static Collection<LocallyTrackedIssueTrackable> toTrackables(List<LocallyTrackedIssueDto> locallyTrackedIssue) {
-    return locallyTrackedIssue.stream().map(LocallyTrackedIssueTrackable::new).collect(Collectors.toList());
+  private static Collection<ClientTrackedIssueTrackable> toTrackables(List<ClientTrackedIssueDto> clientTrackedIssue) {
+    return clientTrackedIssue.stream().map(ClientTrackedIssueTrackable::new).collect(Collectors.toList());
   }
 
   private static Collection<Trackable> toServerIssueTrackables(List<ServerIssue> serverIssues) {

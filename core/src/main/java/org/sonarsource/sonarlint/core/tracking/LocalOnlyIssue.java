@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,34 +17,42 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.backend.tracking;
+package org.sonarsource.sonarlint.core.tracking;
 
-import javax.annotation.CheckForNull;
+import java.util.UUID;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TextRangeWithHashDto;
 
-public class LocallyTrackedIssueDto {
-  private final String key;
+public class LocalOnlyIssue {
+  private final UUID id;
+  private final String serverRelativePath;
   private final TextRangeWithHashDto textRangeWithHash;
   private final LineWithHashDto lineWithHash;
   private final String ruleKey;
   private final String message;
+  private final LocalOnlyIssueResolution resolution;
 
   /**
-   * @param key null when it's a first-time detected issue, else can be the key coming from the server issue or local tracking
-   * @param textRangeWithHash null when it's a file-level issue
-   * @param lineWithHash null when it's a file-level issue
+   * @param resolution is null when the issue is not resolved
    */
-  public LocallyTrackedIssueDto(@Nullable String key, @Nullable TextRangeWithHashDto textRangeWithHash, @Nullable LineWithHashDto lineWithHash, String ruleKey, String message) {
-    this.key = key;
+  public LocalOnlyIssue(UUID id, String serverRelativePath, TextRangeWithHashDto textRangeWithHash, LineWithHashDto lineWithHash, String ruleKey, String message,
+    @Nullable LocalOnlyIssueResolution resolution) {
+    this.id = id;
+    this.serverRelativePath = serverRelativePath;
     this.textRangeWithHash = textRangeWithHash;
     this.lineWithHash = lineWithHash;
     this.ruleKey = ruleKey;
     this.message = message;
+    this.resolution = resolution;
   }
 
-  @CheckForNull
-  public String getKey() {
-    return key;
+  public UUID getId() {
+    return id;
+  }
+
+  public String getServerRelativePath() {
+    return serverRelativePath;
   }
 
   public TextRangeWithHashDto getTextRangeWithHash() {
@@ -61,5 +69,9 @@ public class LocallyTrackedIssueDto {
 
   public String getMessage() {
     return message;
+  }
+
+  public LocalOnlyIssueResolution getResolution() {
+    return resolution;
   }
 }

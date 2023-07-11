@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,20 +17,34 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.backend.tracking;
+package org.sonarsource.sonarlint.core.tracking;
 
-import java.util.List;
-import java.util.Map;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import java.time.Instant;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
 
-public class TrackWithServerIssuesResponse {
-  private final Map<String, List<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>> issuesByServerRelativePath;
+public class LocalOnlyIssueResolution {
+  private final IssueStatus resolutionStatus;
+  private final Instant resolutionDate;
+  private final String comment;
 
-  public TrackWithServerIssuesResponse(Map<String, List<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>> issuesByServerRelativePath) {
-    this.issuesByServerRelativePath = issuesByServerRelativePath;
+  public LocalOnlyIssueResolution(IssueStatus status, Instant resolutionDate, @Nullable String comment) {
+    this.resolutionStatus = status;
+    this.resolutionDate = resolutionDate;
+    this.comment = comment;
   }
 
-  public Map<String, List<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>> getIssuesByServerRelativePath() {
-    return issuesByServerRelativePath;
+  public IssueStatus getStatus() {
+    return resolutionStatus;
+  }
+
+  public Instant getResolutionDate() {
+    return resolutionDate;
+  }
+
+  @CheckForNull
+  public String getComment() {
+    return comment;
   }
 }
