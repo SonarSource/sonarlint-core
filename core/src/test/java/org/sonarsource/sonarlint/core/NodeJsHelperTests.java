@@ -169,8 +169,8 @@ class NodeJsHelperTests {
 
     assertThat(logTester.logs()).containsExactly(
       "Looking for node in the PATH",
-      "Execute command 'which node'...",
-      "Command 'which node' exited with 0\nstdout: " + FAKE_NODE_PATH.toString(),
+      "Execute command '/usr/bin/which node'...",
+      "Command '/usr/bin/which node' exited with 0\nstdout: " + FAKE_NODE_PATH.toString(),
       "Found node at " + FAKE_NODE_PATH.toString(),
       "Checking node version...",
       "Execute command '" + FAKE_NODE_PATH.toString() + " -v'...",
@@ -192,8 +192,8 @@ class NodeJsHelperTests {
 
     assertThat(logTester.logs()).containsExactly(
       "Looking for node in the PATH",
-      "Execute command 'which node'...",
-      "Command 'which node' exited with -1\nstderr: error",
+      "Execute command '/usr/bin/which node'...",
+      "Command '/usr/bin/which node' exited with -1\nstderr: error",
       "Unable to locate node");
     assertThat(underTest.getNodeJsPath()).isNull();
     assertThat(underTest.getNodeJsVersion()).isNull();
@@ -286,8 +286,8 @@ class NodeJsHelperTests {
       "Looking for node in the PATH",
       "Execute command '" + fakePathHelper.toString() + " -s'...",
       "Command '" + fakePathHelper.toString() + " -s' exited with 0\nstdout: PATH=\"/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin/node\"; export PATH;",
-      "Execute command 'which node'...",
-      "Command 'which node' exited with 0\nstdout: " + FAKE_NODE_PATH.toString(),
+      "Execute command '/usr/bin/which node'...",
+      "Command '/usr/bin/which node' exited with 0\nstdout: " + FAKE_NODE_PATH.toString(),
       "Found node at " + FAKE_NODE_PATH.toString(),
       "Checking node version...",
       "Execute command '" + FAKE_NODE_PATH.toString() + " -v'...",
@@ -314,8 +314,8 @@ class NodeJsHelperTests {
       "Looking for node in the PATH",
       "Execute command '" + fakePathHelper.toString() + " -s'...",
       "Command '" + fakePathHelper.toString() + " -s' exited with 0\nstdout: wrong \n output",
-      "Execute command 'which node'...",
-      "Command 'which node' exited with 0\nstdout: " + FAKE_NODE_PATH.toString(),
+      "Execute command '/usr/bin/which node'...",
+      "Command '/usr/bin/which node' exited with 0\nstdout: " + FAKE_NODE_PATH.toString(),
       "Found node at " + FAKE_NODE_PATH.toString(),
       "Checking node version...",
       "Execute command '" + FAKE_NODE_PATH.toString() + " -v'...",
@@ -338,8 +338,8 @@ class NodeJsHelperTests {
 
     assertThat(logTester.logs()).containsExactly(
       "Looking for node in the PATH",
-      "Execute command 'which node'...",
-      "Command 'which node' exited with 0\nstdout: " + FAKE_NODE_PATH.toString(),
+      "Execute command '/usr/bin/which node'...",
+      "Command '/usr/bin/which node' exited with 0\nstdout: " + FAKE_NODE_PATH.toString(),
       "Found node at " + FAKE_NODE_PATH.toString(),
       "Checking node version...",
       "Execute command '" + FAKE_NODE_PATH.toString() + " -v'...",
