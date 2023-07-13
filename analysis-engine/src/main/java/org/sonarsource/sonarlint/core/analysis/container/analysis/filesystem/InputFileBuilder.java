@@ -54,7 +54,7 @@ public class InputFileBuilder {
     defaultInputFile.setType(inputFile.isTest() ? Type.TEST : Type.MAIN);
     var fileLanguage = inputFile.language();
     if (fileLanguage != null) {
-      LOG.debug("Language of file '{}' is set to '{}'", inputFile.uri(), fileLanguage);
+      LOG.debug("Language of file \"{}\" is set to \"{}\"", inputFile.uri(), fileLanguage);
       defaultInputFile.setLanguage(fileLanguage);
     } else {
       defaultInputFile.setLanguage(langDetection.language(defaultInputFile));

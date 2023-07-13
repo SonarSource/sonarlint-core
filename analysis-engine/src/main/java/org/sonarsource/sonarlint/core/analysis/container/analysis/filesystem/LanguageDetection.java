@@ -68,13 +68,13 @@ public class LanguageDetection {
           detectedLanguage = languagePatterns.getKey();
         } else {
           // Language was already forced by another pattern
-          throw MessageException.of(MessageFormat.format("Language of file ''{0}'' can not be decided as the file extension matches both {1} and {2}",
+          throw MessageException.of(MessageFormat.format("Language of file \"{0}\" can not be decided as the file extension matches both {1} and {2}",
             inputFile.uri(), getDetails(detectedLanguage), getDetails(languagePatterns.getKey())));
         }
       }
     }
     if (detectedLanguage != null) {
-      LOG.debug("Language of file '{}' is detected to be '{}'", inputFile.uri(), detectedLanguage);
+      LOG.debug("Language of file \"{}\" is detected to be \"{}\"", inputFile.uri(), detectedLanguage);
       return detectedLanguage;
     }
     return null;
