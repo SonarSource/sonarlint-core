@@ -77,7 +77,7 @@ class TrackWithServerIssuesMediumTests {
   }
 
   @Test
-  void it_should_not_track_local_only_issues() {
+  void it_should_track_local_only_issues() {
     backend = newBackend()
       .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
@@ -90,11 +90,15 @@ class TrackWithServerIssuesMediumTests {
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
-        .hasEntrySatisfying("file/path", issues -> assertThat(issues).hasSize(1).allSatisfy(issue -> assertThat(issue.isRight()).isTrue())));
+        .hasEntrySatisfying("file/path", issues -> {
+          assertThat(issues).hasSize(1).allSatisfy(issue -> assertThat(issue.isRight()).isTrue());
+          assertThat(issues).usingRecursiveComparison().ignoringFields("right.id")
+            .isEqualTo(List.of(Either.<ServerMatchedIssueDto, LocalOnlyIssueDto>forRight(new LocalOnlyIssueDto(null, null))));
+        }));
   }
 
   @Test
-  void it_should_not_track_issues_for_unknown_branch() {
+  void it_should_track_issues_for_unknown_branch() {
     backend = newBackend()
       .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
@@ -107,7 +111,11 @@ class TrackWithServerIssuesMediumTests {
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
-        .hasEntrySatisfying("file/path", issues -> assertThat(issues).hasSize(1).allSatisfy(issue -> assertThat(issue.isRight()).isTrue())));
+        .hasEntrySatisfying("file/path", issues -> {
+          assertThat(issues).hasSize(1).allSatisfy(issue -> assertThat(issue.isRight()).isTrue());
+          assertThat(issues).usingRecursiveComparison().ignoringFields("right.id")
+            .isEqualTo(List.of(Either.<ServerMatchedIssueDto, LocalOnlyIssueDto>forRight(new LocalOnlyIssueDto(null, null))));
+        }));
   }
 
   @Test

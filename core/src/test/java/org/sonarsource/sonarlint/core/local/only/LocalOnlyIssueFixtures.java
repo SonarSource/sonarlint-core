@@ -17,14 +17,37 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.issue;
+package org.sonarsource.sonarlint.core.local.only;
 
-public class IssueStatusChangeException extends RuntimeException {
-  public IssueStatusChangeException(Throwable cause) {
-    super("Cannot change status on the issue", cause);
+import java.util.UUID;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TextRangeWithHashDto;
+import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssue;
+
+public class LocalOnlyIssueFixtures {
+
+  public static LocalOnlyIssue aLocalOnlyIssueUnresolved() {
+    return new LocalOnlyIssue(
+      UUID.randomUUID(),
+      "file/path",
+      new TextRangeWithHashDto(1, 2, 3, 4, "ab12"),
+      new LineWithHashDto(1, "linehash"),
+      "ruleKey",
+      "message",
+      null
+    );
   }
 
-  public IssueStatusChangeException(String cause) {
-    super("Cannot change status on the issue: " + cause);
+  public static LocalOnlyIssue aLocalOnlyIssueUnresolvedWithoutTextAndLineRange() {
+    return new LocalOnlyIssue(
+      UUID.randomUUID(),
+      "file/path",
+      null,
+      null,
+      "ruleKey",
+      "message",
+      null
+    );
   }
+
 }

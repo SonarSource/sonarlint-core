@@ -21,25 +21,39 @@ package mediumtest.issues;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.ServerFixture;
+import mediumtest.fixtures.SonarLintTestBackend;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.AddIssueCommentParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ChangeIssueStatusParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedIssueDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LocalOnlyIssueDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TextRangeWithHashDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TrackWithServerIssuesParams;
+import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.issue.AddIssueCommentException;
 import org.sonarsource.sonarlint.core.issue.IssueStatusChangeException;
 
 import static mediumtest.fixtures.ServerFixture.ServerStatus.DOWN;
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static mediumtest.fixtures.storage.ServerIssueFixtures.aServerIssue;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
+
 
 class IssuesStatusChangeMediumTests {
 
-  private SonarLintBackendImpl backend;
+  private SonarLintTestBackend backend;
   private ServerFixture.Server server;
 
   @AfterEach
@@ -53,10 +67,13 @@ class IssuesStatusChangeMediumTests {
 
   @Test
   void it_should_update_the_status_on_sonarqube_through_the_web_api() {
+    var serverIssue = aServerIssue("myIssueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
     server = newSonarQubeServer().start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage
+        .withProject("projectKey", project -> project.withBranch("main", branch -> branch.withIssue(serverIssue)))
+        .withServerVersion("9.8"))
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
       .build();
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", "myIssueKey",
@@ -71,9 +88,12 @@ class IssuesStatusChangeMediumTests {
 
   @Test
   void it_should_fail_the_future_when_the_server_returns_an_error() {
+    var serverIssue = aServerIssue("myIssueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
     server = newSonarQubeServer().withStatus(DOWN).start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server)
+      .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage
+        .withProject("projectKey", project -> project.withBranch("main", branch -> branch.withIssue(serverIssue)))
+        .withServerVersion("9.8"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
@@ -86,6 +106,51 @@ class IssuesStatusChangeMediumTests {
       .havingCause()
       .isInstanceOf(IssueStatusChangeException.class)
       .withMessage("Cannot change status on the issue");
+  }
+
+  @Test
+  void it_should_update_local_only_storage_when_the_issue_exists_locally() {
+    server = newSonarQubeServer().withStatus(DOWN).start();
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", server.baseUrl())
+      .withActiveBranch("configScopeId", "branch")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .build();
+
+    var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
+      Map.of("file/path", List.of(new ClientTrackedIssueDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      false));
+
+    LocalOnlyIssueDto localOnlyIssue = null;
+    try {
+      localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get("file/path").get(0).getRight();
+    } catch (Exception e) {
+      fail();
+    }
+
+    var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", localOnlyIssue.getId().toString(),
+      IssueStatus.WONT_FIX, false));
+    var issueLoaded = backend.getLocalOnlyIssueStorageService().get().load("configScopeId", "file/path");
+
+    assertThat(response).succeedsWithin(Duration.ofSeconds(2));
+    assertThat(issueLoaded).hasSize(1);
+    assertThat(issueLoaded.get(0).getId()).isEqualTo(localOnlyIssue.getId());
+    assertThat(issueLoaded.get(0).getResolution().getStatus()).isEqualTo(IssueStatus.WONT_FIX);
+  }
+
+  @Test
+  void it_should_fail_when_the_issue_does_not_exists() {
+    server = newSonarQubeServer().withStatus(DOWN).start();
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", server)
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .build();
+
+    var params = new ChangeIssueStatusParams("configScopeId", "myIssueKey", IssueStatus.WONT_FIX, false);
+    var issueService = backend.getIssueService();
+
+    var thrown = assertThrows(IssueStatusChangeException.class, () -> issueService.changeStatus(params));
+    assertThat(thrown).hasMessageStartingWith("Cannot change status on the issue: Issue key myIssueKey was not found");
   }
 
   @Test

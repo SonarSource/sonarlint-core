@@ -27,6 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.AddIssueCommentParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ChangeIssueStatusParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangePermittedParams;
@@ -37,6 +38,7 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
+import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 
 @Named
 @Singleton
@@ -52,13 +54,18 @@ public class IssueServiceImpl implements IssueService {
   private final ConfigurationRepository configurationRepository;
   private final ServerApiProvider serverApiProvider;
   private final StorageService storageService;
+  private final LocalOnlyIssueStorageService localOnlyIssueStorageService;
+  private final LocalOnlyIssueRepository localOnlyIssueRepository;
   private final TelemetryServiceImpl telemetryService;
 
   public IssueServiceImpl(ConfigurationRepository configurationRepository, ServerApiProvider serverApiProvider,
-    StorageService storageService, TelemetryServiceImpl telemetryService) {
+    StorageService storageService, LocalOnlyIssueStorageService localOnlyIssueStorageService,
+    TelemetryServiceImpl telemetryService, LocalOnlyIssueRepository localOnlyIssueRepository) {
     this.configurationRepository = configurationRepository;
     this.serverApiProvider = serverApiProvider;
     this.storageService = storageService;
+    this.localOnlyIssueStorageService = localOnlyIssueStorageService;
+    this.localOnlyIssueRepository = localOnlyIssueRepository;
     this.telemetryService = telemetryService;
   }
 
@@ -70,16 +77,26 @@ public class IssueServiceImpl implements IssueService {
       .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
       .map(connection -> {
         var reviewStatus = transitionByIssueStatus.get(params.getNewStatus());
-        return connection.issue().changeStatusAsync(params.getIssueKey(), reviewStatus)
-          .thenAccept(nothing -> {
-            storageService.binding(optionalBinding.get())
-              .findings()
-              .markIssueAsResolved(params.getIssueKey(), params.isTaintIssue());
-            telemetryService.issueStatusChanged();
-          })
-          .exceptionally(throwable -> {
-            throw new IssueStatusChangeException(throwable);
-          });
+        var projectServerIssueStore = storageService.binding(optionalBinding.get()).findings();
+        boolean isServerIssue = projectServerIssueStore.containsIssue(params.getIssueKey(), params.isTaintIssue());
+        if (isServerIssue) {
+          return connection.issue().changeStatusAsync(params.getIssueKey(), reviewStatus)
+            .thenAccept(nothing -> {
+              projectServerIssueStore.markIssueAsResolved(params.getIssueKey(), params.isTaintIssue());
+              telemetryService.issueStatusChanged();
+            })
+            .exceptionally(throwable -> {
+              throw new IssueStatusChangeException(throwable);
+            });
+        }
+        // TODO: Submit to new SQ API endpoint
+        var optionalIssue = localOnlyIssueRepository.findByKey(params.getIssueKey());
+        if (optionalIssue.isPresent()) {
+          var issue = optionalIssue.get();
+          localOnlyIssueStorageService.get().storeLocalOnlyIssue(params.getConfigurationScopeId(), issue, params.getNewStatus());
+          return CompletableFuture.<Void>completedFuture(null);
+        }
+        throw new IssueStatusChangeException("Issue key " + params.getIssueKey() + " was not found");
       })
       .orElseGet(() -> CompletableFuture.completedFuture(null));
   }
