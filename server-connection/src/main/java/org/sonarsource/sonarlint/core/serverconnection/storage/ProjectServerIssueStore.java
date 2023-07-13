@@ -162,4 +162,6 @@ public interface ProjectServerIssueStore {
   void close();
 
   void updateHotspot(String hotspotKey, Consumer<ServerHotspot> hotspotUpdater);
+
+  boolean containsIssue(String issueKey, boolean taintIssue);
 }

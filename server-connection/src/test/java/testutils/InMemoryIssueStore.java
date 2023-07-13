@@ -32,7 +32,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
-import org.sonarsource.sonarlint.core.serverconnection.ServerHotspotUpdater;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
@@ -261,5 +260,10 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
           hotspotUpdater.accept(hotspot);
         }
       })));
+  }
+
+  @Override
+  public boolean containsIssue(String issueKey, boolean taintIssue) {
+    return false;
   }
 }
