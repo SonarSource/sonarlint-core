@@ -17,14 +17,27 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.issue;
 
-public class IssueStatusChangeException extends RuntimeException {
-  public IssueStatusChangeException(Throwable cause) {
-    super("Cannot change status on the issue", cause);
+package org.sonarsource.sonarlint.core.local.only;
+
+import java.io.ByteArrayInputStream;
+import java.util.UUID;
+import jetbrains.exodus.bindings.BindingUtils;
+import jetbrains.exodus.bindings.ComparableBinding;
+import jetbrains.exodus.util.LightOutputStream;
+import org.jetbrains.annotations.NotNull;
+
+public class UuidBinding extends ComparableBinding {
+
+  @Override
+  public Comparable readObject(@NotNull ByteArrayInputStream stream) {
+    return UUID.fromString(BindingUtils.readString(stream));
   }
 
-  public IssueStatusChangeException(String cause) {
-    super("Cannot change status on the issue: " + cause);
+  @Override
+  public void writeObject(@NotNull LightOutputStream output, @NotNull Comparable object) {
+    final var uuid = (UUID) object;
+    output.writeString(uuid.toString());
   }
+
 }

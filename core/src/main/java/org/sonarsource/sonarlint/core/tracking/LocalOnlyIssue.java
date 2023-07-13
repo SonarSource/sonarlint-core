@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import java.util.UUID;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TextRangeWithHashDto;
@@ -36,8 +37,8 @@ public class LocalOnlyIssue {
   /**
    * @param resolution is null when the issue is not resolved
    */
-  public LocalOnlyIssue(UUID id, String serverRelativePath, TextRangeWithHashDto textRangeWithHash, LineWithHashDto lineWithHash, String ruleKey, String message,
-    @Nullable LocalOnlyIssueResolution resolution) {
+  public LocalOnlyIssue(UUID id, String serverRelativePath, @Nullable TextRangeWithHashDto textRangeWithHash, @Nullable LineWithHashDto lineWithHash, String ruleKey,
+    String message, @Nullable LocalOnlyIssueResolution resolution) {
     this.id = id;
     this.serverRelativePath = serverRelativePath;
     this.textRangeWithHash = textRangeWithHash;
@@ -55,10 +56,12 @@ public class LocalOnlyIssue {
     return serverRelativePath;
   }
 
+  @CheckForNull
   public TextRangeWithHashDto getTextRangeWithHash() {
     return textRangeWithHash;
   }
 
+  @CheckForNull
   public LineWithHashDto getLineWithHash() {
     return lineWithHash;
   }

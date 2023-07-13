@@ -43,7 +43,6 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Location;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.TaintVulnerabilityLite;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
-import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
