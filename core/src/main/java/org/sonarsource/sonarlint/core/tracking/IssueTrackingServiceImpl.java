@@ -33,6 +33,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -49,6 +50,7 @@ import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 import org.sonarsource.sonarlint.core.issuetracking.Tracker;
+import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.vcs.ActiveSonarProjectBranchRepository;
 import org.sonarsource.sonarlint.core.serverconnection.StorageService;
@@ -68,15 +70,18 @@ public class IssueTrackingServiceImpl implements IssueTrackingService {
   private final ActiveSonarProjectBranchRepository activeSonarProjectBranchRepository;
   private final SynchronizationServiceImpl synchronizationService;
   private final LocalOnlyIssueRepository localOnlyIssueRepository;
+  private final LocalOnlyIssueStorageService localOnlyIssueStorageService;
   private final ExecutorService executorService;
 
   public IssueTrackingServiceImpl(ConfigurationRepository configurationRepository, StorageService storageService,
-    ActiveSonarProjectBranchRepository activeSonarProjectBranchRepository, SynchronizationServiceImpl synchronizationService, LocalOnlyIssueRepository localOnlyIssueRepository) {
+    ActiveSonarProjectBranchRepository activeSonarProjectBranchRepository, SynchronizationServiceImpl synchronizationService,
+    LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository) {
     this.configurationRepository = configurationRepository;
     this.storageService = storageService;
     this.activeSonarProjectBranchRepository = activeSonarProjectBranchRepository;
     this.synchronizationService = synchronizationService;
     this.localOnlyIssueRepository = localOnlyIssueRepository;
+    this.localOnlyIssueStorageService = localOnlyIssueStorageService;
     this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-server-tracking-issue-updater"));
   }
 
@@ -100,8 +105,10 @@ public class IssueTrackingServiceImpl implements IssueTrackingService {
       return new TrackWithServerIssuesResponse(clientTrackedIssuesByServerRelativePath.entrySet().stream().map(e -> {
         var serverRelativePath = e.getKey();
         var serverIssues = storageService.binding(binding).findings().load(activeBranch, serverRelativePath);
+        var localOnlyIssues = localOnlyIssueStorageService.get().load(params.getConfigurationScopeId(), serverRelativePath);
         var clientIssueTrackables = toTrackables(e.getValue());
-        var matches = matchIssues(serverRelativePath, serverIssues, clientIssueTrackables).stream().<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>map(result -> {
+        var matches = matchIssues(serverRelativePath, serverIssues, localOnlyIssues, clientIssueTrackables)
+          .stream().<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>map(result -> {
           if (result.isLeft()) {
             var serverIssue = result.getLeft();
             return Either.forLeft(new ServerMatchedIssueDto(UUID.randomUUID(), serverIssue.getKey(), serverIssue.getCreationDate().toEpochMilli(), serverIssue.isResolved(),
@@ -133,23 +140,26 @@ public class IssueTrackingServiceImpl implements IssueTrackingService {
   }
 
   private List<Either<ServerIssue, LocalOnlyIssue>> matchIssues(String serverRelativePath, List<ServerIssue> serverIssues,
-    Collection<ClientTrackedIssueTrackable> clientTrackedIssueTrackables) {
+    List<LocalOnlyIssue> localOnlyIssues, Collection<ClientTrackedIssueTrackable> clientTrackedIssueTrackables) {
     var tracker = new Tracker<>();
-    // TODO read local only resolved issues from the storage by server relative path, and include them in the tracking
-    var trackingResult = tracker.track(() -> new ArrayList<>(clientTrackedIssueTrackables), () -> toServerIssueTrackables(serverIssues));
+    var trackingResult = tracker.track(() -> new ArrayList<>(clientTrackedIssueTrackables),
+      () -> mergeTrackables(toServerIssueTrackables(serverIssues), toLocalOnlyIssueTrackables(localOnlyIssues)));
     var matches = clientTrackedIssueTrackables.stream().<Either<ServerIssue, LocalOnlyIssue>>map(clientTrackedIssueTrackable -> {
       var match = trackingResult.getMatch(clientTrackedIssueTrackable);
-      // TODO modify this if to check if matched with server issue, should use next branch for local only resolved issues
       if (match != null) {
-        return Either.forLeft(((ServerIssueTrackable) match).getServerIssue());
+        if (match.getServerIssueKey() != null) {
+          return Either.forLeft(((ServerIssueTrackable) match).getServerIssue());
+        } else {
+          return Either.forRight(((LocalOnlyIssueTrackable) match).getLocalOnlyIssue());
+        }
       } else {
         var clientTrackedIssue = clientTrackedIssueTrackable.getClientTrackedIssue();
         return Either.forRight(new LocalOnlyIssue(UUID.randomUUID(), serverRelativePath, clientTrackedIssue.getTextRangeWithHash(), clientTrackedIssue.getLineWithHash(),
           clientTrackedIssue.getRuleKey(), clientTrackedIssue.getMessage(), null));
       }
     }).collect(Collectors.toList());
-    var localOnlyIssues = matches.stream().filter(Either::isRight).map(Either::getRight).collect(Collectors.toList());
-    localOnlyIssueRepository.save(serverRelativePath, localOnlyIssues);
+    var localOnlyIssuesMatched = matches.stream().filter(Either::isRight).map(Either::getRight).collect(Collectors.toList());
+    localOnlyIssueRepository.save(serverRelativePath, localOnlyIssuesMatched);
     return matches;
   }
 
@@ -157,8 +167,16 @@ public class IssueTrackingServiceImpl implements IssueTrackingService {
     return clientTrackedIssue.stream().map(ClientTrackedIssueTrackable::new).collect(Collectors.toList());
   }
 
+  private static Collection<Trackable> mergeTrackables(Collection<Trackable> serverTrackables, Collection<Trackable> localOnlyTrackables) {
+    return Stream.of(serverTrackables, localOnlyTrackables).flatMap(Collection::stream).collect(Collectors.toList());
+  }
+
   private static Collection<Trackable> toServerIssueTrackables(List<ServerIssue> serverIssues) {
     return serverIssues.stream().map(ServerIssueTrackable::new).collect(Collectors.toList());
+  }
+
+  private static Collection<Trackable> toLocalOnlyIssueTrackables(List<LocalOnlyIssue> localOnlyIssues) {
+    return localOnlyIssues.stream().map(LocalOnlyIssueTrackable::new).collect(Collectors.toList());
   }
 
   @PreDestroy

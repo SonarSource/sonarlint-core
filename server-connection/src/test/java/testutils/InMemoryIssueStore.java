@@ -306,4 +306,9 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
         }
       })));
   }
+
+  @Override
+  public boolean containsIssue(String issueKey, boolean taintIssue) {
+    return false;
+  }
 }

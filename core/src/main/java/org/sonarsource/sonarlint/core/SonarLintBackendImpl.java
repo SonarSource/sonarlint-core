@@ -66,7 +66,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     });
   }
 
-  private ConfigurableApplicationContext getInitializedApplicationContext() {
+  protected ConfigurableApplicationContext getInitializedApplicationContext() {
     if (!initialized.get()) {
       throw new IllegalStateException("Backend is not initialized");
     }

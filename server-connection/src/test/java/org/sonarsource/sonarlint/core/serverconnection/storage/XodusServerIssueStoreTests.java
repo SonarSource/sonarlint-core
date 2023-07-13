@@ -838,4 +838,34 @@ class XodusServerIssueStoreTests {
 
     store2.close();
   }
+
+  @Test
+  void should_find_when_the_issue_exists() {
+    var creationDate = Instant.now();
+
+    store
+      .replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setFilePath("file/path").setCreationDate(creationDate)));
+
+    assertThat(store.containsIssue("key", false)).isTrue();
+  }
+
+  @Test
+  void should_find_when_the_taint_exists() {
+    var creationDate = Instant.now();
+
+    store
+      .replaceAllTaintOfFile("branch", "file/path", List.of(aServerTaintIssue().setFilePath("file/path").setCreationDate(creationDate)));
+
+    assertThat(store.containsIssue("key", true)).isTrue();
+  }
+
+  @Test
+  void should_not_find_the_issue_when_it_does_not_exist() {
+    var creationDate = Instant.now();
+
+    store
+      .replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setFilePath("file/path").setCreationDate(creationDate)));
+
+    assertThat(store.containsIssue("key_not_found", false)).isFalse();
+  }
 }

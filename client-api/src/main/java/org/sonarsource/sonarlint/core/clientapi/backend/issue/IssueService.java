@@ -25,11 +25,12 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 public interface IssueService {
 
   /**
-   * <p> It changes a status of an existing issues. In detail, it is responsible for:
+   * <p> It changes a status of an issue that is existing on the server or local-only. In detail, it is responsible for:
    * <ul>
-   *   <li>Changes the status of an existing issue (identified by {@link ChangeIssueStatusParams#getIssueKey()} )}</li>
+   *   <li>Changes the status of an issue (identified by {@link ChangeIssueStatusParams#getIssueKey()} )}</li>
    *   <li>Updates the issue status in the local storage</li>
-   *   <li>Increments the 'issue.status_changed_count' counter for telemetry</li>
+   *   <li>In case of a local-only issue, it stores the issue in the xodus database for local-only issues</li>
+   *   <li>Increments the 'issue.status_changed_count' counter for telemetry when issue exists in the server</li>
    * </ul>
    *</p>
    * It silently deals with the following conditions:
@@ -43,6 +44,7 @@ public interface IssueService {
    * <p>
    * It returns a failed future if:
    * <ul>
+   *   <li>the issue is not found either on the server or in the local-only storage for issues</li>
    *   <li>there is a communication problem with the server: network outage, server is down, unauthorized</li>
    * </ul>
    * </p>

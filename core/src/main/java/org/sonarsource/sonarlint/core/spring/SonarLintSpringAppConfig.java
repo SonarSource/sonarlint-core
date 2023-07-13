@@ -42,6 +42,7 @@ import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.TokenGeneratorHelper;
 import org.sonarsource.sonarlint.core.analysis.AnalysisServiceImpl;
+import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchServiceImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
@@ -132,6 +133,11 @@ public class SonarLintSpringAppConfig {
   @Bean(destroyMethod = "close")
   StorageService provideStorageService(InitializeParams params, @Named("workDir") Path workDir) {
     return new StorageService(params.getStorageRoot(), workDir);
+  }
+
+  @Bean(destroyMethod = "close")
+  LocalOnlyIssueStorageService provideLocalOnlyIssueStorageService(InitializeParams params, @Named("workDir") Path workDir) {
+    return new LocalOnlyIssueStorageService(params.getStorageRoot(), workDir);
   }
 
   @Bean
