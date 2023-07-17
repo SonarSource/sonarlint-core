@@ -122,8 +122,8 @@ class LanguageDetectionTests {
     var inputFile = newInputFile("abc.xhtml");
     var e = assertThrows(MessageException.class, () -> detection.language(inputFile));
     assertThat(e.getMessage())
-      .contains("Language of file 'file://")
-      .contains("abc.xhtml' can not be decided as the file extension matches both ")
+      .contains("Language of file \"file://")
+      .contains("abc.xhtml\" can not be decided as the file extension matches both ")
       .contains("HTML: xhtml")
       .contains("XML: xhtml");
   }
