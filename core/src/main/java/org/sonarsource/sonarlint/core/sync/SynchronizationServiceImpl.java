@@ -66,7 +66,7 @@ public class SynchronizationServiceImpl {
   private final TaskManager taskManager;
   private final StorageService storageService;
   private final Set<String> connectedModeEmbeddedPluginKeys;
-  private final InitializeParams params;
+  private final boolean synchronizationEnabled;
   private ScheduledExecutorService scheduledSynchronizer;
 
   public SynchronizationServiceImpl(SonarLintClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
@@ -79,12 +79,12 @@ public class SynchronizationServiceImpl {
     this.taskManager = new TaskManager(client);
     this.storageService = storageService;
     this.connectedModeEmbeddedPluginKeys = params.getConnectedModeEmbeddedPluginPathsByKey().keySet();
-    this.params = params;
+    this.synchronizationEnabled = params.getFeatureFlags().shouldSynchronizeProjects();
   }
 
   @PostConstruct
   public void startScheduledSync() {
-    if (!params.getFeatureFlags().shouldSynchronizeProjects()) {
+    if (!synchronizationEnabled) {
       return;
     }
     scheduledSynchronizer = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SonarLint Local Storage Synchronizer"));
@@ -161,6 +161,9 @@ public class SynchronizationServiceImpl {
 
   @Subscribe
   public void onSonarProjectBranchChanged(ActiveSonarProjectBranchChanged changedEvent) {
+    if (!synchronizationEnabled) {
+      return;
+    }
     var configurationScopeId = changedEvent.getConfigurationScopeId();
     configurationRepository.getEffectiveBinding(configurationScopeId).ifPresent(binding -> autoSync(Map.of(requireNonNull(binding.getConnectionId()),
       List.of(new BoundConfigurationScope(configurationScopeId, binding.getSonarProjectKey())))));
