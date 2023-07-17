@@ -27,13 +27,13 @@ import java.util.concurrent.CompletableFuture;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
-import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.AddIssueCommentParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ChangeIssueStatusParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangePermittedParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueService;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
+import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverconnection.StorageService;
@@ -108,12 +108,19 @@ public class IssueServiceImpl implements IssueService {
     if (serverApiOpt.isEmpty()) {
       return CompletableFuture.failedFuture(new IllegalArgumentException("Connection with ID '" + connectionId + "' does not exist"));
     }
+    if (localOnlyIssueRepository.findByKey(params.getIssueKey()).isPresent()) {
+      // always permitted to change the status, might fail later when pushing to SQ
+      return CompletableFuture.completedFuture(toResponse(true));
+    }
     return serverApiOpt.get().issue().searchByKey(params.getIssueKey())
       .thenApply(IssueServiceImpl::toResponse);
   }
 
   private static CheckStatusChangePermittedResponse toResponse(Issues.Issue issue) {
-    var permitted = hasChangePermission(issue);
+    return toResponse(hasChangePermission(issue));
+  }
+
+  private static CheckStatusChangePermittedResponse toResponse(boolean permitted) {
     return new CheckStatusChangePermittedResponse(permitted,
       permitted ? null : STATUS_CHANGE_PERMISSION_MISSING_REASON,
       // even if not permitted, return the possible statuses, if clients still want to show users what's supported

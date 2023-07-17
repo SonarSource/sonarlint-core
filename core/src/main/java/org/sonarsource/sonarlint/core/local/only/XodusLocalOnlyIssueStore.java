@@ -100,10 +100,10 @@ public class XodusLocalOnlyIssueStore {
   }
 
   public List<LocalOnlyIssue> load(String configurationScopeId, String filePath) {
-    return loadIssue(configurationScopeId, filePath, XodusLocalOnlyIssueStore::adapt);
+    return loadIssues(configurationScopeId, filePath, XodusLocalOnlyIssueStore::adapt);
   }
 
-  private <G> List<G> loadIssue(String configurationScopeId, String filePath, Function<Entity, G> adapter) {
+  private <G> List<G> loadIssues(String configurationScopeId, String filePath, Function<Entity, G> adapter) {
     return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, CONFIGURATION_SCOPE_ID_ENTITY_TYPE, NAME_PROPERTY_NAME, configurationScopeId)
       .map(branch -> branch.getLinks(CONFIGURATION_SCOPE_ID_TO_FILES_LINK_NAME))
       .flatMap(files -> findUniqueAmong(files, PATH_PROPERTY_NAME, filePath))
