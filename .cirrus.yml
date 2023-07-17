@@ -17,6 +17,7 @@ auto_cancellation: $CIRRUS_BRANCH != $CIRRUS_DEFAULT_BRANCH
 only_if_with_nightly: &ONLY_IF
   skip: "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')"
   only_if: $CIRRUS_USER_COLLABORATOR == 'true' && $CIRRUS_TAG == ""
+    && ($CIRRUS_PR != "" || $CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-.*" || $CIRRUS_BRANCH =~ "dogfood-on-.*")
 
 only_if_except_nightly: &ONLY_IF_EXCEPT_NIGHTLY
   skip: "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')"
