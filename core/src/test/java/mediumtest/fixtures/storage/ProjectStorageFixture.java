@@ -163,48 +163,50 @@ public class ProjectStorageFixture {
       }
       var environment = Environments.newInstance(xodusTempDbPath.toAbsolutePath().toFile());
       var entityStore = PersistentEntityStores.newInstance(environment);
-      entityStore.executeInTransaction(txn -> branches.forEach(branch -> {
+      entityStore.executeInTransaction(txn -> {
         entityStore.registerCustomPropertyType(txn, IssueSeverity.class, new IssueSeverityBinding());
         entityStore.registerCustomPropertyType(txn, RuleType.class, new IssueTypeBinding());
         entityStore.registerCustomPropertyType(txn, Instant.class, new InstantBinding());
-        var branchEntity = txn.newEntity("Branch");
-        branchEntity.setProperty("name", branch.name);
-        branch.serverIssues.stream()
-          .map(ServerIssueFixtures.ServerIssueBuilder::build)
-          .collect(Collectors.groupingBy(ServerIssueFixtures.ServerIssue::getFilePath))
-          .forEach((filePath, issues) -> {
-            var fileEntity = txn.newEntity("File");
-            fileEntity.setProperty("path", filePath);
-            branchEntity.addLink("files", fileEntity);
-            issues.forEach(issue -> {
-              var issueEntity = txn.newEntity("Issue");
-              issueEntity.setProperty("key", issue.key);
-              issueEntity.setProperty("type", issue.ruleType);
-              issueEntity.setProperty("resolved", issue.resolved);
-              issueEntity.setProperty("ruleKey", issue.ruleKey);
-              issueEntity.setBlobString("message", issue.message);
-              issueEntity.setProperty("creationDate", issue.introductionDate);
-              var userSeverity = issue.userSeverity;
-              if (userSeverity != null) {
-                issueEntity.setProperty("userSeverity", userSeverity);
-              }
-              if (issue.lineNumber != null && issue.lineHash != null) {
-                issueEntity.setBlobString("lineHash", issue.lineHash);
-                issueEntity.setProperty("startLine", issue.lineNumber);
-              } else if (issue.textRangeWithHash != null) {
-                var textRange = issue.textRangeWithHash;
-                issueEntity.setProperty("startLine", textRange.getStartLine());
-                issueEntity.setProperty("startLineOffset", textRange.getStartLineOffset());
-                issueEntity.setProperty("endLine", textRange.getEndLine());
-                issueEntity.setProperty("endLineOffset", textRange.getEndLineOffset());
-                issueEntity.setBlobString("rangeHash", textRange.getHash());
-              }
+        branches.forEach(branch -> {
+          var branchEntity = txn.newEntity("Branch");
+          branchEntity.setProperty("name", branch.name);
+          branch.serverIssues.stream()
+            .map(ServerIssueFixtures.ServerIssueBuilder::build)
+            .collect(Collectors.groupingBy(ServerIssueFixtures.ServerIssue::getFilePath))
+            .forEach((filePath, issues) -> {
+              var fileEntity = txn.newEntity("File");
+              fileEntity.setProperty("path", filePath);
+              branchEntity.addLink("files", fileEntity);
+              issues.forEach(issue -> {
+                var issueEntity = txn.newEntity("Issue");
+                issueEntity.setProperty("key", issue.key);
+                issueEntity.setProperty("type", issue.ruleType);
+                issueEntity.setProperty("resolved", issue.resolved);
+                issueEntity.setProperty("ruleKey", issue.ruleKey);
+                issueEntity.setBlobString("message", issue.message);
+                issueEntity.setProperty("creationDate", issue.introductionDate);
+                var userSeverity = issue.userSeverity;
+                if (userSeverity != null) {
+                  issueEntity.setProperty("userSeverity", userSeverity);
+                }
+                if (issue.lineNumber != null && issue.lineHash != null) {
+                  issueEntity.setBlobString("lineHash", issue.lineHash);
+                  issueEntity.setProperty("startLine", issue.lineNumber);
+                } else if (issue.textRangeWithHash != null) {
+                  var textRange = issue.textRangeWithHash;
+                  issueEntity.setProperty("startLine", textRange.getStartLine());
+                  issueEntity.setProperty("startLineOffset", textRange.getStartLineOffset());
+                  issueEntity.setProperty("endLine", textRange.getEndLine());
+                  issueEntity.setProperty("endLineOffset", textRange.getEndLineOffset());
+                  issueEntity.setBlobString("rangeHash", textRange.getHash());
+                }
 
-              issueEntity.setLink("file", fileEntity);
-              fileEntity.addLink("issues", issueEntity);
+                issueEntity.setLink("file", fileEntity);
+                fileEntity.addLink("issues", issueEntity);
+              });
             });
-          });
-      }));
+        });
+      });
       try {
         CompressBackupUtil.backup(entityStore, xodusBackupPath.toFile(), false);
       } catch (Exception e) {

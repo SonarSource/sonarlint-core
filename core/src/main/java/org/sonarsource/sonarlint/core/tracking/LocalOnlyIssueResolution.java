@@ -27,7 +27,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
 public class LocalOnlyIssueResolution {
   private final IssueStatus resolutionStatus;
   private final Instant resolutionDate;
-  private final String comment;
+  private String comment;
 
   public LocalOnlyIssueResolution(IssueStatus status, Instant resolutionDate, @Nullable String comment) {
     this.resolutionStatus = status;
@@ -46,5 +46,9 @@ public class LocalOnlyIssueResolution {
   @CheckForNull
   public String getComment() {
     return comment;
+  }
+
+  public void setComment(String comment) {
+    this.comment = comment;
   }
 }
