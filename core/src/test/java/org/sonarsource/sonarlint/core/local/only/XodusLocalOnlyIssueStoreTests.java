@@ -27,13 +27,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueResolution;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus.FALSE_POSITIVE;
-import static org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus.WONT_FIX;
-import static org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueFixtures.aLocalOnlyIssueUnresolved;
-import static org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueFixtures.aLocalOnlyIssueUnresolvedWithoutTextAndLineRange;
+import static org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueFixtures.aLocalOnlyIssueResolved;
+import static org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueFixtures.aLocalOnlyIssueResolvedWithoutTextAndLineRange;
 
 class XodusLocalOnlyIssueStoreTests {
 
@@ -65,42 +62,42 @@ class XodusLocalOnlyIssueStoreTests {
 
   @Test
   void should_save_a_local_only_issue() {
-    var localOnlyIssue = aLocalOnlyIssueUnresolved();
-    store.storeLocalOnlyIssue("configScopeId", localOnlyIssue, WONT_FIX);
+    var localOnlyIssue = aLocalOnlyIssueResolved();
+    store.storeLocalOnlyIssue("configScopeId", localOnlyIssue);
 
     var storedIssues = store.load("configScopeId", "file/path");
-    assertThat(storedIssues).hasSize(1);
-    var storedIssue = storedIssues.get(0);
-    assertThat(storedIssue).usingRecursiveComparison().ignoringFieldsOfTypes(LocalOnlyIssueResolution.class).isEqualTo(localOnlyIssue);
-    assertThat(storedIssue.getResolution().getStatus()).isEqualTo(WONT_FIX);
+    assertThat(storedIssues).usingRecursiveFieldByFieldElementComparator()
+      .containsOnly(localOnlyIssue);
+  }
+
+  @Test
+  void should_save_a_resolved_local_only_issue() {
+    var localOnlyIssue = aLocalOnlyIssueResolved();
+    store.storeLocalOnlyIssue("configScopeId", localOnlyIssue);
+
+    var storedIssues = store.load("configScopeId", "file/path");
+    assertThat(storedIssues).usingRecursiveFieldByFieldElementComparator()
+        .containsOnly(localOnlyIssue);
   }
 
   @Test
   void should_save_multiple_local_only_issue_to_save_file() {
-    var localOnlyIssue1 = aLocalOnlyIssueUnresolved();
-    var localOnlyIssue2 = aLocalOnlyIssueUnresolvedWithoutTextAndLineRange();
-    var localOnlyIssue3 = aLocalOnlyIssueUnresolved();
-    store.storeLocalOnlyIssue("configScopeId", localOnlyIssue1, WONT_FIX);
-    store.storeLocalOnlyIssue("configScopeId", localOnlyIssue2, WONT_FIX);
-    store.storeLocalOnlyIssue("configScopeId", localOnlyIssue3, FALSE_POSITIVE);
+    var localOnlyIssue1 = aLocalOnlyIssueResolved();
+    var localOnlyIssue2 = aLocalOnlyIssueResolvedWithoutTextAndLineRange();
+    var localOnlyIssue3 = aLocalOnlyIssueResolved();
+    store.storeLocalOnlyIssue("configScopeId", localOnlyIssue1);
+    store.storeLocalOnlyIssue("configScopeId", localOnlyIssue2);
+    store.storeLocalOnlyIssue("configScopeId", localOnlyIssue3);
 
     var storedIssues = store.load("configScopeId", "file/path");
-    assertThat(storedIssues).hasSize(3);
-    var storedIssue1 = storedIssues.get(0);
-    var storedIssue2 = storedIssues.get(1);
-    var storedIssue3 = storedIssues.get(2);
-    assertThat(storedIssue1).usingRecursiveComparison().ignoringFieldsOfTypes(LocalOnlyIssueResolution.class).isEqualTo(localOnlyIssue1);
-    assertThat(storedIssue1.getResolution().getStatus()).isEqualTo(WONT_FIX);
-    assertThat(storedIssue2).usingRecursiveComparison().ignoringFieldsOfTypes(LocalOnlyIssueResolution.class).isEqualTo(localOnlyIssue2);
-    assertThat(storedIssue2.getResolution().getStatus()).isEqualTo(WONT_FIX);
-    assertThat(storedIssue3).usingRecursiveComparison().ignoringFieldsOfTypes(LocalOnlyIssueResolution.class).isEqualTo(localOnlyIssue3);
-    assertThat(storedIssue3.getResolution().getStatus()).isEqualTo(FALSE_POSITIVE);
+    assertThat(storedIssues).usingRecursiveFieldByFieldElementComparator()
+        .containsExactly(localOnlyIssue1, localOnlyIssue2, localOnlyIssue3);
   }
 
   @Test
   void should_not_load_a_local_only_issue_if_file_path_is_wrong() {
-    var localOnlyIssue = aLocalOnlyIssueUnresolved();
-    store.storeLocalOnlyIssue("configScopeId", localOnlyIssue, WONT_FIX);
+    var localOnlyIssue = aLocalOnlyIssueResolved();
+    store.storeLocalOnlyIssue("configScopeId", localOnlyIssue);
 
     var storedIssues = store.load("configScopeId", "wrong/path");
     assertThat(storedIssues).isEmpty();
@@ -108,8 +105,8 @@ class XodusLocalOnlyIssueStoreTests {
 
   @Test
   void should_not_load_a_local_only_issue_if_config_scope_id_is_wrong() {
-    var localOnlyIssue = aLocalOnlyIssueUnresolved();
-    store.storeLocalOnlyIssue("configScopeId", localOnlyIssue, WONT_FIX);
+    var localOnlyIssue = aLocalOnlyIssueResolved();
+    store.storeLocalOnlyIssue("configScopeId", localOnlyIssue);
 
     var storedIssues = store.load("wrongConfigScopeId", "file/path");
     assertThat(storedIssues).isEmpty();

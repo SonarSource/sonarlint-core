@@ -22,7 +22,9 @@ package org.sonarsource.sonarlint.core.issue;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -78,11 +80,12 @@ public class IssueServiceImpl implements IssueService {
       .map(connection -> {
         var reviewStatus = transitionByIssueStatus.get(params.getNewStatus());
         var projectServerIssueStore = storageService.binding(optionalBinding.get()).findings();
-        boolean isServerIssue = projectServerIssueStore.containsIssue(params.getIssueKey(), params.isTaintIssue());
+        var issueKey = params.getIssueKey();
+        boolean isServerIssue = projectServerIssueStore.containsIssue(issueKey, params.isTaintIssue());
         if (isServerIssue) {
-          return connection.issue().changeStatusAsync(params.getIssueKey(), reviewStatus)
+          return connection.issue().changeStatusAsync(issueKey, reviewStatus)
             .thenAccept(nothing -> {
-              projectServerIssueStore.markIssueAsResolved(params.getIssueKey(), params.isTaintIssue());
+              projectServerIssueStore.markIssueAsResolved(issueKey, params.isTaintIssue());
               telemetryService.issueStatusChanged();
             })
             .exceptionally(throwable -> {
@@ -90,13 +93,13 @@ public class IssueServiceImpl implements IssueService {
             });
         }
         // TODO: Submit to new SQ API endpoint
-        var optionalIssue = localOnlyIssueRepository.findByKey(params.getIssueKey());
-        if (optionalIssue.isPresent()) {
-          var issue = optionalIssue.get();
-          localOnlyIssueStorageService.get().storeLocalOnlyIssue(params.getConfigurationScopeId(), issue, params.getNewStatus());
-          return CompletableFuture.<Void>completedFuture(null);
-        }
-        throw new IssueStatusChangeException("Issue key " + params.getIssueKey() + " was not found");
+        return asUUID(issueKey)
+          .flatMap(localOnlyIssueRepository::findByKey)
+          .map(issue -> {
+            issue.resolve(params.getNewStatus());
+            localOnlyIssueStorageService.get().storeLocalOnlyIssue(params.getConfigurationScopeId(), issue);
+            return CompletableFuture.<Void>completedFuture(null);
+          }).orElseThrow(() -> new IssueStatusChangeException("Issue key " + issueKey + " was not found"));
       })
       .orElseGet(() -> CompletableFuture.completedFuture(null));
   }
@@ -108,12 +111,15 @@ public class IssueServiceImpl implements IssueService {
     if (serverApiOpt.isEmpty()) {
       return CompletableFuture.failedFuture(new IllegalArgumentException("Connection with ID '" + connectionId + "' does not exist"));
     }
-    if (localOnlyIssueRepository.findByKey(params.getIssueKey()).isPresent()) {
-      // always permitted to change the status, might fail later when pushing to SQ
-      return CompletableFuture.completedFuture(toResponse(true));
-    }
-    return serverApiOpt.get().issue().searchByKey(params.getIssueKey())
-      .thenApply(IssueServiceImpl::toResponse);
+    var issueKey = params.getIssueKey();
+    return asUUID(issueKey)
+      .flatMap(localOnlyIssueRepository::findByKey)
+      .map(r -> {
+        // always permitted to change the status, might fail later when pushing to SQ
+        return CompletableFuture.completedFuture(toResponse(true));
+      })
+      .orElseGet(() -> serverApiOpt.get().issue().searchByKey(params.getIssueKey())
+        .thenApply(IssueServiceImpl::toResponse));
   }
 
   private static CheckStatusChangePermittedResponse toResponse(Issues.Issue issue) {
@@ -137,11 +143,25 @@ public class IssueServiceImpl implements IssueService {
   @Override
   public CompletableFuture<Void> addComment(AddIssueCommentParams params) {
     var configurationScopeId = params.getConfigurationScopeId();
+    var issueKey = params.getIssueKey();
+    var issueId = asUUID(issueKey);
+    if (issueId.isPresent()) {
+      var found = localOnlyIssueStorageService.get().update(issueId.get(), localOnlyIssue -> {
+        var resolution = localOnlyIssue.getResolution();
+        if (resolution != null) {
+          // should always be true, we store only resolved local-only issues
+          resolution.setComment(params.getText());
+        }
+      });
+      if (found) {
+        // TODO: Submit to new SQ API endpoint
+        return CompletableFuture.completedFuture(null);
+      }
+    }
     var optionalBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
     return optionalBinding
       .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
       .map(connection -> {
-        var issueKey = params.getIssueKey();
         var text = params.getText();
         return connection.issue().addComment(issueKey, text)
           .exceptionally(throwable -> {
@@ -149,5 +169,13 @@ public class IssueServiceImpl implements IssueService {
           });
       })
       .orElseGet(() -> CompletableFuture.completedFuture(null));
+  }
+
+  private static Optional<UUID> asUUID(String key) {
+    try {
+      return Optional.of(UUID.fromString(key));
+    } catch (Exception e) {
+      return Optional.empty();
+    }
   }
 }
