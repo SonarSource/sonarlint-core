@@ -342,6 +342,9 @@ public class ServerFixture {
       }
       registerIssuesStatusChangeApiResponses();
       registerAddIssueCommentApiResponses();
+      if (version != null && version.satisfiesMinRequirement(Version.create("10.2"))) {
+        registerIssueAnticipateTransitionResponses();
+      }
     }
 
     private void registerBatchIssuesResponses() {
@@ -415,6 +418,10 @@ public class ServerFixture {
         mockWebServer.addProtobufResponseDelimited(
           "/api/issues/pull_taint?projectKey=" + projectKey + "&branchName=" + branchName + "&changedSince=" + timestamp.getQueryTimestamp(), timestamp);
       }));
+    }
+
+    private void registerIssueAnticipateTransitionResponses() {
+      mockWebServer.addResponse("/api/issues/anticipate_transitions", new MockResponse().setResponseCode(200));
     }
 
     private void registerSourceApiResponses() {
