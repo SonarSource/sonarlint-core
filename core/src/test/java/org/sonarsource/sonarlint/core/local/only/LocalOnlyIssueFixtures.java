@@ -19,34 +19,42 @@
  */
 package org.sonarsource.sonarlint.core.local.only;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TextRangeWithHashDto;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssue;
+import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueResolution;
 
 public class LocalOnlyIssueFixtures {
 
-  public static LocalOnlyIssue aLocalOnlyIssueUnresolved() {
+  public static LocalOnlyIssue aLocalOnlyIssueResolvedWithoutTextAndLineRange() {
     return new LocalOnlyIssue(
       UUID.randomUUID(),
+      "file/path",
+      null,
+      null,
+      "ruleKey",
+      "message",
+      new LocalOnlyIssueResolution(IssueStatus.WONT_FIX, Instant.now().truncatedTo(ChronoUnit.MILLIS), "comment")
+    );
+  }
+
+  public static LocalOnlyIssue aLocalOnlyIssueResolved() {
+    return aLocalOnlyIssueResolved(UUID.randomUUID());
+  }
+
+  public static LocalOnlyIssue aLocalOnlyIssueResolved(UUID id) {
+    return new LocalOnlyIssue(
+      id,
       "file/path",
       new TextRangeWithHashDto(1, 2, 3, 4, "ab12"),
       new LineWithHashDto(1, "linehash"),
       "ruleKey",
       "message",
-      null
-    );
-  }
-
-  public static LocalOnlyIssue aLocalOnlyIssueUnresolvedWithoutTextAndLineRange() {
-    return new LocalOnlyIssue(
-      UUID.randomUUID(),
-      "file/path",
-      null,
-      null,
-      "ruleKey",
-      "message",
-      null
+      new LocalOnlyIssueResolution(IssueStatus.WONT_FIX, Instant.now().truncatedTo(ChronoUnit.MILLIS), "comment")
     );
   }
 

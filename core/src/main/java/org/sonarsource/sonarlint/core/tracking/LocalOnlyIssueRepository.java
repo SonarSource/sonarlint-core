@@ -36,12 +36,7 @@ public class LocalOnlyIssueRepository {
     localOnlyIssuesByRelativePath.put(serverRelativePath, localOnlyIssues);
   }
 
-  public Optional<LocalOnlyIssue> findByKey(String localOnlyIssueKey) {
-    try {
-      var issueId = UUID.fromString(localOnlyIssueKey);
-      return localOnlyIssuesByRelativePath.values().stream().flatMap(List::stream).filter(issue -> issue.getId().equals(issueId)).findFirst();
-    } catch(Exception e) {
-      return Optional.empty();
-    }
+  public Optional<LocalOnlyIssue> findByKey(UUID localOnlyIssueKey) {
+    return localOnlyIssuesByRelativePath.values().stream().flatMap(List::stream).filter(issue -> issue.getId().equals(localOnlyIssueKey)).findFirst();
   }
 }

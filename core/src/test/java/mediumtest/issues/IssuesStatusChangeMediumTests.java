@@ -24,6 +24,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.ServerFixture;
 import mediumtest.fixtures.SonarLintTestBackend;
@@ -41,14 +42,17 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.issue.AddIssueCommentException;
 import org.sonarsource.sonarlint.core.issue.IssueStatusChangeException;
+import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssue;
+import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueResolution;
 
-import static mediumtest.fixtures.ServerFixture.ServerStatus.DOWN;
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
+import static mediumtest.fixtures.ServerFixture.ServerStatus.DOWN;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.storage.ServerIssueFixtures.aServerIssue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueFixtures.aLocalOnlyIssueResolved;
 
 
 class IssuesStatusChangeMediumTests {
@@ -148,13 +152,13 @@ class IssuesStatusChangeMediumTests {
 
     var params = new ChangeIssueStatusParams("configScopeId", "myIssueKey", IssueStatus.WONT_FIX, false);
     var issueService = backend.getIssueService();
-
     var thrown = assertThrows(IssueStatusChangeException.class, () -> issueService.changeStatus(params));
+
     assertThat(thrown).hasMessageStartingWith("Cannot change status on the issue: Issue key myIssueKey was not found");
   }
 
   @Test
-  void it_should_add_new_comment_to_issue() {
+  void it_should_add_new_comment_to_server_issue() {
     server = newSonarQubeServer().start();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server)
@@ -163,11 +167,32 @@ class IssuesStatusChangeMediumTests {
 
     var response = backend.getIssueService().addComment(new AddIssueCommentParams("configScopeId", "myIssueKey", "That's " +
       "serious issue"));
+
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     var lastRequest = server.lastRequest();
     assertThat(lastRequest.getPath()).isEqualTo("/api/issues/add_comment");
     assertThat(lastRequest.getHeader("Content-Type")).isEqualTo("application/x-www-form-urlencoded");
     assertThat(lastRequest.getBody().readString(StandardCharsets.UTF_8)).isEqualTo("issue=myIssueKey&text=That%27s+serious+issue");
+  }
+
+  @Test
+  void it_should_add_new_comment_to_resolved_local_only_issue() {
+    server = newSonarQubeServer().start();
+    var issueId = UUID.randomUUID();
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", server)
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId)))
+      .build();
+
+    var response = backend.getIssueService().addComment(new AddIssueCommentParams("configScopeId", issueId.toString(), "That's " +
+      "serious issue"));
+
+    assertThat(response).succeedsWithin(Duration.ofSeconds(2));
+    var storedIssues = backend.getLocalOnlyIssueStorageService().get().load("configScopeId", "file/path");
+    assertThat(storedIssues)
+      .extracting(LocalOnlyIssue::getResolution)
+      .extracting(LocalOnlyIssueResolution::getComment)
+      .containsOnly("That's serious issue");
   }
 
   @Test
