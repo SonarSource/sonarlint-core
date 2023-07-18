@@ -22,9 +22,9 @@ package org.sonarsource.sonarlint.core.local.only;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TextRangeWithHashDto;
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
+import org.sonarsource.sonarlint.core.commons.LineWithHash;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueResolution;
 
@@ -50,8 +50,8 @@ public class LocalOnlyIssueFixtures {
     return new LocalOnlyIssue(
       id,
       "file/path",
-      new TextRangeWithHashDto(1, 2, 3, 4, "ab12"),
-      new LineWithHashDto(1, "linehash"),
+      new TextRangeWithHash(1, 2, 3, 4, "ab12"),
+      new LineWithHash(1, "linehash"),
       "ruleKey",
       "message",
       new LocalOnlyIssueResolution(IssueStatus.WONT_FIX, Instant.now().truncatedTo(ChronoUnit.MILLIS), "comment")
