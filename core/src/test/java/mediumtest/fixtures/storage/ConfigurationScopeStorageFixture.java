@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 import jetbrains.exodus.entitystore.PersistentEntityStores;
 import jetbrains.exodus.env.Environments;
 import jetbrains.exodus.util.CompressBackupUtil;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.local.only.IssueStatusBinding;
 import org.sonarsource.sonarlint.core.local.only.UuidBinding;
 import org.sonarsource.sonarlint.core.serverconnection.storage.InstantBinding;

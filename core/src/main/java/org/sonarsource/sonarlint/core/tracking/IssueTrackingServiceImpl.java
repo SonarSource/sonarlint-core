@@ -34,19 +34,26 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedIssueDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.IssueTrackingService;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LocalOnlyIssueDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ServerMatchedIssueDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TextRangeWithHashDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TrackWithServerIssuesParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TrackWithServerIssuesResponse;
 import org.sonarsource.sonarlint.core.commons.Binding;
+import org.sonarsource.sonarlint.core.commons.LineWithHash;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 import org.sonarsource.sonarlint.core.issuetracking.Tracker;
@@ -109,16 +116,16 @@ public class IssueTrackingServiceImpl implements IssueTrackingService {
         var clientIssueTrackables = toTrackables(e.getValue());
         var matches = matchIssues(serverRelativePath, serverIssues, localOnlyIssues, clientIssueTrackables)
           .stream().<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>map(result -> {
-          if (result.isLeft()) {
-            var serverIssue = result.getLeft();
-            return Either.forLeft(new ServerMatchedIssueDto(UUID.randomUUID(), serverIssue.getKey(), serverIssue.getCreationDate().toEpochMilli(), serverIssue.isResolved(),
-              serverIssue.getUserSeverity(), serverIssue.getType()));
-          } else {
-            var localOnlyIssue = result.getRight();
-            var resolution = localOnlyIssue.getResolution();
-            return Either.forRight(new LocalOnlyIssueDto(localOnlyIssue.getId(), resolution == null ? null : resolution.getStatus()));
-          }
-        }).collect(Collectors.toList());
+            if (result.isLeft()) {
+              var serverIssue = result.getLeft();
+              return Either.forLeft(new ServerMatchedIssueDto(UUID.randomUUID(), serverIssue.getKey(), serverIssue.getCreationDate().toEpochMilli(), serverIssue.isResolved(),
+                serverIssue.getUserSeverity(), serverIssue.getType()));
+            } else {
+              var localOnlyIssue = result.getRight();
+              var resolution = localOnlyIssue.getResolution();
+              return Either.forRight(new LocalOnlyIssueDto(localOnlyIssue.getId(), resolution == null ? null : IssueStatus.valueOf(resolution.getStatus().name())));
+            }
+          }).collect(Collectors.toList());
         return Map.entry(serverRelativePath, matches);
       }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
     });
@@ -154,13 +161,25 @@ public class IssueTrackingServiceImpl implements IssueTrackingService {
         }
       } else {
         var clientTrackedIssue = clientTrackedIssueTrackable.getClientTrackedIssue();
-        return Either.forRight(new LocalOnlyIssue(UUID.randomUUID(), serverRelativePath, clientTrackedIssue.getTextRangeWithHash(), clientTrackedIssue.getLineWithHash(),
-          clientTrackedIssue.getRuleKey(), clientTrackedIssue.getMessage(), null));
+        return Either
+          .forRight(new LocalOnlyIssue(UUID.randomUUID(), serverRelativePath, adapt(clientTrackedIssue.getTextRangeWithHash()), adapt(clientTrackedIssue.getLineWithHash()),
+            clientTrackedIssue.getRuleKey(), clientTrackedIssue.getMessage(), null));
       }
     }).collect(Collectors.toList());
     var localOnlyIssuesMatched = matches.stream().filter(Either::isRight).map(Either::getRight).collect(Collectors.toList());
     localOnlyIssueRepository.save(serverRelativePath, localOnlyIssuesMatched);
     return matches;
+  }
+
+  @CheckForNull
+  private static TextRangeWithHash adapt(@Nullable TextRangeWithHashDto textRange) {
+    return textRange == null ? null
+      : new TextRangeWithHash(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset(), textRange.getHash());
+  }
+
+  @CheckForNull
+  private static LineWithHash adapt(@Nullable LineWithHashDto line) {
+    return line == null ? null : new LineWithHash(line.getNumber(), line.getHash());
   }
 
   private static Collection<ClientTrackedIssueTrackable> toTrackables(List<ClientTrackedIssueDto> clientTrackedIssue) {

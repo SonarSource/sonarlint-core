@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.tracking;
 import java.time.Instant;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
 
 public class LocalOnlyIssueResolution {
   private final IssueStatus resolutionStatus;
