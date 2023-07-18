@@ -23,15 +23,15 @@ import java.time.Instant;
 import java.util.UUID;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TextRangeWithHashDto;
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
+import org.sonarsource.sonarlint.core.commons.LineWithHash;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 
 public class LocalOnlyIssue {
   private final UUID id;
   private final String serverRelativePath;
-  private final TextRangeWithHashDto textRangeWithHash;
-  private final LineWithHashDto lineWithHash;
+  private final TextRangeWithHash textRangeWithHash;
+  private final LineWithHash lineWithHash;
   private final String ruleKey;
   private final String message;
   private LocalOnlyIssueResolution resolution;
@@ -39,7 +39,7 @@ public class LocalOnlyIssue {
   /**
    * @param resolution is null when the issue is not resolved
    */
-  public LocalOnlyIssue(UUID id, String serverRelativePath, @Nullable TextRangeWithHashDto textRangeWithHash, @Nullable LineWithHashDto lineWithHash, String ruleKey,
+  public LocalOnlyIssue(UUID id, String serverRelativePath, @Nullable TextRangeWithHash textRangeWithHash, @Nullable LineWithHash lineWithHash, String ruleKey,
     String message, @Nullable LocalOnlyIssueResolution resolution) {
     this.id = id;
     this.serverRelativePath = serverRelativePath;
@@ -59,12 +59,12 @@ public class LocalOnlyIssue {
   }
 
   @CheckForNull
-  public TextRangeWithHashDto getTextRangeWithHash() {
+  public TextRangeWithHash getTextRangeWithHash() {
     return textRangeWithHash;
   }
 
   @CheckForNull
-  public LineWithHashDto getLineWithHash() {
+  public LineWithHash getLineWithHash() {
     return lineWithHash;
   }
 

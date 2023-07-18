@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Commons
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,27 +17,23 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+package org.sonarsource.sonarlint.core.commons;
 
-package org.sonarsource.sonarlint.core.local.only;
+public class LineWithHash {
 
-import java.io.ByteArrayInputStream;
-import jetbrains.exodus.bindings.BindingUtils;
-import jetbrains.exodus.bindings.ComparableBinding;
-import jetbrains.exodus.util.LightOutputStream;
-import org.jetbrains.annotations.NotNull;
-import org.sonarsource.sonarlint.core.commons.IssueStatus;
+  private final int number;
+  private final String hash;
 
-public class IssueStatusBinding extends ComparableBinding {
-
-  @Override
-  public Comparable readObject(@NotNull ByteArrayInputStream stream) {
-    return IssueStatus.values()[BindingUtils.readInt(stream)];
+  public LineWithHash(int number, String hash) {
+    this.number = number;
+    this.hash = hash;
   }
 
-  @Override
-  public void writeObject(@NotNull LightOutputStream output, @NotNull Comparable object) {
-    final var cPair = (IssueStatus) object;
-    output.writeUnsignedInt(cPair.ordinal() ^ 0x80_000_000);
+  public int getNumber() {
+    return number;
   }
 
+  public String getHash() {
+    return hash;
+  }
 }

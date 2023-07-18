@@ -76,12 +76,7 @@ public class LocalOnlyIssueTrackable implements Trackable {
 
   @Override
   public TextRangeWithHash getTextRange() {
-    var textRange = localOnlyIssue.getTextRangeWithHash();
-    return textRange == null ? null : new TextRangeWithHash(textRange.getStartLine(),
-      textRange.getStartLineOffset(),
-      textRange.getEndLine(),
-      textRange.getEndLineOffset(),
-      textRange.getHash());
+    return localOnlyIssue.getTextRangeWithHash();
   }
 
   @Override

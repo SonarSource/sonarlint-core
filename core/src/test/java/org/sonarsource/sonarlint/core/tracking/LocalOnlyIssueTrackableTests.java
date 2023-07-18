@@ -23,9 +23,9 @@ import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TextRangeWithHashDto;
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
+import org.sonarsource.sonarlint.core.commons.LineWithHash;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,8 +44,8 @@ class LocalOnlyIssueTrackableTests {
     when(localOnlyIssue.getResolution()).thenReturn(new LocalOnlyIssueResolution(IssueStatus.WONT_FIX, Instant.now(), null));
     when(localOnlyIssue.getRuleKey()).thenReturn("ruleKey");
     when(localOnlyIssue.getServerRelativePath()).thenReturn("file/path");
-    when(localOnlyIssue.getTextRangeWithHash()).thenReturn(new TextRangeWithHashDto(1, 2, 3, 4, "hash"));
-    when(localOnlyIssue.getLineWithHash()).thenReturn(new LineWithHashDto(1, "hash"));
+    when(localOnlyIssue.getTextRangeWithHash()).thenReturn(new TextRangeWithHash(1, 2, 3, 4, "hash"));
+    when(localOnlyIssue.getLineWithHash()).thenReturn(new LineWithHash(1, "hash"));
     trackable = new LocalOnlyIssueTrackable(localOnlyIssue);
   }
 
