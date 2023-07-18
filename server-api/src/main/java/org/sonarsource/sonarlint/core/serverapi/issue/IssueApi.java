@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.issue;
 
+import com.google.gson.Gson;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,7 +31,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonar.scanner.protocol.input.ScannerInput;
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -41,13 +44,17 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Component;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Issue;
 
+import static java.util.Objects.requireNonNull;
 import static org.sonarsource.sonarlint.core.http.HttpClient.FORM_URL_ENCODED_CONTENT_TYPE;
+import static org.sonarsource.sonarlint.core.http.HttpClient.JSON_CONTENT_TYPE;
 import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 import static org.sonarsource.sonarlint.core.serverapi.util.ProtobufUtil.readMessages;
 
 public class IssueApi {
 
   public static final Version MIN_SQ_VERSION_SUPPORTING_PULL = Version.create("9.6");
+
+  private static final Map<IssueStatus, String> transitionByStatus = Map.of(IssueStatus.WONT_FIX, "wontfix", IssueStatus.FALSE_POSITIVE, "falsepositive");
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
@@ -250,6 +257,30 @@ public class IssueApi {
       });
   }
 
+  public CompletableFuture<Void> anticipateTransitions(String projectKey, List<LocalOnlyIssue> resolvedLocalOnlyIssues) {
+    return serverApiHelper.postAsync("/api/issues/anticipate_transitions", JSON_CONTENT_TYPE, new Gson().toJson(adapt(projectKey, resolvedLocalOnlyIssues)))
+      .thenAccept(response -> {
+        // no data, return void
+      });
+  }
+
+  private static AnticipateTransitionBody adapt(String projectKey, List<LocalOnlyIssue> resolvedLocalOnlyIssues) {
+    return new AnticipateTransitionBody(projectKey, resolvedLocalOnlyIssues.stream().map(IssueApi::adapt).collect(Collectors.toList()));
+  }
+
+  private static IssueAnticipatedTransition adapt(LocalOnlyIssue issue) {
+    Integer lineNumber = null;
+    String lineHash = null;
+    var lineWithHash = issue.getLineWithHash();
+    if (lineWithHash != null) {
+      lineNumber = lineWithHash.getNumber();
+      lineHash = lineWithHash.getHash();
+    }
+    var resolution = requireNonNull(issue.getResolution());
+    return new IssueAnticipatedTransition(issue.getServerRelativePath(), lineNumber, lineHash, issue.getRuleKey(), issue.getMessage(),
+      transitionByStatus.get(resolution.getStatus()), resolution.getComment());
+  }
+
   public static class TaintIssuesPullResult {
     private final Issues.TaintVulnerabilityPullQueryTimestamp timestamp;
     private final List<Issues.TaintVulnerabilityLite> issues;
@@ -268,4 +299,34 @@ public class IssueApi {
     }
   }
 
+  public static class AnticipateTransitionBody {
+    public final String projectKey;
+    public final List<IssueAnticipatedTransition> anticipatedTransitions;
+
+    public AnticipateTransitionBody(String projectKey, List<IssueAnticipatedTransition> anticipatedTransitions) {
+      this.projectKey = projectKey;
+      this.anticipatedTransitions = anticipatedTransitions;
+    }
+  }
+
+  private static class IssueAnticipatedTransition {
+    public final String filePath;
+    public final Integer line;
+    public final String hash;
+    public final String ruleKey;
+    public final String issueMessage;
+    public final String transition;
+    public final String comment;
+
+    private IssueAnticipatedTransition(String filePath, @Nullable Integer line, @Nullable String hash, String ruleKey, String issueMessage, String transition,
+      @Nullable String comment) {
+      this.filePath = filePath;
+      this.line = line;
+      this.hash = hash;
+      this.ruleKey = ruleKey;
+      this.issueMessage = issueMessage;
+      this.transition = transition;
+      this.comment = comment;
+    }
+  }
 }

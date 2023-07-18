@@ -26,6 +26,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 
 @Named
 @Singleton
