@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -53,8 +54,8 @@ import static java.util.Objects.requireNonNull;
 
 public class XodusLocalOnlyIssueStore {
 
-  private static final String CONFIGURATION_SCOPE_ID_TO_FILES_LINK_NAME = "scopes";
   private static final String CONFIGURATION_SCOPE_ID_ENTITY_TYPE = "Scope";
+  private static final String CONFIGURATION_SCOPE_ID_TO_FILES_LINK_NAME = "files";
   private static final String FILE_ENTITY_TYPE = "File";
   private static final String PATH_PROPERTY_NAME = "path";
   private static final String NAME_PROPERTY_NAME = "name";
@@ -114,11 +115,11 @@ public class XodusLocalOnlyIssueStore {
       .orElseGet(Collections::emptyList));
   }
 
-  public void storeLocalOnlyIssue(String configurationScopeId, LocalOnlyIssue issue, IssueStatus newStatus) {
+  public void storeLocalOnlyIssue(String configurationScopeId, LocalOnlyIssue issue) {
     entityStore.computeInTransaction(txn -> {
       var configurationScope = getOrCreateConfigurationScopeId(configurationScopeId, txn);
       var fileEntity = getOrCreateFile(configurationScope, issue.getServerRelativePath(), txn);
-      updateOrCreateIssue(fileEntity, issue, newStatus, txn);
+      updateOrCreateIssue(fileEntity, issue, txn);
       return true;
     });
   }
@@ -168,13 +169,13 @@ public class XodusLocalOnlyIssueStore {
     return entityStoreImpl;
   }
 
-  private static Optional<Entity> findUnique(StoreTransaction transaction, String entityType, String propertyName, String caseSensitivePropertyValue) {
+  private static Optional<Entity> findUnique(StoreTransaction transaction, String entityType, String propertyName, Comparable caseSensitivePropertyValue) {
     // the find is case-insensitive but we need an exact match
     var entities = transaction.find(entityType, propertyName, caseSensitivePropertyValue);
     return findUniqueAmong(entities, propertyName, caseSensitivePropertyValue);
   }
 
-  private static Optional<Entity> findUniqueAmong(EntityIterable iterable, String propertyName, String caseSensitivePropertyValue) {
+  private static Optional<Entity> findUniqueAmong(EntityIterable iterable, String propertyName, Comparable caseSensitivePropertyValue) {
     return StreamSupport.stream(iterable.spliterator(), false)
       .filter(e -> caseSensitivePropertyValue.equals(e.getProperty(propertyName)))
       .findFirst();
@@ -199,9 +200,9 @@ public class XodusLocalOnlyIssueStore {
       });
   }
 
-  private static void updateOrCreateIssue(Entity fileEntity, LocalOnlyIssue issue, IssueStatus newStatus, StoreTransaction transaction) {
+  private static void updateOrCreateIssue(Entity fileEntity, LocalOnlyIssue issue, StoreTransaction transaction) {
     var issueEntity = updateOrCreateIssueCommon(fileEntity, issue.getId(), transaction);
-    updateIssueEntity(issueEntity, issue, newStatus);
+    updateIssueEntity(issueEntity, issue);
   }
 
   private static Entity updateOrCreateIssueCommon(Entity fileEntity, UUID issueUuid, StoreTransaction transaction) {
@@ -218,12 +219,17 @@ public class XodusLocalOnlyIssueStore {
     return issueEntity;
   }
 
-  private static void updateIssueEntity(Entity issueEntity, LocalOnlyIssue issue, IssueStatus newStatus) {
+  private static void updateIssueEntity(Entity issueEntity, LocalOnlyIssue issue) {
     issueEntity.setProperty(UUID_PROPERTY_NAME, issue.getId());
-    issueEntity.setProperty(RESOLVED_STATUS_PROPERTY_NAME, newStatus);
-    issueEntity.setProperty(RESOLUTION_DATE_PROPERTY_NAME, Instant.now());
     issueEntity.setProperty(RULE_KEY_PROPERTY_NAME, issue.getRuleKey());
     issueEntity.setBlobString(MESSAGE_BLOB_NAME, issue.getMessage());
+    var resolution = requireNonNull(issue.getResolution());
+    issueEntity.setProperty(RESOLVED_STATUS_PROPERTY_NAME, resolution.getStatus());
+    issueEntity.setProperty(RESOLUTION_DATE_PROPERTY_NAME, resolution.getResolutionDate());
+    var comment = resolution.getComment();
+    if (comment != null) {
+      issueEntity.setBlobString(COMMENT_PROPERTY_NAME, comment);
+    }
     var textRange = issue.getTextRangeWithHash();
     var lineWithHash = issue.getLineWithHash();
 
@@ -257,4 +263,14 @@ public class XodusLocalOnlyIssueStore {
     FileUtils.deleteQuietly(xodusDbDir.toFile());
   }
 
+  public boolean update(UUID issueKey, Consumer<LocalOnlyIssue> issueConsumer) {
+    return entityStore.computeInTransaction(txn -> findUnique(txn, ISSUE_ENTITY_TYPE, UUID_PROPERTY_NAME, issueKey)
+      .map(issueEntity -> {
+        var issue = adapt(issueEntity);
+        issueConsumer.accept(issue);
+        updateIssueEntity(issueEntity, issue);
+        return true;
+      })
+      .orElse(false));
+  }
 }

@@ -19,9 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
+import java.time.Instant;
 import java.util.UUID;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TextRangeWithHashDto;
 
@@ -32,7 +34,7 @@ public class LocalOnlyIssue {
   private final LineWithHashDto lineWithHash;
   private final String ruleKey;
   private final String message;
-  private final LocalOnlyIssueResolution resolution;
+  private LocalOnlyIssueResolution resolution;
 
   /**
    * @param resolution is null when the issue is not resolved
@@ -74,7 +76,12 @@ public class LocalOnlyIssue {
     return message;
   }
 
+  @CheckForNull
   public LocalOnlyIssueResolution getResolution() {
     return resolution;
+  }
+
+  public void resolve(IssueStatus newStatus) {
+    resolution = new LocalOnlyIssueResolution(newStatus, Instant.now(), null);
   }
 }
