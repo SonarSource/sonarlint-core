@@ -21,11 +21,14 @@ package org.sonarsource.sonarlint.core.issue;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
@@ -35,6 +38,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangeP
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueService;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
+import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
@@ -79,7 +83,8 @@ public class IssueServiceImpl implements IssueService {
       .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
       .map(connection -> {
         var reviewStatus = transitionByIssueStatus.get(params.getNewStatus());
-        var projectServerIssueStore = storageService.binding(optionalBinding.get()).findings();
+        var binding = optionalBinding.get();
+        var projectServerIssueStore = storageService.binding(binding).findings();
         var issueKey = params.getIssueKey();
         boolean isServerIssue = projectServerIssueStore.containsIssue(issueKey, params.isTaintIssue());
         if (isServerIssue) {
@@ -92,17 +97,22 @@ public class IssueServiceImpl implements IssueService {
               throw new IssueStatusChangeException(throwable);
             });
         }
-        // TODO: Submit to new SQ API endpoint
         return asUUID(issueKey)
           .flatMap(localOnlyIssueRepository::findByKey)
           .map(issue -> {
             var coreStatus = org.sonarsource.sonarlint.core.commons.IssueStatus.valueOf(params.getNewStatus().name());
             issue.resolve(coreStatus);
-            localOnlyIssueStorageService.get().storeLocalOnlyIssue(params.getConfigurationScopeId(), issue);
-            return CompletableFuture.<Void>completedFuture(null);
+            var localOnlyIssueStore = localOnlyIssueStorageService.get();
+            return connection.issue()
+              .anticipateTransitions(binding.getSonarProjectKey(), concat(localOnlyIssueStore.load(configurationScopeId, issue.getServerRelativePath()), issue))
+              .thenAccept(nothing -> localOnlyIssueStore.storeLocalOnlyIssue(params.getConfigurationScopeId(), issue));
           }).orElseThrow(() -> new IssueStatusChangeException("Issue key " + issueKey + " was not found"));
       })
       .orElseGet(() -> CompletableFuture.completedFuture(null));
+  }
+
+  private static List<LocalOnlyIssue> concat(List<LocalOnlyIssue> issues, LocalOnlyIssue issue) {
+    return Stream.concat(issues.stream(), Stream.of(issue)).collect(Collectors.toList());
   }
 
   @Override
@@ -145,30 +155,39 @@ public class IssueServiceImpl implements IssueService {
   public CompletableFuture<Void> addComment(AddIssueCommentParams params) {
     var configurationScopeId = params.getConfigurationScopeId();
     var issueKey = params.getIssueKey();
-    var issueId = asUUID(issueKey);
-    if (issueId.isPresent()) {
-      var found = localOnlyIssueStorageService.get().update(issueId.get(), localOnlyIssue -> {
-        var resolution = localOnlyIssue.getResolution();
+    return asUUID(issueKey)
+      .flatMap(issueId -> setCommentOnLocalOnlyIssue(configurationScopeId, issueId, params.getText()))
+      .orElseGet(() -> addCommentOnServerIssue(configurationScopeId, issueKey, params.getText()));
+  }
+
+  private Optional<CompletableFuture<Void>> setCommentOnLocalOnlyIssue(String configurationScopeId, UUID issueId, String comment) {
+    var localOnlyIssueStore = localOnlyIssueStorageService.get();
+    return localOnlyIssueStore.find(issueId)
+      .flatMap(commentedIssue -> {
+        var resolution = commentedIssue.getResolution();
         if (resolution != null) {
           // should always be true, we store only resolved local-only issues
-          resolution.setComment(params.getText());
+          resolution.setComment(comment);
+          var issuesToSync = localOnlyIssueStore.load(configurationScopeId, commentedIssue.getServerRelativePath());
+          issuesToSync.replaceAll(issue -> issue.getId().equals(issueId) ? commentedIssue : issue);
+          var optionalBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
+          return optionalBinding
+            .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
+            .map(connection -> connection.issue().anticipateTransitions(optionalBinding.get().getSonarProjectKey(), issuesToSync))
+            .map(future -> future.thenAccept(nothing -> localOnlyIssueStore.storeLocalOnlyIssue(configurationScopeId, commentedIssue)));
         }
+        return Optional.empty();
       });
-      if (found) {
-        // TODO: Submit to new SQ API endpoint
-        return CompletableFuture.completedFuture(null);
-      }
-    }
+  }
+
+  private CompletableFuture<Void> addCommentOnServerIssue(String configurationScopeId, String issueKey, String comment) {
     var optionalBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
     return optionalBinding
       .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
-      .map(connection -> {
-        var text = params.getText();
-        return connection.issue().addComment(issueKey, text)
-          .exceptionally(throwable -> {
-            throw new AddIssueCommentException(throwable);
-          });
-      })
+      .map(connection -> connection.issue().addComment(issueKey, comment)
+        .exceptionally(throwable -> {
+          throw new AddIssueCommentException(throwable);
+        }))
       .orElseGet(() -> CompletableFuture.completedFuture(null));
   }
 

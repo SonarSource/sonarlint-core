@@ -34,7 +34,7 @@ import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.local.only.IssueStatusBinding;
 import org.sonarsource.sonarlint.core.local.only.UuidBinding;
 import org.sonarsource.sonarlint.core.serverconnection.storage.InstantBinding;
-import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssue;
+import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 
 import static java.util.Objects.requireNonNull;
 

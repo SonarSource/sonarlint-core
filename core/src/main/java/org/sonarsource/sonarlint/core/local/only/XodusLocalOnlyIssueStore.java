@@ -28,8 +28,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import jetbrains.exodus.entitystore.Entity;
@@ -43,12 +41,12 @@ import jetbrains.exodus.util.CompressBackupUtil;
 import org.apache.commons.io.FileUtils;
 import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
+import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
+import org.sonarsource.sonarlint.core.commons.LocalOnlyIssueResolution;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverconnection.storage.InstantBinding;
 import org.sonarsource.sonarlint.core.serverconnection.storage.TarGzUtils;
-import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssue;
-import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueResolution;
 
 import static java.util.Objects.requireNonNull;
 
@@ -101,16 +99,12 @@ public class XodusLocalOnlyIssueStore {
   }
 
   public List<LocalOnlyIssue> load(String configurationScopeId, String filePath) {
-    return loadIssues(configurationScopeId, filePath, XodusLocalOnlyIssueStore::adapt);
-  }
-
-  private <G> List<G> loadIssues(String configurationScopeId, String filePath, Function<Entity, G> adapter) {
     return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, CONFIGURATION_SCOPE_ID_ENTITY_TYPE, NAME_PROPERTY_NAME, configurationScopeId)
       .map(branch -> branch.getLinks(CONFIGURATION_SCOPE_ID_TO_FILES_LINK_NAME))
       .flatMap(files -> findUniqueAmong(files, PATH_PROPERTY_NAME, filePath))
       .map(fileToLoad -> fileToLoad.getLinks(XodusLocalOnlyIssueStore.FILE_TO_ISSUES_LINK_NAME))
       .map(issueEntities -> StreamSupport.stream(issueEntities.spliterator(), false)
-        .map(adapter)
+        .map(XodusLocalOnlyIssueStore::adapt)
         .collect(Collectors.toList()))
       .orElseGet(Collections::emptyList));
   }
@@ -206,7 +200,7 @@ public class XodusLocalOnlyIssueStore {
   }
 
   private static Entity updateOrCreateIssueCommon(Entity fileEntity, UUID issueUuid, StoreTransaction transaction) {
-    var issueEntity = findUnique(transaction, XodusLocalOnlyIssueStore.ISSUE_ENTITY_TYPE, UUID_PROPERTY_NAME, issueUuid.toString())
+    var issueEntity = findUnique(transaction, XodusLocalOnlyIssueStore.ISSUE_ENTITY_TYPE, UUID_PROPERTY_NAME, issueUuid)
       .orElseGet(() -> transaction.newEntity(XodusLocalOnlyIssueStore.ISSUE_ENTITY_TYPE));
     var oldFileEntity = issueEntity.getLink(ISSUE_TO_FILE_LINK_NAME);
     if (oldFileEntity != null && !fileEntity.equals(oldFileEntity)) {
@@ -247,6 +241,11 @@ public class XodusLocalOnlyIssueStore {
     }
   }
 
+  public Optional<LocalOnlyIssue> find(UUID issueId) {
+    return entityStore.computeInTransaction(txn -> findUnique(txn, ISSUE_ENTITY_TYPE, UUID_PROPERTY_NAME, issueId)
+      .map(XodusLocalOnlyIssueStore::adapt));
+  }
+
   public void backup() {
     LOG.debug("Creating backup of local-only issue database in {}", backupFile);
     try {
@@ -261,16 +260,5 @@ public class XodusLocalOnlyIssueStore {
     backup();
     entityStore.close();
     FileUtils.deleteQuietly(xodusDbDir.toFile());
-  }
-
-  public boolean update(UUID issueKey, Consumer<LocalOnlyIssue> issueConsumer) {
-    return entityStore.computeInTransaction(txn -> findUnique(txn, ISSUE_ENTITY_TYPE, UUID_PROPERTY_NAME, issueKey)
-      .map(issueEntity -> {
-        var issue = adapt(issueEntity);
-        issueConsumer.accept(issue);
-        updateIssueEntity(issueEntity, issue);
-        return true;
-      })
-      .orElse(false));
   }
 }
