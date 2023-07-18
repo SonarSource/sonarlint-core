@@ -96,7 +96,8 @@ public class IssueServiceImpl implements IssueService {
         return asUUID(issueKey)
           .flatMap(localOnlyIssueRepository::findByKey)
           .map(issue -> {
-            issue.resolve(params.getNewStatus());
+            var coreStatus = org.sonarsource.sonarlint.core.commons.IssueStatus.valueOf(params.getNewStatus().name());
+            issue.resolve(coreStatus);
             localOnlyIssueStorageService.get().storeLocalOnlyIssue(params.getConfigurationScopeId(), issue);
             return CompletableFuture.<Void>completedFuture(null);
           }).orElseThrow(() -> new IssueStatusChangeException("Issue key " + issueKey + " was not found"));

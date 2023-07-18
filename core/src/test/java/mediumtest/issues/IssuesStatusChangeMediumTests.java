@@ -134,12 +134,12 @@ class IssuesStatusChangeMediumTests {
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", localOnlyIssue.getId().toString(),
       IssueStatus.WONT_FIX, false));
-    var issueLoaded = backend.getLocalOnlyIssueStorageService().get().load("configScopeId", "file/path");
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
+    var issueLoaded = backend.getLocalOnlyIssueStorageService().get().load("configScopeId", "file/path");
     assertThat(issueLoaded).hasSize(1);
     assertThat(issueLoaded.get(0).getId()).isEqualTo(localOnlyIssue.getId());
-    assertThat(issueLoaded.get(0).getResolution().getStatus()).isEqualTo(IssueStatus.WONT_FIX);
+    assertThat(issueLoaded.get(0).getResolution().getStatus()).isEqualTo(org.sonarsource.sonarlint.core.commons.IssueStatus.WONT_FIX);
   }
 
   @Test

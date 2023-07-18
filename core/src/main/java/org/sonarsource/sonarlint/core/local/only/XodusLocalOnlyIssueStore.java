@@ -41,9 +41,9 @@ import jetbrains.exodus.env.EnvironmentConfig;
 import jetbrains.exodus.env.Environments;
 import jetbrains.exodus.util.CompressBackupUtil;
 import org.apache.commons.io.FileUtils;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TextRangeWithHashDto;
+import org.sonarsource.sonarlint.core.commons.IssueStatus;
+import org.sonarsource.sonarlint.core.commons.LineWithHash;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverconnection.storage.InstantBinding;
 import org.sonarsource.sonarlint.core.serverconnection.storage.TarGzUtils;
@@ -134,19 +134,19 @@ public class XodusLocalOnlyIssueStore {
     var comment = storedIssue.getBlobString(COMMENT_PROPERTY_NAME);
     var startLine = (Integer) storedIssue.getProperty(START_LINE_PROPERTY_NAME);
 
-    TextRangeWithHashDto textRange = null;
-    LineWithHashDto lineWithHash = null;
+    TextRangeWithHash textRange = null;
+    LineWithHash lineWithHash = null;
     if (startLine != null) {
       var rangeHash = (String) storedIssue.getProperty(RANGE_HASH_PROPERTY_NAME);
       if (rangeHash != null) {
         var startLineOffset = (Integer) storedIssue.getProperty(START_LINE_OFFSET_PROPERTY_NAME);
         var endLine = (Integer) storedIssue.getProperty(END_LINE_PROPERTY_NAME);
         var endLineOffset = (Integer) storedIssue.getProperty(END_LINE_OFFSET_PROPERTY_NAME);
-        textRange = new TextRangeWithHashDto(startLine, startLineOffset, endLine, endLineOffset, rangeHash);
+        textRange = new TextRangeWithHash(startLine, startLineOffset, endLine, endLineOffset, rangeHash);
       }
       var lineHash = (String) storedIssue.getProperty(LINE_HASH_PROPERTY_NAME);
       if (lineHash != null) {
-        lineWithHash = new LineWithHashDto(startLine, lineHash);
+        lineWithHash = new LineWithHash(startLine, lineHash);
       }
     }
     return new LocalOnlyIssue(
