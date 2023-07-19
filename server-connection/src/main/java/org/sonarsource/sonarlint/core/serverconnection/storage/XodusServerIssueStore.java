@@ -60,6 +60,7 @@ import org.sonarsource.sonarlint.core.serverapi.util.ProtobufUtil;
 import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerFinding;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue.Flow;
@@ -678,16 +679,16 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void markIssueAsResolved(String issueKey, boolean isTaintIssue) {
+  public Optional<ServerFinding> markIssueAsResolved(String issueKey, boolean isTaintIssue) {
     var entityIssueType = isTaintIssue ? TAINT_ISSUE_ENTITY_TYPE : ISSUE_ENTITY_TYPE;
-    entityStore.computeInTransaction(txn -> {
+    return entityStore.computeInTransaction(txn -> {
       var optionalEntity = findUnique(txn, entityIssueType, KEY_PROPERTY_NAME, issueKey);
       if (optionalEntity.isPresent()) {
         var issueEntity = optionalEntity.get();
         issueEntity.setProperty(RESOLVED_PROPERTY_NAME, true);
-        return true;
+        return Optional.of(isTaintIssue ? adaptTaint(issueEntity) : adapt(issueEntity));
       }
-      return false;
+      return Optional.empty();
     });
   }
 
