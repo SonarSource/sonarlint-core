@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryHelpAndFeedbackCounter;
 
@@ -51,7 +52,7 @@ class TelemetryPayloadTests {
     var showHotspotPayload = new ShowHotspotPayload(4);
     var hotspotPayload = new HotspotPayload(5, 3);
     var taintVulnerabilitiesPayload = new TaintVulnerabilitiesPayload(6, 7);
-    var issuePayload = new IssuePayload(2);
+    var issuePayload = new IssuePayload(Set.of("java:S123"));
     var rulesPayload = new TelemetryRulesPayload(Arrays.asList("enabledRuleKey1", "enabledRuleKey2"), Arrays.asList("disabledRuleKey1", "disabledRuleKey2"),
       Arrays.asList("reportedRuleKey1", "reportedRuleKey2"), Arrays.asList("quickFixedRuleKey1", "quickFixedRuleKey2"));
     Map<String, TelemetryHelpAndFeedbackCounter> helpAndFeedbackCounter = new HashMap<>();
@@ -90,7 +91,7 @@ class TelemetryPayloadTests {
       + "\"taint_vulnerabilities\":{\"investigated_locally_count\":6,\"investigated_remotely_count\":7},"
       + "\"rules\":{\"non_default_enabled\":[\"enabledRuleKey1\",\"enabledRuleKey2\"],\"default_disabled\":[\"disabledRuleKey1\",\"disabledRuleKey2\"],\"raised_issues\":[\"reportedRuleKey1\",\"reportedRuleKey2\"],\"quick_fix_applied\":[\"quickFixedRuleKey1\",\"quickFixedRuleKey2\"]},"
       + "\"hotspot\":{\"open_in_browser_count\":5,\"status_changed_count\":3},"
-      + "\"issue\":{\"status_changed_count\":2},"
+      + "\"issue\":{\"status_changed_rule_keys\":[\"java:S123\"]},"
       + "\"help_and_feedback\":{\"count_by_link\":{\"docs\":5,\"faq\":4}},"
       + "\"aString\":\"stringValue\","
       + "\"aBool\":false,"
@@ -111,7 +112,7 @@ class TelemetryPayloadTests {
     assertThat(m.notifications().disabled()).isTrue();
     assertThat(m.notifications().counters()).containsOnlyKeys("QUALITY_GATE", "NEW_ISSUES");
     assertThat(m.helpAndFeedbackPayload().getCounters()).containsOnlyKeys("docs", "faq");
-    assertThat(m.issuePayload().getStatusChangedCount()).isEqualTo(2);
+    assertThat(m.issuePayload().getStatusChangedRuleKeys()).isEqualTo(Set.of("java:S123"));
     assertThat(m.additionalAttributes()).containsExactlyEntriesOf(additionalProps);
   }
 

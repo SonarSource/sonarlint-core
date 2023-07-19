@@ -90,8 +90,9 @@ public class IssueServiceImpl implements IssueService {
         if (isServerIssue) {
           return connection.issue().changeStatusAsync(issueKey, reviewStatus)
             .thenAccept(nothing -> {
-              projectServerIssueStore.markIssueAsResolved(issueKey, params.isTaintIssue());
-              telemetryService.issueStatusChanged();
+              projectServerIssueStore.markIssueAsResolved(issueKey, params.isTaintIssue())
+                .ifPresent(issue -> telemetryService.issueStatusChanged(issue.getRuleKey()));
+
             })
             .exceptionally(throwable -> {
               throw new IssueStatusChangeException(throwable);
@@ -105,7 +106,10 @@ public class IssueServiceImpl implements IssueService {
             var localOnlyIssueStore = localOnlyIssueStorageService.get();
             return connection.issue()
               .anticipateTransitions(binding.getSonarProjectKey(), concat(localOnlyIssueStore.load(configurationScopeId, issue.getServerRelativePath()), issue))
-              .thenAccept(nothing -> localOnlyIssueStore.storeLocalOnlyIssue(params.getConfigurationScopeId(), issue));
+              .thenAccept(nothing -> {
+                localOnlyIssueStore.storeLocalOnlyIssue(params.getConfigurationScopeId(), issue);
+                telemetryService.issueStatusChanged(issue.getRuleKey());
+              });
           }).orElseThrow(() -> new IssueStatusChangeException("Issue key " + issueKey + " was not found"));
       })
       .orElseGet(() -> CompletableFuture.completedFuture(null));
