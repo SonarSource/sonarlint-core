@@ -25,7 +25,7 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 
-public abstract class ServerIssue<G extends ServerIssue<G>> {
+public abstract class ServerIssue<G extends ServerIssue<G>> implements ServerFinding {
   private String key;
   private boolean resolved;
   private String ruleKey;
@@ -54,6 +54,7 @@ public abstract class ServerIssue<G extends ServerIssue<G>> {
     return resolved;
   }
 
+  @Override
   public String getRuleKey() {
     return ruleKey;
   }
