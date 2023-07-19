@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Telemetry
+ * SonarLint Core - Server Connection
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,20 +17,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.telemetry.payload;
+package org.sonarsource.sonarlint.core.serverconnection.issues;
 
-import com.google.gson.annotations.SerializedName;
-import java.util.Set;
-
-public class IssuePayload {
-  @SerializedName("status_changed_rule_keys")
-  public final Set<String> statusChangedRuleKeys;
-
-  public IssuePayload(Set<String> statusChangedRuleKeys) {
-    this.statusChangedRuleKeys = statusChangedRuleKeys;
-  }
-
-  public Set<String> getStatusChangedRuleKeys() {
-    return statusChangedRuleKeys;
-  }
+public interface ServerFinding {
+  String getRuleKey();
 }

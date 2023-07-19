@@ -89,7 +89,7 @@ public class TelemetryHttpClient {
     var hotspotPayload = new HotspotPayload(data.openHotspotInBrowserCount(), data.hotspotStatusChangedCount());
     var taintVulnerabilitiesPayload = new TaintVulnerabilitiesPayload(data.taintVulnerabilitiesInvestigatedLocallyCount(),
       data.taintVulnerabilitiesInvestigatedRemotelyCount());
-    var issuePayload = new IssuePayload(data.issueStatusChangedCount());
+    var issuePayload = new IssuePayload(data.issueStatusChangedRuleKeys());
     var os = System.getProperty("os.name");
     var jre = System.getProperty("java.version");
     var telemetryRulesPayload = new TelemetryRulesPayload(attributesProvider.getNonDefaultEnabledRules(),

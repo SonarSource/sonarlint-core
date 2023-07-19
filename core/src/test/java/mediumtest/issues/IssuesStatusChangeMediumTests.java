@@ -69,7 +69,7 @@ class IssuesStatusChangeMediumTests {
   }
 
   @Test
-  void it_should_update_the_status_on_sonarqube_through_the_web_api() {
+  void it_should_update_the_status_on_sonarqube_when_changing_the_status_on_a_server_matched_issue() {
     var serverIssue = aServerIssue("myIssueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
     server = newSonarQubeServer().start();
     backend = newBackend()
@@ -87,6 +87,32 @@ class IssuesStatusChangeMediumTests {
     assertThat(lastRequest.getPath()).isEqualTo("/api/issues/do_transition");
     assertThat(lastRequest.getHeader("Content-Type")).isEqualTo("application/x-www-form-urlencoded");
     assertThat(lastRequest.getBody().readString(StandardCharsets.UTF_8)).isEqualTo("issue=myIssueKey&transition=wontfix");
+  }
+
+  @Test
+  void it_should_update_the_telemetry_when_changing_the_status_on_a_server_matched_issue() {
+    server = newSonarQubeServer().start();
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage
+        .withProject("projectKey",
+          project -> project.withBranch("main",
+            branch -> branch.withIssue(
+              aServerIssue("myIssueKey")
+                .withRuleKey("rule:key")
+                .withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
+                .withIntroductionDate(Instant.EPOCH.plusSeconds(1))
+                .withType(RuleType.BUG))))
+        .withServerVersion("9.8"))
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
+      .build();
+
+    var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", "myIssueKey",
+      IssueStatus.WONT_FIX, false));
+
+    assertThat(response).succeedsWithin(Duration.ofSeconds(2));
+    assertThat(backend.telemetryFilePath())
+      .content().asBase64Decoded().asString()
+      .contains("\"issueStatusChangedRuleKeys\":[\"rule:key\"]");
   }
 
   @Test
@@ -170,6 +196,34 @@ class IssuesStatusChangeMediumTests {
     assertThat(lastRequest.getHeader("Content-Type")).isEqualTo("application/json; charset=utf-8");
     assertThat(lastRequest.getBody().readString(StandardCharsets.UTF_8)).isEqualTo(
       "{\"projectKey\":\"projectKey\",\"anticipatedTransitions\":[{\"filePath\":\"file/path\",\"line\":1,\"hash\":\"linehash\",\"ruleKey\":\"ruleKey\",\"issueMessage\":\"message\",\"transition\":\"wontfix\"}]}");
+  }
+
+  @Test
+  void it_should_update_telemetry_when_changing_status_of_a_local_only_issue() {
+    server = newSonarQubeServer().start();
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", server)
+      .withActiveBranch("configScopeId", "branch")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .build();
+    var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
+      Map.of("file/path", List.of(new ClientTrackedIssueDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      false));
+
+    LocalOnlyIssueDto localOnlyIssue = null;
+    try {
+      localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get("file/path").get(0).getRight();
+    } catch (Exception e) {
+      fail();
+    }
+
+    var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", localOnlyIssue.getId().toString(),
+      IssueStatus.WONT_FIX, false));
+
+    assertThat(response).succeedsWithin(Duration.ofSeconds(2));
+    assertThat(backend.telemetryFilePath())
+      .content().asBase64Decoded().asString()
+      .contains("\"issueStatusChangedRuleKeys\":[\"ruleKey\"]");
   }
 
   @Test

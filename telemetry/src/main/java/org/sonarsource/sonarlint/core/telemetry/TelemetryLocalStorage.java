@@ -48,7 +48,7 @@ public class TelemetryLocalStorage {
   private int taintVulnerabilitiesInvestigatedLocallyCount;
   private int taintVulnerabilitiesInvestigatedRemotelyCount;
   private int hotspotStatusChangedCount;
-  private int issueStatusChangedCount;
+  private Set<String> issueStatusChangedRuleKeys;
   private final Set<String> raisedIssuesRules;
   private final Set<String> quickFixesApplied;
   private final Map<String, TelemetryHelpAndFeedbackCounter> helpAndFeedbackLinkClickedCount;
@@ -58,6 +58,7 @@ public class TelemetryLocalStorage {
     installTime = OffsetDateTime.now();
     analyzers = new LinkedHashMap<>();
     notificationsCountersByEventType = new LinkedHashMap<>();
+    issueStatusChangedRuleKeys = new HashSet<>();
     raisedIssuesRules = new HashSet<>();
     quickFixesApplied = new HashSet<>();
     helpAndFeedbackLinkClickedCount = new LinkedHashMap<>();
@@ -143,7 +144,7 @@ public class TelemetryLocalStorage {
     taintVulnerabilitiesInvestigatedLocallyCount = 0;
     taintVulnerabilitiesInvestigatedRemotelyCount = 0;
     hotspotStatusChangedCount = 0;
-    issueStatusChangedCount = 0;
+    issueStatusChangedRuleKeys.clear();
     raisedIssuesRules.clear();
     quickFixesApplied.clear();
     this.helpAndFeedbackLinkClickedCount.clear();
@@ -291,12 +292,12 @@ public class TelemetryLocalStorage {
     return hotspotStatusChangedCount;
   }
 
-  public void incrementIssueStatusChangedCount() {
+  public void addIssueStatusChanged(String ruleKey) {
     markSonarLintAsUsedToday();
-    issueStatusChangedCount++;
+    issueStatusChangedRuleKeys.add(ruleKey);
   }
 
-  public int issueStatusChangedCount() {
-    return issueStatusChangedCount;
+  public Set<String> issueStatusChangedRuleKeys() {
+    return issueStatusChangedRuleKeys;
   }
 }

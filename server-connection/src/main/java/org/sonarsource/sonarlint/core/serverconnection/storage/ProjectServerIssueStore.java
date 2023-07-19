@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerFinding;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
@@ -148,7 +149,7 @@ public interface ProjectServerIssueStore {
   /**
    * Set the resolution status of an Issue (by its key) to true.
    */
-  void markIssueAsResolved(String issueKey, boolean isTaintIssue);
+  Optional<ServerFinding> markIssueAsResolved(String issueKey, boolean isTaintIssue);
 
   void updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater);
 

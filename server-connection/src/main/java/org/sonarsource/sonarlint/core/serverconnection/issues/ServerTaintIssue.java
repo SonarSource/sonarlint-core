@@ -28,7 +28,7 @@ import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 
-public class ServerTaintIssue {
+public class ServerTaintIssue implements ServerFinding {
   private String key;
   private boolean resolved;
   private String ruleKey;
@@ -64,6 +64,7 @@ public class ServerTaintIssue {
     return resolved;
   }
 
+  @Override
   public String getRuleKey() {
     return ruleKey;
   }
