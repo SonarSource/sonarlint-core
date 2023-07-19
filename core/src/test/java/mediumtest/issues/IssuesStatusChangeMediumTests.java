@@ -22,6 +22,7 @@ package mediumtest.issues;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -33,11 +34,14 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.AddIssueCommentParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ChangeIssueStatusParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenAllIssuesForFileParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenIssueParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedIssueDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LocalOnlyIssueDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TextRangeWithHashDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TrackWithServerIssuesParams;
+import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssueResolution;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -161,7 +165,7 @@ class IssuesStatusChangeMediumTests {
       IssueStatus.WONT_FIX, false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    var issueLoaded = backend.getLocalOnlyIssueStorageService().get().load("configScopeId", "file/path");
+    var issueLoaded = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", "file/path");
     assertThat(issueLoaded).hasSize(1);
     assertThat(issueLoaded.get(0).getId()).isEqualTo(localOnlyIssue.getId());
     assertThat(issueLoaded.get(0).getResolution().getStatus()).isEqualTo(org.sonarsource.sonarlint.core.commons.IssueStatus.WONT_FIX);
@@ -272,7 +276,7 @@ class IssuesStatusChangeMediumTests {
       "serious issue"));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    var storedIssues = backend.getLocalOnlyIssueStorageService().get().load("configScopeId", "file/path");
+    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", "file/path");
     assertThat(storedIssues)
       .extracting(LocalOnlyIssue::getResolution)
       .extracting(LocalOnlyIssueResolution::getComment)
@@ -298,4 +302,127 @@ class IssuesStatusChangeMediumTests {
       .withMessage("Cannot add comment to the issue");
   }
 
+
+  @Test
+  void it_should_reopen_issue_by_id() throws ExecutionException, InterruptedException {
+    server = newSonarQubeServer().start();
+    var issueId = UUID.randomUUID();
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", server)
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId)))
+      .build();
+    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll("configScopeId");
+    assertThat(storedIssues).extracting(LocalOnlyIssue::getId).containsOnly(issueId);
+
+    var response = backend.getIssueService().reopenIssue(new ReopenIssueParams("configScopeId", issueId.toString()));
+
+    assertThat(response).succeedsWithin(Duration.ofSeconds(2));
+    assertThat(response.get().isIssueReopened()).isTrue();
+    storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll("configScopeId");
+    assertThat(storedIssues).isEmpty();
+  }
+
+  @Test
+  void it_should_load_issues() throws ExecutionException, InterruptedException {
+    server = newSonarQubeServer().start();
+    var issueId1 = UUID.randomUUID();
+    var issueId2 = UUID.randomUUID();
+    var otherFileIssueId = UUID.randomUUID();
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", server)
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey",
+        storage -> storage
+          .withLocalOnlyIssue(new LocalOnlyIssue(
+            otherFileIssueId,
+            "file/path1",
+            new TextRangeWithHash(1, 2, 3, 4, "ab12"),
+            new LineWithHash(1, "linehash"),
+            "ruleKey",
+            "message",
+            new LocalOnlyIssueResolution(org.sonarsource.sonarlint.core.commons.IssueStatus.WONT_FIX, Instant.now().truncatedTo(ChronoUnit.MILLIS), "comment")
+          ))
+          .withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId1))
+          .withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId2)))
+      .build();
+
+    var issuesForFile = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", "file/path");
+    var issuesForOtherFile = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", "file/path1");
+    var allIssues = backend.getLocalOnlyIssueStorageService().get().loadAll("configScopeId");
+    assertThat(issuesForFile).extracting(LocalOnlyIssue::getId).containsOnly(issueId1, issueId2);
+    assertThat(issuesForOtherFile).extracting(LocalOnlyIssue::getId).containsOnly(otherFileIssueId);
+    assertThat(allIssues).extracting(LocalOnlyIssue::getId).containsOnly(issueId1, issueId2, otherFileIssueId);
+  }
+
+
+  @Test
+  void it_should_reopen_all_issues_for_file() throws ExecutionException, InterruptedException {
+    server = newSonarQubeServer().start();
+    var issueId1 = UUID.randomUUID();
+    var issueId2 = UUID.randomUUID();
+    var otherFileIssueId = UUID.randomUUID();
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", server)
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey",
+        storage -> storage
+          .withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId1))
+          .withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId2))
+          .withLocalOnlyIssue(new LocalOnlyIssue(
+            otherFileIssueId,
+            "file/path1",
+            new TextRangeWithHash(1, 2, 3, 4, "ab12"),
+            new LineWithHash(1, "linehash"),
+            "ruleKey",
+            "message",
+            new LocalOnlyIssueResolution(org.sonarsource.sonarlint.core.commons.IssueStatus.WONT_FIX, Instant.now().truncatedTo(ChronoUnit.MILLIS), "comment")
+          )))
+      .build();
+    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll("configScopeId");
+    assertThat(storedIssues).extracting(LocalOnlyIssue::getId).containsOnly(issueId1, issueId2, otherFileIssueId);
+
+    var response = backend.getIssueService()
+      .reopenAllIssuesForFile(new ReopenAllIssuesForFileParams("configScopeId", "file/path"));
+
+    assertThat(response).succeedsWithin(Duration.ofSeconds(2));
+    assertThat(response.get().isIssueReopened()).isTrue();
+    storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll("configScopeId");
+    assertThat(storedIssues).extracting(LocalOnlyIssue::getId).containsOnly(otherFileIssueId);
+  }
+
+  @Test
+  void it_should_return_false_on_reopen_issue_with_invalid_id() throws ExecutionException, InterruptedException {
+    server = newSonarQubeServer().start();
+    var issueId = UUID.randomUUID();
+    var invalidIssueId = "invalid-id";
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", server)
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId)))
+      .build();
+
+    var response = backend.getIssueService().reopenIssue(new ReopenIssueParams("configScopeId", invalidIssueId));
+
+    assertThat(response).succeedsWithin(Duration.ofSeconds(2));
+    assertThat(response.get().isIssueReopened()).isFalse();
+    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", "file/path");
+    assertThat(storedIssues).extracting(LocalOnlyIssue::getId).containsOnly(issueId);
+  }
+
+  @Test
+  void it_should_return_false_on_reopen_non_existing_issue() throws ExecutionException, InterruptedException {
+    server = newSonarQubeServer().start();
+    var issueId = UUID.randomUUID();
+    var nonExistingIssueId = UUID.randomUUID();
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", server)
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId)))
+      .build();
+
+    var response = backend.getIssueService().reopenIssue(new ReopenIssueParams("configScopeId", nonExistingIssueId.toString()));
+
+    assertThat(response).succeedsWithin(Duration.ofSeconds(2));
+    assertThat(response.get().isIssueReopened()).isFalse();
+    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", "file/path");
+    assertThat(storedIssues)
+      .extracting(LocalOnlyIssue::getId)
+      .containsOnly(issueId);
+  }
 }
