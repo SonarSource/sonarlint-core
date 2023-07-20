@@ -22,6 +22,7 @@ package mediumtest.issues;
 import com.google.protobuf.Message;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
@@ -35,6 +36,11 @@ import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangePermittedParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedIssueDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LocalOnlyIssueDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TextRangeWithHashDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TrackWithServerIssuesParams;
 import org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
@@ -43,6 +49,7 @@ import testutils.MockWebServerExtensionWithProtobuf;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class CheckIssueStatusChangePermittedMediumTests {
 
@@ -184,6 +191,90 @@ class CheckIssueStatusChangePermittedMediumTests {
       .havingCause()
       .isInstanceOf(UnexpectedBodyException.class)
       .withMessage("Unexpected body received");
+  }
+
+  @Test
+  void it_should_not_permit_status_change_on_local_only_issues_for_sonarcloud() {
+    backend = newBackend()
+      .withSonarCloudConnection("connectionId", "orgKey")
+      .withActiveBranch("configScopeId", "branch")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .build();
+
+    var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
+      Map.of("file/path", List.of(new ClientTrackedIssueDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      false));
+
+    LocalOnlyIssueDto localOnlyIssue = null;
+    try {
+      localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get("file/path").get(0).getRight();
+    } catch (Exception e) {
+      fail();
+    }
+
+    var response = checkStatusChangePermitted("connectionId", localOnlyIssue.getId().toString());
+
+    assertThat(response)
+      .succeedsWithin(Duration.ofSeconds(2))
+      .extracting(CheckStatusChangePermittedResponse::isPermitted, CheckStatusChangePermittedResponse::getNotPermittedReason,
+        CheckStatusChangePermittedResponse::getAllowedStatuses)
+      .containsExactly(false, "Marking a local-only issue as resolved requires SonarQube 10.2+", List.of(IssueStatus.WONT_FIX, IssueStatus.FALSE_POSITIVE));
+  }
+
+  @Test
+  void it_should_not_permit_status_change_on_local_only_issues_for_sonarqube_prior_to_10_2() {
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("10.1"))
+      .withActiveBranch("configScopeId", "branch")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .build();
+
+    var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
+      Map.of("file/path", List.of(new ClientTrackedIssueDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      false));
+
+    LocalOnlyIssueDto localOnlyIssue = null;
+    try {
+      localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get("file/path").get(0).getRight();
+    } catch (Exception e) {
+      fail();
+    }
+
+    var response = checkStatusChangePermitted("connectionId", localOnlyIssue.getId().toString());
+
+    assertThat(response)
+      .succeedsWithin(Duration.ofSeconds(2))
+      .extracting(CheckStatusChangePermittedResponse::isPermitted, CheckStatusChangePermittedResponse::getNotPermittedReason,
+        CheckStatusChangePermittedResponse::getAllowedStatuses)
+      .containsExactly(false, "Marking a local-only issue as resolved requires SonarQube 10.2+", List.of(IssueStatus.WONT_FIX, IssueStatus.FALSE_POSITIVE));
+  }
+
+  @Test
+  void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_2_plus() {
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("10.2"))
+      .withActiveBranch("configScopeId", "branch")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .build();
+
+    var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
+      Map.of("file/path", List.of(new ClientTrackedIssueDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      false));
+
+    LocalOnlyIssueDto localOnlyIssue = null;
+    try {
+      localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get("file/path").get(0).getRight();
+    } catch (Exception e) {
+      fail();
+    }
+
+    var response = checkStatusChangePermitted("connectionId", localOnlyIssue.getId().toString());
+
+    assertThat(response)
+      .succeedsWithin(Duration.ofSeconds(2))
+      .extracting(CheckStatusChangePermittedResponse::isPermitted, CheckStatusChangePermittedResponse::getNotPermittedReason,
+        CheckStatusChangePermittedResponse::getAllowedStatuses)
+      .containsExactly(true, null, List.of(IssueStatus.WONT_FIX, IssueStatus.FALSE_POSITIVE));
   }
 
   private void fakeServerWithIssue(String issueKey, List<String> transitions) {

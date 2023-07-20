@@ -39,6 +39,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangeP
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueService;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
@@ -51,6 +52,8 @@ import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 public class IssueServiceImpl implements IssueService {
 
   private static final String STATUS_CHANGE_PERMISSION_MISSING_REASON = "Marking an issue as resolved requires the 'Administer Issues' permission";
+  private static final String UNSUPPORTED_SQ_VERSION_REASON = "Marking a local-only issue as resolved requires SonarQube 10.2+";
+  private static final Version SQ_ANTICIPATE_TRANSITIONS_MIN_VERSION = Version.create("10.2");
   private static final Map<IssueStatus, String> transitionByIssueStatus = Map.of(
     IssueStatus.WONT_FIX, "wontfix",
     IssueStatus.FALSE_POSITIVE, "falsepositive");
@@ -127,28 +130,27 @@ public class IssueServiceImpl implements IssueService {
       return CompletableFuture.failedFuture(new IllegalArgumentException("Connection with ID '" + connectionId + "' does not exist"));
     }
     var issueKey = params.getIssueKey();
+    var serverApi = serverApiOpt.get();
     return asUUID(issueKey)
       .flatMap(localOnlyIssueRepository::findByKey)
       .map(r -> {
-        // always permitted to change the status, might fail later when pushing to SQ
-        return CompletableFuture.completedFuture(toResponse(true));
+        var anticipateTransitionsSupported = !serverApi.isSonarCloud() && storageService.connection(connectionId).serverInfo().read()
+          .map(version -> version.getVersion().satisfiesMinRequirement(SQ_ANTICIPATE_TRANSITIONS_MIN_VERSION)).orElse(false);
+        // no way to easily check if 'Administer Issue' permission is granted, might fail later
+        return CompletableFuture.completedFuture(toResponse(anticipateTransitionsSupported, UNSUPPORTED_SQ_VERSION_REASON));
       })
-      .orElseGet(() -> serverApiOpt.get().issue().searchByKey(params.getIssueKey())
-        .thenApply(IssueServiceImpl::toResponse));
+      .orElseGet(() -> serverApi.issue().searchByKey(params.getIssueKey())
+        .thenApply(issue -> toResponse(hasAdministerIssuePermission(issue), STATUS_CHANGE_PERMISSION_MISSING_REASON)));
   }
 
-  private static CheckStatusChangePermittedResponse toResponse(Issues.Issue issue) {
-    return toResponse(hasChangePermission(issue));
-  }
-
-  private static CheckStatusChangePermittedResponse toResponse(boolean permitted) {
+  private static CheckStatusChangePermittedResponse toResponse(boolean permitted, String reason) {
     return new CheckStatusChangePermittedResponse(permitted,
-      permitted ? null : STATUS_CHANGE_PERMISSION_MISSING_REASON,
+      permitted ? null : reason,
       // even if not permitted, return the possible statuses, if clients still want to show users what's supported
       Arrays.asList(IssueStatus.values()));
   }
 
-  private static boolean hasChangePermission(Issues.Issue issue) {
+  private static boolean hasAdministerIssuePermission(Issues.Issue issue) {
     // the 2 required transitions are not available when the 'Administer Issues' permission is missing
     // normally the 'Browse' permission is also required, but we assume it's present as the client knows the issue key
     var possibleTransitions = new HashSet<>(issue.getTransitions().getTransitionsList());
