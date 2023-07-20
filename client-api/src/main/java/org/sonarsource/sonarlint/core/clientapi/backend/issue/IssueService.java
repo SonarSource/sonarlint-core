@@ -71,11 +71,16 @@ public interface IssueService {
   CompletableFuture<Void> addComment(AddIssueCommentParams params);
 
   /**
-   * Checks if the user has permission to change the issue status. Also returns the list of allowed statuses.
+   * Checks if the user can change the issue status. They are allowed in two cases:
+   * <ul>
+   *   <li>If it is a server-matched issue, users need the 'Administer Issues' permission</li>
+   *   <li>If it is a local-only issue, the provided connection should link to a SonarQube 10.2+ instance</li>
+   * </ul>Also returns the list of allowed statuses.
    * <p>
    * This method will fail if:
    * <ul>
    *   <li>the connectionId provided as a parameter is unknown</li>
+   *   <li>there is a communication problem with the server: network outage, server is down, unauthorized</li>
    * </ul>
    * In those cases, a failed future will be returned.
    * </p>
