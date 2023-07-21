@@ -21,6 +21,9 @@ package org.sonarsource.sonarlint.core.local.only;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import javax.annotation.PostConstruct;
 
 public class LocalOnlyIssueStorageService {
 
@@ -31,6 +34,11 @@ public class LocalOnlyIssueStorageService {
   public LocalOnlyIssueStorageService(Path storageRoot, Path workDir) {
     projectsStorageBaseDir = storageRoot;
     this.workDir = workDir;
+  }
+
+  @PostConstruct
+  public void purgeOldIssues() {
+    get().purgeIssuesOlderThan(Instant.now().minus(7, ChronoUnit.DAYS));
   }
 
   public XodusLocalOnlyIssueStore get() {
