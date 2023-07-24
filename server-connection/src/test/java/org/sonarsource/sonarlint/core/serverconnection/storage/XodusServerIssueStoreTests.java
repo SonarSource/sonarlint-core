@@ -33,6 +33,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
@@ -240,7 +241,7 @@ class XodusServerIssueStoreTests {
       aServerIssue().setKey("key2"),
       aServerIssue().setKey("key3")));
 
-    store.mergeIssues("branch", List.of(), Set.of("key1", "key3"), Instant.now());
+    store.mergeIssues("branch", List.of(), Set.of("key1", "key3"), Instant.now(), Set.of());
 
     assertThat(store.load("branch", "file/path"))
       .extracting(ServerIssue::getKey)
@@ -252,7 +253,8 @@ class XodusServerIssueStoreTests {
     store.mergeIssues("branch", List.of(
       aServerIssue().setKey("key1"),
       aServerIssue().setKey("key2"),
-      aServerIssue().setKey("key3")), Set.of(), Instant.now());
+      aServerIssue().setKey("key3")), Set.of(), Instant.now(),
+      Set.of());
 
     assertThat(store.load("branch", "file/path"))
       .extracting(ServerIssue::getKey)
@@ -268,7 +270,8 @@ class XodusServerIssueStoreTests {
     store.mergeIssues("branch", List.of(
       aServerIssue().setType(RuleType.CODE_SMELL).setKey("key1"),
       aServerIssue().setType(RuleType.BUG).setKey("key2"),
-      aServerIssue().setType(RuleType.VULNERABILITY).setKey("key3")), Set.of(), Instant.now());
+      aServerIssue().setType(RuleType.VULNERABILITY).setKey("key3")), Set.of(), Instant.now(),
+      Set.of());
 
     assertThat(store.load("branch", "file/path"))
       .extracting(ServerIssue::getKey, ServerIssue::getType)
@@ -282,7 +285,7 @@ class XodusServerIssueStoreTests {
       aServerTaintIssue().setKey("key2"),
       aServerTaintIssue().setKey("key3")));
 
-    store.mergeTaintIssues("branch", List.of(), Set.of("key1", "key3"), Instant.now());
+    store.mergeTaintIssues("branch", List.of(), Set.of("key1", "key3"), Instant.now(), Set.of());
 
     assertThat(store.loadTaint("branch", "file/path"))
       .extracting(ServerTaintIssue::getKey)
@@ -294,7 +297,7 @@ class XodusServerIssueStoreTests {
     store.mergeTaintIssues("branch", List.of(
       aServerTaintIssue().setKey("key1"),
       aServerTaintIssue().setKey("key2"),
-      aServerTaintIssue().setKey("key3")), Set.of(), Instant.now());
+      aServerTaintIssue().setKey("key3")), Set.of(), Instant.now(), Set.of());
 
     assertThat(store.loadTaint("branch", "file/path"))
       .extracting(ServerTaintIssue::getKey)
@@ -310,7 +313,7 @@ class XodusServerIssueStoreTests {
     store.mergeTaintIssues("branch", List.of(
       aServerTaintIssue().setType(RuleType.CODE_SMELL).setKey("key1"),
       aServerTaintIssue().setType(RuleType.BUG).setKey("key2"),
-      aServerTaintIssue().setType(RuleType.VULNERABILITY).setKey("key3")), Set.of(), Instant.now());
+      aServerTaintIssue().setType(RuleType.VULNERABILITY).setKey("key3")), Set.of(), Instant.now(), Set.of());
 
     assertThat(store.loadTaint("branch", "file/path"))
       .extracting(ServerTaintIssue::getKey, ServerTaintIssue::getType)
@@ -504,9 +507,37 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_get_last_issue_sync_timestamp() {
-    store.mergeIssues("branch", List.of(aServerIssue()), Set.of(), Instant.ofEpochMilli(123456789));
+    store.mergeIssues("branch", List.of(aServerIssue()), Set.of(), Instant.ofEpochMilli(123456789), Set.of());
 
     assertThat(store.getLastIssueSyncTimestamp("branch")).contains(Instant.ofEpochMilli(123456789));
+  }
+
+  @Test
+  void should_get_last_enabled_languages_for_issues() {
+    store.mergeIssues("branch", List.of(aServerIssue()), Set.of(), Instant.ofEpochMilli(123456789), Set.of(Language.C, Language.GO));
+
+    var lastEnabledLanguages = store.getLastIssueEnabledLanguages("branch");
+
+    assertThat(lastEnabledLanguages).isEqualTo(Set.of(Language.C, Language.GO));
+  }
+
+  @Test
+  void should_get_last_enabled_languages_for_hotspots() {
+    store.mergeHotspots("branch", List.of(aServerHotspot()), Set.of(), Instant.ofEpochMilli(123456789), Set.of(Language.C, Language.GO));
+
+    var lastEnabledLanguages = store.getLastHotspotEnabledLanguages("branch");
+
+    assertThat(lastEnabledLanguages).isEqualTo(Set.of(Language.C, Language.GO));
+  }
+
+  @Test
+  void should_get_last_enabled_languages_for_taints() {
+    store.mergeTaintIssues("branch", List.of(aServerTaintIssue()), Set.of(), Instant.ofEpochMilli(123456789), Set.of(Language.C,
+      Language.GO));
+
+    var lastEnabledLanguages = store.getLastTaintEnabledLanguages("branch");
+
+    assertThat(lastEnabledLanguages).isEqualTo(Set.of(Language.C, Language.GO));
   }
 
   @Test
@@ -525,7 +556,7 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_get_last_taint_sync_timestamp() {
-    store.mergeTaintIssues("branch", List.of(aServerTaintIssue()), Set.of(), Instant.ofEpochMilli(123456789));
+    store.mergeTaintIssues("branch", List.of(aServerTaintIssue()), Set.of(), Instant.ofEpochMilli(123456789), Set.of());
 
     assertThat(store.getLastTaintSyncTimestamp("branch")).contains(Instant.ofEpochMilli(123456789));
   }
@@ -708,7 +739,7 @@ class XodusServerIssueStoreTests {
       aServerHotspot("key2"),
       aServerHotspot("key3")));
 
-    store.mergeHotspots("branch", List.of(), Set.of("key1", "key3"), Instant.now());
+    store.mergeHotspots("branch", List.of(), Set.of("key1", "key3"), Instant.now(), Set.of());
 
     assertThat(store.loadHotspots("branch", "file/path"))
       .extracting(ServerHotspot::getKey)
@@ -720,7 +751,7 @@ class XodusServerIssueStoreTests {
     store.mergeHotspots("branch", List.of(
       aServerHotspot("key1"),
       aServerHotspot("key2"),
-      aServerHotspot("key3")), Set.of(), Instant.now());
+      aServerHotspot("key3")), Set.of(), Instant.now(), Set.of());
 
     assertThat(store.loadHotspots("branch", "file/path"))
       .extracting(ServerHotspot::getKey)
@@ -735,7 +766,7 @@ class XodusServerIssueStoreTests {
 
     store.mergeHotspots("branch", List.of(
       aServerHotspot("key1"),
-      aServerHotspot("key2").withStatus(HotspotReviewStatus.SAFE)), Set.of(), Instant.now());
+      aServerHotspot("key2").withStatus(HotspotReviewStatus.SAFE)), Set.of(), Instant.now(), Set.of());
 
     assertThat(store.loadHotspots("branch", "file/path"))
       .extracting(ServerHotspot::getKey, ServerHotspot::getStatus)

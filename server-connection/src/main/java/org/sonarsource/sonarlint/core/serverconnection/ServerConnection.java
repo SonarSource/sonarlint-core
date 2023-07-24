@@ -229,7 +229,7 @@ public class ServerConnection {
     var serverVersion = readOrSynchronizeServerVersion(serverApi);
     if (IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
       LOG.info("[SYNC] Synchronizing issues for project '{}' on branch '{}'", projectKey, branchName);
-      issuesUpdater.sync(serverApi, projectKey, branchName);
+      issuesUpdater.sync(serverApi, projectKey, branchName, enabledLanguagesToSync);
     } else {
       LOG.debug("Incremental issue sync is not supported. Skipping.");
     }
@@ -243,7 +243,7 @@ public class ServerConnection {
     var serverVersion = readOrSynchronizeServerVersion(serverApi);
     if (IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
       LOG.info("[SYNC] Synchronizing taint issues for project '{}' on branch '{}'", projectKey, branchName);
-      issuesUpdater.syncTaints(serverApi, projectKey, branchName);
+      issuesUpdater.syncTaints(serverApi, projectKey, branchName, enabledLanguagesToSync);
     } else {
       LOG.debug("Incremental taint issue sync is not supported. Skipping.");
     }
@@ -257,7 +257,7 @@ public class ServerConnection {
     var serverVersion = readOrSynchronizeServerVersion(serverApi);
     if (HotspotApi.supportHotspotsPull(isSonarCloud, serverVersion)) {
       LOG.info("[SYNC] Synchronizing hotspots for project '{}' on branch '{}'", projectKey, branchName);
-      hotspotsUpdater.sync(serverApi.hotspot(), projectKey, branchName);
+      hotspotsUpdater.sync(serverApi.hotspot(), projectKey, branchName, enabledLanguagesToSync);
     } else {
       LOG.debug("Incremental hotspot sync is not supported. Skipping.");
     }

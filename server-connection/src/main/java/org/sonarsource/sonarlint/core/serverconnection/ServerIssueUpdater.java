@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -28,6 +30,8 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
+
+import static org.sonarsource.sonarlint.core.serverconnection.ServerUpdaterUtils.computeLastSync;
 
 public class ServerIssueUpdater {
 
@@ -45,24 +49,34 @@ public class ServerIssueUpdater {
 
   public void update(ServerApi serverApi, String projectKey, String branchName, boolean isSonarCloud, Version serverVersion) {
     if (IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
-      sync(serverApi, projectKey, branchName);
+      sync(serverApi, projectKey, branchName, issueDownloader.getEnabledLanguages());
     } else {
       List<ServerIssue> issues = issueDownloader.downloadFromBatch(serverApi, projectKey, branchName);
       storage.project(projectKey).findings().replaceAllIssuesOfBranch(branchName, issues);
     }
   }
 
-  public void sync(ServerApi serverApi, String projectKey, String branchName) {
+  public void sync(ServerApi serverApi, String projectKey, String branchName, Set<Language> enabledLanguages) {
     var lastSync = storage.project(projectKey).findings().getLastIssueSyncTimestamp(branchName);
+
+    lastSync = computeLastSync(enabledLanguages, lastSync, storage.project(projectKey).findings().getLastIssueEnabledLanguages(branchName));
+
     var result = issueDownloader.downloadFromPull(serverApi, projectKey, branchName, lastSync);
-    storage.project(projectKey).findings().mergeIssues(branchName, result.getChangedIssues(), result.getClosedIssueKeys(), result.getQueryTimestamp());
+    storage.project(projectKey).findings().mergeIssues(branchName, result.getChangedIssues(), result.getClosedIssueKeys(),
+      result.getQueryTimestamp(), enabledLanguages);
   }
 
-  public void syncTaints(ServerApi serverApi, String projectKey, String branchName) {
+
+  public void syncTaints(ServerApi serverApi, String projectKey, String branchName, Set<Language> enabledLanguages) {
     var serverIssueStore = storage.project(projectKey).findings();
+
     var lastSync = serverIssueStore.getLastTaintSyncTimestamp(branchName);
+
+    lastSync = computeLastSync(enabledLanguages, lastSync, storage.project(projectKey).findings().getLastTaintEnabledLanguages(branchName));
+
     var result = taintIssueDownloader.downloadTaintFromPull(serverApi, projectKey, branchName, lastSync);
-    serverIssueStore.mergeTaintIssues(branchName, result.getChangedTaintIssues(), result.getClosedIssueKeys(), result.getQueryTimestamp());
+    serverIssueStore.mergeTaintIssues(branchName, result.getChangedTaintIssues(), result.getClosedIssueKeys(), result.getQueryTimestamp()
+      , enabledLanguages);
   }
 
   public void updateFileIssues(ServerApi serverApi, ProjectBinding projectBinding, String ideFilePath, String branchName, boolean isSonarCloud,

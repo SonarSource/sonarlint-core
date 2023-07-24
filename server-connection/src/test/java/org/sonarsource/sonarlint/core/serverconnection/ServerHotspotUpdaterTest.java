@@ -27,15 +27,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
-import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -135,12 +136,54 @@ class ServerHotspotUpdaterTest {
     when(hotspotDownloader.downloadFromPull(hotspotApi, PROJECT_KEY, "branch", Optional.empty()))
       .thenReturn(new HotspotDownloader.PullResult(timestamp, hotspots, Set.of()));
 
-    updater.sync(hotspotApi, PROJECT_KEY, "branch");
+    updater.sync(hotspotApi, PROJECT_KEY, "branch", Set.of(Language.C));
 
     var hotspotCaptor = ArgumentCaptor.forClass(List.class);
-    verify(issueStore).mergeHotspots(eq("branch"), hotspotCaptor.capture(), eq(Set.of()), eq(timestamp));
+    verify(issueStore).mergeHotspots(eq("branch"), hotspotCaptor.capture(), eq(Set.of()), eq(timestamp), eq(Set.of(Language.C)));
     assertThat(hotspotCaptor.getValue()).hasSize(1);
     var capturedHotspot = (ServerHotspot) (hotspotCaptor.getValue().get(0));
     assertThat(capturedHotspot.getKey()).isEqualTo(hotspotKey);
+  }
+
+  @Test
+  void update_hotspots_with_pull_when_enabled_language_not_changed() {
+    var timestamp = Instant.ofEpochMilli(123456789L);
+    var lastHotspotEnabledLanguages = Set.of(Language.C, Language.GO);
+    var hotspotKey = "hotspotKey";
+    var hotspots = List.of(aServerHotspot(hotspotKey));
+    when(hotspotDownloader.downloadFromPull(hotspotApi, PROJECT_KEY, "branch", Optional.of(timestamp)))
+      .thenReturn(new HotspotDownloader.PullResult(timestamp, hotspots, Set.of()));
+    when(issueStore.getLastHotspotEnabledLanguages("branch")).thenReturn(lastHotspotEnabledLanguages);
+    when(issueStore.getLastHotspotSyncTimestamp("branch")).thenReturn(Optional.of(timestamp));
+
+    updater.sync(hotspotApi, PROJECT_KEY, "branch", Set.of(Language.C, Language.GO));
+
+    var hotspotCaptor = ArgumentCaptor.forClass(List.class);
+    verify(issueStore).mergeHotspots(eq("branch"), hotspotCaptor.capture(), eq(Set.of()), eq(timestamp), anySet());
+    assertThat(hotspotCaptor.getValue()).hasSize(1);
+    var capturedHotspot = (ServerHotspot) (hotspotCaptor.getValue().get(0));
+    assertThat(capturedHotspot.getKey()).isEqualTo(hotspotKey);
+    verify(hotspotDownloader).downloadFromPull(eq(hotspotApi), eq(projectBinding.projectKey()), eq("branch"), eq(Optional.of(timestamp)));
+  }
+
+  @Test
+  void update_hotspots_with_pull_when_enabled_language_changed() {
+    var timestamp = Instant.ofEpochMilli(123456789L);
+    var lastHotspotEnabledLanguages = Set.of(Language.C);
+    var hotspotKey = "hotspotKey";
+    var hotspots = List.of(aServerHotspot(hotspotKey));
+    when(hotspotDownloader.downloadFromPull(hotspotApi, PROJECT_KEY, "branch", Optional.empty()))
+      .thenReturn(new HotspotDownloader.PullResult(timestamp, hotspots, Set.of()));
+    when(issueStore.getLastHotspotEnabledLanguages("branch")).thenReturn(lastHotspotEnabledLanguages);
+    when(issueStore.getLastHotspotSyncTimestamp("branch")).thenReturn(Optional.of(timestamp));
+
+    updater.sync(hotspotApi, PROJECT_KEY, "branch", Set.of(Language.C, Language.GO));
+
+    var hotspotCaptor = ArgumentCaptor.forClass(List.class);
+    verify(issueStore).mergeHotspots(eq("branch"), hotspotCaptor.capture(), eq(Set.of()), eq(timestamp), anySet());
+    assertThat(hotspotCaptor.getValue()).hasSize(1);
+    var capturedHotspot = (ServerHotspot) (hotspotCaptor.getValue().get(0));
+    assertThat(capturedHotspot.getKey()).isEqualTo(hotspotKey);
+    verify(hotspotDownloader).downloadFromPull(eq(hotspotApi), eq(projectBinding.projectKey()), eq("branch"), eq(Optional.empty()));
   }
 }

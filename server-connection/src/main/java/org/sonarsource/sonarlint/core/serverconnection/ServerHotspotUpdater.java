@@ -19,11 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.util.Set;
 import java.util.function.Supplier;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
+
+import static org.sonarsource.sonarlint.core.serverconnection.ServerUpdaterUtils.computeLastSync;
 
 public class ServerHotspotUpdater {
 
@@ -64,9 +68,13 @@ public class ServerHotspotUpdater {
     }
   }
 
-  public void sync(HotspotApi hotspotApi, String projectKey, String branchName) {
+  public void sync(HotspotApi hotspotApi, String projectKey, String branchName, Set<Language> enabledLanguages) {
     var lastSync = storage.project(projectKey).findings().getLastHotspotSyncTimestamp(branchName);
+
+    lastSync = computeLastSync(enabledLanguages, lastSync, storage.project(projectKey).findings().getLastHotspotEnabledLanguages(branchName));
+
     var result = hotspotDownloader.downloadFromPull(hotspotApi, projectKey, branchName, lastSync);
-    storage.project(projectKey).findings().mergeHotspots(branchName, result.getChangedHotspots(), result.getClosedHotspotKeys(), result.getQueryTimestamp());
+    storage.project(projectKey).findings().mergeHotspots(branchName, result.getChangedHotspots(), result.getClosedHotspotKeys(),
+      result.getQueryTimestamp(), enabledLanguages);
   }
 }

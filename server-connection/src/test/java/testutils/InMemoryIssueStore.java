@@ -30,21 +30,27 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
-import org.sonarsource.sonarlint.core.serverconnection.ServerHotspotUpdater;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 
 import static java.util.Optional.ofNullable;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.StorageUtils.deserializeLanguages;
 
 public class InMemoryIssueStore implements ProjectServerIssueStore {
   private final Map<String, Map<String, List<ServerIssue>>> issuesByFileByBranch = new HashMap<>();
   private final Map<String, Map<String, Collection<ServerHotspot>>> hotspotsByFileByBranch = new HashMap<>();
   private final Map<String, Instant> lastHotspotSyncByBranch = new HashMap<>();
   private final Map<String, ServerHotspot> hotspotsByKey = new HashMap<>();
+
   private final Map<String, Instant> lastIssueSyncByBranch = new HashMap<>();
+  private final Map<String, String> lastIssueEnabledLanguagesByBranch = new HashMap<>();
+  private final Map<String, String> lastTaintEnabledLanguagesByBranch = new HashMap<>();
+  private final Map<String, String> lastHotspotEnabledLanguagesByBranch = new HashMap<>();
   private final Map<String, ServerIssue> issuesByKey = new HashMap<>();
   private final Map<String, Map<String, List<ServerTaintIssue>>> taintIssuesByFileByBranch = new HashMap<>();
   private final Map<String, Instant> lastTaintSyncByBranch = new HashMap<>();
@@ -59,7 +65,7 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void mergeIssues(String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp) {
+  public void mergeIssues(String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp, Set<Language> enabledLanguages) {
     var issuesToMergeByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
     // does not handle issue moving file (e.g. file renaming)
     issuesByFileByBranch
@@ -68,10 +74,14 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
     issuesToMerge.forEach(issue -> issuesByKey.put(issue.getKey(), issue));
     closedIssueKeysToDelete.forEach(issuesByKey::remove);
     lastIssueSyncByBranch.put(branchName, syncTimestamp);
+
+    String serializedLanguages = getSerializedLanguages(enabledLanguages);
+
+    lastIssueEnabledLanguagesByBranch.put(branchName, serializedLanguages);
   }
 
   @Override
-  public void mergeTaintIssues(String branchName, List<ServerTaintIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp) {
+  public void mergeTaintIssues(String branchName, List<ServerTaintIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp, Set<Language> enabledLanguages) {
     var issuesToMergeByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerTaintIssue::getFilePath));
     // does not handle issue moving file (e.g. file renaming)
     taintIssuesByFileByBranch
@@ -80,10 +90,14 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
     issuesToMerge.forEach(issue -> taintIssuesByKey.put(issue.getKey(), issue));
     closedIssueKeysToDelete.forEach(taintIssuesByKey::remove);
     lastTaintSyncByBranch.put(branchName, syncTimestamp);
+
+    String serializedLanguages = getSerializedLanguages(enabledLanguages);
+
+    lastTaintEnabledLanguagesByBranch.put(branchName, serializedLanguages);
   }
 
   @Override
-  public void mergeHotspots(String branchName, List<ServerHotspot> hotspotsToMerge, Set<String> closedHotspotKeysToDelete, Instant syncTimestamp) {
+  public void mergeHotspots(String branchName, List<ServerHotspot> hotspotsToMerge, Set<String> closedHotspotKeysToDelete, Instant syncTimestamp, Set<Language> enabledLanguages) {
     var hotspotsToMergeByFilePath = hotspotsToMerge.stream().collect(Collectors.groupingBy(ServerHotspot::getFilePath));
     // does not handle hotspot moving file (e.g. file renaming)
     hotspotsByFileByBranch
@@ -92,11 +106,41 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
     hotspotsToMerge.forEach(hotspot -> hotspotsByKey.put(hotspot.getKey(), hotspot));
     closedHotspotKeysToDelete.forEach(hotspotsByKey::remove);
     lastHotspotSyncByBranch.put(branchName, syncTimestamp);
+
+    String serializedLanguages = getSerializedLanguages(enabledLanguages);
+
+    lastHotspotEnabledLanguagesByBranch.put(branchName, serializedLanguages);
+  }
+
+  @NotNull
+  private static String getSerializedLanguages(Set<Language> enabledLanguages) {
+    List<Language> languagesList = new ArrayList<>();
+    languagesList.addAll(enabledLanguages);
+    return languagesList.stream().map(Language::getLanguageKey)
+      .collect(Collectors.joining(","));
   }
 
   @Override
   public Optional<Instant> getLastIssueSyncTimestamp(String branchName) {
     return ofNullable(lastIssueSyncByBranch.get(branchName));
+  }
+
+  @Override
+  public Set<Language> getLastIssueEnabledLanguages(String branchName) {
+    var lastEnabledLanguages = ofNullable(lastIssueEnabledLanguagesByBranch.get(branchName));
+    return deserializeLanguages(lastEnabledLanguages);
+  }
+
+  @Override
+  public Set<Language> getLastTaintEnabledLanguages(String branchName) {
+    var lastEnabledLanguages = ofNullable(lastTaintEnabledLanguagesByBranch.get(branchName));
+    return deserializeLanguages(lastEnabledLanguages);
+  }
+
+  @Override
+  public Set<Language> getLastHotspotEnabledLanguages(String branchName) {
+    var lastEnabledLanguages = ofNullable(lastHotspotEnabledLanguagesByBranch.get(branchName));
+    return deserializeLanguages(lastEnabledLanguages);
   }
 
   @Override

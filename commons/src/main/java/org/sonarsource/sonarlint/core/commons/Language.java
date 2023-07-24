@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.commons;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -114,6 +115,11 @@ public enum Language {
 
   public static Set<Language> getLanguagesByPluginKey(String pluginKey) {
     return Stream.of(values()).filter(l -> l.getPluginKey().equals(pluginKey)).collect(Collectors.toCollection(LinkedHashSet::new));
+  }
+
+  public static Optional<Language> getLanguageByLanguageKey(String languageKey) {
+    var languages = Stream.of(values()).filter(l -> l.getLanguageKey().equals(languageKey)).collect(Collectors.toCollection(ArrayList::new));
+    return languages.isEmpty() ? Optional.empty() : Optional.of(languages.get(0));
   }
 
   public static boolean containsPlugin(String pluginKey) {

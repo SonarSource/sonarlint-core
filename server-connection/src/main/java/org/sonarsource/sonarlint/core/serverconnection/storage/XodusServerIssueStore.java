@@ -51,6 +51,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
@@ -69,12 +70,18 @@ import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint.Location;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint.TextRange;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.joining;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.StorageUtils.deserializeLanguages;
 
 public class XodusServerIssueStore implements ProjectServerIssueStore {
 
   static final int CURRENT_SCHEMA_VERSION = 1;
 
   private static final String BACKUP_TAR_GZ = "backup.tar.gz";
+
+  private static final String HOTSPOTS = "hotspots";
+
+  private static final String ISSUES = "issues";
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
@@ -111,6 +118,9 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private static final String PATH_PROPERTY_NAME = "path";
   private static final String NAME_PROPERTY_NAME = "name";
   private static final String LAST_ISSUE_SYNC_PROPERTY_NAME = "lastIssueSync";
+  private static final String LAST_ISSUE_ENABLED_LANGUAGES = "lastIssueEnabledLanguages";
+  private static final String LAST_TAINT_ENABLED_LANGUAGES = "lastTaintEnabledLanguages";
+  private static final String LAST_HOTSPOT_ENABLED_LANGUAGES = "lastHotspotEnabledLanguages";
   private static final String LAST_TAINT_SYNC_PROPERTY_NAME = "lastTaintSync";
   private static final String LAST_HOTSPOT_SYNC_PROPERTY_NAME = "lastHotspotSync";
   private static final String VERSION_PROPERTY_NAME = "version";
@@ -308,7 +318,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
 
   @Override
   public void replaceAllIssuesOfFile(String branchName, String serverFilePath, List<ServerIssue> issues) {
-    timed(wroteMessage(issues.size(), "issues"), () -> entityStore.executeInTransaction(txn -> {
+    timed(wroteMessage(issues.size(), ISSUES), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
       var fileEntity = getOrCreateFile(branch, serverFilePath, txn);
       replaceAllIssuesOfFile(issues, txn, fileEntity);
@@ -316,9 +326,9 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void mergeIssues(String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp) {
+  public void mergeIssues(String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp, Set<Language> enabledLanguages) {
     var issuesByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
-    timed(mergedMessage(issuesToMerge.size(), closedIssueKeysToDelete.size(), "issues"), () -> entityStore.executeInTransaction(txn -> {
+    timed(mergedMessage(issuesToMerge.size(), closedIssueKeysToDelete.size(), ISSUES), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
       issuesByFilePath.forEach((filePath, issues) -> {
         var fileEntity = getOrCreateFile(branch, filePath, txn);
@@ -327,11 +337,15 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       });
       closedIssueKeysToDelete.forEach(issueKey -> remove(issueKey, txn));
       branch.setProperty(LAST_ISSUE_SYNC_PROPERTY_NAME, syncTimestamp);
+
+      String serializedLanguages = getSerializedLanguages(enabledLanguages);
+      branch.setProperty(LAST_ISSUE_ENABLED_LANGUAGES, serializedLanguages);
     }));
   }
 
   @Override
-  public void mergeTaintIssues(String branchName, List<ServerTaintIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp) {
+  public void mergeTaintIssues(String branchName, List<ServerTaintIssue> issuesToMerge, Set<String> closedIssueKeysToDelete,
+    Instant syncTimestamp, Set<Language> enabledLanguages) {
     var issuesByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerTaintIssue::getFilePath));
     timed(mergedMessage(issuesToMerge.size(), closedIssueKeysToDelete.size(), "taint issues"), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
@@ -342,13 +356,16 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       });
       closedIssueKeysToDelete.forEach(issueKey -> removeTaint(issueKey, txn));
       branch.setProperty(LAST_TAINT_SYNC_PROPERTY_NAME, syncTimestamp);
+
+      String serializedLanguages = getSerializedLanguages(enabledLanguages);
+      branch.setProperty(LAST_TAINT_ENABLED_LANGUAGES, serializedLanguages);
     }));
   }
 
   @Override
-  public void mergeHotspots(String branchName, List<ServerHotspot> hotspotsToMerge, Set<String> closedHotspotKeysToDelete, Instant syncTimestamp) {
+  public void mergeHotspots(String branchName, List<ServerHotspot> hotspotsToMerge, Set<String> closedHotspotKeysToDelete, Instant syncTimestamp, Set<Language> enabledLanguages) {
     var hotspotsByFilePath = hotspotsToMerge.stream().collect(Collectors.groupingBy(ServerHotspot::getFilePath));
-    timed(mergedMessage(hotspotsToMerge.size(), closedHotspotKeysToDelete.size(), "hotspots"), () -> entityStore.executeInTransaction(txn -> {
+    timed(mergedMessage(hotspotsToMerge.size(), closedHotspotKeysToDelete.size(), HOTSPOTS), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
       hotspotsByFilePath.forEach((filePath, hotspots) -> {
         var fileEntity = getOrCreateFile(branch, filePath, txn);
@@ -357,6 +374,9 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       });
       closedHotspotKeysToDelete.forEach(hotspotKey -> removeHotspot(hotspotKey, txn));
       branch.setProperty(LAST_HOTSPOT_SYNC_PROPERTY_NAME, syncTimestamp);
+
+      String serializedLanguages = getSerializedLanguages(enabledLanguages);
+      branch.setProperty(LAST_HOTSPOT_ENABLED_LANGUAGES, serializedLanguages);
     }));
   }
 
@@ -375,6 +395,29 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
+  public Set<Language> getLastIssueEnabledLanguages(String branchName) {
+    var lastEnabledLanguages = entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
+      .map(branch -> (String) branch.getProperty(LAST_ISSUE_ENABLED_LANGUAGES)));
+
+    return deserializeLanguages(lastEnabledLanguages);
+  }
+
+  @Override
+  public Set<Language> getLastTaintEnabledLanguages(String branchName) {
+    var lastEnabledLanguages = entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
+      .map(branch -> (String) branch.getProperty(LAST_TAINT_ENABLED_LANGUAGES)));
+
+    return deserializeLanguages(lastEnabledLanguages);
+  }
+
+  @Override
+  public Set<Language> getLastHotspotEnabledLanguages(String branchName) {
+    var lastEnabledLanguages = entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
+      .map(branch -> (String) branch.getProperty(LAST_HOTSPOT_ENABLED_LANGUAGES)));
+    return deserializeLanguages(lastEnabledLanguages);
+  }
+
+  @Override
   public Optional<Instant> getLastTaintSyncTimestamp(String branchName) {
     return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
       .map(branch -> (Instant) branch.getProperty(LAST_TAINT_SYNC_PROPERTY_NAME)));
@@ -389,7 +432,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   @Override
   public void replaceAllIssuesOfBranch(String branchName, List<ServerIssue> issues) {
     var issuesByFile = issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
-    timed(wroteMessage(issues.size(), "issues"), () -> entityStore.executeInTransaction(txn -> {
+    timed(wroteMessage(issues.size(), ISSUES), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
       branch.getLinks(BRANCH_TO_FILES_LINK_NAME).forEach(fileEntity -> {
         var entityFilePath = fileEntity.getProperty(PATH_PROPERTY_NAME);
@@ -409,7 +452,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   @Override
   public void replaceAllHotspotsOfBranch(String branchName, Collection<ServerHotspot> serverHotspots) {
     var hotspotsByFile = serverHotspots.stream().collect(Collectors.groupingBy(ServerHotspot::getFilePath));
-    timed(wroteMessage(serverHotspots.size(), "hotspots"), () -> entityStore.executeInTransaction(txn -> {
+    timed(wroteMessage(serverHotspots.size(), HOTSPOTS), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
       branch.getLinks(BRANCH_TO_FILES_LINK_NAME).forEach(fileEntity -> {
         var entityFilePath = fileEntity.getProperty(PATH_PROPERTY_NAME);
@@ -428,7 +471,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
 
   @Override
   public void replaceAllHotspotsOfFile(String branchName, String serverFilePath, Collection<ServerHotspot> serverHotspots) {
-    timed(wroteMessage(serverHotspots.size(), "hotspots"), () -> entityStore.executeInTransaction(txn -> {
+    timed(wroteMessage(serverHotspots.size(), HOTSPOTS), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
       var fileEntity = getOrCreateFile(branch, serverFilePath, txn);
       replaceAllHotspotsOfFile(serverHotspots, txn, fileEntity);
@@ -453,6 +496,10 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     fileEntity.deleteLinks(FILE_TO_HOTSPOTS_LINK_NAME);
 
     hotspots.forEach(hotspot -> updateOrCreateHotspot(fileEntity, hotspot, txn));
+  }
+
+  private static String getSerializedLanguages(Set<Language> enabledLanguages) {
+    return enabledLanguages.stream().map(Language::getLanguageKey).collect(joining(","));
   }
 
   private static void updateOrCreateHotspot(Entity fileEntity, ServerHotspot hotspot, StoreTransaction transaction) {
