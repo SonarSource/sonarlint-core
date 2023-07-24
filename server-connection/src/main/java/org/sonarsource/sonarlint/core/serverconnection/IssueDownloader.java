@@ -46,6 +46,10 @@ public class IssueDownloader {
 
   private final Set<Language> enabledLanguages;
 
+  public Set<Language> getEnabledLanguages() {
+    return enabledLanguages;
+  }
+
   public IssueDownloader(Set<Language> enabledLanguages) {
     this.enabledLanguages = enabledLanguages;
   }

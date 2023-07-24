@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
@@ -57,7 +58,7 @@ public interface ProjectServerIssueStore {
    *  - existing issues are updated
    *  - closed issues are removed from the store
    */
-  void mergeIssues(String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp);
+  void mergeIssues(String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp, Set<Language> enabledLanguages);
 
   /**
    * Merge provided taint issues to stored ones for the given project:
@@ -65,7 +66,7 @@ public interface ProjectServerIssueStore {
    *  - existing issues are updated
    *  - closed issues are removed from the store
    */
-  void mergeTaintIssues(String branchName, List<ServerTaintIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp);
+  void mergeTaintIssues(String branchName, List<ServerTaintIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp, Set<Language> enabledLanguages);
 
   /**
    * Merge provided hotspots to stored ones for the given project:
@@ -73,13 +74,32 @@ public interface ProjectServerIssueStore {
    *  - existing hotspots are updated
    *  - closed hotspots are removed from the store
    */
-  void mergeHotspots(String branchName, List<ServerHotspot> hotspotsToMerge, Set<String> closedHotspotKeysToDelete, Instant syncTimestamp);
+  void mergeHotspots(String branchName, List<ServerHotspot> hotspotsToMerge, Set<String> closedHotspotKeysToDelete, Instant syncTimestamp, Set<Language> enabledLanguages);
 
   /**
    * Return the timestamp of the last issue sync for a given branch.
    * @return empty if the issues of the branch have never been pulled
    */
   Optional<Instant> getLastIssueSyncTimestamp(String branchName);
+
+  /**
+   * Return the last enabled languages of the last issue sync for a given branch.
+   *
+   * @return empty if the issues of the branch have never been pulled
+   */
+  Set<Language> getLastIssueEnabledLanguages(String branchName);
+
+  /**
+   * Return the last enabled languages of the last taint sync for a given branch.
+   * @return empty if the taints of the branch have never been pulled
+   */
+  Set<Language> getLastTaintEnabledLanguages(String branchName);
+
+  /**
+   * Return the last enabled languages of the last hotspot sync for a given branch.
+   * @return empty if the hotspots of the branch have never been pulled
+   */
+  Set<Language> getLastHotspotEnabledLanguages(String branchName);
 
   /**
    * Return the timestamp of the last taint issue sync for a given branch.

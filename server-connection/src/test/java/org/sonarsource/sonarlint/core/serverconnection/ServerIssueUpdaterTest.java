@@ -26,14 +26,17 @@ import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -44,6 +47,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerIssue;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerTaintIssue;
 
 class ServerIssueUpdaterTest {
 
@@ -99,7 +103,7 @@ class ServerIssueUpdaterTest {
 
     updater.update(serverApi, projectBinding.projectKey(), "master", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
 
-    verify(issueStore).mergeIssues(eq("master"), anyList(), anySet(), eq(queryTimestamp));
+    verify(issueStore).mergeIssues(eq("master"), anyList(), anySet(), eq(queryTimestamp), anySet());
   }
 
   @Test
@@ -113,7 +117,67 @@ class ServerIssueUpdaterTest {
 
     updater.update(serverApi, projectBinding.projectKey(), "master", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
 
-    verify(issueStore).mergeIssues(eq("master"), anyList(), anySet(), eq(queryTimestamp));
+    verify(issueStore).mergeIssues(eq("master"), anyList(), anySet(), eq(queryTimestamp), anySet());
+  }
+
+  @Test
+  void update_project_issues_with_pull_when_enabled_language_changed() {
+    var issue = aServerIssue();
+    List<ServerIssue> issues = Collections.singletonList(issue);
+    var queryTimestamp = Instant.now();
+    var lastSync = Optional.of(Instant.ofEpochMilli(123456789));
+    var lastIssueEnabledLanguages = Set.of(Language.C, Language.GO);
+    when(issueStore.getLastIssueSyncTimestamp("master")).thenReturn(lastSync);
+    when(issueStore.getLastIssueEnabledLanguages("master")).thenReturn(lastIssueEnabledLanguages);
+    when(downloader.getEnabledLanguages()).thenReturn(Set.of(Language.C));
+    when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty())).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
+    updater.update(serverApi, projectBinding.projectKey(), "master", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
+    verify(downloader).downloadFromPull(eq(serverApi), eq(projectBinding.projectKey()), eq("master"), eq(Optional.empty()));
+  }
+
+  @Test
+  void update_project_issues_with_pull_when_enabled_language_not_changed() {
+    var issue = aServerIssue();
+    List<ServerIssue> issues = Collections.singletonList(issue);
+    var queryTimestamp = Instant.now();
+    var lastSync = Optional.of(Instant.ofEpochMilli(123456789));
+    var lastIssueEnabledLanguages = Set.of(Language.C, Language.GO);
+    when(issueStore.getLastIssueSyncTimestamp("master")).thenReturn(lastSync);
+    when(issueStore.getLastIssueEnabledLanguages("master")).thenReturn(lastIssueEnabledLanguages);
+    when(downloader.getEnabledLanguages()).thenReturn(Set.of(Language.C, Language.GO));
+    when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", lastSync)).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
+    updater.update(serverApi, projectBinding.projectKey(), "master", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
+    verify(downloader).downloadFromPull(eq(serverApi), eq(projectBinding.projectKey()), eq("master"), eq(lastSync));
+  }
+
+  @Test
+  void update_project_taints_with_pull_when_enabled_language_changed() {
+    var issue = aServerTaintIssue();
+    List<ServerTaintIssue> issues = Collections.singletonList(issue);
+    var queryTimestamp = Instant.now();
+    var lastSync = Optional.of(Instant.ofEpochMilli(123456789));
+    var lastIssueEnabledLanguages = Set.of(Language.C, Language.GO);
+    when(issueStore.getLastTaintSyncTimestamp("master")).thenReturn(lastSync);
+    when(issueStore.getLastTaintEnabledLanguages("master")).thenReturn(lastIssueEnabledLanguages);
+    when(taintDownloader.downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty())).thenReturn(new TaintIssueDownloader.PullTaintResult(queryTimestamp, issues, Set.of()));
+
+    updater.syncTaints(serverApi, projectBinding.projectKey(), "master", Set.of(Language.C));
+    verify(taintDownloader).downloadTaintFromPull(eq(serverApi), eq(projectBinding.projectKey()), eq("master"), eq(Optional.empty()));
+  }
+
+  @Test
+  void update_project_taints_with_pull_when_enabled_language_not_changed() {
+    var issue = aServerTaintIssue();
+    List<ServerTaintIssue> issues = Collections.singletonList(issue);
+    var queryTimestamp = Instant.now();
+    var lastSync = Optional.of(Instant.ofEpochMilli(123456789));
+    var lastIssueEnabledLanguages = Set.of(Language.C, Language.GO);
+    when(issueStore.getLastTaintSyncTimestamp("master")).thenReturn(lastSync);
+    when(issueStore.getLastTaintEnabledLanguages("master")).thenReturn(lastIssueEnabledLanguages);
+    when(taintDownloader.downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", lastSync)).thenReturn(new TaintIssueDownloader.PullTaintResult(queryTimestamp, issues, Set.of()));
+
+    updater.syncTaints(serverApi, projectBinding.projectKey(), "master", Set.of(Language.C, Language.GO));
+    verify(taintDownloader).downloadTaintFromPull(eq(serverApi), eq(projectBinding.projectKey()), eq("master"), eq(lastSync));
   }
 
   @Test

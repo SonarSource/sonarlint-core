@@ -95,7 +95,7 @@ class XodusServerIssueStoreMigrationTests {
     try {
       storeV0 = new XodusServerIssueStore(backupDir, workDir, txn -> {});
       // Emulate previous synchronization
-      storeV0.mergeTaintIssues("somebranch", List.of(ServerIssueFixtures.aServerTaintIssue()), Set.of(), Instant.now());
+      storeV0.mergeTaintIssues("somebranch", List.of(ServerIssueFixtures.aServerTaintIssue()), Set.of(), Instant.now(), Set.of());
       assertThat(storeV0.getCurrentSchemaVersion()).isZero();
       assertThat(storeV0.getLastTaintSyncTimestamp("somebranch"))
         .hasValueSatisfying(instant -> assertThat(instant).isAfter(Instant.EPOCH));
