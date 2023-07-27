@@ -61,7 +61,7 @@ class RuleExtractorMediumTests {
 
   @BeforeAll
   static void prepare() throws IOException {
-    var dir = Paths.get("target/plugins/");
+    var dir = Paths.get(System.getProperty("sonar.plugins.test.path"));
     try (var files = Files.list(dir)) {
       allJars = files.filter(x -> x.getFileName().toString().endsWith(".jar")).collect(toSet());
     }

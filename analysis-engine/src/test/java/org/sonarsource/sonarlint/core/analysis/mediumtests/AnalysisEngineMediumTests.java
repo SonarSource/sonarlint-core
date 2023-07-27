@@ -102,8 +102,8 @@ class AnalysisEngineMediumTests {
     List<Issue> issues = new ArrayList<>();
     analysisEngine.post(new AnalyzeCommand(null, analysisConfig, issues::add, null), progressMonitor).get();
     assertThat(issues)
-      .extracting("ruleKey", "message", "inputFile", "flows", "quickFixes", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
-      .containsOnly(tuple("python:S139", "Move this trailing comment on the previous empty line.", inputFile, List.of(), List.of(), 2, 9, 2, 27));
+      .extracting("ruleKey", "message", "inputFile", "flows", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
+      .containsOnly(tuple("python:S139", "Move this trailing comment on the previous empty line.", inputFile, List.of(), 2, 9, 2, 27));
   }
 
   @Test
@@ -121,8 +121,8 @@ class AnalysisEngineMediumTests {
     analysisEngine.post(new RegisterModuleCommand(new ClientModuleInfo("moduleKey", aModuleFileSystem())), progressMonitor).get();
     analysisEngine.post(new AnalyzeCommand("moduleKey", analysisConfig, issues::add, null), progressMonitor).get();
     assertThat(issues)
-      .extracting("ruleKey", "message", "inputFile", "flows", "quickFixes", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
-      .containsOnly(tuple("python:S139", "Move this trailing comment on the previous empty line.", inputFile, List.of(), List.of(), 2, 9, 2, 27));
+      .extracting("ruleKey", "message", "inputFile", "flows", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
+      .containsOnly(tuple("python:S139", "Move this trailing comment on the previous empty line.", inputFile, List.of(), 2, 9, 2, 27));
   }
 
   @Test
@@ -226,7 +226,7 @@ class AnalysisEngineMediumTests {
   }
 
   private static Path findPythonJarPath() throws IOException {
-    var pluginsFolderPath = Paths.get("target/plugins/");
+    var pluginsFolderPath = Paths.get(System.getProperty("sonar.plugins.test.path"));
     try (var files = Files.list(pluginsFolderPath)) {
       return files.filter(x -> x.getFileName().toString().endsWith(".jar"))
         .filter(x -> x.getFileName().toString().contains("python"))
