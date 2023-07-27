@@ -89,13 +89,16 @@ public interface IssueService {
   CompletableFuture<CheckStatusChangePermittedResponse> checkStatusChangePermitted(CheckStatusChangePermittedParams params);
 
   /**
-   * Notifying SonarQube server that anticipated issue should be removed and removes it from local storage
-   *
-   * @return
+   * Notifying server that anticipated issue with given ID should be removed and removes it from local storage
+   * @return true if issue was found and actually deleted and false otherwise
    */
   @JsonRequest
   CompletableFuture<ReopenIssueResponse> reopenIssue(ReopenIssueParams params);
 
+  /**
+   * Notifying server that anticipated issues for given file should be removed and removes them from local storage
+   * @return true if entity for file was found and actually deleted and false otherwise
+   */
   @JsonRequest
   CompletableFuture<ReopenIssueResponse> reopenAllIssuesForFile(ReopenAllIssuesForFileParams params);
 }
