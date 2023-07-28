@@ -421,7 +421,7 @@ public class ServerFixture {
     }
 
     private void registerIssueAnticipateTransitionResponses() {
-      mockWebServer.addResponse("/api/issues/anticipate_transitions", new MockResponse().setResponseCode(200));
+      mockWebServer.addResponse("/api/issues/anticipated_transitions?projectKey=projectKey", new MockResponse().setResponseCode(200));
     }
 
     private void registerSourceApiResponses() {

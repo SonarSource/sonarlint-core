@@ -53,7 +53,7 @@ public class IssueServiceImpl implements IssueService {
 
   private static final String STATUS_CHANGE_PERMISSION_MISSING_REASON = "Marking an issue as resolved requires the 'Administer Issues' permission";
   private static final String UNSUPPORTED_SQ_VERSION_REASON = "Marking a local-only issue as resolved requires SonarQube 10.2+";
-  private static final Version SQ_ANTICIPATE_TRANSITIONS_MIN_VERSION = Version.create("10.2");
+  private static final Version SQ_ANTICIPATED_TRANSITIONS_MIN_VERSION = Version.create("10.2");
   private static final Map<IssueStatus, String> transitionByIssueStatus = Map.of(
     IssueStatus.WONT_FIX, "wontfix",
     IssueStatus.FALSE_POSITIVE, "falsepositive");
@@ -135,7 +135,7 @@ public class IssueServiceImpl implements IssueService {
       .flatMap(localOnlyIssueRepository::findByKey)
       .map(r -> {
         var anticipateTransitionsSupported = !serverApi.isSonarCloud() && storageService.connection(connectionId).serverInfo().read()
-          .map(version -> version.getVersion().satisfiesMinRequirement(SQ_ANTICIPATE_TRANSITIONS_MIN_VERSION)).orElse(false);
+          .map(version -> version.getVersion().satisfiesMinRequirement(SQ_ANTICIPATED_TRANSITIONS_MIN_VERSION)).orElse(false);
         // no way to easily check if 'Administer Issue' permission is granted, might fail later
         return CompletableFuture.completedFuture(toResponse(anticipateTransitionsSupported, UNSUPPORTED_SQ_VERSION_REASON));
       })
