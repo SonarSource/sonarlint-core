@@ -113,7 +113,7 @@ public class IssueTrackingServiceImpl implements IssueTrackingService {
       return new TrackWithServerIssuesResponse(clientTrackedIssuesByServerRelativePath.entrySet().stream().map(e -> {
         var serverRelativePath = e.getKey();
         var serverIssues = storageService.binding(binding).findings().load(activeBranch, serverRelativePath);
-        var localOnlyIssues = localOnlyIssueStorageService.get().load(params.getConfigurationScopeId(), serverRelativePath);
+        var localOnlyIssues = localOnlyIssueStorageService.get().loadForFile(params.getConfigurationScopeId(), serverRelativePath);
         var clientIssueTrackables = toTrackables(e.getValue());
         var matches = matchIssues(serverRelativePath, serverIssues, localOnlyIssues, clientIssueTrackables)
           .stream().<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>map(result -> {
