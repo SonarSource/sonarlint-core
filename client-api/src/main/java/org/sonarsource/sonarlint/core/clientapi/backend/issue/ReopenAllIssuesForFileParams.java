@@ -24,9 +24,9 @@ public class ReopenAllIssuesForFileParams {
   private final String configurationScopeId;
   private final String filePath;
 
-  public ReopenAllIssuesForFileParams(String configurationScopeId, String issueId) {
+  public ReopenAllIssuesForFileParams(String configurationScopeId, String filePath) {
     this.configurationScopeId = configurationScopeId;
-    this.filePath = issueId;
+    this.filePath = filePath;
   }
 
   public String getFilePath() {
