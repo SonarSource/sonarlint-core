@@ -144,7 +144,7 @@ public class XodusLocalOnlyIssueStore {
       var entity = entities.getFirst();
       if (entity != null) {
         var link = entity.getLink(ISSUE_TO_FILE_LINK_NAME);
-        if (link !=  null) {
+        if (link != null) {
           link.deleteLink(FILE_TO_ISSUES_LINK_NAME, entity);
         }
         return entity.delete();
@@ -288,6 +288,17 @@ public class XodusLocalOnlyIssueStore {
   public Optional<LocalOnlyIssue> find(UUID issueId) {
     return entityStore.computeInTransaction(txn -> findUnique(txn, ISSUE_ENTITY_TYPE, UUID_PROPERTY_NAME, issueId)
       .map(XodusLocalOnlyIssueStore::adapt));
+  }
+
+  public void purgeIssuesOlderThan(Instant limit) {
+    entityStore.executeInTransaction(txn -> txn.find(ISSUE_ENTITY_TYPE, RESOLUTION_DATE_PROPERTY_NAME, Instant.EPOCH, limit)
+      .forEach(issueEntity -> {
+        var fileEntity = issueEntity.getLink(ISSUE_TO_FILE_LINK_NAME);
+        if (fileEntity != null) {
+          fileEntity.deleteLink(FILE_TO_ISSUES_LINK_NAME, issueEntity);
+        }
+        issueEntity.delete();
+      }));
   }
 
   public void backup() {

@@ -46,7 +46,15 @@ public class LocalOnlyIssueFixtures {
     return aLocalOnlyIssueResolved(UUID.randomUUID());
   }
 
+  public static LocalOnlyIssue aLocalOnlyIssueResolved(Instant resolutionDate) {
+    return aLocalOnlyIssueResolved(UUID.randomUUID(), resolutionDate);
+  }
+
   public static LocalOnlyIssue aLocalOnlyIssueResolved(UUID id) {
+    return aLocalOnlyIssueResolved(id, Instant.now());
+  }
+
+  public static LocalOnlyIssue aLocalOnlyIssueResolved(UUID id, Instant resolutionDate) {
     return new LocalOnlyIssue(
       id,
       "file/path",
@@ -54,7 +62,7 @@ public class LocalOnlyIssueFixtures {
       new LineWithHash(1, "linehash"),
       "ruleKey",
       "message",
-      new LocalOnlyIssueResolution(IssueStatus.WONT_FIX, Instant.now().truncatedTo(ChronoUnit.MILLIS), "comment")
+      new LocalOnlyIssueResolution(IssueStatus.WONT_FIX, resolutionDate.truncatedTo(ChronoUnit.MILLIS), "comment")
     );
   }
 
