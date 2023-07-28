@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -170,6 +171,27 @@ class ServerHotspotUpdaterTest {
   void update_hotspots_with_pull_when_enabled_language_changed() {
     var timestamp = Instant.ofEpochMilli(123456789L);
     var lastHotspotEnabledLanguages = Set.of(Language.C);
+    var hotspotKey = "hotspotKey";
+    var hotspots = List.of(aServerHotspot(hotspotKey));
+    when(hotspotDownloader.downloadFromPull(hotspotApi, PROJECT_KEY, "branch", Optional.empty()))
+      .thenReturn(new HotspotDownloader.PullResult(timestamp, hotspots, Set.of()));
+    when(issueStore.getLastHotspotEnabledLanguages("branch")).thenReturn(lastHotspotEnabledLanguages);
+    when(issueStore.getLastHotspotSyncTimestamp("branch")).thenReturn(Optional.of(timestamp));
+
+    updater.sync(hotspotApi, PROJECT_KEY, "branch", Set.of(Language.C, Language.GO));
+
+    var hotspotCaptor = ArgumentCaptor.forClass(List.class);
+    verify(issueStore).mergeHotspots(eq("branch"), hotspotCaptor.capture(), eq(Set.of()), eq(timestamp), anySet());
+    assertThat(hotspotCaptor.getValue()).hasSize(1);
+    var capturedHotspot = (ServerHotspot) (hotspotCaptor.getValue().get(0));
+    assertThat(capturedHotspot.getKey()).isEqualTo(hotspotKey);
+    verify(hotspotDownloader).downloadFromPull(eq(hotspotApi), eq(projectBinding.projectKey()), eq("branch"), eq(Optional.empty()));
+  }
+
+  @Test
+  void update_hotspots_with_pull_when_last_enabled_language_were_not_there() {
+    var timestamp = Instant.ofEpochMilli(123456789L);
+    var lastHotspotEnabledLanguages = new HashSet<Language>();
     var hotspotKey = "hotspotKey";
     var hotspots = List.of(aServerHotspot(hotspotKey));
     when(hotspotDownloader.downloadFromPull(hotspotApi, PROJECT_KEY, "branch", Optional.empty()))
