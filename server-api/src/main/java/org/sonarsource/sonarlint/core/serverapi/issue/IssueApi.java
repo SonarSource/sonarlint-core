@@ -258,14 +258,14 @@ public class IssueApi {
   }
 
   public CompletableFuture<Void> anticipateTransitions(String projectKey, List<LocalOnlyIssue> resolvedLocalOnlyIssues) {
-    return serverApiHelper.postAsync("/api/issues/anticipate_transitions", JSON_CONTENT_TYPE, new Gson().toJson(adapt(projectKey, resolvedLocalOnlyIssues)))
+    return serverApiHelper.postAsync("/api/issues/anticipated_transitions?projectKey=" + projectKey, JSON_CONTENT_TYPE, new Gson().toJson(adapt(resolvedLocalOnlyIssues)))
       .thenAccept(response -> {
         // no data, return void
       });
   }
 
-  private static AnticipateTransitionBody adapt(String projectKey, List<LocalOnlyIssue> resolvedLocalOnlyIssues) {
-    return new AnticipateTransitionBody(projectKey, resolvedLocalOnlyIssues.stream().map(IssueApi::adapt).collect(Collectors.toList()));
+  private static List<IssueAnticipatedTransition> adapt(List<LocalOnlyIssue> resolvedLocalOnlyIssues) {
+    return resolvedLocalOnlyIssues.stream().map(IssueApi::adapt).collect(Collectors.toList());
   }
 
   private static IssueAnticipatedTransition adapt(LocalOnlyIssue issue) {
@@ -299,15 +299,7 @@ public class IssueApi {
     }
   }
 
-  public static class AnticipateTransitionBody {
-    public final String projectKey;
-    public final List<IssueAnticipatedTransition> anticipatedTransitions;
 
-    public AnticipateTransitionBody(String projectKey, List<IssueAnticipatedTransition> anticipatedTransitions) {
-      this.projectKey = projectKey;
-      this.anticipatedTransitions = anticipatedTransitions;
-    }
-  }
 
   private static class IssueAnticipatedTransition {
     public final String filePath;

@@ -192,10 +192,10 @@ class IssuesStatusChangeMediumTests {
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     var lastRequest = server.lastRequest();
-    assertThat(lastRequest.getPath()).isEqualTo("/api/issues/anticipate_transitions");
+    assertThat(lastRequest.getPath()).isEqualTo("/api/issues/anticipated_transitions?projectKey=projectKey");
     assertThat(lastRequest.getHeader("Content-Type")).isEqualTo("application/json; charset=utf-8");
     assertThat(lastRequest.getBody().readString(StandardCharsets.UTF_8)).isEqualTo(
-      "{\"projectKey\":\"projectKey\",\"anticipatedTransitions\":[{\"filePath\":\"file/path\",\"line\":1,\"hash\":\"linehash\",\"ruleKey\":\"ruleKey\",\"issueMessage\":\"message\",\"transition\":\"wontfix\"}]}");
+      "[{\"filePath\":\"file/path\",\"line\":1,\"hash\":\"linehash\",\"ruleKey\":\"ruleKey\",\"issueMessage\":\"message\",\"transition\":\"wontfix\"}]");
   }
 
   @Test
