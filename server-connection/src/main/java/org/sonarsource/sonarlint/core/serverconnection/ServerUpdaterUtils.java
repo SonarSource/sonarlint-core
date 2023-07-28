@@ -31,7 +31,7 @@ public class ServerUpdaterUtils {
    */
   public static Optional<Instant> computeLastSync(Set<Language> enabledLanguages, Optional<Instant> lastSync,
     Set<Language> lastEnabledLanguages) {
-    if (!lastEnabledLanguages.isEmpty() && (!lastEnabledLanguages.equals(enabledLanguages))) {
+    if (lastEnabledLanguages.isEmpty() || (!lastEnabledLanguages.equals(enabledLanguages))) {
       lastSync = Optional.empty();
     }
     return lastSync;
