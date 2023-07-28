@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -98,14 +99,33 @@ public class XodusLocalOnlyIssueStore {
     });
   }
 
-  public List<LocalOnlyIssue> load(String configurationScopeId, String filePath) {
+  public List<LocalOnlyIssue> loadForFile(String configurationScopeId, String filePath) {
     return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, CONFIGURATION_SCOPE_ID_ENTITY_TYPE, NAME_PROPERTY_NAME, configurationScopeId)
-      .map(branch -> branch.getLinks(CONFIGURATION_SCOPE_ID_TO_FILES_LINK_NAME))
+      .map(configScopeId -> configScopeId.getLinks(CONFIGURATION_SCOPE_ID_TO_FILES_LINK_NAME))
       .flatMap(files -> findUniqueAmong(files, PATH_PROPERTY_NAME, filePath))
       .map(fileToLoad -> fileToLoad.getLinks(XodusLocalOnlyIssueStore.FILE_TO_ISSUES_LINK_NAME))
       .map(issueEntities -> StreamSupport.stream(issueEntities.spliterator(), false)
         .map(XodusLocalOnlyIssueStore::adapt)
         .collect(Collectors.toList()))
+      .orElseGet(Collections::emptyList));
+  }
+
+  public List<LocalOnlyIssue> loadAll(String configurationScopeId) {
+    return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, CONFIGURATION_SCOPE_ID_ENTITY_TYPE, NAME_PROPERTY_NAME, configurationScopeId)
+      .map(configScopeId -> configScopeId.getLinks(CONFIGURATION_SCOPE_ID_TO_FILES_LINK_NAME))
+      .flatMap(filesIterable -> {
+        List<LocalOnlyIssue> allIssues = new ArrayList<>();
+        var files = StreamSupport.stream(filesIterable.spliterator(), false)
+          .collect(Collectors.toList());
+        files.forEach(file -> {
+          EntityIterable issueEntitiesForFile = file.getLinks(XodusLocalOnlyIssueStore.FILE_TO_ISSUES_LINK_NAME);
+          List<LocalOnlyIssue> localIssuesForFile = StreamSupport.stream(issueEntitiesForFile.spliterator(), false)
+            .map(XodusLocalOnlyIssueStore::adapt)
+            .collect(Collectors.toList());
+          allIssues.addAll(localIssuesForFile);
+        });
+        return Optional.of(allIssues);
+      })
       .orElseGet(Collections::emptyList));
   }
 
@@ -115,6 +135,30 @@ public class XodusLocalOnlyIssueStore {
       var fileEntity = getOrCreateFile(configurationScope, issue.getServerRelativePath(), txn);
       updateOrCreateIssue(fileEntity, issue, txn);
       return true;
+    });
+  }
+
+  public boolean removeIssue(UUID issueId) {
+    return entityStore.computeInTransaction(txn -> {
+      var entities = txn.find(XodusLocalOnlyIssueStore.ISSUE_ENTITY_TYPE, UUID_PROPERTY_NAME, issueId);
+      var entity = entities.getFirst();
+      if (entity != null) {
+        var link = entity.getLink(ISSUE_TO_FILE_LINK_NAME);
+        if (link != null) {
+          link.deleteLink(FILE_TO_ISSUES_LINK_NAME, entity);
+        }
+        return entity.delete();
+      }
+      return false;
+    });
+  }
+
+  public boolean removeAllIssuesForFile(String configurationScopeId, String filePath) {
+    return entityStore.computeInTransaction(txn -> {
+      var configurationScope = getOrCreateConfigurationScopeId(configurationScopeId, txn);
+      var fileEntity = getOrCreateFile(configurationScope, filePath, txn);
+      fileEntity.getLinks(FILE_TO_ISSUES_LINK_NAME).forEach(Entity::delete);
+      return fileEntity.delete();
     });
   }
 
@@ -244,6 +288,17 @@ public class XodusLocalOnlyIssueStore {
   public Optional<LocalOnlyIssue> find(UUID issueId) {
     return entityStore.computeInTransaction(txn -> findUnique(txn, ISSUE_ENTITY_TYPE, UUID_PROPERTY_NAME, issueId)
       .map(XodusLocalOnlyIssueStore::adapt));
+  }
+
+  public void purgeIssuesOlderThan(Instant limit) {
+    entityStore.executeInTransaction(txn -> txn.find(ISSUE_ENTITY_TYPE, RESOLUTION_DATE_PROPERTY_NAME, Instant.EPOCH, limit)
+      .forEach(issueEntity -> {
+        var fileEntity = issueEntity.getLink(ISSUE_TO_FILE_LINK_NAME);
+        if (fileEntity != null) {
+          fileEntity.deleteLink(FILE_TO_ISSUES_LINK_NAME, issueEntity);
+        }
+        issueEntity.delete();
+      }));
   }
 
   public void backup() {

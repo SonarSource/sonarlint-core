@@ -70,10 +70,10 @@ public class ConfigurationScopeStorageFixture {
         entityStore.registerCustomPropertyType(txn, Instant.class, new InstantBinding());
         entityStore.registerCustomPropertyType(txn, UUID.class, new UuidBinding());
         entityStore.registerCustomPropertyType(txn, IssueStatus.class, new IssueStatusBinding());
+        var scopeEntity = txn.newEntity("Scope");
         localOnlyIssues.stream()
           .collect(Collectors.groupingBy(LocalOnlyIssue::getServerRelativePath))
           .forEach((filePath, localOnlyIssues) -> {
-            var scopeEntity = txn.newEntity("Scope");
             var fileEntity = txn.newEntity("File");
             localOnlyIssues.forEach(issue -> {
               var issueEntity = txn.newEntity("Issue");

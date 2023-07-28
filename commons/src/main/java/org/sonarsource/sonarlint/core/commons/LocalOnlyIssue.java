@@ -81,4 +81,5 @@ public class LocalOnlyIssue {
   public void resolve(IssueStatus newStatus) {
     resolution = new LocalOnlyIssueResolution(newStatus, Instant.now(), null);
   }
+
 }

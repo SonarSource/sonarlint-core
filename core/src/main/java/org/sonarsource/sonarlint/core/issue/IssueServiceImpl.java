@@ -38,9 +38,13 @@ import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangeP
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueService;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenAllIssuesForFileParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenIssueParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenIssueResponse;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
+import org.sonarsource.sonarlint.core.local.only.XodusLocalOnlyIssueStore;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverconnection.StorageService;
@@ -108,7 +112,7 @@ public class IssueServiceImpl implements IssueService {
             issue.resolve(coreStatus);
             var localOnlyIssueStore = localOnlyIssueStorageService.get();
             return connection.issue()
-              .anticipateTransitions(binding.getSonarProjectKey(), concat(localOnlyIssueStore.load(configurationScopeId, issue.getServerRelativePath()), issue))
+              .anticipateTransitions(binding.getSonarProjectKey(), concat(localOnlyIssueStore.loadAll(configurationScopeId), issue))
               .thenAccept(nothing -> {
                 localOnlyIssueStore.storeLocalOnlyIssue(params.getConfigurationScopeId(), issue);
                 telemetryService.issueStatusChanged(issue.getRuleKey());
@@ -120,6 +124,12 @@ public class IssueServiceImpl implements IssueService {
 
   private static List<LocalOnlyIssue> concat(List<LocalOnlyIssue> issues, LocalOnlyIssue issue) {
     return Stream.concat(issues.stream(), Stream.of(issue)).collect(Collectors.toList());
+  }
+
+  private static List<LocalOnlyIssue> subtract(List<LocalOnlyIssue> allIssues, List<LocalOnlyIssue> issueToSubtract) {
+    return allIssues.stream()
+      .filter(it -> issueToSubtract.stream().noneMatch(issue -> issue.getId().equals(it.getId())))
+      .collect(Collectors.toList());
   }
 
   @Override
@@ -166,6 +176,54 @@ public class IssueServiceImpl implements IssueService {
       .orElseGet(() -> addCommentOnServerIssue(configurationScopeId, issueKey, params.getText()));
   }
 
+  @Override
+  public CompletableFuture<ReopenIssueResponse> reopenIssue(ReopenIssueParams params) {
+    var issueId = params.getIssueId();
+    var issueUuidOptional = asUUID(issueId);
+    if (issueUuidOptional.isEmpty()) {
+      return CompletableFuture.completedFuture(new ReopenIssueResponse(false));
+    }
+    var issueUuid = issueUuidOptional.get();
+    var configurationScopeId = params.getConfigurationScopeId();
+    var localOnlyIssueStore = localOnlyIssueStorageService.get();
+    return removeIssue(localOnlyIssueStore, configurationScopeId, issueUuid)
+      .thenApply(v -> localOnlyIssueStorageService.get().removeIssue(issueUuid))
+      .thenApply(ReopenIssueResponse::new);
+  }
+
+  @Override
+  public CompletableFuture<ReopenIssueResponse> reopenAllIssuesForFile(ReopenAllIssuesForFileParams params) {
+    var configurationScopeId = params.getConfigurationScopeId();
+    var filePath = params.getFilePath();
+    var localOnlyIssueStore = localOnlyIssueStorageService.get();
+    return removeAllIssuesForFile(localOnlyIssueStore, configurationScopeId, filePath)
+      .thenApply(v -> localOnlyIssueStorageService.get().removeAllIssuesForFile(configurationScopeId, filePath))
+      .thenApply(ReopenIssueResponse::new);
+  }
+
+  private CompletableFuture<Void> removeAllIssuesForFile(XodusLocalOnlyIssueStore localOnlyIssueStore,
+    String configurationScopeId, String filePath) {
+    var allIssues = localOnlyIssueStore.loadAll(configurationScopeId);
+    var issuesForFile = localOnlyIssueStore.loadForFile(configurationScopeId, filePath);
+    var issuesToSync = subtract(allIssues, issuesForFile);
+    var optionalBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
+    return optionalBinding
+      .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
+      .map(connection -> connection.issue().anticipateTransitions(optionalBinding.get().getSonarProjectKey(), issuesToSync))
+      .orElseGet(() -> CompletableFuture.completedFuture(null));
+  }
+
+  private CompletableFuture<Void> removeIssue(XodusLocalOnlyIssueStore localOnlyIssueStore,
+    String configurationScopeId, UUID issueId) {
+    var allIssues = localOnlyIssueStore.loadAll(configurationScopeId);
+    var issuesToSync = allIssues.stream().filter(it -> !it.getId().equals(issueId)).collect(Collectors.toList());
+    var optionalBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
+    return optionalBinding
+      .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
+      .map(connection -> connection.issue().anticipateTransitions(optionalBinding.get().getSonarProjectKey(), issuesToSync))
+      .orElseGet(() -> CompletableFuture.completedFuture(null));
+  }
+
   private Optional<CompletableFuture<Void>> setCommentOnLocalOnlyIssue(String configurationScopeId, UUID issueId, String comment) {
     var localOnlyIssueStore = localOnlyIssueStorageService.get();
     return localOnlyIssueStore.find(issueId)
@@ -174,7 +232,7 @@ public class IssueServiceImpl implements IssueService {
         if (resolution != null) {
           // should always be true, we store only resolved local-only issues
           resolution.setComment(comment);
-          var issuesToSync = localOnlyIssueStore.load(configurationScopeId, commentedIssue.getServerRelativePath());
+          var issuesToSync = localOnlyIssueStore.loadAll(configurationScopeId);
           issuesToSync.replaceAll(issue -> issue.getId().equals(issueId) ? commentedIssue : issue);
           var optionalBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
           return optionalBinding
@@ -204,4 +262,5 @@ public class IssueServiceImpl implements IssueService {
       return Optional.empty();
     }
   }
+
 }

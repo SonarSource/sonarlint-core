@@ -55,7 +55,7 @@ class XodusLocalOnlyIssueStoreTests {
 
   @Test
   void should_return_empty_when_file_path_unknown() {
-    var issues = store.load("configScopeId", "path");
+    var issues = store.loadForFile("configScopeId", "path");
 
     assertThat(issues).isEmpty();
   }
@@ -65,7 +65,7 @@ class XodusLocalOnlyIssueStoreTests {
     var localOnlyIssue = aLocalOnlyIssueResolved();
     store.storeLocalOnlyIssue("configScopeId", localOnlyIssue);
 
-    var storedIssues = store.load("configScopeId", "file/path");
+    var storedIssues = store.loadForFile("configScopeId", "file/path");
     assertThat(storedIssues).usingRecursiveFieldByFieldElementComparator()
       .containsOnly(localOnlyIssue);
   }
@@ -75,7 +75,7 @@ class XodusLocalOnlyIssueStoreTests {
     var localOnlyIssue = aLocalOnlyIssueResolved();
     store.storeLocalOnlyIssue("configScopeId", localOnlyIssue);
 
-    var storedIssues = store.load("configScopeId", "file/path");
+    var storedIssues = store.loadForFile("configScopeId", "file/path");
     assertThat(storedIssues).usingRecursiveFieldByFieldElementComparator()
         .containsOnly(localOnlyIssue);
   }
@@ -89,7 +89,7 @@ class XodusLocalOnlyIssueStoreTests {
     store.storeLocalOnlyIssue("configScopeId", localOnlyIssue2);
     store.storeLocalOnlyIssue("configScopeId", localOnlyIssue3);
 
-    var storedIssues = store.load("configScopeId", "file/path");
+    var storedIssues = store.loadForFile("configScopeId", "file/path");
     assertThat(storedIssues).usingRecursiveFieldByFieldElementComparator()
         .containsExactly(localOnlyIssue1, localOnlyIssue2, localOnlyIssue3);
   }
@@ -99,7 +99,7 @@ class XodusLocalOnlyIssueStoreTests {
     var localOnlyIssue = aLocalOnlyIssueResolved();
     store.storeLocalOnlyIssue("configScopeId", localOnlyIssue);
 
-    var storedIssues = store.load("configScopeId", "wrong/path");
+    var storedIssues = store.loadForFile("configScopeId", "wrong/path");
     assertThat(storedIssues).isEmpty();
   }
 
@@ -108,8 +108,33 @@ class XodusLocalOnlyIssueStoreTests {
     var localOnlyIssue = aLocalOnlyIssueResolved();
     store.storeLocalOnlyIssue("configScopeId", localOnlyIssue);
 
-    var storedIssues = store.load("wrongConfigScopeId", "file/path");
+    var storedIssues = store.loadForFile("wrongConfigScopeId", "file/path");
     assertThat(storedIssues).isEmpty();
   }
+
+  @Test
+  void should_reopen_issue() {
+    var localOnlyIssue = aLocalOnlyIssueResolved();
+    store.storeLocalOnlyIssue("configScopeId", localOnlyIssue);
+    assertThat(store.loadForFile("configScopeId", "file/path")).usingRecursiveFieldByFieldElementComparator()
+      .containsExactly(localOnlyIssue);
+
+    store.removeIssue(localOnlyIssue.getId());
+    assertThat(store.loadForFile("configScopeId", "file/path")).isEmpty();
+  }
+
+  @Test
+  void should_reopen_all_issues_for_file() {
+    var localOnlyIssue1 = aLocalOnlyIssueResolved();
+    var localOnlyIssue2 = aLocalOnlyIssueResolved();
+    store.storeLocalOnlyIssue("configScopeId", localOnlyIssue1);
+    store.storeLocalOnlyIssue("configScopeId", localOnlyIssue2);
+    assertThat(store.loadForFile("configScopeId", "file/path")).usingRecursiveFieldByFieldElementComparator()
+      .containsExactly(localOnlyIssue1, localOnlyIssue2);
+
+    store.removeAllIssuesForFile("configScopeId", "file/path");
+    assertThat(store.loadForFile("configScopeId", "file/path")).isEmpty();
+  }
+
 
 }
