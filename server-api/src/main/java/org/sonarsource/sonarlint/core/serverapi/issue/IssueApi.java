@@ -257,7 +257,7 @@ public class IssueApi {
       });
   }
 
-  public CompletableFuture<Void> anticipateTransitions(String projectKey, List<LocalOnlyIssue> resolvedLocalOnlyIssues) {
+  public CompletableFuture<Void> anticipatedTransitions(String projectKey, List<LocalOnlyIssue> resolvedLocalOnlyIssues) {
     return serverApiHelper.postAsync("/api/issues/anticipated_transitions?projectKey=" + projectKey, JSON_CONTENT_TYPE, new Gson().toJson(adapt(resolvedLocalOnlyIssues)))
       .thenAccept(response -> {
         // no data, return void

@@ -112,7 +112,7 @@ public class IssueServiceImpl implements IssueService {
             issue.resolve(coreStatus);
             var localOnlyIssueStore = localOnlyIssueStorageService.get();
             return connection.issue()
-              .anticipateTransitions(binding.getSonarProjectKey(), concat(localOnlyIssueStore.loadAll(configurationScopeId), issue))
+              .anticipatedTransitions(binding.getSonarProjectKey(), concat(localOnlyIssueStore.loadAll(configurationScopeId), issue))
               .thenAccept(nothing -> {
                 localOnlyIssueStore.storeLocalOnlyIssue(params.getConfigurationScopeId(), issue);
                 telemetryService.issueStatusChanged(issue.getRuleKey());
@@ -209,7 +209,7 @@ public class IssueServiceImpl implements IssueService {
     var optionalBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
     return optionalBinding
       .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
-      .map(connection -> connection.issue().anticipateTransitions(optionalBinding.get().getSonarProjectKey(), issuesToSync))
+      .map(connection -> connection.issue().anticipatedTransitions(optionalBinding.get().getSonarProjectKey(), issuesToSync))
       .orElseGet(() -> CompletableFuture.completedFuture(null));
   }
 
@@ -220,7 +220,7 @@ public class IssueServiceImpl implements IssueService {
     var optionalBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
     return optionalBinding
       .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
-      .map(connection -> connection.issue().anticipateTransitions(optionalBinding.get().getSonarProjectKey(), issuesToSync))
+      .map(connection -> connection.issue().anticipatedTransitions(optionalBinding.get().getSonarProjectKey(), issuesToSync))
       .orElseGet(() -> CompletableFuture.completedFuture(null));
   }
 
@@ -237,7 +237,7 @@ public class IssueServiceImpl implements IssueService {
           var optionalBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
           return optionalBinding
             .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
-            .map(connection -> connection.issue().anticipateTransitions(optionalBinding.get().getSonarProjectKey(), issuesToSync))
+            .map(connection -> connection.issue().anticipatedTransitions(optionalBinding.get().getSonarProjectKey(), issuesToSync))
             .map(future -> future.thenAccept(nothing -> localOnlyIssueStore.storeLocalOnlyIssue(configurationScopeId, commentedIssue)));
         }
         return Optional.empty();
