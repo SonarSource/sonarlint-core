@@ -194,7 +194,7 @@ public class IssueServiceImpl implements IssueService {
   @Override
   public CompletableFuture<ReopenIssueResponse> reopenAllIssuesForFile(ReopenAllIssuesForFileParams params) {
     var configurationScopeId = params.getConfigurationScopeId();
-    var filePath = params.getFilePath();
+    var filePath = params.getRelativePath();
     var localOnlyIssueStore = localOnlyIssueStorageService.get();
     return removeAllIssuesForFile(localOnlyIssueStore, configurationScopeId, filePath)
       .thenApply(v -> localOnlyIssueStorageService.get().removeAllIssuesForFile(configurationScopeId, filePath))
