@@ -49,27 +49,14 @@ public class ClientProxySelector extends ProxySelector {
   public List<Proxy> select(URI uri) {
     try {
       return client.selectProxies(new SelectProxiesParams(uri.toString())).get().getProxies().stream()
-        .map(p -> {
-          var port = p.getPort();
-          if (port == -1) {
-            if ("http".equalsIgnoreCase(uri.getScheme())) {
-              port = 80;
-            } else if ("https".equalsIgnoreCase(uri.getScheme())) {
-              port = 443;
-            } else {
-              throw new IllegalStateException("Port is not recognized for URI: " + uri);
-            }
-          } else if (port < -1 || port > 65535) {
-            throw new IllegalStateException("Port is outside the valid range for URI: " + uri);
-          }
-          return p.getType() == Proxy.Type.DIRECT ? Proxy.NO_PROXY
-            : new Proxy(p.getType(), new InetSocketAddress(p.getHostname(), port));
-        })
+        .map(p -> p.getType() == Proxy.Type.DIRECT ? Proxy.NO_PROXY
+          : new Proxy(p.getType(), new InetSocketAddress(p.getHostname(),
+            p.getPort())))
         .collect(Collectors.toList());
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       logger.warn("Interrupted!", e);
-    } catch (IllegalStateException | ExecutionException e) {
+    } catch (ExecutionException e) {
       logger.warn("Unable to get proxy", e);
     }
     return List.of();
