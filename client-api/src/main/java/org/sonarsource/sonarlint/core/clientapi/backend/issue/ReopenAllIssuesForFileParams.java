@@ -22,15 +22,15 @@ package org.sonarsource.sonarlint.core.clientapi.backend.issue;
 public class ReopenAllIssuesForFileParams {
 
   private final String configurationScopeId;
-  private final String filePath;
+  private final String relativePath;
 
-  public ReopenAllIssuesForFileParams(String configurationScopeId, String filePath) {
+  public ReopenAllIssuesForFileParams(String configurationScopeId, String relativePath) {
     this.configurationScopeId = configurationScopeId;
-    this.filePath = filePath;
+    this.relativePath = relativePath;
   }
 
-  public String getFilePath() {
-    return filePath;
+  public String getRelativePath() {
+    return relativePath;
   }
 
   public String getConfigurationScopeId() {
