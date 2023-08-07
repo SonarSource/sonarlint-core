@@ -348,6 +348,11 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintClientBuilder withDirectProxy() {
+      this.proxy = ProxyDto.NO_PROXY;
+      return this;
+    }
+
     public SonarLintClientBuilder withHttpProxyAuth(String username, String password) {
       this.proxyAuth = new GetProxyPasswordAuthenticationResponse(username, password);
       return this;

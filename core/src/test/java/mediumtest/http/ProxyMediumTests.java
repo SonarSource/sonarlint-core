@@ -122,6 +122,32 @@ class ProxyMediumTests {
   }
 
   @Test
+  void it_should_honor_http_direct_proxy_settings() {
+    var fakeClient = newFakeClient()
+      .withDirectProxy()
+      .build();
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
+        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
+      .build(fakeClient);
+    sonarqubeMock.stubFor(get("/api/rules/show.protobuf?key=python:S139")
+      .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Rules.ShowResponse.newBuilder()
+        .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc(
+          "desc").setHtmlNote("extendedDesc from server").build())
+        .build()))));
+
+    var details = getEffectiveRuleDetails("scopeId", "python:S139");
+
+    assertThat(details.getDescription().getLeft().getHtmlContent()).contains("extendedDesc from server");
+
+    sonarqubeMock.verify(getRequestedFor(urlEqualTo("/api/rules/show.protobuf?key=python:S139")));
+    proxyMock.verify(0, getRequestedFor(urlEqualTo("/api/rules/show.protobuf?key=python:S139")));
+  }
+
+  @Test
   @Tag(PROXY_AUTH_ENABLED)
   void it_should_honor_http_proxy_authentication() {
     var proxyLogin = "proxyLogin";
@@ -182,7 +208,36 @@ class ProxyMediumTests {
 
   @Test
   @Tag(PROXY_AUTH_ENABLED)
-  void it_should_fail_if_proxy_port_is_not_valid() {
+  void it_should_fail_if_proxy_port_is_smaller_than_valid_range() {
+    var proxyLogin = "proxyLogin";
+    var fakeClient = newFakeClient()
+      .withHttpProxy("localhost", -1)
+      .withHttpProxyAuth(proxyLogin, null)
+      .build();
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
+        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
+      .build(fakeClient);
+    sonarqubeMock.stubFor(get("/api/rules/show.protobuf?key=python:S139")
+      .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Rules.ShowResponse.newBuilder()
+        .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc(
+          "desc").setHtmlNote("extendedDesc from server").build())
+        .build()))));
+
+    var details = getEffectiveRuleDetails("scopeId", "python:S139");
+
+    assertThat(details.getDescription().getLeft().getHtmlContent()).contains("extendedDesc from server");
+
+    assertThat(logTester.logs()).contains("Unable to get proxy");
+    assertThat(logTester.logs()).anyMatch(s -> s.contains("Port is outside the valid range for hostname: localhost"));
+  }
+
+  @Test
+  @Tag(PROXY_AUTH_ENABLED)
+  void it_should_fail_if_proxy_port_is_higher_than_valid_range() {
     var proxyLogin = "proxyLogin";
     var fakeClient = newFakeClient()
       .withHttpProxy("localhost", 70000)
