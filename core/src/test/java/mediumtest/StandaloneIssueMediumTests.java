@@ -60,6 +60,7 @@ import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
+import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
@@ -172,8 +173,9 @@ class StandaloneIssueMediumTests {
         .build(),
       issues::add, null,
       null);
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getRuleDescriptionContextKey).containsOnly(
-      tuple("javascript:S1481", 2, "foo.js", Optional.empty()));
+    assertThat(issues)
+      .extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getRuleDescriptionContextKey, Issue::getCleanCodeAttribute, Issue::getImpacts)
+      .containsOnly(tuple("javascript:S1481", 2, "foo.js", Optional.empty(), CleanCodeAttribute.defaultCleanCodeAttribute(), Map.of()));
 
     // SLCORE-160
     inputFile = prepareInputFile("node_modules/foo.js", content, false);
