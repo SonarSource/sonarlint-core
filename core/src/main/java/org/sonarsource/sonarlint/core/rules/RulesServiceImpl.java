@@ -196,7 +196,8 @@ public class RulesServiceImpl implements RulesService {
 
   @NotNull
   private static RuleDefinitionDto convert(SonarLintRuleDefinition r) {
-    return new RuleDefinitionDto(r.getKey(), r.getName(), r.getDefaultSeverity(), r.getType(), convert(r.getParams()), r.isActiveByDefault(), r.getLanguage());
+    return new RuleDefinitionDto(r.getKey(), r.getName(), r.getDefaultSeverity(), r.getType(), r.getCleanCodeAttribute().orElse(null), r.getDefaultImpacts(),
+      convert(r.getParams()), r.isActiveByDefault(), r.getLanguage());
   }
 
   private static Map<String, RuleParamDefinitionDto> convert(Map<String, SonarLintRuleParamDefinition> params) {
