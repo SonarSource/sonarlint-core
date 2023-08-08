@@ -57,6 +57,8 @@ class RuleDetailsAdapter {
       ruleDetails.getName(),
       ruleDetails.getDefaultSeverity(),
       ruleDetails.getType(),
+      ruleDetails.getCleanCodeAttribute().orElse(null),
+      ruleDetails.getDefaultImpacts(),
       transformDescriptions(ruleDetails, contextKey),
       transform(ruleDetails.getParams()),
       ruleDetails.getLanguage());

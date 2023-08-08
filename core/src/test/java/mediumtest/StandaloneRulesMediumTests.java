@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.rules.ListAllStandaloneR
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleDefinitionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleParamDefinitionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleParamType;
+import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -86,6 +87,8 @@ class StandaloneRulesMediumTests {
 
     var ruleDetails = backend.getRulesService().getStandaloneRuleDetails(new GetStandaloneRuleDescriptionParams("java:S1176")).get();
 
+    assertThat(ruleDetails.getRuleDefinition().getCleanCodeAttribute()).hasValue(CleanCodeAttribute.defaultCleanCodeAttribute());
+    assertThat(ruleDetails.getRuleDefinition().getDefaultImpacts()).isEmpty();
     assertThat(ruleDetails.getRuleDefinition().getName()).isEqualTo("Public types, methods and fields (API) should be documented with Javadoc");
     assertThat(ruleDetails.getRuleDefinition().getDefaultSeverity()).isEqualTo(IssueSeverity.MAJOR);
     assertThat(ruleDetails.getRuleDefinition().getType()).isEqualTo(RuleType.CODE_SMELL);
