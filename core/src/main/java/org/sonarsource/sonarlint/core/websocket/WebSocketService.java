@@ -65,7 +65,7 @@ public class WebSocketService {
       connectionConfigurationRepository.getConnectionById(connectionId) : null;
     var isSonarCloudConnection = connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD);
     var projectKey = subscribedProjectKeysByConfigScopes.remove(bindingConfigChangedEvent.getNewConfig().getConfigScopeId());
-    if(!subscribedProjectKeysByConfigScopes.containsValue(projectKey)) {
+    if(projectKey != null && !subscribedProjectKeysByConfigScopes.containsValue(projectKey)) {
       unsubscribe(projectKey);
     }
     if(newProjectKey != null && isSonarCloudConnection && !connection.isDisableNotifications()) {
