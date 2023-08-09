@@ -19,12 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.http;
 
+import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.http.WebSocket;
 import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
@@ -247,5 +251,43 @@ class ApacheHttpClientAdapter implements HttpClient {
     }
 
   }
+
+  public WebSocket createWebSocketConnection(String url) {
+    var latch = new CountDownLatch(1);
+
+    return java.net.http.HttpClient
+        .newHttpClient()
+        .newWebSocketBuilder()
+        .header("Authorization", "Bearer " + usernameOrToken)
+        .buildAsync(URI.create(url), new WebSocketClient(latch))
+        .join();
+  }
+
+  private static class WebSocketClient implements WebSocket.Listener {
+
+    private final CountDownLatch latch;
+
+    public WebSocketClient(CountDownLatch latch) { this.latch = latch; }
+
+    @Override
+    public void onOpen(WebSocket webSocket) {
+      SonarLintLogger.get().debug("onOpen using subprotocol " + webSocket.getSubprotocol());
+      WebSocket.Listener.super.onOpen(webSocket);
+    }
+
+    @Override
+    public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
+      SonarLintLogger.get().debug("onText received " + data);
+      latch.countDown();
+      return WebSocket.Listener.super.onText(webSocket, data, last);
+    }
+
+    @Override
+    public void onError(WebSocket webSocket, Throwable error) {
+      SonarLintLogger.get().debug("Bad day! " + webSocket.toString());
+      WebSocket.Listener.super.onError(webSocket, error);
+    }
+  }
+
 
 }
