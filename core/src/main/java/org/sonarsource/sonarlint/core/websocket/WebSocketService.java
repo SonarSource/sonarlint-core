@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
@@ -44,13 +45,13 @@ public class WebSocketService {
   private static final String WEBSOCKET_URL = "wss://squad-5-events-api.sc-dev.io/";
   private final Map<String, String> subscribedProjectKeysByConfigScopes = new HashMap<>();
   private final Set<String> connectionIdsInterestedInNotifications = new HashSet<>();
-  private ConnectionConfigurationRepository connectionConfigurationRepository;
-  private ConfigurationRepository configurationRepository;
-
-  private ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider;
+  private final ConnectionConfigurationRepository connectionConfigurationRepository;
+  private final ConfigurationRepository configurationRepository;
+  private final ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider;
   private WebSocket ws;
 
-  public WebSocketService(ConnectionConfigurationRepository connectionConfigurationRepository, ConfigurationRepository configurationRepository, ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider) {
+  public WebSocketService(ConnectionConfigurationRepository connectionConfigurationRepository, ConfigurationRepository configurationRepository,
+    ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider) {
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.configurationRepository = configurationRepository;
     this.connectionAwareHttpClientProvider = connectionAwareHttpClientProvider;
@@ -61,14 +62,13 @@ public class WebSocketService {
     var newProjectKey = bindingConfigChangedEvent.getNewConfig().getSonarProjectKey();
     var configScopeId = bindingConfigChangedEvent.getNewConfig().getConfigScopeId();
     String connectionId = bindingConfigChangedEvent.getNewConfig().getConnectionId();
-    var connection = connectionId != null ?
-      connectionConfigurationRepository.getConnectionById(connectionId) : null;
+    var connection = connectionId != null ? connectionConfigurationRepository.getConnectionById(connectionId) : null;
     var isSonarCloudConnection = connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD);
     var projectKey = subscribedProjectKeysByConfigScopes.remove(bindingConfigChangedEvent.getNewConfig().getConfigScopeId());
-    if(projectKey != null && !subscribedProjectKeysByConfigScopes.containsValue(projectKey)) {
+    if (projectKey != null && !subscribedProjectKeysByConfigScopes.containsValue(projectKey)) {
       unsubscribe(projectKey);
     }
-    if(newProjectKey != null && isSonarCloudConnection && !connection.isDisableNotifications()) {
+    if (newProjectKey != null && isSonarCloudConnection && !connection.isDisableNotifications()) {
       createConnectionIfNeeded(connectionId);
       subscribe(configScopeId, newProjectKey);
     }
@@ -92,7 +92,7 @@ public class WebSocketService {
   @Subscribe
   public void handleEvent(ConfigurationScopeRemovedEvent configurationScopeRemovedEvent) {
     var projectKey = subscribedProjectKeysByConfigScopes.remove(configurationScopeRemovedEvent.getRemovedConfigurationScopeId());
-    if(!subscribedProjectKeysByConfigScopes.containsValue(projectKey)) {
+    if (!subscribedProjectKeysByConfigScopes.containsValue(projectKey)) {
       unsubscribe(projectKey);
     }
   }
@@ -116,10 +116,11 @@ public class WebSocketService {
 
   @Subscribe
   public void handleEvent(ConnectionConfigurationUpdatedEvent connectionConfigurationUpdatedEvent) {
-    var connection = connectionConfigurationRepository.getConnectionById(connectionConfigurationUpdatedEvent.getUpdatedConnectionId());
-    if(connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD)) { // TODO what if connection type changed from SQ to SC or vice versa?
-      closeConnection(connectionConfigurationUpdatedEvent.getUpdatedConnectionId());
-      if(!connection.isDisableNotifications() || !connectionIdsInterestedInNotifications.isEmpty()) {
+    var updatedConnectionId = connectionConfigurationUpdatedEvent.getUpdatedConnectionId();
+    var connection = connectionConfigurationRepository.getConnectionById(updatedConnectionId);
+    if (connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD)) { // TODO what if connection type changed from SQ to SC or vice versa?
+      closeConnection(updatedConnectionId);
+      if (!connection.isDisableNotifications() || !connectionIdsInterestedInNotifications.isEmpty()) {
         createConnectionIfNeeded(connection.getConnectionId());
         resubscribeAll();
       }
@@ -129,7 +130,7 @@ public class WebSocketService {
   @Subscribe
   public void handleEvent(ConnectionConfigurationRemovedEvent connectionConfigurationRemovedEvent) {
     String removedConnectionId = connectionConfigurationRemovedEvent.getRemovedConnectionId();
-    if(connectionIdsInterestedInNotifications.size() == 1 && connectionIdsInterestedInNotifications.contains(removedConnectionId)) {
+    if (connectionIdsInterestedInNotifications.size() == 1 && connectionIdsInterestedInNotifications.contains(removedConnectionId)) {
       closeConnection(removedConnectionId);
     }
   }
@@ -168,16 +169,27 @@ public class WebSocketService {
 
   private void createConnectionIfNeeded(String connectionId) {
     connectionIdsInterestedInNotifications.add(connectionId);
-    if(this.ws == null) {
+    if (this.ws == null) {
       this.ws = connectionAwareHttpClientProvider.getHttpClient(connectionId).createWebSocketConnection(WEBSOCKET_URL);
     }
   }
 
   private void closeConnection(String connectionId) {
+    connectionIdsInterestedInNotifications.remove(connectionId);
+    closeSocket();
+  }
+
+  private void closeSocket() {
     if (this.ws != null) {
       this.ws.sendClose(WebSocket.NORMAL_CLOSURE, "");
-      connectionIdsInterestedInNotifications.remove(connectionId);
       this.ws = null;
     }
+  }
+
+  @PreDestroy
+  public void shutdown() {
+    closeSocket();
+    connectionIdsInterestedInNotifications.clear();
+    subscribedProjectKeysByConfigScopes.clear();
   }
 }
