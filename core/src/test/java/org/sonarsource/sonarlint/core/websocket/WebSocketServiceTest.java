@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.websocket;
 
 import java.net.http.WebSocket;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -29,10 +30,12 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
@@ -264,6 +267,32 @@ class WebSocketServiceTest {
 
       verify(webSocket, times(0)).sendText("{\"action\":\"unsubscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey\"}", true);
       assertEquals(1, webSocketService.subscribedProjectKeysByConfigScopes.size());
+    }
+  }
+
+  @Nested
+  class HandleConnectionConfigurationAddedEvent {
+    @Test
+    void shouldResubscribeAllProjectsBoundToAddedConnection() {
+      var connectionConfigurationAddedEvent = new ConnectionConfigurationAddedEvent("connectionId");
+      var bindingConfiguration1 = new BindingConfiguration("connectionId", "projectKey1", false);
+      var bindingConfiguration2 = new BindingConfiguration("connectionId", "projectKey2", false);
+      var connection = new SonarCloudConnectionConfiguration("connectionId", "myOrg", false);
+
+      when(configurationRepository.getConfigScopesWithBindingConfiguredTo("connectionId")).thenReturn(
+        List.of(new ConfigurationScope("configScope1", null, true, "config scope 1"),
+          new ConfigurationScope("configScope2", null, true, "config scope 2")));
+      when(configurationRepository.getBindingConfiguration("configScope1")).thenReturn(bindingConfiguration1);
+      when(configurationRepository.getBindingConfiguration("configScope2")).thenReturn(bindingConfiguration2);
+      when(connectionConfigurationRepository.getConnectionById("connectionId")).thenReturn(connection);
+      when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
+      when(httpClient.createWebSocketConnection(WEBSOCKET_DEV_URL)).thenReturn(webSocket);
+
+      webSocketService.handleEvent(connectionConfigurationAddedEvent);
+
+      verify(httpClient, times(1)).createWebSocketConnection(WEBSOCKET_DEV_URL);
+      verify(webSocket).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey1\"}", true);
+      verify(webSocket).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey2\"}", true);
     }
   }
 }

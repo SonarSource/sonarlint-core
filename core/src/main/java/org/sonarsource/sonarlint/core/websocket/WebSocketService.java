@@ -24,8 +24,10 @@ import com.google.gson.Gson;
 import java.net.http.WebSocket;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -37,6 +39,7 @@ import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 
 import static java.util.Objects.requireNonNull;
@@ -77,17 +80,7 @@ public class WebSocketService {
 
   @Subscribe
   public void handleEvent(ConfigurationScopesAddedEvent configurationScopesAddedEvent) {
-    for (var configurationScopeId : configurationScopesAddedEvent.getAddedConfigurationScopeIds()) {
-      var bindingConfiguration = configurationRepository.getBindingConfiguration(configurationScopeId);
-      if (bindingConfiguration != null && bindingConfiguration.isBound()) {
-        var connection = connectionConfigurationRepository.getConnectionById(requireNonNull(bindingConfiguration.getConnectionId()));
-        if (connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD) &&
-          !connection.isDisableNotifications()) {
-          createConnectionIfNeeded(bindingConfiguration.getConnectionId());
-          subscribe(configurationScopeId, bindingConfiguration.getSonarProjectKey());
-        }
-      }
-    }
+    subscribeAllBoundConfigurationScopes(configurationScopesAddedEvent.getAddedConfigurationScopeIds());
   }
 
   @Subscribe
@@ -101,15 +94,21 @@ public class WebSocketService {
   @Subscribe
   public void handleEvent(ConnectionConfigurationAddedEvent connectionConfigurationAddedEvent) {
     // This is only to handle the case where binding was invalid (connection did not exist) and became valid (matching connection was created)
-    var configScopes = configurationRepository.getConfigScopesWithBindingConfiguredTo(connectionConfigurationAddedEvent.getAddedConnectionId());
-    for (var configurationScope : configScopes) {
-      var bindingConfiguration = configurationRepository.getBindingConfiguration(configurationScope.getId());
+    var configScopeIds = configurationRepository.getConfigScopesWithBindingConfiguredTo(connectionConfigurationAddedEvent.getAddedConnectionId())
+      .stream().map(ConfigurationScope::getId)
+      .collect(Collectors.toSet());
+    subscribeAllBoundConfigurationScopes(configScopeIds);
+  }
+
+  private void subscribeAllBoundConfigurationScopes(Set<String> configScopeIds) {
+    for (var configurationScopeId : configScopeIds) {
+      var bindingConfiguration = configurationRepository.getBindingConfiguration(configurationScopeId);
       if (bindingConfiguration != null && bindingConfiguration.isBound()) {
         var connection = connectionConfigurationRepository.getConnectionById(requireNonNull(bindingConfiguration.getConnectionId()));
         if (connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD) &&
           !connection.isDisableNotifications()) {
           createConnectionIfNeeded(bindingConfiguration.getConnectionId());
-          subscribe(configurationScope.getId(), bindingConfiguration.getSonarProjectKey());
+          subscribe(configurationScopeId, bindingConfiguration.getSonarProjectKey());
         }
       }
     }
