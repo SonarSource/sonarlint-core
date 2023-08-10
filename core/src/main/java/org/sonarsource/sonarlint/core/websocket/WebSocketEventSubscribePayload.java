@@ -20,10 +20,10 @@
 package org.sonarsource.sonarlint.core.websocket;
 
 public class WebSocketEventSubscribePayload {
-  private String action;
+  private final String action;
   //TODO refactor to String[] once list of event types is supported
-  private String eventTypes;
-  private String project;
+  private final String eventTypes;
+  private final String project;
 
   public WebSocketEventSubscribePayload(String action, String eventTypes, String project) {
     this.action = action;

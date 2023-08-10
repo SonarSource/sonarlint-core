@@ -21,18 +21,23 @@
 package org.sonarsource.sonarlint.core.websocket;
 
 import java.net.http.WebSocket;
+import java.util.HashSet;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClient;
+import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -162,6 +167,71 @@ class WebSocketServiceTest {
       when(httpClient.createWebSocketConnection(WEBSOCKET_DEV_URL)).thenReturn(webSocket);
 
       webSocketService.handleEvent(bindingConfigChangedEvent);
+
+      verify(httpClient, times(0)).createWebSocketConnection(WEBSOCKET_DEV_URL);
+      verify(webSocket, times(0)).sendText(any(String.class), any(Boolean.class));
+    }
+  }
+
+  @Nested
+  class HandleConfigurationScopeAddedEvent {
+
+    @Test
+    void shouldSubscribeOnConfigScopeAddedEvent() {
+      var configurationScopesAddedEvent = new ConfigurationScopesAddedEvent(Set.of("configScope1", "configScope2"));
+      var bindingConfiguration = new BindingConfiguration("connectionId", "projectKey", false);
+      var connection = new SonarCloudConnectionConfiguration("connectionId", "myOrg", false);
+
+      when(configurationRepository.getBindingConfiguration("configScope1")).thenReturn(bindingConfiguration);
+      when(connectionConfigurationRepository.getConnectionById("connectionId")).thenReturn(connection);
+      when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
+      when(httpClient.createWebSocketConnection(WEBSOCKET_DEV_URL)).thenReturn(webSocket);
+
+      webSocketService.handleEvent(configurationScopesAddedEvent);
+
+      verify(httpClient).createWebSocketConnection(WEBSOCKET_DEV_URL);
+      verify(webSocket).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey\"}", true);
+    }
+
+    @Test
+    void shouldNotSubscribeOnConfigScopeAddedEventIfNotBound() {
+      var configurationScopesAddedEvent = new ConfigurationScopesAddedEvent(Set.of("configScope1"));
+
+      webSocketService.handleEvent(configurationScopesAddedEvent);
+
+      verify(httpClient, times(0)).createWebSocketConnection(WEBSOCKET_DEV_URL);
+      verify(webSocket, times(0)).sendText(any(String.class), any(Boolean.class));
+    }
+
+    @Test
+    void shouldNotSubscribeOnConfigScopeAddedEventIfBoundToSonarQube() {
+      var configurationScopesAddedEvent = new ConfigurationScopesAddedEvent(Set.of("configScope1"));
+      var bindingConfiguration = new BindingConfiguration("connectionId", "projectKey", false);
+      var connection = new SonarQubeConnectionConfiguration("connectionId", "http://localhost:9000", false);
+
+      when(configurationRepository.getBindingConfiguration("configScope1")).thenReturn(bindingConfiguration);
+      when(connectionConfigurationRepository.getConnectionById("connectionId")).thenReturn(connection);
+      when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
+      when(httpClient.createWebSocketConnection(WEBSOCKET_DEV_URL)).thenReturn(webSocket);
+
+      webSocketService.handleEvent(configurationScopesAddedEvent);
+
+      verify(httpClient, times(0)).createWebSocketConnection(WEBSOCKET_DEV_URL);
+      verify(webSocket, times(0)).sendText(any(String.class), any(Boolean.class));
+    }
+
+    @Test
+    void shouldNotSubscribeOnConfigScopeAddedEventIfSonarCloudButNotifsDisabled() {
+      var configurationScopesAddedEvent = new ConfigurationScopesAddedEvent(Set.of("configScope1"));
+      var bindingConfiguration = new BindingConfiguration("connectionId", "projectKey", false);
+      var connection = new SonarCloudConnectionConfiguration("connectionId", "myOrg", true);
+
+      when(configurationRepository.getBindingConfiguration("configScope1")).thenReturn(bindingConfiguration);
+      when(connectionConfigurationRepository.getConnectionById("connectionId")).thenReturn(connection);
+      when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
+      when(httpClient.createWebSocketConnection(WEBSOCKET_DEV_URL)).thenReturn(webSocket);
+
+      webSocketService.handleEvent(configurationScopesAddedEvent);
 
       verify(httpClient, times(0)).createWebSocketConnection(WEBSOCKET_DEV_URL);
       verify(webSocket, times(0)).sendText(any(String.class), any(Boolean.class));
