@@ -28,7 +28,6 @@ import java.util.Base64;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
@@ -252,22 +251,21 @@ class ApacheHttpClientAdapter implements HttpClient {
 
   }
 
-  public WebSocket createWebSocketConnection(String url) {
-    var latch = new CountDownLatch(1);
-
+  public WebSocket createWebSocketConnection(String url, Consumer<String> messageConsumer) {
     return java.net.http.HttpClient
         .newHttpClient()
         .newWebSocketBuilder()
         .header("Authorization", "Bearer " + usernameOrToken)
-        .buildAsync(URI.create(url), new WebSocketClient(latch))
+        .buildAsync(URI.create(url), new WebSocketClient(messageConsumer))
         .join();
   }
 
   private static class WebSocketClient implements WebSocket.Listener {
+    private final Consumer<String> messageConsumer;
 
-    private final CountDownLatch latch;
-
-    public WebSocketClient(CountDownLatch latch) { this.latch = latch; }
+    public WebSocketClient(Consumer<String> messageConsumer) {
+      this.messageConsumer = messageConsumer;
+    }
 
     @Override
     public void onOpen(WebSocket webSocket) {
@@ -278,13 +276,13 @@ class ApacheHttpClientAdapter implements HttpClient {
     @Override
     public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
       SonarLintLogger.get().debug("onText received " + data);
-      latch.countDown();
+      messageConsumer.accept(data.toString());
       return WebSocket.Listener.super.onText(webSocket, data, last);
     }
 
     @Override
     public void onError(WebSocket webSocket, Throwable error) {
-      SonarLintLogger.get().debug("Bad day! " + webSocket.toString());
+      SonarLintLogger.get().error("Error occurred on the WebSocket ", error);
       WebSocket.Listener.super.onError(webSocket, error);
     }
   }

@@ -20,16 +20,14 @@
 package org.sonarsource.sonarlint.core.websocket;
 
 import com.google.common.eventbus.Subscribe;
-import com.google.gson.Gson;
-import java.net.http.WebSocket;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
+import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
@@ -40,24 +38,27 @@ import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.serverconnection.events.EventDispatcher;
+import org.sonarsource.sonarlint.core.websocket.events.QualityGateChangedEvent;
 
 import static java.util.Objects.requireNonNull;
 
 public class WebSocketService {
-  public static final String WEBSOCKET_DEV_URL = "wss://squad-5-events-api.sc-dev.io/";
-  public static final String WEBSOCKET_URL = "wss://events-api.sonarcloud.io/";
   protected final Map<String, String> subscribedProjectKeysByConfigScopes = new HashMap<>();
   protected final Set<String> connectionIdsInterestedInNotifications = new HashSet<>();
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final ConfigurationRepository configurationRepository;
   private final ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider;
-  protected WebSocket ws;
+  protected SonarCloudWebSocket sonarCloudWebSocket;
+  private final EventDispatcher eventRouter;
 
-  public WebSocketService(ConnectionConfigurationRepository connectionConfigurationRepository, ConfigurationRepository configurationRepository,
+  public WebSocketService(SonarLintClient client, ConnectionConfigurationRepository connectionConfigurationRepository, ConfigurationRepository configurationRepository,
     ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider) {
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.configurationRepository = configurationRepository;
     this.connectionAwareHttpClientProvider = connectionAwareHttpClientProvider;
+    this.eventRouter = new EventDispatcher()
+      .dispatch(QualityGateChangedEvent.class, new ShowSmartNotificationOnQualityGateChangedEvent(client, configurationRepository));
   }
 
   @Subscribe
@@ -156,50 +157,29 @@ public class WebSocketService {
   }
 
   private void subscribe(String configScopeId, String projectKey) {
-    sendSubscriptionMessage(projectKey);
-
+    sonarCloudWebSocket.subscribe(projectKey);
     subscribedProjectKeysByConfigScopes.put(configScopeId, projectKey);
   }
 
-  private void resubscribeAll() {
-    subscribedProjectKeysByConfigScopes.forEach((configScope, projectKey) -> sendSubscriptionMessage(projectKey));
-  }
-
-  private void sendSubscriptionMessage(String projectKey) {
-    var subscribePayload = new WebSocketEventSubscribePayload("subscribe", "QualityGateChanged", projectKey);
-
-    var gson = new Gson();
-    var jsonString = gson.toJson(subscribePayload);
-
-    SonarLintLogger.get().debug("subscribed for events");
-
-    this.ws.sendText(jsonString, true);
-  }
-
   private void unsubscribe(String projectKey) {
-    var unsubscribePayload = new WebSocketEventSubscribePayload("unsubscribe", "QualityGateChanged", projectKey);
+    sonarCloudWebSocket.unsubscribe(projectKey);
+  }
 
-    var gson = new Gson();
-    var jsonString = gson.toJson(unsubscribePayload);
-
-
-    if(this.ws != null) {
-      SonarLintLogger.get().debug("unsubscribed for events");
-      this.ws.sendText(jsonString, true);
-    }
+  private void resubscribeAll() {
+    subscribedProjectKeysByConfigScopes.forEach((configScope, projectKey) -> sonarCloudWebSocket.subscribe(projectKey));
   }
 
   private void createConnectionIfNeeded(String connectionId) {
     connectionIdsInterestedInNotifications.add(connectionId);
-    if (this.ws == null) {
-      this.ws = connectionAwareHttpClientProvider.getHttpClient(connectionId).createWebSocketConnection(WEBSOCKET_DEV_URL);
+    if (this.sonarCloudWebSocket == null) {
+      this.sonarCloudWebSocket = SonarCloudWebSocket.create(connectionAwareHttpClientProvider.getHttpClient(connectionId), eventRouter::handle);
     }
   }
 
   private void closeSocket() {
-    if (this.ws != null) {
-      this.ws.sendClose(WebSocket.NORMAL_CLOSURE, "");
-      this.ws = null;
+    if (this.sonarCloudWebSocket != null) {
+      this.sonarCloudWebSocket.close();
+      this.sonarCloudWebSocket = null;
     }
   }
 
