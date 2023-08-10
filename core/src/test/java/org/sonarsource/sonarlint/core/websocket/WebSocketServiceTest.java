@@ -27,6 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClient;
@@ -36,6 +37,7 @@ import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurat
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.mock;
@@ -235,6 +237,33 @@ class WebSocketServiceTest {
 
       verify(httpClient, times(0)).createWebSocketConnection(WEBSOCKET_DEV_URL);
       verify(webSocket, times(0)).sendText(any(String.class), any(Boolean.class));
+    }
+  }
+
+  @Nested
+  class HandleConfigurationScopeRemovedEvent {
+    @Test
+    void shouldUnsubscribeFromProjectIfLastInterestedConfigScopeWasClosed() {
+      webSocketService.subscribedProjectKeysByConfigScopes.put("configScope1", "projectKey");
+      webSocketService.ws = webSocket;
+      var configurationScopeRemovedEvent = new ConfigurationScopeRemovedEvent("configScope1");
+
+      webSocketService.handleEvent(configurationScopeRemovedEvent);
+
+      verify(webSocket).sendText("{\"action\":\"unsubscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey\"}", true);
+    }
+
+    @Test
+    void shouldNotUnsubscribeFromProjectIfSomeoneStillInterested() {
+      webSocketService.subscribedProjectKeysByConfigScopes.put("configScope1", "projectKey");
+      webSocketService.subscribedProjectKeysByConfigScopes.put("configScope2", "projectKey");
+      webSocketService.ws = webSocket;
+      var configurationScopeRemovedEvent = new ConfigurationScopeRemovedEvent("configScope1");
+
+      webSocketService.handleEvent(configurationScopeRemovedEvent);
+
+      verify(webSocket, times(0)).sendText("{\"action\":\"unsubscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey\"}", true);
+      assertEquals(1, webSocketService.subscribedProjectKeysByConfigScopes.size());
     }
   }
 }
