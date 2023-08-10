@@ -67,7 +67,7 @@ public final class DefaultClientIssue implements Issue {
   }
 
   public DefaultClientIssue(org.sonarsource.sonarlint.core.analysis.api.Issue i, IssueSeverity severity,
-    RuleType type, Optional<VulnerabilityProbability> vulnerabilityProbability) {
+    RuleType type, CleanCodeAttribute cleanCodeAttribute, Map<SoftwareQuality, ImpactSeverity> defaultImpacts, Optional<VulnerabilityProbability> vulnerabilityProbability) {
     this.textRange = i.getTextRange() != null ? i.getTextRange() : null;
     this.primaryMessage = i.getMessage();
     this.clientInputFile = i.getInputFile();
@@ -75,8 +75,10 @@ public final class DefaultClientIssue implements Issue {
     this.quickFixes = i.quickFixes();
     this.severity = severity;
     this.type = type;
-    this.cleanCodeAttribute = null; // TODO !!!
-    this.impacts = new EnumMap<>(SoftwareQuality.class); // TODO !!!
+    this.cleanCodeAttribute = cleanCodeAttribute;
+    this.impacts = new EnumMap<>(SoftwareQuality.class);
+    this.impacts.putAll(defaultImpacts);
+    this.impacts.putAll(i.getOverriddenImpacts());
     this.ruleKey = i.getRuleKey();
     this.ruleDescriptionContextKey = i.getRuleDescriptionContextKey();
     this.vulnerabilityProbability = vulnerabilityProbability;
