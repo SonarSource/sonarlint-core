@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
@@ -41,6 +42,7 @@ import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnection
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.mock;
@@ -293,6 +295,86 @@ class WebSocketServiceTest {
       verify(httpClient, times(1)).createWebSocketConnection(WEBSOCKET_DEV_URL);
       verify(webSocket).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey1\"}", true);
       verify(webSocket).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey2\"}", true);
+    }
+  }
+
+  @Nested
+  class HandleConnectionConfigurationUpdateEvent {
+    @Test
+    void shouldCloseAndReopenConnectionOnConnectionUpdatedEvent() {
+      webSocketService.connectionIdsInterestedInNotifications.add("connectionId");
+      webSocketService.subscribedProjectKeysByConfigScopes.put("configScope1", "projectKey");
+      webSocketService.ws = webSocket;
+
+      var connectionConfigurationUpdatedEvent = new ConnectionConfigurationUpdatedEvent("connectionId");
+      var connection = new SonarCloudConnectionConfiguration("connectionId", "myOrg", false);
+
+      when(connectionConfigurationRepository.getConnectionById("connectionId")).thenReturn(connection);
+      when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
+      when(httpClient.createWebSocketConnection(WEBSOCKET_DEV_URL)).thenReturn(webSocket);
+
+      webSocketService.handleEvent(connectionConfigurationUpdatedEvent);
+
+      assertEquals(1, webSocketService.connectionIdsInterestedInNotifications.size());
+      verify(httpClient).createWebSocketConnection(WEBSOCKET_DEV_URL);
+      verify(webSocket).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey\"}", true);
+    }
+
+    @Test
+    void shouldDoNothingForSonarQubeOnConnectionOnConnectionUpdatedEvent() {
+      var connectionConfigurationUpdatedEvent = new ConnectionConfigurationUpdatedEvent("connectionId");
+      var connection = new SonarQubeConnectionConfiguration("connectionId", "http://localhost:9000", false);
+
+      when(connectionConfigurationRepository.getConnectionById("connectionId")).thenReturn(connection);
+
+      webSocketService.handleEvent(connectionConfigurationUpdatedEvent);
+
+      verify(httpClient, times(0)).createWebSocketConnection(WEBSOCKET_DEV_URL);
+      verify(webSocket, times(0)).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey\"}", true);
+    }
+
+    @Test
+    void shouldCloseWebSocketOnConnectionUpdatedEventWhenNotificationsAreDisabled() {
+      webSocketService.connectionIdsInterestedInNotifications.add("connectionId");
+      webSocketService.subscribedProjectKeysByConfigScopes.put("configScope1", "projectKey");
+      webSocketService.ws = webSocket;
+
+      var connectionConfigurationUpdatedEvent = new ConnectionConfigurationUpdatedEvent("connectionId");
+      var connection = new SonarCloudConnectionConfiguration("connectionId", "myOrg", true);
+
+      when(connectionConfigurationRepository.getConnectionById("connectionId")).thenReturn(connection);
+
+      webSocketService.handleEvent(connectionConfigurationUpdatedEvent);
+
+      assertEquals(0, webSocketService.connectionIdsInterestedInNotifications.size());
+      verify(httpClient, times(0)).createWebSocketConnection(WEBSOCKET_DEV_URL);
+      verify(webSocket, times(0)).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey\"}", true);
+      assertNull(webSocketService.ws);
+    }
+
+    @Test
+    void shouldCloseAndReopenWebSocketOnConnectionUpdatedEventWhenNotificationsAreDisabled() {
+      webSocketService.connectionIdsInterestedInNotifications.add("connectionId1");
+      webSocketService.connectionIdsInterestedInNotifications.add("connectionId2");
+      webSocketService.subscribedProjectKeysByConfigScopes.put("configScope1", "projectKey1");
+      webSocketService.subscribedProjectKeysByConfigScopes.put("configScope2", "projectKey2");
+      webSocketService.ws = webSocket;
+
+      var connectionConfigurationUpdatedEvent = new ConnectionConfigurationUpdatedEvent("connectionId1");
+      var connection = new SonarCloudConnectionConfiguration("connectionId1", "myOrg", true);
+
+      when(connectionConfigurationRepository.getConnectionById("connectionId1")).thenReturn(connection);
+      when(connectionAwareHttpClientProvider.getHttpClient("connectionId2")).thenReturn(httpClient);
+      when(configurationRepository.getConfigScopesWithBindingConfiguredTo("connectionId1"))
+        .thenReturn(List.of(new ConfigurationScope("configScope1", null, true, "Config scope 1")));
+      when(httpClient.createWebSocketConnection(WEBSOCKET_DEV_URL)).thenReturn(webSocket);
+
+      webSocketService.handleEvent(connectionConfigurationUpdatedEvent);
+
+      assertEquals(1, webSocketService.connectionIdsInterestedInNotifications.size());
+      verify(httpClient).createWebSocketConnection(WEBSOCKET_DEV_URL);
+      verify(webSocket).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey2\"}", true);
+      verify(webSocket, times(0)).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey1\"}", true);
     }
   }
 }

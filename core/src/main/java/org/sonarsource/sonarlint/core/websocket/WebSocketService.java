@@ -118,10 +118,20 @@ public class WebSocketService {
   public void handleEvent(ConnectionConfigurationUpdatedEvent connectionConfigurationUpdatedEvent) {
     var updatedConnectionId = connectionConfigurationUpdatedEvent.getUpdatedConnectionId();
     var connection = connectionConfigurationRepository.getConnectionById(updatedConnectionId);
-    if (connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD)) { // TODO what if connection type changed from SQ to SC or vice versa?
+    if (connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD)) {
+      // TODO what if connection type changed from SQ to SC or vice versa?
       closeConnection(updatedConnectionId);
-      if (!connection.isDisableNotifications() || !connectionIdsInterestedInNotifications.isEmpty()) {
+      if (!connection.isDisableNotifications()){
+        // Notifications are enabled, reopen the connection
         createConnectionIfNeeded(connection.getConnectionId());
+        resubscribeAll();
+      } else if(!connectionIdsInterestedInNotifications.isEmpty()) {
+        var configurationScopesToUnsubscribe = configurationRepository.getConfigScopesWithBindingConfiguredTo(updatedConnectionId);
+        for(var configScope : configurationScopesToUnsubscribe) {
+          subscribedProjectKeysByConfigScopes.remove(configScope.getId());
+        }
+        // Some other connection needs WebSocket
+        createConnectionIfNeeded(connectionIdsInterestedInNotifications.stream().findFirst().get());
         resubscribeAll();
       }
     }
