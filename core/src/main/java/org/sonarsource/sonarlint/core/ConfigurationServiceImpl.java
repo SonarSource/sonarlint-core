@@ -133,6 +133,6 @@ public class ConfigurationServiceImpl implements ConfigurationService {
   }
 
   public List<ConfigurationScope> getConfigScopesWithBindingConfiguredTo(String connectionId, String projectKey) {
-    return repository.getConfigScopesWithBindingConfiguredTo(connectionId, projectKey);
+    return repository.getBoundScopesByConnection(connectionId, projectKey);
   }
 }
