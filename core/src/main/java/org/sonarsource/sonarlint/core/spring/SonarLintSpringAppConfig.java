@@ -68,6 +68,7 @@ import org.sonarsource.sonarlint.core.repository.vcs.ActiveSonarProjectBranchRep
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
 import org.sonarsource.sonarlint.core.rules.RulesServiceImpl;
 import org.sonarsource.sonarlint.core.serverconnection.StorageService;
+import org.sonarsource.sonarlint.core.websocket.WebSocketService;
 import org.sonarsource.sonarlint.core.smartnotifications.SmartNotifications;
 import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
@@ -114,7 +115,8 @@ import org.springframework.context.annotation.Import;
   AnalysisServiceImpl.class,
   SmartNotifications.class,
   IssueTrackingServiceImpl.class,
-  LocalOnlyIssueRepository.class
+  LocalOnlyIssueRepository.class,
+  WebSocketService.class
 })
 public class SonarLintSpringAppConfig {
 
