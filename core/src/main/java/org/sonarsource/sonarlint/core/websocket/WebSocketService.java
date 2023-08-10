@@ -42,13 +42,14 @@ import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurat
 import static java.util.Objects.requireNonNull;
 
 public class WebSocketService {
-  private static final String WEBSOCKET_URL = "wss://squad-5-events-api.sc-dev.io/";
-  private final Map<String, String> subscribedProjectKeysByConfigScopes = new HashMap<>();
-  private final Set<String> connectionIdsInterestedInNotifications = new HashSet<>();
+  public static final String WEBSOCKET_DEV_URL = "wss://squad-5-events-api.sc-dev.io/";
+  public static final String WEBSOCKET_URL = "wss://events-api.sonarcloud.io/";
+  protected final Map<String, String> subscribedProjectKeysByConfigScopes = new HashMap<>();
+  protected final Set<String> connectionIdsInterestedInNotifications = new HashSet<>();
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final ConfigurationRepository configurationRepository;
   private final ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider;
-  private WebSocket ws;
+  protected WebSocket ws;
 
   public WebSocketService(ConnectionConfigurationRepository connectionConfigurationRepository, ConfigurationRepository configurationRepository,
     ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider) {
@@ -162,15 +163,17 @@ public class WebSocketService {
     var gson = new Gson();
     var jsonString = gson.toJson(unsubscribePayload);
 
-    SonarLintLogger.get().debug("unsubscribed for events");
 
-    this.ws.sendText(jsonString, true);
+    if(this.ws != null) {
+      SonarLintLogger.get().debug("unsubscribed for events");
+      this.ws.sendText(jsonString, true);
+    }
   }
 
   private void createConnectionIfNeeded(String connectionId) {
     connectionIdsInterestedInNotifications.add(connectionId);
     if (this.ws == null) {
-      this.ws = connectionAwareHttpClientProvider.getHttpClient(connectionId).createWebSocketConnection(WEBSOCKET_URL);
+      this.ws = connectionAwareHttpClientProvider.getHttpClient(connectionId).createWebSocketConnection(WEBSOCKET_DEV_URL);
     }
   }
 

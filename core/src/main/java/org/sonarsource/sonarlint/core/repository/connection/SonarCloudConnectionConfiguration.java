@@ -27,7 +27,7 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 public class SonarCloudConnectionConfiguration extends AbstractConnectionConfiguration {
 
   public static String getSonarCloudUrl() {
-    return System.getProperty("sonarlint.internal.sonarcloud.url", "https://squad-5-core.sc-dev.io");
+    return System.getProperty("sonarlint.internal.sonarcloud.url", "https://sonarcloud.io");
   }
 
   private final String organization;
