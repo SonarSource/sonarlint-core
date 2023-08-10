@@ -90,7 +90,7 @@ class StandaloneRulesMediumTests {
     assertThat(ruleDetails.getRuleDefinition().getCleanCodeAttribute()).hasValue(CleanCodeAttribute.defaultCleanCodeAttribute());
     assertThat(ruleDetails.getRuleDefinition().getDefaultImpacts()).isEmpty();
     assertThat(ruleDetails.getRuleDefinition().getName()).isEqualTo("Public types, methods and fields (API) should be documented with Javadoc");
-    assertThat(ruleDetails.getRuleDefinition().getDefaultSeverity()).isEqualTo(IssueSeverity.MAJOR);
+    assertThat(ruleDetails.getRuleDefinition().getSeverity()).isEqualTo(IssueSeverity.MAJOR);
     assertThat(ruleDetails.getRuleDefinition().getType()).isEqualTo(RuleType.CODE_SMELL);
     assertThat(ruleDetails.getDescription().isLeft()).isTrue();
     assertThat(ruleDetails.getDescription().getLeft().getHtmlContent()).startsWith("<p>Try to imagine using the standard Java API (Collections, JDBC, IO, …\u200B) without Javadoc.");
