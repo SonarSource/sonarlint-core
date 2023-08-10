@@ -32,6 +32,7 @@ import javax.annotation.CheckForNull;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.Binding;
+import org.sonarsource.sonarlint.core.commons.BoundScope;
 
 import static java.util.Objects.requireNonNull;
 
@@ -105,7 +106,7 @@ public class ConfigurationRepository {
     return configScopePerId.get(configScopeId);
   }
 
-  public List<ConfigurationScope> getConfigScopesWithBindingConfiguredTo(String connectionId, String projectKey) {
+  public List<ConfigurationScope> getBoundScopesByConnection(String connectionId, String projectKey) {
     return bindingPerConfigScopeId.entrySet().stream()
       .filter(e -> e.getValue().isBoundTo(connectionId, projectKey))
       .map(e -> configScopePerId.get(e.getKey()))
@@ -114,8 +115,15 @@ public class ConfigurationRepository {
 
   public List<ConfigurationScope> getConfigScopesWithBindingConfiguredTo(String connectionId) {
     return bindingPerConfigScopeId.entrySet().stream()
-      .filter(e -> e.getValue().isBoundTo(connectionId))
+      .filter(e -> e.getValue().isBoundToConnection(connectionId))
       .map(e -> configScopePerId.get(e.getKey()))
+      .collect(Collectors.toList());
+  }
+
+  public List<BoundScope> getBoundScopesByProject(String projectKey) {
+    return bindingPerConfigScopeId.entrySet().stream()
+      .filter(e -> e.getValue().isBoundToProject(projectKey))
+      .map(e -> new BoundScope(e.getKey(), requireNonNull(e.getValue().getConnectionId()), projectKey))
       .collect(Collectors.toList());
   }
 
