@@ -59,8 +59,12 @@ public class BindingConfiguration {
     return Objects.equals(connectionId, this.connectionId) && Objects.equals(projectKey, this.sonarProjectKey);
   }
 
-  public boolean isBoundTo(String connectionId) {
-    return Objects.equals(connectionId, this.connectionId);
+  public boolean isBoundToConnection(String connectionId) {
+    return Objects.equals(connectionId, this.connectionId) && sonarProjectKey != null;
+  }
+
+  public boolean isBoundToProject(String projectKey) {
+    return connectionId != null && Objects.equals(projectKey, this.sonarProjectKey);
   }
 
   public <G> Optional<G> ifBound(BiFunction<String, String, G> calledIfBound) {

@@ -75,6 +75,6 @@ public interface HttpClient {
     void cancel();
   }
 
-  WebSocket createWebSocketConnection(String url);
+  WebSocket createWebSocketConnection(String url, Consumer<String> messageConsumer);
 
 }
