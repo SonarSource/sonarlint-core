@@ -112,6 +112,13 @@ public class ConfigurationRepository {
       .collect(Collectors.toList());
   }
 
+  public List<ConfigurationScope> getConfigScopesWithBindingConfiguredTo(String connectionId) {
+    return bindingPerConfigScopeId.entrySet().stream()
+      .filter(e -> e.getValue().isBoundTo(connectionId))
+      .map(e -> configScopePerId.get(e.getKey()))
+      .collect(Collectors.toList());
+  }
+
   public Map<String, Map<String, Set<String>>> getScopeIdsPerProjectKeyPerConnectionId() {
     Map<String, Map<String, Set<String>>> scopeIdsPerProjectKeyPerConnectionId = new HashMap<>();
     bindingPerConfigScopeId
