@@ -311,9 +311,13 @@ class WebSocketServiceTest {
 
       var connectionConfigurationUpdatedEvent = new ConnectionConfigurationUpdatedEvent("connectionId");
       var connection = new SonarCloudConnectionConfiguration("connectionId", "myOrg", false);
+      var bindingConfiguration = new BindingConfiguration("connectionId", "projectKey", false);
 
       when(connectionConfigurationRepository.getConnectionById("connectionId")).thenReturn(connection);
+      when(configurationRepository.getBindingConfiguration("configScope1")).thenReturn(bindingConfiguration);
       when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
+      when(configurationRepository.getConfigScopeIds())
+        .thenReturn(Set.of("configScope1"));
       when(httpClient.createWebSocketConnection(WEBSOCKET_DEV_URL)).thenReturn(webSocket);
 
       webSocketService.handleEvent(connectionConfigurationUpdatedEvent);
@@ -378,6 +382,28 @@ class WebSocketServiceTest {
       webSocketService.handleEvent(connectionConfigurationUpdatedEvent);
 
       assertEquals(1, webSocketService.connectionIdsInterestedInNotifications.size());
+      verify(httpClient).createWebSocketConnection(WEBSOCKET_DEV_URL);
+      verify(webSocket).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey2\"}", true);
+      verify(webSocket, times(0)).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey1\"}", true);
+    }
+
+    @Test
+    void should_close_and_reopen_websocket_on_connection_updated_event_when_notifications_settings_did_not_change() {
+      webSocketService.connectionIdsInterestedInNotifications.add("connectionId2");
+      webSocketService.subscribedProjectKeysByConfigScopes.put("configScope2", "projectKey2");
+      webSocketService.ws = webSocket;
+
+      var connectionConfigurationUpdatedEvent = new ConnectionConfigurationUpdatedEvent("connectionId1");
+      var connection = new SonarCloudConnectionConfiguration("connectionId1", "myOrg", true);
+
+      when(connectionConfigurationRepository.getConnectionById("connectionId1")).thenReturn(connection);
+      when(connectionAwareHttpClientProvider.getHttpClient("connectionId2")).thenReturn(httpClient);
+      when(httpClient.createWebSocketConnection(WEBSOCKET_DEV_URL)).thenReturn(webSocket);
+
+      webSocketService.handleEvent(connectionConfigurationUpdatedEvent);
+
+      assertEquals(1, webSocketService.connectionIdsInterestedInNotifications.size());
+      assertEquals(1, webSocketService.subscribedProjectKeysByConfigScopes.size());
       verify(httpClient).createWebSocketConnection(WEBSOCKET_DEV_URL);
       verify(webSocket).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey2\"}", true);
       verify(webSocket, times(0)).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey1\"}", true);

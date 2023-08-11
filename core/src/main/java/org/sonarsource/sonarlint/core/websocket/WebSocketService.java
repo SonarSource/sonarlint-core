@@ -85,7 +85,6 @@ public class WebSocketService {
   @Subscribe
   public void handleEvent(ConfigurationScopeRemovedEvent configurationScopeRemovedEvent) {
     var projectKey = subscribedProjectKeysByConfigScopes.remove(configurationScopeRemovedEvent.getRemovedConfigurationScopeId());
-    // TODO remove subscriptions related to the connection
     if (!subscribedProjectKeysByConfigScopes.containsValue(projectKey)) {
       unsubscribe(projectKey);
     }
@@ -107,17 +106,16 @@ public class WebSocketService {
     if (connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD)) {
       // TODO what if connection type changed from SQ to SC or vice versa?
       closeSocket();
-      if (connectionIdsInterestedInNotifications.contains(updatedConnectionId) && connection.isDisableNotifications()) {
-        // At some point connection was interested in notifications but not anymore. Remove it from both sets.
+      boolean notificationsGotDisabledForConnection = connectionIdsInterestedInNotifications.contains(updatedConnectionId) && connection.isDisableNotifications();
+      if (notificationsGotDisabledForConnection) {
         connectionIdsInterestedInNotifications.remove(updatedConnectionId);
         removeProjectsFromSubscriptionListForConnection(updatedConnectionId);
       }
-      if (!connection.isDisableNotifications()){
-        // Notifications are enabled, reopen the connection
+      if (!connection.isDisableNotifications()) {
         createConnectionIfNeeded(updatedConnectionId);
-        var configScopeIds = configurationRepository.getConfigScopeIds();
-        subscribeAllBoundConfigurationScopes(configScopeIds);
-      } else if(!connectionIdsInterestedInNotifications.isEmpty()) {
+        subscribeAllBoundConfigurationScopes(configurationRepository.getConfigScopeIds());
+      } else if (!connectionIdsInterestedInNotifications.isEmpty()) {
+        connectionIdsInterestedInNotifications.remove(updatedConnectionId);
         removeProjectsFromSubscriptionListForConnection(updatedConnectionId);
         // Some other connection needs WebSocket
         createConnectionIfNeeded(connectionIdsInterestedInNotifications.stream().findFirst().orElse(null));
