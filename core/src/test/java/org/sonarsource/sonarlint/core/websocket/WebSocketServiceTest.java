@@ -24,6 +24,7 @@ import java.net.http.WebSocket;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.checkerframework.checker.units.qual.C;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -74,7 +75,7 @@ class WebSocketServiceTest {
   @Nested
   class HandleBindingConfigChangeEvent {
     @Test
-    void bindingUpdateShouldCreateConnectionAndSubscribeToEvents() {
+    void should_create_connection_and_subscribe_to_events() {
       var previousConfig = new BindingConfigChangedEvent.BindingConfig("configScope", "connectionId1", "projectKey", false);
       var newConfig = new BindingConfigChangedEvent.BindingConfig("configScope", "connectionId2", "projectKey", false);
       var bindingConfigChangedEvent = new BindingConfigChangedEvent(previousConfig, newConfig);
@@ -91,7 +92,7 @@ class WebSocketServiceTest {
     }
 
     @Test
-    void bindingUpdateShouldNotDoAnythingIfBindingRemoved() {
+    void should_not_do_anything_if_binding_removed() {
       var previousConfig = new BindingConfigChangedEvent.BindingConfig("configScope", "connectionId1", "projectKey", false);
       var newConfig = new BindingConfigChangedEvent.BindingConfig("configScope", null, null, false);
       var bindingConfigChangedEvent = new BindingConfigChangedEvent(previousConfig, newConfig);
@@ -106,7 +107,7 @@ class WebSocketServiceTest {
     }
 
     @Test
-    void bindingUpdateShouldNotDoAnythingIfSonarQubeConnection() {
+    void should_not_do_anything_if_sonar_qube_connection() {
       var previousConfig = new BindingConfigChangedEvent.BindingConfig("configScope", "connectionId1", "projectKey", false);
       var newConfig = new BindingConfigChangedEvent.BindingConfig("configScope", "connectionId2", "projectKey", false);
       var bindingConfigChangedEvent = new BindingConfigChangedEvent(previousConfig, newConfig);
@@ -123,7 +124,7 @@ class WebSocketServiceTest {
     }
 
     @Test
-    void bindingUpdateShouldUnsubscribeFromOldProjectAndSubscribeToNewProject() {
+    void should_unsubscribe_from_old_project_and_subscribe_to_new_project() {
       // there was already subscription for the project
       webSocketService.subscribedProjectKeysByConfigScopes.put("configScope", "projectKey");
       webSocketService.ws = webSocket;
@@ -144,7 +145,7 @@ class WebSocketServiceTest {
     }
 
     @Test
-    void bindingUpdateShouldNotUnsubscribeFromOldProjectIfSomeoneElseStillInterested() {
+    void should_not_unsubscribe_from_old_project_if_someone_else_still_interested() {
       // there was already subscription for the project
       webSocketService.subscribedProjectKeysByConfigScopes.put("configScope", "projectKey");
       webSocketService.subscribedProjectKeysByConfigScopes.put("configScope2", "projectKey");
@@ -165,7 +166,7 @@ class WebSocketServiceTest {
     }
 
     @Test
-    void bindingUpdateShouldDoNothingIfNotificationsDisabled() {
+    void should_do_nothing_if_notifications_disabled() {
       var previousConfig = new BindingConfigChangedEvent.BindingConfig("configScope", "connectionId1", "projectKey", false);
       var newConfig = new BindingConfigChangedEvent.BindingConfig("configScope", "connectionId2", "projectKey", false);
       var bindingConfigChangedEvent = new BindingConfigChangedEvent(previousConfig, newConfig);
@@ -186,7 +187,7 @@ class WebSocketServiceTest {
   class HandleConfigurationScopeAddedEvent {
 
     @Test
-    void shouldSubscribeOnConfigScopeAddedEvent() {
+    void should_subscribe_on_config_scope_added_event() {
       var configurationScopesAddedEvent = new ConfigurationScopesAddedEvent(Set.of("configScope1", "configScope2"));
       var bindingConfiguration = new BindingConfiguration("connectionId", "projectKey", false);
       var connection = new SonarCloudConnectionConfiguration("connectionId", "myOrg", false);
@@ -203,7 +204,7 @@ class WebSocketServiceTest {
     }
 
     @Test
-    void shouldNotSubscribeOnConfigScopeAddedEventIfNotBound() {
+    void should_not_subscribe_on_config_scope_added_event_if_not_bound() {
       var configurationScopesAddedEvent = new ConfigurationScopesAddedEvent(Set.of("configScope1"));
 
       webSocketService.handleEvent(configurationScopesAddedEvent);
@@ -213,7 +214,7 @@ class WebSocketServiceTest {
     }
 
     @Test
-    void shouldNotSubscribeOnConfigScopeAddedEventIfBoundToSonarQube() {
+    void should_not_subscribe_on_config_scope_added_event_if_bound_to_sonar_qube() {
       var configurationScopesAddedEvent = new ConfigurationScopesAddedEvent(Set.of("configScope1"));
       var bindingConfiguration = new BindingConfiguration("connectionId", "projectKey", false);
       var connection = new SonarQubeConnectionConfiguration("connectionId", "http://localhost:9000", false);
@@ -230,7 +231,7 @@ class WebSocketServiceTest {
     }
 
     @Test
-    void shouldNotSubscribeOnConfigScopeAddedEventIfSonarCloudButNotifsDisabled() {
+    void should_not_subscribe_on_config_scope_added_event_if_sonar_cloud_but_notifs_disabled() {
       var configurationScopesAddedEvent = new ConfigurationScopesAddedEvent(Set.of("configScope1"));
       var bindingConfiguration = new BindingConfiguration("connectionId", "projectKey", false);
       var connection = new SonarCloudConnectionConfiguration("connectionId", "myOrg", true);
@@ -250,7 +251,7 @@ class WebSocketServiceTest {
   @Nested
   class HandleConfigurationScopeRemovedEvent {
     @Test
-    void shouldUnsubscribeFromProjectIfLastInterestedConfigScopeWasClosed() {
+    void should_unsubscribe_from_project_if_last_interested_config_scope_was_closed() {
       webSocketService.subscribedProjectKeysByConfigScopes.put("configScope1", "projectKey");
       webSocketService.ws = webSocket;
       var configurationScopeRemovedEvent = new ConfigurationScopeRemovedEvent("configScope1");
@@ -261,7 +262,7 @@ class WebSocketServiceTest {
     }
 
     @Test
-    void shouldNotUnsubscribeFromProjectIfSomeoneStillInterested() {
+    void should_not_unsubscribe_from_project_if_someone_still_interested() {
       webSocketService.subscribedProjectKeysByConfigScopes.put("configScope1", "projectKey");
       webSocketService.subscribedProjectKeysByConfigScopes.put("configScope2", "projectKey");
       webSocketService.ws = webSocket;
@@ -277,7 +278,7 @@ class WebSocketServiceTest {
   @Nested
   class HandleConnectionConfigurationAddedEvent {
     @Test
-    void shouldResubscribeAllProjectsBoundToAddedConnection() {
+    void should_resubscribe_all_projects_bound_to_added_connection() {
       var connectionConfigurationAddedEvent = new ConnectionConfigurationAddedEvent("connectionId");
       var bindingConfiguration1 = new BindingConfiguration("connectionId", "projectKey1", false);
       var bindingConfiguration2 = new BindingConfiguration("connectionId", "projectKey2", false);
@@ -303,7 +304,7 @@ class WebSocketServiceTest {
   @Nested
   class HandleConnectionConfigurationUpdateEvent {
     @Test
-    void shouldCloseAndReopenConnectionOnConnectionUpdatedEvent() {
+    void should_close_and_reopen_connection_on_connection_updated_event() {
       webSocketService.connectionIdsInterestedInNotifications.add("connectionId");
       webSocketService.subscribedProjectKeysByConfigScopes.put("configScope1", "projectKey");
       webSocketService.ws = webSocket;
@@ -323,7 +324,7 @@ class WebSocketServiceTest {
     }
 
     @Test
-    void shouldDoNothingForSonarQubeOnConnectionOnConnectionUpdatedEvent() {
+    void should_do_nothing_for_sonarqube_on_connection_updated_event() {
       var connectionConfigurationUpdatedEvent = new ConnectionConfigurationUpdatedEvent("connectionId");
       var connection = new SonarQubeConnectionConfiguration("connectionId", "http://localhost:9000", false);
 
@@ -336,7 +337,7 @@ class WebSocketServiceTest {
     }
 
     @Test
-    void shouldCloseWebSocketOnConnectionUpdatedEventWhenNotificationsAreDisabled() {
+    void should_close_websocket_and_remove_subscriptions_on_connection_updated_event_when_notifications_are_disabled() {
       webSocketService.connectionIdsInterestedInNotifications.add("connectionId");
       webSocketService.subscribedProjectKeysByConfigScopes.put("configScope1", "projectKey");
       webSocketService.ws = webSocket;
@@ -345,17 +346,20 @@ class WebSocketServiceTest {
       var connection = new SonarCloudConnectionConfiguration("connectionId", "myOrg", true);
 
       when(connectionConfigurationRepository.getConnectionById("connectionId")).thenReturn(connection);
+      when(configurationRepository.getConfigScopesWithBindingConfiguredTo("connectionId"))
+        .thenReturn(List.of(new ConfigurationScope("configScope1", null, true, "config scope 1")));
 
       webSocketService.handleEvent(connectionConfigurationUpdatedEvent);
 
       assertEquals(0, webSocketService.connectionIdsInterestedInNotifications.size());
+      assertEquals(0, webSocketService.subscribedProjectKeysByConfigScopes.size());
       verify(httpClient, times(0)).createWebSocketConnection(WEBSOCKET_DEV_URL);
       verify(webSocket, times(0)).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey\"}", true);
       assertNull(webSocketService.ws);
     }
 
     @Test
-    void shouldCloseAndReopenWebSocketOnConnectionUpdatedEventWhenNotificationsAreDisabled() {
+    void should_close_and_reopen_websocket_on_connection_updated_event_when_notifications_are_disabled() {
       webSocketService.connectionIdsInterestedInNotifications.add("connectionId1");
       webSocketService.connectionIdsInterestedInNotifications.add("connectionId2");
       webSocketService.subscribedProjectKeysByConfigScopes.put("configScope1", "projectKey1");
@@ -378,12 +382,35 @@ class WebSocketServiceTest {
       verify(webSocket).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey2\"}", true);
       verify(webSocket, times(0)).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey1\"}", true);
     }
+
+    @Test
+    void should_open_websocket_and_subscribe_to_all_bound_projects_if_opted_in_for_notifications() {
+      webSocketService.ws = webSocket;
+
+      var connectionConfigurationUpdatedEvent = new ConnectionConfigurationUpdatedEvent("connectionId");
+      var connection = new SonarCloudConnectionConfiguration("connectionId", "myOrg", false);
+      var bindingConfiguration = new BindingConfiguration("connectionId", "projectKey", false);
+
+      when(connectionConfigurationRepository.getConnectionById("connectionId")).thenReturn(connection);
+      when(configurationRepository.getConfigScopeIds())
+        .thenReturn(Set.of("configScope1"));
+      when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
+      when(httpClient.createWebSocketConnection(WEBSOCKET_DEV_URL)).thenReturn(webSocket);
+      when(configurationRepository.getBindingConfiguration("configScope1")).thenReturn(bindingConfiguration);
+
+      webSocketService.handleEvent(connectionConfigurationUpdatedEvent);
+
+      assertEquals(1, webSocketService.connectionIdsInterestedInNotifications.size());
+      assertEquals(1, webSocketService.subscribedProjectKeysByConfigScopes.size());
+      verify(httpClient).createWebSocketConnection(WEBSOCKET_DEV_URL);
+      verify(webSocket).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey\"}", true);
+    }
   }
 
   @Nested
   class HandleConnectionConfigurationRemovedEvent {
     @Test
-    void shouldCloseConnectionIfConnectionRemovedAndNobodyLeft() {
+    void should_close_connection_if_connection_removed_and_nobody_left() {
       webSocketService.connectionIdsInterestedInNotifications.add("connectionId1");
       webSocketService.ws = webSocket;
 
@@ -397,7 +424,7 @@ class WebSocketServiceTest {
     }
 
     @Test
-    void shouldNotCloseConnectionIfConnectionRemovedAndSomebodyLeft() {
+    void should_not_close_connection_if_connection_removed_and_somebody_left() {
       webSocketService.connectionIdsInterestedInNotifications.add("connectionId1");
       webSocketService.connectionIdsInterestedInNotifications.add("connectionId2");
       webSocketService.ws = webSocket;
@@ -409,6 +436,29 @@ class WebSocketServiceTest {
       verify(webSocket, times(0)).sendClose(WebSocket.NORMAL_CLOSURE, "");
       assertNotNull(webSocketService.ws);
       assertEquals(1, webSocketService.connectionIdsInterestedInNotifications.size());
+    }
+
+    @Test
+    void should_remove_projects_from_subscriptions_when_connection_removed() {
+      webSocketService.connectionIdsInterestedInNotifications.add("connectionId1");
+      webSocketService.connectionIdsInterestedInNotifications.add("connectionId2");
+      webSocketService.subscribedProjectKeysByConfigScopes.put("configScope1", "projectKey1");
+      webSocketService.subscribedProjectKeysByConfigScopes.put("configScope2", "projectKey2");
+      webSocketService.subscribedProjectKeysByConfigScopes.put("configScope3", "projectKey2");
+      webSocketService.ws = webSocket;
+      var connectionConfigurationRemovedEvent = new ConnectionConfigurationRemovedEvent("connectionId1");
+
+      when(configurationRepository.getConfigScopesWithBindingConfiguredTo("connectionId1"))
+        .thenReturn(List.of(new ConfigurationScope("configScope1", null, true, "config scope 1"),
+          new ConfigurationScope("configScope2", null, true, "config scope 2")));
+
+      webSocketService.handleEvent(connectionConfigurationRemovedEvent);
+
+      verify(webSocket, times(0)).sendClose(WebSocket.NORMAL_CLOSURE, "");
+      assertNotNull(webSocketService.ws);
+      assertEquals(1, webSocketService.connectionIdsInterestedInNotifications.size());
+      assertEquals(1, webSocketService.subscribedProjectKeysByConfigScopes.size());
+      assertNull(webSocketService.subscribedProjectKeysByConfigScopes.get("configScope2"));
     }
   }
 }

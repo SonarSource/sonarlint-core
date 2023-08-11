@@ -85,6 +85,7 @@ public class WebSocketService {
   @Subscribe
   public void handleEvent(ConfigurationScopeRemovedEvent configurationScopeRemovedEvent) {
     var projectKey = subscribedProjectKeysByConfigScopes.remove(configurationScopeRemovedEvent.getRemovedConfigurationScopeId());
+    // TODO remove subscriptions related to the connection
     if (!subscribedProjectKeysByConfigScopes.containsValue(projectKey)) {
       unsubscribe(projectKey);
     }
@@ -97,6 +98,42 @@ public class WebSocketService {
       .stream().map(ConfigurationScope::getId)
       .collect(Collectors.toSet());
     subscribeAllBoundConfigurationScopes(configScopeIds);
+  }
+
+  @Subscribe
+  public void handleEvent(ConnectionConfigurationUpdatedEvent connectionConfigurationUpdatedEvent) {
+    var updatedConnectionId = connectionConfigurationUpdatedEvent.getUpdatedConnectionId();
+    var connection = connectionConfigurationRepository.getConnectionById(updatedConnectionId);
+    if (connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD)) {
+      // TODO what if connection type changed from SQ to SC or vice versa?
+      closeSocket();
+      if (connectionIdsInterestedInNotifications.contains(updatedConnectionId) && connection.isDisableNotifications()) {
+        // At some point connection was interested in notifications but not anymore. Remove it from both sets.
+        connectionIdsInterestedInNotifications.remove(updatedConnectionId);
+        removeProjectsFromSubscriptionListForConnection(updatedConnectionId);
+      }
+      if (!connection.isDisableNotifications()){
+        // Notifications are enabled, reopen the connection
+        createConnectionIfNeeded(updatedConnectionId);
+        var configScopeIds = configurationRepository.getConfigScopeIds();
+        subscribeAllBoundConfigurationScopes(configScopeIds);
+      } else if(!connectionIdsInterestedInNotifications.isEmpty()) {
+        removeProjectsFromSubscriptionListForConnection(updatedConnectionId);
+        // Some other connection needs WebSocket
+        createConnectionIfNeeded(connectionIdsInterestedInNotifications.stream().findFirst().orElse(null));
+        resubscribeAll();
+      }
+    }
+  }
+
+  @Subscribe
+  public void handleEvent(ConnectionConfigurationRemovedEvent connectionConfigurationRemovedEvent) {
+    String removedConnectionId = connectionConfigurationRemovedEvent.getRemovedConnectionId();
+    connectionIdsInterestedInNotifications.remove(removedConnectionId);
+    removeProjectsFromSubscriptionListForConnection(removedConnectionId);
+    if (connectionIdsInterestedInNotifications.isEmpty()) {
+      closeSocket();
+    }
   }
 
   private void subscribeAllBoundConfigurationScopes(Set<String> configScopeIds) {
@@ -113,36 +150,10 @@ public class WebSocketService {
     }
   }
 
-  @Subscribe
-  public void handleEvent(ConnectionConfigurationUpdatedEvent connectionConfigurationUpdatedEvent) {
-    var updatedConnectionId = connectionConfigurationUpdatedEvent.getUpdatedConnectionId();
-    var connection = connectionConfigurationRepository.getConnectionById(updatedConnectionId);
-    if (connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD)) {
-      // TODO what if connection type changed from SQ to SC or vice versa?
-      closeSocket();
-      connectionIdsInterestedInNotifications.remove(updatedConnectionId);
-      if (!connection.isDisableNotifications()){
-        // Notifications are enabled, reopen the connection
-        createConnectionIfNeeded(updatedConnectionId);
-        resubscribeAll();
-      } else if(!connectionIdsInterestedInNotifications.isEmpty()) {
-        var configurationScopesToUnsubscribe = configurationRepository.getConfigScopesWithBindingConfiguredTo(updatedConnectionId);
-        for(var configScope : configurationScopesToUnsubscribe) {
-          subscribedProjectKeysByConfigScopes.remove(configScope.getId());
-        }
-        // Some other connection needs WebSocket
-        createConnectionIfNeeded(connectionIdsInterestedInNotifications.stream().findFirst().orElse(null));
-        resubscribeAll();
-      }
-    }
-  }
-
-  @Subscribe
-  public void handleEvent(ConnectionConfigurationRemovedEvent connectionConfigurationRemovedEvent) {
-    String removedConnectionId = connectionConfigurationRemovedEvent.getRemovedConnectionId();
-    connectionIdsInterestedInNotifications.remove(removedConnectionId);
-    if (connectionIdsInterestedInNotifications.isEmpty()) {
-      closeSocket();
+  private void removeProjectsFromSubscriptionListForConnection(String updatedConnectionId) {
+    var configurationScopesToUnsubscribe = configurationRepository.getConfigScopesWithBindingConfiguredTo(updatedConnectionId);
+    for (var configScope : configurationScopesToUnsubscribe) {
+      subscribedProjectKeysByConfigScopes.remove(configScope.getId());
     }
   }
 
