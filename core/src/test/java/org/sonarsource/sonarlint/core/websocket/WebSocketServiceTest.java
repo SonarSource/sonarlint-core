@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClient;
@@ -42,6 +43,7 @@ import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnection
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -375,6 +377,38 @@ class WebSocketServiceTest {
       verify(httpClient).createWebSocketConnection(WEBSOCKET_DEV_URL);
       verify(webSocket).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey2\"}", true);
       verify(webSocket, times(0)).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey1\"}", true);
+    }
+  }
+
+  @Nested
+  class HandleConnectionConfigurationRemovedEvent {
+    @Test
+    void shouldCloseConnectionIfConnectionRemovedAndNobodyLeft() {
+      webSocketService.connectionIdsInterestedInNotifications.add("connectionId1");
+      webSocketService.ws = webSocket;
+
+      var connectionConfigurationRemovedEvent = new ConnectionConfigurationRemovedEvent("connectionId1");
+
+      webSocketService.handleEvent(connectionConfigurationRemovedEvent);
+
+      verify(webSocket).sendClose(WebSocket.NORMAL_CLOSURE, "");
+      assertNull(webSocketService.ws);
+      assertEquals(0, webSocketService.connectionIdsInterestedInNotifications.size());
+    }
+
+    @Test
+    void shouldNotCloseConnectionIfConnectionRemovedAndSomebodyLeft() {
+      webSocketService.connectionIdsInterestedInNotifications.add("connectionId1");
+      webSocketService.connectionIdsInterestedInNotifications.add("connectionId2");
+      webSocketService.ws = webSocket;
+
+      var connectionConfigurationRemovedEvent = new ConnectionConfigurationRemovedEvent("connectionId1");
+
+      webSocketService.handleEvent(connectionConfigurationRemovedEvent);
+
+      verify(webSocket, times(0)).sendClose(WebSocket.NORMAL_CLOSURE, "");
+      assertNotNull(webSocketService.ws);
+      assertEquals(1, webSocketService.connectionIdsInterestedInNotifications.size());
     }
   }
 }

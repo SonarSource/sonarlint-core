@@ -120,10 +120,11 @@ public class WebSocketService {
     var connection = connectionConfigurationRepository.getConnectionById(updatedConnectionId);
     if (connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD)) {
       // TODO what if connection type changed from SQ to SC or vice versa?
-      closeConnection(updatedConnectionId);
+      closeSocket();
+      connectionIdsInterestedInNotifications.remove(updatedConnectionId);
       if (!connection.isDisableNotifications()){
         // Notifications are enabled, reopen the connection
-        createConnectionIfNeeded(connection.getConnectionId());
+        createConnectionIfNeeded(updatedConnectionId);
         resubscribeAll();
       } else if(!connectionIdsInterestedInNotifications.isEmpty()) {
         var configurationScopesToUnsubscribe = configurationRepository.getConfigScopesWithBindingConfiguredTo(updatedConnectionId);
@@ -140,8 +141,9 @@ public class WebSocketService {
   @Subscribe
   public void handleEvent(ConnectionConfigurationRemovedEvent connectionConfigurationRemovedEvent) {
     String removedConnectionId = connectionConfigurationRemovedEvent.getRemovedConnectionId();
-    if (connectionIdsInterestedInNotifications.size() == 1 && connectionIdsInterestedInNotifications.contains(removedConnectionId)) {
-      closeConnection(removedConnectionId);
+    connectionIdsInterestedInNotifications.remove(removedConnectionId);
+    if (connectionIdsInterestedInNotifications.isEmpty()) {
+      closeSocket();
     }
   }
 
@@ -184,11 +186,6 @@ public class WebSocketService {
     if (this.ws == null) {
       this.ws = connectionAwareHttpClientProvider.getHttpClient(connectionId).createWebSocketConnection(WEBSOCKET_DEV_URL);
     }
-  }
-
-  private void closeConnection(String connectionId) {
-    connectionIdsInterestedInNotifications.remove(connectionId);
-    closeSocket();
   }
 
   private void closeSocket() {
