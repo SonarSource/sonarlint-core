@@ -24,7 +24,6 @@ import com.google.gson.Gson;
 import java.net.http.WebSocket;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -132,7 +131,7 @@ public class WebSocketService {
           subscribedProjectKeysByConfigScopes.remove(configScope.getId());
         }
         // Some other connection needs WebSocket
-        createConnectionIfNeeded(connectionIdsInterestedInNotifications.stream().findFirst().get());
+        createConnectionIfNeeded(connectionIdsInterestedInNotifications.stream().findFirst().orElse(null));
         resubscribeAll();
       }
     }
