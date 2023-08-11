@@ -21,8 +21,12 @@ package org.sonarsource.sonarlint.core.serverconnection.storage;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
@@ -79,7 +83,8 @@ public class ServerIssueFixtures {
       Instant.now(),
       IssueSeverity.MINOR,
       RuleType.VULNERABILITY,
-      new TextRangeWithHash(1, 2, 3, 4, "ab12"), "context")
+      new TextRangeWithHash(1, 2, 3, 4, "ab12"), "context",
+      CleanCodeAttribute.TRUSTWORTHY, Map.of(SoftwareQuality.SECURITY, ImpactSeverity.HIGH))
         .setFlows(List.of(aServerTaintIssueFlow()));
   }
 

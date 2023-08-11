@@ -75,6 +75,11 @@ message Flow {
   repeated Location location = 1;
 }
 
+message Impact {
+  string softwareQuality = 1;
+  string severity = 2;
+}
+
 message TextRange {
   int32 start_line = 1;
   int32 start_line_offset = 2;

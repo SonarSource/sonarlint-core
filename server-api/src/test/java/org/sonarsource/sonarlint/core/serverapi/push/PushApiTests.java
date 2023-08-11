@@ -31,9 +31,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 
@@ -419,6 +422,67 @@ class PushApiTests {
       .containsOnly(
         tuple("functions/taint.js", "sink: tainted value is used to perform a security-sensitive operation", 17, 10, 3, 2, "hash1"),
         tuple("functions/taint2.js", "sink: tainted value is used to perform a security-sensitive operation", 18, 11, 4, 3, "hash2"));
+  }
+
+  @Test
+  void should_notify_taint_vulnerability_raised_event_with_cct() {
+    var mockResponse = new MockResponse();
+    mockResponse.setBody("event: TaintVulnerabilityRaised\n" +
+      "data: {" +
+      "\"key\": \"taintKey\"," +
+      "\"projectKey\": \"projectKey1\"," +
+      "\"branch\": \"branch\"," +
+      "\"creationDate\": 123456789," +
+      "\"ruleKey\": \"javasecurity:S123\"," +
+      "\"severity\": \"MAJOR\"," +
+      "\"type\": \"VULNERABILITY\"," +
+      "\"cleanCodeAttribute\": \"TRUSTWORTHY\"," +
+      "\"impacts\": [ { \"softwareQuality\": \"SECURITY\", \"severity\": \"HIGH\" } ]," +
+      "\"type\": \"VULNERABILITY\"," +
+      "\"mainLocation\": {" +
+      "  \"filePath\": \"functions/taint.js\"," +
+      "  \"message\": \"blah blah\"," +
+      "  \"textRange\": {" +
+      "    \"startLine\": 17," +
+      "    \"startLineOffset\": 10," +
+      "    \"endLine\": 3," +
+      "    \"endLineOffset\": 2," +
+      "    \"hash\": \"hash\"" +
+      "  }" +
+      "}," +
+      "\"flows\": [{" +
+      "  \"locations\": [{" +
+      "    \"filePath\": \"functions/taint.js\"," +
+      "    \"message\": \"sink: tainted value is used to perform a security-sensitive operation\"," +
+      "    \"textRange\": {" +
+      "      \"startLine\": 17," +
+      "      \"startLineOffset\": 10," +
+      "      \"endLine\": 3," +
+      "      \"endLineOffset\": 2," +
+      "      \"hash\": \"hash1\"" +
+      "    }" +
+      "  }," +
+      "  {" +
+      "    \"filePath\": \"functions/taint2.js\"," +
+      "    \"message\": \"sink: tainted value is used to perform a security-sensitive operation\"," +
+      "    \"textRange\": {" +
+      "      \"startLine\": 18," +
+      "      \"startLineOffset\": 11," +
+      "      \"endLine\": 4," +
+      "      \"endLineOffset\": 3," +
+      "      \"hash\": \"hash2\"" +
+      "    }" +
+      "  }]" +
+      "}]" +
+      "}\n\n");
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey&languages=java,py", mockResponse);
+
+    List<ServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
+    underTest.subscribe(new LinkedHashSet<>(List.of("projectKey")), new LinkedHashSet<>(List.of(Language.JAVA, Language.PYTHON)), receivedEvents::add, silentLogOutput);
+
+    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(receivedEvents)
+      .extracting("key", "projectKey", "branchName", "creationDate", "ruleKey", "severity", "type", "cleanCodeAttribute", "impacts")
+      .containsOnly(tuple("taintKey", "projectKey1", "branch", Instant.parse("1970-01-02T10:17:36.789Z"), "javasecurity:S123", IssueSeverity.MAJOR, RuleType.VULNERABILITY, CleanCodeAttribute.TRUSTWORTHY, Map.of(SoftwareQuality.SECURITY, ImpactSeverity.HIGH))));
   }
 
   @Test
