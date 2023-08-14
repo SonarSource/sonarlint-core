@@ -56,6 +56,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.websocket.SonarCloudWebSocket.WEBSOCKET_DEV_URL;
 
@@ -666,6 +667,29 @@ class WebSocketServiceTest {
       rawMessageConsumer.accept("{\"eventType\": \"Malformed");
 
       verifyNoInteractions(client);
+    }
+
+    @Test
+    void should_do_nothing_when_the_event_is_duplicated() {
+      var configurationScopesAddedEvent = new ConfigurationScopesAddedEvent(Set.of("configScope1", "configScope2"));
+      var bindingConfiguration = new BindingConfiguration("connectionId", "projectKey", false);
+      var connection = new SonarCloudConnectionConfiguration("connectionId", "myOrg", false);
+
+      when(configurationRepository.getBindingConfiguration("configScope1")).thenReturn(bindingConfiguration);
+      when(configurationRepository.getBoundScopesByProject("projectKey")).thenReturn(List.of(new BoundScope("configScope1", "connectionId", "projectKey")));
+      when(connectionConfigurationRepository.getConnectionById("connectionId")).thenReturn(connection);
+      when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+      webSocketService.handleEvent(configurationScopesAddedEvent);
+
+      ArgumentCaptor<Consumer> captor = ArgumentCaptor.forClass(Consumer.class);
+      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture());
+      var rawMessageConsumer = captor.getValue();
+      rawMessageConsumer.accept("{\"eventType\": \"QualityGateChanged\", \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
+      verify(client).showSmartNotification(refEq(new ShowSmartNotificationParams("msg", "lnk", Set.of("configScope1"), "QUALITY_GATE", "connectionId")));
+
+      rawMessageConsumer.accept("{\"eventType\": \"QualityGateChanged\", \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
+      verifyNoMoreInteractions(client);
     }
   }
 }

@@ -19,11 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.websocket;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import java.net.http.WebSocket;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -38,14 +43,26 @@ public class SonarCloudWebSocket {
   private static final Map<String, EventParser<?>> parsersByType = Map.of(
     "QualityGateChanged", new QualityGateChangedEventParser());
 
-  private WebSocket ws;
   private static final Gson gson = new Gson();
+  private WebSocket ws;
+  private final History history = new History();
+  private final ScheduledExecutorService messageHistoryCleaner = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "sonarcloud-websocket-history-cleaner"));
 
   public static SonarCloudWebSocket create(HttpClient httpClient, Consumer<ServerEvent> serverEventConsumer) {
-    return new SonarCloudWebSocket(httpClient.createWebSocketConnection(WEBSOCKET_DEV_URL, rawEvent -> handleRawMessage(rawEvent, serverEventConsumer)));
+    var webSocket = new SonarCloudWebSocket();
+    webSocket.ws = httpClient.createWebSocketConnection(WEBSOCKET_DEV_URL, rawEvent -> webSocket.handleRawMessage(rawEvent, serverEventConsumer));
+    webSocket.messageHistoryCleaner.scheduleAtFixedRate(webSocket::cleanUpMessageHistory, 0, 1, TimeUnit.MINUTES);
+    return webSocket;
   }
 
-  public SonarCloudWebSocket(WebSocket ws) {
+  private void cleanUpMessageHistory() {
+    history.forgetOlderThan(Duration.ofMinutes(1));
+  }
+
+  private SonarCloudWebSocket() {
+  }
+
+  SonarCloudWebSocket(WebSocket ws) {
     this.ws = ws;
   }
 
@@ -66,7 +83,12 @@ public class SonarCloudWebSocket {
     this.ws.sendText(jsonString, true);
   }
 
-  private static void handleRawMessage(String message, Consumer<ServerEvent> serverEventConsumer) {
+  private void handleRawMessage(String message, Consumer<ServerEvent> serverEventConsumer) {
+    if (history.exists(message)) {
+      // SC implements at least 1 time delivery, so we need to de-duplicate the messages
+      return;
+    }
+    history.recordMessage(message);
     try {
       var wsEvent = gson.fromJson(message, WebSocketEvent.class);
       parse(wsEvent).ifPresent(serverEventConsumer);
@@ -94,6 +116,9 @@ public class SonarCloudWebSocket {
     if (this.ws != null) {
       this.ws.sendClose(WebSocket.NORMAL_CLOSURE, "");
       this.ws = null;
+    }
+    if (!MoreExecutors.shutdownAndAwaitTermination(messageHistoryCleaner, 1, TimeUnit.SECONDS)) {
+      SonarLintLogger.get().warn("Unable to stop SonarCLoud WebSocket history cleaner in a timely manner");
     }
   }
 
