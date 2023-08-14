@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -37,6 +38,7 @@ import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 
 import static java.util.Objects.requireNonNull;
@@ -77,17 +79,7 @@ public class WebSocketService {
 
   @Subscribe
   public void handleEvent(ConfigurationScopesAddedEvent configurationScopesAddedEvent) {
-    for (var configurationScopeId : configurationScopesAddedEvent.getAddedConfigurationScopeIds()) {
-      var bindingConfiguration = configurationRepository.getBindingConfiguration(configurationScopeId);
-      if (bindingConfiguration != null && bindingConfiguration.isBound()) {
-        var connection = connectionConfigurationRepository.getConnectionById(requireNonNull(bindingConfiguration.getConnectionId()));
-        if (connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD) &&
-          !connection.isDisableNotifications()) {
-          createConnectionIfNeeded(bindingConfiguration.getConnectionId());
-          subscribe(configurationScopeId, bindingConfiguration.getSonarProjectKey());
-        }
-      }
-    }
+    subscribeAllBoundConfigurationScopes(configurationScopesAddedEvent.getAddedConfigurationScopeIds());
   }
 
   @Subscribe
@@ -101,28 +93,32 @@ public class WebSocketService {
   @Subscribe
   public void handleEvent(ConnectionConfigurationAddedEvent connectionConfigurationAddedEvent) {
     // This is only to handle the case where binding was invalid (connection did not exist) and became valid (matching connection was created)
-    var configScopes = configurationRepository.getConfigScopesWithBindingConfiguredTo(connectionConfigurationAddedEvent.getAddedConnectionId());
-    for (var configurationScope : configScopes) {
-      var bindingConfiguration = configurationRepository.getBindingConfiguration(configurationScope.getId());
-      if (bindingConfiguration != null && bindingConfiguration.isBound()) {
-        var connection = connectionConfigurationRepository.getConnectionById(requireNonNull(bindingConfiguration.getConnectionId()));
-        if (connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD) &&
-          !connection.isDisableNotifications()) {
-          createConnectionIfNeeded(bindingConfiguration.getConnectionId());
-          subscribe(configurationScope.getId(), bindingConfiguration.getSonarProjectKey());
-        }
-      }
-    }
+    var configScopeIds = configurationRepository.getConfigScopesWithBindingConfiguredTo(connectionConfigurationAddedEvent.getAddedConnectionId())
+      .stream().map(ConfigurationScope::getId)
+      .collect(Collectors.toSet());
+    subscribeAllBoundConfigurationScopes(configScopeIds);
   }
 
   @Subscribe
   public void handleEvent(ConnectionConfigurationUpdatedEvent connectionConfigurationUpdatedEvent) {
     var updatedConnectionId = connectionConfigurationUpdatedEvent.getUpdatedConnectionId();
     var connection = connectionConfigurationRepository.getConnectionById(updatedConnectionId);
-    if (connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD)) { // TODO what if connection type changed from SQ to SC or vice versa?
-      closeConnection(updatedConnectionId);
-      if (!connection.isDisableNotifications() || !connectionIdsInterestedInNotifications.isEmpty()) {
-        createConnectionIfNeeded(connection.getConnectionId());
+    if (connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD)) {
+      // TODO what if connection type changed from SQ to SC or vice versa?
+      closeSocket();
+      boolean notificationsGotDisabledForConnection = connectionIdsInterestedInNotifications.contains(updatedConnectionId) && connection.isDisableNotifications();
+      if (notificationsGotDisabledForConnection) {
+        connectionIdsInterestedInNotifications.remove(updatedConnectionId);
+        removeProjectsFromSubscriptionListForConnection(updatedConnectionId);
+      }
+      if (!connection.isDisableNotifications()) {
+        createConnectionIfNeeded(updatedConnectionId);
+        subscribeAllBoundConfigurationScopes(configurationRepository.getConfigScopeIds());
+      } else if (!connectionIdsInterestedInNotifications.isEmpty()) {
+        connectionIdsInterestedInNotifications.remove(updatedConnectionId);
+        removeProjectsFromSubscriptionListForConnection(updatedConnectionId);
+        // Some other connection needs WebSocket
+        createConnectionIfNeeded(connectionIdsInterestedInNotifications.stream().findFirst().orElse(null));
         resubscribeAll();
       }
     }
@@ -131,8 +127,31 @@ public class WebSocketService {
   @Subscribe
   public void handleEvent(ConnectionConfigurationRemovedEvent connectionConfigurationRemovedEvent) {
     String removedConnectionId = connectionConfigurationRemovedEvent.getRemovedConnectionId();
-    if (connectionIdsInterestedInNotifications.size() == 1 && connectionIdsInterestedInNotifications.contains(removedConnectionId)) {
-      closeConnection(removedConnectionId);
+    connectionIdsInterestedInNotifications.remove(removedConnectionId);
+    removeProjectsFromSubscriptionListForConnection(removedConnectionId);
+    if (connectionIdsInterestedInNotifications.isEmpty()) {
+      closeSocket();
+    }
+  }
+
+  private void subscribeAllBoundConfigurationScopes(Set<String> configScopeIds) {
+    for (var configurationScopeId : configScopeIds) {
+      var bindingConfiguration = configurationRepository.getBindingConfiguration(configurationScopeId);
+      if (bindingConfiguration != null && bindingConfiguration.isBound()) {
+        var connection = connectionConfigurationRepository.getConnectionById(requireNonNull(bindingConfiguration.getConnectionId()));
+        if (connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD) &&
+          !connection.isDisableNotifications()) {
+          createConnectionIfNeeded(bindingConfiguration.getConnectionId());
+          subscribe(configurationScopeId, bindingConfiguration.getSonarProjectKey());
+        }
+      }
+    }
+  }
+
+  private void removeProjectsFromSubscriptionListForConnection(String updatedConnectionId) {
+    var configurationScopesToUnsubscribe = configurationRepository.getConfigScopesWithBindingConfiguredTo(updatedConnectionId);
+    for (var configScope : configurationScopesToUnsubscribe) {
+      subscribedProjectKeysByConfigScopes.remove(configScope.getId());
     }
   }
 
@@ -175,11 +194,6 @@ public class WebSocketService {
     if (this.ws == null) {
       this.ws = connectionAwareHttpClientProvider.getHttpClient(connectionId).createWebSocketConnection(WEBSOCKET_DEV_URL);
     }
-  }
-
-  private void closeConnection(String connectionId) {
-    connectionIdsInterestedInNotifications.remove(connectionId);
-    closeSocket();
   }
 
   private void closeSocket() {
