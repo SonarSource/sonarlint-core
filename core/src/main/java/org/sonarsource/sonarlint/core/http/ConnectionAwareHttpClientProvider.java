@@ -19,18 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.http;
 
-import java.net.URI;
-import java.net.http.WebSocket;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
-import org.sonarsource.sonarlint.core.websocket.WebSocketService;
 
 @Named
 @Singleton
