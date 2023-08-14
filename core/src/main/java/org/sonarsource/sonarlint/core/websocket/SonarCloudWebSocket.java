@@ -118,7 +118,7 @@ public class SonarCloudWebSocket {
       this.ws = null;
     }
     if (!MoreExecutors.shutdownAndAwaitTermination(messageHistoryCleaner, 1, TimeUnit.SECONDS)) {
-      SonarLintLogger.get().warn("Unable to stop SonarCLoud WebSocket history cleaner in a timely manner");
+      SonarLintLogger.get().warn("Unable to stop SonarCloud WebSocket history cleaner in a timely manner");
     }
   }
 
