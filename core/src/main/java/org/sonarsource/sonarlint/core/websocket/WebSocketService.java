@@ -24,7 +24,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
@@ -38,6 +42,7 @@ import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.serverconnection.events.EventDispatcher;
 import org.sonarsource.sonarlint.core.websocket.events.QualityGateChangedEvent;
 
@@ -59,6 +64,24 @@ public class WebSocketService {
     this.connectionAwareHttpClientProvider = connectionAwareHttpClientProvider;
     this.eventRouter = new EventDispatcher()
       .dispatch(QualityGateChangedEvent.class, new ShowSmartNotificationOnQualityGateChangedEvent(client, configurationRepository));
+  }
+
+  @PostConstruct
+  public void initialize() {
+    ScheduledExecutorService webSocketConnectionRefresher = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "WebSocket connection refresher"));
+    webSocketConnectionRefresher.scheduleAtFixedRate(this::refreshConnectionIfNeeded, 119, 119, TimeUnit.MINUTES);
+  }
+
+  private void refreshConnectionIfNeeded() {
+    if (connectionConfigurationRepository.hasConnectionWithOrigin(SonarCloudConnectionConfiguration.getSonarCloudUrl())) {
+      var connectionId = connectionIdsInterestedInNotifications.stream().findFirst().orElse(null);
+      if (this.sonarCloudWebSocket != null && connectionId != null) {
+        // If connection already exists, close it and create new one before it expires on its own
+        closeSocket();
+        createConnectionIfNeeded(connectionId);
+        resubscribeAll();
+      }
+    }
   }
 
   @Subscribe
