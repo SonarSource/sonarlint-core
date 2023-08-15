@@ -90,7 +90,8 @@ class StandaloneRulesMediumTests {
 
     var ruleDetails = backend.getRulesService().getStandaloneRuleDetails(new GetStandaloneRuleDescriptionParams("java:S1176")).get();
 
-    assertThat(ruleDetails.getRuleDefinition().getCleanCodeAttribute()).hasValue(CleanCodeAttribute.defaultCleanCodeAttribute());
+    assertThat(ruleDetails.getRuleDefinition().getCleanCodeAttribute()).isEmpty();
+    // TODO Check why we get this default value from the sonar-plugin-api
     assertThat(ruleDetails.getRuleDefinition().getDefaultImpacts()).containsExactly(entry(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM));
     assertThat(ruleDetails.getRuleDefinition().getName()).isEqualTo("Public types, methods and fields (API) should be documented with Javadoc");
     assertThat(ruleDetails.getRuleDefinition().getSeverity()).isEqualTo(IssueSeverity.MAJOR);

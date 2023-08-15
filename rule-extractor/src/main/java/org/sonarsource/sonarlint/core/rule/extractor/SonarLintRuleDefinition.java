@@ -68,10 +68,7 @@ public class SonarLintRuleDefinition {
     this.defaultSeverity = IssueSeverity.valueOf(rule.severity());
     this.type = RuleType.valueOf(rule.type().name());
     var cleanCodeAttributeFromRule = rule.cleanCodeAttribute();
-    this.cleanCodeAttribute = cleanCodeAttributeFromRule == null ?
-      // TODO Should we keep this as a transition feature? When do we drop this default value?
-      CleanCodeAttribute.defaultCleanCodeAttribute() :
-      CleanCodeAttribute.valueOf(cleanCodeAttributeFromRule.name());
+    this.cleanCodeAttribute = cleanCodeAttributeFromRule == null ? null : CleanCodeAttribute.valueOf(cleanCodeAttributeFromRule.name());
     this.defaultImpacts = rule.defaultImpacts().entrySet()
       .stream()
       .map(e -> Map.entry(SoftwareQuality.valueOf(e.getKey().name()), ImpactSeverity.valueOf(e.getValue().name())))
