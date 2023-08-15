@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.smartnotifications;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,6 +39,7 @@ import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
+import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
@@ -61,6 +63,7 @@ public class SmartNotifications {
   private final Map<String, Boolean> isConnectionIdSupported;
   private final LastEventPolling lastEventPollingService;
   private ScheduledExecutorService smartNotificationsPolling;
+  private Set<String> sonarCloudEventsToIgnore = new HashSet<>();
 
   public SmartNotifications(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository,
     ServerApiProvider serverApiProvider, SonarLintClient client, StorageService storageService, TelemetryServiceImpl telemetryService, InitializeParams params) {
@@ -102,6 +105,7 @@ public class SmartNotifications {
     var developersApi = serverApi.developers();
 
     var isSupported = isConnectionIdSupported.computeIfAbsent(connectionId, v -> developersApi.isSupported());
+    var connection = connectionRepository.getConnectionById(connectionId);
     if (Boolean.TRUE.equals(isSupported)) {
       var projectKeysByLastEventPolling = scopeIdsPerProjectKey.keySet().stream()
         .collect(Collectors.toMap(Function.identity(),
@@ -110,10 +114,12 @@ public class SmartNotifications {
       var notifications = retrieveServerNotifications(developersApi, projectKeysByLastEventPolling);
 
       for (var n : notifications) {
-        var smartNotification = new ShowSmartNotificationParams(n.message(), n.link(), scopeIdsPerProjectKey.get(n.projectKey()),
-          n.category(), connectionId);
-        client.showSmartNotification(smartNotification);
-        telemetryService.smartNotificationsReceived(n.category());
+        if (connection != null && connection.getKind() == ConnectionKind.SONARQUBE && !sonarCloudEventsToIgnore.contains(n.category())) {
+          var smartNotification = new ShowSmartNotificationParams(n.message(), n.link(), scopeIdsPerProjectKey.get(n.projectKey()),
+            n.category(), connectionId);
+          client.showSmartNotification(smartNotification);
+          telemetryService.smartNotificationsReceived(n.category());
+        }
       }
 
       projectKeysByLastEventPolling.keySet()
@@ -143,6 +149,10 @@ public class SmartNotifications {
         e.getProjectKey(),
         e.getTime()))
       .collect(Collectors.toList());
+  }
+
+  public void addEventsToIgnore(Set<String> events) {
+    sonarCloudEventsToIgnore.addAll(events);
   }
 
 }

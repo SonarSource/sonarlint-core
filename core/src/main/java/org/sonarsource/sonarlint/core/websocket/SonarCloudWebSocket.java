@@ -26,6 +26,7 @@ import java.net.http.WebSocket;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -121,6 +122,14 @@ public class SonarCloudWebSocket {
     if (!MoreExecutors.shutdownAndAwaitTermination(sonarCloudWebSocketScheduler, 1, TimeUnit.SECONDS)) {
       SonarLintLogger.get().warn("Unable to stop SonarCloud WebSocket job scheduler in a timely manner");
     }
+  }
+
+  public boolean isConnectionSuccessful() {
+    return this.ws != null;
+  }
+
+  public Set<String> getSupportedEventTypes() {
+    return parsersByType.keySet();
   }
 
   private static class WebSocketEvent {

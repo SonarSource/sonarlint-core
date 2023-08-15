@@ -39,6 +39,7 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverconnection.events.EventDispatcher;
+import org.sonarsource.sonarlint.core.smartnotifications.SmartNotifications;
 import org.sonarsource.sonarlint.core.websocket.events.QualityGateChangedEvent;
 
 import static java.util.Objects.requireNonNull;
@@ -51,14 +52,16 @@ public class WebSocketService {
   private final ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider;
   protected SonarCloudWebSocket sonarCloudWebSocket;
   private final EventDispatcher eventRouter;
+  private final SmartNotifications smartNotifications;
 
   public WebSocketService(SonarLintClient client, ConnectionConfigurationRepository connectionConfigurationRepository, ConfigurationRepository configurationRepository,
-    ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider) {
+    ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider, SmartNotifications smartNotifications) {
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.configurationRepository = configurationRepository;
     this.connectionAwareHttpClientProvider = connectionAwareHttpClientProvider;
     this.eventRouter = new EventDispatcher()
       .dispatch(QualityGateChangedEvent.class, new ShowSmartNotificationOnQualityGateChangedEvent(client, configurationRepository));
+    this.smartNotifications = smartNotifications;
   }
 
   protected void refreshConnectionIfNeeded() {
@@ -183,6 +186,9 @@ public class WebSocketService {
     connectionIdsInterestedInNotifications.add(connectionId);
     if (this.sonarCloudWebSocket == null) {
       this.sonarCloudWebSocket = SonarCloudWebSocket.create(connectionAwareHttpClientProvider.getHttpClient(connectionId), eventRouter::handle, this::refreshConnectionIfNeeded);
+      if (this.sonarCloudWebSocket.isConnectionSuccessful()) {
+        this.smartNotifications.addEventsToIgnore(this.sonarCloudWebSocket.getSupportedEventTypes());
+      }
     }
   }
 

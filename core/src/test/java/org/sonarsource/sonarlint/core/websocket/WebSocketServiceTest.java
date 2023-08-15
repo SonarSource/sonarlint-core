@@ -45,6 +45,7 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
+import org.sonarsource.sonarlint.core.smartnotifications.SmartNotifications;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -67,6 +68,7 @@ class WebSocketServiceTest {
   private static HttpClient httpClient;
   private static WebSocket webSocket;
   private static WebSocketService webSocketService;
+  private static SmartNotifications smartNotifications;
   private SonarLintClient client;
 
   @BeforeEach
@@ -77,7 +79,8 @@ class WebSocketServiceTest {
     httpClient = mock(HttpClient.class);
     webSocket = mock(WebSocket.class);
     client = mock(SonarLintClient.class);
-    webSocketService = new WebSocketService(client, connectionConfigurationRepository, configurationRepository, connectionAwareHttpClientProvider);
+    smartNotifications = mock(SmartNotifications.class);
+    webSocketService = new WebSocketService(client, connectionConfigurationRepository, configurationRepository, connectionAwareHttpClientProvider, smartNotifications);
   }
 
   @Nested
