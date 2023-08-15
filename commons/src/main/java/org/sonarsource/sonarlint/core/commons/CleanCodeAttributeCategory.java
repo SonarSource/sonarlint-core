@@ -20,8 +20,18 @@
 package org.sonarsource.sonarlint.core.commons;
 
 public enum CleanCodeAttributeCategory {
-  ADAPTABLE,
-  CONSISTENT,
-  INTENTIONAL,
-  RESPONSIBLE
+  ADAPTABLE("Adaptability"),
+  CONSISTENT("Consistency"),
+  INTENTIONAL("Intentionality"),
+  RESPONSIBLE("Responsibility");
+
+  private final String issueLabel;
+
+  CleanCodeAttributeCategory(String issueLabel) {
+    this.issueLabel = issueLabel;
+  }
+
+  public String getIssueLabel() {
+    return issueLabel;
+  }
 }

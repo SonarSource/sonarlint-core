@@ -20,7 +20,17 @@
 package org.sonarsource.sonarlint.core.commons;
 
 public enum SoftwareQuality {
-  MAINTAINABILITY,
-  RELIABILITY,
-  SECURITY
+  MAINTAINABILITY("Maintainability"),
+  RELIABILITY("Reliability"),
+  SECURITY("Security");
+
+  private final String displayLabel;
+
+  SoftwareQuality(String displayLabel) {
+    this.displayLabel = displayLabel;
+  }
+
+  public String getDisplayLabel() {
+    return displayLabel;
+  }
 }

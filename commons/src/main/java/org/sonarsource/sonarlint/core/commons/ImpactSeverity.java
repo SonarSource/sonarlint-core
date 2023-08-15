@@ -20,7 +20,17 @@
 package org.sonarsource.sonarlint.core.commons;
 
 public enum ImpactSeverity {
-  LOW,
-  MEDIUM,
-  HIGH
+  LOW("Low"),
+  MEDIUM("Medium"),
+  HIGH("High");
+
+  private final String displayLabel;
+
+  ImpactSeverity(String displayLabel) {
+    this.displayLabel = displayLabel;
+  }
+
+  public String getDisplayLabel() {
+    return displayLabel;
+  }
 }

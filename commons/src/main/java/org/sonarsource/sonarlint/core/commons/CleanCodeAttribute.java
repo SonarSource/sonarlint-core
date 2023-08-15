@@ -26,28 +26,35 @@ import static org.sonarsource.sonarlint.core.commons.CleanCodeAttributeCategory.
 
 public enum CleanCodeAttribute {
 
-  CONVENTIONAL(CONSISTENT),
-  FORMATTED(CONSISTENT),
-  IDENTIFIABLE(CONSISTENT),
+  CONVENTIONAL("Not conventional", CONSISTENT),
+  FORMATTED("Not formatted", CONSISTENT),
+  IDENTIFIABLE("Not identifiable", CONSISTENT),
 
-  CLEAR(INTENTIONAL),
-  COMPLETE(INTENTIONAL),
-  EFFICIENT(INTENTIONAL),
-  LOGICAL(INTENTIONAL),
+  CLEAR("Not clean", INTENTIONAL),
+  COMPLETE("Not complete", INTENTIONAL),
+  EFFICIENT("Not efficient", INTENTIONAL),
+  LOGICAL("Not logical", INTENTIONAL),
 
-  DISTINCT(ADAPTABLE),
-  FOCUSED(ADAPTABLE),
-  MODULAR(ADAPTABLE),
-  TESTED(ADAPTABLE),
+  DISTINCT("Not distinct", ADAPTABLE),
+  FOCUSED("Not focused", ADAPTABLE),
+  MODULAR("Not modular", ADAPTABLE),
+  TESTED("Not tested", ADAPTABLE),
 
-  LAWFUL(RESPONSIBLE),
-  RESPECTFUL(RESPONSIBLE),
-  TRUSTWORTHY(RESPONSIBLE);
+  LAWFUL("Not lawful", RESPONSIBLE),
+  RESPECTFUL("Not respectful", RESPONSIBLE),
+  TRUSTWORTHY("Not trustworthy", RESPONSIBLE);
 
   private final CleanCodeAttributeCategory attributeCategory;
 
-  CleanCodeAttribute(CleanCodeAttributeCategory attributeCategory) {
+  private final String issueLabel;
+
+  CleanCodeAttribute(String issueLabel, CleanCodeAttributeCategory attributeCategory) {
+    this.issueLabel = issueLabel;
     this.attributeCategory = attributeCategory;
+  }
+
+  public String getIssueLabel() {
+    return issueLabel;
   }
 
   public CleanCodeAttributeCategory getAttributeCategory() {
