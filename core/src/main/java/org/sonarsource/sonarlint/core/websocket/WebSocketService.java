@@ -72,15 +72,13 @@ public class WebSocketService {
     webSocketConnectionRefresher.scheduleAtFixedRate(this::refreshConnectionIfNeeded, 119, 119, TimeUnit.MINUTES);
   }
 
-  private void refreshConnectionIfNeeded() {
-    if (connectionConfigurationRepository.hasConnectionWithOrigin(SonarCloudConnectionConfiguration.getSonarCloudUrl())) {
-      var connectionId = connectionIdsInterestedInNotifications.stream().findFirst().orElse(null);
-      if (this.sonarCloudWebSocket != null && connectionId != null) {
-        // If connection already exists, close it and create new one before it expires on its own
-        closeSocket();
-        createConnectionIfNeeded(connectionId);
-        resubscribeAll();
-      }
+  protected void refreshConnectionIfNeeded() {
+    var connectionId = connectionIdsInterestedInNotifications.stream().findFirst().orElse(null);
+    if (this.sonarCloudWebSocket != null && connectionId != null) {
+      // If connection already exists, close it and create new one before it expires on its own
+      closeSocket();
+      createConnectionIfNeeded(connectionId);
+      resubscribeAll();
     }
   }
 
