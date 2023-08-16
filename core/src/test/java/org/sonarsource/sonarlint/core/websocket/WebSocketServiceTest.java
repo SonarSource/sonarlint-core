@@ -692,4 +692,43 @@ class WebSocketServiceTest {
       verifyNoMoreInteractions(client);
     }
   }
+
+  @Nested
+  class ConnectionRefresh {
+    @Test
+    void should_do_nothing_if_connection_does_not_exist() {
+      webSocketService.refreshConnectionIfNeeded();
+
+      verify(webSocket, times(0)).sendClose(WebSocket.NORMAL_CLOSURE, "");
+      verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
+      verify(webSocket, times(0)).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey\"}", true);
+    }
+
+    @Test
+    void should_do_nothing_if_connection_exists_but_nobody_interested() {
+      webSocketService.sonarCloudWebSocket = new SonarCloudWebSocket(webSocket);
+
+      webSocketService.refreshConnectionIfNeeded();
+
+      verify(webSocket, times(0)).sendClose(WebSocket.NORMAL_CLOSURE, "");
+      verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
+      verify(webSocket, times(0)).sendText(any(String.class), any(Boolean.class));
+    }
+
+    @Test
+    void should_refresh_connection_if_needed() {
+      webSocketService.sonarCloudWebSocket = new SonarCloudWebSocket(webSocket);
+      webSocketService.connectionIdsInterestedInNotifications.add("connectionId");
+      webSocketService.subscribedProjectKeysByConfigScopes.put("configScope1", "projectKey1");
+
+      when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+
+      webSocketService.refreshConnectionIfNeeded();
+
+      verify(webSocket).sendClose(WebSocket.NORMAL_CLOSURE, "");
+      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
+      verify(webSocket).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey1\"}", true);
+    }
+  }
 }
