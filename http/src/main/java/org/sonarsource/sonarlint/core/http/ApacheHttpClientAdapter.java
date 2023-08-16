@@ -251,31 +251,33 @@ class ApacheHttpClientAdapter implements HttpClient {
 
   }
 
-  public WebSocket createWebSocketConnection(String url, Consumer<String> messageConsumer) {
+  public WebSocket createWebSocketConnection(String url, Consumer<String> messageConsumer, Runnable onClosedRunnable) {
+    // TODO handle handshake or other errors
     return java.net.http.HttpClient
         .newHttpClient()
         .newWebSocketBuilder()
         .header("Authorization", "Bearer " + usernameOrToken)
-        .buildAsync(URI.create(url), new WebSocketClient(messageConsumer))
+        .buildAsync(URI.create(url), new WebSocketClient(messageConsumer, onClosedRunnable))
         .join();
   }
 
   private static class WebSocketClient implements WebSocket.Listener {
     private final Consumer<String> messageConsumer;
+    private final Runnable onClosedRunnable;
 
-    public WebSocketClient(Consumer<String> messageConsumer) {
+    public WebSocketClient(Consumer<String> messageConsumer, Runnable onClosedRunnable) {
       this.messageConsumer = messageConsumer;
+      this.onClosedRunnable = onClosedRunnable;
     }
 
     @Override
     public void onOpen(WebSocket webSocket) {
-      SonarLintLogger.get().debug("onOpen using subprotocol " + webSocket.getSubprotocol());
+      SonarLintLogger.get().debug("WebSocket opened");
       WebSocket.Listener.super.onOpen(webSocket);
     }
 
     @Override
     public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
-      SonarLintLogger.get().debug("onText received " + data);
       messageConsumer.accept(data.toString());
       return WebSocket.Listener.super.onText(webSocket, data, last);
     }
@@ -283,7 +285,15 @@ class ApacheHttpClientAdapter implements HttpClient {
     @Override
     public void onError(WebSocket webSocket, Throwable error) {
       SonarLintLogger.get().error("Error occurred on the WebSocket ", error);
+      onClosedRunnable.run();
       WebSocket.Listener.super.onError(webSocket, error);
+    }
+
+    @Override
+    public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
+      SonarLintLogger.get().debug("WebSocket closed");
+      onClosedRunnable.run();
+      return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
     }
   }
 
