@@ -653,7 +653,6 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     if (ruleDescriptionContextKey != null) {
       issueEntity.setProperty(RULE_DESCRIPTION_CONTEXT_KEY_PROPERTY_NAME, ruleDescriptionContextKey);
     }
-    issueEntity.setBlob(FLOWS_BLOB_NAME, toProtoFlow(issue.getFlows()));
     issue.getCleanCodeAttribute().ifPresent(attribute -> issueEntity.setProperty(CLEAN_CODE_ATTRIBUTE_PROPERTY_NAME, attribute.name()));
     issueEntity.setBlob(IMPACTS_BLOB_NAME, toProtoImpact(issue.getImpacts()));
   }

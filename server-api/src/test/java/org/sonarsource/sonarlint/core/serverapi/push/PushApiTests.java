@@ -23,6 +23,7 @@ import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import mockwebserver3.MockResponse;
@@ -482,7 +483,7 @@ class PushApiTests {
 
     await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(receivedEvents)
       .extracting("key", "projectKey", "branchName", "creationDate", "ruleKey", "severity", "type", "cleanCodeAttribute", "impacts")
-      .containsOnly(tuple("taintKey", "projectKey1", "branch", Instant.parse("1970-01-02T10:17:36.789Z"), "javasecurity:S123", IssueSeverity.MAJOR, RuleType.VULNERABILITY, CleanCodeAttribute.TRUSTWORTHY, Map.of(SoftwareQuality.SECURITY, ImpactSeverity.HIGH))));
+      .containsOnly(tuple("taintKey", "projectKey1", "branch", Instant.parse("1970-01-02T10:17:36.789Z"), "javasecurity:S123", IssueSeverity.MAJOR, RuleType.VULNERABILITY, Optional.of(CleanCodeAttribute.TRUSTWORTHY), Map.of(SoftwareQuality.SECURITY, ImpactSeverity.HIGH))));
   }
 
   @Test
