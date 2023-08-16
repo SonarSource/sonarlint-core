@@ -25,15 +25,19 @@ import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSma
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverconnection.events.ServerEventHandler;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 import org.sonarsource.sonarlint.core.websocket.events.QualityGateChangedEvent;
 
 public class ShowSmartNotificationOnQualityGateChangedEvent implements ServerEventHandler<QualityGateChangedEvent> {
+  public static final String NOTIFICATION_CATEGORY = "QUALITY_GATE";
   private final SonarLintClient client;
   private final ConfigurationRepository configurationRepository;
+  private final TelemetryServiceImpl telemetryService;
 
-  public ShowSmartNotificationOnQualityGateChangedEvent(SonarLintClient client, ConfigurationRepository configurationRepository) {
+  public ShowSmartNotificationOnQualityGateChangedEvent(SonarLintClient client, ConfigurationRepository configurationRepository, TelemetryServiceImpl telemetryService) {
     this.client = client;
     this.configurationRepository = configurationRepository;
+    this.telemetryService = telemetryService;
   }
 
   @Override
@@ -42,6 +46,7 @@ public class ShowSmartNotificationOnQualityGateChangedEvent implements ServerEve
     configurationRepository.getBoundScopesByProject(projectKey).stream()
       .collect(Collectors.groupingBy(BoundScope::getConnectionId))
       .forEach((connectionId, scope) -> client.showSmartNotification(new ShowSmartNotificationParams(event.getMessage(), event.getLink(),
-        scope.stream().map(BoundScope::getId).collect(Collectors.toSet()), "QUALITY_GATE", connectionId)));
+        scope.stream().map(BoundScope::getId).collect(Collectors.toSet()), NOTIFICATION_CATEGORY, connectionId)));
+    telemetryService.smartNotificationsReceived(NOTIFICATION_CATEGORY);
   }
 }

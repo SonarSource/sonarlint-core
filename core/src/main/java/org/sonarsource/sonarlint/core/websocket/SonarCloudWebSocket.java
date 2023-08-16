@@ -52,7 +52,6 @@ public class SonarCloudWebSocket {
     var webSocket = new SonarCloudWebSocket();
     webSocket.ws = httpClient.createWebSocketConnection(WEBSOCKET_DEV_URL, rawEvent -> webSocket.handleRawMessage(rawEvent, serverEventConsumer));
     webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(webSocket::cleanUpMessageHistory, 0, 5, TimeUnit.MINUTES);
-    webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(webSocket::keepAlive, 9, 9, TimeUnit.MINUTES);
     webSocket.sonarCloudWebSocketScheduler.schedule(connectionRefresher, 119, TimeUnit.MINUTES);
     webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(webSocket::keepAlive, 9, 9, TimeUnit.MINUTES);
     return webSocket;
