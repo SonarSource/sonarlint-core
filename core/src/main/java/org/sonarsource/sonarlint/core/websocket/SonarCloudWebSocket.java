@@ -50,7 +50,7 @@ public class SonarCloudWebSocket {
 
   public static SonarCloudWebSocket create(HttpClient httpClient, Consumer<ServerEvent> serverEventConsumer, Runnable connectionRefresher) {
     var webSocket = new SonarCloudWebSocket();
-    webSocket.ws = httpClient.createWebSocketConnection(WEBSOCKET_DEV_URL, rawEvent -> webSocket.handleRawMessage(rawEvent, serverEventConsumer));
+    webSocket.ws = httpClient.createWebSocketConnection(WEBSOCKET_DEV_URL, rawEvent -> webSocket.handleRawMessage(rawEvent, serverEventConsumer), connectionRefresher);
     webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(webSocket::cleanUpMessageHistory, 0, 5, TimeUnit.MINUTES);
     webSocket.sonarCloudWebSocketScheduler.schedule(connectionRefresher, 119, TimeUnit.MINUTES);
     webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(webSocket::keepAlive, 9, 9, TimeUnit.MINUTES);
@@ -122,7 +122,10 @@ public class SonarCloudWebSocket {
 
   public void close() {
     if (this.ws != null) {
-      this.ws.sendClose(WebSocket.NORMAL_CLOSURE, "");
+      // output could already be closed if an error occurred
+      if (!this.ws.isOutputClosed()) {
+        this.ws.sendClose(WebSocket.NORMAL_CLOSURE, "");
+      }
       this.ws = null;
     }
     if (!MoreExecutors.shutdownAndAwaitTermination(sonarCloudWebSocketScheduler, 1, TimeUnit.SECONDS)) {
