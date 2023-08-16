@@ -149,6 +149,10 @@ public class SonarLintBackendFixture {
       return withSonarQubeConnection(connectionId, serverUrl, false, storageBuilder);
     }
 
+    public SonarLintBackendBuilder withSonarCloudConnectionAndNotifications(String connectionId, String organisationKey, Consumer<StorageFixture.StorageBuilder> storageBuilder) {
+      return withSonarCloudConnection(connectionId, organisationKey, false, storageBuilder);
+    }
+
     private SonarLintBackendBuilder withSonarQubeConnection(String connectionId, String serverUrl, boolean disableNotifications,
       Consumer<StorageFixture.StorageBuilder> storageBuilder) {
       if (storageBuilder != null) {
@@ -165,6 +169,16 @@ public class SonarLintBackendFixture {
       var storage = newStorage(connectionId);
       storageBuilder.accept(storage);
       storages.add(storage);
+      return this;
+    }
+
+    public SonarLintBackendBuilder withSonarCloudConnection(String connectionId, String organizationKey, boolean disableNotifications, Consumer<StorageFixture.StorageBuilder> storageBuilder) {
+      if (storageBuilder != null) {
+        var storage = newStorage(connectionId);
+        storageBuilder.accept(storage);
+        storages.add(storage);
+      }
+      sonarCloudConnections.add(new SonarCloudConnectionConfigurationDto(connectionId, organizationKey, disableNotifications));
       return this;
     }
 
