@@ -54,6 +54,7 @@ public class SonarCloudWebSocket {
     webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(webSocket::cleanUpMessageHistory, 0, 5, TimeUnit.MINUTES);
     webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(webSocket::keepAlive, 9, 9, TimeUnit.MINUTES);
     webSocket.sonarCloudWebSocketScheduler.schedule(connectionRefresher, 119, TimeUnit.MINUTES);
+    webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(webSocket::keepAlive, 9, 9, TimeUnit.MINUTES);
     return webSocket;
   }
 
