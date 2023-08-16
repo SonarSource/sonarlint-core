@@ -94,11 +94,11 @@ class WebSocketServiceTest {
 
       when(connectionConfigurationRepository.getConnectionById(newConfig.getConnectionId())).thenReturn(connection);
       when(connectionAwareHttpClientProvider.getHttpClient(newConfig.getConnectionId())).thenReturn(httpClient);
-      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
 
       webSocketService.handleEvent(bindingConfigChangedEvent);
 
-      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
+      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any());
       verify(webSocket).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}", true);
     }
 
@@ -113,7 +113,7 @@ class WebSocketServiceTest {
 
       webSocketService.handleEvent(bindingConfigChangedEvent);
 
-      verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
+      verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any());
       verify(webSocket, times(0)).sendText(any(String.class), any(Boolean.class));
     }
 
@@ -126,11 +126,11 @@ class WebSocketServiceTest {
 
       when(connectionConfigurationRepository.getConnectionById(newConfig.getConnectionId())).thenReturn(connection);
       when(connectionAwareHttpClientProvider.getHttpClient(newConfig.getConnectionId())).thenReturn(httpClient);
-      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
 
       webSocketService.handleEvent(bindingConfigChangedEvent);
 
-      verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
+      verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any());
       verify(webSocket, times(0)).sendText(any(String.class), any(Boolean.class));
     }
 
@@ -147,7 +147,7 @@ class WebSocketServiceTest {
 
       when(connectionConfigurationRepository.getConnectionById(newConfig.getConnectionId())).thenReturn(connection);
       when(connectionAwareHttpClientProvider.getHttpClient(newConfig.getConnectionId())).thenReturn(httpClient);
-      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
 
       webSocketService.handleEvent(bindingConfigChangedEvent);
 
@@ -169,7 +169,7 @@ class WebSocketServiceTest {
 
       when(connectionConfigurationRepository.getConnectionById(newConfig.getConnectionId())).thenReturn(connection);
       when(connectionAwareHttpClientProvider.getHttpClient(newConfig.getConnectionId())).thenReturn(httpClient);
-      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
 
       webSocketService.handleEvent(bindingConfigChangedEvent);
 
@@ -185,11 +185,11 @@ class WebSocketServiceTest {
 
       when(connectionConfigurationRepository.getConnectionById(newConfig.getConnectionId())).thenReturn(connection);
       when(connectionAwareHttpClientProvider.getHttpClient(newConfig.getConnectionId())).thenReturn(httpClient);
-      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
 
       webSocketService.handleEvent(bindingConfigChangedEvent);
 
-      verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
+      verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any());
       verify(webSocket, times(0)).sendText(any(String.class), any(Boolean.class));
     }
   }
@@ -206,11 +206,11 @@ class WebSocketServiceTest {
       when(configurationRepository.getBindingConfiguration("configScope1")).thenReturn(bindingConfiguration);
       when(connectionConfigurationRepository.getConnectionById("connectionId")).thenReturn(connection);
       when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
-      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
 
       webSocketService.handleEvent(configurationScopesAddedEvent);
 
-      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
+      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any());
       verify(webSocket).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}", true);
     }
 
@@ -220,7 +220,7 @@ class WebSocketServiceTest {
 
       webSocketService.handleEvent(configurationScopesAddedEvent);
 
-      verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
+      verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any());
       verify(webSocket, times(0)).sendText(any(String.class), any(Boolean.class));
     }
 
@@ -233,11 +233,11 @@ class WebSocketServiceTest {
       when(configurationRepository.getBindingConfiguration("configScope1")).thenReturn(bindingConfiguration);
       when(connectionConfigurationRepository.getConnectionById("connectionId")).thenReturn(connection);
       when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
-      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
 
       webSocketService.handleEvent(configurationScopesAddedEvent);
 
-      verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
+      verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any());
       verify(webSocket, times(0)).sendText(any(String.class), any(Boolean.class));
     }
 
@@ -250,11 +250,11 @@ class WebSocketServiceTest {
       when(configurationRepository.getBindingConfiguration("configScope1")).thenReturn(bindingConfiguration);
       when(connectionConfigurationRepository.getConnectionById("connectionId")).thenReturn(connection);
       when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
-      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
 
       webSocketService.handleEvent(configurationScopesAddedEvent);
 
-      verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
+      verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any());
       verify(webSocket, times(0)).sendText(any(String.class), any(Boolean.class));
     }
   }
@@ -302,11 +302,11 @@ class WebSocketServiceTest {
       when(configurationRepository.getBindingConfiguration("configScope2")).thenReturn(bindingConfiguration2);
       when(connectionConfigurationRepository.getConnectionById("connectionId")).thenReturn(connection);
       when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
-      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
 
       webSocketService.handleEvent(connectionConfigurationAddedEvent);
 
-      verify(httpClient, times(1)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
+      verify(httpClient, times(1)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any());
       verify(webSocket).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey1\"}", true);
       verify(webSocket).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey2\"}", true);
     }
@@ -329,12 +329,12 @@ class WebSocketServiceTest {
       when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
       when(configurationRepository.getConfigScopeIds())
         .thenReturn(Set.of("configScope1"));
-      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
 
       webSocketService.handleEvent(connectionConfigurationUpdatedEvent);
 
       assertEquals(1, webSocketService.connectionIdsInterestedInNotifications.size());
-      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
+      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any());
       verify(webSocket).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}", true);
     }
 
@@ -347,7 +347,7 @@ class WebSocketServiceTest {
 
       webSocketService.handleEvent(connectionConfigurationUpdatedEvent);
 
-      verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
+      verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any());
       verify(webSocket, times(0)).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}", true);
     }
 
@@ -368,7 +368,7 @@ class WebSocketServiceTest {
 
       assertEquals(0, webSocketService.connectionIdsInterestedInNotifications.size());
       assertEquals(0, webSocketService.subscribedProjectKeysByConfigScopes.size());
-      verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
+      verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any());
       verify(webSocket, times(0)).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}", true);
       assertNull(webSocketService.sonarCloudWebSocket);
     }
@@ -388,12 +388,12 @@ class WebSocketServiceTest {
       when(connectionAwareHttpClientProvider.getHttpClient("connectionId2")).thenReturn(httpClient);
       when(configurationRepository.getConfigScopesWithBindingConfiguredTo("connectionId1"))
         .thenReturn(List.of(new ConfigurationScope("configScope1", null, true, "Config scope 1")));
-      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
 
       webSocketService.handleEvent(connectionConfigurationUpdatedEvent);
 
       assertEquals(1, webSocketService.connectionIdsInterestedInNotifications.size());
-      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
+      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any());
       verify(webSocket).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey2\"}", true);
       verify(webSocket, times(0)).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey1\"}", true);
     }
@@ -409,13 +409,13 @@ class WebSocketServiceTest {
 
       when(connectionConfigurationRepository.getConnectionById("connectionId1")).thenReturn(connection);
       when(connectionAwareHttpClientProvider.getHttpClient("connectionId2")).thenReturn(httpClient);
-      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
 
       webSocketService.handleEvent(connectionConfigurationUpdatedEvent);
 
       assertEquals(1, webSocketService.connectionIdsInterestedInNotifications.size());
       assertEquals(1, webSocketService.subscribedProjectKeysByConfigScopes.size());
-      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
+      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any());
       verify(webSocket).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey2\"}", true);
       verify(webSocket, times(0)).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey1\"}", true);
     }
@@ -432,14 +432,14 @@ class WebSocketServiceTest {
       when(configurationRepository.getConfigScopeIds())
         .thenReturn(Set.of("configScope1"));
       when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
-      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
       when(configurationRepository.getBindingConfiguration("configScope1")).thenReturn(bindingConfiguration);
 
       webSocketService.handleEvent(connectionConfigurationUpdatedEvent);
 
       assertEquals(1, webSocketService.connectionIdsInterestedInNotifications.size());
       assertEquals(1, webSocketService.subscribedProjectKeysByConfigScopes.size());
-      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
+      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any());
       verify(webSocket).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}", true);
     }
   }
@@ -511,11 +511,11 @@ class WebSocketServiceTest {
       when(configurationRepository.getBoundScopesByProject("projectKey")).thenReturn(List.of(new BoundScope("configScope1", "connectionId", "projectKey")));
       when(connectionConfigurationRepository.getConnectionById("connectionId")).thenReturn(connection);
       when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
-      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
       webSocketService.handleEvent(configurationScopesAddedEvent);
 
       ArgumentCaptor<Consumer> captor = ArgumentCaptor.forClass(Consumer.class);
-      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture());
+      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture(), any());
       var rawMessageConsumer = captor.getValue();
       rawMessageConsumer.accept("{\"event\": \"QualityGateChanged\", \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
 
@@ -532,11 +532,11 @@ class WebSocketServiceTest {
       when(configurationRepository.getBoundScopesByProject("projectKey")).thenReturn(List.of(new BoundScope("configScope1", "connectionId", "projectKey")));
       when(connectionConfigurationRepository.getConnectionById("connectionId")).thenReturn(connection);
       when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
-      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
       webSocketService.handleEvent(configurationScopesAddedEvent);
 
       ArgumentCaptor<Consumer> captor = ArgumentCaptor.forClass(Consumer.class);
-      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture());
+      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture(), any());
       var rawMessageConsumer = captor.getValue();
       rawMessageConsumer.accept("{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": 0}}");
 
@@ -553,11 +553,11 @@ class WebSocketServiceTest {
       when(configurationRepository.getBoundScopesByProject("projectKey")).thenReturn(List.of(new BoundScope("configScope1", "connectionId", "projectKey")));
       when(connectionConfigurationRepository.getConnectionById("connectionId")).thenReturn(connection);
       when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
-      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
       webSocketService.handleEvent(configurationScopesAddedEvent);
 
       ArgumentCaptor<Consumer> captor = ArgumentCaptor.forClass(Consumer.class);
-      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture());
+      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture(), any());
       var rawMessageConsumer = captor.getValue();
       rawMessageConsumer.accept("{\"event\": [\"QualityGateChanged\"], \"data\": {\"link\": \"lnk\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
 
@@ -574,11 +574,11 @@ class WebSocketServiceTest {
       when(configurationRepository.getBoundScopesByProject("projectKey")).thenReturn(List.of(new BoundScope("configScope1", "connectionId", "projectKey")));
       when(connectionConfigurationRepository.getConnectionById("connectionId")).thenReturn(connection);
       when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
-      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
       webSocketService.handleEvent(configurationScopesAddedEvent);
 
       ArgumentCaptor<Consumer> captor = ArgumentCaptor.forClass(Consumer.class);
-      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture());
+      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture(), any());
       var rawMessageConsumer = captor.getValue();
       rawMessageConsumer.accept("{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": \"msg\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
 
@@ -595,11 +595,11 @@ class WebSocketServiceTest {
       when(configurationRepository.getBoundScopesByProject("projectKey")).thenReturn(List.of(new BoundScope("configScope1", "connectionId", "projectKey")));
       when(connectionConfigurationRepository.getConnectionById("connectionId")).thenReturn(connection);
       when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
-      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
       webSocketService.handleEvent(configurationScopesAddedEvent);
 
       ArgumentCaptor<Consumer> captor = ArgumentCaptor.forClass(Consumer.class);
-      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture());
+      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture(), any());
       var rawMessageConsumer = captor.getValue();
       rawMessageConsumer.accept("{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
 
@@ -616,11 +616,11 @@ class WebSocketServiceTest {
       when(configurationRepository.getBoundScopesByProject("projectKey")).thenReturn(List.of(new BoundScope("configScope1", "connectionId", "projectKey")));
       when(connectionConfigurationRepository.getConnectionById("connectionId")).thenReturn(connection);
       when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
-      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
       webSocketService.handleEvent(configurationScopesAddedEvent);
 
       ArgumentCaptor<Consumer> captor = ArgumentCaptor.forClass(Consumer.class);
-      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture());
+      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture(), any());
       var rawMessageConsumer = captor.getValue();
       rawMessageConsumer.accept("{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\"}}");
 
@@ -640,11 +640,11 @@ class WebSocketServiceTest {
       when(configurationRepository.getBoundScopesByProject("projectKey")).thenReturn(List.of(new BoundScope("configScope1", "connectionId", "projectKey")));
       when(connectionConfigurationRepository.getConnectionById("connectionId")).thenReturn(connection);
       when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
-      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
       webSocketService.handleEvent(configurationScopesAddedEvent);
 
       ArgumentCaptor<Consumer> captor = ArgumentCaptor.forClass(Consumer.class);
-      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture());
+      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture(), any());
       var rawMessageConsumer = captor.getValue();
       rawMessageConsumer.accept("{\"event\": \"UnknownEvent\", \"data\": {\"message\": \"msg\"}}");
 
@@ -661,11 +661,11 @@ class WebSocketServiceTest {
       when(configurationRepository.getBoundScopesByProject("projectKey")).thenReturn(List.of(new BoundScope("configScope1", "connectionId", "projectKey")));
       when(connectionConfigurationRepository.getConnectionById("connectionId")).thenReturn(connection);
       when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
-      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
       webSocketService.handleEvent(configurationScopesAddedEvent);
 
       ArgumentCaptor<Consumer> captor = ArgumentCaptor.forClass(Consumer.class);
-      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture());
+      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture(), any());
       var rawMessageConsumer = captor.getValue();
       rawMessageConsumer.accept("{\"event\": \"Malformed");
 
@@ -682,11 +682,11 @@ class WebSocketServiceTest {
       when(configurationRepository.getBoundScopesByProject("projectKey")).thenReturn(List.of(new BoundScope("configScope1", "connectionId", "projectKey")));
       when(connectionConfigurationRepository.getConnectionById("connectionId")).thenReturn(connection);
       when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
-      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
       webSocketService.handleEvent(configurationScopesAddedEvent);
 
       ArgumentCaptor<Consumer> captor = ArgumentCaptor.forClass(Consumer.class);
-      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture());
+      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture(), any());
       var rawMessageConsumer = captor.getValue();
       rawMessageConsumer.accept("{\"event\": \"QualityGateChanged\", \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
       verify(client).showSmartNotification(refEq(new ShowSmartNotificationParams("msg", "lnk", Set.of("configScope1"), "QUALITY_GATE", "connectionId")));
@@ -703,7 +703,7 @@ class WebSocketServiceTest {
       webSocketService.refreshConnectionIfNeeded();
 
       verify(webSocket, times(0)).sendClose(WebSocket.NORMAL_CLOSURE, "");
-      verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
+      verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any());
       verify(webSocket, times(0)).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}", true);
     }
 
@@ -714,7 +714,7 @@ class WebSocketServiceTest {
       webSocketService.refreshConnectionIfNeeded();
 
       verify(webSocket, times(0)).sendClose(WebSocket.NORMAL_CLOSURE, "");
-      verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
+      verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any());
       verify(webSocket, times(0)).sendText(any(String.class), any(Boolean.class));
     }
 
@@ -725,12 +725,12 @@ class WebSocketServiceTest {
       webSocketService.subscribedProjectKeysByConfigScopes.put("configScope1", "projectKey1");
 
       when(connectionAwareHttpClientProvider.getHttpClient("connectionId")).thenReturn(httpClient);
-      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any())).thenReturn(webSocket);
+      when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
 
       webSocketService.refreshConnectionIfNeeded();
 
       verify(webSocket).sendClose(WebSocket.NORMAL_CLOSURE, "");
-      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
+      verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any());
       verify(webSocket).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey1\"}", true);
     }
   }
