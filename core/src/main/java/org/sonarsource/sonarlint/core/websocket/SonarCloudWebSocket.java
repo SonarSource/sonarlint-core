@@ -26,7 +26,6 @@ import java.net.http.WebSocket;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -82,9 +81,7 @@ public class SonarCloudWebSocket {
     var jsonString = gson.toJson(unsubscribePayload);
 
     SonarLintLogger.get().debug("sent '" + messageType + "' for project '" + projectKey + "'");
-    if (this.ws != null) {
-      this.ws.sendText(jsonString, true);
-    }
+    this.ws.sendText(jsonString, true);
   }
 
   private void handleRawMessage(String message, Consumer<ServerEvent> serverEventConsumer) {
@@ -124,14 +121,6 @@ public class SonarCloudWebSocket {
     if (!MoreExecutors.shutdownAndAwaitTermination(sonarCloudWebSocketScheduler, 1, TimeUnit.SECONDS)) {
       SonarLintLogger.get().warn("Unable to stop SonarCloud WebSocket job scheduler in a timely manner");
     }
-  }
-
-  public boolean isConnectionSuccessful() {
-    return this.ws != null;
-  }
-
-  public Set<String> getSupportedEventTypes() {
-    return parsersByType.keySet();
   }
 
   private static class WebSocketEvent {

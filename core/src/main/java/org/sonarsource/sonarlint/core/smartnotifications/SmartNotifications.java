@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -63,7 +64,6 @@ public class SmartNotifications {
   private final Map<String, Boolean> isConnectionIdSupported;
   private final LastEventPolling lastEventPollingService;
   private ScheduledExecutorService smartNotificationsPolling;
-  private Set<String> sonarCloudEventsToIgnore = new HashSet<>();
 
   public SmartNotifications(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository,
     ServerApiProvider serverApiProvider, SonarLintClient client, StorageService storageService, TelemetryServiceImpl telemetryService, InitializeParams params) {
@@ -114,7 +114,7 @@ public class SmartNotifications {
       var notifications = retrieveServerNotifications(developersApi, projectKeysByLastEventPolling);
 
       for (var n : notifications) {
-        if (connection != null && connection.getKind() == ConnectionKind.SONARQUBE && !sonarCloudEventsToIgnore.contains(n.category())) {
+        if ((connection != null && connection.getKind() == ConnectionKind.SONARQUBE) || !Objects.equals(n.category(), "QUALITY_GATE")) {
           var smartNotification = new ShowSmartNotificationParams(n.message(), n.link(), scopeIdsPerProjectKey.get(n.projectKey()),
             n.category(), connectionId);
           client.showSmartNotification(smartNotification);
@@ -149,10 +149,6 @@ public class SmartNotifications {
         e.getProjectKey(),
         e.getTime()))
       .collect(Collectors.toList());
-  }
-
-  public void addEventsToIgnore(Set<String> events) {
-    sonarCloudEventsToIgnore.addAll(events);
   }
 
 }

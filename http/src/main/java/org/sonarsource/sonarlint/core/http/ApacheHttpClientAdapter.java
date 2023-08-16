@@ -252,17 +252,12 @@ class ApacheHttpClientAdapter implements HttpClient {
   }
 
   public WebSocket createWebSocketConnection(String url, Consumer<String> messageConsumer) {
-    try {
-      return java.net.http.HttpClient
+    return java.net.http.HttpClient
         .newHttpClient()
         .newWebSocketBuilder()
         .header("Authorization", "Bearer " + usernameOrToken)
         .buildAsync(URI.create(url), new WebSocketClient(messageConsumer))
         .join();
-    } catch (Exception e) {
-      SonarLintLogger.get().error("Could not establish WebSocket connection");
-      return null;
-    }
   }
 
   private static class WebSocketClient implements WebSocket.Listener {
