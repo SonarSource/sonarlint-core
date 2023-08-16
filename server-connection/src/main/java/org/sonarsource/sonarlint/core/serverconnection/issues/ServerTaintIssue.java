@@ -46,6 +46,7 @@ public class ServerTaintIssue implements ServerFinding {
   private TextRangeWithHash textRange;
   @Nullable
   private final String ruleDescriptionContextKey;
+  @Nullable
   private final CleanCodeAttribute cleanCodeAttribute;
   private final Map<SoftwareQuality, ImpactSeverity> impacts;
 

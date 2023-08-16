@@ -235,6 +235,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       var hash = storedIssue.getBlobString(RANGE_HASH_PROPERTY_NAME);
       textRange = new TextRangeWithHash(startLine, startLineOffset, endLine, endLineOffset, hash);
     }
+    var cleanCodeAttribute = (String) storedIssue.getProperty(CLEAN_CODE_ATTRIBUTE_PROPERTY_NAME);
     return new ServerTaintIssue(
       (String) requireNonNull(storedIssue.getProperty(KEY_PROPERTY_NAME)),
       Boolean.TRUE.equals(storedIssue.getProperty(RESOLVED_PROPERTY_NAME)),
@@ -245,7 +246,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       (IssueSeverity) requireNonNull(storedIssue.getProperty(SEVERITY_PROPERTY_NAME)),
       (RuleType) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME)),
       textRange, (String) storedIssue.getProperty(RULE_DESCRIPTION_CONTEXT_KEY_PROPERTY_NAME),
-      CleanCodeAttribute.valueOf((String) storedIssue.getProperty(CLEAN_CODE_ATTRIBUTE_PROPERTY_NAME)),
+      Optional.ofNullable(cleanCodeAttribute).map(CleanCodeAttribute::valueOf).orElse(null),
       readImpacts(storedIssue.getBlob(IMPACTS_BLOB_NAME)))
         .setFlows(readFlows(storedIssue.getBlob(FLOWS_BLOB_NAME)));
   }
