@@ -82,7 +82,9 @@ public class SonarCloudWebSocket {
     var jsonString = gson.toJson(unsubscribePayload);
 
     SonarLintLogger.get().debug("sent '" + messageType + "' for project '" + projectKey + "'");
-    this.ws.sendText(jsonString, true);
+    if (this.ws != null) {
+      this.ws.sendText(jsonString, true);
+    }
   }
 
   private void handleRawMessage(String message, Consumer<ServerEvent> serverEventConsumer) {

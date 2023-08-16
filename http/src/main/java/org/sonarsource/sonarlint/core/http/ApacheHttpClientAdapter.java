@@ -260,6 +260,7 @@ class ApacheHttpClientAdapter implements HttpClient {
         .buildAsync(URI.create(url), new WebSocketClient(messageConsumer))
         .join();
     } catch (Exception e) {
+      SonarLintLogger.get().error("Could not establish WebSocket connection");
       return null;
     }
   }
