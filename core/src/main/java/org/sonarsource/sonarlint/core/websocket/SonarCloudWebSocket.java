@@ -46,12 +46,13 @@ public class SonarCloudWebSocket {
   private static final Gson gson = new Gson();
   private WebSocket ws;
   private final History history = new History();
-  private final ScheduledExecutorService messageHistoryCleaner = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "sonarcloud-websocket-history-cleaner"));
+  private final ScheduledExecutorService sonarCloudWebSocketScheduler = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "sonarcloud-websocket-scheduled-jobs"));
 
-  public static SonarCloudWebSocket create(HttpClient httpClient, Consumer<ServerEvent> serverEventConsumer) {
+  public static SonarCloudWebSocket create(HttpClient httpClient, Consumer<ServerEvent> serverEventConsumer, Runnable connectionRefresher) {
     var webSocket = new SonarCloudWebSocket();
     webSocket.ws = httpClient.createWebSocketConnection(WEBSOCKET_DEV_URL, rawEvent -> webSocket.handleRawMessage(rawEvent, serverEventConsumer));
-    webSocket.messageHistoryCleaner.scheduleAtFixedRate(webSocket::cleanUpMessageHistory, 0, 1, TimeUnit.MINUTES);
+    webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(webSocket::cleanUpMessageHistory, 0, 1, TimeUnit.MINUTES);
+    webSocket.sonarCloudWebSocketScheduler.schedule(connectionRefresher, 119, TimeUnit.MINUTES);
     return webSocket;
   }
 
@@ -117,8 +118,8 @@ public class SonarCloudWebSocket {
       this.ws.sendClose(WebSocket.NORMAL_CLOSURE, "");
       this.ws = null;
     }
-    if (!MoreExecutors.shutdownAndAwaitTermination(messageHistoryCleaner, 1, TimeUnit.SECONDS)) {
-      SonarLintLogger.get().warn("Unable to stop SonarCloud WebSocket history cleaner in a timely manner");
+    if (!MoreExecutors.shutdownAndAwaitTermination(sonarCloudWebSocketScheduler, 1, TimeUnit.SECONDS)) {
+      SonarLintLogger.get().warn("Unable to stop SonarCloud WebSocket job scheduler in a timely manner");
     }
   }
 
