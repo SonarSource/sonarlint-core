@@ -66,12 +66,6 @@ public class WebSocketService {
       .dispatch(QualityGateChangedEvent.class, new ShowSmartNotificationOnQualityGateChangedEvent(client, configurationRepository));
   }
 
-  @PostConstruct
-  public void initialize() {
-    ScheduledExecutorService webSocketConnectionRefresher = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "WebSocket connection refresher"));
-    webSocketConnectionRefresher.scheduleAtFixedRate(this::refreshConnectionIfNeeded, 119, 119, TimeUnit.MINUTES);
-  }
-
   protected void refreshConnectionIfNeeded() {
     var connectionId = connectionIdsInterestedInNotifications.stream().findFirst().orElse(null);
     if (this.sonarCloudWebSocket != null && connectionId != null) {
@@ -193,7 +187,7 @@ public class WebSocketService {
   private void createConnectionIfNeeded(String connectionId) {
     connectionIdsInterestedInNotifications.add(connectionId);
     if (this.sonarCloudWebSocket == null) {
-      this.sonarCloudWebSocket = SonarCloudWebSocket.create(connectionAwareHttpClientProvider.getHttpClient(connectionId), eventRouter::handle);
+      this.sonarCloudWebSocket = SonarCloudWebSocket.create(connectionAwareHttpClientProvider.getHttpClient(connectionId), eventRouter::handle, this::refreshConnectionIfNeeded);
     }
   }
 
