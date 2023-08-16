@@ -70,6 +70,10 @@ public class PluginsSynchronizer {
   }
 
   private boolean shouldDownload(ServerPlugin serverPlugin, Map<String, StoredPlugin> storedPluginsByKey) {
+    if (serverPlugin.getKey().equals("license")) {
+      LOG.debug("[SYNC] License plugin. Skip downloading it.", serverPlugin.getKey());
+      return false;
+    }
     if (embeddedPluginKeys.contains(serverPlugin.getKey())) {
       LOG.debug("[SYNC] Code analyzer '{}' is embedded in SonarLint. Skip downloading it.", serverPlugin.getKey());
       return false;
