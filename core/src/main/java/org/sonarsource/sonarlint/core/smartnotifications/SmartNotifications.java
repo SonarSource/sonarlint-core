@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.smartnotifications;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
