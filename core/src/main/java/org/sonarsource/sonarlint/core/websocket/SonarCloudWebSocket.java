@@ -133,6 +133,10 @@ public class SonarCloudWebSocket {
     }
   }
 
+  public boolean isOpen() {
+    return ws != null && !ws.isInputClosed() && !ws.isOutputClosed();
+  }
+
   private static class WebSocketEvent {
     private String event;
     private JsonObject data;
