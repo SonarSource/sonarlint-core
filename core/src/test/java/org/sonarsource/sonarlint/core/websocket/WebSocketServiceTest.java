@@ -96,7 +96,7 @@ class WebSocketServiceTest {
       webSocketService.handleEvent(bindingConfigChangedEvent);
 
       verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
-      verify(webSocket).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey\"}", true);
+      verify(webSocket).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}", true);
     }
 
     @Test
@@ -148,8 +148,8 @@ class WebSocketServiceTest {
 
       webSocketService.handleEvent(bindingConfigChangedEvent);
 
-      verify(webSocket).sendText("{\"action\":\"unsubscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey\"}", true);
-      verify(webSocket).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey2\"}", true);
+      verify(webSocket).sendText("{\"action\":\"unsubscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}", true);
+      verify(webSocket).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey2\"}", true);
     }
 
     @Test
@@ -170,7 +170,7 @@ class WebSocketServiceTest {
 
       webSocketService.handleEvent(bindingConfigChangedEvent);
 
-      verify(webSocket, times(0)).sendText("{\"action\":\"unsubscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey\"}", true);
+      verify(webSocket, times(0)).sendText("{\"action\":\"unsubscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}", true);
     }
 
     @Test
@@ -208,7 +208,7 @@ class WebSocketServiceTest {
       webSocketService.handleEvent(configurationScopesAddedEvent);
 
       verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
-      verify(webSocket).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey\"}", true);
+      verify(webSocket).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}", true);
     }
 
     @Test
@@ -266,7 +266,7 @@ class WebSocketServiceTest {
 
       webSocketService.handleEvent(configurationScopeRemovedEvent);
 
-      verify(webSocket).sendText("{\"action\":\"unsubscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey\"}", true);
+      verify(webSocket).sendText("{\"action\":\"unsubscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}", true);
     }
 
     @Test
@@ -278,7 +278,7 @@ class WebSocketServiceTest {
 
       webSocketService.handleEvent(configurationScopeRemovedEvent);
 
-      verify(webSocket, times(0)).sendText("{\"action\":\"unsubscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey\"}", true);
+      verify(webSocket, times(0)).sendText("{\"action\":\"unsubscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}", true);
       assertEquals(1, webSocketService.subscribedProjectKeysByConfigScopes.size());
     }
   }
@@ -304,8 +304,8 @@ class WebSocketServiceTest {
       webSocketService.handleEvent(connectionConfigurationAddedEvent);
 
       verify(httpClient, times(1)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
-      verify(webSocket).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey1\"}", true);
-      verify(webSocket).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey2\"}", true);
+      verify(webSocket).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey1\"}", true);
+      verify(webSocket).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey2\"}", true);
     }
   }
 
@@ -332,7 +332,7 @@ class WebSocketServiceTest {
 
       assertEquals(1, webSocketService.connectionIdsInterestedInNotifications.size());
       verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
-      verify(webSocket).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey\"}", true);
+      verify(webSocket).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}", true);
     }
 
     @Test
@@ -345,7 +345,7 @@ class WebSocketServiceTest {
       webSocketService.handleEvent(connectionConfigurationUpdatedEvent);
 
       verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
-      verify(webSocket, times(0)).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey\"}", true);
+      verify(webSocket, times(0)).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}", true);
     }
 
     @Test
@@ -366,7 +366,7 @@ class WebSocketServiceTest {
       assertEquals(0, webSocketService.connectionIdsInterestedInNotifications.size());
       assertEquals(0, webSocketService.subscribedProjectKeysByConfigScopes.size());
       verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
-      verify(webSocket, times(0)).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey\"}", true);
+      verify(webSocket, times(0)).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}", true);
       assertNull(webSocketService.sonarCloudWebSocket);
     }
 
@@ -391,8 +391,8 @@ class WebSocketServiceTest {
 
       assertEquals(1, webSocketService.connectionIdsInterestedInNotifications.size());
       verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
-      verify(webSocket).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey2\"}", true);
-      verify(webSocket, times(0)).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey1\"}", true);
+      verify(webSocket).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey2\"}", true);
+      verify(webSocket, times(0)).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey1\"}", true);
     }
 
     @Test
@@ -413,8 +413,8 @@ class WebSocketServiceTest {
       assertEquals(1, webSocketService.connectionIdsInterestedInNotifications.size());
       assertEquals(1, webSocketService.subscribedProjectKeysByConfigScopes.size());
       verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
-      verify(webSocket).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey2\"}", true);
-      verify(webSocket, times(0)).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey1\"}", true);
+      verify(webSocket).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey2\"}", true);
+      verify(webSocket, times(0)).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey1\"}", true);
     }
 
     @Test
@@ -437,7 +437,7 @@ class WebSocketServiceTest {
       assertEquals(1, webSocketService.connectionIdsInterestedInNotifications.size());
       assertEquals(1, webSocketService.subscribedProjectKeysByConfigScopes.size());
       verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
-      verify(webSocket).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey\"}", true);
+      verify(webSocket).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}", true);
     }
   }
 
@@ -514,7 +514,7 @@ class WebSocketServiceTest {
       ArgumentCaptor<Consumer> captor = ArgumentCaptor.forClass(Consumer.class);
       verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture());
       var rawMessageConsumer = captor.getValue();
-      rawMessageConsumer.accept("{\"eventType\": \"QualityGateChanged\", \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
+      rawMessageConsumer.accept("{\"event\": \"QualityGateChanged\", \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
 
       verify(client).showSmartNotification(refEq(new ShowSmartNotificationParams("msg", "lnk", Set.of("configScope1"), "QUALITY_GATE", "connectionId")));
     }
@@ -535,7 +535,7 @@ class WebSocketServiceTest {
       ArgumentCaptor<Consumer> captor = ArgumentCaptor.forClass(Consumer.class);
       verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture());
       var rawMessageConsumer = captor.getValue();
-      rawMessageConsumer.accept("{\"eventType\": \"QualityGateChanged\", \"data\": {\"message\": 0}}");
+      rawMessageConsumer.accept("{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": 0}}");
 
       verifyNoInteractions(client);
     }
@@ -556,7 +556,7 @@ class WebSocketServiceTest {
       ArgumentCaptor<Consumer> captor = ArgumentCaptor.forClass(Consumer.class);
       verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture());
       var rawMessageConsumer = captor.getValue();
-      rawMessageConsumer.accept("{\"eventType\": \"QualityGateChanged\", \"data\": {\"link\": \"lnk\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
+      rawMessageConsumer.accept("{\"event\": [\"QualityGateChanged\"], \"data\": {\"link\": \"lnk\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
 
       verifyNoInteractions(client);
     }
@@ -577,7 +577,7 @@ class WebSocketServiceTest {
       ArgumentCaptor<Consumer> captor = ArgumentCaptor.forClass(Consumer.class);
       verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture());
       var rawMessageConsumer = captor.getValue();
-      rawMessageConsumer.accept("{\"eventType\": \"QualityGateChanged\", \"data\": {\"message\": \"msg\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
+      rawMessageConsumer.accept("{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": \"msg\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
 
       verifyNoInteractions(client);
     }
@@ -598,7 +598,7 @@ class WebSocketServiceTest {
       ArgumentCaptor<Consumer> captor = ArgumentCaptor.forClass(Consumer.class);
       verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture());
       var rawMessageConsumer = captor.getValue();
-      rawMessageConsumer.accept("{\"eventType\": \"QualityGateChanged\", \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
+      rawMessageConsumer.accept("{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
 
       verifyNoInteractions(client);
     }
@@ -619,7 +619,7 @@ class WebSocketServiceTest {
       ArgumentCaptor<Consumer> captor = ArgumentCaptor.forClass(Consumer.class);
       verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture());
       var rawMessageConsumer = captor.getValue();
-      rawMessageConsumer.accept("{\"eventType\": \"QualityGateChanged\", \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\"}}");
+      rawMessageConsumer.accept("{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\"}}");
 
       verifyNoInteractions(client);
     }
@@ -643,7 +643,7 @@ class WebSocketServiceTest {
       ArgumentCaptor<Consumer> captor = ArgumentCaptor.forClass(Consumer.class);
       verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture());
       var rawMessageConsumer = captor.getValue();
-      rawMessageConsumer.accept("{\"eventType\": \"UnknownEvent\", \"data\": {\"message\": \"msg\"}}");
+      rawMessageConsumer.accept("{\"event\": \"UnknownEvent\", \"data\": {\"message\": \"msg\"}}");
 
       verifyNoInteractions(client);
     }
@@ -664,7 +664,7 @@ class WebSocketServiceTest {
       ArgumentCaptor<Consumer> captor = ArgumentCaptor.forClass(Consumer.class);
       verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture());
       var rawMessageConsumer = captor.getValue();
-      rawMessageConsumer.accept("{\"eventType\": \"Malformed");
+      rawMessageConsumer.accept("{\"event\": \"Malformed");
 
       verifyNoInteractions(client);
     }
@@ -685,10 +685,10 @@ class WebSocketServiceTest {
       ArgumentCaptor<Consumer> captor = ArgumentCaptor.forClass(Consumer.class);
       verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), captor.capture());
       var rawMessageConsumer = captor.getValue();
-      rawMessageConsumer.accept("{\"eventType\": \"QualityGateChanged\", \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
+      rawMessageConsumer.accept("{\"event\": \"QualityGateChanged\", \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
       verify(client).showSmartNotification(refEq(new ShowSmartNotificationParams("msg", "lnk", Set.of("configScope1"), "QUALITY_GATE", "connectionId")));
 
-      rawMessageConsumer.accept("{\"eventType\": \"QualityGateChanged\", \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
+      rawMessageConsumer.accept("{\"event\": \"QualityGateChanged\", \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
       verifyNoMoreInteractions(client);
     }
   }
@@ -701,7 +701,7 @@ class WebSocketServiceTest {
 
       verify(webSocket, times(0)).sendClose(WebSocket.NORMAL_CLOSURE, "");
       verify(httpClient, times(0)).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
-      verify(webSocket, times(0)).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey\"}", true);
+      verify(webSocket, times(0)).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}", true);
     }
 
     @Test
@@ -728,7 +728,7 @@ class WebSocketServiceTest {
 
       verify(webSocket).sendClose(WebSocket.NORMAL_CLOSURE, "");
       verify(httpClient).createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any());
-      verify(webSocket).sendText("{\"action\":\"subscribe\",\"eventTypes\":\"QualityGateChanged\",\"project\":\"projectKey1\"}", true);
+      verify(webSocket).sendText("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey1\"}", true);
     }
   }
 }
