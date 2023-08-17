@@ -58,7 +58,7 @@ public class SonarCloudWebSocket {
   }
 
   private void keepAlive() {
-    this.ws.sendText(gson.toJson("{\"action\": \"keep_alive\",\"statusCode\":200}"), true);
+    this.ws.sendText("{\"action\": \"keep_alive\",\"statusCode\":200}", true);
   }
 
   private void cleanUpMessageHistory() {
