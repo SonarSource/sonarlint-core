@@ -76,7 +76,7 @@ public class SonarCloudWebSocket {
   }
 
   private void send(String messageType, String projectKey) {
-    var unsubscribePayload = new WebSocketEventSubscribePayload(messageType, new String[]{"QualityGateChanged"}, projectKey);
+    var unsubscribePayload = new WebSocketEventSubscribePayload(messageType, parsersByType.keySet().toArray(new String[0]), projectKey);
 
     var jsonString = gson.toJson(unsubscribePayload);
 
