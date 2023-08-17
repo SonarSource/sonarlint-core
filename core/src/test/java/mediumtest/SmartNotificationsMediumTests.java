@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import mockwebserver3.MockResponse;
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
@@ -56,6 +57,7 @@ class SmartNotificationsMediumTests {
   private static final String CONNECTION_ID_2 = "connectionId2";
   private static final String DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
   private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern(DATETIME_FORMAT);
+  private String oldSonarCloudUrl;
   private static final String EVENT_PROJECT_1 = "{\"events\": [" +
     "{\"message\": \"msg1\"," +
     "\"link\": \"lnk\"," +
@@ -91,10 +93,19 @@ class SmartNotificationsMediumTests {
   private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
   private SonarLintBackendImpl backend;
 
+  @BeforeEach
+  void prepare() {
+    oldSonarCloudUrl = System.getProperty("sonarlint.internal.sonarcloud.url");
+  }
+
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
     backend.shutdown().get();
-    System.clearProperty("sonarlint.internal.sonarcloud.url");
+    if (oldSonarCloudUrl == null) {
+      System.clearProperty("sonarlint.internal.sonarcloud.url");
+    } else {
+      System.setProperty("sonarlint.internal.sonarcloud.url", oldSonarCloudUrl);
+    }
   }
 
   @Test
