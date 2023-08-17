@@ -76,7 +76,7 @@ public class SonarCloudWebSocket {
   }
 
   private void send(String messageType, String projectKey) {
-    var unsubscribePayload = new WebSocketEventSubscribePayload(messageType, "QualityGateChanged", projectKey);
+    var unsubscribePayload = new WebSocketEventSubscribePayload(messageType, new String[]{"QualityGateChanged"}, projectKey);
 
     var jsonString = gson.toJson(unsubscribePayload);
 
@@ -100,8 +100,10 @@ public class SonarCloudWebSocket {
   }
 
   private static Optional<? extends ServerEvent> parse(WebSocketEvent event) {
-    var eventType = event.eventType;
-    if (!parsersByType.containsKey(eventType)) {
+    var eventType = event.event;
+    if (eventType == null){
+      return Optional.empty();
+    } else if (!parsersByType.containsKey(eventType)) {
       SonarLintLogger.get().error("Unknown '{}' event type ", eventType);
       return Optional.empty();
     }
@@ -124,7 +126,7 @@ public class SonarCloudWebSocket {
   }
 
   private static class WebSocketEvent {
-    private String eventType;
+    private String event;
     private JsonObject data;
   }
 }
