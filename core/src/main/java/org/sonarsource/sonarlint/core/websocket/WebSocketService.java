@@ -195,6 +195,10 @@ public class WebSocketService {
     }
   }
 
+  public boolean hasOpenConnection() {
+    return sonarCloudWebSocket != null && sonarCloudWebSocket.isOpen();
+  }
+
   @PreDestroy
   public void shutdown() {
     closeSocket();

@@ -24,7 +24,6 @@ import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -42,11 +41,13 @@ import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSma
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.developers.DevelopersApi;
 import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
+import org.sonarsource.sonarlint.core.websocket.WebSocketService;
 
 @Named
 @Singleton
@@ -59,18 +60,20 @@ public class SmartNotifications {
   private final ServerApiProvider serverApiProvider;
   private final SonarLintClient client;
   private final TelemetryServiceImpl telemetryService;
+  private final WebSocketService webSocketService;
   private final InitializeParams params;
   private final Map<String, Boolean> isConnectionIdSupported;
   private final LastEventPolling lastEventPollingService;
   private ScheduledExecutorService smartNotificationsPolling;
 
-  public SmartNotifications(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository,
-    ServerApiProvider serverApiProvider, SonarLintClient client, StorageService storageService, TelemetryServiceImpl telemetryService, InitializeParams params) {
+  public SmartNotifications(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository, ServerApiProvider serverApiProvider,
+    SonarLintClient client, StorageService storageService, TelemetryServiceImpl telemetryService, WebSocketService webSocketService, InitializeParams params) {
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
     this.serverApiProvider = serverApiProvider;
     this.client = client;
     this.telemetryService = telemetryService;
+    this.webSocketService = webSocketService;
     this.params = params;
     isConnectionIdSupported = new HashMap<>();
     lastEventPollingService = new LastEventPolling(storageService);
@@ -94,17 +97,16 @@ public class SmartNotifications {
       var httpClient = serverApiProvider.getServerApi(connectionId);
 
       if (connection != null && !connection.isDisableNotifications() && httpClient.isPresent()) {
-        manageNotificationsForConnection(httpClient.get(), keysAndScopeIds.getValue(), connectionId);
+        manageNotificationsForConnection(httpClient.get(), keysAndScopeIds.getValue(), connection);
       }
     }
   }
 
   private void manageNotificationsForConnection(ServerApi serverApi, Map<String, Set<String>> scopeIdsPerProjectKey,
-    String connectionId) {
+    AbstractConnectionConfiguration connection) {
     var developersApi = serverApi.developers();
-
+    var connectionId = connection.getConnectionId();
     var isSupported = isConnectionIdSupported.computeIfAbsent(connectionId, v -> developersApi.isSupported());
-    var connection = connectionRepository.getConnectionById(connectionId);
     if (Boolean.TRUE.equals(isSupported)) {
       var projectKeysByLastEventPolling = scopeIdsPerProjectKey.keySet().stream()
         .collect(Collectors.toMap(Function.identity(),
@@ -113,7 +115,7 @@ public class SmartNotifications {
       var notifications = retrieveServerNotifications(developersApi, projectKeysByLastEventPolling);
 
       for (var n : notifications) {
-        if ((connection != null && connection.getKind() == ConnectionKind.SONARQUBE) || !Objects.equals(n.category(), "QUALITY_GATE")) {
+        if (!shouldIgnoreNotification(connection, n)) {
           var smartNotification = new ShowSmartNotificationParams(n.message(), n.link(), scopeIdsPerProjectKey.get(n.projectKey()),
             n.category(), connectionId);
           client.showSmartNotification(smartNotification);
@@ -124,6 +126,10 @@ public class SmartNotifications {
       projectKeysByLastEventPolling.keySet()
         .forEach(projectKey -> lastEventPollingService.setLastEventPolling(ZonedDateTime.now(), connectionId, projectKey));
     }
+  }
+
+  private boolean shouldIgnoreNotification(AbstractConnectionConfiguration connection, ServerNotification n) {
+    return connection.getKind() == ConnectionKind.SONARCLOUD && webSocketService.hasOpenConnection() && "QUALITY_GATE".equals(n.category());
   }
 
   @PreDestroy
