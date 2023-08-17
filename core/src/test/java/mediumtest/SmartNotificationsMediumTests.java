@@ -36,7 +36,6 @@ import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.Configurati
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.DidRemoveConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
@@ -95,6 +94,7 @@ class SmartNotificationsMediumTests {
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
     backend.shutdown().get();
+    System.clearProperty("sonarlint.internal.sonarcloud.url");
   }
 
   @Test
@@ -276,4 +276,24 @@ class SmartNotificationsMediumTests {
     assertThat(notificationsResult.get(0).getScopeIds()).hasSize(1).contains("scopeId");
   }
 
+  @Test
+  void it_should_send_sonarqube_notification() {
+    var fakeClient = newFakeClient().build();
+    mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
+    mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
+      UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
+
+    backend = newBackend()
+      .withSonarQubeConnectionAndNotifications(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage ->
+        storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
+      .withBoundConfigScope("scopeId", CONNECTION_ID, PROJECT_KEY)
+      .withSmartNotifications()
+      .build(fakeClient);
+
+    await().atMost(3, TimeUnit.SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
+
+    var notificationsResult = fakeClient.getSmartNotificationsToShow();
+    assertThat(notificationsResult).hasSize(1);
+    assertThat(notificationsResult.get(0).getScopeIds()).hasSize(1).contains("scopeId");
+  }
 }
