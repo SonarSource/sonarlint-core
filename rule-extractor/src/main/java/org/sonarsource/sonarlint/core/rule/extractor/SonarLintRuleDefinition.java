@@ -67,8 +67,8 @@ public class SonarLintRuleDefinition {
     this.name = rule.name();
     this.defaultSeverity = IssueSeverity.valueOf(rule.severity());
     this.type = RuleType.valueOf(rule.type().name());
-    var cleanCodeAttributeFromRule = rule.cleanCodeAttribute();
-    this.cleanCodeAttribute = cleanCodeAttributeFromRule == null ? null : CleanCodeAttribute.valueOf(cleanCodeAttributeFromRule.name());
+    this.cleanCodeAttribute = Optional.ofNullable(rule.cleanCodeAttribute()).map(Enum::name).map(CleanCodeAttribute::valueOf)
+      .orElse(CleanCodeAttribute.defaultCleanCodeAttribute());
     this.defaultImpacts = rule.defaultImpacts().entrySet()
       .stream()
       .map(e -> Map.entry(SoftwareQuality.valueOf(e.getKey().name()), ImpactSeverity.valueOf(e.getValue().name())))

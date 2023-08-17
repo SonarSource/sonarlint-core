@@ -177,7 +177,7 @@ class StandaloneIssueMediumTests {
       null);
     assertThat(issues)
       .extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getRuleDescriptionContextKey, Issue::getCleanCodeAttribute, Issue::getImpacts)
-      .containsOnly(tuple("javascript:S1481", 2, "foo.js", Optional.empty(), CleanCodeAttribute.defaultCleanCodeAttribute(), Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)));
+      .containsOnly(tuple("javascript:S1481", 2, "foo.js", Optional.empty(), Optional.of(CleanCodeAttribute.defaultCleanCodeAttribute()), Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)));
 
     // SLCORE-160
     inputFile = prepareInputFile("node_modules/foo.js", content, false);

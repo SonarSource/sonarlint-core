@@ -56,7 +56,7 @@ public class RuleDetails {
         .collect(Collectors.groupingBy(DescriptionSection::getKey)),
       ruleDefinition.getDefaultSeverity(),
       ruleDefinition.getType(),
-      ruleDefinition.getCleanCodeAttribute().orElse(null),
+      ruleDefinition.getCleanCodeAttribute().orElse(CleanCodeAttribute.defaultCleanCodeAttribute()),
       ruleDefinition.getDefaultImpacts(),
       null,
       transformParams(ruleDefinition.getParams(), ruleConfig != null ? ruleConfig.getParamValueByKey() : Map.of()),
@@ -84,18 +84,23 @@ public class RuleDetails {
       serverRule.getEducationPrincipleKeys());
   }
 
-  public static RuleDetails merging(ServerRule activeRuleFromServer, SonarLintRuleDefinition ruleDefFromPlugin) {
+  public static RuleDetails merging(ServerRule activeRuleFromServer, SonarLintRuleDefinition ruleDefFromPlugin, boolean skipCleanCodeTaxonomy) {
+    var cleanCodeAttribute = skipCleanCodeTaxonomy ? null : ruleDefFromPlugin.getCleanCodeAttribute().orElse(CleanCodeAttribute.defaultCleanCodeAttribute());
+    var defaultImpacts = skipCleanCodeTaxonomy ? Map.<SoftwareQuality, ImpactSeverity>of() : ruleDefFromPlugin.getDefaultImpacts();
     return new RuleDetails(ruleDefFromPlugin.getKey(), ruleDefFromPlugin.getLanguage(), ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(),
       ruleDefFromPlugin.getDescriptionSections().stream()
         .map(s -> new DescriptionSection(s.getKey(), s.getHtmlContent(), s.getContext().map(c -> new DescriptionSection.Context(c.getKey(), c.getDisplayName()))))
         .collect(Collectors.groupingBy(DescriptionSection::getKey)),
       Optional.ofNullable(activeRuleFromServer.getSeverity()).orElse(ruleDefFromPlugin.getDefaultSeverity()), ruleDefFromPlugin.getType(),
-      ruleDefFromPlugin.getCleanCodeAttribute().orElse(null),
-      ruleDefFromPlugin.getDefaultImpacts(),
+      cleanCodeAttribute,
+      defaultImpacts,
       activeRuleFromServer.getHtmlNote(), Collections.emptyList(), ruleDefFromPlugin.getEducationPrincipleKeys());
   }
 
-  public static RuleDetails merging(ServerActiveRule activeRuleFromStorage, ServerRule serverRule, SonarLintRuleDefinition templateRuleDefFromPlugin) {
+  public static RuleDetails merging(ServerActiveRule activeRuleFromStorage, ServerRule serverRule, SonarLintRuleDefinition templateRuleDefFromPlugin,
+    boolean skipCleanCodeTaxonomy) {
+    var cleanCodeAttribute = skipCleanCodeTaxonomy ? null : templateRuleDefFromPlugin.getCleanCodeAttribute().orElse(CleanCodeAttribute.defaultCleanCodeAttribute());
+    var defaultImpacts = skipCleanCodeTaxonomy ? Map.<SoftwareQuality, ImpactSeverity>of() : templateRuleDefFromPlugin.getDefaultImpacts();
     return new RuleDetails(
       activeRuleFromStorage.getRuleKey(),
       templateRuleDefFromPlugin.getLanguage(),
@@ -106,8 +111,8 @@ public class RuleDetails {
         .collect(Collectors.groupingBy(DescriptionSection::getKey)),
       serverRule.getSeverity(),
       templateRuleDefFromPlugin.getType(),
-      templateRuleDefFromPlugin.getCleanCodeAttribute().orElse(null),
-      templateRuleDefFromPlugin.getDefaultImpacts(),
+      cleanCodeAttribute,
+      defaultImpacts,
       serverRule.getHtmlNote(),
       Collections.emptyList(), templateRuleDefFromPlugin.getEducationPrincipleKeys());
   }

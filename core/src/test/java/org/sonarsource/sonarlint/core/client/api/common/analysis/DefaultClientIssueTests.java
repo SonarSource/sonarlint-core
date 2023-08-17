@@ -83,7 +83,7 @@ class DefaultClientIssueTests {
     assertThat(underTest.getMessage()).isEqualTo("msg");
     assertThat(underTest.getSeverity()).isEqualTo(IssueSeverity.MAJOR);
     assertThat(underTest.getType()).isEqualTo(RuleType.BUG);
-    assertThat(underTest.getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.CLEAR);
+    assertThat(underTest.getCleanCodeAttribute()).hasValue(CleanCodeAttribute.CLEAR);
     assertThat(underTest.getImpacts()).containsExactly(entry(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM));
     assertThat(underTest.getInputFile()).isEqualTo(clientInputFile);
     assertThat(underTest.getVulnerabilityProbability()).isEmpty();

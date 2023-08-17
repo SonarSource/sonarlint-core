@@ -32,6 +32,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchServiceImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
@@ -135,8 +136,7 @@ public class SynchronizationServiceImpl {
       return;
     }
     serverApiProvider.getServerApi(connectionId).ifPresent(serverApi -> {
-      var serverConnection = new ServerConnection(storageService.getStorageFacade(), connectionId, serverApi.isSonarCloud(),
-        languageSupportRepository.getEnabledLanguagesInConnectedMode(), connectedModeEmbeddedPluginKeys);
+      var serverConnection = getServerConnection(connectionId, serverApi);
       var subProgressGap = progressGap / boundConfigurationScopes.size();
       var subProgress = progress;
       for (BoundConfigurationScope scope : boundConfigurationScopes) {
@@ -145,6 +145,12 @@ public class SynchronizationServiceImpl {
         subProgress += subProgressGap;
       }
     });
+  }
+
+  @NotNull
+  public ServerConnection getServerConnection(String connectionId, ServerApi serverApi) {
+    return new ServerConnection(storageService.getStorageFacade(), connectionId, serverApi.isSonarCloud(),
+      languageSupportRepository.getEnabledLanguagesInConnectedMode(), connectedModeEmbeddedPluginKeys);
   }
 
   private void autoSyncBoundConfigurationScope(BoundConfigurationScope boundScope, ServerApi serverApi,
@@ -171,16 +177,14 @@ public class SynchronizationServiceImpl {
 
   public void fetchProjectIssues(Binding binding, String activeBranch) {
     serverApiProvider.getServerApi(binding.getConnectionId()).ifPresent(serverApi -> {
-      var serverConnection = new ServerConnection(storageService.getStorageFacade(), binding.getConnectionId(), serverApi.isSonarCloud(),
-        languageSupportRepository.getEnabledLanguagesInConnectedMode(), connectedModeEmbeddedPluginKeys);
+      var serverConnection = getServerConnection(binding.getConnectionId(), serverApi);
       serverConnection.downloadServerIssuesForProject(serverApi, binding.getSonarProjectKey(), activeBranch);
     });
   }
 
   public void fetchFileIssues(Binding binding, String serverFileRelativePath, String activeBranch) {
     serverApiProvider.getServerApi(binding.getConnectionId()).ifPresent(serverApi -> {
-      var serverConnection = new ServerConnection(storageService.getStorageFacade(), binding.getConnectionId(), serverApi.isSonarCloud(),
-        languageSupportRepository.getEnabledLanguagesInConnectedMode(), connectedModeEmbeddedPluginKeys);
+      var serverConnection = getServerConnection(binding.getConnectionId(), serverApi);
       serverConnection.downloadServerIssuesForFile(serverApi, binding.getSonarProjectKey(), serverFileRelativePath, activeBranch);
     });
   }

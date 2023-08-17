@@ -145,8 +145,13 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   private static class ActiveRulesContext {
+    private final boolean shouldSkipCleanCodeTaxonomy;
     private final List<ActiveRule> activeRules = new ArrayList<>();
     private final Map<String, ActiveRuleMetadata> activeRulesMetadata = new HashMap<>();
+
+    private ActiveRulesContext(boolean shouldSkipCleanCodeTaxonomy) {
+      this.shouldSkipCleanCodeTaxonomy = shouldSkipCleanCodeTaxonomy;
+    }
 
     public void includeRule(SonarLintRuleDefinition ruleOrTemplateDefinition, ServerActiveRule activeRule) {
       var activeRuleForAnalysis = new ActiveRule(activeRule.getRuleKey(), ruleOrTemplateDefinition.getLanguage().getLanguageKey());
@@ -231,12 +236,14 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   private void streamIssue(IssueListener issueListener, Issue newIssue, ActiveRulesContext activeRulesContext) {
     var ruleMetadata = activeRulesContext.getRuleMetadata(newIssue.getRuleKey());
     var vulnerabilityProbability = analysisContext.get().findRule(newIssue.getRuleKey()).flatMap(SonarLintRuleDefinition::getVulnerabilityProbability);
-    issueListener.handle(new DefaultClientIssue(newIssue, ruleMetadata.severity, ruleMetadata.type, ruleMetadata.cleanCodeAttribute,
-      ruleMetadata.defaultImpacts, vulnerabilityProbability));
+    var effectiveCleanCodeAttribute = activeRulesContext.shouldSkipCleanCodeTaxonomy ? null : ruleMetadata.cleanCodeAttribute;
+    var effectiveImpacts = activeRulesContext.shouldSkipCleanCodeTaxonomy ? Map.<SoftwareQuality, ImpactSeverity>of() : ruleMetadata.defaultImpacts;
+    issueListener.handle(new DefaultClientIssue(newIssue, ruleMetadata.severity, ruleMetadata.type, effectiveCleanCodeAttribute,
+      effectiveImpacts, vulnerabilityProbability));
   }
 
   private ActiveRulesContext buildActiveRulesContext(ConnectedAnalysisConfiguration configuration) {
-    var analysisRulesContext = new ActiveRulesContext();
+    var analysisRulesContext = new ActiveRulesContext(serverConnection.shouldSkipCleanCodeTaxonomy());
     var projectKey = configuration.getProjectKey();
     var ruleSetByLanguageKey = serverConnection.getAnalyzerConfiguration(projectKey).getRuleSetByLanguageKey();
     if (ruleSetByLanguageKey.isEmpty()) {

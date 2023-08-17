@@ -33,6 +33,7 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -50,11 +51,15 @@ class ConnectionSyncMediumTests {
 
   @Test
   void it_should_cache_extracted_rule_metadata_per_connection() {
+    var client = newFakeClient()
+      .withClientDescription(this.getClass().getName())
+      .withCredentials("connectionId", "user", "pw")
+      .build();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", storage -> storage.withJavaPlugin())
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withEnabledLanguage(Language.JAVA)
-      .build();
+      .build(client);
 
     await().untilAsserted(() -> assertThat(logTester.logs()).contains("Binding suggestion computation queued for config scopes 'scopeId'..."));
 

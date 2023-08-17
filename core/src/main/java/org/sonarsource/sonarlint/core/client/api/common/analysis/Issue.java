@@ -38,7 +38,7 @@ public interface Issue extends IssueLocation {
 
   RuleType getType();
 
-  CleanCodeAttribute getCleanCodeAttribute();
+  Optional<CleanCodeAttribute> getCleanCodeAttribute();
 
   Map<SoftwareQuality, ImpactSeverity> getImpacts();
 

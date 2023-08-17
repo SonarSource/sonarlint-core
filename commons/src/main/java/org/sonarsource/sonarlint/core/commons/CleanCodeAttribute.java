@@ -30,7 +30,7 @@ public enum CleanCodeAttribute {
   FORMATTED("Not formatted", CONSISTENT),
   IDENTIFIABLE("Not identifiable", CONSISTENT),
 
-  CLEAR("Not clean", INTENTIONAL),
+  CLEAR("Not clear", INTENTIONAL),
   COMPLETE("Not complete", INTENTIONAL),
   EFFICIENT("Not efficient", INTENTIONAL),
   LOGICAL("Not logical", INTENTIONAL),
