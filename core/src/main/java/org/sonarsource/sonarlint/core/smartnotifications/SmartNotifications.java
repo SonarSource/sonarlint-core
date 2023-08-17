@@ -24,6 +24,7 @@ import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -38,6 +39,7 @@ import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
+import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
@@ -102,6 +104,7 @@ public class SmartNotifications {
     var developersApi = serverApi.developers();
 
     var isSupported = isConnectionIdSupported.computeIfAbsent(connectionId, v -> developersApi.isSupported());
+    var connection = connectionRepository.getConnectionById(connectionId);
     if (Boolean.TRUE.equals(isSupported)) {
       var projectKeysByLastEventPolling = scopeIdsPerProjectKey.keySet().stream()
         .collect(Collectors.toMap(Function.identity(),
@@ -110,10 +113,12 @@ public class SmartNotifications {
       var notifications = retrieveServerNotifications(developersApi, projectKeysByLastEventPolling);
 
       for (var n : notifications) {
-        var smartNotification = new ShowSmartNotificationParams(n.message(), n.link(), scopeIdsPerProjectKey.get(n.projectKey()),
-          n.category(), connectionId);
-        client.showSmartNotification(smartNotification);
-        telemetryService.smartNotificationsReceived(n.category());
+        if ((connection != null && connection.getKind() == ConnectionKind.SONARQUBE) || !Objects.equals(n.category(), "QUALITY_GATE")) {
+          var smartNotification = new ShowSmartNotificationParams(n.message(), n.link(), scopeIdsPerProjectKey.get(n.projectKey()),
+            n.category(), connectionId);
+          client.showSmartNotification(smartNotification);
+          telemetryService.smartNotificationsReceived(n.category());
+        }
       }
 
       projectKeysByLastEventPolling.keySet()
