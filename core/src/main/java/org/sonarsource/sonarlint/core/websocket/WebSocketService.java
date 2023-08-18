@@ -75,11 +75,11 @@ public class WebSocketService {
   @Subscribe
   public void handleEvent(BindingConfigChangedEvent bindingConfigChangedEvent) {
     var newProjectKey = bindingConfigChangedEvent.getNewConfig().getSonarProjectKey();
-    var configScopeId = bindingConfigChangedEvent.getNewConfig().getConfigScopeId();
+    var configScopeId = bindingConfigChangedEvent.getConfigScopeId();
     String connectionId = bindingConfigChangedEvent.getNewConfig().getConnectionId();
     var connection = connectionId != null ? connectionConfigurationRepository.getConnectionById(connectionId) : null;
     var isSonarCloudConnection = connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD);
-    var projectKey = subscribedProjectKeysByConfigScopes.remove(bindingConfigChangedEvent.getNewConfig().getConfigScopeId());
+    var projectKey = subscribedProjectKeysByConfigScopes.remove(configScopeId);
     if (projectKey != null && !subscribedProjectKeysByConfigScopes.containsValue(projectKey)) {
       unsubscribe(projectKey);
     }

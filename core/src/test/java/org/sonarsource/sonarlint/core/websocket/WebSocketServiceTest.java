@@ -87,9 +87,9 @@ class WebSocketServiceTest {
   class HandleBindingConfigChangeEvent {
     @Test
     void should_create_connection_and_subscribe_to_events() {
-      var previousConfig = new BindingConfigChangedEvent.BindingConfig("configScope", "connectionId1", "projectKey", false);
-      var newConfig = new BindingConfigChangedEvent.BindingConfig("configScope", "connectionId2", "projectKey", false);
-      var bindingConfigChangedEvent = new BindingConfigChangedEvent(previousConfig, newConfig);
+      var previousConfig = new BindingConfigChangedEvent.BindingConfig("connectionId1", "projectKey", false);
+      var newConfig = new BindingConfigChangedEvent.BindingConfig("connectionId2", "projectKey", false);
+      var bindingConfigChangedEvent = new BindingConfigChangedEvent("configScope", previousConfig, newConfig);
       var connection = new SonarCloudConnectionConfiguration("connectionId1", "myOrg", false);
 
       when(connectionConfigurationRepository.getConnectionById(newConfig.getConnectionId())).thenReturn(connection);
@@ -104,9 +104,9 @@ class WebSocketServiceTest {
 
     @Test
     void should_not_do_anything_if_binding_removed() {
-      var previousConfig = new BindingConfigChangedEvent.BindingConfig("configScope", "connectionId1", "projectKey", false);
-      var newConfig = new BindingConfigChangedEvent.BindingConfig("configScope", null, null, false);
-      var bindingConfigChangedEvent = new BindingConfigChangedEvent(previousConfig, newConfig);
+      var previousConfig = new BindingConfigChangedEvent.BindingConfig("connectionId1", "projectKey", false);
+      var newConfig = new BindingConfigChangedEvent.BindingConfig(null, null, false);
+      var bindingConfigChangedEvent = new BindingConfigChangedEvent("configScope", previousConfig, newConfig);
 
       when(connectionConfigurationRepository.getConnectionById(newConfig.getConnectionId())).thenReturn(null);
       when(connectionAwareHttpClientProvider.getHttpClient(newConfig.getConnectionId())).thenReturn(httpClient);
@@ -119,9 +119,9 @@ class WebSocketServiceTest {
 
     @Test
     void should_not_do_anything_if_sonar_qube_connection() {
-      var previousConfig = new BindingConfigChangedEvent.BindingConfig("configScope", "connectionId1", "projectKey", false);
-      var newConfig = new BindingConfigChangedEvent.BindingConfig("configScope", "connectionId2", "projectKey", false);
-      var bindingConfigChangedEvent = new BindingConfigChangedEvent(previousConfig, newConfig);
+      var previousConfig = new BindingConfigChangedEvent.BindingConfig("connectionId1", "projectKey", false);
+      var newConfig = new BindingConfigChangedEvent.BindingConfig("connectionId2", "projectKey", false);
+      var bindingConfigChangedEvent = new BindingConfigChangedEvent("configScope", previousConfig, newConfig);
       var connection = new SonarQubeConnectionConfiguration("connectionId1", "http://localhost:9000", false);
 
       when(connectionConfigurationRepository.getConnectionById(newConfig.getConnectionId())).thenReturn(connection);
@@ -140,9 +140,9 @@ class WebSocketServiceTest {
       webSocketService.subscribedProjectKeysByConfigScopes.put("configScope", "projectKey");
       webSocketService.sonarCloudWebSocket = new SonarCloudWebSocket(webSocket);
 
-      var previousConfig = new BindingConfigChangedEvent.BindingConfig("configScope", "connectionId", "projectKey", false);
-      var newConfig = new BindingConfigChangedEvent.BindingConfig("configScope", "connectionId", "projectKey2", false);
-      var bindingConfigChangedEvent = new BindingConfigChangedEvent(previousConfig, newConfig);
+      var previousConfig = new BindingConfigChangedEvent.BindingConfig("connectionId", "projectKey", false);
+      var newConfig = new BindingConfigChangedEvent.BindingConfig("connectionId", "projectKey2", false);
+      var bindingConfigChangedEvent = new BindingConfigChangedEvent("configScope", previousConfig, newConfig);
       var connection = new SonarCloudConnectionConfiguration("connectionId", "myOrg", false);
 
       when(connectionConfigurationRepository.getConnectionById(newConfig.getConnectionId())).thenReturn(connection);
@@ -162,9 +162,9 @@ class WebSocketServiceTest {
       webSocketService.subscribedProjectKeysByConfigScopes.put("configScope2", "projectKey");
       webSocketService.sonarCloudWebSocket = new SonarCloudWebSocket(webSocket);
 
-      var previousConfig = new BindingConfigChangedEvent.BindingConfig("configScope", "connectionId", "projectKey", false);
-      var newConfig = new BindingConfigChangedEvent.BindingConfig("configScope", "connectionId", "projectKey2", false);
-      var bindingConfigChangedEvent = new BindingConfigChangedEvent(previousConfig, newConfig);
+      var previousConfig = new BindingConfigChangedEvent.BindingConfig( "connectionId", "projectKey", false);
+      var newConfig = new BindingConfigChangedEvent.BindingConfig( "connectionId", "projectKey2", false);
+      var bindingConfigChangedEvent = new BindingConfigChangedEvent("configScope", previousConfig, newConfig);
       var connection = new SonarCloudConnectionConfiguration("connectionId", "myOrg", false);
 
       when(connectionConfigurationRepository.getConnectionById(newConfig.getConnectionId())).thenReturn(connection);
@@ -178,9 +178,9 @@ class WebSocketServiceTest {
 
     @Test
     void should_do_nothing_if_notifications_disabled() {
-      var previousConfig = new BindingConfigChangedEvent.BindingConfig("configScope", "connectionId1", "projectKey", false);
-      var newConfig = new BindingConfigChangedEvent.BindingConfig("configScope", "connectionId2", "projectKey", false);
-      var bindingConfigChangedEvent = new BindingConfigChangedEvent(previousConfig, newConfig);
+      var previousConfig = new BindingConfigChangedEvent.BindingConfig( "connectionId1", "projectKey", false);
+      var newConfig = new BindingConfigChangedEvent.BindingConfig( "connectionId2", "projectKey", false);
+      var bindingConfigChangedEvent = new BindingConfigChangedEvent("configScope", previousConfig, newConfig);
       var connection = new SonarCloudConnectionConfiguration("connectionId1", "myOrg", true);
 
       when(connectionConfigurationRepository.getConnectionById(newConfig.getConnectionId())).thenReturn(connection);

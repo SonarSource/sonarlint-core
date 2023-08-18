@@ -101,7 +101,7 @@ public class BindingSuggestionProviderImpl implements BindingService {
   public void bindingConfigChanged(BindingConfigChangedEvent event) {
     // Check if binding suggestion was switched on
     if (!event.getNewConfig().isBindingSuggestionDisabled() && event.getPreviousConfig().isBindingSuggestionDisabled()) {
-      suggestBindingForGivenScopesAndAllConnections(Set.of(event.getNewConfig().getConfigScopeId()));
+      suggestBindingForGivenScopesAndAllConnections(Set.of(event.getConfigScopeId()));
     }
   }
 
