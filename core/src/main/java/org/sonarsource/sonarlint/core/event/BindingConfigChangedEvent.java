@@ -24,13 +24,18 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
 public class BindingConfigChangedEvent {
-
+  private final String configScopeId;
   private final BindingConfig previousConfig;
   private final BindingConfig newConfig;
 
-  public BindingConfigChangedEvent(BindingConfig previousConfig, BindingConfig newConfig) {
+  public BindingConfigChangedEvent(String configScopeId, BindingConfig previousConfig, BindingConfig newConfig) {
+    this.configScopeId = configScopeId;
     this.previousConfig = previousConfig;
     this.newConfig = newConfig;
+  }
+
+  public String getConfigScopeId() {
+    return configScopeId;
   }
 
   public BindingConfig getPreviousConfig() {
@@ -42,20 +47,14 @@ public class BindingConfigChangedEvent {
   }
 
   public static class BindingConfig {
-    private final String configScopeId;
     private final String connectionId;
     private final String sonarProjectKey;
     private final boolean bindingSuggestionDisabled;
 
-    public BindingConfig(String configScopeId, @Nullable String connectionId, @Nullable String sonarProjectKey, boolean bindingSuggestionDisabled) {
-      this.configScopeId = configScopeId;
+    public BindingConfig(@Nullable String connectionId, @Nullable String sonarProjectKey, boolean bindingSuggestionDisabled) {
       this.connectionId = connectionId;
       this.sonarProjectKey = sonarProjectKey;
       this.bindingSuggestionDisabled = bindingSuggestionDisabled;
-    }
-
-    public String getConfigScopeId() {
-      return configScopeId;
     }
 
     @CheckForNull
@@ -82,14 +81,13 @@ public class BindingConfigChangedEvent {
       }
       var that = (BindingConfig) o;
       return bindingSuggestionDisabled == that.bindingSuggestionDisabled
-        && configScopeId.equals(that.configScopeId)
         && Objects.equals(connectionId, that.connectionId)
         && Objects.equals(sonarProjectKey, that.sonarProjectKey);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(configScopeId, connectionId, sonarProjectKey, bindingSuggestionDisabled);
+      return Objects.hash(connectionId, sonarProjectKey, bindingSuggestionDisabled);
     }
   }
 

@@ -121,13 +121,13 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 
   @CheckForNull
   private static BindingConfigChangedEvent createChangedEventIfNeeded(String configScopeId, BindingConfiguration previousBindingConfig, BindingConfiguration newBindingConfig) {
-    var previousConfigForEvent = new BindingConfigChangedEvent.BindingConfig(configScopeId, previousBindingConfig.getConnectionId(),
+    var previousConfigForEvent = new BindingConfigChangedEvent.BindingConfig(previousBindingConfig.getConnectionId(),
       previousBindingConfig.getSonarProjectKey(), previousBindingConfig.isBindingSuggestionDisabled());
-    var newConfigForEvent = new BindingConfigChangedEvent.BindingConfig(configScopeId, newBindingConfig.getConnectionId(),
+    var newConfigForEvent = new BindingConfigChangedEvent.BindingConfig(newBindingConfig.getConnectionId(),
       newBindingConfig.getSonarProjectKey(), newBindingConfig.isBindingSuggestionDisabled());
 
     if (!previousConfigForEvent.equals(newConfigForEvent)) {
-      return new BindingConfigChangedEvent(previousConfigForEvent, newConfigForEvent);
+      return new BindingConfigChangedEvent(configScopeId, previousConfigForEvent, newConfigForEvent);
     }
     return null;
   }
