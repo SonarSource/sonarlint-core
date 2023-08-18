@@ -94,6 +94,7 @@ class WebSocketServiceTest {
 
       when(connectionConfigurationRepository.getConnectionById(newConfig.getConnectionId())).thenReturn(connection);
       when(connectionAwareHttpClientProvider.getHttpClient(newConfig.getConnectionId())).thenReturn(httpClient);
+      when(configurationRepository.getBindingConfiguration("configScope")).thenReturn(new BindingConfiguration("connectionId2", "projectKey", false));
       when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
 
       webSocketService.handleEvent(bindingConfigChangedEvent);
@@ -147,6 +148,7 @@ class WebSocketServiceTest {
 
       when(connectionConfigurationRepository.getConnectionById(newConfig.getConnectionId())).thenReturn(connection);
       when(connectionAwareHttpClientProvider.getHttpClient(newConfig.getConnectionId())).thenReturn(httpClient);
+      when(configurationRepository.getBindingConfiguration("configScope")).thenReturn(new BindingConfiguration("connectionId", "projectKey2", false));
       when(httpClient.createWebSocketConnection(eq(WEBSOCKET_DEV_URL), any(), any())).thenReturn(webSocket);
 
       webSocketService.handleEvent(bindingConfigChangedEvent);
