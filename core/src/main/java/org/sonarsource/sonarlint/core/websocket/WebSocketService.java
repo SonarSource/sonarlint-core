@@ -74,19 +74,39 @@ public class WebSocketService {
 
   @Subscribe
   public void handleEvent(BindingConfigChangedEvent bindingConfigChangedEvent) {
-    var newProjectKey = bindingConfigChangedEvent.getNewConfig().getSonarProjectKey();
     var configScopeId = bindingConfigChangedEvent.getConfigScopeId();
-    String connectionId = bindingConfigChangedEvent.getNewConfig().getConnectionId();
-    var connection = connectionId != null ? connectionConfigurationRepository.getConnectionById(connectionId) : null;
-    var isSonarCloudConnection = connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD);
-    var projectKey = subscribedProjectKeysByConfigScopes.remove(configScopeId);
-    if (projectKey != null && !subscribedProjectKeysByConfigScopes.containsValue(projectKey)) {
-      unsubscribe(projectKey);
+    if (isBoundProjectAlreadySubscribed(configScopeId)) {
+      return;
     }
-    if (newProjectKey != null && isSonarCloudConnection && !connection.isDisableNotifications()) {
-      createConnectionIfNeeded(connectionId);
-      subscribe(configScopeId, newProjectKey);
+    unsubscribePreviousProject(configScopeId);
+
+    var bindingConfiguration = configurationRepository.getBindingConfiguration(configScopeId);
+    if (bindingConfiguration != null && bindingConfiguration.isBound()) {
+      var connectionId = bindingConfiguration.getConnectionId();
+      if (connectionId != null) {
+        var connection = connectionConfigurationRepository.getConnectionById(connectionId);
+        if (connection != null) {
+          var isSonarCloudConnection = connection.getKind().equals(ConnectionKind.SONARCLOUD);
+          var projectKey = bindingConfiguration.getSonarProjectKey();
+          if (projectKey != null && isSonarCloudConnection && !connection.isDisableNotifications()) {
+            createConnectionIfNeeded(connectionId);
+            subscribe(configScopeId, projectKey);
+          }
+        }
+      }
     }
+  }
+
+  private boolean isBoundProjectAlreadySubscribed(String configScopeId) {
+    // start from the repository has it is the source of truth and the events might be outdated
+    var bindingConfiguration = configurationRepository.getBindingConfiguration(configScopeId);
+    if (bindingConfiguration != null && bindingConfiguration.isBound()) {
+      var connectionId = requireNonNull(bindingConfiguration.getConnectionId());
+      var connection = connectionConfigurationRepository.getConnectionById(connectionId);
+      var sonarProjectKey = bindingConfiguration.getSonarProjectKey();
+      return connection != null && connection.getKind() == ConnectionKind.SONARCLOUD && subscribedProjectKeysByConfigScopes.containsValue(sonarProjectKey);
+    }
+    return false;
   }
 
   @Subscribe
@@ -96,9 +116,13 @@ public class WebSocketService {
 
   @Subscribe
   public void handleEvent(ConfigurationScopeRemovedEvent configurationScopeRemovedEvent) {
-    var projectKey = subscribedProjectKeysByConfigScopes.remove(configurationScopeRemovedEvent.getRemovedConfigurationScopeId());
-    if (!subscribedProjectKeysByConfigScopes.containsValue(projectKey)) {
-      unsubscribe(projectKey);
+    unsubscribePreviousProject(configurationScopeRemovedEvent.getRemovedConfigurationScopeId());
+  }
+
+  private void unsubscribePreviousProject(String configScopeId) {
+    var previousProjectKey = subscribedProjectKeysByConfigScopes.remove(configScopeId);
+    if (previousProjectKey != null && !subscribedProjectKeysByConfigScopes.containsValue(previousProjectKey)) {
+      unsubscribe(previousProjectKey);
     }
   }
 
@@ -183,8 +207,7 @@ public class WebSocketService {
   private void createConnectionIfNeeded(String connectionId) {
     connectionIdsInterestedInNotifications.add(connectionId);
     if (this.sonarCloudWebSocket == null) {
-      this.sonarCloudWebSocket = SonarCloudWebSocket.
-        create(connectionAwareHttpClientProvider.getHttpClient(connectionId), eventRouter::handle, this::refreshConnectionIfNeeded);
+      this.sonarCloudWebSocket = SonarCloudWebSocket.create(connectionAwareHttpClientProvider.getHttpClient(connectionId), eventRouter::handle, this::refreshConnectionIfNeeded);
     }
   }
 
