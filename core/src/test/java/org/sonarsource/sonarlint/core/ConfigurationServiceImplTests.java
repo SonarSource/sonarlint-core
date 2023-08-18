@@ -152,12 +152,11 @@ class ConfigurationServiceImplTests {
     verify(eventBus).post(captor.capture());
     var event = captor.getValue();
 
-    assertThat(event.getPreviousConfig().getConfigScopeId()).isEqualTo("id1");
+    assertThat(event.getConfigScopeId()).isEqualTo("id1");
     assertThat(event.getPreviousConfig().getConnectionId()).isEqualTo("connection1");
     assertThat(event.getPreviousConfig().getSonarProjectKey()).isEqualTo("projectKey1");
     assertThat(event.getPreviousConfig().isBindingSuggestionDisabled()).isFalse();
 
-    assertThat(event.getNewConfig().getConfigScopeId()).isEqualTo("id1");
     assertThat(event.getNewConfig().getConnectionId()).isEqualTo("connection1");
     assertThat(event.getNewConfig().getSonarProjectKey()).isEqualTo("projectKey2");
     assertThat(event.getNewConfig().isBindingSuggestionDisabled()).isTrue();
