@@ -39,8 +39,10 @@ import org.sonarsource.sonarlint.core.serverapi.push.parsing.EventParser;
 import org.sonarsource.sonarlint.core.websocket.parsing.QualityGateChangedEventParser;
 
 public class SonarCloudWebSocket {
-  public static final String WEBSOCKET_DEV_URL = "wss://squad-5-events-api.sc-dev.io/";
-  public static final String WEBSOCKET_URL = "wss://events-api.sonarcloud.io/";
+
+  public static String getUrl() {
+    return System.getProperty("sonarlint.internal.sonarcloud.websocket.url", "wss://events-api.sonarcloud.io/");
+  }
   private static final Map<String, EventParser<?>> parsersByType = Map.of(
     "QualityGateChanged", new QualityGateChangedEventParser());
 
@@ -51,7 +53,7 @@ public class SonarCloudWebSocket {
 
   public static SonarCloudWebSocket create(HttpClient httpClient, Consumer<ServerEvent> serverEventConsumer, Runnable connectionEndedRunnable) {
     var webSocket = new SonarCloudWebSocket();
-    webSocket.ws = httpClient.createWebSocketConnection(WEBSOCKET_DEV_URL, rawEvent -> webSocket.handleRawMessage(rawEvent, serverEventConsumer), connectionEndedRunnable);
+    webSocket.ws = httpClient.createWebSocketConnection(getUrl(), rawEvent -> webSocket.handleRawMessage(rawEvent, serverEventConsumer), connectionEndedRunnable);
     webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(webSocket::cleanUpMessageHistory, 0, 5, TimeUnit.MINUTES);
     webSocket.sonarCloudWebSocketScheduler.schedule(connectionEndedRunnable, 119, TimeUnit.MINUTES);
     webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(webSocket::keepAlive, 9, 9, TimeUnit.MINUTES);

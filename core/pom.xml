@@ -162,6 +162,20 @@
       <artifactId>awaitility</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- For WebSockets testing -->
+    <dependency>
+      <groupId>javax.websocket</groupId>
+      <artifactId>javax.websocket-api</artifactId>
+      <version>1.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tomcat.embed</groupId>
+      <artifactId>tomcat-embed-websocket</artifactId>
+      <version>10.1.12</version>
+      <scope>test</scope>
+    </dependency>
+
     <!-- For Xodus -->
     <dependency>
       <groupId>org.slf4j</groupId>
