@@ -122,6 +122,7 @@ public class ConnectionServiceImpl implements ConnectionService {
 
     var updatedConnections = newConnectionsById.entrySet().stream()
       .filter(e -> previousConnectionsById.containsKey(e.getKey()))
+      // FIXME does not work for credential changes?
       .filter(e -> !previousConnectionsById.get(e.getKey()).equals(e.getValue()))
       .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
     var addedConnections = newConnectionsById.entrySet().stream()
