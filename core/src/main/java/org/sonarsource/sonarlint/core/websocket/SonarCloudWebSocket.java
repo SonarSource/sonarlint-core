@@ -26,6 +26,7 @@ import java.net.http.WebSocket;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -48,11 +49,11 @@ public class SonarCloudWebSocket {
   private final History history = new History();
   private final ScheduledExecutorService sonarCloudWebSocketScheduler = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "sonarcloud-websocket-scheduled-jobs"));
 
-  public static SonarCloudWebSocket create(HttpClient httpClient, Consumer<ServerEvent> serverEventConsumer, Runnable connectionRefresher) {
+  public static SonarCloudWebSocket create(HttpClient httpClient, Consumer<ServerEvent> serverEventConsumer, Runnable connectionEndedRunnable) {
     var webSocket = new SonarCloudWebSocket();
-    webSocket.ws = httpClient.createWebSocketConnection(WEBSOCKET_DEV_URL, rawEvent -> webSocket.handleRawMessage(rawEvent, serverEventConsumer), connectionRefresher);
+    webSocket.ws = httpClient.createWebSocketConnection(WEBSOCKET_DEV_URL, rawEvent -> webSocket.handleRawMessage(rawEvent, serverEventConsumer), connectionEndedRunnable);
     webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(webSocket::cleanUpMessageHistory, 0, 5, TimeUnit.MINUTES);
-    webSocket.sonarCloudWebSocketScheduler.schedule(connectionRefresher, 119, TimeUnit.MINUTES);
+    webSocket.sonarCloudWebSocketScheduler.schedule(connectionEndedRunnable, 119, TimeUnit.MINUTES);
     webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(webSocket::keepAlive, 9, 9, TimeUnit.MINUTES);
     return webSocket;
   }
@@ -106,7 +107,7 @@ public class SonarCloudWebSocket {
 
   private static Optional<? extends ServerEvent> parse(WebSocketEvent event) {
     var eventType = event.event;
-    if (eventType == null){
+    if (eventType == null) {
       return Optional.empty();
     } else if (!parsersByType.containsKey(eventType)) {
       SonarLintLogger.get().error("Unknown '{}' event type ", eventType);
@@ -124,7 +125,18 @@ public class SonarCloudWebSocket {
     if (this.ws != null) {
       // output could already be closed if an error occurred
       if (!this.ws.isOutputClosed()) {
-        this.ws.sendClose(WebSocket.NORMAL_CLOSURE, "");
+        try {
+          // close output
+          this.ws.sendClose(WebSocket.NORMAL_CLOSURE, "").get();
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        } catch (ExecutionException e) {
+          SonarLintLogger.get().error("Cannot close the WebSocket output", e);
+        }
+      }
+      if (!this.ws.isInputClosed()) {
+        // close input
+        this.ws.abort();
       }
       this.ws = null;
     }
