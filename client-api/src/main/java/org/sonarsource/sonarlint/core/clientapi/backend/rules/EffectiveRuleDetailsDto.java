@@ -20,45 +20,27 @@
 package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
 import java.util.Collection;
+import java.util.Map;
+import javax.annotation.Nullable;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 
-public class EffectiveRuleDetailsDto {
-  private final String key;
-  private final String name;
-  private final IssueSeverity severity;
-  private final RuleType type;
+public class EffectiveRuleDetailsDto extends AbstractRuleDto {
   private final Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> description;
   private final Collection<EffectiveRuleParamDto> params;
-  private final Language language;
 
-  public EffectiveRuleDetailsDto(String key, String name, IssueSeverity severity, RuleType type, Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> description,
-    Collection<EffectiveRuleParamDto> params, Language language) {
-    this.key = key;
-    this.name = name;
-    this.severity = severity;
-    this.type = type;
+  public EffectiveRuleDetailsDto(String key, String name, IssueSeverity severity, RuleType type,
+    @Nullable CleanCodeAttribute cleanCodeAttribute, Map<SoftwareQuality, ImpactSeverity> defaultImpacts,
+    Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> description, Collection<EffectiveRuleParamDto> params,
+    Language language) {
+    super(key, name, severity, type, cleanCodeAttribute, defaultImpacts, language);
     this.description = description;
     this.params = params;
-    this.language = language;
-  }
-
-  public String getKey() {
-    return key;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public IssueSeverity getSeverity() {
-    return severity;
-  }
-
-  public RuleType getType() {
-    return type;
   }
 
   public Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> getDescription() {
@@ -68,9 +50,4 @@ public class EffectiveRuleDetailsDto {
   public Collection<EffectiveRuleParamDto> getParams() {
     return params;
   }
-
-  public Language getLanguage() {
-    return language;
-  }
-
 }

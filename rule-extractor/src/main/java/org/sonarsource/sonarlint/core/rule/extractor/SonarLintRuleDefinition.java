@@ -30,9 +30,12 @@ import org.sonar.api.rule.RuleKey;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.api.server.rule.RulesDefinition.Param;
 import org.sonar.markdown.Markdown;
+import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 
 import static java.util.stream.Collectors.toSet;
@@ -44,6 +47,8 @@ public class SonarLintRuleDefinition {
   private final String name;
   private final IssueSeverity defaultSeverity;
   private final RuleType type;
+  private final CleanCodeAttribute cleanCodeAttribute;
+  private final Map<SoftwareQuality, ImpactSeverity> defaultImpacts;
   private final String description;
   private final List<SonarLintRuleDescriptionSection> descriptionSections;
   private final Map<String, SonarLintRuleParamDefinition> params;
@@ -62,6 +67,12 @@ public class SonarLintRuleDefinition {
     this.name = rule.name();
     this.defaultSeverity = IssueSeverity.valueOf(rule.severity());
     this.type = RuleType.valueOf(rule.type().name());
+    this.cleanCodeAttribute = Optional.ofNullable(rule.cleanCodeAttribute()).map(Enum::name).map(CleanCodeAttribute::valueOf)
+      .orElse(CleanCodeAttribute.defaultCleanCodeAttribute());
+    this.defaultImpacts = rule.defaultImpacts().entrySet()
+      .stream()
+      .map(e -> Map.entry(SoftwareQuality.valueOf(e.getKey().name()), ImpactSeverity.valueOf(e.getValue().name())))
+      .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     var htmlDescription = rule.htmlDescription() != null ? rule.htmlDescription() : Markdown.convertToHtml(rule.markdownDescription());
     if (rule.type() == org.sonar.api.rules.RuleType.SECURITY_HOTSPOT) {
       this.description = null;
@@ -107,6 +118,14 @@ public class SonarLintRuleDefinition {
 
   public RuleType getType() {
     return type;
+  }
+
+  public Optional<CleanCodeAttribute> getCleanCodeAttribute() {
+    return Optional.ofNullable(cleanCodeAttribute);
+  }
+
+  public Map<SoftwareQuality, ImpactSeverity> getDefaultImpacts() {
+    return defaultImpacts;
   }
 
   public Map<String, SonarLintRuleParamDefinition> getParams() {

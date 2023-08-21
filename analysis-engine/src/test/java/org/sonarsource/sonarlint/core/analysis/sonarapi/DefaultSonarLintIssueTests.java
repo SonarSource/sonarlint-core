@@ -32,6 +32,7 @@ import org.sonar.api.batch.sensor.issue.MessageFormatting;
 import org.sonar.api.batch.sensor.issue.fix.NewInputFileEdit;
 import org.sonar.api.batch.sensor.issue.fix.NewQuickFix;
 import org.sonar.api.batch.sensor.issue.fix.NewTextEdit;
+import org.sonar.api.issue.impact.SoftwareQuality;
 import org.sonar.api.rule.RuleKey;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputDir;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputProject;
@@ -40,6 +41,7 @@ import testutils.TestInputFileBuilder;
 import static org.apache.commons.lang3.StringUtils.repeat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -69,12 +71,14 @@ class DefaultSonarLintIssueTests {
         .at(range)
         .message("Wrong way!"))
       .forRule(RuleKey.of("repo", "rule"))
-      .gap(10.0);
+      .gap(10.0)
+      .overrideImpact(SoftwareQuality.SECURITY, org.sonar.api.issue.impact.Severity.HIGH);
 
     assertThat(issue.primaryLocation().inputComponent()).isEqualTo(inputFile);
     assertThat(issue.ruleKey()).isEqualTo(RuleKey.of("repo", "rule"));
     assertThat(issue.primaryLocation().textRange().start().line()).isEqualTo(1);
     assertThat(issue.primaryLocation().message()).isEqualTo("Wrong way!");
+    assertThat(issue.overridenImpacts()).containsExactly(entry(SoftwareQuality.SECURITY, org.sonar.api.issue.impact.Severity.HIGH));
 
     assertThatExceptionOfType(UnsupportedOperationException.class)
       .isThrownBy(issue::gap)

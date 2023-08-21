@@ -31,12 +31,16 @@ import org.sonarsource.sonarlint.core.clientapi.backend.rules.ListAllStandaloneR
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleDefinitionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleParamDefinitionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleParamType;
+import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 class StandaloneRulesMediumTests {
 
@@ -86,8 +90,10 @@ class StandaloneRulesMediumTests {
 
     var ruleDetails = backend.getRulesService().getStandaloneRuleDetails(new GetStandaloneRuleDescriptionParams("java:S1176")).get();
 
+    assertThat(ruleDetails.getRuleDefinition().getCleanCodeAttribute()).hasValue(CleanCodeAttribute.defaultCleanCodeAttribute());
+    assertThat(ruleDetails.getRuleDefinition().getDefaultImpacts()).containsExactly(entry(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM));
     assertThat(ruleDetails.getRuleDefinition().getName()).isEqualTo("Public types, methods and fields (API) should be documented with Javadoc");
-    assertThat(ruleDetails.getRuleDefinition().getDefaultSeverity()).isEqualTo(IssueSeverity.MAJOR);
+    assertThat(ruleDetails.getRuleDefinition().getSeverity()).isEqualTo(IssueSeverity.MAJOR);
     assertThat(ruleDetails.getRuleDefinition().getType()).isEqualTo(RuleType.CODE_SMELL);
     assertThat(ruleDetails.getDescription().isLeft()).isTrue();
     assertThat(ruleDetails.getDescription().getLeft().getHtmlContent()).startsWith("<p>Try to imagine using the standard Java API (Collections, JDBC, IO, …\u200B) without Javadoc.");

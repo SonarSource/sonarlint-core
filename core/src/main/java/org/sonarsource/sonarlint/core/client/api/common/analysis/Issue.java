@@ -20,12 +20,16 @@
 package org.sonarsource.sonarlint.core.client.api.common.analysis;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.sonarsource.sonarlint.core.analysis.api.Flow;
 import org.sonarsource.sonarlint.core.analysis.api.IssueLocation;
 import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
+import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 
 public interface Issue extends IssueLocation {
@@ -33,6 +37,10 @@ public interface Issue extends IssueLocation {
   IssueSeverity getSeverity();
 
   RuleType getType();
+
+  Optional<CleanCodeAttribute> getCleanCodeAttribute();
+
+  Map<SoftwareQuality, ImpactSeverity> getImpacts();
 
   String getRuleKey();
 

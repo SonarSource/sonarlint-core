@@ -57,6 +57,7 @@ import org.sonarsource.sonarlint.core.serverapi.rules.ServerRule;
 import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
 import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
+import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
 
 @Named
 @Singleton
@@ -67,21 +68,23 @@ public class RulesServiceImpl implements RulesService {
   private final ConfigurationRepository configurationRepository;
   private final RulesRepository rulesRepository;
   private final StorageService storageService;
+  private final SynchronizationServiceImpl synchronizationService;
   private static final String COULD_NOT_FIND_RULE = "Could not find rule '";
   private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfig = new ConcurrentHashMap<>();
 
   @Inject
   public RulesServiceImpl(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository, StorageService storageService,
-    InitializeParams params) {
-    this(serverApiProvider, configurationRepository, rulesRepository, storageService, params.getStandaloneRuleConfigByKey());
+    SynchronizationServiceImpl synchronizationService, InitializeParams params) {
+    this(serverApiProvider, configurationRepository, rulesRepository, storageService, synchronizationService, params.getStandaloneRuleConfigByKey());
   }
 
   RulesServiceImpl(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository, StorageService storageService,
-    Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
+    SynchronizationServiceImpl synchronizationService, Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
     this.serverApiProvider = serverApiProvider;
     this.configurationRepository = configurationRepository;
     this.rulesRepository = rulesRepository;
     this.storageService = storageService;
+    this.synchronizationService = synchronizationService;
     this.standaloneRuleConfig.putAll(standaloneRuleConfigByKey);
   }
 
@@ -103,9 +106,14 @@ public class RulesServiceImpl implements RulesService {
 
   private CompletableFuture<RuleDetails> getActiveRuleForBinding(String ruleKey, Binding binding) {
     var connectionId = binding.getConnectionId();
+    var serverApi = serverApiProvider.getServerApi(connectionId);
+    if (serverApi.isEmpty()) {
+      return failedFutureUnknownConnection(connectionId);
+    }
+    boolean skipCleanCodeTaxonomy = synchronizationService.getServerConnection(connectionId, serverApi.get()).shouldSkipCleanCodeTaxonomy();
 
     return findServerActiveRuleInStorage(binding, ruleKey)
-      .map(storageRule -> hydrateDetailsWithServer(connectionId, storageRule))
+      .map(storageRule -> hydrateDetailsWithServer(connectionId, storageRule, skipCleanCodeTaxonomy))
       // try from loaded rules, for e.g. extra analyzers
       .orElseGet(() -> rulesRepository.getRule(connectionId, ruleKey)
         .map(r -> RuleDetails.from(r, standaloneRuleConfig.get(ruleKey)))
@@ -127,23 +135,28 @@ public class RulesServiceImpl implements RulesService {
       .filter(r -> tryConvertDeprecatedKeys(r, binding.getConnectionId()).getRuleKey().equals(ruleKey)).findFirst();
   }
 
-  private CompletableFuture<RuleDetails> hydrateDetailsWithServer(String connectionId, ServerActiveRule activeRuleFromStorage) {
+  private CompletableFuture<RuleDetails> hydrateDetailsWithServer(String connectionId, ServerActiveRule activeRuleFromStorage, boolean skipCleanCodeTaxonomy) {
     var ruleKey = activeRuleFromStorage.getRuleKey();
     var templateKey = activeRuleFromStorage.getTemplateKey();
     if (StringUtils.isNotBlank(templateKey)) {
       return rulesRepository.getRule(connectionId, templateKey)
         .map(templateRule -> serverApiProvider.getServerApi(connectionId)
           .map(serverApi -> fetchRuleFromServer(connectionId, ruleKey, serverApi)
-            .thenApply(serverRule -> RuleDetails.merging(activeRuleFromStorage, serverRule, templateRule)))
-          .orElseGet(() -> CompletableFuture.failedFuture(new IllegalStateException("Unknown connection '" + connectionId + "'"))))
+            .thenApply(serverRule -> RuleDetails.merging(activeRuleFromStorage, serverRule, templateRule, skipCleanCodeTaxonomy)))
+          .orElseGet(() -> failedFutureUnknownConnection(connectionId)))
         .orElseGet(() -> CompletableFuture.failedFuture(new IllegalStateException("Unable to find rule definition for rule template " + templateKey)));
     } else {
       return serverApiProvider.getServerApi(connectionId).map(serverApi -> fetchRuleFromServer(connectionId, ruleKey, serverApi)
         .thenApply(serverRule -> rulesRepository.getRule(connectionId, ruleKey)
-          .map(ruleDefFromPlugin -> RuleDetails.merging(serverRule, ruleDefFromPlugin))
+          .map(ruleDefFromPlugin -> RuleDetails.merging(serverRule, ruleDefFromPlugin, skipCleanCodeTaxonomy))
           .orElseGet(() -> RuleDetails.merging(activeRuleFromStorage, serverRule))))
-        .orElseGet(() -> CompletableFuture.failedFuture(new IllegalStateException("Unknown connection '" + connectionId + "'")));
+        .orElseGet(() -> failedFutureUnknownConnection(connectionId));
     }
+  }
+
+  @NotNull
+  private static CompletableFuture<RuleDetails> failedFutureUnknownConnection(String connectionId) {
+    return CompletableFuture.failedFuture(new IllegalStateException("Unknown connection '" + connectionId + "'"));
   }
 
   private static CompletableFuture<ServerRule> fetchRuleFromServer(String connectionId, String ruleKey, ServerApi serverApi) {
@@ -196,7 +209,8 @@ public class RulesServiceImpl implements RulesService {
 
   @NotNull
   private static RuleDefinitionDto convert(SonarLintRuleDefinition r) {
-    return new RuleDefinitionDto(r.getKey(), r.getName(), r.getDefaultSeverity(), r.getType(), convert(r.getParams()), r.isActiveByDefault(), r.getLanguage());
+    return new RuleDefinitionDto(r.getKey(), r.getName(), r.getDefaultSeverity(), r.getType(), r.getCleanCodeAttribute().orElse(null), r.getDefaultImpacts(),
+      convert(r.getParams()), r.isActiveByDefault(), r.getLanguage());
   }
 
   private static Map<String, RuleParamDefinitionDto> convert(Map<String, SonarLintRuleParamDefinition> params) {

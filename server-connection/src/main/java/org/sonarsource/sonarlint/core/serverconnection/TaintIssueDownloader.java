@@ -33,10 +33,13 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -121,6 +124,13 @@ public class TaintIssueDownloader {
       return null;
     }
     var ruleDescriptionContextKey = taintVulnerabilityFromWs.hasRuleDescriptionContextKey() ? taintVulnerabilityFromWs.getRuleDescriptionContextKey() : null;
+    // TODO Parse actual values from stream
+    var cleanCodeAttribute = CleanCodeAttribute.TRUSTWORTHY;
+    var impacts = Map.of(
+      SoftwareQuality.RELIABILITY, ImpactSeverity.LOW,
+      SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM,
+      SoftwareQuality.SECURITY, ImpactSeverity.HIGH
+    );
     return new ServerTaintIssue(
       taintVulnerabilityFromWs.getKey(),
       !taintVulnerabilityFromWs.getResolution().isEmpty(),
@@ -130,7 +140,8 @@ public class TaintIssueDownloader {
       ServerApiUtils.parseOffsetDateTime(taintVulnerabilityFromWs.getCreationDate()).toInstant(),
       IssueSeverity.valueOf(taintVulnerabilityFromWs.getSeverity().name()),
       RuleType.valueOf(taintVulnerabilityFromWs.getType().name()),
-      primaryLocation.getTextRange(), ruleDescriptionContextKey)
+      primaryLocation.getTextRange(), ruleDescriptionContextKey,
+      cleanCodeAttribute, impacts)
         .setFlows(convertFlows(sourceApi, taintVulnerabilityFromWs.getFlowsList(), componentsByKey, sourceCodeByKey));
   }
 
@@ -168,13 +179,20 @@ public class TaintIssueDownloader {
     var severity = IssueSeverity.valueOf(liteTaintIssueFromWs.getSeverity().name());
     var type = RuleType.valueOf(liteTaintIssueFromWs.getType().name());
     var ruleDescriptionContextKey = liteTaintIssueFromWs.hasRuleDescriptionContextKey() ? liteTaintIssueFromWs.getRuleDescriptionContextKey() : null;
+    // TODO Parse actual values from stream
+    var cleanCodeAttribute = CleanCodeAttribute.TRUSTWORTHY;
+    var impacts = Map.of(
+      SoftwareQuality.RELIABILITY, ImpactSeverity.LOW,
+      SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM,
+      SoftwareQuality.SECURITY, ImpactSeverity.HIGH
+    );
     if (mainLocation.hasTextRange()) {
       taintIssue = new ServerTaintIssue(liteTaintIssueFromWs.getKey(), liteTaintIssueFromWs.getResolved(), liteTaintIssueFromWs.getRuleKey(), mainLocation.getMessage(),
         filePath, creationDate, severity,
-        type, toServerTaintIssueTextRange(mainLocation.getTextRange()), ruleDescriptionContextKey);
+        type, toServerTaintIssueTextRange(mainLocation.getTextRange()), ruleDescriptionContextKey, cleanCodeAttribute, impacts);
     } else {
       taintIssue = new ServerTaintIssue(liteTaintIssueFromWs.getKey(), liteTaintIssueFromWs.getResolved(), liteTaintIssueFromWs.getRuleKey(), mainLocation.getMessage(),
-        filePath, creationDate, severity, type, null, ruleDescriptionContextKey);
+        filePath, creationDate, severity, type, null, ruleDescriptionContextKey, cleanCodeAttribute, impacts);
     }
     taintIssue.setFlows(liteTaintIssueFromWs.getFlowsList().stream().map(TaintIssueDownloader::convertFlows).collect(Collectors.toList()));
     return taintIssue;

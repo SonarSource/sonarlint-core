@@ -55,10 +55,13 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBranches;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
+import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
@@ -142,15 +145,22 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   private static class ActiveRulesContext {
+    private final boolean shouldSkipCleanCodeTaxonomy;
     private final List<ActiveRule> activeRules = new ArrayList<>();
     private final Map<String, ActiveRuleMetadata> activeRulesMetadata = new HashMap<>();
+
+    private ActiveRulesContext(boolean shouldSkipCleanCodeTaxonomy) {
+      this.shouldSkipCleanCodeTaxonomy = shouldSkipCleanCodeTaxonomy;
+    }
 
     public void includeRule(SonarLintRuleDefinition ruleOrTemplateDefinition, ServerActiveRule activeRule) {
       var activeRuleForAnalysis = new ActiveRule(activeRule.getRuleKey(), ruleOrTemplateDefinition.getLanguage().getLanguageKey());
       activeRuleForAnalysis.setTemplateRuleKey(trimToNull(activeRule.getTemplateKey()));
       activeRuleForAnalysis.setParams(getEffectiveParams(ruleOrTemplateDefinition, activeRule));
       activeRules.add(activeRuleForAnalysis);
-      activeRulesMetadata.put(activeRule.getRuleKey(), new ActiveRuleMetadata(activeRule.getSeverity(), ruleOrTemplateDefinition.getType()));
+      activeRulesMetadata.put(activeRule.getRuleKey(),
+        new ActiveRuleMetadata(activeRule.getSeverity(), ruleOrTemplateDefinition.getType(),
+          ruleOrTemplateDefinition.getCleanCodeAttribute().orElse(CleanCodeAttribute.defaultCleanCodeAttribute()), ruleOrTemplateDefinition.getDefaultImpacts()));
     }
 
     private static Map<String, String> getEffectiveParams(SonarLintRuleDefinition ruleOrTemplateDefinition, ServerActiveRule activeRule) {
@@ -169,7 +179,8 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
       var activeRuleForAnalysis = new ActiveRule(rule.getKey(), rule.getLanguage().getLanguageKey());
       activeRuleForAnalysis.setParams(rule.getDefaultParams());
       activeRules.add(activeRuleForAnalysis);
-      activeRulesMetadata.put(activeRuleForAnalysis.getRuleKey(), new ActiveRuleMetadata(rule.getDefaultSeverity(), rule.getType()));
+      activeRulesMetadata.put(activeRuleForAnalysis.getRuleKey(), new ActiveRuleMetadata(rule.getDefaultSeverity(), rule.getType(),
+        rule.getCleanCodeAttribute().orElse(CleanCodeAttribute.defaultCleanCodeAttribute()), rule.getDefaultImpacts()));
     }
 
     private ActiveRuleMetadata getRuleMetadata(String ruleKey) {
@@ -180,9 +191,15 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
       private final IssueSeverity severity;
       private final RuleType type;
 
-      private ActiveRuleMetadata(IssueSeverity severity, RuleType type) {
+      private final CleanCodeAttribute cleanCodeAttribute;
+
+      private final Map<SoftwareQuality, ImpactSeverity> defaultImpacts;
+
+      private ActiveRuleMetadata(IssueSeverity severity, RuleType type, CleanCodeAttribute cleanCodeAttribute, Map<SoftwareQuality, ImpactSeverity> defaultImpacts) {
         this.severity = severity;
         this.type = type;
+        this.cleanCodeAttribute = cleanCodeAttribute;
+        this.defaultImpacts = defaultImpacts;
       }
     }
   }
@@ -219,11 +236,14 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   private void streamIssue(IssueListener issueListener, Issue newIssue, ActiveRulesContext activeRulesContext) {
     var ruleMetadata = activeRulesContext.getRuleMetadata(newIssue.getRuleKey());
     var vulnerabilityProbability = analysisContext.get().findRule(newIssue.getRuleKey()).flatMap(SonarLintRuleDefinition::getVulnerabilityProbability);
-    issueListener.handle(new DefaultClientIssue(newIssue, ruleMetadata.severity, ruleMetadata.type, vulnerabilityProbability));
+    var effectiveCleanCodeAttribute = activeRulesContext.shouldSkipCleanCodeTaxonomy ? null : ruleMetadata.cleanCodeAttribute;
+    var effectiveImpacts = activeRulesContext.shouldSkipCleanCodeTaxonomy ? Map.<SoftwareQuality, ImpactSeverity>of() : ruleMetadata.defaultImpacts;
+    issueListener.handle(new DefaultClientIssue(newIssue, ruleMetadata.severity, ruleMetadata.type, effectiveCleanCodeAttribute,
+      effectiveImpacts, vulnerabilityProbability));
   }
 
   private ActiveRulesContext buildActiveRulesContext(ConnectedAnalysisConfiguration configuration) {
-    var analysisRulesContext = new ActiveRulesContext();
+    var analysisRulesContext = new ActiveRulesContext(serverConnection.shouldSkipCleanCodeTaxonomy());
     var projectKey = configuration.getProjectKey();
     var ruleSetByLanguageKey = serverConnection.getAnalyzerConfiguration(projectKey).getRuleSetByLanguageKey();
     if (ruleSetByLanguageKey.isEmpty()) {

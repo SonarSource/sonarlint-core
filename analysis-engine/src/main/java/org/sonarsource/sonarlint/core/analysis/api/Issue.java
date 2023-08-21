@@ -20,10 +20,13 @@
 package org.sonarsource.sonarlint.core.analysis.api;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 
 public class Issue implements IssueLocation {
@@ -34,15 +37,17 @@ public class Issue implements IssueLocation {
   private final List<QuickFix> quickFixes;
   private final Optional<String> ruleDescriptionContextKey;
   private final TextRange textRange;
+  private final Map<SoftwareQuality, ImpactSeverity> overriddenImpacts;
 
-  public Issue(ActiveRuleAdapter activeRule, @Nullable String primaryMessage, @Nullable org.sonar.api.batch.fs.TextRange textRange,
+  public Issue(ActiveRuleAdapter activeRule, @Nullable String primaryMessage, Map<SoftwareQuality, ImpactSeverity> overriddenImpacts, @Nullable org.sonar.api.batch.fs.TextRange textRange,
     @Nullable ClientInputFile clientInputFile, List<Flow> flows, List<QuickFix> quickFixes, Optional<String> ruleDescriptionContextKey) {
-    this(activeRule.ruleKey().toString(), primaryMessage, Optional.ofNullable(textRange).map(WithTextRange::convert).orElse(null), clientInputFile, flows, quickFixes,
+    this(activeRule.ruleKey().toString(), primaryMessage, overriddenImpacts, Optional.ofNullable(textRange).map(WithTextRange::convert).orElse(null), clientInputFile, flows, quickFixes,
       ruleDescriptionContextKey);
   }
 
-  public Issue(String ruleKey, @Nullable String primaryMessage, @Nullable TextRange textRange,
+  public Issue(String ruleKey, @Nullable String primaryMessage, Map<SoftwareQuality, ImpactSeverity> overriddenImpacts, @Nullable TextRange textRange,
     @Nullable ClientInputFile clientInputFile, List<Flow> flows, List<QuickFix> quickFixes, Optional<String> ruleDescriptionContextKey) {
+    this.overriddenImpacts = overriddenImpacts;
     this.textRange = textRange;
     this.ruleKey = ruleKey;
     this.primaryMessage = primaryMessage;
@@ -79,6 +84,10 @@ public class Issue implements IssueLocation {
   @CheckForNull
   public TextRange getTextRange() {
     return textRange;
+  }
+
+  public Map<SoftwareQuality, ImpactSeverity> getOverriddenImpacts() {
+    return overriddenImpacts;
   }
 
   public Optional<String> getRuleDescriptionContextKey() {

@@ -20,44 +20,24 @@
 package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
 import java.util.Map;
+import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 
-public class RuleDefinitionDto {
-  private final String key;
-  private final String name;
-  private final IssueSeverity defaultSeverity;
-  private final RuleType type;
+public class RuleDefinitionDto extends AbstractRuleDto {
   private final Map<String, RuleParamDefinitionDto> paramsByKey;
   private final boolean isActiveByDefault;
-  private final Language language;
 
-  public RuleDefinitionDto(String key, String name, IssueSeverity defaultSeverity, RuleType type, Map<String, RuleParamDefinitionDto> paramsByKey, boolean isActiveByDefault,
-    Language language) {
-    this.key = key;
-    this.name = name;
-    this.defaultSeverity = defaultSeverity;
-    this.type = type;
+  public RuleDefinitionDto(String key, String name, IssueSeverity defaultSeverity, RuleType type,
+    @Nullable CleanCodeAttribute cleanCodeAttribute, Map<SoftwareQuality, ImpactSeverity> defaultImpacts,
+    Map<String, RuleParamDefinitionDto> paramsByKey, boolean isActiveByDefault, Language language) {
+    super(key, name, defaultSeverity, type, cleanCodeAttribute, defaultImpacts, language);
     this.paramsByKey = paramsByKey;
     this.isActiveByDefault = isActiveByDefault;
-    this.language = language;
-  }
-
-  public String getKey() {
-    return key;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public IssueSeverity getDefaultSeverity() {
-    return defaultSeverity;
-  }
-
-  public RuleType getType() {
-    return type;
   }
 
   public Map<String, RuleParamDefinitionDto> getParamsByKey() {
@@ -66,9 +46,5 @@ public class RuleDefinitionDto {
 
   public boolean isActiveByDefault() {
     return isActiveByDefault;
-  }
-
-  public Language getLanguage() {
-    return language;
   }
 }

@@ -30,9 +30,12 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.StandaloneRuleConfigDto;
+import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamDefinition;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
@@ -53,6 +56,8 @@ public class RuleDetails {
         .collect(Collectors.groupingBy(DescriptionSection::getKey)),
       ruleDefinition.getDefaultSeverity(),
       ruleDefinition.getType(),
+      ruleDefinition.getCleanCodeAttribute().orElse(CleanCodeAttribute.defaultCleanCodeAttribute()),
+      ruleDefinition.getDefaultImpacts(),
       null,
       transformParams(ruleDefinition.getParams(), ruleConfig != null ? ruleConfig.getParamValueByKey() : Map.of()),
       ruleDefinition.getEducationPrincipleKeys());
@@ -72,20 +77,30 @@ public class RuleDetails {
         .map(s -> new DescriptionSection(s.getKey(), s.getHtmlContent(), s.getContext().map(c -> new DescriptionSection.Context(c.getKey(), c.getDisplayName()))))
         .collect(Collectors.groupingBy(DescriptionSection::getKey)),
       Optional.ofNullable(activeRuleFromStorage.getSeverity()).orElse(serverRule.getSeverity()),
-      serverRule.getType(), serverRule.getHtmlNote(), Collections.emptyList(),
+      serverRule.getType(),
+      null, // TODO get clean code attribute from storage?
+      Map.of(), // TODO get impacts from storage?
+      serverRule.getHtmlNote(), Collections.emptyList(),
       serverRule.getEducationPrincipleKeys());
   }
 
-  public static RuleDetails merging(ServerRule activeRuleFromServer, SonarLintRuleDefinition ruleDefFromPlugin) {
+  public static RuleDetails merging(ServerRule activeRuleFromServer, SonarLintRuleDefinition ruleDefFromPlugin, boolean skipCleanCodeTaxonomy) {
+    var cleanCodeAttribute = skipCleanCodeTaxonomy ? null : ruleDefFromPlugin.getCleanCodeAttribute().orElse(CleanCodeAttribute.defaultCleanCodeAttribute());
+    var defaultImpacts = skipCleanCodeTaxonomy ? Map.<SoftwareQuality, ImpactSeverity>of() : ruleDefFromPlugin.getDefaultImpacts();
     return new RuleDetails(ruleDefFromPlugin.getKey(), ruleDefFromPlugin.getLanguage(), ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(),
       ruleDefFromPlugin.getDescriptionSections().stream()
         .map(s -> new DescriptionSection(s.getKey(), s.getHtmlContent(), s.getContext().map(c -> new DescriptionSection.Context(c.getKey(), c.getDisplayName()))))
         .collect(Collectors.groupingBy(DescriptionSection::getKey)),
       Optional.ofNullable(activeRuleFromServer.getSeverity()).orElse(ruleDefFromPlugin.getDefaultSeverity()), ruleDefFromPlugin.getType(),
+      cleanCodeAttribute,
+      defaultImpacts,
       activeRuleFromServer.getHtmlNote(), Collections.emptyList(), ruleDefFromPlugin.getEducationPrincipleKeys());
   }
 
-  public static RuleDetails merging(ServerActiveRule activeRuleFromStorage, ServerRule serverRule, SonarLintRuleDefinition templateRuleDefFromPlugin) {
+  public static RuleDetails merging(ServerActiveRule activeRuleFromStorage, ServerRule serverRule, SonarLintRuleDefinition templateRuleDefFromPlugin,
+    boolean skipCleanCodeTaxonomy) {
+    var cleanCodeAttribute = skipCleanCodeTaxonomy ? null : templateRuleDefFromPlugin.getCleanCodeAttribute().orElse(CleanCodeAttribute.defaultCleanCodeAttribute());
+    var defaultImpacts = skipCleanCodeTaxonomy ? Map.<SoftwareQuality, ImpactSeverity>of() : templateRuleDefFromPlugin.getDefaultImpacts();
     return new RuleDetails(
       activeRuleFromStorage.getRuleKey(),
       templateRuleDefFromPlugin.getLanguage(),
@@ -96,6 +111,8 @@ public class RuleDetails {
         .collect(Collectors.groupingBy(DescriptionSection::getKey)),
       serverRule.getSeverity(),
       templateRuleDefFromPlugin.getType(),
+      cleanCodeAttribute,
+      defaultImpacts,
       serverRule.getHtmlNote(),
       Collections.emptyList(), templateRuleDefFromPlugin.getEducationPrincipleKeys());
   }
@@ -107,12 +124,15 @@ public class RuleDetails {
   private final Map<String, List<DescriptionSection>> descriptionSectionsByKey;
   private final IssueSeverity defaultSeverity;
   private final RuleType type;
+  private final CleanCodeAttribute cleanCodeAttribute;
+  private final Map<SoftwareQuality, ImpactSeverity> defaultImpacts;
   private final Collection<EffectiveRuleParam> params;
   private final String extendedDescription;
   private final Set<String> educationPrincipleKeys;
 
   public RuleDetails(String key, Language language, String name, String htmlDescription, Map<String, List<DescriptionSection>> descriptionSectionsByKey,
-    IssueSeverity defaultSeverity, RuleType type, @Nullable String extendedDescription, Collection<EffectiveRuleParam> params, Set<String> educationPrincipleKeys) {
+    IssueSeverity defaultSeverity, RuleType type, @Nullable CleanCodeAttribute cleanCodeAttribute, Map<SoftwareQuality, ImpactSeverity> defaultImpacts,
+    @Nullable String extendedDescription, Collection<EffectiveRuleParam> params, Set<String> educationPrincipleKeys) {
     this.key = key;
     this.language = language;
     this.name = name;
@@ -120,6 +140,8 @@ public class RuleDetails {
     this.descriptionSectionsByKey = descriptionSectionsByKey;
     this.defaultSeverity = defaultSeverity;
     this.type = type;
+    this.cleanCodeAttribute = cleanCodeAttribute;
+    this.defaultImpacts = defaultImpacts;
     this.params = params;
     this.extendedDescription = extendedDescription;
     this.educationPrincipleKeys = educationPrincipleKeys;
@@ -159,6 +181,14 @@ public class RuleDetails {
 
   public RuleType getType() {
     return type;
+  }
+
+  public Optional<CleanCodeAttribute> getCleanCodeAttribute() {
+    return Optional.ofNullable(cleanCodeAttribute);
+  }
+
+  public Map<SoftwareQuality, ImpactSeverity> getDefaultImpacts() {
+    return defaultImpacts;
   }
 
   public Collection<EffectiveRuleParam> getParams() {

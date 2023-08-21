@@ -67,6 +67,8 @@ public class ServerConnection {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final Version SECRET_ANALYSIS_MIN_SQ_VERSION = Version.create("9.9");
 
+  private static final Version CLEAN_CODE_TAXONOMY_MIN_SQ_VERSION = Version.create("10.2");
+
   private final Set<Language> enabledLanguagesToSync;
   private final IssueStoreReader issueStoreReader;
   private final LocalStorageSynchronizer storageSynchronizer;
@@ -226,6 +228,13 @@ public class ServerConnection {
     // when storage is not present, assume that secrets are not supported by server
     return isSonarCloud || storage.serverInfo().read()
       .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(SECRET_ANALYSIS_MIN_SQ_VERSION) >= 0)
+      .orElse(false);
+  }
+
+  public boolean shouldSkipCleanCodeTaxonomy() {
+    // In connected mode, Clean Code taxonomy is skipped if the server is SonarQube < 10.2
+    return !isSonarCloud && storage.serverInfo().read()
+      .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(CLEAN_CODE_TAXONOMY_MIN_SQ_VERSION) < 0)
       .orElse(false);
   }
 

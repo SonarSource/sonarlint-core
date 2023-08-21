@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common.analysis;
 
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,12 +28,16 @@ import org.mockito.MockitoAnnotations;
 import org.sonar.api.batch.fs.InputComponent;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
+import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -61,9 +66,12 @@ class DefaultClientIssueTests {
 
     when(rule.getName()).thenReturn("name");
     when(rule.getType()).thenReturn(RuleType.BUG);
+    when(rule.getCleanCodeAttribute()).thenReturn(Optional.of(CleanCodeAttribute.CLEAR));
+    when(rule.getDefaultImpacts()).thenReturn(Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW));
     when(rule.getDefaultSeverity()).thenReturn(IssueSeverity.MAJOR);
 
-    var issue = new Issue("rule:S123", "msg", textRange, clientInputFile, null, null, Optional.empty());
+    var overriddenImpacts = Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM);
+    var issue = new Issue("rule:S123", "msg", overriddenImpacts, textRange, clientInputFile, null, null, Optional.empty());
 
     var underTest = new DefaultClientIssue(issue, rule);
 
@@ -75,6 +83,8 @@ class DefaultClientIssueTests {
     assertThat(underTest.getMessage()).isEqualTo("msg");
     assertThat(underTest.getSeverity()).isEqualTo(IssueSeverity.MAJOR);
     assertThat(underTest.getType()).isEqualTo(RuleType.BUG);
+    assertThat(underTest.getCleanCodeAttribute()).hasValue(CleanCodeAttribute.CLEAR);
+    assertThat(underTest.getImpacts()).containsExactly(entry(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM));
     assertThat(underTest.getInputFile()).isEqualTo(clientInputFile);
     assertThat(underTest.getVulnerabilityProbability()).isEmpty();
   }
