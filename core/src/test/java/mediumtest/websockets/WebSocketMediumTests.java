@@ -121,6 +121,25 @@ class WebSocketMediumTests {
     }
 
     @Test
+    void should_unsubscribe_from_old_project_and_not_subscribe_to_new_project_if_it_is_already_subscribed() {
+      startWebSocketServer();
+      backend = newBackend()
+        .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
+        .withBoundConfigScope("configScope1", "connectionId", "projectKey1")
+        .withBoundConfigScope("configScope2", "connectionId", "projectKey2")
+        .build();
+      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+
+      bind("configScope1", "connectionId", "projectKey2");
+
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
+        .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
+        .containsExactly(tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey2\"}",
+          "{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey1\"}",
+          "{\"action\":\"unsubscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey1\"}"))));
+    }
+
+    @Test
     void should_not_open_connection_or_subscribe_if_notifications_disabled_on_connection() {
       startWebSocketServer();
       backend = newBackend()
@@ -167,7 +186,7 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
         assertThat(webSocketServer.getConnections())
           .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
-          .containsExactly(tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}",
+          .containsExactly(tuple(false, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}",
             "{\"action\":\"unsubscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}")));
       });
     }
@@ -276,7 +295,7 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
         assertThat(webSocketServer.getConnections())
           .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
-          .containsExactly(tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}",
+          .containsExactly(tuple(false, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}",
             "{\"action\":\"unsubscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}")));
       });
     }
@@ -353,7 +372,8 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
         .containsExactly(tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey2\"}",
-          "{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey1\"}"))));
+          "{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey1\"}",
+          "{\"action\":\"unsubscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey1\"}"))));
     }
   }
 
@@ -395,6 +415,20 @@ class WebSocketMediumTests {
     }
 
     @Test
+    void should_do_nothing_when_no_project_bound_to_sonarcloud() {
+      startWebSocketServer();
+      backend = newBackend()
+        .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
+        .build();
+
+      backend.getConnectionService()
+        .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey2", false))));
+
+      // FIXME verify differently
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
+    }
+
+    @Test
     void should_close_websocket_if_notifications_disabled() {
       startWebSocketServer();
       backend = newBackend()
@@ -420,7 +454,7 @@ class WebSocketMediumTests {
         .withBoundConfigScope("configScope1", "connectionId1", "projectKey1")
         .withBoundConfigScope("configScope2", "connectionId2", "projectKey2")
         .build();
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty() && webSocketServer.getConnections().get(0).getReceivedMessages().size() == 2);
 
       backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(emptyList(),
         List.of(new SonarCloudConnectionConfigurationDto("connectionId1", "orgKey1", false), new SonarCloudConnectionConfigurationDto("connectionId2", "orgKey2", true))));
@@ -462,10 +496,12 @@ class WebSocketMediumTests {
         .build(client);
       await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
 
-      webSocketServer.getConnections().get(0).sendMessage("{\"event\": \"QualityGateChanged\", \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
+      webSocketServer.getConnections().get(0).sendMessage(
+        "{\"event\": \"QualityGateChanged\", \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSmartNotificationsToShow())
-        .extracting(ShowSmartNotificationParams::getScopeIds, ShowSmartNotificationParams::getCategory, ShowSmartNotificationParams::getLink, ShowSmartNotificationParams::getText, ShowSmartNotificationParams::getConnectionId)
+        .extracting(ShowSmartNotificationParams::getScopeIds, ShowSmartNotificationParams::getCategory, ShowSmartNotificationParams::getLink, ShowSmartNotificationParams::getText,
+          ShowSmartNotificationParams::getConnectionId)
         .containsExactly(tuple(Set.of("configScope"), "QUALITY_GATE", "lnk", "msg", "connectionId")));
     }
 
@@ -495,7 +531,8 @@ class WebSocketMediumTests {
         .build(client);
       await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
 
-      webSocketServer.getConnections().get(0).sendMessage("{\"event\": [\"QualityGateChanged\"], \"data\": {\"link\": \"lnk\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
+      webSocketServer.getConnections().get(0)
+        .sendMessage("{\"event\": [\"QualityGateChanged\"], \"data\": {\"link\": \"lnk\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
 
       // FIXME verify differently
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSmartNotificationsToShow()).isEmpty());
@@ -511,7 +548,8 @@ class WebSocketMediumTests {
         .build(client);
       await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
 
-      webSocketServer.getConnections().get(0).sendMessage("{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": \"msg\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
+      webSocketServer.getConnections().get(0)
+        .sendMessage("{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": \"msg\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
 
       // FIXME verify differently
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSmartNotificationsToShow()).isEmpty());
@@ -527,7 +565,8 @@ class WebSocketMediumTests {
         .build(client);
       await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
 
-      webSocketServer.getConnections().get(0).sendMessage("{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
+      webSocketServer.getConnections().get(0)
+        .sendMessage("{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
 
       // FIXME verify differently
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSmartNotificationsToShow()).isEmpty());
@@ -543,7 +582,8 @@ class WebSocketMediumTests {
         .build(client);
       await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
 
-      webSocketServer.getConnections().get(0).sendMessage("{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\"}}");
+      webSocketServer.getConnections().get(0)
+        .sendMessage("{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\"}}");
 
       // FIXME verify differently
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSmartNotificationsToShow()).isEmpty());
@@ -594,11 +634,14 @@ class WebSocketMediumTests {
         .build(client);
       await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
 
-      webSocketServer.getConnections().get(0).sendMessage("{\"event\": \"QualityGateChanged\", \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
-      webSocketServer.getConnections().get(0).sendMessage("{\"event\": \"QualityGateChanged\", \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
+      webSocketServer.getConnections().get(0).sendMessage(
+        "{\"event\": \"QualityGateChanged\", \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
+      webSocketServer.getConnections().get(0).sendMessage(
+        "{\"event\": \"QualityGateChanged\", \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSmartNotificationsToShow())
-        .extracting(ShowSmartNotificationParams::getScopeIds, ShowSmartNotificationParams::getCategory, ShowSmartNotificationParams::getLink, ShowSmartNotificationParams::getText, ShowSmartNotificationParams::getConnectionId)
+        .extracting(ShowSmartNotificationParams::getScopeIds, ShowSmartNotificationParams::getCategory, ShowSmartNotificationParams::getLink, ShowSmartNotificationParams::getText,
+          ShowSmartNotificationParams::getConnectionId)
         .containsExactly(tuple(Set.of("configScope"), "QUALITY_GATE", "lnk", "msg", "connectionId")));
     }
   }
@@ -612,7 +655,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build();
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).hasSize(1));
+      await().atMost(Duration.ofSeconds(2)).until(() -> webSocketServer.getConnections().size() == 1 && webSocketServer.getConnections().get(0).getReceivedMessages().size() == 1);
 
       webSocketServer.getConnections().get(0).close();
 

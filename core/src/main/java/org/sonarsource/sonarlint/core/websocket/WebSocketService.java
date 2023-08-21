@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
+import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
@@ -45,8 +46,9 @@ import org.sonarsource.sonarlint.core.websocket.events.QualityGateChangedEvent;
 import static java.util.Objects.requireNonNull;
 
 public class WebSocketService {
-  protected final Map<String, String> subscribedProjectKeysByConfigScopes = new HashMap<>();
-  protected final Set<String> connectionIdsInterestedInNotifications = new HashSet<>();
+  private final Map<String, String> subscribedProjectKeysByConfigScopes = new HashMap<>();
+  private final Set<String> connectionIdsInterestedInNotifications = new HashSet<>();
+  private String connectionIdUsedToCreateConnection;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final ConfigurationRepository configurationRepository;
   private final ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider;
@@ -74,115 +76,128 @@ public class WebSocketService {
 
   @Subscribe
   public void handleEvent(BindingConfigChangedEvent bindingConfigChangedEvent) {
-    var configScopeId = bindingConfigChangedEvent.getConfigScopeId();
-    if (isBoundProjectAlreadySubscribed(configScopeId)) {
-      return;
-    }
-    unsubscribePreviousProject(configScopeId);
-
-    var bindingConfiguration = configurationRepository.getBindingConfiguration(configScopeId);
-    if (bindingConfiguration != null && bindingConfiguration.isBound()) {
-      var connectionId = bindingConfiguration.getConnectionId();
-      if (connectionId != null) {
-        var connection = connectionConfigurationRepository.getConnectionById(connectionId);
-        if (connection != null) {
-          var isSonarCloudConnection = connection.getKind().equals(ConnectionKind.SONARCLOUD);
-          var projectKey = bindingConfiguration.getSonarProjectKey();
-          if (projectKey != null && isSonarCloudConnection && !connection.isDisableNotifications()) {
-            createConnectionIfNeeded(connectionId);
-            subscribe(configScopeId, projectKey);
-          }
-        }
-      }
-    }
-  }
-
-  private boolean isBoundProjectAlreadySubscribed(String configScopeId) {
-    // start from the repository has it is the source of truth and the events might be outdated
-    var bindingConfiguration = configurationRepository.getBindingConfiguration(configScopeId);
-    if (bindingConfiguration != null && bindingConfiguration.isBound()) {
-      var connectionId = requireNonNull(bindingConfiguration.getConnectionId());
-      var connection = connectionConfigurationRepository.getConnectionById(connectionId);
-      var sonarProjectKey = bindingConfiguration.getSonarProjectKey();
-      return connection != null && connection.getKind() == ConnectionKind.SONARCLOUD && subscribedProjectKeysByConfigScopes.containsValue(sonarProjectKey);
-    }
-    return false;
+    considerScope(bindingConfigChangedEvent.getConfigScopeId());
   }
 
   @Subscribe
   public void handleEvent(ConfigurationScopesAddedEvent configurationScopesAddedEvent) {
-    subscribeAllBoundConfigurationScopes(configurationScopesAddedEvent.getAddedConfigurationScopeIds());
+    considerAllBoundConfigurationScopes(configurationScopesAddedEvent.getAddedConfigurationScopeIds());
   }
 
   @Subscribe
   public void handleEvent(ConfigurationScopeRemovedEvent configurationScopeRemovedEvent) {
-    unsubscribePreviousProject(configurationScopeRemovedEvent.getRemovedConfigurationScopeId());
-  }
-
-  private void unsubscribePreviousProject(String configScopeId) {
-    var previousProjectKey = subscribedProjectKeysByConfigScopes.remove(configScopeId);
-    if (previousProjectKey != null && !subscribedProjectKeysByConfigScopes.containsValue(previousProjectKey)) {
-      unsubscribe(previousProjectKey);
-    }
+    var removedConfigurationScopeId = configurationScopeRemovedEvent.getRemovedConfigurationScopeId();
+    forget(removedConfigurationScopeId);
+    closeSocketIfNoMoreNeeded();
   }
 
   @Subscribe
   public void handleEvent(ConnectionConfigurationAddedEvent connectionConfigurationAddedEvent) {
     // This is only to handle the case where binding was invalid (connection did not exist) and became valid (matching connection was created)
-    var configScopeIds = configurationRepository.getConfigScopesWithBindingConfiguredTo(connectionConfigurationAddedEvent.getAddedConnectionId())
-      .stream().map(ConfigurationScope::getId)
-      .collect(Collectors.toSet());
-    subscribeAllBoundConfigurationScopes(configScopeIds);
+    considerConnection(connectionConfigurationAddedEvent.getAddedConnectionId());
   }
 
   @Subscribe
   public void handleEvent(ConnectionConfigurationUpdatedEvent connectionConfigurationUpdatedEvent) {
     var updatedConnectionId = connectionConfigurationUpdatedEvent.getUpdatedConnectionId();
-    var connection = connectionConfigurationRepository.getConnectionById(updatedConnectionId);
-    if (connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD)) {
-      // TODO what if connection type changed from SQ to SC or vice versa?
-      closeSocket();
-      boolean notificationsGotDisabledForConnection = connectionIdsInterestedInNotifications.contains(updatedConnectionId) && connection.isDisableNotifications();
-      if (notificationsGotDisabledForConnection) {
-        connectionIdsInterestedInNotifications.remove(updatedConnectionId);
-        removeProjectsFromSubscriptionListForConnection(updatedConnectionId);
-      }
-      if (!connection.isDisableNotifications()) {
-        createConnectionIfNeeded(updatedConnectionId);
-        subscribeAllBoundConfigurationScopes(configurationRepository.getConfigScopeIds());
-      } else if (!connectionIdsInterestedInNotifications.isEmpty()) {
-        connectionIdsInterestedInNotifications.remove(updatedConnectionId);
-        removeProjectsFromSubscriptionListForConnection(updatedConnectionId);
-        // Some other connection needs WebSocket
-        createConnectionIfNeeded(connectionIdsInterestedInNotifications.stream().findFirst().orElse(null));
-        resubscribeAll();
-      }
+    if (didDisableNotifications(updatedConnectionId)) {
+      forgetConnection(updatedConnectionId);
+    } else if (didEnableNotifications(updatedConnectionId)) {
+      considerConnection(updatedConnectionId);
     }
   }
 
   @Subscribe
   public void handleEvent(ConnectionConfigurationRemovedEvent connectionConfigurationRemovedEvent) {
     String removedConnectionId = connectionConfigurationRemovedEvent.getRemovedConnectionId();
-    connectionIdsInterestedInNotifications.remove(removedConnectionId);
-    removeProjectsFromSubscriptionListForConnection(removedConnectionId);
-    if (connectionIdsInterestedInNotifications.isEmpty()) {
+    forgetConnection(removedConnectionId);
+  }
+
+  private boolean isEligibleConnection(String connectionId) {
+    var connection = connectionConfigurationRepository.getConnectionById(connectionId);
+    return connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD) && !connection.isDisableNotifications();
+  }
+
+  private String getBoundProjectKey(String configScopeId) {
+    var bindingConfiguration = configurationRepository.getBindingConfiguration(configScopeId);
+    if (bindingConfiguration != null && bindingConfiguration.isBound()) {
+      return bindingConfiguration.getSonarProjectKey();
+    }
+    return null;
+  }
+
+  private Binding getCurrentBinding(String configScopeId) {
+    var bindingConfiguration = configurationRepository.getBindingConfiguration(configScopeId);
+    if (bindingConfiguration != null && bindingConfiguration.isBound()) {
+      return new Binding(requireNonNull(bindingConfiguration.getConnectionId()), requireNonNull(bindingConfiguration.getSonarProjectKey()));
+    }
+    return null;
+  }
+
+  private void closeSocketIfNoMoreNeeded() {
+    if (subscribedProjectKeysByConfigScopes.isEmpty()) {
       closeSocket();
     }
   }
 
-  private void subscribeAllBoundConfigurationScopes(Set<String> configScopeIds) {
-    for (var configurationScopeId : configScopeIds) {
-      var bindingConfiguration = configurationRepository.getBindingConfiguration(configurationScopeId);
-      if (bindingConfiguration != null && bindingConfiguration.isBound()) {
-        var connection = connectionConfigurationRepository.getConnectionById(requireNonNull(bindingConfiguration.getConnectionId()));
-        var sonarProjectKey = bindingConfiguration.getSonarProjectKey();
-        if (connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD) &&
-          !connection.isDisableNotifications() && !subscribedProjectKeysByConfigScopes.containsValue(sonarProjectKey)) {
-          createConnectionIfNeeded(bindingConfiguration.getConnectionId());
-          subscribe(configurationScopeId, sonarProjectKey);
-        }
-      }
+  private boolean didDisableNotifications(String connectionId) {
+    if (connectionIdsInterestedInNotifications.contains(connectionId)) {
+      var connection = connectionConfigurationRepository.getConnectionById(connectionId);
+      return connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD) && connection.isDisableNotifications();
     }
+    return false;
+  }
+
+  private boolean didEnableNotifications(String connectionId) {
+    return !connectionIdsInterestedInNotifications.contains(connectionId) && isEligibleConnection(connectionId);
+  }
+
+  private void considerConnection(String connectionId) {
+    var configScopeIds = configurationRepository.getConfigScopesWithBindingConfiguredTo(connectionId)
+      .stream().map(ConfigurationScope::getId)
+      .collect(Collectors.toSet());
+    considerAllBoundConfigurationScopes(configScopeIds);
+  }
+
+  private void forgetConnection(String connectionId) {
+    var previouslyInterestedInNotifications = connectionIdsInterestedInNotifications.remove(connectionId);
+    if (!previouslyInterestedInNotifications) {
+      return;
+    }
+    if (connectionIdsInterestedInNotifications.isEmpty()) {
+      closeSocket();
+    } else if (connectionIdUsedToCreateConnection.equals(connectionId)) {
+      // stop using the credentials, switch to another connection
+      var otherConnectionId = connectionIdsInterestedInNotifications.stream().findFirst().orElse(null);
+      closeSocket();
+      createConnectionIfNeeded(otherConnectionId);
+      removeProjectsFromSubscriptionListForConnection(connectionId);
+      resubscribeAll();
+    } else {
+      configurationRepository.getConfigScopesWithBindingConfiguredTo(connectionId)
+        .forEach(configScope -> forget(configScope.getId()));
+    }
+  }
+
+  private void considerAllBoundConfigurationScopes(Set<String> configScopeIds) {
+    for (String scopeId : configScopeIds) {
+      considerScope(scopeId);
+    }
+  }
+
+  private void considerScope(String scopeId) {
+    var binding = getCurrentBinding(scopeId);
+    if (binding != null && isEligibleConnection(binding.getConnectionId())) {
+      subscribe(scopeId, binding);
+    } else if (isSubscribedWithProjectKeyDifferentThanCurrentBinding(scopeId)) {
+      forget(scopeId);
+      closeSocketIfNoMoreNeeded();
+    }
+  }
+
+  private boolean isSubscribedWithProjectKeyDifferentThanCurrentBinding(String configScopeId) {
+    var previousSubscribedProjectKeyForScope = subscribedProjectKeysByConfigScopes.get(configScopeId);
+    return previousSubscribedProjectKeyForScope != null && !previousSubscribedProjectKeyForScope.equals(getBoundProjectKey(configScopeId));
   }
 
   private void removeProjectsFromSubscriptionListForConnection(String updatedConnectionId) {
@@ -192,13 +207,23 @@ public class WebSocketService {
     }
   }
 
-  private void subscribe(String configScopeId, String projectKey) {
-    sonarCloudWebSocket.subscribe(projectKey);
+  private void subscribe(String configScopeId, Binding binding) {
+    createConnectionIfNeeded(binding.getConnectionId());
+    var projectKey = binding.getSonarProjectKey();
+    if (subscribedProjectKeysByConfigScopes.containsKey(configScopeId) && !subscribedProjectKeysByConfigScopes.get(configScopeId).equals(projectKey)) {
+      forget(configScopeId);
+    }
+    if (!subscribedProjectKeysByConfigScopes.containsValue(projectKey)) {
+      sonarCloudWebSocket.subscribe(projectKey);
+    }
     subscribedProjectKeysByConfigScopes.put(configScopeId, projectKey);
   }
 
-  private void unsubscribe(String projectKey) {
-    sonarCloudWebSocket.unsubscribe(projectKey);
+  private void forget(String configScopeId) {
+    var projectKey = subscribedProjectKeysByConfigScopes.remove(configScopeId);
+    if (projectKey != null && !subscribedProjectKeysByConfigScopes.containsValue(projectKey)) {
+      sonarCloudWebSocket.unsubscribe(projectKey);
+    }
   }
 
   private void resubscribeAll() {
@@ -209,6 +234,7 @@ public class WebSocketService {
     connectionIdsInterestedInNotifications.add(connectionId);
     if (this.sonarCloudWebSocket == null) {
       this.sonarCloudWebSocket = SonarCloudWebSocket.create(connectionAwareHttpClientProvider.getHttpClient(connectionId), eventRouter::handle, this::reopenConnectionOnClose);
+      this.connectionIdUsedToCreateConnection = connectionId;
     }
   }
 
@@ -216,6 +242,7 @@ public class WebSocketService {
     if (this.sonarCloudWebSocket != null) {
       this.sonarCloudWebSocket.close();
       this.sonarCloudWebSocket = null;
+      this.connectionIdUsedToCreateConnection = null;
     }
   }
 
