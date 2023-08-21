@@ -62,7 +62,7 @@ public class WebSocketService {
       .dispatch(QualityGateChangedEvent.class, new ShowSmartNotificationOnQualityGateChangedEvent(client, configurationRepository, telemetryService));
   }
 
-  protected void refreshConnectionIfNeeded() {
+  protected void reopenConnectionOnClose() {
     var connectionId = connectionIdsInterestedInNotifications.stream().findFirst().orElse(null);
     if (this.sonarCloudWebSocket != null && connectionId != null) {
       // If connection already exists, close it and create new one before it expires on its own
@@ -207,7 +207,7 @@ public class WebSocketService {
   private void createConnectionIfNeeded(String connectionId) {
     connectionIdsInterestedInNotifications.add(connectionId);
     if (this.sonarCloudWebSocket == null) {
-      this.sonarCloudWebSocket = SonarCloudWebSocket.create(connectionAwareHttpClientProvider.getHttpClient(connectionId), eventRouter::handle, this::refreshConnectionIfNeeded);
+      this.sonarCloudWebSocket = SonarCloudWebSocket.create(connectionAwareHttpClientProvider.getHttpClient(connectionId), eventRouter::handle, this::reopenConnectionOnClose);
     }
   }
 

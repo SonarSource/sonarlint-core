@@ -28,6 +28,7 @@ import java.util.Base64;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
@@ -284,16 +285,27 @@ class ApacheHttpClientAdapter implements HttpClient {
 
     @Override
     public void onError(WebSocket webSocket, Throwable error) {
-      SonarLintLogger.get().error("Error occurred on the WebSocket ", error);
+      SonarLintLogger.get().error("Error occurred on the WebSocket", error);
       onClosedRunnable.run();
       WebSocket.Listener.super.onError(webSocket, error);
     }
 
     @Override
     public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
-      SonarLintLogger.get().debug("WebSocket closed");
+      SonarLintLogger.get().debug("WebSocket closed, status=" + statusCode + ", reason=" + reason);
+      // ack the close
+      try {
+        webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "").get();
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        // uncompleted future means the closing has been handled already (default is null)
+        return new CompletableFuture<>();
+      } catch (ExecutionException e) {
+        SonarLintLogger.get().debug("Cannot ack WebSocket close");
+      }
       onClosedRunnable.run();
-      return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
+      // uncompleted future means the closing has been handled already (default is null)
+      return new CompletableFuture<>();
     }
   }
 
