@@ -175,10 +175,11 @@ public class WebSocketService {
       var bindingConfiguration = configurationRepository.getBindingConfiguration(configurationScopeId);
       if (bindingConfiguration != null && bindingConfiguration.isBound()) {
         var connection = connectionConfigurationRepository.getConnectionById(requireNonNull(bindingConfiguration.getConnectionId()));
+        var sonarProjectKey = bindingConfiguration.getSonarProjectKey();
         if (connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD) &&
-          !connection.isDisableNotifications()) {
+          !connection.isDisableNotifications() && !subscribedProjectKeysByConfigScopes.containsValue(sonarProjectKey)) {
           createConnectionIfNeeded(bindingConfiguration.getConnectionId());
-          subscribe(configurationScopeId, bindingConfiguration.getSonarProjectKey());
+          subscribe(configurationScopeId, sonarProjectKey);
         }
       }
     }
