@@ -101,7 +101,7 @@ class WebSocketMediumTests {
 
       bind("configScope", "connectionId", "projectKey");
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
+      await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
     }
 
     @Test
@@ -154,7 +154,7 @@ class WebSocketMediumTests {
 
       bind("configScope", "connectionId", "newProjectKey");
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
+      await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
     }
 
     @Test
@@ -168,7 +168,7 @@ class WebSocketMediumTests {
 
       bind("configScope", "connectionId", "newProjectKey");
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
+      await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
     }
 
     private void bind(String configScopeId, String connectionId, String newProjectKey) {
@@ -226,7 +226,7 @@ class WebSocketMediumTests {
 
       unbind("configScope");
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
+      await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
     }
 
     private void unbind(String configScope) {
@@ -261,8 +261,7 @@ class WebSocketMediumTests {
         .withUnboundConfigScope("configScope")
         .build();
 
-      // FIXME verify differently
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
+      await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
     }
 
     @Test
@@ -274,8 +273,7 @@ class WebSocketMediumTests {
         .withUnboundConfigScope("configScope")
         .build();
 
-      // FIXME verify differently
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
+      await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
     }
 
     @Test
@@ -287,8 +285,7 @@ class WebSocketMediumTests {
         .withUnboundConfigScope("configScope")
         .build();
 
-      // FIXME verify differently
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
+      await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
     }
   }
 
@@ -366,7 +363,7 @@ class WebSocketMediumTests {
 
       backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams("connectionId"));
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
+      await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
     }
 
     @Test
@@ -380,7 +377,7 @@ class WebSocketMediumTests {
 
       backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams("connectionId"));
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
+      await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
     }
   }
 
@@ -459,8 +456,7 @@ class WebSocketMediumTests {
       backend.getConnectionService()
         .didUpdateConnections(new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto("connectionid", "url", false)), emptyList()));
 
-      // FIXME verify differently
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
+      await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
     }
 
     @Test
@@ -474,8 +470,7 @@ class WebSocketMediumTests {
       backend.getConnectionService()
         .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey2", false))));
 
-      // FIXME verify differently
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
+      await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
     }
 
     @Test
@@ -572,8 +567,7 @@ class WebSocketMediumTests {
 
       webSocketServer.getConnections().get(0).sendMessage("{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": 0}}");
 
-      // FIXME verify differently
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSmartNotificationsToShow()).isEmpty());
+      await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSmartNotificationsToShow()).isEmpty());
     }
 
     @Test
@@ -590,8 +584,7 @@ class WebSocketMediumTests {
       webSocketServer.getConnections().get(0)
         .sendMessage("{\"event\": [\"QualityGateChanged\"], \"data\": {\"link\": \"lnk\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
 
-      // FIXME verify differently
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSmartNotificationsToShow()).isEmpty());
+      await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSmartNotificationsToShow()).isEmpty());
     }
 
     @Test
@@ -608,8 +601,7 @@ class WebSocketMediumTests {
       webSocketServer.getConnections().get(0)
         .sendMessage("{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": \"msg\", \"project\": \"projectKey\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
 
-      // FIXME verify differently
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSmartNotificationsToShow()).isEmpty());
+      await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSmartNotificationsToShow()).isEmpty());
     }
 
     @Test
@@ -626,8 +618,7 @@ class WebSocketMediumTests {
       webSocketServer.getConnections().get(0)
         .sendMessage("{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"date\": \"2023-07-19T15:08:01+0000\"}}");
 
-      // FIXME verify differently
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSmartNotificationsToShow()).isEmpty());
+      await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSmartNotificationsToShow()).isEmpty());
     }
 
     @Test
@@ -644,8 +635,7 @@ class WebSocketMediumTests {
       webSocketServer.getConnections().get(0)
         .sendMessage("{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\"}}");
 
-      // FIXME verify differently
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSmartNotificationsToShow()).isEmpty());
+      await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSmartNotificationsToShow()).isEmpty());
     }
   }
 
@@ -664,8 +654,7 @@ class WebSocketMediumTests {
 
       webSocketServer.getConnections().get(0).sendMessage("{\"event\": \"UnknownEvent\", \"data\": {\"message\": \"msg\"}}");
 
-      // FIXME verify differently
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSmartNotificationsToShow()).isEmpty());
+      await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSmartNotificationsToShow()).isEmpty());
     }
 
     @Test
@@ -681,8 +670,7 @@ class WebSocketMediumTests {
 
       webSocketServer.getConnections().get(0).sendMessage("{\"event\": \"Malformed");
 
-      // FIXME verify differently
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSmartNotificationsToShow()).isEmpty());
+      await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSmartNotificationsToShow()).isEmpty());
     }
 
     @Test
