@@ -98,7 +98,7 @@ test_linux_task:
     - source cirrus-env QA
     - PULL_REQUEST_SHA=$GIT_SHA1 regular_mvn_build_deploy_analyze -P-deploy-sonarsource,-release,-sign -Dcommercial -Dmaven.install.skip=true -Dmaven.deploy.skip=true -Dsonar.coverage.jacoco.xmlReportPaths=$CIRRUS_WORKING_DIR/report-aggregate/target/site/jacoco-aggregate/jacoco.xml
   cleanup_before_cache_script: cleanup_maven_repository
-  on_failure:
+  always:
     junit_artifacts:
       path: '**/target/surefire-reports/TEST-*.xml'
       format: junit
@@ -119,7 +119,7 @@ test_windows_task:
     - source set_maven_build_version $BUILD_NUMBER
     - mvn -B -e -V verify -Dcommercial -Dmaven.test.redirectTestOutputToFile=false
   cleanup_before_cache_script: cleanup_maven_repository
-  on_failure:
+  always:
     junit_artifacts:
       path: '**/target/surefire-reports/TEST-*.xml'
       format: junit
@@ -198,7 +198,7 @@ qa_task:
     fi
   cleanup_before_cache_script:
     - cleanup_maven_repository
-  on_failure:
+  always:
     junit_artifacts:
       path: '**/target/surefire-reports/TEST-*.xml'
       format: junit
