@@ -71,10 +71,6 @@ public class SonarCloudWebSocket {
   private SonarCloudWebSocket() {
   }
 
-  SonarCloudWebSocket(WebSocket ws) {
-    this.ws = ws;
-  }
-
   public void subscribe(String projectKey) {
     send("subscribe", projectKey);
   }
