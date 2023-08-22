@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
+import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
@@ -48,6 +49,7 @@ import static java.util.Objects.requireNonNull;
 public class WebSocketService {
   private final Map<String, String> subscribedProjectKeysByConfigScopes = new HashMap<>();
   private final Set<String> connectionIdsInterestedInNotifications = new HashSet<>();
+  private final boolean shouldEnableWebSockets;
   private String connectionIdUsedToCreateConnection;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final ConfigurationRepository configurationRepository;
@@ -56,10 +58,11 @@ public class WebSocketService {
   private final EventDispatcher eventRouter;
 
   public WebSocketService(SonarLintClient client, ConnectionConfigurationRepository connectionConfigurationRepository, ConfigurationRepository configurationRepository,
-    ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider, TelemetryServiceImpl telemetryService) {
+    ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider, TelemetryServiceImpl telemetryService, InitializeParams params) {
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.configurationRepository = configurationRepository;
     this.connectionAwareHttpClientProvider = connectionAwareHttpClientProvider;
+    this.shouldEnableWebSockets = params.getFeatureFlags().shouldManageSmartNotifications();
     this.eventRouter = new EventDispatcher()
       .dispatch(QualityGateChangedEvent.class, new ShowSmartNotificationOnQualityGateChangedEvent(client, configurationRepository, telemetryService));
   }
@@ -76,16 +79,25 @@ public class WebSocketService {
 
   @Subscribe
   public void handleEvent(BindingConfigChangedEvent bindingConfigChangedEvent) {
+    if (!shouldEnableWebSockets) {
+      return;
+    }
     considerScope(bindingConfigChangedEvent.getConfigScopeId());
   }
 
   @Subscribe
   public void handleEvent(ConfigurationScopesAddedEvent configurationScopesAddedEvent) {
+    if (!shouldEnableWebSockets) {
+      return;
+    }
     considerAllBoundConfigurationScopes(configurationScopesAddedEvent.getAddedConfigurationScopeIds());
   }
 
   @Subscribe
   public void handleEvent(ConfigurationScopeRemovedEvent configurationScopeRemovedEvent) {
+    if (!shouldEnableWebSockets) {
+      return;
+    }
     var removedConfigurationScopeId = configurationScopeRemovedEvent.getRemovedConfigurationScopeId();
     forget(removedConfigurationScopeId);
     closeSocketIfNoMoreNeeded();
@@ -93,12 +105,18 @@ public class WebSocketService {
 
   @Subscribe
   public void handleEvent(ConnectionConfigurationAddedEvent connectionConfigurationAddedEvent) {
+    if (!shouldEnableWebSockets) {
+      return;
+    }
     // This is only to handle the case where binding was invalid (connection did not exist) and became valid (matching connection was created)
     considerConnection(connectionConfigurationAddedEvent.getAddedConnectionId());
   }
 
   @Subscribe
   public void handleEvent(ConnectionConfigurationUpdatedEvent connectionConfigurationUpdatedEvent) {
+    if (!shouldEnableWebSockets) {
+      return;
+    }
     var updatedConnectionId = connectionConfigurationUpdatedEvent.getUpdatedConnectionId();
     if (didDisableNotifications(updatedConnectionId)) {
       forgetConnection(updatedConnectionId);
@@ -109,6 +127,9 @@ public class WebSocketService {
 
   @Subscribe
   public void handleEvent(ConnectionConfigurationRemovedEvent connectionConfigurationRemovedEvent) {
+    if (!shouldEnableWebSockets) {
+      return;
+    }
     String removedConnectionId = connectionConfigurationRemovedEvent.getRemovedConnectionId();
     forgetConnection(removedConnectionId);
   }
