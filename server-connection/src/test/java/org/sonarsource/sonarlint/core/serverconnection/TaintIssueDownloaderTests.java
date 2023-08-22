@@ -28,9 +28,12 @@ import javax.annotation.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -46,7 +49,12 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
 import static org.sonarsource.sonarlint.core.serverconnection.TaintIssueDownloader.hash;
+import static org.sonarsource.sonarlint.core.serverconnection.TaintIssueDownloader.parseProtoCleanCodeAttribute;
+import static org.sonarsource.sonarlint.core.serverconnection.TaintIssueDownloader.parseProtoImpactSeverity;
+import static org.sonarsource.sonarlint.core.serverconnection.TaintIssueDownloader.parseProtoSoftwareQuality;
 
 class TaintIssueDownloaderTests {
 
@@ -90,6 +98,11 @@ class TaintIssueDownloaderTests {
         .setComponent(FILE_1_KEY)
         .setType(Common.RuleType.VULNERABILITY)
         .setSeverity(Severity.INFO)
+        .setCleanCodeAttribute(Common.CleanCodeAttribute.COMPLETE)
+        .addImpacts(Common.Impact.newBuilder()
+          .setSoftwareQuality(Common.SoftwareQuality.SECURITY)
+          .setSeverity(Common.ImpactSeverity.HIGH)
+          .build())
         .addFlows(Flow.newBuilder()
           .addLocations(Common.Location.newBuilder().setMsg("Flow 1 - Location 1").setComponent(FILE_1_KEY)
             .setTextRange(TextRange.newBuilder().setStartLine(5).setStartOffset(1).setEndLine(5).setEndOffset(6)))
@@ -157,6 +170,8 @@ class TaintIssueDownloaderTests {
     assertThat(taintIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
     assertThat(taintIssue.getType()).isEqualTo(RuleType.VULNERABILITY);
     assertThat(taintIssue.getSeverity()).isEqualTo(IssueSeverity.INFO);
+    assertThat(taintIssue.getCleanCodeAttribute()).hasValue(CleanCodeAttribute.COMPLETE);
+    assertThat(taintIssue.getImpacts()).containsExactly(entry(SoftwareQuality.SECURITY, ImpactSeverity.HIGH));
 
     assertTextRange(taintIssue.getTextRange(), 2, 7,4, 9, hash("My\n\tCode\n  Snippet"));
 
@@ -221,19 +236,24 @@ class TaintIssueDownloaderTests {
       .setKey("uuid1")
       .setRuleKey("sonarjava:S123")
       .setType(Common.RuleType.VULNERABILITY)
-      .setSeverity(Common.Severity.MAJOR)
+      .setSeverity(Severity.MAJOR)
+      .setCleanCodeAttribute(Common.CleanCodeAttribute.COMPLETE)
+      .addImpacts(Common.Impact.newBuilder()
+        .setSoftwareQuality(Common.SoftwareQuality.SECURITY)
+        .setSeverity(Common.ImpactSeverity.HIGH)
+        .build())
       .setMainLocation(Location.newBuilder().setFilePath("foo/bar/Hello.java").setMessage("Primary message")
-        .setTextRange(org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.TextRange.newBuilder().setStartLine(1).setStartLineOffset(2).setEndLine(3)
+        .setTextRange(Issues.TextRange.newBuilder().setStartLine(1).setStartLineOffset(2).setEndLine(3)
           .setEndLineOffset(4).setHash("hash")))
       .setCreationDate(123456789L)
       .addFlows(Issues.Flow.newBuilder()
-        .addLocations(Issues.Location.newBuilder().setMessage("Flow 1 - Location 1").setFilePath("foo/bar/Hello.java")
+        .addLocations(Location.newBuilder().setMessage("Flow 1 - Location 1").setFilePath("foo/bar/Hello.java")
           .setTextRange(Issues.TextRange.newBuilder().setStartLine(5).setStartLineOffset(1).setEndLine(5).setEndLineOffset(6).setHash("hashLocation11")))
-        .addLocations(Issues.Location.newBuilder().setMessage("Flow 1 - Another file").setFilePath("foo/bar/Hello2.java")
+        .addLocations(Location.newBuilder().setMessage("Flow 1 - Another file").setFilePath("foo/bar/Hello2.java")
           .setTextRange(Issues.TextRange.newBuilder().setStartLine(9).setStartLineOffset(10).setEndLine(11).setEndLineOffset(12).setHash("hashLocation12")))
-        .addLocations(Issues.Location.newBuilder().setMessage("Flow 1 - Location No Text Range").setFilePath("foo/bar/Hello.java")))
+        .addLocations(Location.newBuilder().setMessage("Flow 1 - Location No Text Range").setFilePath("foo/bar/Hello.java")))
       .addFlows(Issues.Flow.newBuilder()
-        .addLocations(Issues.Location.newBuilder().setMessage("Flow 2 - Location 1").setFilePath("foo/bar/Hello.java")
+        .addLocations(Location.newBuilder().setMessage("Flow 2 - Location 1").setFilePath("foo/bar/Hello.java")
           .setTextRange(Issues.TextRange.newBuilder().setStartLine(5).setStartLineOffset(1).setEndLine(5).setEndLineOffset(6).setHash("hashLocation21"))))
       .setRuleDescriptionContextKey("context")
       .build();
@@ -261,6 +281,8 @@ class TaintIssueDownloaderTests {
     assertThat(serverTaintIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
     assertThat(serverTaintIssue.getSeverity()).isEqualTo(IssueSeverity.MAJOR);
     assertThat(serverTaintIssue.getType()).isEqualTo(RuleType.VULNERABILITY);
+    assertThat(serverTaintIssue.getCleanCodeAttribute()).hasValue(CleanCodeAttribute.COMPLETE);
+    assertThat(serverTaintIssue.getImpacts()).containsExactly(entry(SoftwareQuality.SECURITY, ImpactSeverity.HIGH));
 
     assertTextRange(serverTaintIssue.getTextRange(), 1, 2, 3, 4, "hash");
 
@@ -283,6 +305,66 @@ class TaintIssueDownloaderTests {
 
     assertThat(serverTaintIssue.getRuleDescriptionContextKey()).isEqualTo("context");
   }
+
+  @Test
+  void parse_clean_code_attribute_from_stream() {
+    var partialIssue = Issues.Issue.newBuilder().setCleanCodeAttribute(Common.CleanCodeAttribute.CLEAR).build();
+    var cleanCodeAttribute = parseProtoCleanCodeAttribute(partialIssue);
+    assertThat(cleanCodeAttribute).isEqualTo(CleanCodeAttribute.CLEAR);
+  }
+
+  @Test
+  void parse_clean_code_attribute_from_stream_missing() {
+    var partialIssue = Issues.Issue.newBuilder().build();
+    var cleanCodeAttribute = parseProtoCleanCodeAttribute(partialIssue);
+    assertThat(cleanCodeAttribute).isNull();
+  }
+
+  @Test
+  void parse_clean_code_attribute_from_stream_unknown() {
+    var partialIssue = Issues.Issue.newBuilder().setCleanCodeAttribute(Common.CleanCodeAttribute.UNKNOWN_ATTRIBUTE).build();
+    var cleanCodeAttribute = parseProtoCleanCodeAttribute(partialIssue);
+    assertThat(cleanCodeAttribute).isNull();
+  }
+
+  void parse_software_quality() {
+    var impact = Common.Impact.newBuilder().setSoftwareQuality(Common.SoftwareQuality.SECURITY).build();
+    assertThat(parseProtoSoftwareQuality(impact)).isEqualTo(SoftwareQuality.SECURITY);
+  }
+
+  void parse_software_quality_missing() {
+    var impact = Common.Impact.newBuilder().build();
+    assertThatThrownBy(() -> parseProtoSoftwareQuality(impact))
+      .isInstanceOf(IllegalArgumentException.class)
+      .hasMessage("Unknown or missing software quality");
+  }
+
+  void parse_software_quality_unknown() {
+    var impact = Common.Impact.newBuilder().setSoftwareQuality(Common.SoftwareQuality.UNKNOWN_IMPACT_QUALITY).build();
+    assertThatThrownBy(() -> parseProtoSoftwareQuality(impact))
+      .isInstanceOf(IllegalArgumentException.class)
+      .hasMessage("Unknown or missing software quality");
+  }
+
+  void parse_impact_severity() {
+    var impact = Common.Impact.newBuilder().setSeverity(Common.ImpactSeverity.LOW).build();
+    assertThat(parseProtoImpactSeverity(impact)).isEqualTo(ImpactSeverity.LOW);
+  }
+
+  void parse_impact_severity_missing() {
+    var impact = Common.Impact.newBuilder().build();
+    assertThatThrownBy(() -> parseProtoImpactSeverity(impact))
+      .isInstanceOf(IllegalArgumentException.class)
+      .hasMessage("Unknown or missing impact severity");
+  }
+
+  void parse_impact_severity_unknown() {
+    var impact = Common.Impact.newBuilder().setSeverity(Common.ImpactSeverity.UNKNOWN_IMPACT_SEVERITY).build();
+    assertThatThrownBy(() -> parseProtoImpactSeverity(impact))
+      .isInstanceOf(IllegalArgumentException.class)
+      .hasMessage("Unknown or missing impact severity");
+  }
+
 
   private static void assertTextRange(@Nullable TextRangeWithHash textRangeWithHash, int startLine, int startLineOffset,
     int endLine, int endLineOffset, String hash) {
