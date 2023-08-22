@@ -22,11 +22,11 @@ package org.sonarsource.sonarlint.core.clientapi.backend.connection;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
-import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.auth.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.auth.HelpGenerateUserTokenResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.check.CheckSmartNotificationsSupportedParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.check.CheckSmartNotificationsSupportedResponse;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidChangeCredentialsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.GetOrganizationParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.GetOrganizationResponse;
@@ -34,6 +34,8 @@ import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.ListUserO
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.ListUserOrganizationsResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.ValidateConnectionResponse;
+import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
 
 /**
  * The client is the source of truth for connection configuration, but the backend also need to be kept in sync.
@@ -44,7 +46,6 @@ import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.Vali
  * the IDE secure storage. Accessing secure storage may be delayed after IDE startup, request manual user
  * actions, or even be prevented. So the backend should be able to handle "partial" connection configuration, where
  * credentials are missing.
- *
  */
 public interface ConnectionService {
 
@@ -53,6 +54,13 @@ public interface ConnectionService {
    */
   @JsonNotification
   void didUpdateConnections(DidUpdateConnectionsParams params);
+
+  /**
+   * Called by the client when connection credentials have been changed. The backend might later retrieve them with
+   * {@link org.sonarsource.sonarlint.core.clientapi.SonarLintClient#getCredentials(GetCredentialsParams)}.
+   */
+  @JsonNotification
+  void didChangeCredentials(DidChangeCredentialsParams params);
 
   /**
    * @param params url of the server on which to create the token

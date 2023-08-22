@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
+import org.sonarsource.sonarlint.core.event.ConnectionCredentialsChangedEvent;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
@@ -71,9 +72,7 @@ public class WebSocketService {
     var connectionId = connectionIdsInterestedInNotifications.stream().findFirst().orElse(null);
     if (this.sonarCloudWebSocket != null && connectionId != null) {
       // If connection already exists, close it and create new one before it expires on its own
-      closeSocket();
-      createConnectionIfNeeded(connectionId);
-      resubscribeAll();
+      reopenConnection(connectionId);
     }
   }
 
@@ -134,6 +133,17 @@ public class WebSocketService {
     forgetConnection(removedConnectionId);
   }
 
+  @Subscribe
+  public void handleEvent(ConnectionCredentialsChangedEvent connectionCredentialsChangedEvent) {
+    if (!shouldEnableWebSockets) {
+      return;
+    }
+    var connectionId = connectionCredentialsChangedEvent.getConnectionId();
+    if (isEligibleConnection(connectionId) && connectionIdsInterestedInNotifications.contains(connectionId)) {
+      reopenConnection(connectionId);
+    }
+  }
+
   private boolean isEligibleConnection(String connectionId) {
     var connection = connectionConfigurationRepository.getConnectionById(connectionId);
     return connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD) && !connection.isDisableNotifications();
@@ -189,15 +199,19 @@ public class WebSocketService {
       closeSocket();
     } else if (connectionIdUsedToCreateConnection.equals(connectionId)) {
       // stop using the credentials, switch to another connection
-      var otherConnectionId = connectionIdsInterestedInNotifications.stream().findFirst().orElse(null);
-      closeSocket();
-      createConnectionIfNeeded(otherConnectionId);
+      var otherConnectionId = connectionIdsInterestedInNotifications.stream().findAny().orElseThrow();
       removeProjectsFromSubscriptionListForConnection(connectionId);
-      resubscribeAll();
+      reopenConnection(otherConnectionId);
     } else {
       configurationRepository.getConfigScopesWithBindingConfiguredTo(connectionId)
         .forEach(configScope -> forget(configScope.getId()));
     }
+  }
+
+  private void reopenConnection(String connectionId) {
+    closeSocket();
+    createConnectionIfNeeded(connectionId);
+    resubscribeAll();
   }
 
   private void considerAllBoundConfigurationScopes(Set<String> configScopeIds) {
