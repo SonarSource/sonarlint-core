@@ -78,6 +78,7 @@ public class WebSocketService {
 
   @Subscribe
   public void handleEvent(BindingConfigChangedEvent bindingConfigChangedEvent) {
+    printState("BindingConfigChangedEvent");
     if (!shouldEnableWebSockets) {
       return;
     }
@@ -86,6 +87,7 @@ public class WebSocketService {
 
   @Subscribe
   public void handleEvent(ConfigurationScopesAddedEvent configurationScopesAddedEvent) {
+    printState("ConfigurationScopesAddedEvent");
     if (!shouldEnableWebSockets) {
       return;
     }
@@ -94,6 +96,7 @@ public class WebSocketService {
 
   @Subscribe
   public void handleEvent(ConfigurationScopeRemovedEvent configurationScopeRemovedEvent) {
+    printState("ConfigurationScopeRemovedEvent");
     if (!shouldEnableWebSockets) {
       return;
     }
@@ -104,6 +107,7 @@ public class WebSocketService {
 
   @Subscribe
   public void handleEvent(ConnectionConfigurationAddedEvent connectionConfigurationAddedEvent) {
+    printState("ConnectionConfigurationAddedEvent");
     if (!shouldEnableWebSockets) {
       return;
     }
@@ -113,6 +117,7 @@ public class WebSocketService {
 
   @Subscribe
   public void handleEvent(ConnectionConfigurationUpdatedEvent connectionConfigurationUpdatedEvent) {
+    printState("ConnectionConfigurationUpdatedEvent");
     if (!shouldEnableWebSockets) {
       return;
     }
@@ -126,6 +131,7 @@ public class WebSocketService {
 
   @Subscribe
   public void handleEvent(ConnectionConfigurationRemovedEvent connectionConfigurationRemovedEvent) {
+    printState("ConnectionConfigurationRemovedEvent");
     if (!shouldEnableWebSockets) {
       return;
     }
@@ -135,6 +141,7 @@ public class WebSocketService {
 
   @Subscribe
   public void handleEvent(ConnectionCredentialsChangedEvent connectionCredentialsChangedEvent) {
+    printState("ConnectionCredentialsChangedEvent");
     if (!shouldEnableWebSockets) {
       return;
     }
@@ -142,6 +149,16 @@ public class WebSocketService {
     if (isEligibleConnection(connectionId) && connectionIdsInterestedInNotifications.contains(connectionId)) {
       reopenConnection(connectionId);
     }
+  }
+
+  private void printState(String event) {
+    System.out.println("Event=" + event);
+    var thread = Thread.currentThread();
+    System.out.println("Current thread=" + thread + ", id=" + thread.getId());
+    System.out.println("connectionIdsInterestedInNotifications=" + connectionIdsInterestedInNotifications);
+    System.out.println("subscribedProjectKeysByConfigScopes=" + subscribedProjectKeysByConfigScopes);
+    System.out.println("connectionIdUsedToCreateConnection=" + connectionIdUsedToCreateConnection);
+    System.out.println("--------------------------------------");
   }
 
   private boolean isEligibleConnection(String connectionId) {
