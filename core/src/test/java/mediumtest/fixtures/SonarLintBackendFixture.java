@@ -350,7 +350,7 @@ public class SonarLintBackendFixture {
 
     private ProxyDto proxy;
     private GetProxyPasswordAuthenticationResponse proxyAuth;
-    private Map<String, Either<TokenDto, UsernamePasswordDto>> creds = new HashMap<>();
+    private Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId = new HashMap<>();
 
     public SonarLintClientBuilder withFoundFile(String name, String path, String content) {
       foundFiles.add(new FoundFileDto(name, path, content));
@@ -368,12 +368,12 @@ public class SonarLintBackendFixture {
     }
 
     public SonarLintClientBuilder withCredentials(String connectionId, String user, String password) {
-      creds.put(connectionId, Either.forRight(new UsernamePasswordDto(user, password)));
+      credentialsByConnectionId.put(connectionId, Either.forRight(new UsernamePasswordDto(user, password)));
       return this;
     }
 
     public SonarLintClientBuilder withToken(String connectionId, String token) {
-      creds.put(connectionId, Either.forLeft(new TokenDto(token)));
+      credentialsByConnectionId.put(connectionId, Either.forLeft(new TokenDto(token)));
       return this;
     }
 
@@ -401,7 +401,7 @@ public class SonarLintBackendFixture {
     public FakeSonarLintClient build() {
       return new FakeSonarLintClient(foundFiles, clientDescription, cannedAssistCreatingSonarQubeConnectionByBaseUrl,
         cannedBindingAssistByProjectKey,
-        rejectingProgress, proxy, proxyAuth, creds);
+        rejectingProgress, proxy, proxyAuth, credentialsByConnectionId);
     }
   }
 
@@ -421,13 +421,13 @@ public class SonarLintBackendFixture {
     private final Set<String> synchronizedConfigScopeIds = new HashSet<>();
     private final ProxyDto proxy;
     private final GetProxyPasswordAuthenticationResponse proxyAuth;
-    private final Map<String, Either<TokenDto, UsernamePasswordDto>> creds;
+    private final Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId;
     private SonarLintBackendImpl backend;
 
     public FakeSonarLintClient(List<FoundFileDto> foundFiles, String clientDescription,
       LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
       LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, boolean rejectingProgress, @Nullable ProxyDto proxy,
-      @Nullable GetProxyPasswordAuthenticationResponse proxyAuth, Map<String, Either<TokenDto, UsernamePasswordDto>> creds) {
+      @Nullable GetProxyPasswordAuthenticationResponse proxyAuth, Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId) {
       this.foundFiles = foundFiles;
       this.clientDescription = clientDescription;
       this.cannedAssistCreatingSonarQubeConnectionByBaseUrl = cannedAssistCreatingSonarQubeConnectionByBaseUrl;
@@ -435,7 +435,7 @@ public class SonarLintBackendFixture {
       this.rejectingProgress = rejectingProgress;
       this.proxy = proxy;
       this.proxyAuth = proxyAuth;
-      this.creds = creds;
+      this.credentialsByConnectionId = credentialsByConnectionId;
     }
 
     public void setBackend(SonarLintBackendImpl backend) {
@@ -536,8 +536,12 @@ public class SonarLintBackendFixture {
     }
 
     public CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params) {
-      var response = new GetCredentialsResponse(creds.get(params.getConnectionId()));
+      var response = new GetCredentialsResponse(credentialsByConnectionId.get(params.getConnectionId()));
       return CompletableFuture.completedFuture(response);
+    }
+
+    public void setToken(String connectionId, String secondToken) {
+      credentialsByConnectionId.put(connectionId, Either.forLeft(new TokenDto(secondToken)));
     }
 
     @Override

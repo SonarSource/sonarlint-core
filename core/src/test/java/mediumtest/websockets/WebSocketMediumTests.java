@@ -26,12 +26,12 @@ import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.SonarLintTestBackend;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.DidRemoveConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidChangeCredentialsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
@@ -335,6 +335,56 @@ class WebSocketMediumTests {
   }
 
   @Nested
+  class WhenConnectionCredentialsChanged {
+    @Test
+    void should_close_and_reopen_connection_for_sonarcloud_if_already_open() {
+      startWebSocketServer();
+      var client = newFakeClient().withToken("connectionId", "firstToken").build();
+      backend = newBackend()
+        .withSmartNotifications()
+        .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
+        .withBoundConfigScope("configScope", "connectionId", "projectKey")
+        .build(client);
+      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      client.setToken("connectionId", "secondToken");
+
+      backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams("connectionId"));
+
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
+        .extracting(WebSocketConnection::getAuthorizationHeader, WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
+        .containsExactly(tuple("Bearer firstToken", false, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}")),
+          tuple("Bearer secondToken", true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}"))));
+    }
+
+    @Test
+    void should_do_nothing_for_sonarcloud_if_not_already_open() {
+      startWebSocketServer();
+      backend = newBackend()
+        .withSmartNotifications()
+        .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
+        .build();
+
+      backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams("connectionId"));
+
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
+    }
+
+    @Test
+    void should_do_nothing_for_sonarqube() {
+      startWebSocketServer();
+      backend = newBackend()
+        .withSmartNotifications()
+        .withSonarQubeConnection("connectionId")
+        .withBoundConfigScope("configScope", "connectionId", "projectKey")
+        .build();
+
+      backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams("connectionId"));
+
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
+    }
+  }
+
+  @Nested
   class WhenConnectionAdded {
     @Test
     void should_subscribe_all_projects_bound_to_added_connection() {
@@ -397,27 +447,6 @@ class WebSocketMediumTests {
 
   @Nested
   class WhenConnectionUpdated {
-    @Test
-    @Disabled("no way to update a connection when credentials changed")
-    void should_close_and_reopen_sonarcloud_connection_if_update_called_with_no_change() {
-      // an update might happen because credentials were changed on the client side
-      startWebSocketServer();
-      backend = newBackend()
-        .withSmartNotifications()
-        .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
-        .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
-
-      backend.getConnectionService()
-        .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", false))));
-
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
-        .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
-        .containsExactly(tuple(false, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}")),
-          tuple(true, "{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}")));
-    }
-
     @Test
     void should_do_nothing_for_sonarqube() {
       startWebSocketServer();

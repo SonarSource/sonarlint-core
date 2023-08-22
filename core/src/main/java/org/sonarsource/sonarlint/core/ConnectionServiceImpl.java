@@ -32,6 +32,7 @@ import javax.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectionValidator;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidChangeCredentialsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.ConnectionService;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.auth.HelpGenerateUserTokenParams;
@@ -57,6 +58,7 @@ import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
+import org.sonarsource.sonarlint.core.event.ConnectionCredentialsChangedEvent;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
@@ -122,7 +124,6 @@ public class ConnectionServiceImpl implements ConnectionService {
 
     var updatedConnections = newConnectionsById.entrySet().stream()
       .filter(e -> previousConnectionsById.containsKey(e.getKey()))
-      // FIXME does not work for credential changes?
       .filter(e -> !previousConnectionsById.get(e.getKey()).equals(e.getValue()))
       .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
     var addedConnections = newConnectionsById.entrySet().stream()
@@ -134,6 +135,11 @@ public class ConnectionServiceImpl implements ConnectionService {
     updatedConnections.values().forEach(this::updateConnection);
     addedConnections.values().forEach(this::addConnection);
     removedConnectionIds.forEach(this::removeConnection);
+  }
+
+  @Override
+  public void didChangeCredentials(DidChangeCredentialsParams params) {
+    clientEventBus.post(new ConnectionCredentialsChangedEvent(params.getConnectionId()));
   }
 
   private void addConnection(AbstractConnectionConfiguration connectionConfiguration) {
