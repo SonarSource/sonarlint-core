@@ -46,6 +46,7 @@ public class SonarCloudWebSocket {
   private static final Map<String, EventParser<?>> parsersByType = Map.of(
     "QualityGateChanged", new QualityGateChangedEventParser());
 
+  private static final String PROJECT_FILTER_TYPE = "PROJECT";
   private static final Gson gson = new Gson();
   private WebSocket ws;
   private final History history = new History();
@@ -80,7 +81,7 @@ public class SonarCloudWebSocket {
   }
 
   private void send(String messageType, String projectKey) {
-    var unsubscribePayload = new WebSocketEventSubscribePayload(messageType, parsersByType.keySet().toArray(new String[0]), projectKey);
+    var unsubscribePayload = new WebSocketEventSubscribePayload(messageType, parsersByType.keySet().toArray(new String[0]), PROJECT_FILTER_TYPE, projectKey);
 
     var jsonString = gson.toJson(unsubscribePayload);
 

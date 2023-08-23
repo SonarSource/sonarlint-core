@@ -87,7 +87,7 @@ class WebSocketMediumTests {
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::getAuthorizationHeader, WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
-        .containsExactly(tuple("Bearer token", true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}"))));
+        .containsExactly(tuple("Bearer token", true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey\"}"))));
     }
 
     @Test
@@ -118,9 +118,9 @@ class WebSocketMediumTests {
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
-        .containsExactly(tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}",
-          "{\"action\":\"unsubscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}",
-          "{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"newProjectKey\"}"))));
+        .containsExactly(tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey\"}",
+          "{\"action\":\"unsubscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey\"}",
+          "{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"newProjectKey\"}"))));
     }
 
     @Test
@@ -138,9 +138,9 @@ class WebSocketMediumTests {
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
-        .containsExactly(tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey2\"}",
-          "{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey1\"}",
-          "{\"action\":\"unsubscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey1\"}"))));
+        .containsExactly(tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey2\"}",
+          "{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey1\"}",
+          "{\"action\":\"unsubscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey1\"}"))));
     }
 
     @Test
@@ -193,8 +193,8 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
         assertThat(webSocketServer.getConnections())
           .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
-          .containsExactly(tuple(false, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}",
-            "{\"action\":\"unsubscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}")));
+          .containsExactly(tuple(false, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey\"}",
+            "{\"action\":\"unsubscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey\"}")));
       });
     }
 
@@ -212,7 +212,7 @@ class WebSocketMediumTests {
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
-        .containsExactly(tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}"))));
+        .containsExactly(tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey\"}"))));
     }
 
     @Test
@@ -248,7 +248,7 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
         assertThat(webSocketServer.getConnections())
           .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
-          .containsExactly(tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}")));
+          .containsExactly(tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey\"}")));
       });
     }
 
@@ -306,8 +306,8 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
         assertThat(webSocketServer.getConnections())
           .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
-          .containsExactly(tuple(false, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}",
-            "{\"action\":\"unsubscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}")));
+          .containsExactly(tuple(false, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey\"}",
+            "{\"action\":\"unsubscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey\"}")));
       });
     }
 
@@ -327,7 +327,7 @@ class WebSocketMediumTests {
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
-        .containsExactly(tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}"))));
+        .containsExactly(tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey\"}"))));
     }
   }
 
@@ -349,8 +349,8 @@ class WebSocketMediumTests {
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::getAuthorizationHeader, WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
-        .containsExactly(tuple("Bearer firstToken", false, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}")),
-          tuple("Bearer secondToken", true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}"))));
+        .containsExactly(tuple("Bearer firstToken", false, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey\"}")),
+          tuple("Bearer secondToken", true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey\"}"))));
     }
 
     @Test
@@ -396,7 +396,7 @@ class WebSocketMediumTests {
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
-        .containsExactly(tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}"))));
+        .containsExactly(tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey\"}"))));
     }
   }
 
@@ -416,7 +416,7 @@ class WebSocketMediumTests {
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
-        .containsExactly(tuple(false, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}"))));
+        .containsExactly(tuple(false, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey\"}"))));
     }
 
     @Test
@@ -436,9 +436,9 @@ class WebSocketMediumTests {
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
-        .containsExactly(tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey2\"}",
-          "{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey1\"}",
-          "{\"action\":\"unsubscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey1\"}"))));
+        .containsExactly(tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey2\"}",
+          "{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey1\"}",
+          "{\"action\":\"unsubscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey1\"}"))));
     }
   }
 
@@ -488,7 +488,7 @@ class WebSocketMediumTests {
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
-        .containsExactly(tuple(false, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}"))));
+        .containsExactly(tuple(false, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey\"}"))));
     }
 
     @Test
@@ -509,9 +509,9 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
         .containsExactly(tuple(false, List.of(
-          "{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey2\"}",
-          "{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey1\"}")),
-          tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey1\"}"))));
+          "{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey2\"}",
+          "{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey1\"}")),
+          tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey1\"}"))));
     }
 
     @Test
@@ -528,7 +528,7 @@ class WebSocketMediumTests {
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
-        .containsExactly(tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}"))));
+        .containsExactly(tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey\"}"))));
     }
   }
 
@@ -712,8 +712,8 @@ class WebSocketMediumTests {
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
-        .containsExactly(tuple(false, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}")),
-          tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"project\":\"projectKey\"}"))));
+        .containsExactly(tuple(false, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey\"}")),
+          tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey\"}"))));
     }
   }
 
