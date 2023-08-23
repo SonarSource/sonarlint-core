@@ -22,11 +22,13 @@ package org.sonarsource.sonarlint.core.websocket;
 public class WebSocketEventSubscribePayload {
   private final String action;
   private final String[] events;
+  private final String filterType;
   private final String project;
 
-  public WebSocketEventSubscribePayload(String action, String[] events, String project) {
+  public WebSocketEventSubscribePayload(String action, String[] events, String filterType, String project) {
     this.action = action;
     this.events = events;
+    this.filterType = filterType;
     this.project = project;
   }
 }
