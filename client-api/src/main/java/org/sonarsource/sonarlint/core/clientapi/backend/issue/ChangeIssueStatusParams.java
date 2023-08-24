@@ -23,10 +23,10 @@ public class ChangeIssueStatusParams {
 
   private final String configurationScopeId;
   private final String issueKey;
-  private final IssueStatus newStatus;
+  private final ResolutionStatus newStatus;
   private final boolean isTaintIssue;
 
-  public ChangeIssueStatusParams(String configurationScopeId, String issueKey, IssueStatus newStatus,
+  public ChangeIssueStatusParams(String configurationScopeId, String issueKey, ResolutionStatus newStatus,
     boolean isTaintIssue) {
     this.configurationScopeId = configurationScopeId;
     this.issueKey = issueKey;
@@ -42,7 +42,7 @@ public class ChangeIssueStatusParams {
     return issueKey;
   }
 
-  public IssueStatus getNewStatus() {
+  public ResolutionStatus getNewStatus() {
     return newStatus;
   }
 

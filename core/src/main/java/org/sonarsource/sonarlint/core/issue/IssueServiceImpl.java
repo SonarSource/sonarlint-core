@@ -37,10 +37,11 @@ import org.sonarsource.sonarlint.core.clientapi.backend.issue.ChangeIssueStatusP
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangePermittedParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueService;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.ResolutionStatus;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenAllIssuesForFileParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenIssueParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenIssueResponse;
+import org.sonarsource.sonarlint.core.commons.Transition;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
@@ -58,12 +59,11 @@ public class IssueServiceImpl implements IssueService {
   private static final String STATUS_CHANGE_PERMISSION_MISSING_REASON = "Marking an issue as resolved requires the 'Administer Issues' permission";
   private static final String UNSUPPORTED_SQ_VERSION_REASON = "Marking a local-only issue as resolved requires SonarQube 10.2+";
   private static final Version SQ_ANTICIPATED_TRANSITIONS_MIN_VERSION = Version.create("10.2");
-  private static final String REOPEN = "reopen";
-  private static final Map<IssueStatus, String> transitionByIssueStatus = Map.of(
-    IssueStatus.WONT_FIX, "wontfix",
-    IssueStatus.FALSE_POSITIVE, "falsepositive");
-
-  private static final Set<String> requiredTransitions = new HashSet<>(transitionByIssueStatus.values());
+  private static final Map<ResolutionStatus, Transition> transitionByResolutionStatus = Map.of(
+    ResolutionStatus.WONT_FIX, Transition.WONT_FIX,
+    ResolutionStatus.FALSE_POSITIVE, Transition.FALSE_POSITIVE
+  );
+  private static final Set<String> requiredTransitions = transitionByResolutionStatus.values().stream().map(Transition::getStatus).collect(Collectors.toSet());
 
   private final ConfigurationRepository configurationRepository;
   private final ServerApiProvider serverApiProvider;
@@ -90,7 +90,7 @@ public class IssueServiceImpl implements IssueService {
     return optionalBinding
       .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
       .map(connection -> {
-        var reviewStatus = transitionByIssueStatus.get(params.getNewStatus());
+        var reviewStatus = transitionByResolutionStatus.get(params.getNewStatus());
         var binding = optionalBinding.get();
         var projectServerIssueStore = storageService.binding(binding).findings();
         var issueKey = params.getIssueKey();
@@ -155,7 +155,7 @@ public class IssueServiceImpl implements IssueService {
     return new CheckStatusChangePermittedResponse(permitted,
       permitted ? null : reason,
       // even if not permitted, return the possible statuses, if clients still want to show users what's supported
-      Arrays.asList(IssueStatus.values()));
+      Arrays.asList(ResolutionStatus.values()));
   }
 
   private static boolean hasAdministerIssuePermission(Issues.Issue issue) {
@@ -186,7 +186,7 @@ public class IssueServiceImpl implements IssueService {
         var issueId = params.getIssueId();
         boolean isServerIssue = projectServerIssueStore.containsIssue(issueId, false);
         if (isServerIssue) {
-          return connection.issue().changeStatusAsync(issueId, REOPEN)
+          return connection.issue().changeStatusAsync(issueId, Transition.REOPEN)
             .thenAccept(nothing -> projectServerIssueStore.updateIssueResolutionStatus(issueId, false, false)
               .ifPresent(issue -> telemetryService.issueStatusChanged(issue.getRuleKey())))
             .thenApply(nothing -> new ReopenIssueResponse(true))

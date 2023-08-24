@@ -22,13 +22,13 @@ package org.sonarsource.sonarlint.core.clientapi.backend.tracking;
 import java.util.UUID;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.ResolutionStatus;
 
 public class LocalOnlyIssueDto {
   private final UUID id;
-  private final IssueStatus resolutionStatus;
+  private final ResolutionStatus resolutionStatus;
 
-  public LocalOnlyIssueDto(UUID id, @Nullable IssueStatus resolutionStatus) {
+  public LocalOnlyIssueDto(UUID id, @Nullable ResolutionStatus resolutionStatus) {
     this.id = id;
     this.resolutionStatus = resolutionStatus;
   }
@@ -38,7 +38,7 @@ public class LocalOnlyIssueDto {
   }
 
   @CheckForNull
-  public IssueStatus getResolutionStatus() {
+  public ResolutionStatus getResolutionStatus() {
     return resolutionStatus;
   }
 }

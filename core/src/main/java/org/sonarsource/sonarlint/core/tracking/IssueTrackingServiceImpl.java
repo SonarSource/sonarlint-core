@@ -42,7 +42,7 @@ import javax.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.ResolutionStatus;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedIssueDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.IssueTrackingService;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
@@ -124,7 +124,7 @@ public class IssueTrackingServiceImpl implements IssueTrackingService {
             } else {
               var localOnlyIssue = result.getRight();
               var resolution = localOnlyIssue.getResolution();
-              return Either.forRight(new LocalOnlyIssueDto(localOnlyIssue.getId(), resolution == null ? null : IssueStatus.valueOf(resolution.getStatus().name())));
+              return Either.forRight(new LocalOnlyIssueDto(localOnlyIssue.getId(), resolution == null ? null : ResolutionStatus.valueOf(resolution.getStatus().name())));
             }
           }).collect(Collectors.toList());
         return Map.entry(serverRelativePath, matches);

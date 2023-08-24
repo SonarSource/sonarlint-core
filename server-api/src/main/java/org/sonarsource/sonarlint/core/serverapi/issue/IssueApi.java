@@ -34,6 +34,7 @@ import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
+import org.sonarsource.sonarlint.core.commons.Transition;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -54,7 +55,10 @@ public class IssueApi {
 
   public static final Version MIN_SQ_VERSION_SUPPORTING_PULL = Version.create("9.6");
 
-  private static final Map<IssueStatus, String> transitionByStatus = Map.of(IssueStatus.WONT_FIX, "wontfix", IssueStatus.FALSE_POSITIVE, "falsepositive");
+  private static final Map<IssueStatus, Transition> transitionByStatus = Map.of(
+    IssueStatus.WONT_FIX, Transition.WONT_FIX,
+    IssueStatus.FALSE_POSITIVE, Transition.FALSE_POSITIVE
+  );
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
@@ -220,8 +224,8 @@ public class IssueApi {
       duration -> LOG.debug("Pulled taint issues in {}ms", duration));
   }
 
-  public CompletableFuture<Void> changeStatusAsync(String issueKey, String status) {
-    var body = "issue=" + urlEncode(issueKey) + "&transition=" + urlEncode(status);
+  public CompletableFuture<Void> changeStatusAsync(String issueKey, Transition transition) {
+    var body = "issue=" + urlEncode(issueKey) + "&transition=" + urlEncode(transition.getStatus());
     return serverApiHelper.postAsync("/api/issues/do_transition", FORM_URL_ENCODED_CONTENT_TYPE, body)
       .thenAccept(response -> {
         // no data, return void
@@ -278,7 +282,7 @@ public class IssueApi {
     }
     var resolution = requireNonNull(issue.getResolution());
     return new IssueAnticipatedTransition(issue.getServerRelativePath(), lineNumber, lineHash, issue.getRuleKey(), issue.getMessage(),
-      transitionByStatus.get(resolution.getStatus()), resolution.getComment());
+      transitionByStatus.get(resolution.getStatus()).getStatus(), resolution.getComment());
   }
 
   public static class TaintIssuesPullResult {

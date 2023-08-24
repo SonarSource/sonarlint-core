@@ -33,7 +33,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.AddIssueCommentParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ChangeIssueStatusParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.ResolutionStatus;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenAllIssuesForFileParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenIssueParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedIssueDto;
@@ -84,7 +84,7 @@ class IssuesStatusChangeMediumTests {
       .build();
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", "myIssueKey",
-      IssueStatus.WONT_FIX, false));
+      ResolutionStatus.WONT_FIX, false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     var lastRequest = server.lastRequest();
@@ -111,7 +111,7 @@ class IssuesStatusChangeMediumTests {
       .build();
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", "myIssueKey",
-      IssueStatus.WONT_FIX, false));
+      ResolutionStatus.WONT_FIX, false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     assertThat(backend.telemetryFilePath())
@@ -131,7 +131,7 @@ class IssuesStatusChangeMediumTests {
       .build();
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", "myIssueKey",
-      IssueStatus.WONT_FIX, false));
+      ResolutionStatus.WONT_FIX, false));
 
     assertThat(response)
       .failsWithin(Duration.ofSeconds(2))
@@ -162,7 +162,7 @@ class IssuesStatusChangeMediumTests {
     }
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", localOnlyIssue.getId().toString(),
-      IssueStatus.WONT_FIX, false));
+      ResolutionStatus.WONT_FIX, false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     var issueLoaded = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", "file/path");
@@ -192,7 +192,7 @@ class IssuesStatusChangeMediumTests {
     }
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", localOnlyIssue.getId().toString(),
-      IssueStatus.WONT_FIX, false));
+      ResolutionStatus.WONT_FIX, false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     var lastRequest = server.lastRequest();
@@ -222,7 +222,7 @@ class IssuesStatusChangeMediumTests {
     }
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", localOnlyIssue.getId().toString(),
-      IssueStatus.WONT_FIX, false));
+      ResolutionStatus.WONT_FIX, false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     assertThat(backend.telemetryFilePath())
@@ -238,7 +238,7 @@ class IssuesStatusChangeMediumTests {
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
-    var params = new ChangeIssueStatusParams("configScopeId", "myIssueKey", IssueStatus.WONT_FIX, false);
+    var params = new ChangeIssueStatusParams("configScopeId", "myIssueKey", ResolutionStatus.WONT_FIX, false);
     var issueService = backend.getIssueService();
     var thrown = assertThrows(IssueStatusChangeException.class, () -> issueService.changeStatus(params));
 

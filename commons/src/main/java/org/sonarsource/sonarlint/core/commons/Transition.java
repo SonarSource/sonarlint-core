@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Commons
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,26 +17,22 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.backend.issue;
+package org.sonarsource.sonarlint.core.commons;
 
-public enum IssueStatus {
-  // order is important here, it will be applied in the UI
-  WONT_FIX("Won't Fix", "The issue is valid but does not need fixing. It represents accepted technical debt."),
-  FALSE_POSITIVE("False Positive", "The issue is raised unexpectedly on code that should not trigger an issue.");
+public enum Transition {
 
-  private final String title;
-  private final String description;
+  WONT_FIX("wontfix"),
+  FALSE_POSITIVE("falsepositive"),
+  REOPEN("reopen");
 
-  IssueStatus(String title, String description) {
-    this.title = title;
-    this.description = description;
+  private final String status;
+
+  Transition(String status) {
+    this.status = status;
   }
 
-  public String getTitle() {
-    return title;
+  public String getStatus() {
+    return status;
   }
 
-  public String getDescription() {
-    return description;
-  }
 }
