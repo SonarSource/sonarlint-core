@@ -302,7 +302,6 @@ class IssuesStatusChangeMediumTests {
       .withMessage("Cannot add comment to the issue");
   }
 
-
   @Test
   void it_should_reopen_issue_by_id() throws ExecutionException, InterruptedException {
     server = newSonarQubeServer().start();
@@ -323,7 +322,7 @@ class IssuesStatusChangeMediumTests {
   }
 
   @Test
-  void it_should_load_issues() throws ExecutionException, InterruptedException {
+  void it_should_load_issues() {
     server = newSonarQubeServer().start();
     var issueId1 = UUID.randomUUID();
     var issueId2 = UUID.randomUUID();
@@ -424,5 +423,22 @@ class IssuesStatusChangeMediumTests {
     assertThat(storedIssues)
       .extracting(LocalOnlyIssue::getId)
       .containsOnly(issueId);
+  }
+
+  @Test
+  void it_should_return_true_on_reopening_server_issue() throws ExecutionException, InterruptedException {
+    var serverIssue = aServerIssue("myIssueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG).resolved();
+    server = newSonarQubeServer().start();
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage
+        .withProject("projectKey", project -> project.withBranch("main", branch -> branch.withIssue(serverIssue)))
+        .withServerVersion("9.8"))
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
+      .build();
+
+    var reopen_response = backend.getIssueService().reopenIssue(new ReopenIssueParams("configScopeId", "myIssueKey"));
+
+    assertThat(reopen_response).succeedsWithin(Duration.ofSeconds(2));
+    assertThat(reopen_response.get().isIssueReopened()).isTrue();
   }
 }

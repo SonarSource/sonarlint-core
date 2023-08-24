@@ -89,8 +89,12 @@ public interface IssueService {
   CompletableFuture<CheckStatusChangePermittedResponse> checkStatusChangePermitted(CheckStatusChangePermittedParams params);
 
   /**
-   * Notifying server that anticipated issue with given ID should be removed and removes it from local storage
-   * @return true if issue was found and actually deleted and false otherwise
+   * Reopens the issue, two cases are possible:
+   * <ul>
+   *   <li>If it is a server-matched issue, it is reopened on the server</li>
+   *   <li>If it is a local-only issue, it is deleted from the local storage</li>
+   * </ul>
+   * @return true if issue was found and actually reopened on the server or deleted locally, false otherwise
    */
   @JsonRequest
   CompletableFuture<ReopenIssueResponse> reopenIssue(ReopenIssueParams params);

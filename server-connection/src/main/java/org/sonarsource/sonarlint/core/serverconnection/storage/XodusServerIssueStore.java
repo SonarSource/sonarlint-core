@@ -753,13 +753,13 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public Optional<ServerFinding> markIssueAsResolved(String issueKey, boolean isTaintIssue) {
+  public Optional<ServerFinding> updateIssueResolutionStatus(String issueKey, boolean isTaintIssue, boolean isResolved) {
     var entityIssueType = isTaintIssue ? TAINT_ISSUE_ENTITY_TYPE : ISSUE_ENTITY_TYPE;
     return entityStore.computeInTransaction(txn -> {
       var optionalEntity = findUnique(txn, entityIssueType, KEY_PROPERTY_NAME, issueKey);
       if (optionalEntity.isPresent()) {
         var issueEntity = optionalEntity.get();
-        issueEntity.setProperty(RESOLVED_PROPERTY_NAME, true);
+        issueEntity.setProperty(RESOLVED_PROPERTY_NAME, isResolved);
         return Optional.of(isTaintIssue ? adaptTaint(issueEntity) : adapt(issueEntity));
       }
       return Optional.empty();

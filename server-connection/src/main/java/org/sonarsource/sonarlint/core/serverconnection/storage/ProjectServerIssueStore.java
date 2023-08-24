@@ -167,9 +167,9 @@ public interface ProjectServerIssueStore {
   boolean updateIssue(String issueKey, Consumer<ServerIssue> issueUpdater);
 
   /**
-   * Set the resolution status of an Issue (by its key) to true.
+   * Set the resolution status of an Issue (by its key).
    */
-  Optional<ServerFinding> markIssueAsResolved(String issueKey, boolean isTaintIssue);
+  Optional<ServerFinding> updateIssueResolutionStatus(String issueKey, boolean isTaintIssue, boolean isResolved);
 
   void updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater);
 

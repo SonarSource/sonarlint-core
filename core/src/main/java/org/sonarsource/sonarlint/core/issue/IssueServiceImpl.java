@@ -58,6 +58,7 @@ public class IssueServiceImpl implements IssueService {
   private static final String STATUS_CHANGE_PERMISSION_MISSING_REASON = "Marking an issue as resolved requires the 'Administer Issues' permission";
   private static final String UNSUPPORTED_SQ_VERSION_REASON = "Marking a local-only issue as resolved requires SonarQube 10.2+";
   private static final Version SQ_ANTICIPATED_TRANSITIONS_MIN_VERSION = Version.create("10.2");
+  private static final String REOPEN = "reopen";
   private static final Map<IssueStatus, String> transitionByIssueStatus = Map.of(
     IssueStatus.WONT_FIX, "wontfix",
     IssueStatus.FALSE_POSITIVE, "falsepositive");
@@ -96,11 +97,8 @@ public class IssueServiceImpl implements IssueService {
         boolean isServerIssue = projectServerIssueStore.containsIssue(issueKey, params.isTaintIssue());
         if (isServerIssue) {
           return connection.issue().changeStatusAsync(issueKey, reviewStatus)
-            .thenAccept(nothing -> {
-              projectServerIssueStore.markIssueAsResolved(issueKey, params.isTaintIssue())
-                .ifPresent(issue -> telemetryService.issueStatusChanged(issue.getRuleKey()));
-
-            })
+            .thenAccept(nothing -> projectServerIssueStore.updateIssueResolutionStatus(issueKey, params.isTaintIssue(), true)
+              .ifPresent(issue -> telemetryService.issueStatusChanged(issue.getRuleKey())))
             .exceptionally(throwable -> {
               throw new IssueStatusChangeException(throwable);
             });
@@ -178,17 +176,36 @@ public class IssueServiceImpl implements IssueService {
 
   @Override
   public CompletableFuture<ReopenIssueResponse> reopenIssue(ReopenIssueParams params) {
-    var issueId = params.getIssueId();
-    var issueUuidOptional = asUUID(issueId);
-    if (issueUuidOptional.isEmpty()) {
-      return CompletableFuture.completedFuture(new ReopenIssueResponse(false));
-    }
-    var issueUuid = issueUuidOptional.get();
     var configurationScopeId = params.getConfigurationScopeId();
-    var localOnlyIssueStore = localOnlyIssueStorageService.get();
-    return removeIssue(localOnlyIssueStore, configurationScopeId, issueUuid)
-      .thenApply(v -> localOnlyIssueStorageService.get().removeIssue(issueUuid))
-      .thenApply(ReopenIssueResponse::new);
+    var optionalBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
+    return optionalBinding
+      .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
+      .map(connection -> {
+        var binding = optionalBinding.get();
+        var projectServerIssueStore = storageService.binding(binding).findings();
+        var issueId = params.getIssueId();
+        boolean isServerIssue = projectServerIssueStore.containsIssue(issueId, false);
+        if (isServerIssue) {
+          return connection.issue().changeStatusAsync(issueId, REOPEN)
+            .thenAccept(nothing -> projectServerIssueStore.updateIssueResolutionStatus(issueId, false, false)
+              .ifPresent(issue -> telemetryService.issueStatusChanged(issue.getRuleKey())))
+            .thenApply(nothing -> new ReopenIssueResponse(true))
+            .exceptionally(throwable -> {
+              throw new IssueStatusChangeException(throwable);
+            });
+        } else {
+          var issueUuidOptional = asUUID(issueId);
+          if (issueUuidOptional.isEmpty()) {
+            return CompletableFuture.completedFuture(new ReopenIssueResponse(false));
+          }
+          var issueUuid = issueUuidOptional.get();
+          var localOnlyIssueStore = localOnlyIssueStorageService.get();
+          return removeIssue(localOnlyIssueStore, configurationScopeId, issueUuid)
+            .thenApply(v -> localOnlyIssueStorageService.get().removeIssue(issueUuid))
+            .thenApply(ReopenIssueResponse::new);
+        }
+      })
+      .orElseGet(() -> CompletableFuture.completedFuture(new ReopenIssueResponse(false)));
   }
 
   @Override

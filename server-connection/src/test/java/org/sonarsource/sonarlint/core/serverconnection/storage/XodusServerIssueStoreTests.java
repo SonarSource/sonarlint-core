@@ -642,7 +642,7 @@ class XodusServerIssueStoreTests {
   void should_update_taint_issue_status() {
     store.replaceAllTaintOfFile("branch", "file/path", List.of(aServerTaintIssue()));
 
-    store.markIssueAsResolved("key", true);
+    store.updateIssueResolutionStatus("key", true, true);
 
     var taintIssues = store.loadTaint("branch", "file/path");
     var issues = store.load("branch", "file/path");
@@ -656,7 +656,7 @@ class XodusServerIssueStoreTests {
   void should_update_non_taint_issue_status() {
     store.replaceAllIssuesOfFile("branch", "file/path", List.of(aServerIssue()));
 
-    store.markIssueAsResolved("key", false);
+    store.updateIssueResolutionStatus("key", false, true);
 
     var taintIssues = store.loadTaint("branch", "file/path");
     var issues = store.load("branch", "file/path");
@@ -668,7 +668,7 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_not_update_issue_status_if_issue_is_not_in_storage() {
-    store.markIssueAsResolved("key", false);
+    store.updateIssueResolutionStatus("key", false, true);
 
     var taintIssues = store.loadTaint("branch", "file/path");
     var issues = store.load("branch", "file/path");
