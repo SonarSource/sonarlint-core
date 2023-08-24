@@ -22,8 +22,10 @@ package org.sonarsource.sonarlint.core.websocket;
 import com.google.common.eventbus.Subscribe;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
@@ -57,6 +59,7 @@ public class WebSocketService {
   private final ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider;
   protected SonarCloudWebSocket sonarCloudWebSocket;
   private final EventDispatcher eventRouter;
+  private final List<String> traces = new CopyOnWriteArrayList<>();
 
   public WebSocketService(SonarLintClient client, ConnectionConfigurationRepository connectionConfigurationRepository, ConfigurationRepository configurationRepository,
     ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider, TelemetryServiceImpl telemetryService, InitializeParams params) {
@@ -152,13 +155,13 @@ public class WebSocketService {
   }
 
   private void printState(String event) {
-    System.out.println("Event=" + event);
+    traces.add("Event=" + event);
     var thread = Thread.currentThread();
-    System.out.println("Current thread=" + thread + ", id=" + thread.getId());
-    System.out.println("connectionIdsInterestedInNotifications=" + connectionIdsInterestedInNotifications);
-    System.out.println("subscribedProjectKeysByConfigScopes=" + subscribedProjectKeysByConfigScopes);
-    System.out.println("connectionIdUsedToCreateConnection=" + connectionIdUsedToCreateConnection);
-    System.out.println("--------------------------------------");
+    traces.add("Current thread=" + thread + ", id=" + thread.getId());
+    traces.add("connectionIdsInterestedInNotifications=" + connectionIdsInterestedInNotifications);
+    traces.add("subscribedProjectKeysByConfigScopes=" + subscribedProjectKeysByConfigScopes);
+    traces.add("connectionIdUsedToCreateConnection=" + connectionIdUsedToCreateConnection);
+    traces.add("--------------------------------------");
   }
 
   private boolean isEligibleConnection(String connectionId) {
@@ -304,6 +307,8 @@ public class WebSocketService {
 
   @PreDestroy
   public void shutdown() {
+    traces.forEach(System.out::println);
+    traces.clear();
     closeSocket();
     connectionIdsInterestedInNotifications.clear();
     subscribedProjectKeysByConfigScopes.clear();
