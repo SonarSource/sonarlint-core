@@ -37,17 +37,20 @@ import org.sonarsource.sonarlint.core.clientapi.backend.issue.ChangeIssueStatusP
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangePermittedParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueService;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueStatus;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.ResolutionStatus;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenAllIssuesForFileParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenIssueParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenIssueResponse;
+import org.sonarsource.sonarlint.core.commons.Transition;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.local.only.XodusLocalOnlyIssueStore;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverconnection.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 
@@ -58,11 +61,11 @@ public class IssueServiceImpl implements IssueService {
   private static final String STATUS_CHANGE_PERMISSION_MISSING_REASON = "Marking an issue as resolved requires the 'Administer Issues' permission";
   private static final String UNSUPPORTED_SQ_VERSION_REASON = "Marking a local-only issue as resolved requires SonarQube 10.2+";
   private static final Version SQ_ANTICIPATED_TRANSITIONS_MIN_VERSION = Version.create("10.2");
-  private static final Map<IssueStatus, String> transitionByIssueStatus = Map.of(
-    IssueStatus.WONT_FIX, "wontfix",
-    IssueStatus.FALSE_POSITIVE, "falsepositive");
-
-  private static final Set<String> requiredTransitions = new HashSet<>(transitionByIssueStatus.values());
+  private static final Map<ResolutionStatus, Transition> transitionByResolutionStatus = Map.of(
+    ResolutionStatus.WONT_FIX, Transition.WONT_FIX,
+    ResolutionStatus.FALSE_POSITIVE, Transition.FALSE_POSITIVE
+  );
+  private static final Set<String> requiredTransitions = transitionByResolutionStatus.values().stream().map(Transition::getStatus).collect(Collectors.toSet());
 
   private final ConfigurationRepository configurationRepository;
   private final ServerApiProvider serverApiProvider;
@@ -89,18 +92,15 @@ public class IssueServiceImpl implements IssueService {
     return optionalBinding
       .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
       .map(connection -> {
-        var reviewStatus = transitionByIssueStatus.get(params.getNewStatus());
+        var reviewStatus = transitionByResolutionStatus.get(params.getNewStatus());
         var binding = optionalBinding.get();
         var projectServerIssueStore = storageService.binding(binding).findings();
         var issueKey = params.getIssueKey();
         boolean isServerIssue = projectServerIssueStore.containsIssue(issueKey, params.isTaintIssue());
         if (isServerIssue) {
           return connection.issue().changeStatusAsync(issueKey, reviewStatus)
-            .thenAccept(nothing -> {
-              projectServerIssueStore.markIssueAsResolved(issueKey, params.isTaintIssue())
-                .ifPresent(issue -> telemetryService.issueStatusChanged(issue.getRuleKey()));
-
-            })
+            .thenAccept(nothing -> projectServerIssueStore.updateIssueResolutionStatus(issueKey, params.isTaintIssue(), true)
+              .ifPresent(issue -> telemetryService.issueStatusChanged(issue.getRuleKey())))
             .exceptionally(throwable -> {
               throw new IssueStatusChangeException(throwable);
             });
@@ -157,7 +157,7 @@ public class IssueServiceImpl implements IssueService {
     return new CheckStatusChangePermittedResponse(permitted,
       permitted ? null : reason,
       // even if not permitted, return the possible statuses, if clients still want to show users what's supported
-      Arrays.asList(IssueStatus.values()));
+      Arrays.asList(ResolutionStatus.values()));
   }
 
   private static boolean hasAdministerIssuePermission(Issues.Issue issue) {
@@ -178,17 +178,22 @@ public class IssueServiceImpl implements IssueService {
 
   @Override
   public CompletableFuture<ReopenIssueResponse> reopenIssue(ReopenIssueParams params) {
-    var issueId = params.getIssueId();
-    var issueUuidOptional = asUUID(issueId);
-    if (issueUuidOptional.isEmpty()) {
-      return CompletableFuture.completedFuture(new ReopenIssueResponse(false));
-    }
-    var issueUuid = issueUuidOptional.get();
     var configurationScopeId = params.getConfigurationScopeId();
-    var localOnlyIssueStore = localOnlyIssueStorageService.get();
-    return removeIssue(localOnlyIssueStore, configurationScopeId, issueUuid)
-      .thenApply(v -> localOnlyIssueStorageService.get().removeIssue(issueUuid))
-      .thenApply(ReopenIssueResponse::new);
+    var optionalBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
+    return optionalBinding
+      .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
+      .map(connection -> {
+        var binding = optionalBinding.get();
+        var projectServerIssueStore = storageService.binding(binding).findings();
+        var issueId = params.getIssueId();
+        boolean isServerIssue = projectServerIssueStore.containsIssue(issueId, false);
+        if (isServerIssue) {
+          return reopenServerIssue(connection, issueId, projectServerIssueStore);
+        } else {
+          return reopenLocalIssue(issueId, configurationScopeId);
+        }
+      })
+      .orElseGet(() -> CompletableFuture.completedFuture(new ReopenIssueResponse(false)));
   }
 
   @Override
@@ -213,7 +218,7 @@ public class IssueServiceImpl implements IssueService {
       .orElseGet(() -> CompletableFuture.completedFuture(null));
   }
 
-  private CompletableFuture<Void> removeIssue(XodusLocalOnlyIssueStore localOnlyIssueStore,
+  private CompletableFuture<Void> removeIssueOnServer(XodusLocalOnlyIssueStore localOnlyIssueStore,
     String configurationScopeId, UUID issueId) {
     var allIssues = localOnlyIssueStore.loadAll(configurationScopeId);
     var issuesToSync = allIssues.stream().filter(it -> !it.getId().equals(issueId)).collect(Collectors.toList());
@@ -253,6 +258,28 @@ public class IssueServiceImpl implements IssueService {
           throw new AddIssueCommentException(throwable);
         }))
       .orElseGet(() -> CompletableFuture.completedFuture(null));
+  }
+
+  private CompletableFuture<ReopenIssueResponse> reopenServerIssue(ServerApi connection, String issueId, ProjectServerIssueStore projectServerIssueStore) {
+    return connection.issue().changeStatusAsync(issueId, Transition.REOPEN)
+      .thenAccept(nothing -> projectServerIssueStore.updateIssueResolutionStatus(issueId, false, false)
+        .ifPresent(issue -> telemetryService.issueStatusChanged(issue.getRuleKey())))
+      .thenApply(nothing -> new ReopenIssueResponse(true))
+      .exceptionally(throwable -> {
+        throw new IssueStatusChangeException(throwable);
+      });
+  }
+
+  private CompletableFuture<ReopenIssueResponse> reopenLocalIssue(String issueId, String configurationScopeId) {
+    var issueUuidOptional = asUUID(issueId);
+    if (issueUuidOptional.isEmpty()) {
+      return CompletableFuture.completedFuture(new ReopenIssueResponse(false));
+    }
+    var issueUuid = issueUuidOptional.get();
+    var localOnlyIssueStore = localOnlyIssueStorageService.get();
+    return removeIssueOnServer(localOnlyIssueStore, configurationScopeId, issueUuid)
+      .thenApply(v -> localOnlyIssueStorageService.get().removeIssue(issueUuid))
+      .thenApply(ReopenIssueResponse::new);
   }
 
   private static Optional<UUID> asUUID(String key) {

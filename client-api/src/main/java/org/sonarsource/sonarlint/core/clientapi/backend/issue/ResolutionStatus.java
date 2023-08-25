@@ -19,31 +19,24 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.issue;
 
-import java.util.List;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
+public enum ResolutionStatus {
+  // order is important here, it will be applied in the UI
+  WONT_FIX("Won't Fix", "The issue is valid but does not need fixing. It represents accepted technical debt."),
+  FALSE_POSITIVE("False Positive", "The issue is raised unexpectedly on code that should not trigger an issue.");
 
-public class CheckStatusChangePermittedResponse {
-  private final boolean permitted;
-  private final String notPermittedReason;
-  private final List<ResolutionStatus> allowedStatuses;
+  private final String title;
+  private final String description;
 
-  public CheckStatusChangePermittedResponse(boolean permitted, @Nullable String notPermittedReason, List<ResolutionStatus> allowedStatuses) {
-    this.permitted = permitted;
-    this.notPermittedReason = notPermittedReason;
-    this.allowedStatuses = allowedStatuses;
+  ResolutionStatus(String title, String description) {
+    this.title = title;
+    this.description = description;
   }
 
-  public boolean isPermitted() {
-    return permitted;
+  public String getTitle() {
+    return title;
   }
 
-  @CheckForNull
-  public String getNotPermittedReason() {
-    return notPermittedReason;
-  }
-
-  public List<ResolutionStatus> getAllowedStatuses() {
-    return allowedStatuses;
+  public String getDescription() {
+    return description;
   }
 }
