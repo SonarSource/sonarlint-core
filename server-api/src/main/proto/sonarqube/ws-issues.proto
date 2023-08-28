@@ -28,9 +28,6 @@ option optimize_for = SPEED;
 
 // Response of GET api/issues/search
 message SearchWsResponse {
-  optional int64 total = 1;
-  optional int64 p = 2;
-  optional int32 ps = 3;
   optional sonarqube.ws.commons.Paging paging = 4;
 
   repeated Issue issues = 6;
