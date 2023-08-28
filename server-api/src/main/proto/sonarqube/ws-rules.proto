@@ -28,11 +28,12 @@ option optimize_for = SPEED;
 
 // WS api/rules/search
 message SearchResponse {
-  optional int64 total = 1;
-  optional int32 p = 2;
-  optional int64 ps = 3;
+  optional int64 total = 1 [deprecated = true]; // Deprecated since 9.8
+  optional int32 p = 2 [deprecated = true]; // Deprecated since 9.8
+  optional int64 ps = 3 [deprecated = true]; // Deprecated since 9.8
   repeated Rule rules = 4;
   optional Actives actives = 5;
+  optional sonarqube.ws.commons.Paging paging = 8; // Added in 9.8
 }
 
 //WS api/rules/show

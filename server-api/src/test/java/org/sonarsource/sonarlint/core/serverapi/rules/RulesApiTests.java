@@ -144,8 +144,7 @@ class RulesApiTests {
     mockServer.addProtobufResponse(
       "/api/rules/search.protobuf?qprofile=QPKEY%2B&organization=orgKey&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY,SECURITY_HOTSPOT&s=key&ps=500&p=1",
       Rules.SearchResponse.newBuilder()
-        .setTotal(2)
-        .setPs(1)
+        .setPaging(Common.Paging.newBuilder().setTotal(2).build())
         .addRules(Rules.Rule.newBuilder().setKey("repo:key_with_template").setTemplateKey("template").build())
         .addRules(Rules.Rule.newBuilder().setKey("repo:key").build())
         .setActives(
@@ -172,6 +171,44 @@ class RulesApiTests {
       .extracting("ruleKey", "severity", "templateKey", "params")
       .containsOnly(tuple("repo:key", IssueSeverity.MINOR, "", Map.of()),
         tuple("repo:key_with_template", IssueSeverity.MAJOR, "template", Map.of("paramKey", "paramValue")));
+  }
+
+  @Test
+  void should_fallback_on_deprecated_pagination_for_sonarqube_older_than_9_8() {
+    mockServer.addProtobufResponse(
+      "/api/rules/search.protobuf?qprofile=QPKEY%2B&organization=orgKey&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY,SECURITY_HOTSPOT&s=key&ps=500&p=1",
+      Rules.SearchResponse.newBuilder()
+        .setTotal(501)
+        .addRules(Rules.Rule.newBuilder().setKey("repo:key1").build())
+        .setActives(
+          Rules.Actives.newBuilder()
+            .putActives("repo:key1", Rules.ActiveList.newBuilder().addActiveList(
+                Rules.Active.newBuilder()
+                  .setSeverity("MINOR")
+                  .build())
+              .build())
+            .build())
+        .build());
+    mockServer.addProtobufResponse(
+      "/api/rules/search.protobuf?qprofile=QPKEY%2B&organization=orgKey&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY,SECURITY_HOTSPOT&s=key&ps=500&p=2",
+      Rules.SearchResponse.newBuilder()
+        .setTotal(501)
+        .addRules(Rules.Rule.newBuilder().setKey("repo:key2").build())
+        .setActives(
+          Rules.Actives.newBuilder()
+            .putActives("repo:key2", Rules.ActiveList.newBuilder().addActiveList(
+                Rules.Active.newBuilder()
+                  .setSeverity("MAJOR")
+                  .build())
+              .build())
+            .build())
+        .build());
+
+    var rulesApi = new RulesApi(mockServer.serverApiHelper("orgKey"));
+
+    var activeRules = rulesApi.getAllActiveRules("QPKEY+", progress);
+
+    assertThat(activeRules).extracting(ServerActiveRule::getRuleKey).containsExactlyInAnyOrder("repo:key1", "repo:key2");
   }
 
 }

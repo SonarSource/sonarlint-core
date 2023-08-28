@@ -103,7 +103,7 @@ public class RulesApi {
     Map<String, String> ruleTemplatesByRuleKey = new HashMap<>();
     serverApiHelper.getPaginated(getSearchByQualityProfileUrl(qualityProfileKey),
       Rules.SearchResponse::parseFrom,
-      Rules.SearchResponse::getTotal,
+      r -> r.hasPaging() ? r.getPaging().getTotal() : r.getTotal(),
       r -> {
         ruleTemplatesByRuleKey.putAll(r.getRulesList().stream().collect(Collectors.toMap(Rules.Rule::getKey, Rules.Rule::getTemplateKey)));
         return List.copyOf(r.getActives().getActivesMap().entrySet());
