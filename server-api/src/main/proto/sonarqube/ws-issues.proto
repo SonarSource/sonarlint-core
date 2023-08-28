@@ -56,6 +56,11 @@ message Issue {
   optional string creationDate = 23;
   optional sonarqube.ws.commons.RuleType type = 27;
   optional string ruleDescriptionContextKey = 37;
+  // skipping unused fields 38-39
+  optional sonarqube.ws.commons.CleanCodeAttribute cleanCodeAttribute = 40;
+  // skipping unused field cleanCodeAttributeCategory = 41;
+  repeated sonarqube.ws.commons.Impact impacts = 42;
+
 }
 
 message Transitions {
@@ -115,6 +120,9 @@ message TaintVulnerabilityLite {
   repeated Flow flows = 9;
   optional bool assignedToSubscribedUser = 10;
   optional string ruleDescriptionContextKey = 11;
+  optional sonarqube.ws.commons.CleanCodeAttribute cleanCodeAttribute = 12;
+  // skipping unused field cleanCodeAttributeCategory = 13;
+  repeated sonarqube.ws.commons.Impact impacts = 14;
 }
 
 message Flow {

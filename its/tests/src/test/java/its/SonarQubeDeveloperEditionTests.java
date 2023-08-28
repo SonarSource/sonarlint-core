@@ -104,10 +104,13 @@ import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressPar
 import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.clientapi.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.common.UsernamePasswordDto;
+import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspotDetails;
@@ -124,6 +127,7 @@ import static its.utils.ItUtils.SONAR_VERSION;
 import static java.util.Collections.singletonList;
 import static org.apache.commons.lang3.StringUtils.abbreviate;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -859,6 +863,12 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         assertThat(taintIssue.getRuleDescriptionContextKey()).isEqualTo("java_se");
       } else {
         assertThat(taintIssue.getRuleDescriptionContextKey()).isNull();
+      }
+      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 2)) {
+        assertThat(taintIssue.getCleanCodeAttribute()).hasValue(CleanCodeAttribute.COMPLETE);
+        assertThat(taintIssue.getImpacts()).containsExactly(entry(SoftwareQuality.SECURITY, ImpactSeverity.HIGH));
+      } else {
+        assertThat(taintIssue.getCleanCodeAttribute()).isEmpty();
       }
       assertThat(taintIssue.getFlows()).isNotEmpty();
       var flow = taintIssue.getFlows().get(0);
