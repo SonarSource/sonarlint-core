@@ -327,6 +327,27 @@ class TaintIssueDownloaderTests {
     assertThat(cleanCodeAttribute).isNull();
   }
 
+  @Test
+  void parse_clean_code_attribute_from_lite_stream() {
+    var partialIssue = Issues.TaintVulnerabilityLite.newBuilder().setKey("key").setCleanCodeAttribute(Common.CleanCodeAttribute.CLEAR).build();
+    var cleanCodeAttribute = parseProtoCleanCodeAttribute(partialIssue);
+    assertThat(cleanCodeAttribute).isEqualTo(CleanCodeAttribute.CLEAR);
+  }
+
+  @Test
+  void parse_clean_code_attribute_from_lite_stream_missing() {
+    var partialIssue = Issues.TaintVulnerabilityLite.newBuilder().setKey("key").build();
+    var cleanCodeAttribute = parseProtoCleanCodeAttribute(partialIssue);
+    assertThat(cleanCodeAttribute).isNull();
+  }
+
+  @Test
+  void parse_clean_code_attribute_from_lite_stream_unknown() {
+    var partialIssue = Issues.TaintVulnerabilityLite.newBuilder().setKey("key").setCleanCodeAttribute(Common.CleanCodeAttribute.UNKNOWN_ATTRIBUTE).build();
+    var cleanCodeAttribute = parseProtoCleanCodeAttribute(partialIssue);
+    assertThat(cleanCodeAttribute).isNull();
+  }
+
   void parse_software_quality() {
     var impact = Common.Impact.newBuilder().setSoftwareQuality(Common.SoftwareQuality.SECURITY).build();
     assertThat(parseProtoSoftwareQuality(impact)).isEqualTo(SoftwareQuality.SECURITY);

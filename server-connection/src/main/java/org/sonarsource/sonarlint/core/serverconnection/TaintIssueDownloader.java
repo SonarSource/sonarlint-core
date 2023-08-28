@@ -153,6 +153,15 @@ public class TaintIssueDownloader {
     return CleanCodeAttribute.valueOf(taintVulnerabilityFromWs.getCleanCodeAttribute().name());
   }
 
+  @CheckForNull
+  @VisibleForTesting
+  static CleanCodeAttribute parseProtoCleanCodeAttribute(TaintVulnerabilityLite taintVulnerabilityFromWs) {
+    if (!taintVulnerabilityFromWs.hasCleanCodeAttribute() || taintVulnerabilityFromWs.getCleanCodeAttribute() == Common.CleanCodeAttribute.UNKNOWN_ATTRIBUTE) {
+      return null;
+    }
+    return CleanCodeAttribute.valueOf(taintVulnerabilityFromWs.getCleanCodeAttribute().name());
+  }
+
   @VisibleForTesting
   static SoftwareQuality parseProtoSoftwareQuality(Common.Impact protoImpact) {
     if (!protoImpact.hasSoftwareQuality() || protoImpact.getSoftwareQuality() == Common.SoftwareQuality.UNKNOWN_IMPACT_QUALITY) {
@@ -203,11 +212,11 @@ public class TaintIssueDownloader {
     var severity = IssueSeverity.valueOf(liteTaintIssueFromWs.getSeverity().name());
     var type = RuleType.valueOf(liteTaintIssueFromWs.getType().name());
     var ruleDescriptionContextKey = liteTaintIssueFromWs.hasRuleDescriptionContextKey() ? liteTaintIssueFromWs.getRuleDescriptionContextKey() : null;
-    var cleanCodeAttribute = liteTaintIssueFromWs.hasCleanCodeAttribute() ? CleanCodeAttribute.valueOf(liteTaintIssueFromWs.getCleanCodeAttribute().name()) : null;
+    var cleanCodeAttribute = parseProtoCleanCodeAttribute(liteTaintIssueFromWs);
     var impacts = liteTaintIssueFromWs.getImpactsList().stream()
       .map(i -> Map.entry(
-        SoftwareQuality.valueOf(i.getSoftwareQuality().name()),
-        ImpactSeverity.valueOf(i.getSeverity().name())
+        parseProtoSoftwareQuality(i),
+        parseProtoImpactSeverity(i)
       ))
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     if (mainLocation.hasTextRange()) {
