@@ -39,9 +39,11 @@ public class Issue implements IssueLocation {
   private final TextRange textRange;
   private final Map<SoftwareQuality, ImpactSeverity> overriddenImpacts;
 
-  public Issue(ActiveRuleAdapter activeRule, @Nullable String primaryMessage, Map<SoftwareQuality, ImpactSeverity> overriddenImpacts, @Nullable org.sonar.api.batch.fs.TextRange textRange,
-    @Nullable ClientInputFile clientInputFile, List<Flow> flows, List<QuickFix> quickFixes, Optional<String> ruleDescriptionContextKey) {
-    this(activeRule.ruleKey().toString(), primaryMessage, overriddenImpacts, Optional.ofNullable(textRange).map(WithTextRange::convert).orElse(null), clientInputFile, flows, quickFixes,
+  public Issue(ActiveRuleAdapter activeRule, @Nullable String primaryMessage, Map<SoftwareQuality, ImpactSeverity> overriddenImpacts,
+    @Nullable org.sonar.api.batch.fs.TextRange textRange, @Nullable ClientInputFile clientInputFile, List<Flow> flows, List<QuickFix> quickFixes,
+    Optional<String> ruleDescriptionContextKey) {
+    this(activeRule.ruleKey().toString(), primaryMessage, overriddenImpacts, Optional.ofNullable(textRange).map(WithTextRange::convert).orElse(null), clientInputFile, flows,
+      quickFixes,
       ruleDescriptionContextKey);
   }
 
