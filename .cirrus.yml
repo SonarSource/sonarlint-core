@@ -22,10 +22,6 @@ only_if_with_nightly: &ONLY_IF
 only_if_except_nightly: &ONLY_IF_EXCEPT_NIGHTLY
   skip: "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')"
   only_if: $CIRRUS_USER_COLLABORATOR == 'true' && $CIRRUS_TAG == "" && $CIRRUS_BUILD_SOURCE != "cron"
-
-only_pr_and_maintained_branches: &ONLY_PR_AND_MAINTAINED_BRANCHES
-  skip: "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')"
-  only_if: $CIRRUS_USER_COLLABORATOR == 'true' && $CIRRUS_TAG == "" && $CIRRUS_BUILD_SOURCE != "cron"
     && ($CIRRUS_PR != "" || $CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-.*" || $CIRRUS_BRANCH =~ "dogfood-on-.*")
 
 only_main_branches: &ONLY_MAIN_BRANCHES
@@ -211,7 +207,7 @@ promote_task:
     - test_windows
     - mend_scan
     - qa
-  <<: *ONLY_PR_AND_MAINTAINED_BRANCHES
+  <<: *ONLY_IF_EXCEPT_NIGHTLY
   eks_container:
     <<: *CONTAINER_DEFINITION
     cpu: 1
