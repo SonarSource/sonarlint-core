@@ -207,13 +207,13 @@ public class XodusLocalOnlyIssueStore {
     return entityStoreImpl;
   }
 
-  private static Optional<Entity> findUnique(StoreTransaction transaction, String entityType, String propertyName, Comparable caseSensitivePropertyValue) {
+  private static Optional<Entity> findUnique(StoreTransaction transaction, String entityType, String propertyName, Comparable<?> caseSensitivePropertyValue) {
     // the find is case-insensitive but we need an exact match
     var entities = transaction.find(entityType, propertyName, caseSensitivePropertyValue);
     return findUniqueAmong(entities, propertyName, caseSensitivePropertyValue);
   }
 
-  private static Optional<Entity> findUniqueAmong(EntityIterable iterable, String propertyName, Comparable caseSensitivePropertyValue) {
+  private static Optional<Entity> findUniqueAmong(EntityIterable iterable, String propertyName, Comparable<?> caseSensitivePropertyValue) {
     return StreamSupport.stream(iterable.spliterator(), false)
       .filter(e -> caseSensitivePropertyValue.equals(e.getProperty(propertyName)))
       .findFirst();
