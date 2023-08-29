@@ -23,6 +23,7 @@ import java.io.IOException;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpException;
+import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.http.io.HttpFilterChain;
 import org.apache.hc.core5.http.io.HttpFilterHandler;
 import org.apache.hc.core5.http.protocol.HttpContext;
@@ -33,6 +34,7 @@ class CorsFilter implements HttpFilterHandler {
   public void handle(ClassicHttpRequest request, HttpFilterChain.ResponseTrigger responseTrigger, HttpContext context, HttpFilterChain chain)
     throws HttpException, IOException {
     var origin = request.getHeader("Origin");
+    var method = request.getMethod();
     chain.proceed(request, new HttpFilterChain.ResponseTrigger() {
       @Override
       public void sendInformation(ClassicHttpResponse classicHttpResponse) throws HttpException, IOException {
@@ -43,6 +45,10 @@ class CorsFilter implements HttpFilterHandler {
       public void submitResponse(ClassicHttpResponse classicHttpResponse) throws HttpException, IOException {
         if (origin != null) {
           classicHttpResponse.addHeader("Access-Control-Allow-Origin", origin.getValue());
+        }
+        if (Method.OPTIONS.name().equalsIgnoreCase(method)) {
+          classicHttpResponse.addHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+          classicHttpResponse.addHeader("Access-Control-Allow-Private-Network", true);
         }
         responseTrigger.submitResponse(classicHttpResponse);
       }

@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -84,6 +85,23 @@ class EmbeddedServerMediumTests {
     assertThat(response)
       .extracting(HttpResponse::statusCode, HttpResponse::body)
       .containsExactly(200, "{\"ideName\":\"ClientName\",\"description\":\"WorkspaceTitle\"}");
+  }
+
+  @Test
+  void it_should_set_preflight_response_accordingly_when_receiving_preflight_request() throws IOException, InterruptedException {
+    var fakeClient = newFakeClient().withClientDescription("WorkspaceTitle").build();
+    backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "http://sonar.my").build(fakeClient);
+
+    var request = HttpRequest.newBuilder()
+      .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
+      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/status"))
+      .header("Origin", "http://sonar.my")
+      .build();
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+    assertThat(response.headers().map())
+      .extracting("access-control-allow-methods", "access-control-allow-origin", "access-control-allow-private-network")
+      .containsExactly(List.of("GET, POST, OPTIONS"), List.of("http://sonar.my"), List.of("true"));
   }
 
   private SonarLintBackendImpl backend;
