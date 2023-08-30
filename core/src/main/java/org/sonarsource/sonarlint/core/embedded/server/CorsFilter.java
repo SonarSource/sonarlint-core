@@ -46,13 +46,10 @@ class CorsFilter implements HttpFilterHandler {
       public void submitResponse(ClassicHttpResponse classicHttpResponse) throws HttpException, IOException {
         if (origin != null) {
           classicHttpResponse.addHeader("Access-Control-Allow-Origin", origin.getValue());
-          if (Method.OPTIONS.name().equalsIgnoreCase(method)) {
-            // Private network resources should only be accessible to the server currently connected to
-            classicHttpResponse.addHeader("Access-Control-Allow-Private-Network", true);
-          }
         }
         if (Method.OPTIONS.name().equalsIgnoreCase(method)) {
           classicHttpResponse.addHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+          classicHttpResponse.addHeader("Access-Control-Allow-Private-Network", true);
           classicHttpResponse.setCode(HttpStatus.SC_OK);
         }
         responseTrigger.submitResponse(classicHttpResponse);
