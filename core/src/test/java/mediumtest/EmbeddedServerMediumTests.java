@@ -25,6 +25,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
@@ -52,7 +53,7 @@ class EmbeddedServerMediumTests {
 
     assertThat(response)
       .extracting(HttpResponse::statusCode, HttpResponse::body)
-      .containsExactly(200, "{\"ideName\":\"ClientName\",\"description\":\"\"}");
+      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"\"}");
   }
 
   @Test
@@ -68,7 +69,7 @@ class EmbeddedServerMediumTests {
 
     assertThat(response)
       .extracting(HttpResponse::statusCode, HttpResponse::body)
-      .containsExactly(200, "{\"ideName\":\"ClientName\",\"description\":\"\"}");
+      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"\"}");
   }
 
   @Test
@@ -84,7 +85,7 @@ class EmbeddedServerMediumTests {
 
     assertThat(response)
       .extracting(HttpResponse::statusCode, HttpResponse::body)
-      .containsExactly(200, "{\"ideName\":\"ClientName\",\"description\":\"WorkspaceTitle\"}");
+      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"WorkspaceTitle\"}");
   }
 
   @Test
@@ -94,7 +95,7 @@ class EmbeddedServerMediumTests {
 
     var request = HttpRequest.newBuilder()
       .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
-      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/status"))
+      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
       .header("Origin", "http://sonar.my")
       .build();
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
@@ -102,6 +103,21 @@ class EmbeddedServerMediumTests {
     assertThat(response.headers().map())
       .extracting("access-control-allow-methods", "access-control-allow-origin", "access-control-allow-private-network")
       .containsExactly(List.of("GET, POST, OPTIONS"), List.of("http://sonar.my"), List.of("true"));
+    assertThat(response.statusCode()).isEqualTo(HttpStatus.OK_200);
+  }
+
+  @Test
+  void it_should_receive_bad_request_response_if_not_right_method() throws IOException, InterruptedException {
+    var fakeClient = newFakeClient().withClientDescription("WorkspaceTitle").build();
+    backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").build(fakeClient);
+
+    var request = HttpRequest.newBuilder()
+      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
+      .header("Origin", "https://sonar.my")
+      .GET().build();
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+    assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST_400);
   }
 
   private SonarLintBackendImpl backend;
