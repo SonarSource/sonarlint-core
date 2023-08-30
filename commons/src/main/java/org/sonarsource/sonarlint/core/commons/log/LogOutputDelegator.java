@@ -33,7 +33,7 @@ class LogOutputDelegator {
    * Temporary until the actual log is removed from sonar-analyzer-commons
    * See SLCORE-520
    */
-  private static final Pattern SKIPPED_MESSAGE_PATTERN = Pattern.compile("^Skipping section '.*' for rule '.*', content is empty$");
+  private static final Pattern SKIPPED_MESSAGE_PATTERN = Pattern.compile("^Skipping section '.*?' for rule '.*?', content is empty$");
   /**
    * In case we can't find a logger in the current Thread hierarchy, fallback on the first ClientLogOutput that has been passed
    */
