@@ -51,11 +51,8 @@ import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFileEdit;
-import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
 import org.sonarsource.sonarlint.core.analysis.api.TextEdit;
-import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
-import org.sonarsource.sonarlint.core.analysis.sonarapi.SonarLintModuleFileSystem;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
@@ -81,7 +78,6 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.sonarsource.sonarlint.core.client.api.common.ClientFileSystemFixtures.aClientFileSystemWith;
 
 class StandaloneIssueMediumTests {
 
@@ -176,8 +172,10 @@ class StandaloneIssueMediumTests {
       issues::add, null,
       null);
     assertThat(issues)
-      .extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getRuleDescriptionContextKey, Issue::getCleanCodeAttribute, Issue::getImpacts)
-      .containsOnly(tuple("javascript:S1481", 2, "foo.js", Optional.empty(), Optional.of(CleanCodeAttribute.defaultCleanCodeAttribute()), Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)));
+      .extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getRuleDescriptionContextKey, Issue::getCleanCodeAttribute,
+        Issue::getImpacts)
+      .containsOnly(tuple("javascript:S1481", 2, "foo.js", Optional.empty(), Optional.of(CleanCodeAttribute.defaultCleanCodeAttribute()),
+        Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)));
 
     // SLCORE-160
     inputFile = prepareInputFile("node_modules/foo.js", content, false);
@@ -254,31 +252,32 @@ class StandaloneIssueMediumTests {
       tuple("typescript:S1764", 2, "foo.ts"));
 
   }
+
   @Test
   void simpleJavaScriptInYamlFile() throws Exception {
     String content = "Resources:\n" +
-            "  LambdaFunction:\n" +
-            "    Type: 'AWS::Lambda::Function'\n" +
-            "    Properties:\n" +
-            "      Code:\n" +
-            "        ZipFile: >\n" +
-            "          exports.handler = function(event, context) {\n" +
-            "            let x;\n" +
-            "          };\n" +
-            "      Runtime: nodejs8.10";
+      "  LambdaFunction:\n" +
+      "    Type: 'AWS::Lambda::Function'\n" +
+      "    Properties:\n" +
+      "      Code:\n" +
+      "        ZipFile: >\n" +
+      "          exports.handler = function(event, context) {\n" +
+      "            let x;\n" +
+      "          };\n" +
+      "      Runtime: nodejs8.10";
 
     var inputFile = prepareInputFile("foo.yaml", content, false);
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(
-            StandaloneAnalysisConfiguration.builder()
-                    .setBaseDir(baseDir.toPath())
-                    .addInputFile(inputFile)
-                    .build(),
-            issues::add, (s, level) -> System.out.println(s),
-            null);
+      StandaloneAnalysisConfiguration.builder()
+        .setBaseDir(baseDir.toPath())
+        .addInputFile(inputFile)
+        .build(),
+      issues::add, (s, level) -> System.out.println(s),
+      null);
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
-            tuple("javascript:S1481", 8, "foo.yaml"));
+      tuple("javascript:S1481", 8, "foo.yaml"));
   }
 
   @Test
@@ -468,21 +467,21 @@ class StandaloneIssueMediumTests {
     var inputFile = prepareInputFile(A_JAVA_FILE_PATH,
       "public class Foo {\n"
         + "  public void foo() {\n"
-        +"     \n"
+        + "     \n"
         + "  }\n"
         + "}",
       false);
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(StandaloneAnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(), issues::add,
+      .setBaseDir(baseDir.toPath())
+      .addInputFile(inputFile)
+      .build(), issues::add,
       null, null);
 
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, Issue::getEndLine, Issue::getEndLineOffset,
       i -> i.getInputFile().relativePath(), Issue::getSeverity).contains(
-      tuple("java:S1186", 2, 14, 2, 17, A_JAVA_FILE_PATH, IssueSeverity.CRITICAL));
+        tuple("java:S1186", 2, 14, 2, 17, A_JAVA_FILE_PATH, IssueSeverity.CRITICAL));
 
     assertThat(issues)
       .flatExtracting(Issue::quickFixes)
@@ -933,28 +932,6 @@ class StandaloneIssueMediumTests {
   }
 
   @Test
-  void declare_module_should_create_a_module_container_with_loaded_extensions() throws Exception {
-    sonarlint
-      .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null)))).get();
-
-    ModuleContainer moduleContainer = sonarlint.getAnalysisEngine().getModuleRegistry().getContainerFor("key");
-
-    assertThat(moduleContainer).isNotNull();
-    assertThat(moduleContainer.getComponentsByType(SonarLintModuleFileSystem.class)).isNotEmpty();
-  }
-
-  @Test
-  void stop_module_should_stop_the_module_container() throws Exception {
-    sonarlint
-      .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null)))).get();
-    ModuleContainer moduleContainer = sonarlint.getAnalysisEngine().getModuleRegistry().getContainerFor("key");
-
-    sonarlint.stopModule("key").get();
-
-    assertThat(moduleContainer.getSpringContext().isActive()).isFalse();
-  }
-
-  @Test
   void shouldThrowCancelExceptionWhenCanceled() throws Exception {
     var inputFile = prepareInputFile("foo.php", "<?php\n"
       + "function writeMsg($fname) {\n"
@@ -963,12 +940,12 @@ class StandaloneIssueMediumTests {
       + "}\n"
       + "?>", false);
 
-    final List<Issue> issues = new ArrayList<>();
-    StandaloneAnalysisConfiguration analysisConfiguration = StandaloneAnalysisConfiguration.builder()
+    var analysisConfiguration = StandaloneAnalysisConfiguration.builder()
       .setBaseDir(baseDir.toPath())
       .addInputFile(inputFile)
       .build();
-    assertThrows(CanceledException.class, () -> sonarlint.analyze(analysisConfiguration, issues::add, null, CANCELED_PROGRESS_MONITOR));
+    assertThrows(CanceledException.class, () -> sonarlint.analyze(analysisConfiguration, i -> {
+    }, null, CANCELED_PROGRESS_MONITOR));
   }
 
   private static final class CanceledProgressMonitor implements ClientProgressMonitor {

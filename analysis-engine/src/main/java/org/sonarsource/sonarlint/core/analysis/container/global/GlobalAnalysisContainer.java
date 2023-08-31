@@ -26,15 +26,13 @@ import org.sonar.api.utils.UriReader;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
-import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
+import org.sonarsource.sonarlint.core.plugin.commons.loading.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentContainer;
 import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.SonarLintRuntimeImpl;
 
 public class GlobalAnalysisContainer extends SpringComponentContainer {
   protected static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private GlobalExtensionContainer globalExtensionContainer;
-  private ModuleRegistry moduleRegistry;
   private final AnalysisEngineConfiguration analysisGlobalConfig;
   private final LoadedPlugins loadedPlugins;
 
@@ -66,36 +64,10 @@ public class GlobalAnalysisContainer extends SpringComponentContainer {
   @Override
   protected void doAfterStart() {
     declarePluginProperties();
-    globalExtensionContainer = new GlobalExtensionContainer(this);
-    globalExtensionContainer.startComponents();
-    this.moduleRegistry = new ModuleRegistry(globalExtensionContainer, analysisGlobalConfig.getModulesProvider());
-  }
-
-  @Override
-  public SpringComponentContainer stopComponents() {
-    try {
-      if (moduleRegistry != null) {
-        moduleRegistry.stopAll();
-      }
-      if (globalExtensionContainer != null) {
-        globalExtensionContainer.stopComponents();
-      }
-      loadedPlugins.unload();
-    } catch (Exception e) {
-      LOG.error("Cannot close analysis engine", e);
-    } finally {
-      super.stopComponents();
-    }
-    return this;
   }
 
   private void declarePluginProperties() {
     loadedPlugins.getPluginInstancesByKeys().values().forEach(this::declareProperties);
-  }
-
-  // Visible for medium tests
-  public ModuleRegistry getModuleRegistry() {
-    return moduleRegistry;
   }
 
 }

@@ -74,9 +74,9 @@ public class PluginsLoader {
     logPlugins(nonSkippedPlugins);
 
     var instancesLoader = new PluginInstancesLoader();
-    var pluginInstancesByKeys = instancesLoader.instantiatePluginClasses(nonSkippedPlugins);
+    var loadedPlugins = instancesLoader.instantiatePluginClasses(nonSkippedPlugins);
 
-    return new PluginsLoadResult(new LoadedPlugins(pluginInstancesByKeys, instancesLoader), pluginCheckResultByKeys);
+    return new PluginsLoadResult(loadedPlugins, pluginCheckResultByKeys);
   }
 
   private static void logPlugins(Collection<PluginInfo> nonSkippedPlugins) {

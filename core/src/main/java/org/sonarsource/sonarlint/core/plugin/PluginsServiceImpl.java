@@ -30,7 +30,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializePar
 import org.sonarsource.sonarlint.core.clientapi.backend.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
-import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
+import org.sonarsource.sonarlint.core.plugin.commons.loading.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoadResult;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
 import org.sonarsource.sonarlint.core.serverconnection.StorageService;

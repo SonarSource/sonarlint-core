@@ -33,7 +33,6 @@ import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
-import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.DefaultClientIssue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
@@ -45,6 +44,7 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintE
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoadResult;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader.Configuration;
@@ -113,10 +113,9 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
       .setBaseDir(configuration.baseDir())
       .build();
 
-    var analyzeCommand = new AnalyzeCommand(configuration.moduleKey(), analysisConfig,
+    return getAnalysisEngine().analyze(configuration.moduleKey(), analysisConfig,
       i -> issueListener.handle(new DefaultClientIssue(i, allRulesDefinitionsByKey.get(i.getRuleKey()))),
-      logOutput);
-    return postAnalysisCommandAndGetResult(analyzeCommand, monitor);
+      logOutput, new ProgressMonitor(monitor));
   }
 
   private Collection<ActiveRule> identifyActiveRules(StandaloneAnalysisConfiguration configuration) {

@@ -44,7 +44,6 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
-import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.DefaultClientIssue;
@@ -110,9 +109,9 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     return analysisContext.get().analysisEngine;
   }
 
-  public AnalysisContext start() {
+  public void start() {
     setLogging(null);
-    return analysisContext.getAndSet(loadAnalysisContext());
+    analysisContext.set(loadAnalysisContext());
   }
 
   private AnalysisContext loadAnalysisContext() {
@@ -229,8 +228,8 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
 
     var analysisConfiguration = analysisConfigBuilder.build();
 
-    var analyzeCommand = new AnalyzeCommand(configuration.moduleKey(), analysisConfiguration, issue -> streamIssue(issueListener, issue, activeRulesContext), logOutput);
-    return postAnalysisCommandAndGetResult(analyzeCommand, monitor);
+    return getAnalysisEngine().analyze(configuration.moduleKey(), analysisConfiguration, issue -> streamIssue(issueListener, issue, activeRulesContext), logOutput,
+      new ProgressMonitor(monitor));
   }
 
   private void streamIssue(IssueListener issueListener, Issue newIssue, ActiveRulesContext activeRulesContext) {
@@ -332,8 +331,9 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   private void restartAnalysisEngine() {
-    var oldAnalysisContext = start();
-    oldAnalysisContext.finishGracefully();
+    setLogging(null);
+    var oldAnalysisContext = analysisContext.getAndSet(loadAnalysisContext());
+    oldAnalysisContext.destroy();
   }
 
   @Override
@@ -563,10 +563,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
 
     public void destroy() {
       analysisEngine.stop();
-    }
-
-    public void finishGracefully() {
-      analysisEngine.finishGracefully();
     }
 
     public Optional<SonarLintRuleDefinition> findRule(String ruleKey) {

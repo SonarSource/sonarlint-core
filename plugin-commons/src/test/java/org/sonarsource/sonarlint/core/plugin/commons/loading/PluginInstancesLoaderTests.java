@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -78,13 +79,15 @@ class PluginInstancesLoaderTests {
       .setMainClass("org.foo.FooPlugin")
       .setMinimalSqVersion(Version.create("5.2"));
 
-    var defs = loader.defineClassloaders(Map.of("foo", info));
+    var filesToDelete = new ArrayList<Path>();
+    var defs = loader.defineClassloaders(Map.of("foo", info), filesToDelete);
 
     assertThat(defs).hasSize(1);
     var def = defs.iterator().next();
     assertThat(def.getBasePluginKey()).isEqualTo("foo");
     assertThat(def.getFiles()).containsExactly(jarFile);
     assertThat(def.getMainClassesByPluginKey()).containsOnly(MapEntry.entry("foo", "org.foo.FooPlugin"));
+    assertThat(filesToDelete).isEmpty();
     // TODO test mask - require change in sonar-classloader
   }
 
@@ -96,7 +99,8 @@ class PluginInstancesLoaderTests {
       .setMainClass("org.foo.FooPlugin")
       .setDependencies(List.of("META-INF/lib/commons-cli-1.0.jar", "META-INF/lib/checkstyle-5.1.jar", "META-INF/lib/antlr-2.7.6.jar"));
 
-    var defs = loader.defineClassloaders(Map.of("checkstyle", info));
+    var filesToDelete = new ArrayList<Path>();
+    var defs = loader.defineClassloaders(Map.of("checkstyle", info), filesToDelete);
 
     assertThat(defs).hasSize(1);
     var def = defs.iterator().next();
@@ -113,6 +117,7 @@ class PluginInstancesLoaderTests {
       tuple("commons-cli-1.0.jar", "d784fa8b6d98d27699781bd9a7cf19f0"),
       tuple("checkstyle-5.1.jar", "d784fa8b6d98d27699781bd9a7cf19f0"),
       tuple("antlr-2.7.6.jar", "d784fa8b6d98d27699781bd9a7cf19f0"));
+    assertThat(filesToDelete).extracting(p -> p.getFileName().toString()).containsExactlyInAnyOrder("commons-cli-1.0.jar", "checkstyle-5.1.jar", "antlr-2.7.6.jar");
   }
 
   /**
@@ -138,7 +143,7 @@ class PluginInstancesLoaderTests {
       .setBasePlugin("foo");
 
     var defs = loader.defineClassloaders(Map.of(
-      base.getKey(), base, extension1.getKey(), extension1, extension2.getKey(), extension2));
+      base.getKey(), base, extension1.getKey(), extension1, extension2.getKey(), extension2), new ArrayList<>());
 
     assertThat(defs).hasSize(1);
     var def = defs.iterator().next();
@@ -166,7 +171,7 @@ class PluginInstancesLoaderTests {
       .setBasePlugin("foo");
 
     var defs = loader.defineClassloaders(Map.of(
-      extension1.getKey(), extension1, extension2.getKey(), extension2));
+      extension1.getKey(), extension1, extension2.getKey(), extension2), new ArrayList<>());
 
     assertThat(defs).hasSize(1);
     var def = defs.iterator().next();

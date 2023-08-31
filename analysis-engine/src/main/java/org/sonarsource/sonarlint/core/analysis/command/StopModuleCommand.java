@@ -23,13 +23,22 @@ import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
-public interface Command<R> {
-  R execute(ProgressMonitor progressMonitor);
+public class StopModuleCommand implements Command<Void> {
+  private final ModuleContainer moduleContainer;
 
-  /**
-   * The ModuleContainer this command should execute into.
-   * Can be null for commands in a transient module
-   */
+  public StopModuleCommand(ModuleContainer moduleContainer) {
+    this.moduleContainer = moduleContainer;
+  }
+
   @CheckForNull
-  ModuleContainer getModuleContainer();
+  @Override
+  public ModuleContainer getModuleContainer() {
+    return moduleContainer;
+  }
+
+  @Override
+  public Void execute(ProgressMonitor progressMonitor) {
+    moduleContainer.stopComponents();
+    return null;
+  }
 }

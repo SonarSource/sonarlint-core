@@ -19,16 +19,20 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.CheckForNull;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.plugin.commons.loading.LoadedPlugins;
 @Named
 @Singleton
 public class PluginsRepository {
+
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private LoadedPlugins loadedEmbeddedPlugins;
   private final Map<String, LoadedPlugins> loadedPluginsByConnectionId = new HashMap<>();
 
@@ -53,10 +57,20 @@ public class PluginsRepository {
   @PreDestroy
   public void unloadAllPlugins() {
     if (loadedEmbeddedPlugins != null) {
-      loadedEmbeddedPlugins.unload();
+      try {
+        loadedEmbeddedPlugins.close();
+      } catch (IOException e) {
+        LOG.error("Error while closing embedded plugins", e);
+      }
       loadedEmbeddedPlugins = null;
     }
-    loadedPluginsByConnectionId.values().forEach(LoadedPlugins::unload);
+    loadedPluginsByConnectionId.forEach((id, p) -> {
+      try {
+        p.close();
+      } catch (IOException e) {
+        LOG.error("Error while closing plugins from connection '{}'", id, e);
+      }
+    });
     loadedPluginsByConnectionId.clear();
   }
 }

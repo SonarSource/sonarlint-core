@@ -59,8 +59,6 @@ public class PluginInstancesLoader {
 
   private final PluginClassloaderFactory classloaderFactory;
   private final ClassLoader baseClassLoader;
-  private final Collection<ClassLoader> classloadersToClose = new ArrayList<>();
-  private final List<Path> filesToDelete = new ArrayList<>();
 
   public PluginInstancesLoader() {
     this(new PluginClassloaderFactory());
@@ -71,21 +69,22 @@ public class PluginInstancesLoader {
     this.baseClassLoader = getClass().getClassLoader();
   }
 
-  public Map<String, Plugin> instantiatePluginClasses(Collection<PluginInfo> plugins) {
-    var defs = defineClassloaders(plugins.stream().collect(Collectors.toMap(PluginInfo::getKey, p -> p)));
+  public LoadedPlugins instantiatePluginClasses(Collection<PluginInfo> plugins) {
+    var filesToDelete = new ArrayList<Path>();
+    var defs = defineClassloaders(plugins.stream().collect(Collectors.toMap(PluginInfo::getKey, p -> p)), filesToDelete);
     var classloaders = classloaderFactory.create(baseClassLoader, defs);
-    this.classloadersToClose.addAll(classloaders.values());
-    return instantiatePluginClasses(classloaders);
+    var pluginClasses = instantiatePluginClasses(classloaders);
+    return new LoadedPlugins(pluginClasses, classloaders.values(), filesToDelete);
   }
 
   /**
    * Defines the different classloaders to be created. Number of classloaders can be
-   * different than number of plugins.
+   * different from number of plugins.
    */
-  Collection<PluginClassLoaderDef> defineClassloaders(Map<String, PluginInfo> pluginsByKey) {
+  Collection<PluginClassLoaderDef> defineClassloaders(Map<String, PluginInfo> pluginsByKey, Collection<Path> filesToDelete) {
     Map<String, PluginClassLoaderDef> classloadersByBasePlugin = new HashMap<>();
 
-    for (PluginInfo info : pluginsByKey.values()) {
+    for (var info : pluginsByKey.values()) {
       var baseKey = basePluginKey(info, pluginsByKey);
       if (baseKey == null) {
         continue;
@@ -95,7 +94,7 @@ public class PluginInstancesLoader {
       if (!info.getDependencies().isEmpty()) {
         LOG.warn("Plugin '{}' embeds dependencies. This will be deprecated soon. Plugin should be updated.", info.getKey());
         var tmpFolderForDeps = createTmpFolderForPluginDeps(info);
-        for (String dependency : info.getDependencies()) {
+        for (var dependency : info.getDependencies()) {
           var tmpDepFile = extractDependencyInTempFolder(info, dependency, tmpFolderForDeps);
           def.addFiles(List.of(tmpDepFile.toFile()));
           filesToDelete.add(tmpDepFile);
@@ -103,7 +102,7 @@ public class PluginInstancesLoader {
       }
       def.addMainClass(info.getKey(), info.getMainClass());
 
-      for (String defaultSharedResource : DEFAULT_SHARED_RESOURCES) {
+      for (var defaultSharedResource : DEFAULT_SHARED_RESOURCES) {
         def.getExportMask().addInclusion(String.format("%s/%s/api/", defaultSharedResource, info.getKey()));
       }
     }
@@ -149,12 +148,12 @@ public class PluginInstancesLoader {
   Map<String, Plugin> instantiatePluginClasses(Map<PluginClassLoaderDef, ClassLoader> classloaders) {
     // instantiate plugins
     Map<String, Plugin> instancesByPluginKey = new HashMap<>();
-    for (Map.Entry<PluginClassLoaderDef, ClassLoader> entry : classloaders.entrySet()) {
+    for (var entry : classloaders.entrySet()) {
       var def = entry.getKey();
       var classLoader = entry.getValue();
 
       // the same classloader can be used by multiple plugins
-      for (Map.Entry<String, String> mainClassEntry : def.getMainClassesByPluginKey().entrySet()) {
+      for (var mainClassEntry : def.getMainClassesByPluginKey().entrySet()) {
         var pluginKey = mainClassEntry.getKey();
         var mainClass = mainClassEntry.getValue();
         try {
@@ -167,27 +166,6 @@ public class PluginInstancesLoader {
       }
     }
     return instancesByPluginKey;
-  }
-
-  public void unload() {
-    for (ClassLoader classLoader : classloadersToClose) {
-      if (classLoader instanceof Closeable) {
-        try {
-          ((Closeable) classLoader).close();
-        } catch (Exception e) {
-          LOG.error("Fail to close classloader", e);
-        }
-      }
-    }
-    classloadersToClose.clear();
-    for (Path fileToDelete : filesToDelete) {
-      try {
-        FileUtils.forceDelete(fileToDelete.toFile());
-      } catch (IOException e) {
-        LOG.error("Fail to delete " + fileToDelete.toString(), e);
-      }
-    }
-    filesToDelete.clear();
   }
 
   /**
@@ -209,4 +187,5 @@ public class PluginInstancesLoader {
     }
     return base;
   }
+
 }

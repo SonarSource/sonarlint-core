@@ -172,7 +172,6 @@ class ConnectedEmbeddedPluginMediumTests {
       .setProjectKey(JAVA_MODULE_KEY)
       .setBaseDir(baseDir)
       .addInputFile(inputFile)
-      .setModuleKey("key")
       .build(),
       new StoreIssueListener(issues), null, null);
 
@@ -231,7 +230,6 @@ class ConnectedEmbeddedPluginMediumTests {
       .setProjectKey(JAVA_MODULE_KEY)
       .setBaseDir(baseDir)
       .addInputFile(inputFile)
-      .setModuleKey("key")
       .build(),
       new StoreIssueListener(issues), null, null);
 
@@ -248,7 +246,6 @@ class ConnectedEmbeddedPluginMediumTests {
         .setProjectKey(JAVA_MODULE_KEY)
         .setBaseDir(baseDir)
         .addInputFile(inputFile)
-        .setModuleKey("key")
         .build(),
       new StoreIssueListener(issues), null, null);
 

@@ -19,11 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.global;
 
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentContainer;
 
 /**
- * Used to load plugin global extensions
+ * Used to load plugin global extensions and store ModuleRegistry
  */
 public class GlobalExtensionContainer extends SpringComponentContainer {
 

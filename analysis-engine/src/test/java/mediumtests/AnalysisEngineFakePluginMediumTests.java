@@ -19,55 +19,55 @@
  */
 package mediumtests;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
-import org.apache.commons.io.FileUtils;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.Plugin;
+import org.sonar.api.Startable;
+import org.sonar.api.batch.sensor.Sensor;
+import org.sonar.api.batch.sensor.SensorContext;
+import org.sonar.api.batch.sensor.SensorDescriptor;
+import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.analysis.AnalysisEngine;
-import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
-import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
-import org.sonarsource.sonarlint.core.analysis.api.Issue;
-import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
-import org.sonarsource.sonarlint.core.analysis.command.Command;
-import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.progress.CanceledException;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
+import org.sonarsource.sonarlint.core.plugin.commons.loading.LoadedPlugins;
+import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
+import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileListener;
 import testutils.OnDiskTestClientInputFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
+import static testutils.ClientFileSystemFixtures.anEmptyClientFileSystem;
 
 class AnalysisEngineFakePluginMediumTests {
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester();
 
   private AnalysisEngine analysisEngine;
-  private volatile boolean engineStopped = true;
-  private final ProgressMonitor progressMonitor = new ProgressMonitor(null);
+  private AccumulatingModuleFileListener recordingModuleFileListener = new AccumulatingModuleFileListener();
+  private BlockingModuleFileListener blockingModuleFileListener = new BlockingModuleFileListener();
+  private BlockingSensor blockingSensor = new BlockingSensor();
 
   @BeforeEach
   void prepare(@TempDir Path workDir) throws IOException {
@@ -76,196 +76,245 @@ class AnalysisEngineFakePluginMediumTests {
       .setClientPid(1234L)
       .setWorkDir(workDir)
       .build();
-    var result = new PluginsLoader().load(new PluginsLoader.Configuration(Set.of(findPythonJarPath()), enabledLanguages, Optional.empty()));
-    this.analysisEngine = new AnalysisEngine(analysisGlobalConfig, result.getLoadedPlugins(), logTester.getLogOutput());
-    engineStopped = false;
+    this.analysisEngine = new AnalysisEngine(analysisGlobalConfig, new LoadedPlugins(Map.of("python", new FakeSonarPlugin()), List.of(), List.of()), logTester.getLogOutput());
+  }
+
+  private class FakeSonarPlugin implements Plugin {
+
+    @Override
+    public void define(Context context) {
+      context.addExtension(StartableModuleLevelComponent.class);
+      context.addExtensions(recordingModuleFileListener, blockingModuleFileListener, blockingSensor);
+    }
+  }
+
+  @SonarLintSide(lifespan = "MODULE")
+  private static class StartableModuleLevelComponent implements Startable {
+
+    private static final AtomicBoolean started = new AtomicBoolean();
+    private static final AtomicBoolean stopped = new AtomicBoolean();
+
+    @Override
+    public void start() {
+      started.set(true);
+    }
+
+    @Override
+    public void stop() {
+      // Emulate a long stop
+      try {
+        Thread.sleep(2000);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+      stopped.set(true);
+    }
   }
 
   @AfterEach
   void cleanUp() {
-    if (!engineStopped) {
-      this.analysisEngine.stop();
+    this.analysisEngine.stop();
+  }
+
+  @Test
+  void should_forward_module_file_event_to_listener() {
+    var clientInputFile = new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null);
+    analysisEngine.registerModule(new ClientModuleInfo("moduleKey", anEmptyClientFileSystem()));
+
+    analysisEngine.fireModuleFileEvent("moduleKey", ClientModuleFileEvent.of(clientInputFile, ModuleFileEvent.Type.CREATED));
+
+    await().untilAsserted(() -> assertThat(recordingModuleFileListener.events).hasSize(1));
+  }
+
+  @SonarLintSide(lifespan = "MODULE")
+  static class AccumulatingModuleFileListener implements ModuleFileListener {
+    private final List<ModuleFileEvent> events = new ArrayList<>();
+
+    @Override
+    public void process(ModuleFileEvent event) {
+      events.add(event);
+    }
+  }
+
+  @SonarLintSide(lifespan = "MODULE")
+  static class BlockingModuleFileListener implements ModuleFileListener {
+
+    private boolean beforeLock;
+    private boolean afterLock;
+    private final ReentrantLock lock = new ReentrantLock();
+
+    @Override
+    public void process(ModuleFileEvent event) {
+      this.beforeLock = true;
+      lock.lock();
+      this.afterLock = true;
+    }
+  }
+
+  static class BlockingSensor implements Sensor {
+
+    private boolean beforeLock;
+    private boolean afterLock;
+    private boolean cancelled;
+    private final ReentrantLock lock = new ReentrantLock();
+
+    AtomicInteger executionCount = new AtomicInteger();
+
+    @Override
+    public void describe(SensorDescriptor descriptor) {
+    }
+
+    @Override
+    public void execute(SensorContext context) {
+      this.beforeLock = true;
+      lock.lock();
+      this.cancelled = context.isCancelled();
+      executionCount.incrementAndGet();
+      lock.unlock();
+      this.afterLock = true;
     }
   }
 
   @Test
-  void should_analyze_a_single_file_outside_of_any_module(@TempDir Path baseDir) throws Exception {
-    var content = "def foo():\n"
-      + "  x = 9; # trailing comment\n";
-    var inputFile = preparePythonInputFile(baseDir, content);
+  void should_execute_pending_commands_when_stopping() {
+    var clientInputFile = new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null);
 
-    var analysisConfig = AnalysisConfiguration.builder()
-      .addInputFiles(inputFile)
-      .addActiveRules(trailingCommentRule())
-      .setBaseDir(baseDir)
-      .build();
-    List<Issue> issues = new ArrayList<>();
-    analysisEngine.post(new AnalyzeCommand(null, analysisConfig, issues::add, null), progressMonitor).get();
-    assertThat(issues)
-      .extracting("ruleKey", "message", "inputFile", "flows", "quickFixes", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
-      .containsOnly(tuple("python:S139", "Move this trailing comment on the previous empty line.", inputFile, List.of(), List.of(), 2, 9, 2, 27));
-  }
+    analysisEngine.registerModule(new ClientModuleInfo("moduleKey", anEmptyClientFileSystem()));
 
-  @Test
-  void should_analyze_a_file_inside_a_module(@TempDir Path baseDir) throws Exception {
-    var content = "def foo():\n"
-      + "  x = 9; # trailing comment\n";
-    ClientInputFile inputFile = preparePythonInputFile(baseDir, content);
-
-    AnalysisConfiguration analysisConfig = AnalysisConfiguration.builder()
-      .addInputFiles(inputFile)
-      .addActiveRules(trailingCommentRule())
-      .setBaseDir(baseDir)
-      .build();
-    List<Issue> issues = new ArrayList<>();
-    analysisEngine.post(new RegisterModuleCommand(new ClientModuleInfo("moduleKey", aModuleFileSystem())), progressMonitor).get();
-    analysisEngine.post(new AnalyzeCommand("moduleKey", analysisConfig, issues::add, null), progressMonitor).get();
-    assertThat(issues)
-      .extracting("ruleKey", "message", "inputFile", "flows", "quickFixes", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
-      .containsOnly(tuple("python:S139", "Move this trailing comment on the previous empty line.", inputFile, List.of(), List.of(), 2, 9, 2, 27));
-  }
-
-  @Test
-  void should_fail_the_future_if_the_command_execution_fails() {
-    var futureResult = analysisEngine.post((moduleRegistry, progress) -> {
-      throw new RuntimeException("Kaboom");
-    }, progressMonitor);
-
-    await().until(futureResult::isCompletedExceptionally);
-    futureResult.exceptionally(e -> assertThat(e)
-      .isInstanceOf(RuntimeException.class)
-      .hasMessage("Kaboom"));
-  }
-
-  @Test
-  void should_execute_pending_commands_when_gracefully_finishing() {
-    var futureWaitCommand1 = analysisEngine.post(waitCommand(1000L), progressMonitor);
-    var futureWaitCommand2 = analysisEngine.post(waitCommand(1000L), progressMonitor);
-    var futureWaitCommand3 = analysisEngine.post(waitCommand(1000L), progressMonitor);
-
-    analysisEngine.finishGracefully();
-    engineStopped = true;
-
-    await().until(futureWaitCommand3::isDone);
-    assertThat(futureWaitCommand3).isCompletedWithValue("SUCCESS");
-    assertThat(futureWaitCommand1).isCompleted();
-    assertThat(futureWaitCommand2).isCompleted();
-  }
-
-  @Test
-  void should_cancel_progress_monitor_of_executing_command_when_stopping() {
-    var futureLongCommand = analysisEngine.post((moduleRegistry, progressMonitor) -> {
-      await().atMost(Duration.ofSeconds(5)).until(progressMonitor::isCanceled);
-      return "CANCELED";
-    }, progressMonitor);
-    // let the engine run the command
-    pause(500);
+    // Make the event listener block
+    blockingModuleFileListener.lock.lock();
+    analysisEngine.fireModuleFileEvent("moduleKey", ClientModuleFileEvent.of(clientInputFile, ModuleFileEvent.Type.CREATED));
+    await().untilAsserted(() -> assertThat(blockingModuleFileListener.beforeLock).isTrue());
 
     analysisEngine.stop();
-    engineStopped = true;
+    assertThat(blockingModuleFileListener.afterLock).isFalse();
 
-    await().until(futureLongCommand::isDone);
-    assertThat(futureLongCommand).isCompletedWithValue("CANCELED");
+    blockingModuleFileListener.lock.unlock();
+    await().untilAsserted(() -> assertThat(blockingModuleFileListener.afterLock).isTrue());
   }
 
   @Test
-  void should_cancel_pending_commands_when_stopping() {
-    var futureLongCommand = analysisEngine.post((moduleRegistry, progressMonitor) -> {
-      while (!engineStopped) {
-        ;
-      }
-      return null;
-    }, progressMonitor);
-    var futureRegister = analysisEngine.post(new RegisterModuleCommand(new ClientModuleInfo("moduleKey", aModuleFileSystem())), progressMonitor);
-    // let the engine run the first command
-    pause(500);
+  void should_execute_pending_commands_when_unloading_modules() {
+    var clientInputFile = new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null);
 
-    analysisEngine.stop();
-    engineStopped = true;
+    analysisEngine.registerModule(new ClientModuleInfo("moduleKey", anEmptyClientFileSystem()));
 
-    await().until(futureLongCommand::isDone);
-    assertThat(futureRegister).isCancelled();
+    // Make the event listener block
+    blockingModuleFileListener.lock.lock();
+    analysisEngine.fireModuleFileEvent("moduleKey", ClientModuleFileEvent.of(clientInputFile, ModuleFileEvent.Type.CREATED));
+    await().untilAsserted(() -> assertThat(blockingModuleFileListener.beforeLock).isTrue());
+
+    analysisEngine.unregisterModule("moduleKey");
+    assertThat(blockingModuleFileListener.afterLock).isFalse();
+
+    blockingModuleFileListener.lock.unlock();
+    await().untilAsserted(() -> assertThat(blockingModuleFileListener.afterLock).isTrue());
   }
 
   @Test
-  void should_interrupt_executing_thread_when_stopping() {
-    var futureLongCommand = analysisEngine.post((moduleRegistry, progressMonitor) -> {
+  void should_cancel_all_analysis_from_all_modules_when_stopping() throws InterruptedException {
+    analysisEngine.registerModule(new ClientModuleInfo("moduleKey1", anEmptyClientFileSystem()));
+    analysisEngine.registerModule(new ClientModuleInfo("moduleKey2", anEmptyClientFileSystem()));
+
+    var thrownException1 = new AtomicReference<Exception>();
+    var thrownException2 = new AtomicReference<Exception>();
+
+    blockingSensor.lock.lock();
+    var analysisThread1 = new Thread(() -> {
       try {
-        Thread.sleep(3000);
-      } catch (InterruptedException e) {
-        return "INTERRUPTED";
+        analysisEngine.analyze("moduleKey1", AnalysisConfiguration.builder().build(), i -> {
+        }, null, new ProgressMonitor(null));
+      } catch (Exception e) {
+        thrownException1.set(e);
       }
-      return "FINISHED";
-    }, progressMonitor);
-    // let the engine run the first command
-    pause(500);
+    });
+    analysisThread1.start();
+    var analysisThread2 = new Thread(() -> {
+      try {
+        analysisEngine.analyze("moduleKey2", AnalysisConfiguration.builder().build(), i -> {
+        }, null, new ProgressMonitor(null));
+      } catch (Exception e) {
+        thrownException2.set(e);
+      }
+    });
+    analysisThread2.start();
+
+    // Analysis 1 is executing, while Analysis 2 is in the queue
+    await().untilAsserted(() -> assertThat(blockingSensor.beforeLock).isTrue());
 
     analysisEngine.stop();
-    engineStopped = true;
+    assertThat(blockingSensor.afterLock).isFalse();
 
-    await().until(futureLongCommand::isDone);
-    assertThat(futureLongCommand).isCompletedWithValue("INTERRUPTED");
+    blockingSensor.lock.unlock();
+    await().untilAsserted(() -> assertThat(blockingSensor.afterLock).isTrue());
+
+    assertThat(blockingSensor.cancelled).isTrue();
+
+    analysisThread1.join();
+    analysisThread2.join();
+
+    assertThat(thrownException1).hasValueMatching(e -> e instanceof CanceledException);
+    assertThat(thrownException2).hasValueMatching(e -> e instanceof CanceledException);
+    assertThat(blockingSensor.executionCount.get()).isEqualTo(1);
   }
 
   @Test
-  void should_not_log_any_error_when_stopping() {
-    // let the engine block waiting for the first command
-    pause(500);
+  void should_only_cancel_analysis_from_the_same_module_when_unloading() throws InterruptedException {
+    analysisEngine.registerModule(new ClientModuleInfo("moduleKey1", anEmptyClientFileSystem()));
+    analysisEngine.registerModule(new ClientModuleInfo("moduleKey2", anEmptyClientFileSystem()));
 
-    analysisEngine.stop();
+    var thrownException11 = new AtomicReference<Exception>();
+    var thrownException12 = new AtomicReference<Exception>();
+    var thrownException2 = new AtomicReference<Exception>();
 
-    // let the engine stop properly
-    pause(1000);
-    assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).isEmpty();
-  }
-
-  private ClientInputFile preparePythonInputFile(Path baseDir, String content) throws IOException {
-    final var file = new File(baseDir.toFile(), "file.py");
-    FileUtils.write(file, content, StandardCharsets.UTF_8);
-    return new OnDiskTestClientInputFile(file.toPath(), "file.py", false, StandardCharsets.UTF_8, Language.PYTHON);
-  }
-
-  private static Path findPythonJarPath() throws IOException {
-    var pluginsFolderPath = Paths.get("target/plugins/");
-    try (var files = Files.list(pluginsFolderPath)) {
-      return files.filter(x -> x.getFileName().toString().endsWith(".jar"))
-        .filter(x -> x.getFileName().toString().contains("python"))
-        .findFirst().orElseThrow(() -> new RuntimeException("Unable to locate the python plugin"));
-    }
-  }
-
-  private static ActiveRule trailingCommentRule() {
-    var pythonActiveRule = new ActiveRule("python:S139", "py");
-    pythonActiveRule.setParams(Map.of("legalTrailingCommentPattern", "^#\\s*+[^\\s]++$"));
-    return pythonActiveRule;
-  }
-
-  private static ClientModuleFileSystem aModuleFileSystem() {
-    return new ClientModuleFileSystem() {
-      @Override
-      public Stream<ClientInputFile> files(String suffix, InputFile.Type type) {
-        return Stream.of();
+    blockingSensor.lock.lock();
+    var analysisThread11 = new Thread(() -> {
+      try {
+        analysisEngine.analyze("moduleKey1", AnalysisConfiguration.builder().build(), i -> {
+        }, null, new ProgressMonitor(null));
+      } catch (Exception e) {
+        thrownException11.set(e);
       }
-
-      @Override
-      public Stream<ClientInputFile> files() {
-        return Stream.of();
+    });
+    analysisThread11.start();
+    var analysisThread12 = new Thread(() -> {
+      try {
+        analysisEngine.analyze("moduleKey1", AnalysisConfiguration.builder().build(), i -> {
+        }, null, new ProgressMonitor(null));
+      } catch (Exception e) {
+        thrownException12.set(e);
       }
-    };
+    });
+    analysisThread12.start();
+    var analysisThread2 = new Thread(() -> {
+      try {
+        analysisEngine.analyze("moduleKey2", AnalysisConfiguration.builder().build(), i -> {
+        }, null, new ProgressMonitor(null));
+      } catch (Exception e) {
+        thrownException2.set(e);
+      }
+    });
+    analysisThread2.start();
+
+    // Analysis 11 is executing, while Analysis 12 and Analysis 2 are in the queue
+    await().untilAsserted(() -> assertThat(blockingSensor.beforeLock).isTrue());
+
+    analysisEngine.unregisterModule("moduleKey1");
+    assertThat(blockingSensor.afterLock).isFalse();
+
+    blockingSensor.lock.unlock();
+    await().untilAsserted(() -> assertThat(blockingSensor.afterLock).isTrue());
+
+
+    analysisThread11.join();
+    analysisThread12.join();
+    analysisThread2.join();
+
+    assertThat(thrownException11).hasValueMatching(e -> e instanceof CanceledException);
+    assertThat(thrownException12).hasValueMatching(e -> e instanceof CanceledException);
+    // Analysis 2 has not been cancelled, so the Sensor counter is 2
+    assertThat(thrownException2).hasValue(null);
+    assertThat(blockingSensor.executionCount.get()).isEqualTo(2);
   }
 
-  private static Command<String> waitCommand(long period) {
-    return (moduleRegistry, progressMonitor) -> {
-      pause(period);
-      return "SUCCESS";
-    };
-  }
-
-  private static void pause(long period) {
-    try {
-      Thread.sleep(period);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
-  }
 }
