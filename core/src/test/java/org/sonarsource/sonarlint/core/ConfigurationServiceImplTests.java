@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core;
 
 import com.google.common.eventbus.EventBus;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -63,17 +62,17 @@ class ConfigurationServiceImplTests {
   }
 
   @Test
-  void initialize_empty() throws ExecutionException, InterruptedException {
+  void initialize_empty() {
     assertThat(repository.getConfigScopeIds()).isEmpty();
   }
 
   @Test
-  void get_binding_of_unknown_config_returns_null() throws ExecutionException, InterruptedException {
+  void get_binding_of_unknown_config_returns_null() {
     assertThat(repository.getBindingConfiguration("not_found")).isNull();
   }
 
   @Test
-  void add_configuration_should_post_event() throws ExecutionException, InterruptedException {
+  void add_configuration_should_post_event() {
     underTest.didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(CONFIG_DTO_2)));
 
     assertThat(repository.getConfigScopeIds()).containsOnly("id2");
@@ -87,7 +86,7 @@ class ConfigurationServiceImplTests {
   }
 
   @Test
-  void add_multiple_configurations_should_post_batch_event() throws ExecutionException, InterruptedException {
+  void add_multiple_configurations_should_post_batch_event() {
     underTest.didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(CONFIG_DTO_1, CONFIG_DTO_2)));
 
     assertThat(repository.getConfigScopeIds()).containsOnly("id1", "id2");
@@ -102,7 +101,7 @@ class ConfigurationServiceImplTests {
   }
 
   @Test
-  void add_duplicate_should_log_and_update() throws ExecutionException, InterruptedException {
+  void add_duplicate_should_log_and_update() {
     underTest.didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(CONFIG_DTO_1)));
     assertThat(repository.getBindingConfiguration("id1")).usingRecursiveComparison().isEqualTo(BINDING_DTO_1);
 
@@ -115,7 +114,7 @@ class ConfigurationServiceImplTests {
   }
 
   @Test
-  void remove_configuration() throws ExecutionException, InterruptedException {
+  void remove_configuration() {
     underTest.didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(CONFIG_DTO_1)));
     assertThat(repository.getConfigScopeIds()).containsOnly("id1");
 
@@ -125,7 +124,7 @@ class ConfigurationServiceImplTests {
   }
 
   @Test
-  void remove_unknown_configuration_should_log() throws ExecutionException, InterruptedException {
+  void remove_unknown_configuration_should_log() {
     underTest.didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(CONFIG_DTO_1)));
     assertThat(repository.getConfigScopeIds()).containsOnly("id1");
 
@@ -136,7 +135,7 @@ class ConfigurationServiceImplTests {
   }
 
   @Test
-  void update_binding_config_and_post_event() throws ExecutionException, InterruptedException {
+  void update_binding_config_and_post_event() {
     underTest.didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(CONFIG_DTO_1)));
     assertThat(repository.getBindingConfiguration("id1")).usingRecursiveComparison().isEqualTo(BINDING_DTO_1);
 
@@ -163,7 +162,7 @@ class ConfigurationServiceImplTests {
   }
 
   @Test
-  void update_binding_config_for_unknown_config_scope_should_log() throws ExecutionException, InterruptedException {
+  void update_binding_config_for_unknown_config_scope_should_log() {
     underTest.didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(CONFIG_DTO_1)));
 
     underTest.didUpdateBinding(new DidUpdateBindingParams("id2", BINDING_DTO_2));

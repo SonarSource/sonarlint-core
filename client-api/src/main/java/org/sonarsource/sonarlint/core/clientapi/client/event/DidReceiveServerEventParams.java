@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Client API
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,36 +17,18 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.websocket.events;
+package org.sonarsource.sonarlint.core.clientapi.client.event;
 
 import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 
-public class QualityGateChangedEvent implements ServerEvent {
-  private final String message;
-  private final String link;
-  private final String project;
-  private final String date;
+public class DidReceiveServerEventParams {
+  private final ServerEvent serverEvent;
 
-  public QualityGateChangedEvent(String message, String link, String project, String date) {
-    this.message = message;
-    this.link = link;
-    this.project = project;
-    this.date = date;
+  public DidReceiveServerEventParams(ServerEvent serverEvent) {
+    this.serverEvent = serverEvent;
   }
 
-  public String getMessage() {
-    return message;
-  }
-
-  public String getLink() {
-    return link;
-  }
-
-  public String getProject() {
-    return project;
-  }
-
-  public String getDate() {
-    return date;
+  public ServerEvent getServerEvent() {
+    return serverEvent;
   }
 }

@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection.events;
 
-import org.sonarsource.sonarlint.core.serverapi.push.ServerEvent;
+import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 
 public interface ServerEventHandler<E extends ServerEvent> {
   void handle(E event);

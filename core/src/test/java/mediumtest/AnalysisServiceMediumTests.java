@@ -41,7 +41,7 @@ class AnalysisServiceMediumTests {
   @Test
   void it_should_return_default_supported_file_patterns_in_standalone_mode() throws ExecutionException, InterruptedException {
     backend = newBackend()
-      .withEnabledLanguage(Language.JAVA)
+      .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .build();
 
     var patterns = backend.getAnalysisService().getSupportedFilePatterns(new GetSupportedFilePatternsParams("configScopeId")).get().getPatterns();
@@ -69,7 +69,7 @@ class AnalysisServiceMediumTests {
           projectStorageBuilder.withSetting("sonar.java.file.suffixes", ".foo, .bar");
         })))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "branchName")
-      .withEnabledLanguage(Language.JAVA)
+      .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .build();
 
     var patterns = backend.getAnalysisService().getSupportedFilePatterns(new GetSupportedFilePatternsParams("configScopeId")).get().getPatterns();

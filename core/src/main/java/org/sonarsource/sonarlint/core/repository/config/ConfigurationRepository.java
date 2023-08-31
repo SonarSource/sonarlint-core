@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.repository.config;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -50,10 +51,11 @@ public class ConfigurationRepository {
     return previous;
   }
 
-  public ConfigurationScope remove(String idToRemove) {
-    var removed = configScopePerId.remove(idToRemove);
-    bindingPerConfigScopeId.remove(idToRemove);
-    return removed;
+  @CheckForNull
+  public ConfigurationScopeWithBinding remove(String idToRemove) {
+    var removedScope = configScopePerId.remove(idToRemove);
+    var removeBindingConfiguration = bindingPerConfigScopeId.remove(idToRemove);
+    return removedScope == null ? null : new ConfigurationScopeWithBinding(removedScope, removeBindingConfiguration);
   }
 
   public void updateBinding(String configScopeId, BindingConfiguration bindingConfig) {
@@ -84,7 +86,7 @@ public class ConfigurationRepository {
     }
   }
 
-  private Optional<Binding> getConfiguredBinding(String configScopeId) {
+  public Optional<Binding> getConfiguredBinding(String configScopeId) {
     var bindingConfiguration = bindingPerConfigScopeId.get(configScopeId);
     if (bindingConfiguration != null && bindingConfiguration.isBound()) {
       return Optional.of(new Binding(requireNonNull(bindingConfiguration.getConnectionId()),
@@ -110,6 +112,13 @@ public class ConfigurationRepository {
     return bindingPerConfigScopeId.entrySet().stream()
       .filter(e -> e.getValue().isBoundTo(connectionId, projectKey))
       .map(e -> configScopePerId.get(e.getKey()))
+      .collect(Collectors.toList());
+  }
+
+  public Collection<BoundScope> getBoundScopesByConnection(String connectionId) {
+    return bindingPerConfigScopeId.entrySet().stream()
+      .filter(e -> e.getValue().isBoundToConnection(connectionId))
+      .map(e -> new BoundScope(e.getKey(), connectionId, requireNonNull(e.getValue().getSonarProjectKey())))
       .collect(Collectors.toList());
   }
 

@@ -94,7 +94,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
     if (removed == null) {
       LOG.error("Attempt to remove configuration scope '{}' that was not registered", idToRemove);
     } else {
-      clientEventBus.post(new ConfigurationScopeRemovedEvent(idToRemove));
+      clientEventBus.post(new ConfigurationScopeRemovedEvent(removed.getScope(), removed.getBindingConfiguration()));
     }
   }
 
@@ -121,13 +121,8 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 
   @CheckForNull
   private static BindingConfigChangedEvent createChangedEventIfNeeded(String configScopeId, BindingConfiguration previousBindingConfig, BindingConfiguration newBindingConfig) {
-    var previousConfigForEvent = new BindingConfigChangedEvent.BindingConfig(previousBindingConfig.getConnectionId(),
-      previousBindingConfig.getSonarProjectKey(), previousBindingConfig.isBindingSuggestionDisabled());
-    var newConfigForEvent = new BindingConfigChangedEvent.BindingConfig(newBindingConfig.getConnectionId(),
-      newBindingConfig.getSonarProjectKey(), newBindingConfig.isBindingSuggestionDisabled());
-
-    if (!previousConfigForEvent.equals(newConfigForEvent)) {
-      return new BindingConfigChangedEvent(configScopeId, previousConfigForEvent, newConfigForEvent);
+    if (!previousBindingConfig.equals(newBindingConfig)) {
+      return new BindingConfigChangedEvent(configScopeId, previousBindingConfig, newBindingConfig);
     }
     return null;
   }

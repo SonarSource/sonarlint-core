@@ -19,16 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.event;
 
-import java.util.Objects;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 
 public class BindingConfigChangedEvent {
   private final String configScopeId;
-  private final BindingConfig previousConfig;
-  private final BindingConfig newConfig;
+  private final BindingConfiguration previousConfig;
+  private final BindingConfiguration newConfig;
 
-  public BindingConfigChangedEvent(String configScopeId, BindingConfig previousConfig, BindingConfig newConfig) {
+  public BindingConfigChangedEvent(String configScopeId, BindingConfiguration previousConfig, BindingConfiguration newConfig) {
     this.configScopeId = configScopeId;
     this.previousConfig = previousConfig;
     this.newConfig = newConfig;
@@ -38,57 +36,11 @@ public class BindingConfigChangedEvent {
     return configScopeId;
   }
 
-  public BindingConfig getPreviousConfig() {
+  public BindingConfiguration getPreviousConfig() {
     return previousConfig;
   }
 
-  public BindingConfig getNewConfig() {
+  public BindingConfiguration getNewConfig() {
     return newConfig;
   }
-
-  public static class BindingConfig {
-    private final String connectionId;
-    private final String sonarProjectKey;
-    private final boolean bindingSuggestionDisabled;
-
-    public BindingConfig(@Nullable String connectionId, @Nullable String sonarProjectKey, boolean bindingSuggestionDisabled) {
-      this.connectionId = connectionId;
-      this.sonarProjectKey = sonarProjectKey;
-      this.bindingSuggestionDisabled = bindingSuggestionDisabled;
-    }
-
-    @CheckForNull
-    public String getConnectionId() {
-      return connectionId;
-    }
-
-    @CheckForNull
-    public String getSonarProjectKey() {
-      return sonarProjectKey;
-    }
-
-    public boolean isBindingSuggestionDisabled() {
-      return bindingSuggestionDisabled;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      var that = (BindingConfig) o;
-      return bindingSuggestionDisabled == that.bindingSuggestionDisabled
-        && Objects.equals(connectionId, that.connectionId)
-        && Objects.equals(sonarProjectKey, that.sonarProjectKey);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(connectionId, sonarProjectKey, bindingSuggestionDisabled);
-    }
-  }
-
 }
