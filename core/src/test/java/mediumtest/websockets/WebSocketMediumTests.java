@@ -329,6 +329,25 @@ class WebSocketMediumTests {
         .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
         .containsExactly(tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey\"}"))));
     }
+
+    @Test
+    void should_not_unsubscribe_if_connection_was_already_closed() {
+      startWebSocketServer();
+      backend = newBackend()
+        .withSmartNotifications()
+        .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
+        .withBoundConfigScope("configScope", "connectionId", "projectKey")
+        .build();
+      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", true))));
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).extracting(WebSocketConnection::isOpened).containsExactly(false));
+
+      backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams("configScope"));
+
+      await().pollDelay(Duration.ofMillis(500)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
+        .extracting(WebSocketConnection::isOpened)
+        .containsExactly(false));
+    }
   }
 
   @Nested

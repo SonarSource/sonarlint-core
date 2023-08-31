@@ -197,6 +197,7 @@ public class WebSocketService {
     }
     if (connectionIdsInterestedInNotifications.isEmpty()) {
       closeSocket();
+      subscribedProjectKeysByConfigScopes.clear();
     } else if (connectionIdUsedToCreateConnection.equals(connectionId)) {
       // stop using the credentials, switch to another connection
       var otherConnectionId = connectionIdsInterestedInNotifications.stream().findAny().orElseThrow();
@@ -256,7 +257,7 @@ public class WebSocketService {
 
   private void forget(String configScopeId) {
     var projectKey = subscribedProjectKeysByConfigScopes.remove(configScopeId);
-    if (projectKey != null && !subscribedProjectKeysByConfigScopes.containsValue(projectKey)) {
+    if (projectKey != null && !subscribedProjectKeysByConfigScopes.containsValue(projectKey) && sonarCloudWebSocket != null) {
       sonarCloudWebSocket.unsubscribe(projectKey);
     }
   }
