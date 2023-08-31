@@ -23,20 +23,29 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
 
 class LogOutputDelegator {
 
   /**
+   * Temporary until the actual log is removed from sonar-analyzer-commons
+   * See SLCORE-520
+   */
+  private static final Pattern SKIPPED_MESSAGE_PATTERN = Pattern.compile("^Skipping section '.*?' for rule '.*?', content is empty$");
+  /**
    * In case we can't find a logger in the current Thread hierarchy, fallback on the first ClientLogOutput that has been passed
    */
-  private static AtomicReference<ClientLogOutput> fallback = new AtomicReference<>();
+  private static final AtomicReference<ClientLogOutput> fallback = new AtomicReference<>();
   private final InheritableThreadLocal<ClientLogOutput> target = new InheritableThreadLocal<>();
 
   void log(String formattedMessage, Level level) {
     var output = Optional.ofNullable(target.get()).orElse(fallback.get());
     if (output != null) {
+      if (level == Level.DEBUG && SKIPPED_MESSAGE_PATTERN.matcher(formattedMessage).matches()) {
+        return;
+      }
       output.log(formattedMessage, level);
     }
   }

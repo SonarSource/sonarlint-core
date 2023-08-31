@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -34,7 +35,7 @@ class LogOutputDelegatorTests {
 
   @Test
   void should_not_throw_exception_when_not_set() {
-    delegator.log("asd", Level.DEBUG);
+    assertDoesNotThrow(() -> delegator.log("asd", Level.DEBUG));
   }
 
   @Test
@@ -65,6 +66,14 @@ class LogOutputDelegatorTests {
   void handle_nulls() {
     delegator.setTarget(output);
     delegator.log(null, Level.ERROR, null);
+    verifyNoInteractions(output);
+  }
+
+  @Test
+  void should_not_log_skipped_message() {
+    var messageToSkip = "Skipping section 'introduction' for rule 'S123', content is empty";
+    delegator.setTarget(output);
+    delegator.log(messageToSkip, Level.DEBUG, null);
     verifyNoInteractions(output);
   }
 }
