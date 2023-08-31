@@ -16,12 +16,12 @@ illustrative story}
 ### Considered Options
 
 * {title of option 1}
-    * Pros:
-        * item 1
-        * item 2
-    * Cons:
-        * item 3
-        * item 4
+  * Pros:
+    * item 1
+    * item 2
+  * Cons:
+    * item 3
+    * item 4
 * {title of option 2}
 * … <!-- numbers of options can vary -->
 
