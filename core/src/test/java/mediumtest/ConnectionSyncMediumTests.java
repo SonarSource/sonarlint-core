@@ -58,7 +58,7 @@ class ConnectionSyncMediumTests {
     backend = newBackend()
       .withSonarQubeConnection("connectionId", storage -> storage.withJavaPlugin())
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withEnabledLanguage(Language.JAVA)
+      .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .build(client);
 
     await().untilAsserted(() -> assertThat(logTester.logs()).contains("Binding suggestion computation queued for config scopes 'scopeId'..."));

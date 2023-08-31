@@ -133,7 +133,7 @@ class EffectiveRulesMediumTests {
     backend = newBackend()
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withSonarQubeConnection("connectionId", storage -> storage.withJavaPlugin())
-      .withEnabledLanguage(Language.JAVA)
+      .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .build();
 
     var details = getEffectiveRuleDetails("scopeId", "java:S106");
@@ -290,7 +290,7 @@ class EffectiveRulesMediumTests {
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withEnabledLanguage(Language.PYTHON)
+      .withEnabledLanguageInStandaloneMode(Language.PYTHON)
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
@@ -400,7 +400,7 @@ class EffectiveRulesMediumTests {
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withEnabledLanguage(Language.PYTHON)
+      .withEnabledLanguageInStandaloneMode(Language.PYTHON)
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc")
@@ -476,7 +476,7 @@ class EffectiveRulesMediumTests {
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withEnabledLanguage(Language.PYTHON)
+      .withEnabledLanguageInStandaloneMode(Language.PYTHON)
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc")

@@ -91,8 +91,8 @@ class BindingSuggestionProviderTests {
     when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1));
 
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(
-      CONFIG_SCOPE_ID_1, new BindingConfigChangedEvent.BindingConfig(null, null, true),
-      new BindingConfigChangedEvent.BindingConfig(null, null, false)));
+      CONFIG_SCOPE_ID_1, new BindingConfiguration(null, null, true),
+      new BindingConfiguration(null, null, false)));
 
     assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).contains("Binding suggestion computation queued for config scopes '" + CONFIG_SCOPE_ID_1 + "'...");
   }
@@ -102,8 +102,8 @@ class BindingSuggestionProviderTests {
     when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1));
 
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(
-      CONFIG_SCOPE_ID_1, new BindingConfigChangedEvent.BindingConfig(null, null, false),
-      new BindingConfigChangedEvent.BindingConfig(null, null, true)));
+      CONFIG_SCOPE_ID_1, new BindingConfiguration(null, null, false),
+      new BindingConfiguration(null, null, true)));
 
     assertThat(logTester.logs()).isEmpty();
   }

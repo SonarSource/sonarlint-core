@@ -17,36 +17,23 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.websocket.events;
+package org.sonarsource.sonarlint.core.repository.config;
 
-import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
+public class ConfigurationScopeWithBinding {
 
-public class QualityGateChangedEvent implements ServerEvent {
-  private final String message;
-  private final String link;
-  private final String project;
-  private final String date;
+  private final ConfigurationScope scope;
+  private final BindingConfiguration bindingConfiguration;
 
-  public QualityGateChangedEvent(String message, String link, String project, String date) {
-    this.message = message;
-    this.link = link;
-    this.project = project;
-    this.date = date;
+  public ConfigurationScopeWithBinding(ConfigurationScope scope, BindingConfiguration bindingConfiguration) {
+    this.scope = scope;
+    this.bindingConfiguration = bindingConfiguration;
   }
 
-  public String getMessage() {
-    return message;
+  public ConfigurationScope getScope() {
+    return scope;
   }
 
-  public String getLink() {
-    return link;
-  }
-
-  public String getProject() {
-    return project;
-  }
-
-  public String getDate() {
-    return date;
+  public BindingConfiguration getBindingConfiguration() {
+    return bindingConfiguration;
   }
 }

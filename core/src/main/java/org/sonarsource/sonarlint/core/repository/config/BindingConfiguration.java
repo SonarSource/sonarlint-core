@@ -74,4 +74,23 @@ public class BindingConfiguration {
     return Optional.empty();
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    var that = (BindingConfiguration) o;
+    return bindingSuggestionDisabled == that.bindingSuggestionDisabled
+      && Objects.equals(connectionId, that.connectionId)
+      && Objects.equals(sonarProjectKey, that.sonarProjectKey);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(connectionId, sonarProjectKey, bindingSuggestionDisabled);
+  }
+
 }

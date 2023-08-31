@@ -116,7 +116,7 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspotDetails;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
-import org.sonarsource.sonarlint.core.serverapi.push.ServerEvent;
+import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.TaintVulnerabilityClosedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.TaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
@@ -171,7 +171,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     backend = new SonarLintBackendImpl(newDummySonarLintClient());
     try {
       backend.initialize(
-        new InitializeParams(IT_CLIENT_INFO, new FeatureFlagsDto(false, true, false, false, false), sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
+        new InitializeParams(IT_CLIENT_INFO, new FeatureFlagsDto(false, true, false, false, false, false), sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
           Collections.emptySet(), Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(),
           List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(),
           Map.of()))

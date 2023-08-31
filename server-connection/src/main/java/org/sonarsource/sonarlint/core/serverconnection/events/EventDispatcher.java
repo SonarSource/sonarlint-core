@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.serverapi.push.ServerEvent;
+import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 
 public class EventDispatcher implements ServerEventHandler<ServerEvent> {
   private static final SonarLintLogger LOG = SonarLintLogger.get();

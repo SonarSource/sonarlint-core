@@ -19,14 +19,27 @@
  */
 package org.sonarsource.sonarlint.core.event;
 
-public class ConfigurationScopeRemovedEvent {
-  private final String removedConfigurationScopeId;
+import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 
-  public ConfigurationScopeRemovedEvent(String removedConfigurationScopeId) {
-    this.removedConfigurationScopeId = removedConfigurationScopeId;
+public class ConfigurationScopeRemovedEvent {
+  private final ConfigurationScope removedConfigurationScope;
+  private final BindingConfiguration removedBindingConfiguration;
+
+  public ConfigurationScopeRemovedEvent(ConfigurationScope removedConfigurationScope, BindingConfiguration removedBindingConfiguration) {
+    this.removedConfigurationScope = removedConfigurationScope;
+    this.removedBindingConfiguration = removedBindingConfiguration;
   }
 
   public String getRemovedConfigurationScopeId() {
-    return removedConfigurationScopeId;
+    return removedConfigurationScope.getId();
+  }
+
+  public ConfigurationScope getRemovedConfigurationScope() {
+    return removedConfigurationScope;
+  }
+
+  public BindingConfiguration getRemovedBindingConfiguration() {
+    return removedBindingConfiguration;
   }
 }

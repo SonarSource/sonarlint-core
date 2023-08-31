@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -42,23 +43,7 @@ import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
-import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
-import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
-import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotChangedEvent;
-import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotClosedEvent;
-import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotRaisedEvent;
-import org.sonarsource.sonarlint.core.serverapi.push.ServerEvent;
-import org.sonarsource.sonarlint.core.serverapi.push.TaintVulnerabilityClosedEvent;
-import org.sonarsource.sonarlint.core.serverapi.push.TaintVulnerabilityRaisedEvent;
-import org.sonarsource.sonarlint.core.serverconnection.events.EventDispatcher;
 import org.sonarsource.sonarlint.core.serverconnection.events.ServerEventsAutoSubscriber;
-import org.sonarsource.sonarlint.core.serverconnection.events.hotspot.UpdateStorageOnSecurityHotspotChanged;
-import org.sonarsource.sonarlint.core.serverconnection.events.hotspot.UpdateStorageOnSecurityHotspotClosed;
-import org.sonarsource.sonarlint.core.serverconnection.events.hotspot.UpdateStorageOnSecurityHotspotRaised;
-import org.sonarsource.sonarlint.core.serverconnection.events.issue.UpdateStorageOnIssueChanged;
-import org.sonarsource.sonarlint.core.serverconnection.events.ruleset.UpdateStorageOnRuleSetChanged;
-import org.sonarsource.sonarlint.core.serverconnection.events.taint.UpdateStorageOnTaintVulnerabilityClosed;
-import org.sonarsource.sonarlint.core.serverconnection.events.taint.UpdateStorageOnTaintVulnerabilityRaised;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.prefix.FileTreeMatcher;
@@ -77,7 +62,6 @@ public class ServerConnection {
   private final ServerIssueUpdater issuesUpdater;
   private final ServerHotspotUpdater hotspotsUpdater;
   private final boolean isSonarCloud;
-  private final EventDispatcher coreEventRouter;
   private final ServerInfoSynchronizer serverInfoSynchronizer;
   private final ConnectionStorage storage;
   private final StorageFacade storageFacade;
@@ -99,15 +83,7 @@ public class ServerConnection {
     this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguagesToSync, embeddedPluginKeys, serverInfoSynchronizer, storage);
     this.projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(storage);
     storage.plugins().cleanUp();
-    coreEventRouter = new EventDispatcher()
-      .dispatch(RuleSetChangedEvent.class, new UpdateStorageOnRuleSetChanged(storage))
-      .dispatch(IssueChangedEvent.class, new UpdateStorageOnIssueChanged(storage))
-      .dispatch(TaintVulnerabilityRaisedEvent.class, new UpdateStorageOnTaintVulnerabilityRaised(storage))
-      .dispatch(TaintVulnerabilityClosedEvent.class, new UpdateStorageOnTaintVulnerabilityClosed(storage))
-      .dispatch(SecurityHotspotRaisedEvent.class, new UpdateStorageOnSecurityHotspotRaised(storage))
-      .dispatch(SecurityHotspotChangedEvent.class, new UpdateStorageOnSecurityHotspotChanged(storage))
-      .dispatch(SecurityHotspotClosedEvent.class, new UpdateStorageOnSecurityHotspotClosed(storage));
-    this.serverEventsAutoSubscriber = new ServerEventsAutoSubscriber();
+    this.serverEventsAutoSubscriber = new ServerEventsAutoSubscriber(storage, enabledLanguagesToSync);
   }
 
   public Map<String, Path> getStoredPluginPathsByKey() {
@@ -149,13 +125,8 @@ public class ServerConnection {
   }
 
   public void subscribeForEvents(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, Consumer<ServerEvent> clientEventConsumer, ClientLogOutput clientLogOutput) {
-    serverEventsAutoSubscriber.subscribePermanently(new ServerApi(new ServerApiHelper(endpoint, client)), projectKeys, enabledLanguagesToSync,
-      e -> notifyHandlers(e, clientEventConsumer), clientLogOutput);
-  }
-
-  private void notifyHandlers(ServerEvent serverEvent, Consumer<ServerEvent> clientEventConsumer) {
-    coreEventRouter.handle(serverEvent);
-    clientEventConsumer.accept(serverEvent);
+    serverEventsAutoSubscriber.subscribePermanently(new ServerApi(new ServerApiHelper(endpoint, client)), projectKeys,
+      clientEventConsumer, clientLogOutput);
   }
 
   public ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> ideFilePaths) {

@@ -31,18 +31,24 @@ public class FeatureFlagsDto {
   private final boolean shouldSynchronizeProjects;
   private final boolean shouldManageLocalServer;
   private final boolean enableSecurityHotspots;
+  private final boolean shouldManageServerSentEvents;
 
   public FeatureFlagsDto(boolean shouldManageSmartNotifications, boolean taintVulnerabilitiesEnabled, boolean shouldSynchronizeProjects, boolean shouldManageLocalServer,
-    boolean enableSecurityHotspots) {
+    boolean enableSecurityHotspots, boolean shouldManageServerSentEvents) {
     this.shouldManageSmartNotifications = shouldManageSmartNotifications;
     this.taintVulnerabilitiesEnabled = taintVulnerabilitiesEnabled;
     this.shouldSynchronizeProjects = shouldSynchronizeProjects;
     this.shouldManageLocalServer = shouldManageLocalServer;
     this.enableSecurityHotspots = enableSecurityHotspots;
+    this.shouldManageServerSentEvents = shouldManageServerSentEvents;
   }
 
   public boolean shouldManageSmartNotifications() {
     return shouldManageSmartNotifications;
+  }
+
+  public boolean shouldManageServerSentEvents() {
+    return shouldManageServerSentEvents;
   }
 
   /**

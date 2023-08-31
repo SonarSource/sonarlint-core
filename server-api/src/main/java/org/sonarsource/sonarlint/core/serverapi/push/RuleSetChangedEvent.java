@@ -24,6 +24,7 @@ import java.util.Map;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 
 public class RuleSetChangedEvent implements ServerEvent {
   private final List<String> projectKeys;

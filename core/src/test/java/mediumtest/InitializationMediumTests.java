@@ -52,7 +52,7 @@ class InitializationMediumTests {
       .build();
 
     var future = backend
-      .initialize(new InitializeParams(new ClientInfoDto("name", "productKey", "userAgent"), new FeatureFlagsDto(false, false, false, false, false),
+      .initialize(new InitializeParams(new ClientInfoDto("name", "productKey", "userAgent"), new FeatureFlagsDto(false, false, false, false, false, false),
         Path.of("unused"), Path.of("unused"),
         emptySet(), emptyMap(), emptySet(), emptySet(),
         emptyList(), emptyList(), "home", emptyMap()));

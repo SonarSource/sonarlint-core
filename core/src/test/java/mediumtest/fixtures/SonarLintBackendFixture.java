@@ -64,6 +64,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreating
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.event.DidReceiveServerEventParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FoundFileDto;
@@ -83,6 +84,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.sync.DidSynchronizeConfig
 import org.sonarsource.sonarlint.core.clientapi.common.TokenDto;
 import org.sonarsource.sonarlint.core.clientapi.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 
 import static mediumtest.fixtures.storage.StorageFixture.newStorage;
 
@@ -111,6 +113,7 @@ public class SonarLintBackendFixture {
     private boolean areSecurityHotspotsEnabled;
     private boolean synchronizeProjects;
     private boolean taintVulnerabilitiesEnabled = true;
+    private boolean manageServerSentEvents;
     private String userAgent = "SonarLintBackendFixture";
     private String clientName = "SonarLint Backend Fixture";
 
@@ -182,6 +185,10 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintBackendBuilder withSonarCloudConnection(String connectionId) {
+      return withSonarCloudConnection(connectionId, "orgKey");
+    }
+
     public SonarLintBackendBuilder withSonarCloudConnection(String connectionId, String organizationKey) {
       sonarCloudConnections.add(new SonarCloudConnectionConfigurationDto(connectionId, organizationKey, true));
       return this;
@@ -235,7 +242,7 @@ public class SonarLintBackendFixture {
 
     public SonarLintBackendBuilder withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin plugin) {
       return withStandaloneEmbeddedPlugin(plugin)
-        .withEnabledLanguage(plugin.getLanguage());
+        .withEnabledLanguageInStandaloneMode(plugin.getLanguage());
     }
 
     public SonarLintBackendBuilder withStandaloneEmbeddedPlugin(TestPlugin plugin) {
@@ -246,10 +253,10 @@ public class SonarLintBackendFixture {
     public SonarLintBackendBuilder withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin plugin) {
       this.embeddedPluginPaths.add(plugin.getPath());
       this.connectedModeEmbeddedPluginPathsByKey.put(plugin.getLanguage().getPluginKey(), plugin.getPath());
-      return withEnabledLanguage(plugin.getLanguage());
+      return withEnabledLanguageInStandaloneMode(plugin.getLanguage());
     }
 
-    public SonarLintBackendBuilder withEnabledLanguage(Language language) {
+    public SonarLintBackendBuilder withEnabledLanguageInStandaloneMode(Language language) {
       this.enabledLanguages.add(language);
       return this;
     }
@@ -261,6 +268,11 @@ public class SonarLintBackendFixture {
 
     public SonarLintBackendBuilder withSecurityHotspotsEnabled() {
       this.areSecurityHotspotsEnabled = true;
+      return this;
+    }
+
+    public SonarLintBackendBuilder withServerSentEventsEnabled() {
+      this.manageServerSentEvents = true;
       return this;
     }
 
@@ -311,7 +323,7 @@ public class SonarLintBackendFixture {
       var sonarLintBackend = new SonarLintTestBackend(client);
       client.setBackend(sonarLintBackend);
       var clientInfo = new ClientInfoDto(clientName, "mediumTests", userAgent);
-      var featureFlags = new FeatureFlagsDto(manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, startEmbeddedServer, areSecurityHotspotsEnabled);
+      var featureFlags = new FeatureFlagsDto(manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, startEmbeddedServer, areSecurityHotspotsEnabled, manageServerSentEvents);
       try {
         sonarLintBackend
           .initialize(new InitializeParams(clientInfo, featureFlags,
@@ -422,6 +434,7 @@ public class SonarLintBackendFixture {
     private final ProxyDto proxy;
     private final GetProxyPasswordAuthenticationResponse proxyAuth;
     private final Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId;
+    private final List<ServerEvent> receivedServerEvents = new ArrayList<>();
     private SonarLintBackendImpl backend;
 
     public FakeSonarLintClient(List<FoundFileDto> foundFiles, String clientDescription,
@@ -586,6 +599,15 @@ public class SonarLintBackendFixture {
 
     public Map<String, Collection<HotspotDetailsDto>> getHotspotToShowByConfigScopeId() {
       return hotspotToShowByConfigScopeId;
+    }
+
+    @Override
+    public void didReceiveServerEvent(DidReceiveServerEventParams params) {
+      this.receivedServerEvents.add(params.getServerEvent());
+    }
+
+    public List<ServerEvent> getReceivedServerEvents() {
+      return receivedServerEvents;
     }
 
     private static <T> CompletableFuture<T> canceledFuture() {
