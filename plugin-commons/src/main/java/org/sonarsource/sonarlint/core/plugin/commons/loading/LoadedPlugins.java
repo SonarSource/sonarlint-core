@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.io.FileUtils;
 import org.sonar.api.Plugin;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
@@ -60,6 +59,9 @@ public class LoadedPlugins implements Closeable {
           } catch (IOException e) {
             LOG.error("Failed to close classloader", e);
             exceptions.add(e);
+          } finally {
+            // Ensure that there is no more references relying on this classloader.
+            System.gc();
           }
         }
       }

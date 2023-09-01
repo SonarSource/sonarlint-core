@@ -52,7 +52,7 @@ public class RulesDefinitionExtractor {
       if (repoLanguage.isEmpty() || !enabledLanguages.contains(repoLanguage.get())) {
         continue;
       }
-      for (RulesDefinition.Rule ruleDef : repoDef.rules()) {
+      for (var ruleDef : repoDef.rules()) {
         if (shouldIgnoreAsHotspot(includeSecurityHotspots, ruleDef) || shouldIgnoreAsTemplate(includeTemplateRules, ruleDef)) {
           continue;
         }
