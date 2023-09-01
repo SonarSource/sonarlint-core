@@ -42,7 +42,7 @@ public class VersionSoonUnsupportedHelper {
 
   private static final String UNSUPPORTED_NOTIFICATION_ID = "sonarlint.unsupported.%s.id";
   private static final String NOTIFICATION_MESSAGE = "The version used by the current connection '%s' will be soon unsupported. " +
-    "Please consider upgrading to the latest %s LTS version to ensure continued support and access to the latest functionalities.";
+    "Please consider upgrading to the latest %s LTS version to ensure continued support and access to the latest features.";
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final SonarLintClient client;
   private final ConfigurationRepository configRepository;
