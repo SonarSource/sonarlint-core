@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.plugin.commons.loading;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -29,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import org.sonar.api.Plugin;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.springframework.core.annotation.OrderUtils;
+import org.springframework.util.ReflectionUtils;
 
 public class LoadedPlugins implements Closeable {
 
@@ -51,22 +54,44 @@ public class LoadedPlugins implements Closeable {
   @Override
   public void close() throws IOException {
     var exceptions = new ArrayList<IOException>();
+    pluginInstancesByKeys.clear();
     synchronized (classloadersToClose) {
       for (var classLoader : classloadersToClose) {
+        try {
+          Class classRealm = Class.forName("org.sonar.classloader.ClassRealm");
+          if (classRealm.isInstance(classLoader)) {
+            Field refs = classLoader.getClass().getDeclaredField("siblingRefs");
+            refs.setAccessible(true);
+            List l = (List) refs.get(classLoader);
+            l.clear();
+          }
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
         if (classLoader instanceof Closeable) {
           try {
             ((Closeable) classLoader).close();
           } catch (IOException e) {
             LOG.error("Failed to close classloader", e);
             exceptions.add(e);
-          } finally {
-            // Ensure that there is no more references relying on this classloader.
-            System.gc();
           }
         }
       }
       classloadersToClose.clear();
     }
+    ReflectionUtils.clearCache();
+    try {
+      var orderCacheField = OrderUtils.class.getDeclaredField("orderCache");
+      orderCacheField.setAccessible(true);
+      Map orderCahce = (Map) orderCacheField.get(OrderUtils.class);
+      orderCahce.clear();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+
+
+    System.gc();
+
     synchronized (filesToDelete) {
       for (var fileToDelete : filesToDelete) {
         try {
