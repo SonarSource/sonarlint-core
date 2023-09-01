@@ -96,7 +96,7 @@ class AnalysisEngineRealPluginMediumTests {
       .setBaseDir(baseDir)
       .build();
     List<Issue> issues = new ArrayList<>();
-    analysisEngine.analyze(null, analysisConfig, issues::add, null, progressMonitor);
+    analysisEngine.analyze(null, analysisConfig, issues::add, null, progressMonitor).get();
     assertThat(issues)
       .extracting("ruleKey", "message", "inputFile", "flows", "quickFixes", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
       .containsOnly(tuple("python:S139", "Move this trailing comment on the previous empty line.", inputFile, List.of(), List.of(), 2, 9, 2, 27));
@@ -115,7 +115,7 @@ class AnalysisEngineRealPluginMediumTests {
       .build();
     List<Issue> issues = new ArrayList<>();
     analysisEngine.registerModule(new ClientModuleInfo("moduleKey", anEmptyClientFileSystem()));
-    analysisEngine.analyze("moduleKey", analysisConfig, issues::add, null, progressMonitor);
+    analysisEngine.analyze("moduleKey", analysisConfig, issues::add, null, progressMonitor).get();
     assertThat(issues)
       .extracting("ruleKey", "message", "inputFile", "flows", "quickFixes", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
       .containsOnly(tuple("python:S139", "Move this trailing comment on the previous empty line.", inputFile, List.of(), List.of(), 2, 9, 2, 27));

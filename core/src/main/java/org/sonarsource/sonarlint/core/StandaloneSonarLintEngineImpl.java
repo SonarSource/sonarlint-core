@@ -25,6 +25,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -42,7 +44,9 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConf
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
+import org.sonarsource.sonarlint.core.commons.SonarLintException;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.progress.CanceledException;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoadResult;
@@ -113,14 +117,24 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
       .setBaseDir(configuration.baseDir())
       .build();
 
-    return getAnalysisEngine().analyze(configuration.moduleKey(), analysisConfig,
-      i -> issueListener.handle(new DefaultClientIssue(i, allRulesDefinitionsByKey.get(i.getRuleKey()))),
-      logOutput, new ProgressMonitor(monitor));
+    try {
+      return getAnalysisEngine().analyze(configuration.moduleKey(), analysisConfig,
+        i -> issueListener.handle(new DefaultClientIssue(i, allRulesDefinitionsByKey.get(i.getRuleKey()))),
+        logOutput, new ProgressMonitor(monitor)).get();
+    } catch (ExecutionException e) {
+      throw new SonarLintException("Error while running an analysis", e.getCause());
+    } catch (CancellationException e) {
+      LOG.debug("Analysis was cancelled", e);
+      throw new CanceledException();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SonarLintException("Interrupted!", e);
+    }
   }
 
   private Collection<ActiveRule> identifyActiveRules(StandaloneAnalysisConfiguration configuration) {
-    Set<String> excludedRules = configuration.excludedRules().stream().map(RuleKey::toString).collect(toSet());
-    Set<String> includedRules = configuration.includedRules().stream().map(RuleKey::toString)
+    var excludedRules = configuration.excludedRules().stream().map(RuleKey::toString).collect(toSet());
+    var includedRules = configuration.includedRules().stream().map(RuleKey::toString)
       .filter(r -> !excludedRules.contains(r))
       .collect(toSet());
 
@@ -149,7 +163,7 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
       if (excludedRules.contains(r.getKey())) {
         return false;
       }
-      for (String deprecatedKey : r.getDeprecatedKeys()) {
+      for (var deprecatedKey : r.getDeprecatedKeys()) {
         if (excludedRules.contains(deprecatedKey)) {
           LOG.warn("Rule '{}' was excluded using its deprecated key '{}'. Please fix your configuration.", r.getKey(), deprecatedKey);
           return false;
@@ -164,7 +178,7 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
       if (includedRules.contains(r.getKey())) {
         return true;
       }
-      for (String deprecatedKey : r.getDeprecatedKeys()) {
+      for (var deprecatedKey : r.getDeprecatedKeys()) {
         if (includedRules.contains(deprecatedKey)) {
           LOG.warn("Rule '{}' was included using its deprecated key '{}'. Please fix your configuration.", r.getKey(), deprecatedKey);
           return true;

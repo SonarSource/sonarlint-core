@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -46,10 +45,8 @@ import org.sonarsource.sonarlint.core.analysis.container.global.GlobalAnalysisCo
 import org.sonarsource.sonarlint.core.analysis.container.global.GlobalExtensionContainer;
 import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
-import org.sonarsource.sonarlint.core.commons.SonarLintException;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.CanceledException;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.LoadedPlugins;
 
@@ -141,24 +138,15 @@ public class AnalysisEngine {
   /**
    * @throws CancellationException if progressMonitor is cancelled
    */
-  public AnalysisResults analyze(@Nullable Object moduleKey, AnalysisConfiguration configuration, Consumer<Issue> issueListener, @Nullable ClientLogOutput logOutput,
+  public CompletableFuture<AnalysisResults> analyze(@Nullable Object moduleKey, AnalysisConfiguration configuration, Consumer<Issue> issueListener,
+    @Nullable ClientLogOutput logOutput,
     ProgressMonitor progressMonitor) {
     ModuleContainer moduleContainer = null;
     if (moduleKey != null) {
       moduleContainer = getModuleContainerOrFail(moduleKey);
     }
     var analyzeCommand = new AnalyzeCommand(getModuleRegistry(), moduleContainer, configuration, issueListener, logOutput);
-    try {
-      return post(analyzeCommand, progressMonitor).get();
-    } catch (ExecutionException e) {
-      throw new SonarLintException("Error while running an analysis", e.getCause());
-    } catch (CancellationException e) {
-      LOG.debug("Analysis was cancelled", e);
-      throw new CanceledException();
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new SonarLintException("Interrupted!", e);
-    }
+    return post(analyzeCommand, progressMonitor);
   }
 
   private ModuleContainer getModuleContainerOrFail(Object moduleKey) {

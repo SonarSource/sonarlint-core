@@ -28,7 +28,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -61,8 +63,10 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
+import org.sonarsource.sonarlint.core.commons.SonarLintException;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.progress.CanceledException;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClient;
@@ -228,8 +232,18 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
 
     var analysisConfiguration = analysisConfigBuilder.build();
 
-    return getAnalysisEngine().analyze(configuration.moduleKey(), analysisConfiguration, issue -> streamIssue(issueListener, issue, activeRulesContext), logOutput,
-      new ProgressMonitor(monitor));
+    try {
+      return getAnalysisEngine().analyze(configuration.moduleKey(), analysisConfiguration, issue -> streamIssue(issueListener, issue, activeRulesContext), logOutput,
+        new ProgressMonitor(monitor)).get();
+    } catch (ExecutionException e) {
+      throw new SonarLintException("Error while running an analysis", e.getCause());
+    } catch (CancellationException e) {
+      LOG.debug("Analysis was cancelled", e);
+      throw new CanceledException();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SonarLintException("Interrupted!", e);
+    }
   }
 
   private void streamIssue(IssueListener issueListener, Issue newIssue, ActiveRulesContext activeRulesContext) {

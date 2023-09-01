@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.analysis.command;
 
 import javax.annotation.CheckForNull;
-import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 

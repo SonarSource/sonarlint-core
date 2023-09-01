@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -45,6 +46,7 @@ import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.analysis.AnalysisEngine;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.commons.Language;
@@ -216,28 +218,11 @@ class AnalysisEngineFakePluginMediumTests {
     analysisEngine.registerModule(new ClientModuleInfo("moduleKey1", anEmptyClientFileSystem()));
     analysisEngine.registerModule(new ClientModuleInfo("moduleKey2", anEmptyClientFileSystem()));
 
-    var thrownException1 = new AtomicReference<Exception>();
-    var thrownException2 = new AtomicReference<Exception>();
-
     blockingSensor.lock.lock();
-    var analysisThread1 = new Thread(() -> {
-      try {
-        analysisEngine.analyze("moduleKey1", AnalysisConfiguration.builder().build(), i -> {
-        }, null, new ProgressMonitor(null));
-      } catch (Exception e) {
-        thrownException1.set(e);
-      }
-    });
-    analysisThread1.start();
-    var analysisThread2 = new Thread(() -> {
-      try {
-        analysisEngine.analyze("moduleKey2", AnalysisConfiguration.builder().build(), i -> {
-        }, null, new ProgressMonitor(null));
-      } catch (Exception e) {
-        thrownException2.set(e);
-      }
-    });
-    analysisThread2.start();
+    var module1Future = analysisEngine.analyze("moduleKey1", AnalysisConfiguration.builder().build(), i -> {
+    }, null, new ProgressMonitor(null));
+    var module2Future = analysisEngine.analyze("moduleKey2", AnalysisConfiguration.builder().build(), i -> {
+    }, null, new ProgressMonitor(null));
 
     // Analysis 1 is executing, while Analysis 2 is in the queue
     await().untilAsserted(() -> assertThat(blockingSensor.beforeLock).isTrue());
@@ -250,11 +235,11 @@ class AnalysisEngineFakePluginMediumTests {
 
     assertThat(blockingSensor.cancelled).isTrue();
 
-    analysisThread1.join();
-    analysisThread2.join();
+    await().until(module1Future::isDone);
+    await().until(module2Future::isDone);
 
-    assertThat(thrownException1).hasValueMatching(e -> e instanceof CanceledException);
-    assertThat(thrownException2).hasValueMatching(e -> e instanceof CanceledException);
+    assertThat(module1Future).isCancelled();
+    assertThat(module2Future).isCancelled();
     assertThat(blockingSensor.executionCount.get()).isEqualTo(1);
   }
 
@@ -263,43 +248,17 @@ class AnalysisEngineFakePluginMediumTests {
     analysisEngine.registerModule(new ClientModuleInfo("moduleKey1", anEmptyClientFileSystem()));
     analysisEngine.registerModule(new ClientModuleInfo("moduleKey2", anEmptyClientFileSystem()));
 
-    var thrownException11 = new AtomicReference<Exception>();
-    var thrownException12 = new AtomicReference<Exception>();
-    var thrownException2 = new AtomicReference<Exception>();
-
     blockingSensor.lock.lock();
-    var analysisThread11 = new Thread(() -> {
-      try {
-        analysisEngine.analyze("moduleKey1", AnalysisConfiguration.builder().build(), i -> {
-        }, null, new ProgressMonitor(null));
-      } catch (Exception e) {
-        thrownException11.set(e);
-      }
-    }, "Analysis 1-1");
-    analysisThread11.start();
 
-    // Wait for analysis 11 to be executing, before putting Analysis 12 and Analysis 2 in the queue
+    var module11Future = analysisEngine.analyze("moduleKey1", AnalysisConfiguration.builder().build(), i -> {
+    }, null, new ProgressMonitor(null));
+    var module12Future = analysisEngine.analyze("moduleKey1", AnalysisConfiguration.builder().build(), i -> {
+    }, null, new ProgressMonitor(null));
+    var module2Future = analysisEngine.analyze("moduleKey2", AnalysisConfiguration.builder().build(), i -> {
+    }, null, new ProgressMonitor(null));
+
+    // Wait for analysis 11 to be executing
     await().untilAsserted(() -> assertThat(blockingSensor.beforeLock).isTrue());
-
-    var analysisThread12 = new Thread(() -> {
-      try {
-        analysisEngine.analyze("moduleKey1", AnalysisConfiguration.builder().build(), i -> {
-        }, null, new ProgressMonitor(null));
-      } catch (Exception e) {
-        thrownException12.set(e);
-      }
-    }, "Analysis 1-2");
-    analysisThread12.start();
-    var analysisThread2 = new Thread(() -> {
-      try {
-        analysisEngine.analyze("moduleKey2", AnalysisConfiguration.builder().build(), i -> {
-        }, null, new ProgressMonitor(null));
-      } catch (Exception e) {
-        thrownException2.set(e);
-      }
-    }, "Analysis 2");
-    analysisThread2.start();
-
 
     analysisEngine.unregisterModule("moduleKey1");
     assertThat(blockingSensor.afterLock).isFalse();
@@ -307,15 +266,14 @@ class AnalysisEngineFakePluginMediumTests {
     blockingSensor.lock.unlock();
     await().untilAsserted(() -> assertThat(blockingSensor.afterLock).isTrue());
 
+    await().until(module11Future::isDone);
+    await().until(module12Future::isDone);
+    await().until(module2Future::isDone);
 
-    analysisThread11.join();
-    analysisThread12.join();
-    analysisThread2.join();
-
-    assertThat(thrownException11).hasValueMatching(e -> e instanceof CanceledException);
-    assertThat(thrownException12).hasValueMatching(e -> e instanceof CanceledException);
+    assertThat(module11Future).isCancelled();
+    assertThat(module12Future).isCancelled();
     // Analysis 2 has not been cancelled, so the Sensor counter is 2
-    assertThat(thrownException2).hasValue(null);
+    assertThat(module2Future).isCompleted();
     assertThat(blockingSensor.executionCount.get()).isEqualTo(2);
   }
 
