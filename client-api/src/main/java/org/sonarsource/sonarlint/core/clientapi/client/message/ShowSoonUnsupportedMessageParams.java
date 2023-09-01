@@ -24,7 +24,7 @@ import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 /**
  * The one-time message contains the following elements:
  * <ul>
- *   <li>A notification ID used by the client to remember that this specific notification has been already seen</li>
+ *   <li>A notification ID per connection ID used by the client to remember that this specific notification has been already seen</li>
  *   <li>A configuration scope ID to know where the notification should be displayed</li>
  *   <li>A message type</li>
  *   <li>The text to be displayed</li>
@@ -36,7 +36,7 @@ import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
  *   <li>"INFO"</li>
  * </ul>
  */
-public class ShowOneTimeMessageParams {
+public class ShowSoonUnsupportedMessageParams {
 
   @NonNull
   private final String notificationId;
@@ -47,7 +47,7 @@ public class ShowOneTimeMessageParams {
   @NonNull
   private final String text;
 
-  public ShowOneTimeMessageParams(@NonNull String notificationId, @NonNull String configurationScopeId, @NonNull MessageType type, @NonNull String text) {
+  public ShowSoonUnsupportedMessageParams(@NonNull String notificationId, @NonNull String configurationScopeId, @NonNull MessageType type, @NonNull String text) {
     this.notificationId = notificationId;
     this.configurationScopeId = configurationScopeId;
     this.type = type;

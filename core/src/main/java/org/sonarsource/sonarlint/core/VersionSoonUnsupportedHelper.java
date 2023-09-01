@@ -25,7 +25,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.client.message.MessageType;
-import org.sonarsource.sonarlint.core.clientapi.client.message.ShowOneTimeMessageParams;
+import org.sonarsource.sonarlint.core.clientapi.client.message.ShowSoonUnsupportedMessageParams;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -91,8 +91,8 @@ public class VersionSoonUnsupportedHelper {
           .thenApply(VersionUtils::isVersionSupportedDuringGracePeriod)
           .thenAccept(isSupported -> {
             if (Boolean.TRUE.equals(isSupported)) {
-              client.showOneTimeMessage(
-                new ShowOneTimeMessageParams(
+              client.showSoonUnsupportedMessage(
+                new ShowSoonUnsupportedMessageParams(
                   String.format(UNSUPPORTED_NOTIFICATION_ID, connectionId),
                   configScopeId,
                   MessageType.WARNING,

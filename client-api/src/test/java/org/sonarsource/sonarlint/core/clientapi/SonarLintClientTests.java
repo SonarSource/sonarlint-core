@@ -50,7 +50,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.http.GetProxyPasswordAuth
 import org.sonarsource.sonarlint.core.clientapi.client.http.ProxyDto;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
-import org.sonarsource.sonarlint.core.clientapi.client.message.ShowOneTimeMessageParams;
+import org.sonarsource.sonarlint.core.clientapi.client.message.ShowSoonUnsupportedMessageParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
@@ -163,7 +163,7 @@ class SonarLintClientTests {
     }
 
     @Override
-    public void showOneTimeMessage(ShowOneTimeMessageParams params) {
+    public void showSoonUnsupportedMessage(ShowSoonUnsupportedMessageParams params) {
 
     }
 
