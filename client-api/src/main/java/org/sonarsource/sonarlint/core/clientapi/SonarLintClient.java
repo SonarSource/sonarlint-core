@@ -52,6 +52,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.info.GetClientInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
+import org.sonarsource.sonarlint.core.clientapi.client.message.ShowOneTimeMessageParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
@@ -74,6 +75,14 @@ public interface SonarLintClient {
    */
   @JsonNotification
   void showMessage(ShowMessageParams params);
+
+  /**
+   * Display a one-time message to the user, usually in a small notification.
+   * The message is informative and does not imply applying an action.
+   * The one-time mechanism should be handled on the client side
+   */
+  @JsonNotification
+  void showOneTimeMessage(ShowOneTimeMessageParams params);
 
   @JsonNotification
   void showSmartNotification(ShowSmartNotificationParams params);
