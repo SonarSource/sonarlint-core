@@ -48,9 +48,12 @@ import static org.mockito.Mockito.when;
 class VersionSoonUnsupportedHelperTests {
 
   private static final String CONFIG_SCOPE_ID = "configScopeId";
+  private static final String CONFIG_SCOPE_ID_2 = "configScopeId2";
   private static final String SQ_CONNECTION_ID = "sqConnectionId";
+  private static final String SQ_CONNECTION_ID_2 = "sqConnectionId2";
   private static final String SC_CONNECTION_ID = "scConnectionId";
   private static final SonarQubeConnectionConfiguration SQ_CONNECTION = new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID, "https://mysonarqube.com", true);
+  private static final SonarQubeConnectionConfiguration SQ_CONNECTION_2 = new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_2, "https://mysonarqube2.com", true);
   private static final SonarCloudConnectionConfiguration SC_CONNECTION = new SonarCloudConnectionConfiguration(SC_CONNECTION_ID, "https://sonarcloud.com", true);
 
   private final SonarLintClient client = mock(SonarLintClient.class);
@@ -72,8 +75,9 @@ class VersionSoonUnsupportedHelperTests {
 
   @Test
   void should_trigger_notification_when_new_binding_to_previous_lts_detected_on_config_scope_event() {
-    configRepository.addOrReplace(new ConfigurationScope(CONFIG_SCOPE_ID, null, false, ""),
-      new BindingConfiguration(SQ_CONNECTION_ID, "", true));
+    var bindingConfiguration = new BindingConfiguration(SQ_CONNECTION_ID, "", true);
+    configRepository.addOrReplace(new ConfigurationScope(CONFIG_SCOPE_ID, null, false, ""), bindingConfiguration);
+    configRepository.addOrReplace(new ConfigurationScope(CONFIG_SCOPE_ID_2, null, false, ""), bindingConfiguration);
     connectionRepository.addOrReplace(SQ_CONNECTION);
     var systemApi = mock(SystemApi.class);
     when(systemApi.getStatus()).thenReturn(CompletableFuture.completedFuture(new ServerInfo("", "", VersionUtils.getPreviousLts().getName())));
@@ -81,9 +85,32 @@ class VersionSoonUnsupportedHelperTests {
     when(serverApi.system()).thenReturn(systemApi);
     when(serverApiProvider.getServerApi(SQ_CONNECTION_ID)).thenReturn(Optional.of(serverApi));
 
-    underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID)));
+    underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID, CONFIG_SCOPE_ID_2)));
 
     assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).contains("Connection ID '" + SQ_CONNECTION_ID + "' is detected to be soon unsupported");
+    assertThat(logTester.logs().size()).isEqualTo(1);
+  }
+
+  @Test
+  void should_trigger_multiple_notification_when_new_bindings_to_previous_lts_detected_on_config_scope_event() {
+    var bindingConfiguration = new BindingConfiguration(SQ_CONNECTION_ID, "", true);
+    var bindingConfiguration2 = new BindingConfiguration(SQ_CONNECTION_ID_2, "", true);
+    configRepository.addOrReplace(new ConfigurationScope(CONFIG_SCOPE_ID, null, false, ""), bindingConfiguration);
+    configRepository.addOrReplace(new ConfigurationScope(CONFIG_SCOPE_ID_2, null, false, ""), bindingConfiguration2);
+    connectionRepository.addOrReplace(SQ_CONNECTION);
+    connectionRepository.addOrReplace(SQ_CONNECTION_2);
+    var systemApi = mock(SystemApi.class);
+    when(systemApi.getStatus()).thenReturn(CompletableFuture.completedFuture(new ServerInfo("", "", VersionUtils.getPreviousLts().getName())));
+    var serverApi = mock(ServerApi.class);
+    when(serverApi.system()).thenReturn(systemApi);
+    when(serverApiProvider.getServerApi(SQ_CONNECTION_ID)).thenReturn(Optional.of(serverApi));
+    when(serverApiProvider.getServerApi(SQ_CONNECTION_ID_2)).thenReturn(Optional.of(serverApi));
+
+    underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID, CONFIG_SCOPE_ID_2)));
+
+    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).contains("Connection ID '" + SQ_CONNECTION_ID + "' is detected to be soon unsupported");
+    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).contains("Connection ID '" + SQ_CONNECTION_ID_2 + "' is detected to be soon unsupported");
+    assertThat(logTester.logs().size()).isEqualTo(2);
   }
 
   @Test

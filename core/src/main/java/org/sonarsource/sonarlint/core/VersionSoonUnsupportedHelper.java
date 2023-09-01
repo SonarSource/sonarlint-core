@@ -20,7 +20,11 @@
 package org.sonarsource.sonarlint.core;
 
 import com.google.common.eventbus.Subscribe;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
@@ -60,7 +64,7 @@ public class VersionSoonUnsupportedHelper {
   @Subscribe
   public void configurationScopesAdded(ConfigurationScopesAddedEvent event) {
     var configScopeIds = event.getAddedConfigurationScopeIds();
-    notifyIfSoonUnsupported(configScopeIds);
+    checkIfSoonUnsupported(configScopeIds);
   }
 
   @Subscribe
@@ -68,21 +72,23 @@ public class VersionSoonUnsupportedHelper {
     var configScopeId = event.getConfigScopeId();
     var connectionId = event.getNewConfig().getConnectionId();
     if (connectionId != null) {
-      notifyIfSoonUnsupported(configScopeId, connectionId);
+      checkIfSoonUnsupported(configScopeId, connectionId);
     }
   }
 
-  private void notifyIfSoonUnsupported(Set<String> configScopeIds) {
+  private void checkIfSoonUnsupported(Set<String> configScopeIds) {
+    var connectionsPerConfigScopeId = new HashMap<String, String>();
     configScopeIds.forEach(configScopeId -> {
       var effectiveBinding = configRepository.getEffectiveBinding(configScopeId);
       if (effectiveBinding.isPresent()) {
         var connectionId = effectiveBinding.get().getConnectionId();
-        notifyIfSoonUnsupported(configScopeId, connectionId);
+        connectionsPerConfigScopeId.putIfAbsent(connectionId, configScopeId);
       }
     });
+    connectionsPerConfigScopeId.forEach((key, value) -> checkIfSoonUnsupported(value, key));
   }
 
-  private void notifyIfSoonUnsupported(String configScopeId, String connectionId) {
+  private void checkIfSoonUnsupported(String configScopeId, String connectionId) {
     var connection = connectionRepository.getConnectionById(connectionId);
     if (connection != null && connection.getKind() == ConnectionKind.SONARQUBE) {
       serverApiProvider.getServerApi(connectionId).ifPresent(serverApi -> serverApi.system().getStatus()
@@ -103,7 +109,7 @@ public class VersionSoonUnsupportedHelper {
             }
           })
         .exceptionally(error -> {
-          LOG.error("Could not verify the version used by the current connection, cause:", error);
+          LOG.error(String.format("Could not verify the version used by the current connection ID '%s', cause:", connectionId), error);
           return null;
         })
       );
