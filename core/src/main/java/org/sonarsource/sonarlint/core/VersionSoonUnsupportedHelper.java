@@ -21,10 +21,7 @@ package org.sonarsource.sonarlint.core;
 
 import com.google.common.eventbus.Subscribe;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
@@ -44,8 +41,8 @@ import org.sonarsource.sonarlint.core.serverconnection.VersionUtils;
 @Singleton
 public class VersionSoonUnsupportedHelper {
 
-  private static final String UNSUPPORTED_NOTIFICATION_ID = "sonarlint.unsupported.%s.id";
-  private static final String NOTIFICATION_MESSAGE = "The version used by the current connection '%s' will be soon unsupported. " +
+  private static final String UNSUPPORTED_NOTIFICATION_ID = "sonarlint.unsupported.%s.%s.id";
+  private static final String NOTIFICATION_MESSAGE = "The version '%s' used by the current connection '%s' will be soon unsupported. " +
     "Please consider upgrading to the latest %s LTS version to ensure continued support and access to the latest features.";
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final SonarLintClient client;
@@ -94,18 +91,18 @@ public class VersionSoonUnsupportedHelper {
       serverApiProvider.getServerApi(connectionId).ifPresent(serverApi -> serverApi.system().getStatus()
           .thenApply(ServerInfo::getVersion)
           .thenApply(Version::create)
-          .thenApply(VersionUtils::isVersionSupportedDuringGracePeriod)
-          .thenAccept(isSupported -> {
-            if (Boolean.TRUE.equals(isSupported)) {
+          .thenAccept(version -> {
+            if (VersionUtils.isVersionSupportedDuringGracePeriod(version)) {
               client.showSoonUnsupportedMessage(
                 new ShowSoonUnsupportedMessageParams(
-                  String.format(UNSUPPORTED_NOTIFICATION_ID, connectionId),
+                  String.format(UNSUPPORTED_NOTIFICATION_ID, connectionId, version.getName()),
                   configScopeId,
                   MessageType.WARNING,
-                  String.format(NOTIFICATION_MESSAGE, connectionId, VersionUtils.getCurrentLts())
+                  String.format(NOTIFICATION_MESSAGE, version.getName(), connectionId, VersionUtils.getCurrentLts())
                 )
               );
-              LOG.debug(String.format("Connection ID '%s' is detected to be soon unsupported", connection.getConnectionId()));
+              LOG.debug(String.format("Connection ID '%s' with version '%s' is detected to be soon unsupported",
+                connection.getConnectionId(), version.getName()));
             }
           })
         .exceptionally(error -> {

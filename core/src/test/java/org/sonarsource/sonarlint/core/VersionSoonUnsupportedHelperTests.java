@@ -87,8 +87,9 @@ class VersionSoonUnsupportedHelperTests {
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID, CONFIG_SCOPE_ID_2)));
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).contains("Connection ID '" + SQ_CONNECTION_ID + "' is detected to be soon unsupported");
-    assertThat(logTester.logs().size()).isEqualTo(1);
+    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
+      .contains("Connection ID '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getPreviousLts().getName() + "' is detected to be soon unsupported");
+    assertThat(logTester.logs()).hasSize(1);
   }
 
   @Test
@@ -108,9 +109,11 @@ class VersionSoonUnsupportedHelperTests {
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID, CONFIG_SCOPE_ID_2)));
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).contains("Connection ID '" + SQ_CONNECTION_ID + "' is detected to be soon unsupported");
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).contains("Connection ID '" + SQ_CONNECTION_ID_2 + "' is detected to be soon unsupported");
-    assertThat(logTester.logs().size()).isEqualTo(2);
+    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
+      .contains("Connection ID '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getPreviousLts().getName() + "' is detected to be soon unsupported");
+    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
+      .contains("Connection ID '" + SQ_CONNECTION_ID_2 + "' with version '" + VersionUtils.getPreviousLts().getName() + "' is detected to be soon unsupported");
+    assertThat(logTester.logs()).hasSize(2);
   }
 
   @Test
@@ -132,7 +135,8 @@ class VersionSoonUnsupportedHelperTests {
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID, null,
       new BindingConfigChangedEvent.BindingConfig(SQ_CONNECTION_ID, "", false)));
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).contains("Connection ID '" + SQ_CONNECTION_ID + "' is detected to be soon unsupported");
+    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
+      .contains("Connection ID '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getPreviousLts().getName() + "' is detected to be soon unsupported");
   }
 
   @Test
@@ -147,7 +151,8 @@ class VersionSoonUnsupportedHelperTests {
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID, null,
       new BindingConfigChangedEvent.BindingConfig(SQ_CONNECTION_ID, "", false)));
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).contains("Connection ID '" + SQ_CONNECTION_ID + "' is detected to be soon unsupported");
+    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
+      .contains("Connection ID '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getPreviousLts().getName() + ".9' is detected to be soon unsupported");
   }
 
   @Test
