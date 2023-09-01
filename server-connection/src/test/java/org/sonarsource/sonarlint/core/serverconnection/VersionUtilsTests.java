@@ -24,7 +24,7 @@ import org.sonarsource.sonarlint.core.commons.Version;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.serverconnection.VersionUtils.getCurrentLts;
-import static org.sonarsource.sonarlint.core.serverconnection.VersionUtils.getPreviousLts;
+import static org.sonarsource.sonarlint.core.serverconnection.VersionUtils.getMinimalSupportedVersion;
 
 class VersionUtilsTests {
 
@@ -44,13 +44,13 @@ class VersionUtilsTests {
 
   @Test
   void grace_period_should_be_false_if_connected_outdated_version() {
-    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(Version.create("7.9"))).isFalse();
+    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(Version.create("5.9"))).isFalse();
   }
 
   @Test
   void grace_period_should_be_true_if_connected_during_grace_period() {
-    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(getPreviousLts())).isTrue();
-    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(Version.create(getPreviousLts().getName() + ".1"))).isTrue();
+    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(getMinimalSupportedVersion())).isTrue();
+    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(Version.create(getMinimalSupportedVersion().getName() + ".1"))).isTrue();
   }
 
 }
