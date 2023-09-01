@@ -35,11 +35,13 @@ import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.ChangeHotspotSta
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.hotspot.HotspotStatusChangeException;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static mediumtest.fixtures.ServerFixture.ServerStatus.DOWN;
 import static mediumtest.fixtures.ServerFixture.newSonarCloudServer;
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.waitAtMost;
 
 class HotspotStatusChangeMediumTests {
   @TempDir
@@ -137,16 +139,18 @@ class HotspotStatusChangeMediumTests {
     var response = setStatusToSafe("configScopeId", "hotspotKey");
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    var lastRequest = server.lastRequest();
-    assertThat(lastRequest.getPath()).isEqualTo("/api/hotspots/change_status");
-    assertThat(lastRequest.getHeader("Content-Type")).isEqualTo("application/x-www-form-urlencoded");
-    assertThat(lastRequest.getBody().readString(StandardCharsets.UTF_8)).isEqualTo("hotspot=hotspotKey&status=REVIEWED&resolution=SAFE");
+    waitAtMost(2, SECONDS).untilAsserted(() -> {
+      var lastRequest = server.lastRequest();
+      assertThat(lastRequest.getPath()).isEqualTo("/api/hotspots/change_status");
+      assertThat(lastRequest.getHeader("Content-Type")).isEqualTo("application/x-www-form-urlencoded");
+      assertThat(lastRequest.getBody().readString(StandardCharsets.UTF_8)).isEqualTo("hotspot=hotspotKey&status=REVIEWED&resolution=SAFE");
+    });
   }
 
   @Test
   @Disabled("TODO")
   void it_should_update_the_hotspot_status_in_the_storage() {
-//    newStorage("connectionId").withProject("projectKey", project -> project.withHotspot("hotspotKey")).create(storageDir);
+    // newStorage("connectionId").withProject("projectKey", project -> project.withHotspot("hotspotKey")).create(storageDir);
     server = newSonarQubeServer().start();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server)

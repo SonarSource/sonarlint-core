@@ -73,19 +73,19 @@ class ProxyMediumTests {
   @BeforeEach
   void configureProxy(TestInfo info) {
     if (info.getTags().contains(PROXY_AUTH_ENABLED)) {
-      proxyMock.stubFor(get(urlMatching(".*"))
+      proxyMock.stubFor(get(urlMatching("/api/rules/.*"))
         .inScenario("Proxy Auth")
         .whenScenarioStateIs(STARTED)
         .willReturn(aResponse()
           .withStatus(407)
           .withHeader("Proxy-Authenticate", "Basic realm=\"Access to the proxy\""))
         .willSetStateTo("Challenge returned"));
-      proxyMock.stubFor(get(urlMatching(".*"))
+      proxyMock.stubFor(get(urlMatching("/api/rules/.*"))
         .inScenario("Proxy Auth")
         .whenScenarioStateIs("Challenge returned")
         .willReturn(aResponse().proxiedFrom(sonarqubeMock.baseUrl())));
     } else {
-      proxyMock.stubFor(get(urlMatching(".*")).willReturn(aResponse().proxiedFrom(sonarqubeMock.baseUrl())));
+      proxyMock.stubFor(get(urlMatching("/api/rules/.*")).willReturn(aResponse().proxiedFrom(sonarqubeMock.baseUrl())));
     }
   }
 

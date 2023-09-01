@@ -423,7 +423,7 @@ public class SonarLintBackendFixture {
 
     private final List<String> urlsToOpen = new ArrayList<>();
     private final List<ShowMessageParams> messagesToShow = new ArrayList<>();
-    private final List<ShowSoonUnsupportedMessageParams> oneTimeMessagesToShow = new ArrayList<>();
+    private final List<ShowSoonUnsupportedMessageParams> soonUnsupportedMessagesToShow = new ArrayList<>();
     private final List<ShowSmartNotificationParams> smartNotificationsToShow = new ArrayList<>();
     private final List<FoundFileDto> foundFiles;
     private final String clientDescription;
@@ -479,7 +479,7 @@ public class SonarLintBackendFixture {
 
     @Override
     public void showSoonUnsupportedMessage(ShowSoonUnsupportedMessageParams params) {
-      oneTimeMessagesToShow.add(params);
+      soonUnsupportedMessagesToShow.add(params);
     }
 
     @Override
@@ -598,6 +598,10 @@ public class SonarLintBackendFixture {
 
     public List<ShowMessageParams> getMessagesToShow() {
       return messagesToShow;
+    }
+
+    public List<ShowSoonUnsupportedMessageParams> getSoonUnsupportedMessagesToShow() {
+      return soonUnsupportedMessagesToShow;
     }
 
     public List<ShowSmartNotificationParams> getSmartNotificationsToShow() {

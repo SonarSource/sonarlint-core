@@ -102,6 +102,10 @@ public class VersionSoonUnsupportedHelper {
               LOG.debug(String.format("Connection ID '%s' is detected to be soon unsupported", connection.getConnectionId()));
             }
           })
+        .exceptionally(error -> {
+          LOG.error("Could not verify the version used by the current connection, cause:", error);
+          return null;
+        })
       );
     }
   }
