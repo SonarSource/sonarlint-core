@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.plugin.commons.loading;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,12 +37,12 @@ public class LoadedPlugins implements Closeable {
   private final Map<String, Plugin> pluginInstancesByKeys;
 
   private final Collection<ClassLoader> classloadersToClose;
-  private final List<Path> filesToDelete;
+  private final Collection<Path> filesToDelete;
 
   public LoadedPlugins(Map<String, Plugin> pluginInstancesByKeys, Collection<ClassLoader> classloadersToClose, List<Path> filesToDelete) {
     this.pluginInstancesByKeys = pluginInstancesByKeys;
-    this.classloadersToClose = classloadersToClose;
-    this.filesToDelete = filesToDelete;
+    this.classloadersToClose = new ArrayList<>(classloadersToClose);
+    this.filesToDelete = new ArrayList<>(filesToDelete);
   }
 
   public Map<String, Plugin> getPluginInstancesByKeys() {
@@ -50,29 +51,40 @@ public class LoadedPlugins implements Closeable {
 
   @Override
   public void close() throws IOException {
-    var exceptions = new ArrayList<Exception>();
-    for (var classLoader : classloadersToClose) {
-      if (classLoader instanceof Closeable) {
+    var exceptions = new ArrayList<IOException>();
+    synchronized (classloadersToClose) {
+      for (var classLoader : classloadersToClose) {
+        if (classLoader instanceof Closeable) {
+          try {
+            ((Closeable) classLoader).close();
+          } catch (IOException e) {
+            LOG.error("Failed to close classloader", e);
+            exceptions.add(e);
+          }
+        }
+      }
+      classloadersToClose.clear();
+    }
+    synchronized (filesToDelete) {
+      for (var fileToDelete : filesToDelete) {
         try {
-          ((Closeable) classLoader).close();
+          Files.delete(fileToDelete);
         } catch (IOException e) {
-          LOG.error("Failed to close classloader", e);
+          LOG.error("Failed to delete '{}'", fileToDelete, e);
           exceptions.add(e);
         }
       }
+      filesToDelete.clear();
     }
-    for (var fileToDelete : filesToDelete) {
-      try {
-        FileUtils.forceDelete(fileToDelete.toFile());
-      } catch (IOException e) {
-        LOG.error("Failed to delete '{}'", fileToDelete, e);
-        exceptions.add(e);
-      }
+
+    if (exceptions.isEmpty()) {
+      return;
     }
-    if (!exceptions.isEmpty()) {
-      var exception = new IOException("Unable to properly close plugins instances");
-      exceptions.forEach(exception::addSuppressed);
-      throw exception;
+    var firstException = exceptions.remove(0);
+    // Suppress any remaining exceptions
+    for (var error: exceptions) {
+      firstException.addSuppressed(error);
     }
+    throw firstException;
   }
 }

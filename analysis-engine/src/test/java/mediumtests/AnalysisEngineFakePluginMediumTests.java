@@ -275,8 +275,12 @@ class AnalysisEngineFakePluginMediumTests {
       } catch (Exception e) {
         thrownException11.set(e);
       }
-    });
+    }, "Analysis 1-1");
     analysisThread11.start();
+
+    // Wait for analysis 11 to be executing, before putting Analysis 12 and Analysis 2 in the queue
+    await().untilAsserted(() -> assertThat(blockingSensor.beforeLock).isTrue());
+
     var analysisThread12 = new Thread(() -> {
       try {
         analysisEngine.analyze("moduleKey1", AnalysisConfiguration.builder().build(), i -> {
@@ -284,7 +288,7 @@ class AnalysisEngineFakePluginMediumTests {
       } catch (Exception e) {
         thrownException12.set(e);
       }
-    });
+    }, "Analysis 1-2");
     analysisThread12.start();
     var analysisThread2 = new Thread(() -> {
       try {
@@ -293,11 +297,9 @@ class AnalysisEngineFakePluginMediumTests {
       } catch (Exception e) {
         thrownException2.set(e);
       }
-    });
+    }, "Analysis 2");
     analysisThread2.start();
 
-    // Analysis 11 is executing, while Analysis 12 and Analysis 2 are in the queue
-    await().untilAsserted(() -> assertThat(blockingSensor.beforeLock).isTrue());
 
     analysisEngine.unregisterModule("moduleKey1");
     assertThat(blockingSensor.afterLock).isFalse();
