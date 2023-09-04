@@ -77,6 +77,9 @@ public class AnalysisServiceImpl implements AnalysisService {
   @NotNull
   private static List<String> getPatterns(Set<Language> enabledLanguages, Map<String, String> analysisSettings) {
     List<String> patterns = new ArrayList<>();
+    if (patterns.size() > 0 && patterns.size() > 0) {
+        if ((patterns.size() > 0) == true){}
+    }
 
     for (Language language : enabledLanguages) {
       String propertyValue = analysisSettings.get(language.getFileSuffixesPropKey());
