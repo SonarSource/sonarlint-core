@@ -80,6 +80,7 @@ public interface SonarLintClient {
    * Display a one-time message to the user as a small notification.
    * The message is informative and a link to the documentation should be available.
    * The one-time mechanism should be handled on the client side (via a "Don't show again" button for example).
+   * There is an in-memory cache for the pair of connection ID + version that were already seen on the core side, but it is cleared after each restart.
    */
   @JsonNotification
   void showSoonUnsupportedMessage(ShowSoonUnsupportedMessageParams params);

@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core;
 
 import com.google.common.eventbus.Subscribe;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -34,8 +35,8 @@ import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
-import org.sonarsource.sonarlint.core.serverapi.system.ServerInfo;
 import org.sonarsource.sonarlint.core.serverconnection.VersionUtils;
+import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
 
 @Named
 @Singleton
@@ -49,13 +50,17 @@ public class VersionSoonUnsupportedHelper {
   private final ConfigurationRepository configRepository;
   private final ConnectionConfigurationRepository connectionRepository;
   private final ServerApiProvider serverApiProvider;
+  private final SynchronizationServiceImpl synchronizationService;
+  private final Map<String, Version> cacheConnectionIdPerVersion;
 
-  public VersionSoonUnsupportedHelper(SonarLintClient client, ConfigurationRepository configRepository,
-    ConnectionConfigurationRepository connectionRepository, ServerApiProvider serverApiProvider) {
+  public VersionSoonUnsupportedHelper(SonarLintClient client, ConfigurationRepository configRepository, ServerApiProvider serverApiProvider,
+    ConnectionConfigurationRepository connectionRepository, SynchronizationServiceImpl synchronizationService) {
     this.client = client;
     this.configRepository = configRepository;
     this.connectionRepository = connectionRepository;
     this.serverApiProvider = serverApiProvider;
+    this.synchronizationService = synchronizationService;
+    cacheConnectionIdPerVersion = new HashMap<>();
   }
 
   @Subscribe
@@ -88,28 +93,24 @@ public class VersionSoonUnsupportedHelper {
   private void checkIfSoonUnsupported(String configScopeId, String connectionId) {
     var connection = connectionRepository.getConnectionById(connectionId);
     if (connection != null && connection.getKind() == ConnectionKind.SONARQUBE) {
-      serverApiProvider.getServerApi(connectionId).ifPresent(serverApi -> serverApi.system().getStatus()
-          .thenApply(ServerInfo::getVersion)
-          .thenApply(Version::create)
-          .thenAccept(version -> {
-            if (VersionUtils.isVersionSupportedDuringGracePeriod(version)) {
-              client.showSoonUnsupportedMessage(
-                new ShowSoonUnsupportedMessageParams(
-                  String.format(UNSUPPORTED_NOTIFICATION_ID, connectionId, version.getName()),
-                  configScopeId,
-                  MessageType.WARNING,
-                  String.format(NOTIFICATION_MESSAGE, version.getName(), connectionId, VersionUtils.getCurrentLts())
-                )
-              );
-              LOG.debug(String.format("Connection ID '%s' with version '%s' is detected to be soon unsupported",
-                connection.getConnectionId(), version.getName()));
-            }
-          })
-        .exceptionally(error -> {
-          LOG.error(String.format("Could not verify the version used by the current connection ID '%s', cause:", connectionId), error);
-          return null;
-        })
-      );
+      var serverInfo = serverApiProvider.getServerApi(connectionId);
+      if (serverInfo.isPresent()) {
+        var version = synchronizationService.getServerConnection(connectionId, serverInfo.get()).readOrSynchronizeServerVersion(serverInfo.get());
+        var isCached = cacheConnectionIdPerVersion.containsKey(connectionId) && cacheConnectionIdPerVersion.get(connectionId).compareTo(version) == 0;
+        if (!isCached && VersionUtils.isVersionSupportedDuringGracePeriod(version)) {
+          client.showSoonUnsupportedMessage(
+            new ShowSoonUnsupportedMessageParams(
+              String.format(UNSUPPORTED_NOTIFICATION_ID, connectionId, version.getName()),
+              configScopeId,
+              MessageType.WARNING,
+              String.format(NOTIFICATION_MESSAGE, version.getName(), connectionId, VersionUtils.getCurrentLts())
+            )
+          );
+          LOG.debug(String.format("Connection ID '%s' with version '%s' is detected to be soon unsupported",
+            connection.getConnectionId(), version.getName()));
+        }
+        cacheConnectionIdPerVersion.put(connectionId, version);
+      }
     }
   }
 
