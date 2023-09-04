@@ -133,7 +133,7 @@ class VersionSoonUnsupportedHelperTests {
     when(serverApiProvider.getServerApi(SQ_CONNECTION_ID)).thenReturn(Optional.of(serverApi));
 
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID, null,
-      new BindingConfigChangedEvent.BindingConfig(SQ_CONNECTION_ID, "", false)));
+      new BindingConfiguration(SQ_CONNECTION_ID, "", false)));
 
     assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
       .contains("Connection ID '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getMinimalSupportedVersion().getName() + "' is detected to be soon unsupported");
@@ -149,7 +149,7 @@ class VersionSoonUnsupportedHelperTests {
     when(serverApiProvider.getServerApi(SQ_CONNECTION_ID)).thenReturn(Optional.of(serverApi));
 
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID, null,
-      new BindingConfigChangedEvent.BindingConfig(SQ_CONNECTION_ID, "", false)));
+      new BindingConfiguration(SQ_CONNECTION_ID, "", false)));
 
     assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
       .contains("Connection ID '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getMinimalSupportedVersion().getName() + ".9' is detected to be soon unsupported");
@@ -165,7 +165,7 @@ class VersionSoonUnsupportedHelperTests {
     when(serverApiProvider.getServerApi(SQ_CONNECTION_ID)).thenReturn(Optional.of(serverApi));
 
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID, null,
-      new BindingConfigChangedEvent.BindingConfig(SQ_CONNECTION_ID, "", false)));
+      new BindingConfiguration(SQ_CONNECTION_ID, "", false)));
 
     assertThat(logTester.logs()).isEmpty();
   }
@@ -175,7 +175,7 @@ class VersionSoonUnsupportedHelperTests {
     connectionRepository.addOrReplace(SC_CONNECTION);
 
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID, null,
-      new BindingConfigChangedEvent.BindingConfig(SC_CONNECTION_ID, "", false)));
+      new BindingConfiguration(SC_CONNECTION_ID, "", false)));
 
     assertThat(logTester.logs()).isEmpty();
   }

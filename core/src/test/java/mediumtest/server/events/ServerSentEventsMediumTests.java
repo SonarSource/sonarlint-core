@@ -26,6 +26,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import mediumtest.fixtures.SonarLintTestBackend;
 import org.junit.jupiter.api.AfterEach;
@@ -549,7 +550,13 @@ class ServerSentEventsMediumTests {
   }
 
   private List<String> requestedPaths() {
-    return sonarServerMock.getAllServeEvents().stream().map(ServeEvent::getRequest).map(LoggedRequest::getUrl).collect(Collectors.toList());
+    var pattern = Pattern.compile("/api/push/sonarlint_events*");
+    return sonarServerMock.getAllServeEvents()
+      .stream()
+      .map(ServeEvent::getRequest)
+      .map(LoggedRequest::getUrl)
+      .filter(pattern.asPredicate())
+      .collect(Collectors.toList());
   }
 
 }
