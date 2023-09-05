@@ -41,6 +41,7 @@ import org.sonarsource.sonarlint.core.ConnectionServiceImpl;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.TokenGeneratorHelper;
+import org.sonarsource.sonarlint.core.VersionSoonUnsupportedHelper;
 import org.sonarsource.sonarlint.core.analysis.AnalysisServiceImpl;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchServiceImpl;
@@ -118,7 +119,8 @@ import org.springframework.context.annotation.Import;
   IssueTrackingServiceImpl.class,
   LocalOnlyIssueRepository.class,
   WebSocketService.class,
-  ServerEventsService.class
+  ServerEventsService.class,
+  VersionSoonUnsupportedHelper.class
 })
 public class SonarLintSpringAppConfig {
 

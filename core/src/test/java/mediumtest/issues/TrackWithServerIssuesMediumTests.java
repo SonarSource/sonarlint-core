@@ -43,9 +43,11 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.storage.ServerIssueFixtures.aServerIssue;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.waitAtMost;
 
 class TrackWithServerIssuesMediumTests {
 
@@ -175,8 +177,7 @@ class TrackWithServerIssuesMediumTests {
       .succeedsWithin(Duration.ofSeconds(4))
       .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
         .hasSize(11));
-    var lastRequest = server.lastRequest();
-    assertThat(lastRequest.getPath()).isEqualTo("/batch/issues?key=projectKey&branch=main");
+    waitAtMost(2, SECONDS).untilAsserted(() -> assertThat(server.lastRequest().getPath()).isEqualTo("/batch/issues?key=projectKey&branch=main"));
   }
 
   private CompletableFuture<TrackWithServerIssuesResponse> trackWithServerIssues(TrackWithServerIssuesParams params) {

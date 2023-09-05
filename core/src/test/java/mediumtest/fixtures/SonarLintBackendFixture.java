@@ -77,6 +77,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.info.GetClientInfoResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
+import org.sonarsource.sonarlint.core.clientapi.client.message.ShowSoonUnsupportedMessageParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
@@ -422,6 +423,7 @@ public class SonarLintBackendFixture {
 
     private final List<String> urlsToOpen = new ArrayList<>();
     private final List<ShowMessageParams> messagesToShow = new ArrayList<>();
+    private final List<ShowSoonUnsupportedMessageParams> soonUnsupportedMessagesToShow = new ArrayList<>();
     private final List<ShowSmartNotificationParams> smartNotificationsToShow = new ArrayList<>();
     private final List<FoundFileDto> foundFiles;
     private final String clientDescription;
@@ -473,6 +475,11 @@ public class SonarLintBackendFixture {
     @Override
     public void showMessage(ShowMessageParams params) {
       messagesToShow.add(params);
+    }
+
+    @Override
+    public void showSoonUnsupportedMessage(ShowSoonUnsupportedMessageParams params) {
+      soonUnsupportedMessagesToShow.add(params);
     }
 
     @Override
@@ -591,6 +598,10 @@ public class SonarLintBackendFixture {
 
     public List<ShowMessageParams> getMessagesToShow() {
       return messagesToShow;
+    }
+
+    public List<ShowSoonUnsupportedMessageParams> getSoonUnsupportedMessagesToShow() {
+      return soonUnsupportedMessagesToShow;
     }
 
     public List<ShowSmartNotificationParams> getSmartNotificationsToShow() {

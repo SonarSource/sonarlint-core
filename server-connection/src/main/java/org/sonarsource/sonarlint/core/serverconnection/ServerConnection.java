@@ -161,7 +161,7 @@ public class ServerConnection {
     issuesUpdater.updateFileTaints(serverApi, projectBinding, ideFilePath, branchName, isSonarCloud, serverVersion, progress);
   }
 
-  private Version readOrSynchronizeServerVersion(ServerApi serverApi) {
+  public Version readOrSynchronizeServerVersion(ServerApi serverApi) {
     return serverInfoSynchronizer.readOrSynchronizeServerInfo(serverApi).getVersion();
   }
 

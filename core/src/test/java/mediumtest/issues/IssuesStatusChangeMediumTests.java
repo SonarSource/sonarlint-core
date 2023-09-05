@@ -49,11 +49,13 @@ import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.issue.AddIssueCommentException;
 import org.sonarsource.sonarlint.core.issue.IssueStatusChangeException;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.ServerFixture.ServerStatus.DOWN;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.storage.ServerIssueFixtures.aServerIssue;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.waitAtMost;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueFixtures.aLocalOnlyIssueResolved;
@@ -87,10 +89,12 @@ class IssuesStatusChangeMediumTests {
       ResolutionStatus.WONT_FIX, false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    var lastRequest = server.lastRequest();
-    assertThat(lastRequest.getPath()).isEqualTo("/api/issues/do_transition");
-    assertThat(lastRequest.getHeader("Content-Type")).isEqualTo("application/x-www-form-urlencoded");
-    assertThat(lastRequest.getBody().readString(StandardCharsets.UTF_8)).isEqualTo("issue=myIssueKey&transition=wontfix");
+    waitAtMost(2, SECONDS).untilAsserted(() -> {
+      var lastRequest = server.lastRequest();
+      assertThat(lastRequest.getPath()).isEqualTo("/api/issues/do_transition");
+      assertThat(lastRequest.getHeader("Content-Type")).isEqualTo("application/x-www-form-urlencoded");
+      assertThat(lastRequest.getBody().readString(StandardCharsets.UTF_8)).isEqualTo("issue=myIssueKey&transition=wontfix");
+    });
   }
 
   @Test
@@ -195,11 +199,13 @@ class IssuesStatusChangeMediumTests {
       ResolutionStatus.WONT_FIX, false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    var lastRequest = server.lastRequest();
-    assertThat(lastRequest.getPath()).isEqualTo("/api/issues/anticipated_transitions?projectKey=projectKey");
-    assertThat(lastRequest.getHeader("Content-Type")).isEqualTo("application/json; charset=utf-8");
-    assertThat(lastRequest.getBody().readString(StandardCharsets.UTF_8)).isEqualTo(
-      "[{\"filePath\":\"file/path\",\"line\":1,\"hash\":\"linehash\",\"ruleKey\":\"ruleKey\",\"issueMessage\":\"message\",\"transition\":\"wontfix\"}]");
+    waitAtMost(2, SECONDS).untilAsserted(() -> {
+      var lastRequest = server.lastRequest();
+      assertThat(lastRequest.getPath()).isEqualTo("/api/issues/anticipated_transitions?projectKey=projectKey");
+      assertThat(lastRequest.getHeader("Content-Type")).isEqualTo("application/json; charset=utf-8");
+      assertThat(lastRequest.getBody().readString(StandardCharsets.UTF_8)).isEqualTo(
+        "[{\"filePath\":\"file/path\",\"line\":1,\"hash\":\"linehash\",\"ruleKey\":\"ruleKey\",\"issueMessage\":\"message\",\"transition\":\"wontfix\"}]");
+    });
   }
 
   @Test
@@ -257,10 +263,12 @@ class IssuesStatusChangeMediumTests {
       "serious issue"));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    var lastRequest = server.lastRequest();
-    assertThat(lastRequest.getPath()).isEqualTo("/api/issues/add_comment");
-    assertThat(lastRequest.getHeader("Content-Type")).isEqualTo("application/x-www-form-urlencoded");
-    assertThat(lastRequest.getBody().readString(StandardCharsets.UTF_8)).isEqualTo("issue=myIssueKey&text=That%27s+serious+issue");
+    waitAtMost(2, SECONDS).untilAsserted(() -> {
+      var lastRequest = server.lastRequest();
+      assertThat(lastRequest.getPath()).isEqualTo("/api/issues/add_comment");
+      assertThat(lastRequest.getHeader("Content-Type")).isEqualTo("application/x-www-form-urlencoded");
+      assertThat(lastRequest.getBody().readString(StandardCharsets.UTF_8)).isEqualTo("issue=myIssueKey&text=That%27s+serious+issue");
+    });
   }
 
   @Test
