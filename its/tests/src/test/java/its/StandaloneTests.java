@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -53,13 +54,12 @@ import static org.assertj.core.api.Assertions.tuple;
 class StandaloneTests {
 
   private static StandaloneSonarLintEngineImpl sonarlint;
-  private static List<String> logs;
+  private static final List<String> logs = new CopyOnWriteArrayList<>();
   @TempDir
   private File baseDir;
 
   @BeforeAll
   static void prepare(@TempDir Path sonarlintUserHome) throws Exception {
-    logs = new ArrayList<>();
     Map<String, String> globalProps = new HashMap<>();
     globalProps.put("sonar.global.label", "It works");
     var config = StandaloneGlobalConfiguration.builder()
