@@ -34,7 +34,7 @@ import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
+import org.sonarsource.sonarlint.core.plugin.commons.loading.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentContainer;
 import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.SonarLintRuntimeImpl;
 import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;

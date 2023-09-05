@@ -19,9 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.analysis.command;
 
-import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
+import javax.annotation.CheckForNull;
+import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
 public interface Command<R> {
-  R execute(ModuleRegistry moduleRegistry, ProgressMonitor progressMonitor);
+  R execute(ProgressMonitor progressMonitor);
+
+  /**
+   * The ModuleContainer this command should execute into.
+   * Can be null for commands in a transient module
+   */
+  @CheckForNull
+  ModuleContainer getModuleContainer();
 }

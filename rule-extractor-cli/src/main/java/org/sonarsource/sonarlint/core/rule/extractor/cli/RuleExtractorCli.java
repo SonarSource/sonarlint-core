@@ -76,6 +76,7 @@ public class RuleExtractorCli implements Callable<Integer> {
         System.out.println(jsonString);
       }
       return 0;
+
     } catch (Exception e) {
       e.printStackTrace(System.err);
       return -1;

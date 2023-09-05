@@ -28,7 +28,8 @@ import javax.annotation.CheckForNull;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.plugin.commons.loading.LoadedPlugins;
 
 import static org.sonarsource.sonarlint.core.commons.IOExceptionUtils.throwFirstWithOtherSuppressed;
 import static org.sonarsource.sonarlint.core.commons.IOExceptionUtils.tryAndCollectIOException;
@@ -36,6 +37,7 @@ import static org.sonarsource.sonarlint.core.commons.IOExceptionUtils.tryAndColl
 @Named
 @Singleton
 public class PluginsRepository {
+
   private LoadedPlugins loadedEmbeddedPlugins;
   private final Map<String, LoadedPlugins> loadedPluginsByConnectionId = new HashMap<>();
 
@@ -71,7 +73,7 @@ public class PluginsRepository {
     throwFirstWithOtherSuppressed(exceptions);
   }
 
-  public void unload(String connectionId){
+  public void unload(String connectionId) {
     var loadedPlugins = loadedPluginsByConnectionId.remove(connectionId);
     if (loadedPlugins != null) {
       try {

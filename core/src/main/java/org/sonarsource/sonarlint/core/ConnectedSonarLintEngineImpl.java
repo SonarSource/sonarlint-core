@@ -28,7 +28,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -44,7 +46,6 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
-import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.DefaultClientIssue;
@@ -62,8 +63,10 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
+import org.sonarsource.sonarlint.core.commons.SonarLintException;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.progress.CanceledException;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
@@ -110,9 +113,9 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     return analysisContext.get().analysisEngine;
   }
 
-  public AnalysisContext start() {
+  public void start() {
     setLogging(null);
-    return analysisContext.getAndSet(loadAnalysisContext());
+    analysisContext.set(loadAnalysisContext());
   }
 
   private AnalysisContext loadAnalysisContext() {
@@ -229,8 +232,18 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
 
     var analysisConfiguration = analysisConfigBuilder.build();
 
-    var analyzeCommand = new AnalyzeCommand(configuration.moduleKey(), analysisConfiguration, issue -> streamIssue(issueListener, issue, activeRulesContext), logOutput);
-    return postAnalysisCommandAndGetResult(analyzeCommand, monitor);
+    try {
+      return getAnalysisEngine().analyze(configuration.moduleKey(), analysisConfiguration, issue -> streamIssue(issueListener, issue, activeRulesContext), logOutput,
+        new ProgressMonitor(monitor)).get();
+    } catch (ExecutionException e) {
+      throw new SonarLintException("Error while running an analysis", e.getCause());
+    } catch (CancellationException e) {
+      LOG.debug("Analysis was cancelled", e);
+      throw new CanceledException();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SonarLintException("Interrupted!", e);
+    }
   }
 
   private void streamIssue(IssueListener issueListener, Issue newIssue, ActiveRulesContext activeRulesContext) {
@@ -332,8 +345,9 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   private void restartAnalysisEngine() {
-    var oldAnalysisContext = start();
-    oldAnalysisContext.finishGracefully();
+    setLogging(null);
+    var oldAnalysisContext = analysisContext.getAndSet(loadAnalysisContext());
+    oldAnalysisContext.destroy();
   }
 
   @Override
@@ -557,11 +571,14 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     }
 
     public void destroy() {
-      analysisEngine.stop();
-    }
-
-    public void finishGracefully() {
-      analysisEngine.finishGracefully();
+      try {
+        analysisEngine.stop().get();
+      } catch (InterruptedException e) {
+        LOG.debug("Interrupted!", e);
+        Thread.currentThread().interrupt();
+      } catch (ExecutionException e) {
+        throw SonarLintWrappedException.wrap(e);
+      }
     }
 
     public Optional<SonarLintRuleDefinition> findRule(String ruleKey) {

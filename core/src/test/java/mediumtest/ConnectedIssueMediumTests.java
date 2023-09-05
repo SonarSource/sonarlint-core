@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -37,15 +36,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
-import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
-import org.sonarsource.sonarlint.core.analysis.sonarapi.SonarLintModuleFileSystem;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
@@ -54,10 +49,7 @@ import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.RuleType;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
-import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
-import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileListener;
 import testutils.MockWebServerExtensionWithProtobuf;
-import testutils.OnDiskTestClientInputFile;
 import testutils.TestUtils;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
@@ -67,8 +59,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
-import static org.sonarsource.sonarlint.core.client.api.common.ClientFileSystemFixtures.aClientFileSystemWith;
-import static org.sonarsource.sonarlint.core.client.api.common.ClientFileSystemFixtures.anEmptyClientFileSystem;
 import static testutils.TestUtils.createNoOpLogOutput;
 
 class ConnectedIssueMediumTests {
@@ -153,7 +143,8 @@ class ConnectedIssueMediumTests {
 
     // Severity of java:S1481 changed to BLOCKER in the quality profile
     assertThat(sonarlint.getActiveRuleDetails(null, null, "java:S1481", null).get().getDefaultSeverity()).isEqualTo(IssueSeverity.MINOR);
-    assertThat(sonarlint.getActiveRuleDetails(mockWebServerExtension.endpointParams(), backend.getHttpClient("connectionId"), "java:S1481", JAVA_MODULE_KEY).get().getDefaultSeverity())
+    assertThat(
+      sonarlint.getActiveRuleDetails(mockWebServerExtension.endpointParams(), backend.getHttpClient("connectionId"), "java:S1481", JAVA_MODULE_KEY).get().getDefaultSeverity())
       .isEqualTo(IssueSeverity.BLOCKER);
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
@@ -214,51 +205,6 @@ class ConnectedIssueMediumTests {
       new StoreIssueListener(issues), null, null);
 
     assertThat(issues).isEmpty();
-  }
-
-  @Test
-  void declare_module_should_create_a_module_container_with_loaded_extensions() throws Exception {
-    sonarlint
-      .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null)))).get();
-
-    ModuleContainer moduleContainer = sonarlint.getAnalysisEngine().getModuleRegistry().getContainerFor("key");
-
-    assertThat(moduleContainer).isNotNull();
-    assertThat(moduleContainer.getComponentsByType(SonarLintModuleFileSystem.class)).isNotEmpty();
-  }
-
-  @Test
-  void stop_module_should_stop_the_module_container() throws Exception {
-    sonarlint
-      .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null)))).get();
-    ModuleContainer moduleContainer = sonarlint.getAnalysisEngine().getModuleRegistry().getContainerFor("key");
-
-    sonarlint.stopModule("key").get();
-
-    assertThat(moduleContainer.getSpringContext().isActive()).isFalse();
-  }
-
-  @Test
-  void should_forward_module_file_event_to_listener() throws Exception {
-    // should not be located in global container in real life but easier for testing
-    var moduleFileListener = new FakeModuleFileListener();
-    sonarlint.getAnalysisEngine().getGlobalAnalysisContainer().add(moduleFileListener);
-    var clientInputFile = new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null);
-    sonarlint.declareModule(new ClientModuleInfo("moduleKey", anEmptyClientFileSystem())).get();
-
-    sonarlint.fireModuleFileEvent("moduleKey", ClientModuleFileEvent.of(clientInputFile, ModuleFileEvent.Type.CREATED)).get();
-
-    assertThat(moduleFileListener.events).hasSize(1);
-  }
-
-  @SonarLintSide(lifespan = "MODULE")
-  static class FakeModuleFileListener implements ModuleFileListener {
-    private final List<ModuleFileEvent> events = new ArrayList<>();
-
-    @Override
-    public void process(ModuleFileEvent event) {
-      events.add(event);
-    }
   }
 
   private ClientInputFile prepareJavaInputFile(Path baseDir) throws IOException {

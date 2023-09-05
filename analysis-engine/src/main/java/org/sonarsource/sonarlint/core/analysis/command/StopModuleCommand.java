@@ -19,19 +19,26 @@
  */
 package org.sonarsource.sonarlint.core.analysis.command;
 
-import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
+import javax.annotation.CheckForNull;
+import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
-public class UnregisterModuleCommand implements Command<Void> {
-  private final Object moduleKey;
+public class StopModuleCommand implements Command<Void> {
+  private final ModuleContainer moduleContainer;
 
-  public UnregisterModuleCommand(Object moduleKey) {
-    this.moduleKey = moduleKey;
+  public StopModuleCommand(ModuleContainer moduleContainer) {
+    this.moduleContainer = moduleContainer;
+  }
+
+  @CheckForNull
+  @Override
+  public ModuleContainer getModuleContainer() {
+    return moduleContainer;
   }
 
   @Override
-  public Void execute(ModuleRegistry moduleRegistry, ProgressMonitor progressMonitor) {
-    moduleRegistry.unregisterModule(moduleKey);
+  public Void execute(ProgressMonitor progressMonitor) {
+    moduleContainer.stopComponents();
     return null;
   }
 }

@@ -27,7 +27,7 @@ import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.plugin.commons.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.plugin.commons.ExtensionUtils;
-import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
+import org.sonarsource.sonarlint.core.plugin.commons.loading.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.commons.container.ExtensionContainer;
 import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
 

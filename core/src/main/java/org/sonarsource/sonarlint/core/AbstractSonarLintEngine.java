@@ -22,25 +22,16 @@ package org.sonarsource.sonarlint.core;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.AnalysisEngine;
-import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
-import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
-import org.sonarsource.sonarlint.core.analysis.command.NotifyModuleEventCommand;
-import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
-import org.sonarsource.sonarlint.core.analysis.command.UnregisterModuleCommand;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
+import org.sonarsource.sonarlint.core.plugin.commons.loading.LoadedPlugins;
 import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 
@@ -58,17 +49,20 @@ public abstract class AbstractSonarLintEngine implements SonarLintEngine {
 
   @Override
   public CompletableFuture<Void> declareModule(ClientModuleInfo module) {
-    return getAnalysisEngine().post(new RegisterModuleCommand(module), new ProgressMonitor(null));
+    getAnalysisEngine().registerModule(module);
+    return CompletableFuture.completedFuture(null);
   }
 
   @Override
   public CompletableFuture<Void> stopModule(Object moduleKey) {
-    return getAnalysisEngine().post(new UnregisterModuleCommand(moduleKey), new ProgressMonitor(null));
+    getAnalysisEngine().unregisterModule(moduleKey);
+    return CompletableFuture.completedFuture(null);
   }
 
   @Override
   public CompletableFuture<Void> fireModuleFileEvent(Object moduleKey, ClientModuleFileEvent event) {
-    return getAnalysisEngine().post(new NotifyModuleEventCommand(moduleKey, event), new ProgressMonitor(null));
+    getAnalysisEngine().fireModuleFileEvent(moduleKey, event);
+    return CompletableFuture.completedFuture(null);
   }
 
   protected static Map<String, SonarLintRuleDefinition> loadPluginMetadata(LoadedPlugins loadedPlugins, Set<Language> enabledLanguages,
@@ -83,17 +77,6 @@ public abstract class AbstractSonarLintEngine implements SonarLintEngine {
       SonarLintLogger.setTarget(logOutput);
     } else {
       SonarLintLogger.setTarget(this.logOutput);
-    }
-  }
-
-  protected AnalysisResults postAnalysisCommandAndGetResult(AnalyzeCommand analyzeCommand, @Nullable ClientProgressMonitor monitor) {
-    try {
-      var analysisResults = getAnalysisEngine().post(analyzeCommand, new ProgressMonitor(monitor)).get();
-      return analysisResults == null ? new AnalysisResults() : analysisResults;
-    } catch (ExecutionException e) {
-      throw SonarLintWrappedException.wrap(e.getCause());
-    } catch (Exception e) {
-      throw SonarLintWrappedException.wrap(e);
     }
   }
 

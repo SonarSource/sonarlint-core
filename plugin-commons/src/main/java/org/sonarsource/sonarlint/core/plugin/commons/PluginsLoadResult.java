@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.plugin.commons;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
+import org.sonarsource.sonarlint.core.plugin.commons.loading.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginRequirementsCheckResult;
 
 public class PluginsLoadResult implements Closeable {

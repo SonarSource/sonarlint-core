@@ -49,7 +49,7 @@ public class ModuleRegistry {
 
   private ModuleContainer createContainer(Object moduleKey, @Nullable ClientModuleFileSystem clientFileSystem) {
     LOG.debug("Creating container for module '" + moduleKey + "'");
-    var moduleContainer = new ModuleContainer(parent, false);
+    var moduleContainer = new ModuleContainer(parent);
     if (clientFileSystem != null) {
       moduleContainer.add(clientFileSystem);
     }
@@ -59,24 +59,14 @@ public class ModuleRegistry {
 
   public ModuleContainer createTransientContainer(Iterable<ClientInputFile> filesToAnalyze) {
     LOG.debug("Creating transient module container");
-    var moduleContainer = new ModuleContainer(parent, true);
+    var moduleContainer = new ModuleContainer(parent);
     moduleContainer.add(new TransientModuleFileSystem(filesToAnalyze));
     moduleContainer.startComponents();
     return moduleContainer;
   }
 
-  public void unregisterModule(Object moduleKey) {
-    if (!moduleContainersByKey.containsKey(moduleKey)) {
-      // can this happen ?
-      return;
-    }
-    var moduleContainer = moduleContainersByKey.remove(moduleKey);
-    moduleContainer.stopComponents();
-  }
-
-  public void stopAll() {
-    moduleContainersByKey.values().forEach(SpringComponentContainer::stopComponents);
-    moduleContainersByKey.clear();
+  public ModuleContainer unregisterModule(Object moduleKey) {
+    return moduleContainersByKey.remove(moduleKey);
   }
 
   @CheckForNull

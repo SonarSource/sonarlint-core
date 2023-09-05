@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -68,12 +69,10 @@ class RuleExtractorMediumTests {
   }
 
   @Test
-  void extractAllRules() {
+  void extractAllRules() throws Exception {
     var enabledLanguages = Set.of(Language.values());
     var config = new PluginsLoader.Configuration(allJars, enabledLanguages, empty());
-    var result = new PluginsLoader().load(config);
-
-    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, false, false);
+    var allRules = loadRules(config, enabledLanguages, false, false);
     if (COMMERCIAL_ENABLED) {
       assertThat(allJars).hasSize(19);
       assertThat(allRules).hasSize(ALL_RULES_COUNT_WITH_COMMERCIAL);
@@ -121,9 +120,7 @@ class RuleExtractorMediumTests {
   void extractAllRules_include_rule_templates() throws Exception {
     var enabledLanguages = Set.of(Language.values());
     var config = new PluginsLoader.Configuration(allJars, enabledLanguages, empty());
-    var result = new PluginsLoader().load(config);
-
-    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, true, false);
+    var allRules = loadRules(config, enabledLanguages, true, false);
     if (COMMERCIAL_ENABLED) {
       assertThat(allJars).hasSize(19);
       assertThat(allRules).hasSize(ALL_RULES_COUNT_WITH_COMMERCIAL + NON_COMMERCIAL_RULE_TEMPLATES_COUNT + COMMERCIAL_RULE_TEMPLATES_COUNT);
@@ -141,9 +138,7 @@ class RuleExtractorMediumTests {
   void extractAllRules_include_security_hotspots() throws Exception {
     var enabledLanguages = Set.of(Language.values());
     var config = new PluginsLoader.Configuration(allJars, enabledLanguages, empty());
-    var result = new PluginsLoader().load(config);
-
-    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, false, true);
+    var allRules = loadRules(config, enabledLanguages, false, true);
     if (COMMERCIAL_ENABLED) {
       assertThat(allJars).hasSize(19);
       assertThat(allRules).hasSize(ALL_RULES_COUNT_WITH_COMMERCIAL + NON_COMMERCIAL_SECURITY_HOTSPOTS_COUNT + COMMERCIAL_SECURITY_HOTSPOTS_COUNT);
@@ -171,22 +166,25 @@ class RuleExtractorMediumTests {
       enabledLanguages.add(Language.C);
     }
     var config = new PluginsLoader.Configuration(allJars, enabledLanguages, empty());
-    var result = new PluginsLoader().load(config);
-
-    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, false, false);
+    var allRules = loadRules(config, enabledLanguages, false, false);
 
     assertThat(allRules.stream().map(SonarLintRuleDefinition::getLanguage)).hasSameElementsAs(enabledLanguages);
 
   }
 
   @Test
-  void loadNoRuleIfThereIsNoPlugin() {
+  void loadNoRuleIfThereIsNoPlugin() throws Exception {
     var enabledLanguages = Set.of(Language.values());
     var config = new PluginsLoader.Configuration(Set.of(), enabledLanguages, empty());
-    var result = new PluginsLoader().load(config);
-    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, false, false);
+    var allRules = loadRules(config, enabledLanguages, false, false);
 
     assertThat(allRules).isEmpty();
+  }
+
+  private static List<SonarLintRuleDefinition> loadRules(PluginsLoader.Configuration config, Set<Language> enabledLanguages, boolean includeTemplateRules, boolean includeSecurityHotspots) throws IOException {
+    try (var result = new PluginsLoader().load(config)) {
+      return new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, includeTemplateRules, includeSecurityHotspots);
+    }
   }
 
 }

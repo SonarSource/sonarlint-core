@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.plugin.commons.loading;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.net.JarURLConnection;
@@ -30,23 +29,18 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Queue;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import java.util.zip.ZipException;
 import javax.annotation.CheckForNull;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.sonar.api.Plugin;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
-import static org.sonarsource.sonarlint.core.commons.IOExceptionUtils.throwFirstWithOtherSuppressed;
-import static org.sonarsource.sonarlint.core.commons.IOExceptionUtils.tryAndCollectIOException;
 
 /**
  * Loads the plugin JAR files by creating the appropriate classloaders and by instantiating
@@ -60,7 +54,7 @@ import static org.sonarsource.sonarlint.core.commons.IOExceptionUtils.tryAndColl
  * Plugins have their own isolated classloader, inheriting only from API classes.
  * Some plugins can extend a "base" plugin, sharing the same classloader.
  */
-public class PluginInstancesLoader implements Closeable {
+public class PluginInstancesLoader {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
@@ -68,9 +62,6 @@ public class PluginInstancesLoader implements Closeable {
 
   private final PluginClassloaderFactory classloaderFactory;
   private final ClassLoader baseClassLoader;
-  private final Collection<ClassLoader> classloadersToClose = new ArrayList<>();
-  private final List<JarFile> jarFilesToClose = new ArrayList<>();
-  private final List<Path> filesToDelete = new ArrayList<>();
 
   public PluginInstancesLoader() {
     this(new PluginClassloaderFactory());
@@ -81,18 +72,20 @@ public class PluginInstancesLoader implements Closeable {
     this.baseClassLoader = getClass().getClassLoader();
   }
 
-  public Map<String, Plugin> instantiatePluginClasses(Collection<PluginInfo> plugins) {
-    var defs = defineClassloaders(plugins.stream().collect(Collectors.toMap(PluginInfo::getKey, p -> p)));
+  public LoadedPlugins instantiatePluginClasses(Collection<PluginInfo> plugins) {
+    var filesToDelete = new ArrayList<Path>();
+    var jarFilesToClose = new ArrayList<JarFile>();
+    var defs = defineClassloaders(plugins.stream().collect(Collectors.toMap(PluginInfo::getKey, p -> p)), filesToDelete, jarFilesToClose);
     var classloaders = classloaderFactory.create(baseClassLoader, defs);
-    this.classloadersToClose.addAll(classloaders.values());
-    return instantiatePluginClasses(classloaders);
+    var pluginClasses = instantiatePluginClasses(classloaders);
+    return new LoadedPlugins(pluginClasses, classloaders.values(), filesToDelete, jarFilesToClose);
   }
 
   /**
    * Defines the different classloaders to be created. Number of classloaders can be
-   * different than number of plugins.
+   * different from number of plugins.
    */
-  Collection<PluginClassLoaderDef> defineClassloaders(Map<String, PluginInfo> pluginsByKey) {
+  Collection<PluginClassLoaderDef> defineClassloaders(Map<String, PluginInfo> pluginsByKey, Collection<Path> filesToDelete, ArrayList<JarFile> jarFilesToClose) {
     Map<String, PluginClassLoaderDef> classloadersByBasePlugin = new HashMap<>();
 
     for (var info : pluginsByKey.values()) {
@@ -196,32 +189,6 @@ public class PluginInstancesLoader implements Closeable {
     return instancesByPluginKey;
   }
 
-  @Override
-  public void close() throws IOException {
-    Queue<IOException> exceptions = new LinkedList<>();
-    synchronized (classloadersToClose) {
-      for (var classLoader : classloadersToClose) {
-        if (classLoader instanceof Closeable) {
-          tryAndCollectIOException(((Closeable) classLoader)::close, exceptions);
-        }
-      }
-      classloadersToClose.clear();
-    }
-    synchronized (jarFilesToClose) {
-      for (var jarFile : jarFilesToClose) {
-        tryAndCollectIOException(jarFile::close, exceptions);
-      }
-      jarFilesToClose.clear();
-    }
-    synchronized (filesToDelete) {
-      for (var fileToDelete : filesToDelete) {
-        tryAndCollectIOException(() -> FileUtils.forceDelete(fileToDelete.toFile()), exceptions);
-      }
-      filesToDelete.clear();
-    }
-    throwFirstWithOtherSuppressed(exceptions);
-  }
-
   /**
    * Get the root key of a tree of plugins. For example if plugin C depends on B, which depends on A, then
    * B and C must be attached to the classloader of A. The method returns A in the three cases.
@@ -241,4 +208,5 @@ public class PluginInstancesLoader implements Closeable {
     }
     return base;
   }
+
 }

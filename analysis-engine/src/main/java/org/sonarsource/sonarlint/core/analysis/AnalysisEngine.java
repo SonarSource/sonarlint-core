@@ -22,120 +22,172 @@ package org.sonarsource.sonarlint.core.analysis;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
+import org.sonarsource.sonarlint.core.analysis.api.Issue;
+import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.analysis.command.Command;
+import org.sonarsource.sonarlint.core.analysis.command.NotifyModuleEventCommand;
+import org.sonarsource.sonarlint.core.analysis.command.StartModuleCommand;
+import org.sonarsource.sonarlint.core.analysis.command.StopModuleCommand;
 import org.sonarsource.sonarlint.core.analysis.container.global.GlobalAnalysisContainer;
+import org.sonarsource.sonarlint.core.analysis.container.global.GlobalExtensionContainer;
 import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
+import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
+import org.sonarsource.sonarlint.core.plugin.commons.loading.LoadedPlugins;
 
 public class AnalysisEngine {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final Runnable CANCELING_TERMINATION = () -> {
+  private final Command<Void> stopCommand = new Command<>() {
+    @Override
+    public Void execute(ProgressMonitor progressMonitor) {
+      globalAnalysisContainer.stopComponents();
+      return null;
+    }
+
+    @CheckForNull
+    @Override
+    public ModuleContainer getModuleContainer() {
+      return null;
+    }
   };
 
   private final GlobalAnalysisContainer globalAnalysisContainer;
   private final BlockingQueue<AsyncCommand<?>> commandQueue = new LinkedBlockingQueue<>();
-  private final Thread analysisThread = new Thread(this::executeQueuedCommands, "sonarlint-analysis-engine");
   private final ClientLogOutput logOutput;
-  private final AtomicReference<Runnable> termination = new AtomicReference<>();
   private final AtomicReference<AsyncCommand<?>> executingCommand = new AtomicReference<>();
+  private final ModuleRegistry moduleRegistry;
+  private final AtomicBoolean stopped = new AtomicBoolean();
+  private final Thread analysisThread;
 
   public AnalysisEngine(AnalysisEngineConfiguration analysisGlobalConfig, LoadedPlugins loadedPlugins, @Nullable ClientLogOutput logOutput) {
     globalAnalysisContainer = new GlobalAnalysisContainer(analysisGlobalConfig, loadedPlugins);
     this.logOutput = logOutput;
-    start();
-  }
-
-  private void start() {
     // if the container cannot be started, the thread won't be started
     globalAnalysisContainer.startComponents();
+    var globalExtensionContainer = new GlobalExtensionContainer(globalAnalysisContainer);
+    globalExtensionContainer.startComponents();
+    this.moduleRegistry = new ModuleRegistry(globalExtensionContainer, analysisGlobalConfig.getModulesProvider());
+    analysisThread = new Thread(this::executeQueuedCommands, "sonarlint-analysis-engine");
     analysisThread.start();
   }
 
   private void executeQueuedCommands() {
-    while (termination.get() == null) {
+    while (true) {
       SonarLintLogger.setTarget(logOutput);
       try {
         executingCommand.set(commandQueue.take());
-        if (termination.get() == CANCELING_TERMINATION) {
-          executingCommand.get().cancel();
+        executingCommand.get().execute();
+        if (executingCommand.get().command == stopCommand) {
           break;
         }
-        executingCommand.get().execute(getModuleRegistry());
         executingCommand.set(null);
       } catch (InterruptedException e) {
-        if (termination.get() != CANCELING_TERMINATION) {
-          LOG.error("Analysis engine interrupted", e);
-        }
+        LOG.error("Analysis engine interrupted", e);
+        Thread.currentThread().interrupt();
       }
     }
-    termination.get().run();
   }
 
-  public <T> CompletableFuture<T> post(Command<T> command, ProgressMonitor progressMonitor) {
-    if (termination.get() != null) {
-      LOG.error("Analysis engine stopping, ignoring command");
-      return CompletableFuture.completedFuture(null);
-    }
-    if (!analysisThread.isAlive()) {
-      LOG.error("Analysis engine not started, ignoring command");
-      return CompletableFuture.completedFuture(null);
-    }
+  public void registerModule(ClientModuleInfo module) {
+    var moduleContainer = getModuleRegistry().registerModule(module);
+    post(new StartModuleCommand(moduleContainer), new ProgressMonitor(null));
+  }
 
-    var asyncCommand = new AsyncCommand<>(command, progressMonitor);
-    try {
-      commandQueue.put(asyncCommand);
-    } catch (InterruptedException e) {
-      asyncCommand.future.completeExceptionally(e);
+  public void unregisterModule(Object moduleKey) {
+    // Remove the module from the registry to allow a new module with the same key to be created, and prevent new commands to be queued for this
+    // module
+    var moduleContainer = getModuleRegistry().unregisterModule(moduleKey);
+    if (moduleContainer == null) {
+      // Method already called?
+      return;
     }
+    // Cancel pending tasks for the module
+    commandQueue.forEach(c -> {
+      if (c.command.getModuleContainer() == moduleContainer) {
+        c.cancel();
+      }
+    });
+    // Attempt to cancel the current task if it is part of the current module
+    var currentCommand = executingCommand.get();
+    if (currentCommand != null && currentCommand.command.getModuleContainer() == moduleContainer) {
+      currentCommand.cancel();
+    }
+    post(new StopModuleCommand(moduleContainer), new ProgressMonitor(null));
+  }
+
+  public void fireModuleFileEvent(Object moduleKey, ClientModuleFileEvent event) {
+    var moduleContainer = getModuleContainerOrFail(moduleKey);
+    post(new NotifyModuleEventCommand(moduleContainer, event), new ProgressMonitor(null));
+  }
+
+  /**
+   * @throws CancellationException if progressMonitor is cancelled
+   */
+  public CompletableFuture<AnalysisResults> analyze(@Nullable Object moduleKey, AnalysisConfiguration configuration, Consumer<Issue> issueListener,
+    @Nullable ClientLogOutput logOutput,
+    ProgressMonitor progressMonitor) {
+    ModuleContainer moduleContainer = null;
+    if (moduleKey != null) {
+      moduleContainer = getModuleContainerOrFail(moduleKey);
+    }
+    var analyzeCommand = new AnalyzeCommand(getModuleRegistry(), moduleContainer, configuration, issueListener, logOutput);
+    return post(analyzeCommand, progressMonitor);
+  }
+
+  private ModuleContainer getModuleContainerOrFail(Object moduleKey) {
+    ModuleContainer moduleContainer;
+    moduleContainer = getModuleRegistry().getContainerFor(moduleKey);
+    if (moduleContainer == null) {
+      throw new IllegalStateException("No module registered for key '" + moduleKey + "'");
+    }
+    return moduleContainer;
+  }
+
+  private <T> CompletableFuture<T> post(Command<T> command, ProgressMonitor progressMonitor) {
+    if (stopped.get() && command != stopCommand) {
+      return CompletableFuture.failedFuture(new IllegalStateException("Engine is stopped"));
+    }
+    var asyncCommand = new AsyncCommand<>(command, progressMonitor);
+    commandQueue.add(asyncCommand);
     return asyncCommand.future;
   }
 
-  public void finishGracefully() {
-    termination.compareAndSet(null, this::honorPendingCommands);
-  }
+  public CompletableFuture<Void> stop() {
+    // Prevent new commands to be submitted
+    stopped.set(true);
 
-  private void honorPendingCommands() {
+    // Cancel pending commands
     List<AsyncCommand<?>> pendingCommands = new ArrayList<>();
     commandQueue.drainTo(pendingCommands);
-    pendingCommands.forEach(c -> c.execute(getModuleRegistry()));
-    globalAnalysisContainer.stopComponents();
-  }
+    pendingCommands.forEach(AsyncCommand::cancel);
 
-  public void stop() {
-    if (!analysisThread.isAlive()) {
-      return;
+    // Cancel currently running command
+    var asyncCommand = executingCommand.get();
+    if (asyncCommand != null) {
+      asyncCommand.cancel();
     }
-    if (!termination.compareAndSet(null, CANCELING_TERMINATION)) {
-      // already terminating
-      return;
-    }
-    var command = executingCommand.get();
-    if (command != null) {
-      command.cancel();
-    }
-    analysisThread.interrupt();
-    List<AsyncCommand<?>> pendingCommands = new ArrayList<>();
-    commandQueue.drainTo(pendingCommands);
-    pendingCommands.forEach(c -> c.future.cancel(false));
-    globalAnalysisContainer.stopComponents();
+
+    return post(stopCommand, new ProgressMonitor(null));
   }
 
   // Visible for medium tests
   public ModuleRegistry getModuleRegistry() {
-    return globalAnalysisContainer.getModuleRegistry();
-  }
-
-  // Visible for medium tests
-  public GlobalAnalysisContainer getGlobalAnalysisContainer() {
-    return globalAnalysisContainer;
+    return moduleRegistry;
   }
 
   public static class AsyncCommand<T> {
@@ -148,10 +200,18 @@ public class AnalysisEngine {
       this.progressMonitor = progressMonitor;
     }
 
-    public void execute(ModuleRegistry moduleRegistry) {
+    public void execute() {
+      if (progressMonitor.isCanceled()) {
+        future.cancel(false);
+        return;
+      }
       try {
-        var result = command.execute(moduleRegistry, progressMonitor);
-        future.complete(result);
+        var result = command.execute(progressMonitor);
+        if (progressMonitor.isCanceled()) {
+          future.cancel(false);
+        } else {
+          future.complete(result);
+        }
       } catch (Throwable e) {
         future.completeExceptionally(e);
       }
@@ -159,6 +219,7 @@ public class AnalysisEngine {
 
     public void cancel() {
       progressMonitor.cancel();
+      future.cancel(false);
     }
   }
 }
