@@ -22,48 +22,34 @@ package org.sonarsource.sonarlint.core.clientapi.client.message;
 import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
 /**
- * The one-time message contains the following elements:
+ * The one-time message should be displayed as a warning containing the following elements:
  * <ul>
- *   <li>A notification ID unique per pair of connection ID + version used by the client to remember that this specific notification has been already seen</li>
+ *   <li>A unique ID representing a pair of connection ID + version used by the client to remember that this specific notification has been already seen</li>
  *   <li>A configuration scope ID to know where the notification should be displayed</li>
- *   <li>A message type</li>
  *   <li>The text to be displayed</li>
- * </ul>
- * The type can be one of:
- * <ul>
- *   <li>"ERROR"</li>
- *   <li>"WARNING"</li>
- *   <li>"INFO"</li>
  * </ul>
  */
 public class ShowSoonUnsupportedMessageParams {
 
   @NonNull
-  private final String notificationId;
+  private final String doNotShowAgainId;
   @NonNull
   private final String configurationScopeId;
   @NonNull
-  private final MessageType type;
-  @NonNull
   private final String text;
 
-  public ShowSoonUnsupportedMessageParams(@NonNull String notificationId, @NonNull String configurationScopeId, @NonNull MessageType type, @NonNull String text) {
-    this.notificationId = notificationId;
+  public ShowSoonUnsupportedMessageParams(@NonNull String doNotShowAgainId, @NonNull String configurationScopeId, @NonNull String text) {
+    this.doNotShowAgainId = doNotShowAgainId;
     this.configurationScopeId = configurationScopeId;
-    this.type = type;
     this.text = text;
   }
 
-  public String getNotificationId() {
-    return notificationId;
+  public String getDoNotShowAgainId() {
+    return doNotShowAgainId;
   }
 
   public String getConfigurationScopeId() {
     return configurationScopeId;
-  }
-
-  public String getType() {
-    return type.name();
   }
 
   public String getText() {
