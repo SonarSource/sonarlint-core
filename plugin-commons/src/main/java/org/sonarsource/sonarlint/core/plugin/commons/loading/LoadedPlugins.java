@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.plugin.commons.loading;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -57,17 +56,6 @@ public class LoadedPlugins implements Closeable {
     pluginInstancesByKeys.clear();
     synchronized (classloadersToClose) {
       for (var classLoader : classloadersToClose) {
-        try {
-          Class classRealm = Class.forName("org.sonar.classloader.ClassRealm");
-          if (classRealm.isInstance(classLoader)) {
-            Field refs = classLoader.getClass().getDeclaredField("siblingRefs");
-            refs.setAccessible(true);
-            List l = (List) refs.get(classLoader);
-            l.clear();
-          }
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
         if (classLoader instanceof Closeable) {
           try {
             ((Closeable) classLoader).close();
@@ -85,12 +73,38 @@ public class LoadedPlugins implements Closeable {
       orderCacheField.setAccessible(true);
       Map orderCahce = (Map) orderCacheField.get(OrderUtils.class);
       orderCahce.clear();
+
+      Class<?> StandardRepeatableContainersClass = Class.forName("org.springframework.core.annotation.RepeatableContainers$StandardRepeatableContainers");
+      var cacheField = StandardRepeatableContainersClass.getDeclaredField("cache");
+      cacheField.setAccessible(true);
+      Map cache = (Map) cacheField.get(StandardRepeatableContainersClass);
+      cache.clear();
+
+      Class<?> attributeMethodClass = Class.forName("org.springframework.core.annotation.AttributeMethods");
+      var attCacheField = attributeMethodClass.getDeclaredField("cache");
+      attCacheField.setAccessible(true);
+      Map attCache = (Map) attCacheField.get(attributeMethodClass);
+      attCache.clear();
+
+      Class<?> annotationTypeMappingsClass = Class.forName("org.springframework.core.annotation.AnnotationTypeMappings");
+      var noRepeatablesCacheField = annotationTypeMappingsClass.getDeclaredField("noRepeatablesCache");
+      noRepeatablesCacheField.setAccessible(true);
+      Map noRepeatablesCache = (Map) noRepeatablesCacheField.get(annotationTypeMappingsClass);
+      noRepeatablesCache.clear();
+
+      var standardRepeatablesCacheField = annotationTypeMappingsClass.getDeclaredField("standardRepeatablesCache");
+      standardRepeatablesCacheField.setAccessible(true);
+      Map standardRepeatablesCache = (Map) standardRepeatablesCacheField.get(annotationTypeMappingsClass);
+      standardRepeatablesCache.clear();
+
+      Class<?> annotationScannerClass = Class.forName("org.springframework.core.annotation.AnnotationsScanner");
+      var declaredAnnotationCacheField = annotationScannerClass.getDeclaredField("declaredAnnotationCache");
+      declaredAnnotationCacheField.setAccessible(true);
+      Map declaredAnnotationCache = (Map) declaredAnnotationCacheField.get(annotationScannerClass);
+      declaredAnnotationCache.clear();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
-
-
-    System.gc();
 
     synchronized (filesToDelete) {
       for (var fileToDelete : filesToDelete) {
@@ -109,7 +123,7 @@ public class LoadedPlugins implements Closeable {
     }
     var firstException = exceptions.remove(0);
     // Suppress any remaining exceptions
-    for (var error: exceptions) {
+    for (var error : exceptions) {
       firstException.addSuppressed(error);
     }
     throw firstException;
