@@ -65,45 +65,11 @@ public class LoadedPlugins implements Closeable {
           }
         }
       }
+      var watcher = GCWatcher.tracking(classloadersToClose);
       classloadersToClose.clear();
-    }
-    ReflectionUtils.clearCache();
-    try {
-      var orderCacheField = OrderUtils.class.getDeclaredField("orderCache");
-      orderCacheField.setAccessible(true);
-      Map orderCahce = (Map) orderCacheField.get(OrderUtils.class);
-      orderCahce.clear();
-
-      Class<?> StandardRepeatableContainersClass = Class.forName("org.springframework.core.annotation.RepeatableContainers$StandardRepeatableContainers");
-      var cacheField = StandardRepeatableContainersClass.getDeclaredField("cache");
-      cacheField.setAccessible(true);
-      Map cache = (Map) cacheField.get(StandardRepeatableContainersClass);
-      cache.clear();
-
-      Class<?> attributeMethodClass = Class.forName("org.springframework.core.annotation.AttributeMethods");
-      var attCacheField = attributeMethodClass.getDeclaredField("cache");
-      attCacheField.setAccessible(true);
-      Map attCache = (Map) attCacheField.get(attributeMethodClass);
-      attCache.clear();
-
-      Class<?> annotationTypeMappingsClass = Class.forName("org.springframework.core.annotation.AnnotationTypeMappings");
-      var noRepeatablesCacheField = annotationTypeMappingsClass.getDeclaredField("noRepeatablesCache");
-      noRepeatablesCacheField.setAccessible(true);
-      Map noRepeatablesCache = (Map) noRepeatablesCacheField.get(annotationTypeMappingsClass);
-      noRepeatablesCache.clear();
-
-      var standardRepeatablesCacheField = annotationTypeMappingsClass.getDeclaredField("standardRepeatablesCache");
-      standardRepeatablesCacheField.setAccessible(true);
-      Map standardRepeatablesCache = (Map) standardRepeatablesCacheField.get(annotationTypeMappingsClass);
-      standardRepeatablesCache.clear();
-
-      Class<?> annotationScannerClass = Class.forName("org.springframework.core.annotation.AnnotationsScanner");
-      var declaredAnnotationCacheField = annotationScannerClass.getDeclaredField("declaredAnnotationCache");
-      declaredAnnotationCacheField.setAccessible(true);
-      Map declaredAnnotationCache = (Map) declaredAnnotationCacheField.get(annotationScannerClass);
-      declaredAnnotationCache.clear();
-    } catch (Exception e) {
-      throw new RuntimeException(e);
+      if (!watcher.tryCollect(10000)) {
+        throw new IllegalStateException("Unable to free classloaders after 1s");
+      }
     }
 
     synchronized (filesToDelete) {
