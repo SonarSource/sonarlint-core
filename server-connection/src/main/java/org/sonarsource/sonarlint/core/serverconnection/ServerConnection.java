@@ -108,6 +108,7 @@ public class ServerConnection {
 
   public SynchronizationResult sync(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, ProgressMonitor monitor) {
     var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
+
     return storageSynchronizer.synchronize(serverApi, projectKeys, monitor);
   }
 
@@ -248,6 +249,12 @@ public class ServerConnection {
     } else {
       LOG.debug("Incremental hotspot sync is not supported. Skipping.");
     }
+  }
+
+  public void syncNewCodeDefinitionForProject(ServerApi serverApi, String projectKey, String branchName) {
+    var serverVersion = readOrSynchronizeServerVersion(serverApi);
+    serverApi.newCodeApi().getNewCodeDefinition(projectKey, branchName, serverVersion)
+      .thenAccept(newCodeDefinition -> storage.project(projectKey).newCodeDefinition().store(newCodeDefinition));
   }
 
   public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, ProgressMonitor monitor) {

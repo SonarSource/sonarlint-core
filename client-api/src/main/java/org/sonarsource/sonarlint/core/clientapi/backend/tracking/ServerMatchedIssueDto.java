@@ -32,14 +32,17 @@ public class ServerMatchedIssueDto {
   private final boolean resolved;
   private final IssueSeverity overriddenSeverity;
   private final RuleType type;
+  private final boolean isOnNewCode;
 
-  public ServerMatchedIssueDto(UUID id, @Nullable String serverKey, long introductionDate, boolean resolved, @Nullable IssueSeverity overriddenSeverity, RuleType type) {
+  public ServerMatchedIssueDto(UUID id, @Nullable String serverKey, long introductionDate,
+    boolean resolved, @Nullable IssueSeverity overriddenSeverity, RuleType type, boolean isOnNewCode) {
     this.id = id;
     this.serverKey = serverKey;
     this.introductionDate = introductionDate;
     this.resolved = resolved;
     this.overriddenSeverity = overriddenSeverity;
     this.type = type;
+    this.isOnNewCode = isOnNewCode;
   }
 
   public UUID getId() {
@@ -67,4 +70,9 @@ public class ServerMatchedIssueDto {
   public RuleType getType() {
     return type;
   }
+
+  public boolean isOnNewCode() {
+    return isOnNewCode;
+  }
+
 }
