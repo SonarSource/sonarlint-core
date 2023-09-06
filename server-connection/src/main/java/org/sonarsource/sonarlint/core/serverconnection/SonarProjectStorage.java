@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.nio.file.Path;
+import org.sonarsource.sonarlint.core.serverconnection.storage.NewCodeDefinitionStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStoresManager;
 import org.sonarsource.sonarlint.core.serverconnection.storage.SmartNotificationsStorage;
@@ -34,7 +35,9 @@ public class SonarProjectStorage {
   private final ProjectBranchesStorage projectBranchesStorage;
   private final ComponentsStorage componentsStorage;
   private final SmartNotificationsStorage smartNotificationsStorage;
+  private final NewCodeDefinitionStorage newCodeDefinitionStorage;
   private final Path projectStorageRoot;
+
 
   public SonarProjectStorage(Path projectsStorageRoot, ServerIssueStoresManager serverIssueStoresManager, String sonarProjectKey) {
     this.projectStorageRoot = projectsStorageRoot.resolve(encodeForFs(sonarProjectKey));
@@ -44,6 +47,7 @@ public class SonarProjectStorage {
     this.projectBranchesStorage = new ProjectBranchesStorage(projectStorageRoot);
     this.componentsStorage = new ComponentsStorage(projectStorageRoot);
     this.smartNotificationsStorage = new SmartNotificationsStorage(projectStorageRoot);
+    this.newCodeDefinitionStorage = new NewCodeDefinitionStorage(projectStorageRoot);
   }
 
   public ProjectServerIssueStore findings() {
@@ -64,6 +68,10 @@ public class SonarProjectStorage {
 
   public SmartNotificationsStorage smartNotifications() {
     return smartNotificationsStorage;
+  }
+
+  public NewCodeDefinitionStorage newCodeDefinition() {
+    return newCodeDefinitionStorage;
   }
 
   public Path filePath() {

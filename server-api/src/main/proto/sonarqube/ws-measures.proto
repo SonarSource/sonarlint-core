@@ -1,0 +1,85 @@
+// SonarLint, open source software quality management tool.
+// Copyright (C) 2015-2023 SonarSource
+// mailto:contact AT sonarsource DOT com
+//
+// SonarLint is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 3 of the License, or (at your option) any later version.
+//
+// SonarLint is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software Foundation,
+// Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+syntax = "proto2";
+
+package sonarqube.ws.measures;
+
+import "sonarqube/ws-commons.proto";
+
+option java_package = "org.sonarqube.ws";
+option java_outer_classname = "Measures";
+option optimize_for = SPEED;
+
+
+// WS api/measures/component
+message ComponentWsResponse {
+  optional Component component = 1;
+  optional Metrics metrics = 2;
+  optional Periods periods = 3;
+  optional Period period = 4;
+}
+
+
+message Component {
+  reserved 1,3;
+  optional string key = 2;
+  optional string refKey = 4;
+  optional string projectId = 5;
+  optional string name = 6;
+  optional string description = 7;
+  optional string qualifier = 8;
+  optional string path = 9;
+  optional string language = 10;
+  repeated Measure measures = 11;
+  optional string branch = 12;
+  optional string pullRequest = 13;
+}
+
+message Period {
+  //deprecated since 8.1
+  optional int32 index = 1;
+  optional string mode = 2;
+  optional string date = 3;
+  optional string parameter = 4;
+}
+
+message Periods {
+  repeated Period periods = 1;
+}
+
+message Metrics {
+  repeated sonarqube.ws.commons.Metric metrics = 1;
+}
+
+message Measure {
+  optional string metric = 1;
+  optional string value = 2;
+  reserved 3; // periods
+  optional string component = 4;
+  optional bool bestValue = 5;
+  optional PeriodValue period = 6;
+}
+
+
+message PeriodValue {
+  //deprecated since 8.1
+  optional int32 index = 1;
+  optional string value = 2;
+  optional bool bestValue = 3;
+}

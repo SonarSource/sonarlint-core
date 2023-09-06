@@ -97,3 +97,19 @@ message Location {
 message LastEventPolling {
   int64 last_event_polling = 1;
 }
+
+enum NewCodeDefinitionMode {
+  UNKNOWN = 0;
+  NUMBER_OF_DAYS = 1;
+  PREVIOUS_VERSION = 2;
+  REFERENCE_BRANCH = 3;
+  SPECIFIC_ANALYSIS = 4;
+}
+
+message NewCodeDefinition {
+  NewCodeDefinitionMode mode = 1;
+  optional int32 days = 2;
+  optional int64 thresholdDate = 3;
+  optional string version = 4;
+  optional string referenceBranch = 5;
+}

@@ -60,6 +60,7 @@ import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.issue.IssueServiceImpl;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
+import org.sonarsource.sonarlint.core.newcode.NewCodeServiceImpl;
 import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsServiceImpl;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -122,7 +123,8 @@ import org.springframework.context.annotation.Import;
   ServerEventsService.class,
   VersionSoonUnsupportedHelper.class,
   LocalOnlyIssueStorageService.class,
-  StorageService.class
+  StorageService.class,
+  NewCodeServiceImpl.class
 })
 public class SonarLintSpringAppConfig {
 

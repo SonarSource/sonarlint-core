@@ -43,6 +43,8 @@ import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ResolutionStatus;
+import org.sonarsource.sonarlint.core.clientapi.backend.newcode.GetNewCodeDefinitionParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.newcode.GetNewCodeDefinitionResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedIssueDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.IssueTrackingService;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
@@ -54,11 +56,13 @@ import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TrackWithServer
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
+import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 import org.sonarsource.sonarlint.core.issuetracking.Tracker;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
+import org.sonarsource.sonarlint.core.newcode.NewCodeServiceImpl;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.vcs.ActiveSonarProjectBranchRepository;
 import org.sonarsource.sonarlint.core.storage.StorageService;
@@ -79,25 +83,30 @@ public class IssueTrackingServiceImpl implements IssueTrackingService {
   private final SynchronizationServiceImpl synchronizationService;
   private final LocalOnlyIssueRepository localOnlyIssueRepository;
   private final LocalOnlyIssueStorageService localOnlyIssueStorageService;
+  private final NewCodeServiceImpl newCodeService;
   private final ExecutorService executorService;
 
   public IssueTrackingServiceImpl(ConfigurationRepository configurationRepository, StorageService storageService,
     ActiveSonarProjectBranchRepository activeSonarProjectBranchRepository, SynchronizationServiceImpl synchronizationService,
-    LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository) {
+    LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
+    NewCodeServiceImpl newCodeService) {
     this.configurationRepository = configurationRepository;
     this.storageService = storageService;
     this.activeSonarProjectBranchRepository = activeSonarProjectBranchRepository;
     this.synchronizationService = synchronizationService;
     this.localOnlyIssueRepository = localOnlyIssueRepository;
     this.localOnlyIssueStorageService = localOnlyIssueStorageService;
+    this.newCodeService = newCodeService;
     this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-server-tracking-issue-updater"));
   }
+
 
   @Override
   public CompletableFuture<TrackWithServerIssuesResponse> trackWithServerIssues(TrackWithServerIssuesParams params) {
     return CompletableFutures.computeAsync(cancelChecker -> {
-      var effectiveBindingOpt = configurationRepository.getEffectiveBinding(params.getConfigurationScopeId());
-      var activeBranchOpt = activeSonarProjectBranchRepository.getActiveSonarProjectBranch(params.getConfigurationScopeId());
+      var configurationScopeId = params.getConfigurationScopeId();
+      var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
+      var activeBranchOpt = activeSonarProjectBranchRepository.getActiveSonarProjectBranch(configurationScopeId);
       if (effectiveBindingOpt.isEmpty() || activeBranchOpt.isEmpty()) {
         return new TrackWithServerIssuesResponse(params.getClientTrackedIssuesByServerRelativePath().entrySet().stream()
           .map(e -> Map.entry(e.getKey(), e.getValue().stream()
@@ -110,17 +119,22 @@ public class IssueTrackingServiceImpl implements IssueTrackingService {
         refreshServerIssues(cancelChecker, binding, activeBranch, params);
       }
       var clientTrackedIssuesByServerRelativePath = params.getClientTrackedIssuesByServerRelativePath();
+      var newCodeDefinition = newCodeService.getNewCodeDefinition(new GetNewCodeDefinitionParams(configurationScopeId))
+        .exceptionally(ex -> new GetNewCodeDefinitionResponse(NewCodeDefinition.withAlwaysNew()))
+        .join().getNewCodeDefinition();
       return new TrackWithServerIssuesResponse(clientTrackedIssuesByServerRelativePath.entrySet().stream().map(e -> {
         var serverRelativePath = e.getKey();
         var serverIssues = storageService.binding(binding).findings().load(activeBranch, serverRelativePath);
-        var localOnlyIssues = localOnlyIssueStorageService.get().loadForFile(params.getConfigurationScopeId(), serverRelativePath);
+        var localOnlyIssues = localOnlyIssueStorageService.get().loadForFile(configurationScopeId, serverRelativePath);
         var clientIssueTrackables = toTrackables(e.getValue());
         var matches = matchIssues(serverRelativePath, serverIssues, localOnlyIssues, clientIssueTrackables)
           .stream().<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>map(result -> {
             if (result.isLeft()) {
               var serverIssue = result.getLeft();
-              return Either.forLeft(new ServerMatchedIssueDto(UUID.randomUUID(), serverIssue.getKey(), serverIssue.getCreationDate().toEpochMilli(), serverIssue.isResolved(),
-                serverIssue.getUserSeverity(), serverIssue.getType()));
+              var creationDate = serverIssue.getCreationDate().toEpochMilli();
+              var isOnNewCode = newCodeDefinition.isOnNewCode(creationDate);
+              return Either.forLeft(new ServerMatchedIssueDto(UUID.randomUUID(), serverIssue.getKey(), creationDate, serverIssue.isResolved(),
+                serverIssue.getUserSeverity(), serverIssue.getType(), isOnNewCode));
             } else {
               var localOnlyIssue = result.getRight();
               var resolution = localOnlyIssue.getResolution();

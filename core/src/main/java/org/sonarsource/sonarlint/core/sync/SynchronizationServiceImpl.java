@@ -162,6 +162,7 @@ public class SynchronizationServiceImpl {
       }
       serverConnection.syncServerHotspotsForProject(serverApi, boundScope.sonarProjectKey, branch);
       synchronizedConfScopeIds.add(boundScope.configurationScopeId);
+      serverConnection.syncNewCodeDefinitionForProject(serverApi, boundScope.sonarProjectKey, branch);
     });
   }
 
