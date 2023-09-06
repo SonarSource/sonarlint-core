@@ -29,6 +29,7 @@ import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.clientapi.backend.branch.DidChangeActiveSonarProjectBranchParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.newcode.GetNewCodeDefinitionParams;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -56,6 +57,7 @@ class SynchronizationMediumTests {
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
       assertThat(backend.getWorkDir()).isDirectoryContaining(path -> path.getFileName().toString().contains("xodus-issue-store"));
+      assertThat(backend.getNewCodeService().getNewCodeDefinition(new GetNewCodeDefinitionParams("configScopeId"))).isCompleted();
     });
   }
 

@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationServ
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.ConnectionService;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueService;
+import org.sonarsource.sonarlint.core.clientapi.backend.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RulesService;
 import org.sonarsource.sonarlint.core.clientapi.backend.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.IssueTrackingService;
@@ -120,6 +121,11 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   @Override
   public IssueTrackingService getIssueTrackingService() {
     return getInitializedApplicationContext().getBean(IssueTrackingService.class);
+  }
+
+  @Override
+  public NewCodeService getNewCodeService() {
+    return getInitializedApplicationContext().getBean(NewCodeService.class);
   }
 
   @Override

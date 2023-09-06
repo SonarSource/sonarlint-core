@@ -137,7 +137,7 @@ class TrackWithServerIssuesMediumTests {
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
         .hasEntrySatisfying("file/path", issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("left.id")
-          .isEqualTo(List.of(Either.<ServerMatchedIssueDto, LocalOnlyIssueDto>forLeft(new ServerMatchedIssueDto(null, "issueKey", 1000L, false, null, RuleType.BUG))))));
+          .isEqualTo(List.of(Either.<ServerMatchedIssueDto, LocalOnlyIssueDto>forLeft(new ServerMatchedIssueDto(null, "issueKey", 1000L, false, null, RuleType.BUG, true))))));
   }
 
   @Test
@@ -157,7 +157,7 @@ class TrackWithServerIssuesMediumTests {
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
         .hasEntrySatisfying("file/path", issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("left.id")
-          .isEqualTo(List.of(Either.<ServerMatchedIssueDto, LocalOnlyIssueDto>forLeft(new ServerMatchedIssueDto(null, "issueKey", 123456789L, false, null, RuleType.BUG))))));
+          .isEqualTo(List.of(Either.<ServerMatchedIssueDto, LocalOnlyIssueDto>forLeft(new ServerMatchedIssueDto(null, "issueKey", 123456789L, false, null, RuleType.BUG, true))))));
   }
 
   @Test

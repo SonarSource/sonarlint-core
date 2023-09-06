@@ -31,6 +31,7 @@ import mockwebserver3.MockResponse;
 import mockwebserver3.RecordedRequest;
 import org.sonar.scanner.protocol.Constants;
 import org.sonar.scanner.protocol.input.ScannerInput;
+import org.sonarqube.ws.Measures;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.TextRange;
@@ -285,6 +286,7 @@ public class ServerFixture {
         registerIssuesApiResponses();
         registerSourceApiResponses();
         registerDevelopersApiResponses();
+        registerMeasuresApiResponses();
       }
     }
 
@@ -432,6 +434,28 @@ public class ServerFixture {
       if (smartNotificationsSupported) {
         mockWebServer.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
       }
+    }
+
+    private void registerMeasuresApiResponses() {
+      projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
+        var branchParameter = branchName == null ? "" : "&branch=" + branchName;
+        var uriPath = "/api/measures/component.protobuf?additionalFields=period&metricKeys=projects&component=" + projectKey + branchParameter;
+        mockWebServer.addProtobufResponse(
+          uriPath,
+          // TODO Override with whatever is set on the branch fixture?
+          Measures.ComponentWsResponse.newBuilder()
+            .setComponent(Measures.Component.newBuilder()
+              .setKey(projectKey)
+              .setQualifier("TRK")
+              .build())
+            .setPeriod(Measures.Period.newBuilder()
+              .setMode("PREVIOUS_VERSION")
+              .setDate("2023-08-29T09:37:59+0000")
+              .setParameter("9.2")
+              .build())
+            .build()
+        );
+      }));
     }
 
     public void shutdown() {
