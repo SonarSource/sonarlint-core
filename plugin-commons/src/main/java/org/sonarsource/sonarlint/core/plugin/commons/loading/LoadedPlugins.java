@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core.plugin.commons.loading;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.JarURLConnection;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -75,6 +77,11 @@ public class LoadedPlugins implements Closeable {
     synchronized (filesToDelete) {
       for (var fileToDelete : filesToDelete) {
         try {
+          // Workaround for https://bugs.openjdk.org/browse/JDK-8239054
+          var url = new URL("jar:" + fileToDelete.toUri().toURL() + "!/");
+          var jarConnection = (JarURLConnection) url.openConnection();
+          var jarFile = jarConnection.getJarFile();
+          jarFile.close();
           Files.delete(fileToDelete);
         } catch (IOException e) {
           LOG.error("Failed to delete '{}'", fileToDelete, e);
