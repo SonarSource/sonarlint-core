@@ -63,9 +63,9 @@ class AnalysisEngineFakePluginMediumTests {
   SonarLintLogTester logTester = new SonarLintLogTester();
 
   private AnalysisEngine analysisEngine;
-  private AccumulatingModuleFileListener recordingModuleFileListener = new AccumulatingModuleFileListener();
-  private BlockingModuleFileListener blockingModuleFileListener = new BlockingModuleFileListener();
-  private BlockingSensor blockingSensor = new BlockingSensor();
+  private final AccumulatingModuleFileListener recordingModuleFileListener = new AccumulatingModuleFileListener();
+  private final BlockingModuleFileListener blockingModuleFileListener = new BlockingModuleFileListener();
+  private final BlockingSensor blockingSensor = new BlockingSensor();
 
   @BeforeEach
   void prepare(@TempDir Path workDir) throws IOException {
