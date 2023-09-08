@@ -154,7 +154,7 @@ qa_task:
   env:
     ARTIFACTORY_API_KEY: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-private-reader access_token]
     GITHUB_TOKEN: VAULT[development/github/token/licenses-ro token]
-    MAVEN_OPTS: '-Xmx4G'
+    MAVEN_OPTS: '-Xmx6G'
   matrix:
       -  env:
           SQ_VERSION: "SonarCloud"
