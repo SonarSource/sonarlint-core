@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -68,6 +69,7 @@ class AnalysisEngineMediumTests {
   private AnalysisEngine analysisEngine;
   private volatile boolean engineStopped = true;
   private final ProgressMonitor progressMonitor = new ProgressMonitor(null);
+  private Path pythonJarPathCopy;
 
   @BeforeEach
   void prepare(@TempDir Path workDir) throws IOException {
@@ -76,16 +78,19 @@ class AnalysisEngineMediumTests {
       .setClientPid(1234L)
       .setWorkDir(workDir)
       .build();
-    var result = new PluginsLoader().load(new PluginsLoader.Configuration(Set.of(findPythonJarPath()), enabledLanguages, Optional.empty()));
+    this.pythonJarPathCopy = Files.createTempFile("sonarpython", "jar");
+    Files.copy(findPythonJarPath(), pythonJarPathCopy, StandardCopyOption.REPLACE_EXISTING);
+    var result = new PluginsLoader().load(new PluginsLoader.Configuration(Set.of(pythonJarPathCopy), enabledLanguages, Optional.empty()));
     this.analysisEngine = new AnalysisEngine(analysisGlobalConfig, result.getLoadedPlugins(), logTester.getLogOutput());
     engineStopped = false;
   }
 
   @AfterEach
-  void cleanUp() {
+  void cleanUp() throws IOException {
     if (!engineStopped) {
       this.analysisEngine.stop();
     }
+    Files.delete(pythonJarPathCopy);
   }
 
   @Test
