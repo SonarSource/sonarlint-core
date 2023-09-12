@@ -44,16 +44,17 @@ public class InitializeParams {
   private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections;
   private final String sonarlintUserHome;
   private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey;
+  private final boolean isFocusOnNewCode;
 
   /**
-   * @param sonarlintUserHome         Path to SonarLint user home directory. If null, will default to ~/.sonarlint
    * @param workDir                   Path to work directory. If null, will default to [sonarlintUserHome]/work
+   * @param sonarlintUserHome         Path to SonarLint user home directory. If null, will default to ~/.sonarlint
    * @param standaloneRuleConfigByKey Local rule configuration for standalone analysis. This configuration will override defaults rule activation and parameters.
    */
   public InitializeParams(ClientInfoDto clientInfo, FeatureFlagsDto featureFlags, Path storageRoot, @Nullable Path workDir, Set<Path> embeddedPluginPaths,
     Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> extraEnabledLanguagesInConnectedMode,
-    List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections,
-    @Nullable String sonarlintUserHome, Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
+    List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections, @Nullable String sonarlintUserHome,
+    Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey, boolean isFocusOnNewCode) {
     this.clientInfo = clientInfo;
     this.featureFlags = featureFlags;
     this.storageRoot = storageRoot;
@@ -66,6 +67,7 @@ public class InitializeParams {
     this.sonarCloudConnections = sonarCloudConnections;
     this.sonarlintUserHome = sonarlintUserHome;
     this.standaloneRuleConfigByKey = standaloneRuleConfigByKey;
+    this.isFocusOnNewCode = isFocusOnNewCode;
   }
 
   public ClientInfoDto getClientInfo() {
@@ -118,4 +120,7 @@ public class InitializeParams {
     return standaloneRuleConfigByKey;
   }
 
+  public boolean isFocusOnNewCode() {
+    return isFocusOnNewCode;
+  }
 }

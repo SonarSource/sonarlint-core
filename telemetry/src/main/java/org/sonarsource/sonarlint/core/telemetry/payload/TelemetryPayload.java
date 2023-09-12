@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.telemetry.OffsetDateTimeAdapter;
+import org.sonarsource.sonarlint.core.telemetry.payload.cayc.CleanAsYouCodePayload;
 
 /**
  * Models the usage data uploaded
@@ -100,13 +101,16 @@ public class TelemetryPayload {
   @SerializedName("help_and_feedback")
   private final TelemetryHelpAndFeedbackPayload helpAndFeedbackPayload;
 
+  @SerializedName("cayc")
+  private final CleanAsYouCodePayload cleanAsYouCodePayload;
+
   private final transient Map<String, Object> additionalAttributes;
 
   public TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, String ideVersion, @Nullable String platform, @Nullable String architecture,
     boolean connectedMode, boolean connectedModeSonarcloud, OffsetDateTime systemTime, OffsetDateTime installTime, String os, String jre, @Nullable String nodejs,
     TelemetryAnalyzerPerformancePayload[] analyses, TelemetryNotificationsPayload notifications, ShowHotspotPayload showHotspotPayload,
     TaintVulnerabilitiesPayload taintVulnerabilitiesPayload, TelemetryRulesPayload telemetryRulesPayload, HotspotPayload hotspotPayload,
-    IssuePayload issuePayload, TelemetryHelpAndFeedbackPayload helpAndFeedbackPayload, Map<String, Object> additionalAttributes) {
+    IssuePayload issuePayload, TelemetryHelpAndFeedbackPayload helpAndFeedbackPayload, CleanAsYouCodePayload cleanAsYouCodePayload, Map<String, Object> additionalAttributes) {
     this.daysSinceInstallation = daysSinceInstallation;
     this.daysOfUse = daysOfUse;
     this.product = product;
@@ -129,6 +133,7 @@ public class TelemetryPayload {
     this.hotspotPayload = hotspotPayload;
     this.issuePayload = issuePayload;
     this.helpAndFeedbackPayload = helpAndFeedbackPayload;
+    this.cleanAsYouCodePayload = cleanAsYouCodePayload;
     this.additionalAttributes = additionalAttributes;
   }
 
@@ -182,6 +187,10 @@ public class TelemetryPayload {
 
   public TelemetryHelpAndFeedbackPayload helpAndFeedbackPayload() {
     return helpAndFeedbackPayload;
+  }
+
+  public CleanAsYouCodePayload cleanAsYouCodePayload() {
+    return cleanAsYouCodePayload;
   }
 
   public IssuePayload issuePayload() {

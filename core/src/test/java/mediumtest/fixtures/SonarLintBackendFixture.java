@@ -121,6 +121,7 @@ public class SonarLintBackendFixture {
 
     private final Map<String, StandaloneRuleConfigDto> standaloneConfigByKey = new HashMap<>();
     private final List<StorageFixture.StorageBuilder> storages = new ArrayList<>();
+    private boolean isFocusOnNewCode;
 
     public SonarLintBackendBuilder withSonarQubeConnection() {
       return withSonarQubeConnection("connectionId");
@@ -313,6 +314,11 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintBackendBuilder withFocusOnNewCode() {
+      isFocusOnNewCode = true;
+      return this;
+    }
+
     public SonarLintTestBackend build(FakeSonarLintClient client) {
       var sonarlintUserHome = tempDirectory("slUserHome");
       var workDir = tempDirectory("work");
@@ -331,7 +337,7 @@ public class SonarLintBackendFixture {
           .initialize(new InitializeParams(clientInfo, featureFlags,
             storageRoot, workDir, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
             enabledLanguages, extraEnabledLanguagesInConnectedMode, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
-            standaloneConfigByKey))
+            standaloneConfigByKey, isFocusOnNewCode))
           .get();
       } catch (Exception e) {
         throw new IllegalStateException("Cannot initialize the backend", e);

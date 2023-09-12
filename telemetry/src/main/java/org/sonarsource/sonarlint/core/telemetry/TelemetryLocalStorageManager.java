@@ -75,7 +75,7 @@ public class TelemetryLocalStorageManager {
     }
   }
 
-  private TelemetryLocalStorage readAtomically(FileChannel fileChannel) throws IOException {
+  private TelemetryLocalStorage readAtomically(FileChannel fileChannel) {
     try {
       if (fileChannel.size() == 0) {
         return new TelemetryLocalStorage();

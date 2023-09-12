@@ -52,6 +52,8 @@ public class TelemetryLocalStorage {
   private final Set<String> raisedIssuesRules;
   private final Set<String> quickFixesApplied;
   private final Map<String, TelemetryHelpAndFeedbackCounter> helpAndFeedbackLinkClickedCount;
+  private boolean isFocusOnNewCode;
+  private int codeFocusChangedCount;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -119,6 +121,14 @@ public class TelemetryLocalStorage {
     return helpAndFeedbackLinkClickedCount;
   }
 
+  public boolean isFocusOnNewCode() {
+    return isFocusOnNewCode;
+  }
+
+  public int getCodeFocusChangedCount() {
+    return codeFocusChangedCount;
+  }
+
   void setLastUploadTime() {
     setLastUploadTime(LocalDateTime.now());
   }
@@ -148,6 +158,7 @@ public class TelemetryLocalStorage {
     raisedIssuesRules.clear();
     quickFixesApplied.clear();
     this.helpAndFeedbackLinkClickedCount.clear();
+    this.codeFocusChangedCount = 0;
   }
 
   long numUseDays() {
@@ -299,5 +310,16 @@ public class TelemetryLocalStorage {
 
   public Set<String> issueStatusChangedRuleKeys() {
     return issueStatusChangedRuleKeys;
+  }
+
+  public void setInitialNewCodeFocus(boolean focusOnNewCode) {
+    markSonarLintAsUsedToday();
+    this.isFocusOnNewCode = focusOnNewCode;
+  }
+
+  public void incrementNewCodeFocusChange() {
+    markSonarLintAsUsedToday();
+    this.isFocusOnNewCode = !this.isFocusOnNewCode;
+    codeFocusChangedCount++;
   }
 }

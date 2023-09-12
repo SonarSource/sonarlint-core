@@ -144,7 +144,7 @@ public class SonarLintSpringAppConfig {
 
   @Bean
   TelemetryServiceImpl provideTelemetryService(InitializeParams params, @Named("userHome") Path sonarlintUserHome) {
-    return new TelemetryServiceImpl(params.getClientInfo().getTelemetryProductKey(), sonarlintUserHome);
+    return new TelemetryServiceImpl(params.getClientInfo().getTelemetryProductKey(), sonarlintUserHome, params.isFocusOnNewCode());
   }
 
   @Bean(name = "userHome")
