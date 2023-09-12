@@ -27,16 +27,19 @@ import org.sonarsource.sonarlint.core.clientapi.backend.newcode.GetNewCodeDefini
 import org.sonarsource.sonarlint.core.clientapi.backend.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
 @Named
 @Singleton
 public class NewCodeServiceImpl implements NewCodeService {
   private final ConfigurationRepository configurationRepository;
   private final StorageService storageService;
+  private final TelemetryServiceImpl telemetryService;
 
-  public NewCodeServiceImpl(ConfigurationRepository configurationRepository, StorageService storageService) {
+  public NewCodeServiceImpl(ConfigurationRepository configurationRepository, StorageService storageService, TelemetryServiceImpl telemetryService) {
     this.configurationRepository = configurationRepository;
     this.storageService = storageService;
+    this.telemetryService = telemetryService;
   }
 
   @Override
@@ -51,4 +54,8 @@ public class NewCodeServiceImpl implements NewCodeService {
       .orElse(CompletableFuture.failedFuture(new RuntimeException("No new code definition found for " + configScopeId)));
   }
 
+  @Override
+  public void didToggleFocus() {
+    telemetryService.newCodeFocusChanged();
+  }
 }

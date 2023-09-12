@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Telemetry
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,16 +17,22 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.backend.newcode;
+package org.sonarsource.sonarlint.core.telemetry.payload.cayc;
 
-import java.util.concurrent.CompletableFuture;
+public class NewCodeFocusPayload {
+  private final boolean enabled;
+  private final int changes;
 
-public interface NewCodeService {
+  public NewCodeFocusPayload(boolean enabled, int changes) {
+    this.enabled = enabled;
+    this.changes = changes;
+  }
 
-  CompletableFuture<GetNewCodeDefinitionResponse> getNewCodeDefinition(GetNewCodeDefinitionParams params);
+  public boolean isEnabled() {
+    return enabled;
+  }
 
-  /**
-   * Clients are expected to call this method when the "focus on new code" setting is modified by the user. The implementation will update the telemetry accordingly.
-   */
-  void didToggleFocus();
+  public int getChanges() {
+    return changes;
+  }
 }
