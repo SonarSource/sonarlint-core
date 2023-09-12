@@ -80,14 +80,14 @@ build_task:
   cleanup_before_cache_script: cleanup_maven_repository
 
 test_linux_task:
-  # Run unit tests on Linux with Java 11 and SonarQube analysis on Next
+  # Run unit tests on Linux with Java 17 and SonarQube analysis on Next
   depends_on:
     - build
   <<: *ONLY_IF_EXCEPT_NIGHTLY
   eks_container:
     <<: *CONTAINER_DEFINITION
   env:
-    JDK_VERSION: "11"
+    JDK_VERSION: "17"
     DEPLOY_PULL_REQUEST: "false"
   <<: *MAVEN_CACHE_DEFINITION
   script:
