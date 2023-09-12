@@ -31,6 +31,8 @@ import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryHelpAndFeedbackCounter;
+import org.sonarsource.sonarlint.core.telemetry.payload.cayc.CleanAsYouCodePayload;
+import org.sonarsource.sonarlint.core.telemetry.payload.cayc.NewCodeFocusPayload;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -66,9 +68,10 @@ class TelemetryPayloadTests {
     Map<String, Object> additionalPropsSub = new LinkedHashMap<>();
     additionalPropsSub.put("aSubNumber", 2);
     additionalProps.put("sub", additionalPropsSub);
+    var cleanAsYouCodePayload = new CleanAsYouCodePayload(new NewCodeFocusPayload(true, 2));
     var m = new TelemetryPayload(4, 15, "SLI", "2.4", "Pycharm 3.2", "platform", "architecture",
       true, true, systemTime, installTime, "Windows 10", "1.8.0", "10.5.2", perf,
-      notifPayload, showHotspotPayload, taintVulnerabilitiesPayload, rulesPayload, hotspotPayload, issuePayload, helpAndFeedbackPayload, additionalProps);
+      notifPayload, showHotspotPayload, taintVulnerabilitiesPayload, rulesPayload, hotspotPayload, issuePayload, helpAndFeedbackPayload, cleanAsYouCodePayload, additionalProps);
     var s = m.toJson();
 
     assertThat(s).isEqualTo("{\"days_since_installation\":4,"
@@ -93,6 +96,7 @@ class TelemetryPayloadTests {
       + "\"hotspot\":{\"open_in_browser_count\":5,\"status_changed_count\":3},"
       + "\"issue\":{\"status_changed_rule_keys\":[\"java:S123\"]},"
       + "\"help_and_feedback\":{\"count_by_link\":{\"docs\":5,\"faq\":4}},"
+      + "\"cayc\":{\"new_code_focus\":{\"enabled\":true,\"changes\":2}},"
       + "\"aString\":\"stringValue\","
       + "\"aBool\":false,"
       + "\"aNumber\":1.5,"
@@ -112,6 +116,9 @@ class TelemetryPayloadTests {
     assertThat(m.notifications().disabled()).isTrue();
     assertThat(m.notifications().counters()).containsOnlyKeys("QUALITY_GATE", "NEW_ISSUES");
     assertThat(m.helpAndFeedbackPayload().getCounters()).containsOnlyKeys("docs", "faq");
+    assertThat(m.cleanAsYouCodePayload().getNewCodePayload())
+      .extracting(NewCodeFocusPayload::isEnabled, NewCodeFocusPayload::getChanges)
+      .containsExactly(true, 2);
     assertThat(m.issuePayload().getStatusChangedRuleKeys()).isEqualTo(Set.of("java:S123"));
     assertThat(m.additionalAttributes()).containsExactlyEntriesOf(additionalProps);
   }

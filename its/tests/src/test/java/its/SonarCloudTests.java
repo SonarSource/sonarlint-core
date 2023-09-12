@@ -144,7 +144,7 @@ class SonarCloudTests extends AbstractConnectedTests {
       new InitializeParams(IT_CLIENT_INFO, new FeatureFlagsDto(false, true, false, false, false, false), sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
         Collections.emptySet(), Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(),
         Collections.emptyList(), List.of(new SonarCloudConnectionConfigurationDto(CONNECTION_ID, SONARCLOUD_ORGANIZATION, true)), sonarUserHome.toString(),
-        Map.of()));
+        Map.of(), false));
 
     randomPositiveInt = new Random().nextInt() & Integer.MAX_VALUE;
 

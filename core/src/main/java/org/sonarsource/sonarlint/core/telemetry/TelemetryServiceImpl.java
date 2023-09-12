@@ -34,13 +34,14 @@ public class TelemetryServiceImpl implements TelemetryService {
   @CheckForNull
   private final TelemetryLocalStorageManager telemetryLocalStorageManager;
 
-  public TelemetryServiceImpl(String productKey, Path sonarlintUserHome) {
+  public TelemetryServiceImpl(String productKey, Path sonarlintUserHome, boolean focusOnNewCode) {
     if (isDisabledBySystemProperty()) {
       LOG.info("Telemetry disabled by system property");
       this.telemetryLocalStorageManager = null;
       return;
     }
     this.telemetryLocalStorageManager = new TelemetryLocalStorageManager(TelemetryPathManager.getPath(sonarlintUserHome, productKey));
+    this.telemetryLocalStorageManager.tryUpdateAtomically(storage -> storage.setInitialNewCodeFocus(focusOnNewCode));
   }
 
   private static boolean isDisabledBySystemProperty() {
@@ -90,6 +91,12 @@ public class TelemetryServiceImpl implements TelemetryService {
   public void issueStatusChanged(String ruleKey) {
     if (isEnabled()) {
       getTelemetryLocalStorageManager().tryUpdateAtomically(telemetryLocalStorage -> telemetryLocalStorage.addIssueStatusChanged(ruleKey));
+    }
+  }
+
+  public void newCodeFocusChanged() {
+    if (isEnabled()) {
+      getTelemetryLocalStorageManager().tryUpdateAtomically(storage -> storage.incrementNewCodeFocusChange());
     }
   }
 }

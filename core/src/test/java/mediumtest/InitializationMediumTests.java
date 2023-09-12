@@ -55,7 +55,7 @@ class InitializationMediumTests {
       .initialize(new InitializeParams(new ClientInfoDto("name", "productKey", "userAgent"), new FeatureFlagsDto(false, false, false, false, false, false),
         Path.of("unused"), Path.of("unused"),
         emptySet(), emptyMap(), emptySet(), emptySet(),
-        emptyList(), emptyList(), "home", emptyMap()));
+        emptyList(), emptyList(), "home", emptyMap(), false));
 
     assertThat(future)
       .failsWithin(Duration.ofSeconds(1))

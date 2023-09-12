@@ -118,7 +118,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
           Collections.emptySet(),
           Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(),
           List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(),
-          Map.of()))
+          Map.of(), false))
         .get();
     } catch (Exception e) {
       throw new IllegalStateException("Cannot initialize the backend", e);
