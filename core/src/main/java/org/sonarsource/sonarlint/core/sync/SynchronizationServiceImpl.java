@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializePar
 import org.sonarsource.sonarlint.core.clientapi.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.event.ActiveSonarProjectBranchChanged;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.progress.ProgressNotifier;
@@ -187,6 +188,20 @@ public class SynchronizationServiceImpl {
     serverApiProvider.getServerApi(binding.getConnectionId()).ifPresent(serverApi -> {
       var serverConnection = getServerConnection(binding.getConnectionId(), serverApi);
       serverConnection.downloadServerIssuesForFile(serverApi, binding.getSonarProjectKey(), serverFileRelativePath, activeBranch);
+    });
+  }
+
+  public void fetchProjectHotspots(Binding binding, String activeBranch) {
+    serverApiProvider.getServerApi(binding.getConnectionId()).ifPresent(serverApi -> {
+      var serverConnection = getServerConnection(binding.getConnectionId(), serverApi);
+      serverConnection.downloadAllServerHotspots(serverApi, binding.getSonarProjectKey(), activeBranch, new ProgressMonitor(null));
+    });
+  }
+
+  public void fetchFileHotspots(Binding binding, String activeBranch, String serverFilePath) {
+    serverApiProvider.getServerApi(binding.getConnectionId()).ifPresent(serverApi -> {
+      var serverConnection = getServerConnection(binding.getConnectionId(), serverApi);
+      serverConnection.downloadAllServerHotspotsForFile(serverApi, binding.getSonarProjectKey(), serverFilePath, activeBranch);
     });
   }
 

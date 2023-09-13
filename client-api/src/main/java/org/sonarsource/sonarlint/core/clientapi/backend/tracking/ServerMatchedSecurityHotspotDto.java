@@ -20,28 +20,20 @@
 package org.sonarsource.sonarlint.core.clientapi.backend.tracking;
 
 import java.util.UUID;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotStatus;
 
-public class ServerMatchedIssueDto {
+public class ServerMatchedSecurityHotspotDto {
   private final UUID id;
   private final String serverKey;
   private final long introductionDate;
-  private final boolean resolved;
-  private final IssueSeverity overriddenSeverity;
-  private final RuleType type;
+  private final HotspotStatus status;
   private final boolean isOnNewCode;
 
-  public ServerMatchedIssueDto(UUID id, String serverKey, long introductionDate,
-    boolean resolved, @Nullable IssueSeverity overriddenSeverity, RuleType type, boolean isOnNewCode) {
+  public ServerMatchedSecurityHotspotDto(UUID id, String serverKey, long introductionDate, HotspotStatus status, boolean isOnNewCode) {
     this.id = id;
     this.serverKey = serverKey;
     this.introductionDate = introductionDate;
-    this.resolved = resolved;
-    this.overriddenSeverity = overriddenSeverity;
-    this.type = type;
+    this.status = status;
     this.isOnNewCode = isOnNewCode;
   }
 
@@ -57,17 +49,8 @@ public class ServerMatchedIssueDto {
     return introductionDate;
   }
 
-  public boolean isResolved() {
-    return resolved;
-  }
-
-  @CheckForNull
-  public IssueSeverity getOverriddenSeverity() {
-    return overriddenSeverity;
-  }
-
-  public RuleType getType() {
-    return type;
+  public HotspotStatus getStatus() {
+    return status;
   }
 
   public boolean isOnNewCode() {

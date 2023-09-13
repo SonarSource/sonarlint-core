@@ -55,14 +55,17 @@ public class ServerHotspotUpdater {
     if (serverFilePath == null) {
       return;
     }
+    updateForFile(hotspotApi, projectBinding.projectKey(), serverFilePath, branchName, serverVersionSupplier);
+  }
+
+  public void updateForFile(HotspotApi hotspotApi, String projectKey, String serverFilePath, String branchName, Supplier<Version> serverVersionSupplier) {
     if (hotspotApi.supportHotspotsPull(serverVersionSupplier)) {
       LOG.debug("Skip downloading file hotspots on SonarQube 10.1+");
       return;
     }
     if (hotspotApi.permitsTracking(serverVersionSupplier)) {
-      var projectKey = projectBinding.projectKey();
-      var projectHotspots = hotspotApi.getFromFile(projectKey, serverFilePath, branchName);
-      storage.project(projectKey).findings().replaceAllHotspotsOfFile(branchName, serverFilePath, projectHotspots);
+      var fileHotspots = hotspotApi.getFromFile(projectKey, serverFilePath, branchName);
+      storage.project(projectKey).findings().replaceAllHotspotsOfFile(branchName, serverFilePath, fileHotspots);
     } else {
       LOG.info("Skip downloading hotspots for file, not supported");
     }

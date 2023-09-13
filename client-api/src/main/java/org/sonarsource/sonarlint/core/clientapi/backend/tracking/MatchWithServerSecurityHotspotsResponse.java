@@ -21,28 +21,16 @@ package org.sonarsource.sonarlint.core.clientapi.backend.tracking;
 
 import java.util.List;
 import java.util.Map;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
-public class TrackWithServerIssuesParams {
-  private final String configurationScopeId;
-  private final Map<String, List<ClientTrackedFindingDto>> clientTrackedIssuesByServerRelativePath;
-  private final boolean shouldFetchIssuesFromServer;
+public class MatchWithServerSecurityHotspotsResponse {
+  private final Map<String, List<Either<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>>> securityHotspotsByServerRelativePath;
 
-  public TrackWithServerIssuesParams(String configurationScopeId, Map<String, List<ClientTrackedFindingDto>> clientTrackedIssuesByServerRelativePath,
-    boolean shouldFetchIssuesFromServer) {
-    this.configurationScopeId = configurationScopeId;
-    this.clientTrackedIssuesByServerRelativePath = clientTrackedIssuesByServerRelativePath;
-    this.shouldFetchIssuesFromServer = shouldFetchIssuesFromServer;
+  public MatchWithServerSecurityHotspotsResponse(Map<String, List<Either<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>>> hotspotsByServerRelativePath) {
+    this.securityHotspotsByServerRelativePath = hotspotsByServerRelativePath;
   }
 
-  public String getConfigurationScopeId() {
-    return configurationScopeId;
-  }
-
-  public Map<String, List<ClientTrackedFindingDto>> getClientTrackedIssuesByServerRelativePath() {
-    return clientTrackedIssuesByServerRelativePath;
-  }
-
-  public boolean shouldFetchIssuesFromServer() {
-    return shouldFetchIssuesFromServer;
+  public Map<String, List<Either<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>>> getSecurityHotspotsByServerRelativePath() {
+    return securityHotspotsByServerRelativePath;
   }
 }
