@@ -36,7 +36,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.issue.ChangeIssueStatusP
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ResolutionStatus;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenAllIssuesForFileParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenIssueParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedIssueDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedFindingDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LocalOnlyIssueDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TextRangeWithHashDto;
@@ -155,7 +155,7 @@ class IssuesStatusChangeMediumTests {
       .build();
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedIssueDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
     LocalOnlyIssueDto localOnlyIssue = null;
@@ -185,7 +185,7 @@ class IssuesStatusChangeMediumTests {
       .build();
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedIssueDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
     LocalOnlyIssueDto localOnlyIssue = null;
@@ -217,7 +217,7 @@ class IssuesStatusChangeMediumTests {
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedIssueDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
     LocalOnlyIssueDto localOnlyIssue = null;

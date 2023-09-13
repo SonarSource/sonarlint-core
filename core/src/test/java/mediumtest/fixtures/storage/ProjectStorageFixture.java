@@ -25,9 +25,12 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -35,9 +38,11 @@ import jetbrains.exodus.entitystore.PersistentEntityStores;
 import jetbrains.exodus.env.Environments;
 import jetbrains.exodus.util.CompressBackupUtil;
 import org.apache.commons.io.FileUtils;
+import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.serverconnection.storage.HotspotReviewStatusBinding;
 import org.sonarsource.sonarlint.core.serverconnection.storage.InstantBinding;
 import org.sonarsource.sonarlint.core.serverconnection.storage.IssueSeverityBinding;
 import org.sonarsource.sonarlint.core.serverconnection.storage.IssueTypeBinding;
@@ -167,43 +172,73 @@ public class ProjectStorageFixture {
         entityStore.registerCustomPropertyType(txn, IssueSeverity.class, new IssueSeverityBinding());
         entityStore.registerCustomPropertyType(txn, RuleType.class, new IssueTypeBinding());
         entityStore.registerCustomPropertyType(txn, Instant.class, new InstantBinding());
+        entityStore.registerCustomPropertyType(txn, HotspotReviewStatus.class, new HotspotReviewStatusBinding());
         branches.forEach(branch -> {
           var branchEntity = txn.newEntity("Branch");
           branchEntity.setProperty("name", branch.name);
-          branch.serverIssues.stream()
+          var issuesByFilePath = branch.serverIssues.stream()
             .map(ServerIssueFixtures.ServerIssueBuilder::build)
-            .collect(Collectors.groupingBy(ServerIssueFixtures.ServerIssue::getFilePath))
-            .forEach((filePath, issues) -> {
+            .collect(Collectors.groupingBy(ServerIssueFixtures.ServerIssue::getFilePath));
+          var hotspotsByFilePath = branch.serverHotspots.stream()
+            .map(ServerSecurityHotspotFixture.ServerSecurityHotspotBuilder::build)
+            .collect(Collectors.groupingBy(ServerSecurityHotspotFixture.ServerHotspot::getFilePath));
+          concat(issuesByFilePath.keySet(), hotspotsByFilePath.keySet())
+            .forEach(filePath -> {
               var fileEntity = txn.newEntity("File");
               fileEntity.setProperty("path", filePath);
               branchEntity.addLink("files", fileEntity);
-              issues.forEach(issue -> {
-                var issueEntity = txn.newEntity("Issue");
-                issueEntity.setProperty("key", issue.key);
-                issueEntity.setProperty("type", issue.ruleType);
-                issueEntity.setProperty("resolved", issue.resolved);
-                issueEntity.setProperty("ruleKey", issue.ruleKey);
-                issueEntity.setBlobString("message", issue.message);
-                issueEntity.setProperty("creationDate", issue.introductionDate);
-                var userSeverity = issue.userSeverity;
-                if (userSeverity != null) {
-                  issueEntity.setProperty("userSeverity", userSeverity);
-                }
-                if (issue.lineNumber != null && issue.lineHash != null) {
-                  issueEntity.setBlobString("lineHash", issue.lineHash);
-                  issueEntity.setProperty("startLine", issue.lineNumber);
-                } else if (issue.textRangeWithHash != null) {
-                  var textRange = issue.textRangeWithHash;
-                  issueEntity.setProperty("startLine", textRange.getStartLine());
-                  issueEntity.setProperty("startLineOffset", textRange.getStartLineOffset());
-                  issueEntity.setProperty("endLine", textRange.getEndLine());
-                  issueEntity.setProperty("endLineOffset", textRange.getEndLineOffset());
-                  issueEntity.setBlobString("rangeHash", textRange.getHash());
-                }
+              issuesByFilePath.getOrDefault(filePath, Collections.emptyList())
+                .forEach(issue -> {
+                  var issueEntity = txn.newEntity("Issue");
+                  issueEntity.setProperty("key", issue.key);
+                  issueEntity.setProperty("type", issue.ruleType);
+                  issueEntity.setProperty("resolved", issue.resolved);
+                  issueEntity.setProperty("ruleKey", issue.ruleKey);
+                  issueEntity.setBlobString("message", issue.message);
+                  issueEntity.setProperty("creationDate", issue.introductionDate);
+                  var userSeverity = issue.userSeverity;
+                  if (userSeverity != null) {
+                    issueEntity.setProperty("userSeverity", userSeverity);
+                  }
+                  if (issue.lineNumber != null && issue.lineHash != null) {
+                    issueEntity.setBlobString("lineHash", issue.lineHash);
+                    issueEntity.setProperty("startLine", issue.lineNumber);
+                  } else if (issue.textRangeWithHash != null) {
+                    var textRange = issue.textRangeWithHash;
+                    issueEntity.setProperty("startLine", textRange.getStartLine());
+                    issueEntity.setProperty("startLineOffset", textRange.getStartLineOffset());
+                    issueEntity.setProperty("endLine", textRange.getEndLine());
+                    issueEntity.setProperty("endLineOffset", textRange.getEndLineOffset());
+                    issueEntity.setBlobString("rangeHash", textRange.getHash());
+                  }
 
-                issueEntity.setLink("file", fileEntity);
-                fileEntity.addLink("issues", issueEntity);
-              });
+                  issueEntity.setLink("file", fileEntity);
+                  fileEntity.addLink("issues", issueEntity);
+                });
+
+              hotspotsByFilePath.getOrDefault(filePath, Collections.emptyList())
+                .forEach(hotspot -> {
+                  var hotspotEntity = txn.newEntity("Hotspot");
+                  hotspotEntity.setProperty("key", hotspot.key);
+                  hotspotEntity.setProperty("ruleKey", hotspot.ruleKey);
+                  hotspotEntity.setBlobString("message", hotspot.message);
+                  hotspotEntity.setProperty("creationDate", hotspot.introductionDate);
+                  var textRange = hotspot.textRangeWithHash;
+                  hotspotEntity.setProperty("startLine", textRange.getStartLine());
+                  hotspotEntity.setProperty("startLineOffset", textRange.getStartLineOffset());
+                  hotspotEntity.setProperty("endLine", textRange.getEndLine());
+                  hotspotEntity.setProperty("endLineOffset", textRange.getEndLineOffset());
+                  hotspotEntity.setBlobString("rangeHash", textRange.getHash());
+
+                  hotspotEntity.setProperty("status", hotspot.status);
+                  hotspotEntity.setProperty("vulnerabilityProbability", hotspot.vulnerabilityProbability.toString());
+                  if (hotspot.assignee != null) {
+                    hotspotEntity.setProperty("assignee", hotspot.assignee);
+                  }
+
+                  hotspotEntity.setLink("file", fileEntity);
+                  fileEntity.addLink("hotspots", hotspotEntity);
+                });
             });
         });
       });
@@ -212,6 +247,12 @@ public class ProjectStorageFixture {
       } catch (Exception e) {
         throw new IllegalStateException("Unable to backup server issue database", e);
       }
+    }
+
+    private <T> Set<T> concat(Set<T> set, Set<T> otherSet) {
+      var concatSet = new HashSet<T>(set);
+      concatSet.addAll(otherSet);
+      return concatSet;
     }
 
     public static class RuleSetBuilder {
@@ -239,6 +280,7 @@ public class ProjectStorageFixture {
 
     public static class BranchBuilder {
       private final List<ServerIssueFixtures.ServerIssueBuilder> serverIssues = new ArrayList<>();
+      private final List<ServerSecurityHotspotFixture.ServerSecurityHotspotBuilder> serverHotspots = new ArrayList<>();
       private final String name;
 
       public BranchBuilder(String name) {
@@ -247,6 +289,11 @@ public class ProjectStorageFixture {
 
       public BranchBuilder withIssue(ServerIssueFixtures.ServerIssueBuilder serverIssueBuilder) {
         serverIssues.add(serverIssueBuilder);
+        return this;
+      }
+
+      public BranchBuilder withHotspot(ServerSecurityHotspotFixture.ServerSecurityHotspotBuilder serverHotspotBuilder) {
+        serverHotspots.add(serverHotspotBuilder);
         return this;
       }
     }

@@ -36,7 +36,7 @@ import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangePermittedParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ResolutionStatus;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedIssueDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedFindingDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LocalOnlyIssueDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TextRangeWithHashDto;
@@ -202,7 +202,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .build();
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedIssueDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
     LocalOnlyIssueDto localOnlyIssue = null;
@@ -230,7 +230,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .build();
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedIssueDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
     LocalOnlyIssueDto localOnlyIssue = null;
@@ -258,7 +258,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .build();
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedIssueDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
     LocalOnlyIssueDto localOnlyIssue = null;
