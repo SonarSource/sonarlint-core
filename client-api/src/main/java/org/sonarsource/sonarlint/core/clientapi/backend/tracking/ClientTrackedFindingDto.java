@@ -23,7 +23,7 @@ import java.util.UUID;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
-public class ClientTrackedIssueDto {
+public class ClientTrackedFindingDto {
   private final UUID id;
   private final String serverKey;
   private final TextRangeWithHashDto textRangeWithHash;
@@ -37,7 +37,7 @@ public class ClientTrackedIssueDto {
    * @param textRangeWithHash null when it's a file-level issue
    * @param lineWithHash null when it's a file-level issue
    */
-  public ClientTrackedIssueDto(@Nullable UUID id, @Nullable String serverKey, @Nullable TextRangeWithHashDto textRangeWithHash, @Nullable LineWithHashDto lineWithHash,
+  public ClientTrackedFindingDto(@Nullable UUID id, @Nullable String serverKey, @Nullable TextRangeWithHashDto textRangeWithHash, @Nullable LineWithHashDto lineWithHash,
     String ruleKey, String message) {
     this.id = id;
     this.serverKey = serverKey;

@@ -20,21 +20,21 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import org.jetbrains.annotations.Nullable;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedIssueDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedFindingDto;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 
-public class ClientTrackedIssueTrackable implements Trackable {
-  private final ClientTrackedIssueDto clientTrackedIssue;
+public class ClientTrackedFindingTrackable implements Trackable {
+  private final ClientTrackedFindingDto clientTrackedIssue;
 
-  public ClientTrackedIssueTrackable(ClientTrackedIssueDto clientTrackedIssue) {
+  public ClientTrackedFindingTrackable(ClientTrackedFindingDto clientTrackedIssue) {
     this.clientTrackedIssue = clientTrackedIssue;
   }
 
-  public ClientTrackedIssueDto getClientTrackedIssue() {
+  public ClientTrackedFindingDto getClientTrackedIssue() {
     return clientTrackedIssue;
   }
 
