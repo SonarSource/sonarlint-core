@@ -45,7 +45,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ResolutionStatus;
 import org.sonarsource.sonarlint.core.clientapi.backend.newcode.GetNewCodeDefinitionParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.newcode.GetNewCodeDefinitionResponse;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedIssueDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedFindingDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.IssueTrackingService;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LocalOnlyIssueDto;
@@ -162,12 +162,12 @@ public class IssueTrackingServiceImpl implements IssueTrackingService {
   }
 
   private List<Either<ServerIssue, LocalOnlyIssue>> matchIssues(String serverRelativePath, List<ServerIssue> serverIssues,
-    List<LocalOnlyIssue> localOnlyIssues, Collection<ClientTrackedIssueTrackable> clientTrackedIssueTrackables) {
+    List<LocalOnlyIssue> localOnlyIssues, Collection<ClientTrackedFindingTrackable> clientTrackedIssueTrackables) {
     var tracker = new Tracker<>();
     var trackingResult = tracker.track(() -> new ArrayList<>(clientTrackedIssueTrackables),
       () -> mergeTrackables(toServerIssueTrackables(serverIssues), toLocalOnlyIssueTrackables(localOnlyIssues)));
-    var matches = clientTrackedIssueTrackables.stream().<Either<ServerIssue, LocalOnlyIssue>>map(clientTrackedIssueTrackable -> {
-      var match = trackingResult.getMatch(clientTrackedIssueTrackable);
+    var matches = clientTrackedIssueTrackables.stream().<Either<ServerIssue, LocalOnlyIssue>>map(clientTrackedFindingTrackable -> {
+      var match = trackingResult.getMatch(clientTrackedFindingTrackable);
       if (match != null) {
         if (match.getServerIssueKey() != null) {
           return Either.forLeft(((ServerIssueTrackable) match).getServerIssue());
@@ -175,7 +175,7 @@ public class IssueTrackingServiceImpl implements IssueTrackingService {
           return Either.forRight(((LocalOnlyIssueTrackable) match).getLocalOnlyIssue());
         }
       } else {
-        var clientTrackedIssue = clientTrackedIssueTrackable.getClientTrackedIssue();
+        var clientTrackedIssue = clientTrackedFindingTrackable.getClientTrackedIssue();
         return Either
           .forRight(new LocalOnlyIssue(UUID.randomUUID(), serverRelativePath, adapt(clientTrackedIssue.getTextRangeWithHash()), adapt(clientTrackedIssue.getLineWithHash()),
             clientTrackedIssue.getRuleKey(), clientTrackedIssue.getMessage(), null));
@@ -197,8 +197,8 @@ public class IssueTrackingServiceImpl implements IssueTrackingService {
     return line == null ? null : new LineWithHash(line.getNumber(), line.getHash());
   }
 
-  private static Collection<ClientTrackedIssueTrackable> toTrackables(List<ClientTrackedIssueDto> clientTrackedIssue) {
-    return clientTrackedIssue.stream().map(ClientTrackedIssueTrackable::new).collect(Collectors.toList());
+  private static Collection<ClientTrackedFindingTrackable> toTrackables(List<ClientTrackedFindingDto> clientTrackedIssue) {
+    return clientTrackedIssue.stream().map(ClientTrackedFindingTrackable::new).collect(Collectors.toList());
   }
 
   private static Collection<Trackable> mergeTrackables(Collection<Trackable> serverTrackables, Collection<Trackable> localOnlyTrackables) {
@@ -216,7 +216,7 @@ public class IssueTrackingServiceImpl implements IssueTrackingService {
   @PreDestroy
   public void shutdown() {
     if (!MoreExecutors.shutdownAndAwaitTermination(executorService, 1, TimeUnit.SECONDS)) {
-      LOG.warn("Unable to stop binding suggestions executor service in a timely manner");
+      LOG.warn("Unable to stop issue updater executor service in a timely manner");
     }
   }
 }

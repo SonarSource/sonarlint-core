@@ -17,7 +17,18 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-@ParametersAreNonnullByDefault
 package org.sonarsource.sonarlint.core.tracking;
 
-import javax.annotation.ParametersAreNonnullByDefault;
+import java.util.UUID;
+
+public class LocalOnlySecurityHotspot {
+  private final UUID id;
+
+  public LocalOnlySecurityHotspot(UUID id) {
+    this.id = id;
+  }
+
+  public UUID getId() {
+    return id;
+  }
+}

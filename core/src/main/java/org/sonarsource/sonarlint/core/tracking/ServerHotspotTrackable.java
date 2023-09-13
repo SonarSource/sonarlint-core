@@ -34,6 +34,10 @@ public class ServerHotspotTrackable implements Trackable {
     this.serverHotspot = serverHotspot;
   }
 
+  public ServerHotspot getServerHotspot() {
+    return serverHotspot;
+  }
+
   @Override
   public Object getClientObject() {
     throw new UnsupportedOperationException();

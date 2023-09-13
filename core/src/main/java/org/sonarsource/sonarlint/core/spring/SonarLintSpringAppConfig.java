@@ -43,7 +43,6 @@ import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.TokenGeneratorHelper;
 import org.sonarsource.sonarlint.core.VersionSoonUnsupportedHelper;
 import org.sonarsource.sonarlint.core.analysis.AnalysisServiceImpl;
-import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchServiceImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
@@ -60,6 +59,7 @@ import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.issue.IssueServiceImpl;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
+import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.newcode.NewCodeServiceImpl;
 import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsServiceImpl;
@@ -70,13 +70,14 @@ import org.sonarsource.sonarlint.core.repository.vcs.ActiveSonarProjectBranchRep
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
 import org.sonarsource.sonarlint.core.rules.RulesServiceImpl;
 import org.sonarsource.sonarlint.core.server.event.ServerEventsService;
-import org.sonarsource.sonarlint.core.storage.StorageService;
-import org.sonarsource.sonarlint.core.websocket.WebSocketService;
 import org.sonarsource.sonarlint.core.smartnotifications.SmartNotifications;
+import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 import org.sonarsource.sonarlint.core.tracking.IssueTrackingServiceImpl;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
+import org.sonarsource.sonarlint.core.tracking.SecurityHotspotMatchingServiceImpl;
+import org.sonarsource.sonarlint.core.websocket.WebSocketService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -124,7 +125,8 @@ import org.springframework.context.annotation.Import;
   VersionSoonUnsupportedHelper.class,
   LocalOnlyIssueStorageService.class,
   StorageService.class,
-  NewCodeServiceImpl.class
+  NewCodeServiceImpl.class,
+  SecurityHotspotMatchingServiceImpl.class
 })
 public class SonarLintSpringAppConfig {
 

@@ -20,12 +20,14 @@
 package mediumtest.fixtures;
 
 import com.google.protobuf.Message;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import mockwebserver3.MockResponse;
 import mockwebserver3.RecordedRequest;
@@ -36,12 +38,18 @@ import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
+import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import testutils.MockWebServerExtensionWithProtobuf;
+
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toList;
+import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 
 public class ServerFixture {
   public static ServerBuilder newSonarQubeServer() {
@@ -126,7 +134,7 @@ public class ServerFixture {
     }
 
     public static class ServerProjectBranchBuilder {
-      private final Map<String, ServerHotspot> hotspotsByKey = new HashMap<>();
+      private final Collection<ServerHotspot> hotspots = new ArrayList<>();
       private final Collection<ServerIssue> issues = new ArrayList<>();
 
       public ServerProjectBranchBuilder withHotspot(String hotspotKey) {
@@ -136,7 +144,7 @@ public class ServerFixture {
       public ServerProjectBranchBuilder withHotspot(String hotspotKey, UnaryOperator<HotspotBuilder> hotspotBuilder) {
         var builder = new HotspotBuilder();
         hotspotBuilder.apply(builder);
-        this.hotspotsByKey.put(hotspotKey, builder.build(hotspotKey));
+        this.hotspots.add(builder.build(hotspotKey));
         return this;
       }
 
@@ -155,9 +163,11 @@ public class ServerFixture {
         private final HotspotReviewStatus status;
         private final TextRange textRange;
         private final boolean canChangeStatus;
+        private final Instant creationDate;
+        private final VulnerabilityProbability vulnerabilityProbability;
 
         private ServerHotspot(String hotspotKey, String ruleKey, String message, String author, String filePath, HotspotReviewStatus status, TextRange textRange,
-          boolean canChangeStatus) {
+          boolean canChangeStatus, Instant creationDate, VulnerabilityProbability vulnerabilityProbability) {
           this.hotspotKey = hotspotKey;
           this.ruleKey = ruleKey;
           this.message = message;
@@ -166,6 +176,12 @@ public class ServerFixture {
           this.status = status;
           this.textRange = textRange;
           this.canChangeStatus = canChangeStatus;
+          this.creationDate = creationDate;
+          this.vulnerabilityProbability = vulnerabilityProbability;
+        }
+
+        public String getFilePath() {
+          return filePath;
         }
       }
 
@@ -210,6 +226,8 @@ public class ServerFixture {
       private HotspotReviewStatus reviewStatus = HotspotReviewStatus.TO_REVIEW;
       private TextRange textRange = new TextRange(1, 2, 3, 4);
       private boolean canChangeStatus = true;
+      private Instant creationDate = Instant.now();
+      private VulnerabilityProbability vulnerabilityProbability = VulnerabilityProbability.MEDIUM;
 
       public HotspotBuilder withRuleKey(String ruleKey) {
         this.ruleKey = ruleKey;
@@ -246,8 +264,19 @@ public class ServerFixture {
         return this;
       }
 
+      public HotspotBuilder withCreationDate(Instant creationDate) {
+        this.creationDate = creationDate;
+        return this;
+      }
+
+      public HotspotBuilder withVulnerabilityProbability(VulnerabilityProbability vulnerabilityProbability) {
+        this.vulnerabilityProbability = vulnerabilityProbability;
+        return this;
+      }
+
       public ServerProjectBranchBuilder.ServerHotspot build(String hotspotKey) {
-        return new ServerProjectBranchBuilder.ServerHotspot(hotspotKey, ruleKey, message, author, filePath, reviewStatus, textRange, canChangeStatus);
+        return new ServerProjectBranchBuilder.ServerHotspot(hotspotKey, ruleKey, message, author, filePath, reviewStatus, textRange, canChangeStatus, creationDate,
+          vulnerabilityProbability);
       }
     }
   }
@@ -296,13 +325,66 @@ public class ServerFixture {
     }
 
     private void registerHotspotsApiResponses() {
+      if (version != null && version.satisfiesMinRequirement(HotspotApi.MIN_SQ_VERSION_SUPPORTING_PULL)) {
+        registerApiHotspotsPullResponses();
+      } else {
+        registerApiHotspotSearchResponses();
+      }
       registerHotspotsShowApiResponses();
       registerHotspotsStatusChangeApiResponses();
     }
 
+    private void registerApiHotspotSearchResponses() {
+      projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
+        var messagesPerFilePath = branch.hotspots.stream()
+          .collect(groupingBy(ServerBuilder.ServerProjectBranchBuilder.ServerHotspot::getFilePath,
+            mapping(hotspot -> {
+              var builder = Hotspots.SearchWsResponse.Hotspot.newBuilder()
+                .setKey(hotspot.hotspotKey)
+                .setComponent(projectKey + ":" + hotspot.filePath)
+                .setRuleKey(hotspot.ruleKey)
+                .setMessage(hotspot.message)
+                .setTextRange(Common.TextRange.newBuilder()
+                  .setStartLine(hotspot.textRange.getStartLine())
+                  .setStartOffset(hotspot.textRange.getStartLineOffset())
+                  .setEndLine(hotspot.textRange.getEndLine())
+                  .setEndOffset(hotspot.textRange.getEndLineOffset())
+                  .build())
+                .setCreationDate(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ").withZone(ZoneId.systemDefault()).format(hotspot.creationDate))
+                .setStatus(hotspot.status == HotspotReviewStatus.TO_REVIEW ? "TO_REVIEW" : "REVIEWED")
+                .setResolution("")
+                .setVulnerabilityProbability(hotspot.vulnerabilityProbability.toString())
+                .setAssignee(hotspot.author);
+              if (hotspot.status != HotspotReviewStatus.TO_REVIEW) {
+                builder = builder.setResolution(hotspot.status.toString());
+              }
+              return builder.build();
+            }, toList())));
+        var branchParameter = branchName == null ? "" : "&branch=" + urlEncode(branchName);
+        messagesPerFilePath.forEach((filePath, messages) -> mockWebServer.addProtobufResponse(
+          "/api/hotspots/search.protobuf?projectKey=" + projectKey + "&files=" + urlEncode(filePath) + branchParameter + "&ps=500&p=1",
+          Hotspots.SearchWsResponse.newBuilder()
+            .addComponents(Hotspots.Component.newBuilder().setPath(filePath).setKey(projectKey + ":" + filePath).build())
+            .addAllHotspots(messages)
+            .setPaging(Common.Paging.newBuilder().setTotal(messages.size()).build())
+            .build()));
+        var allMessages = messagesPerFilePath.values().stream().flatMap(Collection::stream).collect(toList());
+        mockWebServer.addProtobufResponse("/api/hotspots/search.protobuf?projectKey=" + projectKey + branchParameter + "&ps=500&p=1",
+          Hotspots.SearchWsResponse.newBuilder()
+            .addAllComponents(messagesPerFilePath.keySet().stream().map(filePath -> Hotspots.Component.newBuilder().setPath(filePath).setKey(projectKey + ":" + filePath).build())
+              .collect(toList()))
+            .setPaging(Common.Paging.newBuilder().setTotal(allMessages.size()).build())
+            .addAllHotspots(allMessages).build());
+      }));
+    }
+
+    private void registerApiHotspotsPullResponses() {
+
+    }
+
     private void registerHotspotsShowApiResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
-        branch.hotspotsByKey.forEach((key, hotspot) -> {
+        branch.hotspots.forEach(hotspot -> {
           var textRange = hotspot.textRange;
           var reviewStatus = hotspot.status;
           var status = reviewStatus.isReviewed() ? "REVIEWED" : "TO_REVIEW";
@@ -352,7 +434,7 @@ public class ServerFixture {
     private void registerBatchIssuesResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
         var allBranchIssues = new ArrayList<Message>();
-        branch.issues.stream().collect(Collectors.groupingBy(i -> i.filePath)).forEach((filePath, issues) -> {
+        branch.issues.stream().collect(groupingBy(i -> i.filePath)).forEach((filePath, issues) -> {
           var messages = issues.stream().map(issue -> {
             var ruleKey = RuleKey.parse(issue.ruleKey);
             var serverIssue = ScannerInput.ServerIssue.newBuilder()
@@ -371,11 +453,11 @@ public class ServerFixture {
             allBranchIssues.add(serverIssue);
             return serverIssue;
           }).toArray(Message[]::new);
-          var branchParameter = branchName == null ? "" : "&branch=" + UrlUtils.urlEncode(branchName);
-          mockWebServer.addProtobufResponseDelimited("/batch/issues?key=" + UrlUtils.urlEncode(projectKey + ':' + filePath) + branchParameter, messages);
+          var branchParameter = branchName == null ? "" : "&branch=" + urlEncode(branchName);
+          mockWebServer.addProtobufResponseDelimited("/batch/issues?key=" + urlEncode(projectKey + ':' + filePath) + branchParameter, messages);
         });
-        var branchParameter = branchName == null ? "" : "&branch=" + UrlUtils.urlEncode(branchName);
-        mockWebServer.addProtobufResponseDelimited("/batch/issues?key=" + UrlUtils.urlEncode(projectKey) + branchParameter, allBranchIssues.toArray(new Message[0]));
+        var branchParameter = branchName == null ? "" : "&branch=" + urlEncode(branchName);
+        mockWebServer.addProtobufResponseDelimited("/batch/issues?key=" + urlEncode(projectKey) + branchParameter, allBranchIssues.toArray(new Message[0]));
       }));
     }
 
@@ -427,7 +509,7 @@ public class ServerFixture {
     }
 
     private void registerSourceApiResponses() {
-      sourceFileByComponentKey.forEach((componentKey, sourceFile) -> mockWebServer.addStringResponse("/api/sources/raw?key=" + UrlUtils.urlEncode(componentKey), sourceFile.code));
+      sourceFileByComponentKey.forEach((componentKey, sourceFile) -> mockWebServer.addStringResponse("/api/sources/raw?key=" + urlEncode(componentKey), sourceFile.code));
     }
 
     private void registerDevelopersApiResponses() {
@@ -453,8 +535,7 @@ public class ServerFixture {
               .setDate("2023-08-29T09:37:59+0000")
               .setParameter("9.2")
               .build())
-            .build()
-        );
+            .build());
       }));
     }
 
