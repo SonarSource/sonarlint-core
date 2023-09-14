@@ -19,16 +19,25 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.client.event;
 
+import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 
 public class DidReceiveServerEventParams {
+
+  @NonNull
+  private final String connectionId;
   private final ServerEvent serverEvent;
 
-  public DidReceiveServerEventParams(ServerEvent serverEvent) {
+  public DidReceiveServerEventParams(String connectionId, ServerEvent serverEvent) {
+    this.connectionId = connectionId;
     this.serverEvent = serverEvent;
   }
 
   public ServerEvent getServerEvent() {
     return serverEvent;
+  }
+
+  public String getConnectionId() {
+    return connectionId;
   }
 }
