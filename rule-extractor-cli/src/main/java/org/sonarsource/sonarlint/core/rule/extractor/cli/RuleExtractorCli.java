@@ -23,10 +23,12 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -34,6 +36,7 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
 import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
+import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "sonarlint-rule-extractor-cli", mixinStandardHelpOptions = true)
@@ -53,20 +56,14 @@ public class RuleExtractorCli implements Callable<Integer> {
 
   @CommandLine.Option(names = {"-o", "--output"}, description = "output JSON file name")
   Path outputFile;
+
   @Override
   public Integer call() throws Exception {
     try {
       // We can pretend we have a very high Node.js version since Node is not required to load rules
       var nodeVersion = Optional.of(Version.create("99.9"));
       var config = new PluginsLoader.Configuration(pluginsJarPaths, enabledLanguages, nodeVersion);
-      var result = new PluginsLoader().load(config);
-      for (var entry : result.getPluginCheckResultByKeys().entrySet()) {
-        if (entry.getValue().isSkipped()) {
-          System.err.println(entry.getKey() + " was skipped:" + entry.getValue().getSkipReason().get().getClass().getName());
-        }
-      }
-      var extractor = new RulesDefinitionExtractor();
-      var rules = extractor.extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, templates, hotspots);
+      var rules = loadRulesFromPlugins(config);
       var gson = new GsonBuilder()
         .setPrettyPrinting()
         .registerTypeAdapter(Optional.class, new GsonOptionalDeserializer<Optional<?>>())
@@ -82,6 +79,18 @@ public class RuleExtractorCli implements Callable<Integer> {
     } catch (Exception e) {
       e.printStackTrace(System.err);
       return -1;
+    }
+  }
+
+  private List<SonarLintRuleDefinition> loadRulesFromPlugins(PluginsLoader.Configuration config) throws IOException {
+    try (var result = new PluginsLoader().load(config)) {
+      for (var entry : result.getPluginCheckResultByKeys().entrySet()) {
+        if (entry.getValue().isSkipped()) {
+          System.err.println(entry.getKey() + " was skipped:" + entry.getValue().getSkipReason().get().getClass().getName());
+        }
+      }
+      var extractor = new RulesDefinitionExtractor();
+      return extractor.extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, templates, hotspots);
     }
   }
 

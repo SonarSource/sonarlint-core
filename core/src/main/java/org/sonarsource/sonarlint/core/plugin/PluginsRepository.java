@@ -19,13 +19,20 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 import javax.annotation.CheckForNull;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
+
+import static org.sonarsource.sonarlint.core.commons.IOExceptionUtils.throwFirstWithOtherSuppressed;
+import static org.sonarsource.sonarlint.core.commons.IOExceptionUtils.tryAndCollectIOException;
+
 @Named
 @Singleton
 public class PluginsRepository {
@@ -51,19 +58,27 @@ public class PluginsRepository {
   }
 
   @PreDestroy
-  public void unloadAllPlugins() {
+  public void unloadAllPlugins() throws IOException {
+    Queue<IOException> exceptions = new LinkedList<>();
     if (loadedEmbeddedPlugins != null) {
-      loadedEmbeddedPlugins.unload();
+      tryAndCollectIOException(loadedEmbeddedPlugins::close, exceptions);
       loadedEmbeddedPlugins = null;
     }
-    loadedPluginsByConnectionId.values().forEach(LoadedPlugins::unload);
-    loadedPluginsByConnectionId.clear();
+    synchronized (loadedPluginsByConnectionId) {
+      loadedPluginsByConnectionId.values().forEach(l -> tryAndCollectIOException(l::close, exceptions));
+      loadedPluginsByConnectionId.clear();
+    }
+    throwFirstWithOtherSuppressed(exceptions);
   }
 
-  public void unload(String connectionId) {
+  public void unload(String connectionId){
     var loadedPlugins = loadedPluginsByConnectionId.remove(connectionId);
     if (loadedPlugins != null) {
-      loadedPlugins.unload();
+      try {
+        loadedPlugins.close();
+      } catch (IOException e) {
+        throw new IllegalStateException("Unable to unload plugins", e);
+      }
     }
   }
 }

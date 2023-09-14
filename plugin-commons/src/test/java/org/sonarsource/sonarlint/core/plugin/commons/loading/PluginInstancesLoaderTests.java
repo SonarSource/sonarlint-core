@@ -23,11 +23,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.assertj.core.data.MapEntry;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -46,8 +48,12 @@ class PluginInstancesLoaderTests {
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester();
 
-  PluginClassloaderFactory classloaderFactory = mock(PluginClassloaderFactory.class);
-  PluginInstancesLoader loader = new PluginInstancesLoader(classloaderFactory);
+  PluginInstancesLoader loader = new PluginInstancesLoader(new PluginClassloaderFactory());
+
+  @AfterEach
+  void closeLoader() throws IOException {
+    loader.close();
+  }
 
   @Test
   void instantiate_plugin_entry_point() {
@@ -71,8 +77,9 @@ class PluginInstancesLoaderTests {
   }
 
   @Test
-  void define_classloader(@TempDir Path tmp) {
+  void define_classloader(@TempDir Path tmp) throws IOException {
     var jarFile = tmp.resolve("fakePlugin.jar").toFile();
+    Files.createFile(jarFile.toPath());
     var info = new PluginInfo("foo")
       .setJarFile(jarFile)
       .setMainClass("org.foo.FooPlugin")
@@ -119,10 +126,13 @@ class PluginInstancesLoaderTests {
    * A plugin (the "base" plugin) can be extended by other plugins. In this case they share the same classloader.
    */
   @Test
-  void test_plugins_sharing_the_same_classloader(@TempDir Path tmp) {
+  void test_plugins_sharing_the_same_classloader(@TempDir Path tmp) throws IOException {
     var baseJarFile = tmp.resolve("fakeBasePlugin.jar").toFile();
+    baseJarFile.createNewFile();
     var extensionJar1 = tmp.resolve("fakePlugin1.jar").toFile();
+    extensionJar1.createNewFile();
     var extensionJar2 = tmp.resolve("fakePlugin2.jar").toFile();
+    extensionJar2.createNewFile();
     var base = new PluginInfo("foo")
       .setJarFile(baseJarFile)
       .setMainClass("org.foo.FooPlugin");
@@ -153,9 +163,11 @@ class PluginInstancesLoaderTests {
 
   // SLCORE-222
   @Test
-  void skip_plugins_when_base_plugin_missing(@TempDir Path tmp) {
+  void skip_plugins_when_base_plugin_missing(@TempDir Path tmp) throws IOException {
     var extensionJar1 = tmp.resolve("fakePlugin1.jar").toFile();
+    extensionJar1.createNewFile();
     var extensionJar2 = tmp.resolve("fakePlugin2.jar").toFile();
+    extensionJar2.createNewFile();
 
     var extension1 = new PluginInfo("fooExtension1")
       .setJarFile(extensionJar1)
@@ -173,6 +185,29 @@ class PluginInstancesLoaderTests {
     assertThat(def.getFiles()).containsOnly(extensionJar1);
     assertThat(def.getMainClassesByPluginKey()).containsOnly(
       entry("fooExtension1", "org.foo.Extension1Plugin"));
+  }
+
+  // SLCORE-557
+  @Test
+  void should_be_able_to_delete_jar_after_unload() throws IOException {
+    var jarFile = PluginClassloaderFactoryTests.testPluginJar("classloader-leak-plugin/target/classloader-leak-plugin-0.1-SNAPSHOT.jar");
+
+    var tmpCopy = Files.createTempFile("leak-plugin", ".jar");
+    Files.copy(jarFile.toPath(), tmpCopy, StandardCopyOption.REPLACE_EXISTING);
+
+    var info = new PluginInfo("leak")
+      .setJarFile(tmpCopy.toFile())
+      .setMainClass("org.sonar.plugins.leak.LeakPlugin");
+
+    var instances = loader.instantiatePluginClasses(List.of(info));
+    var instance = instances.get("leak");
+
+    // The code in the plugin will leak a file handle, see https://bugs.java.com/bugdatabase/view_bug?bug_id=JDK-8315993
+    instance.define(null);
+
+    loader.close();
+
+    Files.delete(tmpCopy);
   }
 
   public static class FakePlugin implements Plugin {
