@@ -83,7 +83,7 @@ class PluginClassloaderFactoryTests {
     var def = new PluginClassLoaderDef(BASE_PLUGIN_KEY);
     def.addMainClass(BASE_PLUGIN_KEY, BASE_PLUGIN_CLASSNAME);
     def.getExportMask().addInclusion("org/sonar/plugins/base/api/");
-    def.addFiles(List.of(fakePluginJar("base-plugin/target/base-plugin-0.1-SNAPSHOT.jar")));
+    def.addFiles(List.of(testPluginJar("base-plugin/target/base-plugin-0.1-SNAPSHOT.jar")));
     return def;
   }
 
@@ -91,19 +91,14 @@ class PluginClassloaderFactoryTests {
     var def = new PluginClassLoaderDef(DEPENDENT_PLUGIN_KEY);
     def.addMainClass(DEPENDENT_PLUGIN_KEY, DEPENDENT_PLUGIN_CLASSNAME);
     def.getExportMask().addInclusion("org/sonar/plugins/dependent/api/");
-    def.addFiles(List.of(fakePluginJar("dependent-plugin/target/dependent-plugin-0.1-SNAPSHOT.jar")));
+    def.addFiles(List.of(testPluginJar("dependent-plugin/target/dependent-plugin-0.1-SNAPSHOT.jar")));
     return def;
   }
 
-  private static File fakePluginJar(String path) {
-    // Maven way
+  static File testPluginJar(String path) {
     var file = Paths.get("src/test/projects/" + path);
     if (!Files.exists(file)) {
-      // Intellij way
-      file = Paths.get("sonar-core/src/test/projects/" + path);
-      if (!Files.exists(file)) {
-        throw new IllegalArgumentException("Fake projects are not built: " + path);
-      }
+        throw new IllegalArgumentException("Test projects are not built: " + path);
     }
     return file.toFile();
   }

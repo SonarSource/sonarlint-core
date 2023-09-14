@@ -22,15 +22,22 @@ package org.sonarsource.sonarlint.core.plugin.commons.loading;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.net.JarURLConnection;
+import java.net.URL;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Queue;
+import java.util.jar.JarFile;
 import java.util.stream.Collectors;
+import java.util.zip.ZipException;
 import javax.annotation.CheckForNull;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
@@ -38,6 +45,8 @@ import org.sonar.api.Plugin;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+import static org.sonarsource.sonarlint.core.commons.IOExceptionUtils.throwFirstWithOtherSuppressed;
+import static org.sonarsource.sonarlint.core.commons.IOExceptionUtils.tryAndCollectIOException;
 
 /**
  * Loads the plugin JAR files by creating the appropriate classloaders and by instantiating
@@ -51,7 +60,7 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
  * Plugins have their own isolated classloader, inheriting only from API classes.
  * Some plugins can extend a "base" plugin, sharing the same classloader.
  */
-public class PluginInstancesLoader {
+public class PluginInstancesLoader implements Closeable {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
@@ -60,6 +69,7 @@ public class PluginInstancesLoader {
   private final PluginClassloaderFactory classloaderFactory;
   private final ClassLoader baseClassLoader;
   private final Collection<ClassLoader> classloadersToClose = new ArrayList<>();
+  private final List<JarFile> jarFilesToClose = new ArrayList<>();
   private final List<Path> filesToDelete = new ArrayList<>();
 
   public PluginInstancesLoader() {
@@ -85,29 +95,46 @@ public class PluginInstancesLoader {
   Collection<PluginClassLoaderDef> defineClassloaders(Map<String, PluginInfo> pluginsByKey) {
     Map<String, PluginClassLoaderDef> classloadersByBasePlugin = new HashMap<>();
 
-    for (PluginInfo info : pluginsByKey.values()) {
+    for (var info : pluginsByKey.values()) {
       var baseKey = basePluginKey(info, pluginsByKey);
       if (baseKey == null) {
         continue;
       }
       var def = classloadersByBasePlugin.computeIfAbsent(baseKey, PluginClassLoaderDef::new);
       def.addFiles(List.of(info.getJarFile()));
+      getJarFile(info.getJarFile().toPath()).ifPresent(jarFilesToClose::add);
       if (!info.getDependencies().isEmpty()) {
         LOG.warn("Plugin '{}' embeds dependencies. This will be deprecated soon. Plugin should be updated.", info.getKey());
         var tmpFolderForDeps = createTmpFolderForPluginDeps(info);
-        for (String dependency : info.getDependencies()) {
+        for (var dependency : info.getDependencies()) {
           var tmpDepFile = extractDependencyInTempFolder(info, dependency, tmpFolderForDeps);
           def.addFiles(List.of(tmpDepFile.toFile()));
           filesToDelete.add(tmpDepFile);
+          getJarFile(tmpDepFile).ifPresent(jarFilesToClose::add);
         }
       }
       def.addMainClass(info.getKey(), info.getMainClass());
 
-      for (String defaultSharedResource : DEFAULT_SHARED_RESOURCES) {
+      for (var defaultSharedResource : DEFAULT_SHARED_RESOURCES) {
         def.getExportMask().addInclusion(String.format("%s/%s/api/", defaultSharedResource, info.getKey()));
       }
     }
     return classloadersByBasePlugin.values();
+  }
+
+  /**
+   * SLCORE-557 Because of bug <a href="https://bugs.java.com/bugdatabase/view_bug?bug_id=JDK-8315993">JDK-8315993</a> we have to somehow get access
+   * to the underlying cached JarFile that will be also opened by the URLClassloader, and close it ourselves.
+   */
+  private static Optional<JarFile> getJarFile(Path tmpDepFile) {
+    try {
+      return Optional.of(((JarURLConnection) new URL("jar:" + tmpDepFile.toUri().toURL() + "!/").openConnection()).getJarFile());
+    } catch (ZipException ignore) {
+      // For tests, we are using fake JARs, so ignore ZipException: zip file is empty
+      return Optional.empty();
+    } catch (IOException e) {
+      throw new IllegalArgumentException(e);
+    }
   }
 
   private static Path createTmpFolderForPluginDeps(PluginInfo info) {
@@ -149,12 +176,12 @@ public class PluginInstancesLoader {
   Map<String, Plugin> instantiatePluginClasses(Map<PluginClassLoaderDef, ClassLoader> classloaders) {
     // instantiate plugins
     Map<String, Plugin> instancesByPluginKey = new HashMap<>();
-    for (Map.Entry<PluginClassLoaderDef, ClassLoader> entry : classloaders.entrySet()) {
+    for (var entry : classloaders.entrySet()) {
       var def = entry.getKey();
       var classLoader = entry.getValue();
 
       // the same classloader can be used by multiple plugins
-      for (Map.Entry<String, String> mainClassEntry : def.getMainClassesByPluginKey().entrySet()) {
+      for (var mainClassEntry : def.getMainClassesByPluginKey().entrySet()) {
         var pluginKey = mainClassEntry.getKey();
         var mainClass = mainClassEntry.getValue();
         try {
@@ -169,25 +196,30 @@ public class PluginInstancesLoader {
     return instancesByPluginKey;
   }
 
-  public void unload() {
-    for (ClassLoader classLoader : classloadersToClose) {
-      if (classLoader instanceof Closeable) {
-        try {
-          ((Closeable) classLoader).close();
-        } catch (Exception e) {
-          LOG.error("Fail to close classloader", e);
+  @Override
+  public void close() throws IOException {
+    Queue<IOException> exceptions = new LinkedList<>();
+    synchronized (classloadersToClose) {
+      for (var classLoader : classloadersToClose) {
+        if (classLoader instanceof Closeable) {
+          tryAndCollectIOException(((Closeable) classLoader)::close, exceptions);
         }
       }
+      classloadersToClose.clear();
     }
-    classloadersToClose.clear();
-    for (Path fileToDelete : filesToDelete) {
-      try {
-        FileUtils.forceDelete(fileToDelete.toFile());
-      } catch (IOException e) {
-        LOG.error("Fail to delete " + fileToDelete.toString(), e);
+    synchronized (jarFilesToClose) {
+      for (var jarFile : jarFilesToClose) {
+        tryAndCollectIOException(jarFile::close, exceptions);
       }
+      jarFilesToClose.clear();
     }
-    filesToDelete.clear();
+    synchronized (filesToDelete) {
+      for (var fileToDelete : filesToDelete) {
+        tryAndCollectIOException(() -> FileUtils.forceDelete(fileToDelete.toFile()), exceptions);
+      }
+      filesToDelete.clear();
+    }
+    throwFirstWithOtherSuppressed(exceptions);
   }
 
   /**

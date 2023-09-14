@@ -80,7 +80,6 @@ public class GlobalAnalysisContainer extends SpringComponentContainer {
       if (globalExtensionContainer != null) {
         globalExtensionContainer.stopComponents();
       }
-      loadedPlugins.unload();
     } catch (Exception e) {
       LOG.error("Cannot close analysis engine", e);
     } finally {

@@ -39,7 +39,6 @@ public class PluginInfo {
   private final String key;
   private String name;
 
-  @CheckForNull
   private File jarFile;
 
   @CheckForNull
