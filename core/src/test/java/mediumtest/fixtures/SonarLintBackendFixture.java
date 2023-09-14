@@ -35,6 +35,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import javax.annotation.CheckForNull;
 import mediumtest.fixtures.storage.ConfigurationScopeStorageFixture;
@@ -436,7 +437,7 @@ public class SonarLintBackendFixture {
     private final ProxyDto proxy;
     private final GetProxyPasswordAuthenticationResponse proxyAuth;
     private final Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId;
-    private final List<ServerEvent> receivedServerEvents = new ArrayList<>();
+    private final Map<String, List<ServerEvent>> receivedServerEventsByConnectionId = new ConcurrentHashMap<>();
     private SonarLintBackendImpl backend;
 
     public FakeSonarLintClient(List<FoundFileDto> foundFiles, String clientDescription,
@@ -614,11 +615,11 @@ public class SonarLintBackendFixture {
 
     @Override
     public void didReceiveServerEvent(DidReceiveServerEventParams params) {
-      this.receivedServerEvents.add(params.getServerEvent());
+      this.receivedServerEventsByConnectionId.computeIfAbsent(params.getConnectionId(), k -> new CopyOnWriteArrayList<>()).add(params.getServerEvent());
     }
 
-    public List<ServerEvent> getReceivedServerEvents() {
-      return receivedServerEvents;
+    public Map<String, List<ServerEvent>> getReceivedServerEventsByConnectionId() {
+      return receivedServerEventsByConnectionId;
     }
 
     private static <T> CompletableFuture<T> canceledFuture() {

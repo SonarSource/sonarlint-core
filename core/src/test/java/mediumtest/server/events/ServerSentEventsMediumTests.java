@@ -544,7 +544,7 @@ class ServerSentEventsMediumTests {
         .build(fakeClient);
 
       await().atMost(Duration.ofSeconds(2))
-        .untilAsserted(() -> assertThat(fakeClient.getReceivedServerEvents()).usingRecursiveFieldByFieldElementComparator()
+        .untilAsserted(() -> assertThat(fakeClient.getReceivedServerEventsByConnectionId().get("connectionId")).usingRecursiveFieldByFieldElementComparator()
           .containsOnly(new IssueChangedEvent("projectKey", List.of("key1"), null, RuleType.BUG, null)));
     }
   }

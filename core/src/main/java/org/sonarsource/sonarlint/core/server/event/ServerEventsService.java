@@ -176,11 +176,11 @@ public class ServerEventsService {
 
   private SonarQubeEventStream openStream(String connectionId) {
     return new SonarQubeEventStream(storageService.connection(connectionId), languageSupportRepository.getEnabledLanguagesInConnectedMode(), connectionId, serverApiProvider,
-      this::notifyClient, (msg, level) -> SonarLintLogger.get().debug(msg));
+      e -> notifyClient(connectionId, e), (msg, level) -> SonarLintLogger.get().debug(msg));
   }
 
-  private void notifyClient(ServerEvent serverEvent) {
-    client.didReceiveServerEvent(new DidReceiveServerEventParams(serverEvent));
+  private void notifyClient(String connectionId, ServerEvent serverEvent) {
+    client.didReceiveServerEvent(new DidReceiveServerEventParams(connectionId, serverEvent));
   }
 
   private boolean supportsServerSentEvents(String connectionId) {
