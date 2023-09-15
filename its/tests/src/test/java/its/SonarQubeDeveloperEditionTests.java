@@ -78,6 +78,7 @@ import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.DidAddConfigurationScopesParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.DidRemoveConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
@@ -91,6 +92,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreating
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.event.DidReceiveServerEventParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
@@ -113,11 +115,11 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspotDetails;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
-import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.TaintVulnerabilityClosedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.TaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
@@ -138,6 +140,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
   public static final String CONNECTION_ID = "orchestrator";
   public static final String CONNECTION_ID_WRONG_CREDENTIALS = "wrong-credentials";
+  private static final String CONFIG_SCOPE_ID = "my-ide-project-name";
 
   @RegisterExtension
   static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
@@ -167,12 +170,14 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   @TempDir
   private static Path sonarUserHome;
 
+  private static Deque<DidReceiveServerEventParams> events = new ConcurrentLinkedDeque<>();
+
   @BeforeAll
   static void start() {
     backend = new SonarLintBackendImpl(newDummySonarLintClient());
     try {
       backend.initialize(
-        new InitializeParams(IT_CLIENT_INFO, new FeatureFlagsDto(false, true, false, false, false, false), sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
+        new InitializeParams(IT_CLIENT_INFO, new FeatureFlagsDto(false, true, false, false, false, true), sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
           Collections.emptySet(), Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(),
           List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(),
           Map.of()))
@@ -185,6 +190,11 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   @AfterAll
   static void stop() throws ExecutionException, InterruptedException {
     backend.shutdown().get();
+  }
+
+  @AfterEach
+  void removeConfigScope() {
+    backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(CONFIG_SCOPE_ID));
   }
 
   @Nested
@@ -594,7 +604,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     private ConnectedSonarLintEngine engine;
 
     @BeforeEach
-    void start(@TempDir Path sonarUserHome) {
+    void start() {
       var globalConfig = ConnectedGlobalConfiguration.sonarQubeBuilder()
         .setConnectionId(CONNECTION_ID)
         .setSonarLintUserHome(sonarUserHome)
@@ -621,13 +631,15 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Java");
 
       updateProject(engine, projectKey);
-      Deque<ServerEvent> events = new ConcurrentLinkedDeque<>();
-      engine.subscribeForEvents(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), Set.of(projectKey), events::add, null);
+
+      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, projectKey, false)))));
+
       var qualityProfile = getQualityProfile(adminWsClient, "SonarLint IT Java");
       deactivateRule(adminWsClient, qualityProfile, "java:S106");
       waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
         assertThat(events).isNotEmpty();
-        assertThat(events.getLast())
+        assertThat(events.getLast().getServerEvent())
           .isInstanceOfSatisfying(RuleSetChangedEvent.class, e -> {
             assertThat(e.getDeactivatedRules()).containsOnly("java:S106");
             assertThat(e.getActivatedRules()).isEmpty();
@@ -653,14 +665,17 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       analyzeMavenProject("sample-java", projectKey);
       updateProject(engine, projectKey);
-      Deque<ServerEvent> events = new ConcurrentLinkedDeque<>();
-      engine.subscribeForEvents(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), Set.of(projectKey), events::add, null);
+
+      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, projectKey, false)))));
+
       var issueKey = getIssueKeys(adminWsClient, "java:S106").get(0);
       resolveIssueAsWontFix(adminWsClient, issueKey);
 
       waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
         assertThat(events).isNotEmpty();
-        assertThat(events.getLast())
+        assertThat(events.getLast().getConnectionId()).isEqualTo(CONNECTION_ID);
+        assertThat(events.getLast().getServerEvent())
           .isInstanceOfSatisfying(IssueChangedEvent.class, e -> {
             assertThat(e.getImpactedIssueKeys()).containsOnly(issueKey);
             assertThat(e.getResolved()).isTrue();
@@ -1252,9 +1267,9 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       // sync is still done by the engine for now
       updateProject(engine, projectKey);
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-        List.of(new ConfigurationScopeDto("project", null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, projectKey, false)))));
+        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, projectKey, false)))));
 
-      var activeRuleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("project", "javasecurity:S2083", null)).get();
+      var activeRuleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, "javasecurity:S2083", null)).get();
 
       var description = activeRuleDetailsResponse.details().getDescription();
 
@@ -1292,9 +1307,9 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       // sync is still done by the engine for now
       updateProject(engine, projectKey);
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-        List.of(new ConfigurationScopeDto("project", null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, projectKey, false)))));
+        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, projectKey, false)))));
 
-      var activeRuleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("project", "javasecurity:S5131", "spring")).get();
+      var activeRuleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, "javasecurity:S5131", "spring")).get();
 
       var description = activeRuleDetailsResponse.details().getDescription();
 
@@ -1344,9 +1359,9 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       updateProject(engine, projectKey);
 
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-        List.of(new ConfigurationScopeDto("project", null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, projectKey, false)))));
+        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, projectKey, false)))));
 
-      var activeRuleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("project", javaRuleKey(ORCHESTRATOR, "S4792"), null))
+      var activeRuleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, javaRuleKey(ORCHESTRATOR, "S4792"), null))
         .get();
 
       var extendedDescription = activeRuleDetailsResponse.details().getDescription().getRight();
@@ -1513,6 +1528,10 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         return CompletableFuture.completedFuture(new SelectProxiesResponse(List.of(ProxyDto.NO_PROXY)));
       }
 
+      @Override
+      public void didReceiveServerEvent(DidReceiveServerEventParams params) {
+        events.add(params);
+      }
     };
   }
 }
