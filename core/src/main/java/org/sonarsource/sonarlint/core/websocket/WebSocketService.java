@@ -276,9 +276,10 @@ public class WebSocketService {
 
   private void closeSocket() {
     if (this.sonarCloudWebSocket != null) {
-      this.sonarCloudWebSocket.close();
+      var socket = this.sonarCloudWebSocket;
       this.sonarCloudWebSocket = null;
       this.connectionIdUsedToCreateConnection = null;
+      socket.close();
     }
   }
 
@@ -288,8 +289,8 @@ public class WebSocketService {
 
   @PreDestroy
   public void shutdown() {
-    closeSocket();
     connectionIdsInterestedInNotifications.clear();
     subscribedProjectKeysByConfigScopes.clear();
+    closeSocket();
   }
 }
