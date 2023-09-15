@@ -117,11 +117,17 @@ public class ServerConnection {
   }
 
   public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName, String ideFilePath) {
-    return issueStoreReader.getServerTaintIssues(projectBinding, branchName, ideFilePath);
+    return enhanceWithNewCodeInformation(projectBinding.projectKey(), issueStoreReader.getServerTaintIssues(projectBinding, branchName, ideFilePath));
   }
 
   public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName) {
-    return issueStoreReader.getRawServerTaintIssues(projectBinding, branchName);
+    return enhanceWithNewCodeInformation(projectBinding.projectKey(), issueStoreReader.getRawServerTaintIssues(projectBinding, branchName));
+  }
+
+  private List<ServerTaintIssue> enhanceWithNewCodeInformation(String projectKey, List<ServerTaintIssue> issues) {
+    var newCodeDefinition = storage.project(projectKey).newCodeDefinition().read();
+    issues.forEach(taintIssue -> taintIssue.setIsOnNewCode(newCodeDefinition.map(definition -> definition.isOnNewCode(taintIssue.getCreationDate().toEpochMilli())).orElse(true)));
+    return issues;
   }
 
   public void subscribeForEvents(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, Consumer<ServerEvent> clientEventConsumer) {
