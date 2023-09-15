@@ -902,6 +902,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         assertThat(taintIssue.getCleanCodeAttribute()).isEmpty();
       }
       assertThat(taintIssue.getFlows()).isNotEmpty();
+      assertThat(taintIssue.isOnNewCode()).isTrue();
       var flow = taintIssue.getFlows().get(0);
       assertThat(flow.locations()).isNotEmpty();
       assertThat(flow.locations().get(0).getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));

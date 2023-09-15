@@ -49,6 +49,7 @@ public class ServerTaintIssue implements ServerFinding {
   @Nullable
   private final CleanCodeAttribute cleanCodeAttribute;
   private final Map<SoftwareQuality, ImpactSeverity> impacts;
+  private boolean isOnNewCode;
 
   public ServerTaintIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant creationDate, IssueSeverity severity, RuleType type,
     @Nullable TextRangeWithHash textRange, @Nullable String ruleDescriptionContextKey, @Nullable CleanCodeAttribute cleanCodeAttribute,
@@ -170,6 +171,14 @@ public class ServerTaintIssue implements ServerFinding {
   public ServerTaintIssue setFlows(List<Flow> flows) {
     this.flows = flows;
     return this;
+  }
+
+  public void setIsOnNewCode(boolean isOnNewCode) {
+    this.isOnNewCode = isOnNewCode;
+  }
+
+  public boolean isOnNewCode() {
+    return isOnNewCode;
   }
 
   public static class Flow {
