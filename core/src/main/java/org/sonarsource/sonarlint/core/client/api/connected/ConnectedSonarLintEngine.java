@@ -71,7 +71,9 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ClientProgressMonitor)})
    * @param filePath       relative to the project.
    * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
+   * @deprecated tracking is managed by the new backend
    */
+  @Deprecated(since = "9.3")
   List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String branchName, String filePath);
 
   /**
@@ -136,7 +138,9 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ClientProgressMonitor)})
    * @param ideFilePath    relative to the project in the IDE.
    * @throws DownloadException if it fails to download
+   * @deprecated synchronization is managed by the new backend
    */
+  @Deprecated(since = "9.3")
   void downloadAllServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
     @Nullable ClientProgressMonitor monitor);
 
@@ -185,22 +189,26 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
   /**
    * Download all hotspots, regardless of their status, from a project.
    * Download will be made only for servers that return enough data to achieve local hotspot tracking.
+   * @deprecated synchronization is managed by the new backend
    */
+  @Deprecated(since = "9.3")
   void downloadAllServerHotspots(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor);
 
   /**
    * Fetch all hotspots, regardless of their status, from a project on the server, and store them in local storage.
    * Download will be made only for servers that return enough data to achieve local hotspot tracking.
+   * @deprecated synchronization is managed by the new backend
    */
+  @Deprecated(since = "9.3")
   void downloadAllServerHotspotsForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
     @Nullable ClientProgressMonitor monitor);
 
   /**
    * Returns locally stored hotspots that were previously downloaded from the server.
+   * @deprecated tracking is managed by the new backend
    */
+  @Deprecated(since = "9.3")
   Collection<ServerHotspot> getServerHotspots(ProjectBinding projectBinding, String branchName, String ideFilePath);
-
-  boolean isSecurityHotspotsDetectionSupported();
 
   /**
    * Get a list of files that are excluded from analysis, out of the provided files.
