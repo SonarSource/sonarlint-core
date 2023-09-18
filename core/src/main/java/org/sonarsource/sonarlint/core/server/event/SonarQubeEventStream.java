@@ -24,7 +24,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 import org.sonarsource.sonarlint.core.serverapi.stream.EventStream;
 import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
@@ -39,16 +38,14 @@ public class SonarQubeEventStream {
   private final String connectionId;
   private final ServerApiProvider serverApiProvider;
   private final Consumer<ServerEvent> eventConsumer;
-  private final ClientLogOutput clientLogOutput;
 
   public SonarQubeEventStream(ConnectionStorage storage, Set<Language> enabledLanguages, String connectionId, ServerApiProvider serverApiProvider,
-    Consumer<ServerEvent> eventConsumer, ClientLogOutput clientLogOutput) {
+    Consumer<ServerEvent> eventConsumer) {
     coreEventRouter = ServerEventsAutoSubscriber.getCoreEventHandlers(storage);
     this.enabledLanguages = enabledLanguages;
     this.connectionId = connectionId;
     this.serverApiProvider = serverApiProvider;
     this.eventConsumer = eventConsumer;
-    this.clientLogOutput = clientLogOutput;
   }
 
   public synchronized void subscribeNew(Set<String> possiblyNewProjectKeys) {
@@ -77,7 +74,7 @@ public class SonarQubeEventStream {
   private void attemptSubscription(Set<String> projectKeys) {
     if (!enabledLanguages.isEmpty()) {
       serverApiProvider.getServerApi(connectionId)
-        .ifPresent(serverApi -> eventStream = serverApi.push().subscribe(projectKeys, enabledLanguages, e -> notifyHandlers(e, eventConsumer), clientLogOutput));
+        .ifPresent(serverApi -> eventStream = serverApi.push().subscribe(projectKeys, enabledLanguages, e -> notifyHandlers(e, eventConsumer)));
     }
   }
 

@@ -27,18 +27,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpConnectionListener;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level.DEBUG;
 
 public class EventStream {
 
-  private final SonarLintLogger logger = SonarLintLogger.get();
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final Integer UNAUTHORIZED = 401;
   private static final Integer FORBIDDEN = 403;
   private static final Integer NOT_FOUND = 404;
@@ -64,32 +62,32 @@ public class EventStream {
     return this;
   }
 
-  public EventStream connect(String wsPath, ClientLogOutput clientLogOutput) {
-    return connect(wsPath, clientLogOutput, new Attempt());
+  public EventStream connect(String wsPath) {
+    return connect(wsPath, new Attempt());
   }
 
-  private EventStream connect(String wsPath, ClientLogOutput clientLogOutput, Attempt currentAttempt) {
-    clientLogOutput.log("Connecting to server event-stream at '" + wsPath + "'...", DEBUG);
+  private EventStream connect(String wsPath, Attempt currentAttempt) {
+    LOG.debug("Connecting to server event-stream at '" + wsPath + "'...");
     var eventBuffer = new EventBuffer();
     currentRequest.set(helper.getEventStream(wsPath,
       new HttpConnectionListener() {
         @Override
         public void onConnected() {
-          clientLogOutput.log("Connected to server event-stream", DEBUG);
-          schedule(() -> connect(wsPath, clientLogOutput), HEART_BEAT_PERIOD * 3);
+          LOG.debug("Connected to server event-stream");
+          schedule(() -> connect(wsPath), HEART_BEAT_PERIOD * 3);
         }
 
         @Override
         public void onError(@Nullable Integer responseCode) {
-          handleError(wsPath, clientLogOutput, currentAttempt, responseCode);
+          handleError(wsPath, currentAttempt, responseCode);
         }
 
         @Override
         public void onClosed() {
           cancelPendingFutureIfAny();
           // reconnect instantly (will also reset attempt parameters)
-          clientLogOutput.log("Disconnected from server event-stream, reconnecting now", DEBUG);
-          connect(wsPath, clientLogOutput);
+          LOG.debug("Disconnected from server event-stream, reconnecting now");
+          connect(wsPath);
         }
       },
       message -> {
@@ -101,36 +99,36 @@ public class EventStream {
     return this;
   }
 
-  private void handleError(String wsPath, ClientLogOutput clientLogOutput, Attempt currentAttempt, @Nullable Integer responseCode) {
-    if (shouldRetry(responseCode, clientLogOutput)) {
+  private void handleError(String wsPath, Attempt currentAttempt, @Nullable Integer responseCode) {
+    if (shouldRetry(responseCode)) {
       if (!currentAttempt.isMax()) {
         var retryDelay = currentAttempt.delay;
         var msgBuilder = new StringBuilder();
         msgBuilder.append("Cannot connect to server event-stream");
         if (responseCode != null) {
-          msgBuilder.append(" (" + responseCode + ")");
+          msgBuilder.append(" (").append(responseCode).append(")");
         }
-        msgBuilder.append(", retrying in " + retryDelay + "s");
-        clientLogOutput.log(msgBuilder.toString(), DEBUG);
-        schedule(() -> connect(wsPath, clientLogOutput, currentAttempt.next()), retryDelay);
+        msgBuilder.append(", retrying in ").append(retryDelay).append("s");
+        LOG.debug(msgBuilder.toString());
+        schedule(() -> connect(wsPath, currentAttempt.next()), retryDelay);
       } else {
-        clientLogOutput.log("Cannot connect to server event-stream, stop retrying", DEBUG);
+        LOG.debug("Cannot connect to server event-stream, stop retrying");
       }
     }
   }
 
-  private static boolean shouldRetry(@Nullable Integer responseCode, ClientLogOutput clientLogOutput) {
+  private static boolean shouldRetry(@Nullable Integer responseCode) {
     if (UNAUTHORIZED.equals(responseCode)) {
-      clientLogOutput.log("Cannot connect to server event-stream, unauthorized", DEBUG);
+      LOG.debug("Cannot connect to server event-stream, unauthorized");
       return false;
     }
     if (FORBIDDEN.equals(responseCode)) {
-      clientLogOutput.log("Cannot connect to server event-stream, forbidden", DEBUG);
+      LOG.debug("Cannot connect to server event-stream, forbidden");
       return false;
     }
     if (NOT_FOUND.equals(responseCode)) {
       // the API is not supported (probably an old SQ or SC)
-      clientLogOutput.log("Server events not supported by the server", DEBUG);
+      LOG.debug("Server events not supported by the server");
       return false;
     }
     return true;
@@ -149,7 +147,7 @@ public class EventStream {
       currentRequestOrNull.cancel();
     }
     if (!MoreExecutors.shutdownAndAwaitTermination(executor, 5, TimeUnit.SECONDS)) {
-      logger.warn("Unable to stop event stream executor service in a timely manner");
+      LOG.warn("Unable to stop event stream executor service in a timely manner");
     }
   }
 

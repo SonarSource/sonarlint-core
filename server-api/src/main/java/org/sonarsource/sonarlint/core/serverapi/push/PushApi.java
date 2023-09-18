@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -60,10 +59,10 @@ public class PushApi {
     this.helper = helper;
   }
 
-  public EventStream subscribe(Set<String> projectKeys, Set<Language> enabledLanguages, Consumer<ServerEvent> serverEventConsumer, ClientLogOutput clientLogOutput) {
+  public EventStream subscribe(Set<String> projectKeys, Set<Language> enabledLanguages, Consumer<ServerEvent> serverEventConsumer) {
     return new EventStream(helper)
-      .onEvent(rawEvent -> handleRawEvent(rawEvent, serverEventConsumer, clientLogOutput))
-      .connect(getWsPath(projectKeys, enabledLanguages), clientLogOutput);
+      .onEvent(rawEvent -> handleRawEvent(rawEvent, serverEventConsumer))
+      .connect(getWsPath(projectKeys, enabledLanguages));
   }
 
   private static String getWsPath(Set<String> projectKeys, Set<Language> enabledLanguages) {
@@ -73,8 +72,8 @@ public class PushApi {
       enabledLanguages.stream().map(Language::getLanguageKey).map(UrlUtils::urlEncode).collect(Collectors.joining(","));
   }
 
-  private static void handleRawEvent(Event rawEvent, Consumer<ServerEvent> serverEventConsumer, ClientLogOutput clientLogOutput) {
-    clientLogOutput.log("Server event received: " + rawEvent, ClientLogOutput.Level.DEBUG);
+  private static void handleRawEvent(Event rawEvent, Consumer<ServerEvent> serverEventConsumer) {
+    LOG.debug("Server event received: {}", rawEvent);
     parse(rawEvent).ifPresent(serverEventConsumer);
   }
 
