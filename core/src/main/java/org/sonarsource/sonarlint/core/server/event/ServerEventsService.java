@@ -34,7 +34,6 @@ import org.sonarsource.sonarlint.core.clientapi.client.event.DidReceiveServerEve
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
@@ -176,7 +175,7 @@ public class ServerEventsService {
 
   private SonarQubeEventStream openStream(String connectionId) {
     return new SonarQubeEventStream(storageService.connection(connectionId), languageSupportRepository.getEnabledLanguagesInConnectedMode(), connectionId, serverApiProvider,
-      e -> notifyClient(connectionId, e), (msg, level) -> SonarLintLogger.get().debug(msg));
+      e -> notifyClient(connectionId, e));
   }
 
   private void notifyClient(String connectionId, ServerEvent serverEvent) {

@@ -28,7 +28,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpConnectionListener;
@@ -54,7 +53,6 @@ class EventStreamTests {
   private final ArgumentCaptor<HttpConnectionListener> listenerCaptor = ArgumentCaptor.forClass(HttpConnectionListener.class);
   private final ArgumentCaptor<Consumer<String>> consumerCaptor = ArgumentCaptor.forClass(Consumer.class);
   private final ArrayList<Event> receivedEvents = new ArrayList<>();
-  private final ClientLogOutput logOutput = logTester.getLogOutput();
   private EventStream stream;
 
   @BeforeEach
@@ -65,7 +63,7 @@ class EventStreamTests {
 
   @Test
   void should_log_when_connected() {
-    stream.connect("wsPath", logOutput);
+    stream.connect("wsPath");
     verify(apiHelper).getEventStream(eq("wsPath"), listenerCaptor.capture(), any());
 
     listenerCaptor.getValue().onConnected();
@@ -78,7 +76,7 @@ class EventStreamTests {
 
   @Test
   void should_notify_consumer_when_event_received() {
-    stream.connect("wsPath", logOutput);
+    stream.connect("wsPath");
     verify(apiHelper).getEventStream(eq("wsPath"), listenerCaptor.capture(), consumerCaptor.capture());
     var scheduledFuture = mock(ScheduledFuture.class);
     when(executor.schedule(any(Runnable.class), anyLong(), any())).thenReturn(scheduledFuture);
@@ -92,7 +90,7 @@ class EventStreamTests {
 
   @Test
   void should_not_retry_when_unauthorized() {
-    stream.connect("wsPath", logOutput);
+    stream.connect("wsPath");
     verify(apiHelper).getEventStream(eq("wsPath"), listenerCaptor.capture(), any());
 
     listenerCaptor.getValue().onError(401);
@@ -106,7 +104,7 @@ class EventStreamTests {
 
   @Test
   void should_not_retry_when_forbidden() {
-    stream.connect("wsPath", logOutput);
+    stream.connect("wsPath");
     verify(apiHelper).getEventStream(eq("wsPath"), listenerCaptor.capture(), any());
 
     listenerCaptor.getValue().onError(403);
@@ -120,7 +118,7 @@ class EventStreamTests {
 
   @Test
   void should_not_retry_when_api_not_found() {
-    stream.connect("wsPath", logOutput);
+    stream.connect("wsPath");
     verify(apiHelper).getEventStream(eq("wsPath"), listenerCaptor.capture(), any());
 
     listenerCaptor.getValue().onError(404);
@@ -134,7 +132,7 @@ class EventStreamTests {
 
   @Test
   void should_retry_when_server_error() {
-    stream.connect("wsPath", logOutput);
+    stream.connect("wsPath");
     verify(apiHelper).getEventStream(eq("wsPath"), listenerCaptor.capture(), any());
 
     listenerCaptor.getValue().onError(500);
@@ -148,7 +146,7 @@ class EventStreamTests {
 
   @Test
   void should_reconnect_when_disconnected() {
-    stream.connect("wsPath", logOutput);
+    stream.connect("wsPath");
     verify(apiHelper).getEventStream(eq("wsPath"), listenerCaptor.capture(), any());
     var listener = listenerCaptor.getValue();
     var scheduledFuture = mock(ScheduledFuture.class);
@@ -168,7 +166,7 @@ class EventStreamTests {
 
   @Test
   void should_stop_retrying_after_failed_attempts() {
-    stream.connect("wsPath", logOutput);
+    stream.connect("wsPath");
 
     for (int attemptNumber = 0; attemptNumber < 9; attemptNumber++) {
       verify(apiHelper).getEventStream(eq("wsPath"), listenerCaptor.capture(), any());
@@ -195,7 +193,7 @@ class EventStreamTests {
     var scheduledFuture = mock(ScheduledFuture.class);
     ArgumentCaptor<Runnable> callableCaptor = ArgumentCaptor.forClass(Runnable.class);
     when(executor.schedule(callableCaptor.capture(), anyLong(), any())).thenReturn(scheduledFuture);
-    stream.connect("wsPath", logOutput);
+    stream.connect("wsPath");
     verify(apiHelper).getEventStream(eq("wsPath"), listenerCaptor.capture(), any());
     var listener = listenerCaptor.getValue();
 
@@ -210,7 +208,7 @@ class EventStreamTests {
   void should_cancel_request_when_closing_stream() {
     var asyncRequest = mock(HttpClient.AsyncRequest.class);
     when(apiHelper.getEventStream(eq("wsPath"), any(), any())).thenReturn(asyncRequest);
-    stream.connect("wsPath", logOutput);
+    stream.connect("wsPath");
 
     stream.close();
 
@@ -221,7 +219,7 @@ class EventStreamTests {
   void should_cancel_delayed_retry_when_closing_stream() {
     var scheduledFuture = mock(ScheduledFuture.class);
     when(executor.schedule(any(Runnable.class), anyLong(), any())).thenReturn(scheduledFuture);
-    stream.connect("wsPath", logOutput);
+    stream.connect("wsPath");
     verify(apiHelper).getEventStream(eq("wsPath"), listenerCaptor.capture(), any());
     listenerCaptor.getValue().onError(null);
 

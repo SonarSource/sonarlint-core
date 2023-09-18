@@ -66,6 +66,7 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoadResult;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
@@ -76,7 +77,6 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
-import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
 import org.sonarsource.sonarlint.core.serverconnection.IssueStorePaths;
@@ -456,12 +456,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   @Override
   public void subscribeForEvents(EndpointParams endpoint, HttpClient client, Set<String> projectKeys,
     Consumer<ServerEvent> eventConsumer, @Nullable ClientLogOutput clientLogOutput) {
-    var logOutput = clientLogOutput == null ? this.logOutput : clientLogOutput;
-    if (logOutput == null) {
-      logOutput = (message, level) -> {
-      };
-    }
-    serverConnection.subscribeForEvents(endpoint, client, projectKeys, eventConsumer, logOutput);
+    serverConnection.subscribeForEvents(endpoint, client, projectKeys, eventConsumer);
   }
 
   @Override
