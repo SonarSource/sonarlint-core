@@ -60,8 +60,7 @@ public class PushApi {
   }
 
   public EventStream subscribe(Set<String> projectKeys, Set<Language> enabledLanguages, Consumer<ServerEvent> serverEventConsumer) {
-    return new EventStream(helper)
-      .onEvent(rawEvent -> handleRawEvent(rawEvent, serverEventConsumer))
+    return new EventStream(helper, rawEvent -> handleRawEvent(rawEvent, serverEventConsumer))
       .connect(getWsPath(projectKeys, enabledLanguages));
   }
 
