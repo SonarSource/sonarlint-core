@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.server.event;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.Language;
@@ -33,7 +32,7 @@ import org.sonarsource.sonarlint.core.serverconnection.events.EventDispatcher;
 import org.sonarsource.sonarlint.core.serverconnection.events.ServerEventsAutoSubscriber;
 
 public class SonarQubeEventStream {
-  private final AtomicReference<EventStream> eventStream = new AtomicReference<>();
+  private EventStream eventStream;
   private final Set<String> subscribedProjectKeys = new LinkedHashSet<>();
   private final EventDispatcher coreEventRouter;
   private final Set<Language> enabledLanguages;
@@ -52,7 +51,7 @@ public class SonarQubeEventStream {
     this.clientLogOutput = clientLogOutput;
   }
 
-  public void subscribeNew(Set<String> possiblyNewProjectKeys) {
+  public synchronized void subscribeNew(Set<String> possiblyNewProjectKeys) {
     if (!possiblyNewProjectKeys.isEmpty() && !subscribedProjectKeys.containsAll(possiblyNewProjectKeys)) {
       cancelSubscription();
       subscribedProjectKeys.addAll(possiblyNewProjectKeys);
@@ -60,14 +59,14 @@ public class SonarQubeEventStream {
     }
   }
 
-  public void resubscribe() {
+  public synchronized void resubscribe() {
     cancelSubscription();
     if (!subscribedProjectKeys.isEmpty()) {
       attemptSubscription(subscribedProjectKeys);
     }
   }
 
-  public void unsubscribe(String projectKey) {
+  public synchronized void unsubscribe(String projectKey) {
     cancelSubscription();
     subscribedProjectKeys.remove(projectKey);
     if (!subscribedProjectKeys.isEmpty()) {
@@ -78,7 +77,7 @@ public class SonarQubeEventStream {
   private void attemptSubscription(Set<String> projectKeys) {
     if (!enabledLanguages.isEmpty()) {
       serverApiProvider.getServerApi(connectionId)
-        .ifPresent(serverApi -> eventStream.set(serverApi.push().subscribe(projectKeys, enabledLanguages, e -> notifyHandlers(e, eventConsumer), clientLogOutput)));
+        .ifPresent(serverApi -> eventStream = serverApi.push().subscribe(projectKeys, enabledLanguages, e -> notifyHandlers(e, eventConsumer), clientLogOutput));
     }
   }
 
@@ -88,12 +87,13 @@ public class SonarQubeEventStream {
   }
 
   private void cancelSubscription() {
-    if (eventStream.get() != null) {
-      eventStream.get().close();
+    if (eventStream != null) {
+      eventStream.close();
+      eventStream = null;
     }
   }
 
-  public void stop() {
+  public synchronized void stop() {
     subscribedProjectKeys.clear();
     cancelSubscription();
   }
