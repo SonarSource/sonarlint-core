@@ -46,20 +46,16 @@ public class EventStream {
   private final ScheduledExecutorService executor;
   private final AtomicReference<HttpClient.AsyncRequest> currentRequest = new AtomicReference<>();
   private final AtomicReference<ScheduledFuture<?>> pendingFuture = new AtomicReference<>();
-  private Consumer<Event> eventConsumer;
+  private final Consumer<Event> eventConsumer;
 
-  public EventStream(ServerApiHelper helper) {
-    this(helper, Executors.newScheduledThreadPool(1));
+  public EventStream(ServerApiHelper helper, Consumer<Event> eventConsumer) {
+    this(helper, eventConsumer, Executors.newScheduledThreadPool(1));
   }
 
-  EventStream(ServerApiHelper helper, ScheduledExecutorService executor) {
+  EventStream(ServerApiHelper helper, Consumer<Event> eventConsumer, ScheduledExecutorService executor) {
     this.helper = helper;
-    this.executor = executor;
-  }
-
-  public EventStream onEvent(Consumer<Event> eventConsumer) {
     this.eventConsumer = eventConsumer;
-    return this;
+    this.executor = executor;
   }
 
   public EventStream connect(String wsPath) {

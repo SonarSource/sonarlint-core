@@ -57,8 +57,7 @@ class EventStreamTests {
 
   @BeforeEach
   void setUp() {
-    stream = new EventStream(apiHelper, executor);
-    stream.onEvent(receivedEvents::add);
+    stream = new EventStream(apiHelper, receivedEvents::add, executor);
   }
 
   @Test
