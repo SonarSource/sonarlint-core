@@ -86,14 +86,14 @@ public class EventStream {
 
         @Override
         public void onClosed() {
-          pendingFuture.get().cancel(true);
+          cancelPendingFutureIfAny();
           // reconnect instantly (will also reset attempt parameters)
           clientLogOutput.log("Disconnected from server event-stream, reconnecting now", DEBUG);
           connect(wsPath, clientLogOutput);
         }
       },
       message -> {
-        pendingFuture.get().cancel(true);
+        cancelPendingFutureIfAny();
         eventBuffer.append(message)
           .drainCompleteEvents()
           .forEach(stringEvent -> eventConsumer.accept(EventParser.parse(stringEvent)));
@@ -143,14 +143,20 @@ public class EventStream {
   }
 
   public void close() {
-    if (pendingFuture.get() != null) {
-      pendingFuture.get().cancel(true);
-    }
-    if (currentRequest.get() != null) {
-      currentRequest.get().cancel();
+    cancelPendingFutureIfAny();
+    var currentRequestOrNull = currentRequest.getAndSet(null);
+    if (currentRequestOrNull != null) {
+      currentRequestOrNull.cancel();
     }
     if (!MoreExecutors.shutdownAndAwaitTermination(executor, 5, TimeUnit.SECONDS)) {
       logger.warn("Unable to stop event stream executor service in a timely manner");
+    }
+  }
+
+  private void cancelPendingFutureIfAny() {
+    var pendingFutureOrNull = pendingFuture.getAndSet(null);
+    if (pendingFutureOrNull != null) {
+      pendingFutureOrNull.cancel(true);
     }
   }
 
