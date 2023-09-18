@@ -32,6 +32,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
@@ -132,6 +133,7 @@ import static org.apache.commons.lang3.StringUtils.abbreviate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -690,6 +692,19 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       assertThat(serverIssues)
         .extracting(ServerIssue::getRuleKey, ServerIssue::isResolved)
         .contains(tuple("java:S106", true));
+
+      // SLCORE-562 Verify that closing SSE stream actually cut the reception of events
+      backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(CONFIG_SCOPE_ID));
+
+      events.clear();
+      reopenIssue(adminWsClient, issueKey);
+
+      await()
+        .during(Duration.ofSeconds(2))
+        .atMost(Duration.ofSeconds(3))
+        .untilAsserted (() ->
+          assertThat(events).isEmpty()
+        );
     }
   }
 

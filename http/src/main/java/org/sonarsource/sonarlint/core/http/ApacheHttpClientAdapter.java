@@ -26,10 +26,12 @@ import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import org.apache.hc.client5.http.async.methods.AbstractCharResponseConsumer;
@@ -114,6 +116,7 @@ class ApacheHttpClientAdapter implements HttpClient {
     }
     request.setHeader("Accept", "text/event-stream");
     connected = false;
+    var cancelled = new AtomicBoolean();
     var httpFuture = apacheClient.execute(new BasicRequestProducer(request, null),
       new AbstractCharResponseConsumer<>() {
         @Override
@@ -128,6 +131,9 @@ class ApacheHttpClientAdapter implements HttpClient {
 
         @Override
         protected void data(CharBuffer src, boolean endOfStream) {
+          if (cancelled.get()) {
+            throw new CancellationException();
+          }
           if (connected) {
             messageConsumer.accept(src.toString());
           }
@@ -150,7 +156,10 @@ class ApacheHttpClientAdapter implements HttpClient {
 
         @Override
         public void failed(Exception cause) {
-          LOG.error(cause.getMessage(), cause);
+          if (cause instanceof CancellationException) {
+            return;
+          }
+          LOG.error("Stream failed", cause);
         }
       }, new FutureCallback<>() {
 
@@ -173,6 +182,7 @@ class ApacheHttpClientAdapter implements HttpClient {
 
         @Override
         public void cancelled() {
+          cancelled.set(true);
           LOG.debug("Stream has been cancelled");
         }
       });
