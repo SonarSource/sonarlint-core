@@ -29,8 +29,8 @@ import java.util.stream.Collectors;
 import org.sonar.api.batch.DependedUpon;
 import org.sonar.api.batch.DependsUpon;
 import org.sonar.api.batch.Phase;
-import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
+import org.sonar.api.scanner.sensor.ProjectSensor;
 import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.api.utils.dag.DirectAcyclicGraph;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultSensorContext;
@@ -47,10 +47,10 @@ public class SensorsExecutor {
 
   private final SensorOptimizer sensorOptimizer;
   private final ProgressMonitor progress;
-  private final List<Sensor> sensors;
+  private final List<ProjectSensor> sensors;
   private final DefaultSensorContext context;
 
-  public SensorsExecutor(DefaultSensorContext context, SensorOptimizer sensorOptimizer, ProgressMonitor progress, Optional<List<Sensor>> sensors) {
+  public SensorsExecutor(DefaultSensorContext context, SensorOptimizer sensorOptimizer, ProgressMonitor progress, Optional<List<ProjectSensor>> sensors) {
     this.context = context;
     this.sensors = sensors.orElse(List.of());
     this.sensorOptimizer = sensorOptimizer;
@@ -58,7 +58,7 @@ public class SensorsExecutor {
   }
 
   public void execute() {
-    for (Sensor sensor : sort(sensors)) {
+    for (var sensor : sort(sensors)) {
       progress.checkCancel();
       var descriptor = new DefaultSensorDescriptor();
       sensor.describe(descriptor);
@@ -68,7 +68,7 @@ public class SensorsExecutor {
     }
   }
 
-  private static void executeSensor(SensorContext context, Sensor sensor, DefaultSensorDescriptor descriptor) {
+  private static void executeSensor(SensorContext context, ProjectSensor sensor, DefaultSensorDescriptor descriptor) {
     var sensorName = descriptor.name() != null ? descriptor.name() : describe(sensor);
     LOG.debug("Execute Sensor: {}", sensorName);
     try {
