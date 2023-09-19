@@ -24,6 +24,8 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.inject.Named;
 
 public class LocalOnlyIssueStorageService {
 
@@ -31,7 +33,7 @@ public class LocalOnlyIssueStorageService {
   private final Path workDir;
   private XodusLocalOnlyIssueStore localOnlyIssueStore;
 
-  public LocalOnlyIssueStorageService(Path storageRoot, Path workDir) {
+  public LocalOnlyIssueStorageService(@Named("storageRoot") Path storageRoot, @Named("userHome") Path workDir) {
     projectsStorageBaseDir = storageRoot;
     this.workDir = workDir;
   }
@@ -53,6 +55,7 @@ public class LocalOnlyIssueStorageService {
     return localOnlyIssueStore;
   }
 
+  @PreDestroy
   public void close() {
     if (localOnlyIssueStore != null) {
       localOnlyIssueStore.close();

@@ -69,7 +69,7 @@ import org.sonarsource.sonarlint.core.repository.vcs.ActiveSonarProjectBranchRep
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
 import org.sonarsource.sonarlint.core.rules.RulesServiceImpl;
 import org.sonarsource.sonarlint.core.server.event.ServerEventsService;
-import org.sonarsource.sonarlint.core.serverconnection.StorageService;
+import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.websocket.WebSocketService;
 import org.sonarsource.sonarlint.core.smartnotifications.SmartNotifications;
 import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
@@ -120,7 +120,9 @@ import org.springframework.context.annotation.Import;
   LocalOnlyIssueRepository.class,
   WebSocketService.class,
   ServerEventsService.class,
-  VersionSoonUnsupportedHelper.class
+  VersionSoonUnsupportedHelper.class,
+  LocalOnlyIssueStorageService.class,
+  StorageService.class
 })
 public class SonarLintSpringAppConfig {
 
@@ -134,16 +136,6 @@ public class SonarLintSpringAppConfig {
   @PreDestroy
   void stopClientEventBus() {
     MoreExecutors.shutdownAndAwaitTermination(eventExecutorService, 1, TimeUnit.SECONDS);
-  }
-
-  @Bean(destroyMethod = "close")
-  StorageService provideStorageService(InitializeParams params, @Named("workDir") Path workDir) {
-    return new StorageService(params.getStorageRoot(), workDir);
-  }
-
-  @Bean(destroyMethod = "close")
-  LocalOnlyIssueStorageService provideLocalOnlyIssueStorageService(InitializeParams params, @Named("workDir") Path workDir) {
-    return new LocalOnlyIssueStorageService(params.getStorageRoot(), workDir);
   }
 
   @Bean
@@ -163,6 +155,13 @@ public class SonarLintSpringAppConfig {
     var workDir = Optional.ofNullable(params.getWorkDir()).orElse(sonarlintUserHome.resolve("work"));
     createFolderIfNeeded(workDir);
     return workDir;
+  }
+
+  @Bean(name = "storageRoot")
+  Path provideSonarLintStorageRoot(InitializeParams params, @Named("userHome") Path sonarlintUserHome) {
+    var storageRoot = Optional.ofNullable(params.getStorageRoot()).orElse(sonarlintUserHome.resolve("storage"));
+    createFolderIfNeeded(storageRoot);
+    return storageRoot;
   }
 
   @Bean

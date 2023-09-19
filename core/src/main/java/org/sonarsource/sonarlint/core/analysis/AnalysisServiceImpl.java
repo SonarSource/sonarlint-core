@@ -35,7 +35,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.analysis.GetSupportedFil
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.serverconnection.StorageService;
+import org.sonarsource.sonarlint.core.storage.StorageService;
 
 import static org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.LanguageDetection.sanitizeExtension;
 

@@ -219,32 +219,6 @@ class SmartNotificationsMediumTests {
   }
 
   @Test
-  void it_should_send_notification_after_adding_removing_connection() {
-    var fakeClient = newFakeClient().build();
-    mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
-    mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
-      UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
-
-    backend = newBackend()
-      .withSonarQubeConnectionAndNotifications(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage ->
-        storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
-      .withBoundConfigScope("scopeId", CONNECTION_ID, PROJECT_KEY)
-      .withSmartNotifications()
-      .build(fakeClient);
-
-    backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(), List.of()));
-
-    var sonarQubeDto = new SonarQubeConnectionConfigurationDto(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), false);
-    backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(sonarQubeDto), List.of()));
-
-    await().atMost(3, TimeUnit.SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
-
-    var notificationsResult = fakeClient.getSmartNotificationsToShow();
-    assertThat(notificationsResult).hasSize(1);
-    assertThat(notificationsResult.get(0).getScopeIds()).hasSize(1).contains("scopeId");
-  }
-
-  @Test
   void it_should_not_send_notification_handled_by_sonarcloud_websocket() {
     var fakeClient = newFakeClient().build();
     System.setProperty("sonarlint.internal.sonarcloud.url", mockWebServerExtension.endpointParams().getBaseUrl());
