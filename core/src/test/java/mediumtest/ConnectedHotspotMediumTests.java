@@ -32,7 +32,6 @@ import mediumtest.fixtures.SonarLintTestBackend;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -55,7 +54,6 @@ import testutils.TestUtils;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
-import static mediumtest.fixtures.storage.StorageFixture.newStorage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.mock;
@@ -75,15 +73,6 @@ class ConnectedHotspotMediumTests {
 
   private SonarLintTestBackend backend;
 
-  @BeforeEach
-  void prepareBackend() {
-    var fakeClient = newFakeClient()
-      .build();
-    backend = newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, mockWebServer.url("/"))
-      .build(fakeClient);
-  }
-
   @AfterEach
   void stopBackend() throws ExecutionException, InterruptedException {
     if (backend != null) {
@@ -98,11 +87,11 @@ class ConnectedHotspotMediumTests {
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
-        .setProjectKey(JAVA_MODULE_KEY)
-        .setBaseDir(baseDir)
-        .addInputFile(inputFile)
-        .setModuleKey("key")
-        .build(),
+      .setProjectKey(JAVA_MODULE_KEY)
+      .setBaseDir(baseDir)
+      .addInputFile(inputFile)
+      .setModuleKey("key")
+      .build(),
       new StoreIssueListener(issues), null, null);
 
     assertThat(issues).isEmpty();
@@ -115,11 +104,11 @@ class ConnectedHotspotMediumTests {
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
-        .setProjectKey(JAVA_MODULE_KEY)
-        .setBaseDir(baseDir)
-        .addInputFile(inputFile)
-        .setModuleKey("key")
-        .build(),
+      .setProjectKey(JAVA_MODULE_KEY)
+      .setBaseDir(baseDir)
+      .addInputFile(inputFile)
+      .setModuleKey("key")
+      .build(),
       new StoreIssueListener(issues), null, null);
 
     assertThat(issues).isEmpty();
@@ -166,7 +155,7 @@ class ConnectedHotspotMediumTests {
 
     assertThat(serverHotspots)
       .extracting("key", "ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "creationDate",
-      "status")
+        "status")
       .containsExactly(
         tuple("hotspotKey1", "ruleKey1", "message1", "file/path", 1, 2, 3, 4, LocalDateTime.of(2020, 9, 21, 12, 46, 39).toInstant(ZoneOffset.UTC), HotspotReviewStatus.TO_REVIEW));
   }
@@ -174,20 +163,21 @@ class ConnectedHotspotMediumTests {
   @Test
   void should_return_file_hotspots_after_downloading_them() {
     createStorageAndEngine("9.7");
-    mockWebServer.addProtobufResponse("/api/hotspots/search.protobuf?projectKey=" + JAVA_MODULE_KEY + "&files=file%2Fpath&branch=master&ps=500&p=1", Hotspots.SearchWsResponse.newBuilder()
-      .setPaging(Common.Paging.newBuilder().setTotal(1).build())
-      .addHotspots(Hotspots.SearchWsResponse.Hotspot.newBuilder()
-        .setComponent("component:file/path")
-        .setTextRange(Common.TextRange.newBuilder().setStartLine(1).setStartOffset(2).setEndLine(3).setEndOffset(4).build())
-        .setStatus("TO_REVIEW")
-        .setKey("hotspotKey1")
-        .setCreationDate("2020-09-21T12:46:39+0000")
-        .setRuleKey("ruleKey1")
-        .setMessage("message1")
-        .setVulnerabilityProbability("LOW")
-        .build())
-      .addComponents(Hotspots.Component.newBuilder().setKey("component:file/path").setPath("file/path").build())
-      .build());
+    mockWebServer.addProtobufResponse("/api/hotspots/search.protobuf?projectKey=" + JAVA_MODULE_KEY + "&files=file%2Fpath&branch=master&ps=500&p=1",
+      Hotspots.SearchWsResponse.newBuilder()
+        .setPaging(Common.Paging.newBuilder().setTotal(1).build())
+        .addHotspots(Hotspots.SearchWsResponse.Hotspot.newBuilder()
+          .setComponent("component:file/path")
+          .setTextRange(Common.TextRange.newBuilder().setStartLine(1).setStartOffset(2).setEndLine(3).setEndOffset(4).build())
+          .setStatus("TO_REVIEW")
+          .setKey("hotspotKey1")
+          .setCreationDate("2020-09-21T12:46:39+0000")
+          .setRuleKey("ruleKey1")
+          .setMessage("message1")
+          .setVulnerabilityProbability("LOW")
+          .build())
+        .addComponents(Hotspots.Component.newBuilder().setKey("component:file/path").setPath("file/path").build())
+        .build());
     var projectBinding = new ProjectBinding(JAVA_MODULE_KEY, "", "");
     sonarlint.downloadAllServerHotspotsForFile(mockWebServer.endpointParams(), backend.getHttpClient(CONNECTION_ID), projectBinding, "file/path", "master", null);
 
@@ -201,18 +191,22 @@ class ConnectedHotspotMediumTests {
   }
 
   private void createStorageAndEngine(String serverVersion) {
-    var storage = newStorage(SERVER_ID)
-      .withServerVersion(serverVersion)
-      .withJavaPlugin()
-      .withProject(JAVA_MODULE_KEY, project -> project
-        .withRuleSet("java", ruleSet -> ruleSet
-          .withActiveRule("java:S5852", "BLOCKER")))
-      .create(storageDir);
+    var fakeClient = newFakeClient()
+      .build();
+    backend = newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, mockWebServer.url("/"))
+      .withStorage(SERVER_ID, b -> b
+        .withServerVersion(serverVersion)
+        .withJavaPlugin()
+        .withProject(JAVA_MODULE_KEY, project -> project
+          .withRuleSet("java", ruleSet -> ruleSet
+            .withActiveRule("java:S5852", "BLOCKER"))))
+      .build(fakeClient);
 
     var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId(SERVER_ID)
-      .setSonarLintUserHome(slHome)
-      .setStorageRoot(storage.getPath())
+      .setSonarLintUserHome(backend.getUserHome())
+      .setStorageRoot(backend.getStorageRoot())
       .setLogOutput(createNoOpLogOutput())
       .addEnabledLanguages(Language.JAVA)
       .enableHotspots()
@@ -253,10 +247,6 @@ class ConnectedHotspotMediumTests {
   @RegisterExtension
   private final MockWebServerExtensionWithProtobuf mockWebServer = new MockWebServerExtensionWithProtobuf();
 
-  @TempDir
-  Path slHome;
-  @TempDir
-  Path storageDir;
   private static final String SERVER_ID = StringUtils.repeat("very-long-id", 30);
   private static final String JAVA_MODULE_KEY = "test-project-2";
   private static ConnectedSonarLintEngineImpl sonarlint;

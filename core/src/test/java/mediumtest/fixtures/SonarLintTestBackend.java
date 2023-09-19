@@ -34,6 +34,7 @@ public class SonarLintTestBackend extends SonarLintBackendImpl {
   private Path userHome;
   private Path workDir;
   private Path telemetryFilePath;
+  private Path storageRoot;
 
   public SonarLintTestBackend(SonarLintClient client) {
     super(client);
@@ -43,6 +44,7 @@ public class SonarLintTestBackend extends SonarLintBackendImpl {
   public CompletableFuture<Void> initialize(InitializeParams params) {
     this.userHome = Path.of(requireNonNull(params.getSonarlintUserHome()));
     this.workDir = requireNonNull(params.getWorkDir());
+    this.storageRoot = requireNonNull(params.getStorageRoot());
     this.telemetryFilePath = TelemetryPathManager.getPath(userHome, params.getClientInfo().getTelemetryProductKey());
     return super.initialize(params);
   }
@@ -53,6 +55,10 @@ public class SonarLintTestBackend extends SonarLintBackendImpl {
 
   public Path getUserHome() {
     return userHome;
+  }
+
+  public Path getStorageRoot() {
+    return storageRoot;
   }
 
   public Path telemetryFilePath() {

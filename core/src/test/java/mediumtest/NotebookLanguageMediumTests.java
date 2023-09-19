@@ -19,60 +19,69 @@
  */
 package mediumtest;
 
-import java.nio.file.Path;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.SonarLintTestBackend;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import testutils.MockWebServerExtensionWithProtobuf;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
-import static mediumtest.fixtures.storage.StorageFixture.newStorage;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.mockito.Mockito.mock;
 import static testutils.TestUtils.createNoOpLogOutput;
+import static testutils.TestUtils.protobufBody;
+import static testutils.TestUtils.protobufBodyDelimited;
 
 class NotebookLanguageMediumTests {
 
   @RegisterExtension
-  private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
+  static WireMockExtension sonarqubeMock = WireMockExtension.newInstance()
+    .options(wireMockConfig().dynamicPort())
+    .build();
 
   private static final String CONNECTION_ID = StringUtils.repeat("very-long-id", 30);
   private static final String JAVA_MODULE_KEY = "test-project-2";
   private static ConnectedSonarLintEngineImpl sonarlint;
+  private static SonarLintTestBackend backend;
 
   @BeforeAll
-  static void prepare(@TempDir Path slHome) {
-    var storage = newStorage(CONNECTION_ID)
-      .withJSPlugin()
-      .withJavaPlugin()
-      .withProject("test-project")
-      .withProject(JAVA_MODULE_KEY)
-      .create(slHome);
+  static void prepare() {
+    var fakeClient = newFakeClient()
+      .build();
+    backend = newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, sonarqubeMock.baseUrl())
+      .withStorage(CONNECTION_ID, s -> s.withJSPlugin()
+        .withJavaPlugin()
+        .withProject("test-project")
+        .withProject(JAVA_MODULE_KEY))
+      .build(fakeClient);
 
     var nodeJsHelper = new NodeJsHelper();
     nodeJsHelper.detect(null);
 
     var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId(CONNECTION_ID)
-      .setSonarLintUserHome(slHome)
-      .setStorageRoot(storage.getPath())
+      .setSonarLintUserHome(backend.getUserHome())
+      .setStorageRoot(backend.getStorageRoot())
       .setLogOutput(createNoOpLogOutput())
       .addEnabledLanguages(Language.JAVA, Language.JS, Language.IPYTHON)
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
@@ -82,26 +91,11 @@ class NotebookLanguageMediumTests {
   }
 
   @AfterAll
-  static void stop() {
+  static void stop() throws ExecutionException, InterruptedException {
     if (sonarlint != null) {
       sonarlint.stop(true);
       sonarlint = null;
     }
-  }
-
-  private SonarLintTestBackend backend;
-
-  @BeforeEach
-  void prepareBackend() {
-    var fakeClient = newFakeClient()
-      .build();
-    backend = newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.url("/"))
-      .build(fakeClient);
-  }
-
-  @AfterEach
-  void stopBackend() throws ExecutionException, InterruptedException {
     if (backend != null) {
       backend.shutdown().get();
     }
@@ -109,7 +103,8 @@ class NotebookLanguageMediumTests {
 
   @Test
   void should_not_pull_issues_for_notebook_python_language() {
-    mockWebServerExtension.addStringResponse("/api/system/status", "{\"status\": \"UP\", \"version\": \"9.6\", \"id\": \"xzy\"}");
+    sonarqubeMock.stubFor(get("/api/system/status")
+      .willReturn(aResponse().withStatus(200).withBody("{\"status\": \"UP\", \"version\": \"9.6\", \"id\": \"xzy\"}")));
     var timestamp = Issues.IssuesPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
     var issue = Issues.IssueLite.newBuilder()
       .setKey("uuid")
@@ -121,11 +116,11 @@ class NotebookLanguageMediumTests {
       .setCreationDate(123456789L)
       .build();
 
-    mockWebServerExtension.addProtobufResponseDelimited("/api/issues/pull?projectKey=test-project&branchName=master&languages=java,js", timestamp, issue);
+    sonarqubeMock.stubFor(get("/api/issues/pull?projectKey=test-project&branchName=master&languages=java,js")
+      .willReturn(aResponse().withStatus(200).withResponseBody(protobufBodyDelimited(timestamp, issue))));
 
-
-    assertThatCode(() -> sonarlint.downloadAllServerIssues(mockWebServerExtension.endpointParams(),
-      backend.getHttpClient(CONNECTION_ID), "test-project", "master",null)).doesNotThrowAnyException();
+    assertThatCode(() -> sonarlint.downloadAllServerIssues(new EndpointParams(sonarqubeMock.baseUrl(), false, null),
+      backend.getHttpClient(CONNECTION_ID), "test-project", "master", null)).doesNotThrowAnyException();
   }
 
 }
