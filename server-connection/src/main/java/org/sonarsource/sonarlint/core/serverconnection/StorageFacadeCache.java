@@ -22,9 +22,12 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 // using a static cache is required for compatibility between the legacy engines and the new backend, can be removed when dropping engines
 public class StorageFacadeCache {
+
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private static final StorageFacadeCache uniqueFacade = new StorageFacadeCache();
 
@@ -35,14 +38,17 @@ public class StorageFacadeCache {
   private final Map<Path, StorageFacade> facadePerRootPath = new ConcurrentHashMap<>();
 
   public StorageFacade getOrCreate(Path globalStorageRoot, Path workDir) {
-    return facadePerRootPath.computeIfAbsent(globalStorageRoot, k -> new StorageFacade(globalStorageRoot, workDir));
+    return facadePerRootPath.computeIfAbsent(globalStorageRoot, k -> {
+      LOG.debug("Creating a new StorageFacade for storageRoot={} and workDir={}", globalStorageRoot, workDir);
+      return new StorageFacade(globalStorageRoot, workDir);
+    });
   }
 
-  public void close(StorageFacade storage) {
-    var removed = facadePerRootPath.values().remove(storage);
-    if (removed) {
+  public void close(Path globalStorageRoot) {
+    var removed = facadePerRootPath.remove(globalStorageRoot);
+    if (removed != null) {
       // close the storage only once
-      storage.close();
+      removed.close();
     }
   }
 }

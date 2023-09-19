@@ -61,7 +61,7 @@ import org.sonarsource.sonarlint.core.issuetracking.Tracker;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.vcs.ActiveSonarProjectBranchRepository;
-import org.sonarsource.sonarlint.core.serverconnection.StorageService;
+import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
 

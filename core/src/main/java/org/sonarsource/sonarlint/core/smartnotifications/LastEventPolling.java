@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.smartnotifications;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import org.sonarsource.sonarlint.core.serverconnection.StorageService;
+import org.sonarsource.sonarlint.core.storage.StorageService;
 
 public class LastEventPolling {
 

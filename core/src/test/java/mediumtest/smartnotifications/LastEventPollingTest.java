@@ -25,7 +25,7 @@ import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
-import org.sonarsource.sonarlint.core.serverconnection.StorageService;
+import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 import org.sonarsource.sonarlint.core.smartnotifications.LastEventPolling;

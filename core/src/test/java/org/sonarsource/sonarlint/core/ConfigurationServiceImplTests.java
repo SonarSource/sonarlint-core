@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.ConfigurationScopeDto;
@@ -37,9 +36,6 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
-import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
-import org.sonarsource.sonarlint.core.serverconnection.StorageService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

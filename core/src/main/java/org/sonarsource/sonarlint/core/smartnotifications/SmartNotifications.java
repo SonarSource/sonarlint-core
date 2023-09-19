@@ -45,7 +45,7 @@ import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionCo
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.developers.DevelopersApi;
-import org.sonarsource.sonarlint.core.serverconnection.StorageService;
+import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 import org.sonarsource.sonarlint.core.websocket.WebSocketService;
 

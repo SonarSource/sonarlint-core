@@ -256,9 +256,5 @@ public class ServerConnection {
 
   public void stop(boolean deleteStorage) {
     serverEventsAutoSubscriber.stop();
-    StorageFacadeCache.get().close(storageFacade);
-    if (deleteStorage) {
-      storage.delete();
-    }
   }
 }
