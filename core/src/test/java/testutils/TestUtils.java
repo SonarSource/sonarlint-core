@@ -74,6 +74,18 @@ public class TestUtils {
     }
   }
 
+  public static Body protobufBodyDelimited(Message... messages) {
+    var baos = new ByteArrayOutputStream();
+    try {
+      for (var message : messages) {
+        message.writeDelimitedTo(baos);
+      }
+      return Body.ofBinaryOrText(baos.toByteArray(), ContentTypeHeader.absent());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   public static String generateThreadDump() {
     final var dump = new StringBuilder();
     final var threadMXBean = ManagementFactory.getThreadMXBean();
