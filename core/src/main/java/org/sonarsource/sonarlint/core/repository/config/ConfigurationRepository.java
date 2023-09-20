@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
@@ -41,8 +42,8 @@ import static java.util.Objects.requireNonNull;
 @Singleton
 public class ConfigurationRepository {
 
-  private final Map<String, ConfigurationScope> configScopePerId = new HashMap<>();
-  private final Map<String, BindingConfiguration> bindingPerConfigScopeId = new HashMap<>();
+  private final Map<String, ConfigurationScope> configScopePerId = new ConcurrentHashMap<>();
+  private final Map<String, BindingConfiguration> bindingPerConfigScopeId = new ConcurrentHashMap<>();
 
   public ConfigurationScope addOrReplace(ConfigurationScope configScope, BindingConfiguration bindingConfig) {
     var id = configScope.getId();
