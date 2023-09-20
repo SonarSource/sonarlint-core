@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.commons.Language;
@@ -60,7 +59,6 @@ class ConnectionSyncMediumTests {
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .build(client);
-
     await().untilAsserted(() -> assertThat(logTester.logs()).contains("Binding suggestion computation queued for config scopes 'scopeId'..."));
 
     assertThat(logTester.logs()).doesNotContain("Extracting rules metadata for connection 'connectionId'");
@@ -74,16 +72,25 @@ class ConnectionSyncMediumTests {
 
     getEffectiveRuleDetails("scopeId", "java:S106");
     assertThat(logTester.logs()).isEmpty();
+  }
 
-    // Removing and adding the connection back should evict the cache
-    backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(), List.of()));
-    await().untilAsserted( () -> assertThat(logTester.logs()).contains("Evict cached rules definitions for connection 'connectionId'"));
-    backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto("connectionId", "http://foo", true)), List.of()));
-
-    logTester.clear();
-
+  @Test
+  void it_should_evict_cache_when_connection_is_removed() {
+    var client = newFakeClient()
+      .withClientDescription(this.getClass().getName())
+      .withCredentials("connectionId", "user", "pw")
+      .build();
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", storage -> storage.withJavaPlugin())
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withEnabledLanguageInStandaloneMode(Language.JAVA)
+      .build(client);
+    await().untilAsserted(() -> assertThat(logTester.logs()).contains("Binding suggestion computation queued for config scopes 'scopeId'..."));
     getEffectiveRuleDetails("scopeId", "java:S106");
-    assertThat(logTester.logs()).contains("Extracting rules metadata for connection 'connectionId'");
+
+    backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(), List.of()));
+
+    await().untilAsserted(() -> assertThat(logTester.logs()).contains("Evict cached rules definitions for connection 'connectionId'"));
   }
 
   private EffectiveRuleDetailsDto getEffectiveRuleDetails(String configScopeId, String ruleKey) {

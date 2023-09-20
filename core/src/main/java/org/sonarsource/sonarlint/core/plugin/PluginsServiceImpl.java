@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
+import com.google.common.eventbus.Subscribe;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,6 +30,8 @@ import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoadResult;
@@ -38,6 +41,8 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
 @Named
 @Singleton
 public class PluginsServiceImpl implements PluginsService {
+
+  private final SonarLintLogger logger = SonarLintLogger.get();
   private final PluginsRepository pluginsRepository;
   private final LanguageSupportRepository languageSupportRepository;
   private final StorageService storageService;
@@ -89,6 +94,16 @@ public class PluginsServiceImpl implements PluginsService {
     // not interested in the Node.js path at the moment
     var config = new PluginsLoader.Configuration(pluginPaths, enabledLanguages);
     return new PluginsLoader().load(config);
+  }
+
+  @Subscribe
+  public void connectionRemoved(ConnectionConfigurationRemovedEvent e) {
+    evictAll(e.getRemovedConnectionId());
+  }
+
+  private void evictAll(String connectionId) {
+    logger.debug("Evict loaded plugins for connection '{}'", connectionId);
+    pluginsRepository.unload(connectionId);
   }
 
 }
