@@ -59,4 +59,11 @@ public class PluginsRepository {
     loadedPluginsByConnectionId.values().forEach(LoadedPlugins::unload);
     loadedPluginsByConnectionId.clear();
   }
+
+  public void unload(String connectionId) {
+    var loadedPlugins = loadedPluginsByConnectionId.remove(connectionId);
+    if (loadedPlugins != null) {
+      loadedPlugins.unload();
+    }
+  }
 }
