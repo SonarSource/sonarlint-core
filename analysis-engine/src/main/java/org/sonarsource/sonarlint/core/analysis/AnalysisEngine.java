@@ -169,7 +169,10 @@ public class AnalysisEngine {
 
   public CompletableFuture<Void> stop() {
     // Prevent new commands to be submitted
-    stopped.set(true);
+    var alreadyStopped = stopped.getAndSet(true);
+    if (alreadyStopped) {
+      return CompletableFuture.completedFuture(null);
+    }
 
     // Cancel pending commands
     List<AsyncCommand<?>> pendingCommands = new ArrayList<>();
