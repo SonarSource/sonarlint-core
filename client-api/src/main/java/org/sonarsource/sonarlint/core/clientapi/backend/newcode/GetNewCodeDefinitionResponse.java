@@ -19,17 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.newcode;
 
-import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
-
 public class GetNewCodeDefinitionResponse {
 
-  NewCodeDefinition newCodeDefinition;
+  private final String description;
 
-  public GetNewCodeDefinitionResponse(NewCodeDefinition newCodeDefinition) {
-    this.newCodeDefinition = newCodeDefinition;
+  private final boolean isSupported;
+
+  public GetNewCodeDefinitionResponse(String description, boolean isSupported) {
+    this.description = description;
+    this.isSupported = isSupported;
   }
 
-  public NewCodeDefinition getNewCodeDefinition() {
-    return newCodeDefinition;
+  public String getDescription() {
+    return description;
+  }
+
+  public boolean isSupported() {
+    return isSupported;
   }
 }

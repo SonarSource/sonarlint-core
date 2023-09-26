@@ -43,8 +43,6 @@ import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ResolutionStatus;
-import org.sonarsource.sonarlint.core.clientapi.backend.newcode.GetNewCodeDefinitionParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.newcode.GetNewCodeDefinitionResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedFindingDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.IssueTrackingService;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
@@ -65,8 +63,8 @@ import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.newcode.NewCodeServiceImpl;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.vcs.ActiveSonarProjectBranchRepository;
-import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
+import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
 
 import static org.sonarsource.sonarlint.core.utils.FutureUtils.waitForTask;
@@ -119,9 +117,8 @@ public class IssueTrackingServiceImpl implements IssueTrackingService {
         refreshServerIssues(cancelChecker, binding, activeBranch, params);
       }
       var clientTrackedIssuesByServerRelativePath = params.getClientTrackedIssuesByServerRelativePath();
-      var newCodeDefinition = newCodeService.getNewCodeDefinition(new GetNewCodeDefinitionParams(configurationScopeId))
-        .exceptionally(ex -> new GetNewCodeDefinitionResponse(NewCodeDefinition.withAlwaysNew()))
-        .join().getNewCodeDefinition();
+      var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId)
+        .orElse(NewCodeDefinition.withAlwaysNew());
       return new TrackWithServerIssuesResponse(clientTrackedIssuesByServerRelativePath.entrySet().stream().map(e -> {
         var serverRelativePath = e.getKey();
         var serverIssues = storageService.binding(binding).findings().load(activeBranch, serverRelativePath);
