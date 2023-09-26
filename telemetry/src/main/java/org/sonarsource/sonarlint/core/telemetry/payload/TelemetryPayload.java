@@ -86,6 +86,9 @@ public class TelemetryPayload {
   @SerializedName("show_hotspot")
   private final ShowHotspotPayload showHotspotPayload;
 
+  @SerializedName("show_issue")
+  private final ShowIssuePayload showIssuePayload;
+
   @SerializedName("taint_vulnerabilities")
   private final TaintVulnerabilitiesPayload taintVulnerabilitiesPayload;
 
@@ -109,7 +112,7 @@ public class TelemetryPayload {
   public TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, String ideVersion, @Nullable String platform, @Nullable String architecture,
     boolean connectedMode, boolean connectedModeSonarcloud, OffsetDateTime systemTime, OffsetDateTime installTime, String os, String jre, @Nullable String nodejs,
     TelemetryAnalyzerPerformancePayload[] analyses, TelemetryNotificationsPayload notifications, ShowHotspotPayload showHotspotPayload,
-    TaintVulnerabilitiesPayload taintVulnerabilitiesPayload, TelemetryRulesPayload telemetryRulesPayload, HotspotPayload hotspotPayload,
+    ShowIssuePayload showIssuePayload, TaintVulnerabilitiesPayload taintVulnerabilitiesPayload, TelemetryRulesPayload telemetryRulesPayload, HotspotPayload hotspotPayload,
     IssuePayload issuePayload, TelemetryHelpAndFeedbackPayload helpAndFeedbackPayload, CleanAsYouCodePayload cleanAsYouCodePayload, Map<String, Object> additionalAttributes) {
     this.daysSinceInstallation = daysSinceInstallation;
     this.daysOfUse = daysOfUse;
@@ -128,6 +131,7 @@ public class TelemetryPayload {
     this.analyses = analyses;
     this.notifications = notifications;
     this.showHotspotPayload = showHotspotPayload;
+    this.showIssuePayload = showIssuePayload;
     this.taintVulnerabilitiesPayload = taintVulnerabilitiesPayload;
     this.telemetryRulesPayload = telemetryRulesPayload;
     this.hotspotPayload = hotspotPayload;

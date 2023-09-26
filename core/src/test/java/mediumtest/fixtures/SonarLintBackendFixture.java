@@ -77,6 +77,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.http.ProxyDto;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.info.GetClientInfoResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowSoonUnsupportedMessageParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
@@ -502,6 +503,11 @@ public class SonarLintBackendFixture {
     @Override
     public void showHotspot(ShowHotspotParams params) {
       hotspotToShowByConfigScopeId.computeIfAbsent(params.getConfigurationScopeId(), k -> new ArrayList<>()).add(params.getHotspotDetails());
+    }
+
+    @Override
+    public void showIssue(ShowIssueParams params) {
+
     }
 
     @Override

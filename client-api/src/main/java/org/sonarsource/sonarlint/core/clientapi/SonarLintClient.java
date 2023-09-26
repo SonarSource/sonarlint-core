@@ -51,6 +51,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.http.ProxyDto;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.info.GetClientInfoResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowSoonUnsupportedMessageParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
@@ -97,6 +98,12 @@ public interface SonarLintClient {
 
   @JsonNotification
   void showHotspot(ShowHotspotParams params);
+
+  /**
+   * Sends a notification to the client to show a specific issue (specified by {@link ShowIssueParams} in the IDE
+   */
+  @JsonNotification
+  void showIssue(ShowIssueParams params);
 
   /**
    * Can be triggered by the backend when trying to handle a feature that needs a connection, e.g. open hotspot.

@@ -25,18 +25,24 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonar.scanner.protocol.input.ScannerInput;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.entry;
+import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 
 class IssueApiTests {
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
+
+  @RegisterExtension
+  public SonarLintLogTester logTester = new SonarLintLogTester();
 
   private IssueApi underTest;
 
@@ -118,4 +124,45 @@ class IssueApiTests {
     assertThat(result.getComponentPathsByKey())
       .containsOnly(entry("componentKey", "componentPath"));
   }
+
+  @Test
+  void should_fetch_server_issue_by_key() {
+    var issueKey = "issueKey";
+    var path = "/home/file.java";
+    mockServer.addProtobufResponse("/api/issues/search.protobuf?issues=".concat(urlEncode(issueKey)).concat("&ps=1&p=1"),
+      Issues.SearchWsResponse.newBuilder()
+        .addIssues(Issues.Issue.newBuilder().setKey(issueKey).build())
+        .addComponents(Issues.Component.newBuilder().setPath(path).build())
+        .setRules(Issues.SearchWsResponse.newBuilder().getRulesBuilder().addRules(Common.Rule.newBuilder().setKey("ruleKey").build()))
+        .build());
+    var serverIssueDetails = underTest.fetchServerIssue(issueKey);
+    assertThat(serverIssueDetails).isPresent();
+    assertThat(serverIssueDetails.get().key).isEqualTo(issueKey);
+    assertThat(serverIssueDetails.get().path).isEqualTo(path);
+  }
+
+  @Test
+  void should_not_fail_when_no_issue_found_by_key(){
+    mockServer.addProtobufResponse("/api/issues/search.protobuf?issues=".concat(urlEncode("qwert")).concat("&ps=1&p=1"),
+      Issues.SearchWsResponse.newBuilder().addIssues(Issues.Issue.newBuilder().build()).build());
+    var serverIssueDetails = underTest.fetchServerIssue("non-existent");
+    assertThat(serverIssueDetails).isEmpty();
+    assertThat(logTester.logs()).contains("Error while fetching issue");
+  }
+
+  @Test
+  void should_not_fetch_server_issue_by_key_with_no_matching_component() {
+    var issueKey = "issueKey";
+    var path = "/home/file.java";
+    mockServer.addProtobufResponse("/api/issues/search.protobuf?issues=".concat(urlEncode(issueKey)).concat("&ps=1&p=1"),
+      Issues.SearchWsResponse.newBuilder()
+        .addIssues(Issues.Issue.newBuilder().setKey(issueKey).setComponent("issueComponent").build())
+        .addComponents(Issues.Component.newBuilder().setPath(path).setKey("differentIssueComponent").build())
+        .setRules(Issues.SearchWsResponse.newBuilder().getRulesBuilder().addRules(Common.Rule.newBuilder().setKey("ruleKey").build()))
+        .build());
+    var serverIssueDetails = underTest.fetchServerIssue(issueKey);
+    assertThat(serverIssueDetails).isEmpty();
+    assertThat(logTester.logs()).contains("No path found in components for the issue with key 'issueKey'");
+  }
+
 }

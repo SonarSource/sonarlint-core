@@ -19,12 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.embedded.server;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.hc.core5.http.ClassicHttpRequest;
@@ -39,21 +41,22 @@ import org.sonarsource.sonarlint.core.BindingSuggestionProviderImpl;
 import org.sonarsource.sonarlint.core.ConfigurationServiceImpl;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.client.hotspot.HotspotDetailsDto;
-import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
+import org.sonarsource.sonarlint.core.clientapi.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.clientapi.client.message.MessageType;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
+import org.sonarsource.sonarlint.core.clientapi.common.FlowDto;
+import org.sonarsource.sonarlint.core.clientapi.common.LocationDto;
 import org.sonarsource.sonarlint.core.clientapi.common.TextRangeDto;
-import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
-import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspotDetails;
+import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @Named
 @Singleton
-public class ShowHotspotRequestHandler extends ShowHotspotOrIssueRequestHandler implements HttpRequestHandler {
+public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler implements HttpRequestHandler {
 
   private final SonarLintClient client;
   private final ConnectionConfigurationRepository repository;
@@ -61,8 +64,9 @@ public class ShowHotspotRequestHandler extends ShowHotspotOrIssueRequestHandler 
   private final ServerApiProvider serverApiProvider;
   private final TelemetryServiceImpl telemetryService;
 
-  public ShowHotspotRequestHandler(SonarLintClient client, ConnectionConfigurationRepository repository, ConfigurationServiceImpl configurationService,
-    BindingSuggestionProviderImpl bindingSuggestionProvider, ServerApiProvider serverApiProvider, TelemetryServiceImpl telemetryService) {
+  public ShowIssueRequestHandler(SonarLintClient client, ConnectionConfigurationRepository repository,
+    ConfigurationServiceImpl configurationService, BindingSuggestionProviderImpl bindingSuggestionProvider,
+    ServerApiProvider serverApiProvider, TelemetryServiceImpl telemetryService) {
     super(bindingSuggestionProvider, client);
     this.client = client;
     this.repository = repository;
@@ -73,92 +77,87 @@ public class ShowHotspotRequestHandler extends ShowHotspotOrIssueRequestHandler 
 
   @Override
   public void handle(ClassicHttpRequest request, ClassicHttpResponse response, HttpContext context) throws HttpException, IOException {
-    var showHotspotQuery = extractQuery(request);
-    if (!showHotspotQuery.isValid()) {
+    var showIssueQuery = extractQuery(request);
+    if (!showIssueQuery.isValid()) {
       response.setCode(HttpStatus.SC_BAD_REQUEST);
       return;
     }
 
-    CompletableFuture.runAsync(() -> showHotspot(showHotspotQuery));
+    CompletableFuture.runAsync(() -> showIssue(showIssueQuery));
 
     response.setCode(HttpStatus.SC_OK);
     response.setEntity(new StringEntity("OK"));
   }
 
-  private void showHotspot(ShowHotspotQuery query) {
-    telemetryService.showHotspotRequestReceived();
+  @VisibleForTesting
+  public void showIssue(ShowIssueQuery query) {
+    telemetryService.showIssueRequestReceived();
 
     var connectionsMatchingOrigin = repository.findByUrl(query.serverUrl);
     if (connectionsMatchingOrigin.isEmpty()) {
       startFullBindingProcess();
       assistCreatingConnection(query.serverUrl)
         .thenCompose(response -> assistBinding(response.getNewConnectionId(), query.projectKey))
-        .thenAccept(response -> showHotspotForScope(response.getConnectionId(), response.getConfigurationScopeId(), query.hotspotKey))
+        .thenAccept(response -> showIssueForScope(response.getConnectionId(), query.issueKey))
         .whenComplete((v, e) -> endFullBindingProcess());
     } else {
-      // we pick the first connection but this could lead to issues later if there were several matches (make the user select the right one?)
-      showHotspotForConnection(connectionsMatchingOrigin.get(0).getConnectionId(), query.projectKey, query.hotspotKey);
+      // we pick the first connection but this could lead to issues later if there were several matches (make the user select the right
+      // one?)
+      showIssueForConnection(connectionsMatchingOrigin.get(0).getConnectionId(), query.projectKey, query.issueKey);
     }
   }
 
-  private void showHotspotForConnection(String connectionId, String projectKey, String hotspotKey) {
+  private void showIssueForConnection(String connectionId, String projectKey, String issueKey) {
     var scopes = configurationService.getConfigScopesWithBindingConfiguredTo(connectionId, projectKey);
     if (scopes.isEmpty()) {
       assistBinding(connectionId, projectKey)
-        .thenAccept(newBinding -> showHotspotForScope(connectionId, newBinding.getConfigurationScopeId(), hotspotKey));
+        .thenAccept(newBinding -> showIssueForScope(connectionId, issueKey));
     } else {
-      // we pick the first bound scope but this could lead to issues later if there were several matches (make the user select the right one?)
-      var firstBoundScope = scopes.get(0);
-      showHotspotForScope(connectionId, firstBoundScope.getId(), hotspotKey);
+      showIssueForScope(connectionId, issueKey);
     }
   }
 
-  private void showHotspotForScope(String connectionId, String configurationScopeId, String hotspotKey) {
-    tryFetchHotspot(connectionId, hotspotKey)
+  private void showIssueForScope(String connectionId, String issueKey) {
+    tryFetchIssue(connectionId, issueKey)
       .ifPresentOrElse(
-        hotspot -> client.showHotspot(new ShowHotspotParams(configurationScopeId, adapt(hotspotKey, hotspot))),
-        () -> client.showMessage(new ShowMessageParams(MessageType.ERROR, "Could not show the hotspot. See logs for more details")));
+        issueDetails -> client.showIssue(getShowIssueParams(issueDetails, connectionId)),
+        () -> client.showMessage(new ShowMessageParams(MessageType.ERROR, "Could not show the issue. See logs for more details")));
   }
 
-  private Optional<ServerHotspotDetails> tryFetchHotspot(String connectionId, String hotspotKey) {
+  @VisibleForTesting
+  static ShowIssueParams getShowIssueParams(IssueApi.ServerIssueDetails issueDetails, String connectionId) {
+    var flowLocations = issueDetails.flowList.stream().map(flow -> {
+      var locations = flow.getLocationsList().stream().map(location -> {
+        var locationComponent =
+          issueDetails.componentsList.stream().filter(component -> component.getKey().equals(location.getComponent())).findFirst();
+        var filePath = locationComponent.map(Issues.Component::getPath).orElse("");
+        var locationTextRange = location.getTextRange();
+        var locationTextRangeDto = new TextRangeDto(locationTextRange.getStartLine(), locationTextRange.getStartOffset(),
+          locationTextRange.getEndLine(), locationTextRange.getEndOffset());
+        return new LocationDto(locationTextRangeDto, location.getMsg(), filePath);
+      }).collect(Collectors.toList());
+      return new FlowDto(locations);
+    }).collect(Collectors.toList());
+
+    var textRange = issueDetails.textRange;
+    var textRangeDto = new TextRangeDto(textRange.getStartLine(), textRange.getStartOffset(), textRange.getEndLine(),
+      textRange.getEndOffset());
+
+    return new ShowIssueParams(textRangeDto, connectionId, issueDetails.ruleKey, issueDetails.key, issueDetails.path, issueDetails.message,
+      issueDetails.creationDate, flowLocations);
+  }
+
+  private Optional<IssueApi.ServerIssueDetails> tryFetchIssue(String connectionId, String issueKey) {
     var serverApi = serverApiProvider.getServerApi(connectionId);
     if (serverApi.isEmpty()) {
       // should not happen since we found the connection just before, improve the design ?
       return Optional.empty();
     }
-    return serverApi.get().hotspot().fetch(hotspotKey);
+    return serverApi.get().issue().fetchServerIssue(issueKey);
   }
 
-
-  private static HotspotDetailsDto adapt(String hotspotKey, ServerHotspotDetails hotspot) {
-    return new HotspotDetailsDto(
-      hotspotKey,
-      hotspot.message,
-      hotspot.filePath,
-      adapt(hotspot.textRange),
-      hotspot.author,
-      hotspot.status.toString(),
-      hotspot.resolution != null ? hotspot.resolution.toString() : null,
-      adapt(hotspot.rule),
-      hotspot.codeSnippet);
-  }
-
-  private static HotspotDetailsDto.HotspotRule adapt(ServerHotspotDetails.Rule rule) {
-    return new HotspotDetailsDto.HotspotRule(
-      rule.key,
-      rule.name,
-      rule.securityCategory,
-      rule.vulnerabilityProbability.toString(),
-      rule.riskDescription,
-      rule.vulnerabilityDescription,
-      rule.fixRecommendations);
-  }
-
-  private static TextRangeDto adapt(TextRange textRange) {
-    return new TextRangeDto(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset());
-  }
-
-  private static ShowHotspotQuery extractQuery(ClassicHttpRequest request) {
+  @VisibleForTesting
+  static ShowIssueQuery extractQuery(ClassicHttpRequest request) {
     var params = new HashMap<String, String>();
     try {
       new URIBuilder(request.getUri(), StandardCharsets.UTF_8)
@@ -167,22 +166,35 @@ public class ShowHotspotRequestHandler extends ShowHotspotOrIssueRequestHandler 
     } catch (URISyntaxException e) {
       // Ignored
     }
-    return new ShowHotspotQuery(params.get("server"), params.get("project"), params.get("hotspot"));
+    return new ShowIssueQuery(params.get("server"), params.get("project"), params.get("issue"));
   }
 
-  private static class ShowHotspotQuery {
+  @VisibleForTesting
+  public static class ShowIssueQuery {
     private final String serverUrl;
     private final String projectKey;
-    private final String hotspotKey;
+    private final String issueKey;
 
-    private ShowHotspotQuery(String serverUrl, String projectKey, String hotspotKey) {
+    public ShowIssueQuery(String serverUrl, String projectKey, String issueKey) {
       this.serverUrl = serverUrl;
       this.projectKey = projectKey;
-      this.hotspotKey = hotspotKey;
+      this.issueKey = issueKey;
     }
 
     public boolean isValid() {
-      return isNotBlank(serverUrl) && isNotBlank(projectKey) && isNotBlank(hotspotKey);
+      return isNotBlank(serverUrl) && isNotBlank(projectKey) && isNotBlank(issueKey);
+    }
+
+    public String getServerUrl() {
+      return serverUrl;
+    }
+
+    public String getProjectKey() {
+      return projectKey;
+    }
+
+    public String getIssueKey() {
+      return issueKey;
     }
   }
 }

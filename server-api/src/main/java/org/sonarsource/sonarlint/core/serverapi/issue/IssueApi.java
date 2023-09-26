@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -41,6 +42,7 @@ import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Component;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Issue;
@@ -61,6 +63,7 @@ public class IssueApi {
   );
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final String ORGANIZATION_PARAM = "&organization=";
 
   private final ServerApiHelper serverApiHelper;
 
@@ -83,7 +86,7 @@ public class IssueApi {
     searchUrl.append(getVulnerabilitiesUrl(key, ruleKeys));
     searchUrl.append(getUrlBranchParameter(branchName));
     serverApiHelper.getOrganizationKey()
-      .ifPresent(org -> searchUrl.append("&organization=").append(UrlUtils.urlEncode(org)));
+      .ifPresent(org -> searchUrl.append(ORGANIZATION_PARAM).append(UrlUtils.urlEncode(org)));
     List<Issue> result = new ArrayList<>();
     Map<String, String> componentsPathByKey = new HashMap<>();
     serverApiHelper.getPaginated(searchUrl.toString(),
@@ -244,7 +247,7 @@ public class IssueApi {
     var searchUrl = new StringBuilder();
     searchUrl.append("/api/issues/search.protobuf?issues=").append(urlEncode(issueKey)).append("&additionalFields=transitions");
     serverApiHelper.getOrganizationKey()
-      .ifPresent(org -> searchUrl.append("&organization=").append(UrlUtils.urlEncode(org)));
+      .ifPresent(org -> searchUrl.append(ORGANIZATION_PARAM).append(UrlUtils.urlEncode(org)));
     searchUrl.append("&ps=1&p=1");
     return serverApiHelper.getAsync(searchUrl.toString())
       .thenApply(rawResponse -> {
@@ -259,6 +262,34 @@ public class IssueApi {
           throw new UnexpectedBodyException(e);
         }
       });
+  }
+
+  public Optional<ServerIssueDetails> fetchServerIssue(String issueKey) {
+    var searchUrl = new StringBuilder();
+    searchUrl.append("/api/issues/search.protobuf?issues=").append(urlEncode(issueKey));
+    serverApiHelper.getOrganizationKey()
+      .ifPresent(org -> searchUrl.append(ORGANIZATION_PARAM).append(UrlUtils.urlEncode(org)));
+    searchUrl.append("&ps=1&p=1");
+
+    try (var wsResponse = serverApiHelper.get(searchUrl.toString()); var is = wsResponse.bodyAsStream()) {
+      var response = Issues.SearchWsResponse.parseFrom(is);
+      if (response.getIssuesList().isEmpty() || response.getComponentsList().isEmpty()) {
+        LOG.warn("No issue found with key '" + issueKey + "'");
+        return Optional.empty();
+      }
+      var issue = response.getIssuesList().get(0);
+      var optionalComponentWithPath = response.getComponentsList().stream().filter(component -> component.getKey().equals(issue.getComponent())).findFirst();
+      if (optionalComponentWithPath.isEmpty()){
+        LOG.warn("No path found in components for the issue with key '" + issueKey + "'");
+        return Optional.empty();
+      }
+
+      return Optional.of(new ServerIssueDetails(issue, optionalComponentWithPath.get().getPath(), response.getComponentsList()));
+    } catch (Exception e) {
+      LOG.warn("Error while fetching issue", e.getMessage());
+      return Optional.empty();
+    }
+
   }
 
   public CompletableFuture<Void> anticipatedTransitions(String projectKey, List<LocalOnlyIssue> resolvedLocalOnlyIssues) {
@@ -303,7 +334,27 @@ public class IssueApi {
     }
   }
 
+  public static class ServerIssueDetails {
+    public final String key;
+    public final String creationDate;
+    public final String ruleKey;
+    public final String path;
+    public final List<Common.Flow> flowList;
+    public final Common.TextRange textRange;
+    public final String message;
+    public final List<Component> componentsList;
 
+    public ServerIssueDetails(Issue issue, String path, List<Component> componentsList) {
+      this.key = issue.getKey();
+      this.ruleKey = issue.getRule();
+      this.textRange = issue.getTextRange();
+      this.path = path;
+      this.flowList = issue.getFlowsList();
+      this.message = issue.getMessage();
+      this.creationDate = issue.getCreationDate();
+      this.componentsList = componentsList;
+    }
+  }
 
   private static class IssueAnticipatedTransition {
     public final String filePath;

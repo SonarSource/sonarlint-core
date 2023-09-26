@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.clientapi.client.hotspot;
 
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.clientapi.common.TextRangeDto;
 
 public class HotspotDetailsDto {
   private final String key;
@@ -138,36 +139,6 @@ public class HotspotDetailsDto {
 
     public String getFixRecommendations() {
       return fixRecommendations;
-    }
-  }
-
-  public static class TextRangeDto {
-    private final int startLine;
-    private final int startLineOffset;
-    private final int endLine;
-    private final int endLineOffset;
-
-    public TextRangeDto(int startLine, int startLineOffset, int endLine, int endLineOffset) {
-      this.startLine = startLine;
-      this.startLineOffset = startLineOffset;
-      this.endLine = endLine;
-      this.endLineOffset = endLineOffset;
-    }
-
-    public int getStartLine() {
-      return startLine;
-    }
-
-    public int getStartLineOffset() {
-      return startLineOffset;
-    }
-
-    public int getEndLine() {
-      return endLine;
-    }
-
-    public int getEndLineOffset() {
-      return endLineOffset;
     }
   }
 }

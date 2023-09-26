@@ -76,6 +76,12 @@ public class TelemetryServiceImpl implements TelemetryService {
     }
   }
 
+  public void showIssueRequestReceived() {
+    if (isEnabled()) {
+      getTelemetryLocalStorageManager().tryUpdateAtomically(TelemetryLocalStorage::incrementShowIssueRequestCount);
+    }
+  }
+
   public void smartNotificationsReceived(String eventType) {
     if (isEnabled()) {
       getTelemetryLocalStorageManager().tryUpdateAtomically(s -> s.incrementDevNotificationsCount(eventType));

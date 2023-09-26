@@ -52,6 +52,7 @@ class TelemetryPayloadTests {
     counters.put("NEW_ISSUES", new TelemetryNotificationsCounterPayload(10, 1));
     var notifPayload = new TelemetryNotificationsPayload(true, counters);
     var showHotspotPayload = new ShowHotspotPayload(4);
+    var showIssuePayload = new ShowIssuePayload(3);
     var hotspotPayload = new HotspotPayload(5, 3);
     var taintVulnerabilitiesPayload = new TaintVulnerabilitiesPayload(6, 7);
     var issuePayload = new IssuePayload(Set.of("java:S123"));
@@ -71,7 +72,7 @@ class TelemetryPayloadTests {
     var cleanAsYouCodePayload = new CleanAsYouCodePayload(new NewCodeFocusPayload(true, 2));
     var m = new TelemetryPayload(4, 15, "SLI", "2.4", "Pycharm 3.2", "platform", "architecture",
       true, true, systemTime, installTime, "Windows 10", "1.8.0", "10.5.2", perf,
-      notifPayload, showHotspotPayload, taintVulnerabilitiesPayload, rulesPayload, hotspotPayload, issuePayload, helpAndFeedbackPayload, cleanAsYouCodePayload, additionalProps);
+      notifPayload, showHotspotPayload, showIssuePayload, taintVulnerabilitiesPayload, rulesPayload, hotspotPayload, issuePayload, helpAndFeedbackPayload, cleanAsYouCodePayload, additionalProps);
     var s = m.toJson();
 
     assertThat(s).isEqualTo("{\"days_since_installation\":4,"
@@ -91,6 +92,7 @@ class TelemetryPayloadTests {
       + "\"analyses\":[{\"language\":\"java\",\"rate_per_duration\":{\"0-300\":9.9,\"1000-2000\":90.1}}],"
       + "\"server_notifications\":{\"disabled\":true,\"count_by_type\":{\"NEW_ISSUES\":{\"received\":10,\"clicked\":1},\"QUALITY_GATE\":{\"received\":5,\"clicked\":3}}},"
       + "\"show_hotspot\":{\"requests_count\":4},"
+      + "\"show_issue\":{\"requests_count\":3},"
       + "\"taint_vulnerabilities\":{\"investigated_locally_count\":6,\"investigated_remotely_count\":7},"
       + "\"rules\":{\"non_default_enabled\":[\"enabledRuleKey1\",\"enabledRuleKey2\"],\"default_disabled\":[\"disabledRuleKey1\",\"disabledRuleKey2\"],\"raised_issues\":[\"reportedRuleKey1\",\"reportedRuleKey2\"],\"quick_fix_applied\":[\"quickFixedRuleKey1\",\"quickFixedRuleKey2\"]},"
       + "\"hotspot\":{\"open_in_browser_count\":5,\"status_changed_count\":3},"
