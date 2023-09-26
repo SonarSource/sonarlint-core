@@ -19,12 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.newcode;
 
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.clientapi.backend.newcode.GetNewCodeDefinitionParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.newcode.GetNewCodeDefinitionResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.newcode.NewCodeService;
+import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
@@ -45,13 +47,17 @@ public class NewCodeServiceImpl implements NewCodeService {
   @Override
   public CompletableFuture<GetNewCodeDefinitionResponse> getNewCodeDefinition(GetNewCodeDefinitionParams params) {
     var configScopeId = params.getConfigScopeId();
+    return getFullNewCodeDefinition(configScopeId)
+      .map(newCodeDefinition ->  CompletableFuture.completedFuture(new GetNewCodeDefinitionResponse(newCodeDefinition.toString(), newCodeDefinition.isSupported())))
+      .orElse(CompletableFuture.completedFuture(new GetNewCodeDefinitionResponse("No new code definition found", false)));
+  }
+
+  public Optional<NewCodeDefinition> getFullNewCodeDefinition(String configScopeId) {
     var effectiveBinding = configurationRepository.getEffectiveBinding(configScopeId);
-    if (effectiveBinding.isEmpty()) return CompletableFuture.failedFuture(new RuntimeException("No binding"));
+    if (effectiveBinding.isEmpty()) return Optional.empty();
     var binding = effectiveBinding.get();
     var sonarProjectStorage = storageService.binding(binding);
-    return sonarProjectStorage.newCodeDefinition().read()
-      .map(newCodeDefinition ->  CompletableFuture.completedFuture(new GetNewCodeDefinitionResponse(newCodeDefinition)))
-      .orElse(CompletableFuture.failedFuture(new RuntimeException("No new code definition found for " + configScopeId)));
+    return sonarProjectStorage.newCodeDefinition().read();
   }
 
   @Override
