@@ -35,7 +35,7 @@ public interface NewCodeDefinition {
 
   boolean isSupported();
 
-  static String parseEpochToDate(long epoch) {
+  static String formatEpochToDate(long epoch) {
     return ZonedDateTime.ofInstant(Instant.ofEpochMilli(epoch), ZoneId.systemDefault()).format(DATETIME_FORMATTER);
   }
 
@@ -112,7 +112,7 @@ public interface NewCodeDefinition {
 
     @Override
     public String toString() {
-      var versionQualifier = (version == null) ? parseEpochToDate(this.thresholdDate) : ("version " + version);
+      var versionQualifier = (version == null) ? formatEpochToDate(this.thresholdDate) : ("version " + version);
       return String.format("Since %s", versionQualifier);
     }
 
@@ -133,7 +133,7 @@ public interface NewCodeDefinition {
 
     @Override
     public String toString() {
-      return String.format("Since analysis from %s", parseEpochToDate(this.thresholdDate));
+      return String.format("Since analysis from %s", formatEpochToDate(this.thresholdDate));
     }
 
     @Override

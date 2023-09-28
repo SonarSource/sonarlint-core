@@ -47,7 +47,7 @@ class NewCodeDefinitionTests {
     var specificAnalysis = NewCodeDefinition.withSpecificAnalysis(analysisEpochDate);
     var referenceBranch = NewCodeDefinition.withReferenceBranch("referenceBranch");
 
-    var analysisDate = NewCodeDefinition.parseEpochToDate(analysisEpochDate);
+    var analysisDate = NewCodeDefinition.formatEpochToDate(analysisEpochDate);
     assertThat(numberOfDays).hasToString("From last 30 days");
     assertThat(previousVersionNull).hasToString("Since " + analysisDate);
     assertThat(previousVersion).hasToString("Since version version");

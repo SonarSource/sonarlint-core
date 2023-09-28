@@ -185,8 +185,9 @@ class NewCodeApiTest {
 
     var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION).get();
 
+    var date = NewCodeDefinition.formatEpochToDate(SOME_DATE_EPOCH_MILLIS);
     assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodeSpecificAnalysis.class)
-      .hasToString("Since analysis from 2023-08-29T09:37:59Z");
+      .hasToString("Since analysis from " + date);
     assertThat(newCodeDefinition.isOnNewCode(SOME_DATE_EPOCH_MILLIS + 1)).isTrue();
     assertThat(newCodeDefinition.isOnNewCode(SOME_DATE_EPOCH_MILLIS - 1)).isFalse();
     assertThat(newCodeDefinition.isSupported()).isTrue();
@@ -202,8 +203,9 @@ class NewCodeApiTest {
 
     var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, SC_VERSION).get();
 
+    var date = NewCodeDefinition.formatEpochToDate(SOME_DATE_EPOCH_MILLIS);
     assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodeSpecificAnalysis.class)
-      .hasToString("Since analysis from 2023-08-29T09:37:59Z");
+      .hasToString("Since analysis from " + date);
     assertThat(newCodeDefinition.isOnNewCode(SOME_DATE_EPOCH_MILLIS + 1)).isTrue();
     assertThat(newCodeDefinition.isOnNewCode(SOME_DATE_EPOCH_MILLIS - 1)).isFalse();
     assertThat(newCodeDefinition.isSupported()).isTrue();
@@ -218,8 +220,9 @@ class NewCodeApiTest {
 
     var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, SC_VERSION).get();
 
+    var date = NewCodeDefinition.formatEpochToDate(SOME_DATE_EPOCH_MILLIS);
     assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodeSpecificAnalysis.class)
-      .hasToString("Since analysis from 2023-08-29T09:37:59Z");
+      .hasToString("Since analysis from " + date);
     assertThat(newCodeDefinition.isOnNewCode(SOME_DATE_EPOCH_MILLIS + 1)).isTrue();
     assertThat(newCodeDefinition.isOnNewCode(SOME_DATE_EPOCH_MILLIS - 1)).isFalse();
     assertThat(newCodeDefinition.isSupported()).isTrue();
