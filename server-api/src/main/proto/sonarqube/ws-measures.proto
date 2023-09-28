@@ -22,7 +22,7 @@ package sonarqube.ws.measures;
 
 import "sonarqube/ws-commons.proto";
 
-option java_package = "org.sonarqube.ws";
+option java_package = "org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws";
 option java_outer_classname = "Measures";
 option optimize_for = SPEED;
 

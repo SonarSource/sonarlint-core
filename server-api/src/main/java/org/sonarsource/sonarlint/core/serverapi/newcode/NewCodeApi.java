@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.serverapi.newcode;
 
 import java.util.concurrent.CompletableFuture;
-import org.sonarqube.ws.Measures;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Measures;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
