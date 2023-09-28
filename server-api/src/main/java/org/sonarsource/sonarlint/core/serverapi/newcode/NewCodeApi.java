@@ -66,6 +66,7 @@ public class NewCodeApi {
       return CompletableFuture.completedFuture(NewCodeDefinition.withNumberOfDays(days, date));
     }
     if (modeString.equalsIgnoreCase("PREVIOUS_VERSION")) {
+      parameter = periodFromWs.hasParameter() ? parameter : null;
       return CompletableFuture.completedFuture(NewCodeDefinition.withPreviousVersion(date, parameter));
     }
     if (modeString.equals("SPECIFIC_ANALYSIS") || modeString.equals("version") || modeString.equals("date")) {
