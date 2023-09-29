@@ -56,17 +56,16 @@ public class NewCodeApi {
     }
     var periodFromWs = getPeriodFromWs(response);
     var modeString = periodFromWs.getMode();
-    var parameter = periodFromWs.getParameter();
-    if (modeString.equals("REFERENCE_BRANCH")) {
+    var parameter = periodFromWs.hasParameter() ? periodFromWs.getParameter() : null;
+    if (modeString.equals("REFERENCE_BRANCH") && parameter != null) {
       return CompletableFuture.completedFuture(NewCodeDefinition.withReferenceBranch(parameter));
     }
     var date = periodFromWs.hasDate() ? parseOffsetDateTime(periodFromWs.getDate()).toInstant().toEpochMilli() : 0;
-    if (modeString.equals("NUMBER_OF_DAYS") || modeString.equals("days")) {
+    if ((modeString.equals("NUMBER_OF_DAYS") || modeString.equals("days")) && parameter != null) {
       var days = Integer.parseInt(parameter);
       return CompletableFuture.completedFuture(NewCodeDefinition.withNumberOfDays(days, date));
     }
     if (modeString.equalsIgnoreCase("PREVIOUS_VERSION")) {
-      parameter = periodFromWs.hasParameter() ? parameter : null;
       return CompletableFuture.completedFuture(NewCodeDefinition.withPreviousVersion(date, parameter));
     }
     if (modeString.equals("SPECIFIC_ANALYSIS") || modeString.equals("version") || modeString.equals("date")) {
