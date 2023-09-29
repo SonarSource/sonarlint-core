@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -54,6 +55,8 @@ import org.sonarqube.ws.client.WsRequest;
 import org.sonarqube.ws.client.WsResponse;
 import org.sonarqube.ws.client.settings.ResetRequest;
 import org.sonarqube.ws.client.settings.SetRequest;
+import org.sonarqube.ws.client.usertokens.GenerateRequest;
+import org.sonarqube.ws.client.usertokens.RevokeRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
@@ -112,6 +115,8 @@ class SonarCloudTests extends AbstractConnectedTests {
   private static final String SONARCLOUD_USER = "sonarlint-it";
   private static final String SONARCLOUD_PASSWORD = System.getenv("SONARCLOUD_IT_PASSWORD");
 
+  private static final String TIMESTAMP = Long.toString(Instant.now().toEpochMilli());
+  private static final String TOKEN_NAME = "SLCORE-IT-" + TIMESTAMP;
   private static final String PROJECT_KEY_JAVA = "sample-java";
   private static final String PROJECT_KEY_PHP = "sample-php";
   private static final String PROJECT_KEY_JAVASCRIPT = "sample-javascript";
@@ -135,10 +140,12 @@ class SonarCloudTests extends AbstractConnectedTests {
   private static int randomPositiveInt;
 
   private static SonarLintBackend backend;
+  private static String sonarcloudUserToken;
 
   @BeforeAll
   static void prepare() throws Exception {
     System.setProperty("sonarlint.internal.sonarcloud.url", SONARCLOUD_STAGING_URL);
+
     backend = new SonarLintBackendImpl(newDummySonarLintClient());
     backend.initialize(
       new InitializeParams(IT_CLIENT_INFO, new FeatureFlagsDto(false, true, false, false, false, false), sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
@@ -149,6 +156,9 @@ class SonarCloudTests extends AbstractConnectedTests {
     randomPositiveInt = new Random().nextInt() & Integer.MAX_VALUE;
 
     adminWsClient = newAdminWsClient();
+    sonarcloudUserToken = adminWsClient.userTokens()
+      .generate(new GenerateRequest().setName(TOKEN_NAME))
+      .getToken();
 
     restoreProfile("java-sonarlint.xml");
     restoreProfile("java-sonarlint-with-hotspot.xml");
@@ -225,6 +235,9 @@ class SonarCloudTests extends AbstractConnectedTests {
 
   @AfterAll
   static void cleanup() throws Exception {
+    adminWsClient.userTokens()
+      .revoke(new RevokeRequest().setName(TOKEN_NAME));
+
     var request = new PostRequest("api/projects/bulk_delete");
     request.setParam("q", "-" + randomPositiveInt);
     request.setParam("organization", SONARCLOUD_ORGANIZATION);
@@ -583,8 +596,7 @@ class SonarCloudTests extends AbstractConnectedTests {
       "-Dsonar.projectKey=" + projectKey,
       "-Dsonar.host.url=" + SONARCLOUD_STAGING_URL,
       "-Dsonar.organization=" + SONARCLOUD_ORGANIZATION,
-      "-Dsonar.login=" + SONARCLOUD_USER,
-      "-Dsonar.password=" + SONARCLOUD_PASSWORD,
+      "-Dsonar.token=" + sonarcloudUserToken,
       "-Dsonar.scm.disabled=true",
       "-Dsonar.branch.autoconfig.disabled=true");
 
