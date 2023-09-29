@@ -20,12 +20,24 @@
 package org.sonarsource.sonarlint.core.commons;
 
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import javax.annotation.Nullable;
+
 public interface NewCodeDefinition {
+
+  String DATETIME_FORMAT = "MM/dd/yyyy HH:mm:ss";
+  DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern(DATETIME_FORMAT);
 
   NewCodeMode getMode();
   boolean isOnNewCode(long creationDate);
 
   boolean isSupported();
+
+  static String formatEpochToDate(long epoch) {
+    return ZonedDateTime.ofInstant(Instant.ofEpochMilli(epoch), ZoneId.systemDefault()).format(DATETIME_FORMATTER);
+  }
 
   static NewCodeDefinition withAlwaysNew() {
     return new NewCodeAlwaysNew();
@@ -35,7 +47,7 @@ public interface NewCodeDefinition {
     return new NewCodeNumberOfDays(days, thresholdDate);
   }
 
-  static NewCodeDefinition withPreviousVersion(long thresholdDate, String version) {
+  static NewCodeDefinition withPreviousVersion(long thresholdDate, @Nullable String version) {
     return new NewCodePreviousVersion(thresholdDate, version);
   }
 
@@ -93,15 +105,15 @@ public interface NewCodeDefinition {
   class NewCodePreviousVersion extends NewCodeDefinitionWithDate {
     private final String version;
 
-    private NewCodePreviousVersion(long thresholdDate, String version) {
+    private NewCodePreviousVersion(long thresholdDate, @Nullable String version) {
       super(thresholdDate);
       this.version = version;
     }
 
     @Override
     public String toString() {
-      var versionQualifier = (version == null) ? ("from " + Instant.ofEpochMilli(this.thresholdDate)) : version;
-      return String.format("Since version %s", versionQualifier);
+      var versionQualifier = (version == null) ? formatEpochToDate(this.thresholdDate) : ("version " + version);
+      return String.format("Since %s", versionQualifier);
     }
 
     @Override
@@ -121,7 +133,7 @@ public interface NewCodeDefinition {
 
     @Override
     public String toString() {
-      return String.format("Since analysis from %s", Instant.ofEpochMilli(this.thresholdDate));
+      return String.format("Since analysis from %s", formatEpochToDate(this.thresholdDate));
     }
 
     @Override

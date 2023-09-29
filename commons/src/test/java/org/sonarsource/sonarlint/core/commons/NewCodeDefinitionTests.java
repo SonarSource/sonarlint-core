@@ -40,15 +40,18 @@ class NewCodeDefinitionTests {
 
   @Test
   void toStringTest() {
-    var analysisDate = Instant.parse("2023-09-12T10:15:30.00Z").toEpochMilli();
-    var numberOfDays = NewCodeDefinition.withNumberOfDays(30, analysisDate);
-    var previousVersion = NewCodeDefinition.withPreviousVersion(analysisDate, "version");
-    var specificAnalysis = NewCodeDefinition.withSpecificAnalysis(analysisDate);
+    var analysisEpochDate = Instant.parse("2023-09-12T10:15:30.00Z").toEpochMilli();
+    var numberOfDays = NewCodeDefinition.withNumberOfDays(30, analysisEpochDate);
+    var previousVersionNull = NewCodeDefinition.withPreviousVersion(analysisEpochDate, null);
+    var previousVersion = NewCodeDefinition.withPreviousVersion(analysisEpochDate, "version");
+    var specificAnalysis = NewCodeDefinition.withSpecificAnalysis(analysisEpochDate);
     var referenceBranch = NewCodeDefinition.withReferenceBranch("referenceBranch");
 
+    var analysisDate = NewCodeDefinition.formatEpochToDate(analysisEpochDate);
     assertThat(numberOfDays).hasToString("From last 30 days");
+    assertThat(previousVersionNull).hasToString("Since " + analysisDate);
     assertThat(previousVersion).hasToString("Since version version");
-    assertThat(specificAnalysis).hasToString("Since analysis from 2023-09-12T10:15:30Z");
+    assertThat(specificAnalysis).hasToString("Since analysis from " + analysisDate);
     assertThat(referenceBranch).hasToString("Compared to branch referenceBranch (not supported)");
   }
 
