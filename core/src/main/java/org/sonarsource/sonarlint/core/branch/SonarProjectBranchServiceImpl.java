@@ -26,8 +26,9 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.clientapi.backend.branch.DidChangeActiveSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.branch.SonarProjectBranchService;
-import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ActiveSonarProjectBranchChanged;
+import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.vcs.ActiveSonarProjectBranchRepository;
 
@@ -75,6 +76,13 @@ public class SonarProjectBranchServiceImpl implements SonarProjectBranchService 
   public void onConfigurationScopeRemoved(ConfigurationScopeRemovedEvent removedEvent) {
     var currentConfigScopeId = removedEvent.getRemovedConfigurationScopeId();
     activeSonarProjectBranchRepository.clearActiveProjectBranch(currentConfigScopeId);
+  }
+
+  @Subscribe
+  public void onConfigScopeChanged(BindingConfigChangedEvent bindingChanged) {
+    var unboundScopeId = bindingChanged.getConfigScopeId();
+    activeSonarProjectBranchRepository.clearActiveProjectBranch(unboundScopeId);
+    // FIXME if bound, we should ask client to resolve the branch again. For now, we will count on the client to do it...
   }
 
 }
