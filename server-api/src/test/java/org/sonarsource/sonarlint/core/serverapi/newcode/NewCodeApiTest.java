@@ -21,14 +21,15 @@ package org.sonarsource.sonarlint.core.serverapi.newcode;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Measures;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Measures;
 import org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -56,9 +57,10 @@ class NewCodeApiTest {
 
   @Test
   void getPeriodForNewSonarQube() {
-    Measures.ComponentWsResponse response = Measures.ComponentWsResponse
+    var response = Measures.ComponentWsResponse
       .newBuilder().setPeriod(Measures.Period.newBuilder()
-        .setDate(SOME_DATE).build()).build();
+        .setDate(SOME_DATE).build())
+      .build();
 
     var period = getPeriodFromWs(response);
 
@@ -67,9 +69,10 @@ class NewCodeApiTest {
 
   @Test
   void getPeriodsForOldSonarQubeOrSonarCloud() {
-    Measures.ComponentWsResponse response = Measures.ComponentWsResponse
+    var response = Measures.ComponentWsResponse
       .newBuilder().setPeriods(Measures.Periods.newBuilder().addPeriods(Measures.Period.newBuilder()
-        .setDate(SOME_DATE).build()).build()).build();
+        .setDate(SOME_DATE).build()).build())
+      .build();
 
     var period = getPeriodFromWs(response);
 
@@ -78,7 +81,7 @@ class NewCodeApiTest {
 
   @Test
   void getPeriodFromServer() {
-    ServerApiHelper serverApiHelper = mock(ServerApiHelper.class);
+    var serverApiHelper = mock(ServerApiHelper.class);
     when(serverApiHelper.isSonarCloud()).thenReturn(true);
 
     var sonarCloud = getPeriodForServer(serverApiHelper, Version.create("9.2"));
@@ -92,30 +95,30 @@ class NewCodeApiTest {
   }
 
   @Test
-  void parseReferenceBranchPeriod() throws Exception {
+  void parseReferenceBranchPeriod() {
     prepareSqWsResponseWithPeriod(Measures.Period.newBuilder()
       .setMode("REFERENCE_BRANCH")
       .setParameter("referenceBranch")
       .build());
 
-    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION).get();
+    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION);
 
     assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodeReferenceBranch.class)
-        .hasToString("Compared to branch referenceBranch (not supported)");
+      .hasToString("Compared to branch referenceBranch (not supported)");
     assertThat(newCodeDefinition.isOnNewCode(0)).isTrue();
     assertThat(newCodeDefinition.isSupported()).isFalse();
 
   }
 
   @Test
-  void parseNumberOfDaysPeriodFromSq() throws Exception {
+  void parseNumberOfDaysPeriodFromSq() {
     prepareSqWsResponseWithPeriod(Measures.Period.newBuilder()
       .setMode("NUMBER_OF_DAYS")
       .setParameter("42")
       .setDate(SOME_DATE)
       .build());
 
-    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION).get();
+    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION);
 
     assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodeNumberOfDays.class)
       .hasToString("From last 42 days");
@@ -125,14 +128,14 @@ class NewCodeApiTest {
   }
 
   @Test
-  void parseNumberOfDaysPeriodFromSc() throws Exception {
+  void parseNumberOfDaysPeriodFromSc() {
     prepareScWsResponseWithPeriods(Measures.Period.newBuilder()
       .setMode("days")
       .setParameter("42")
       .setDate(SOME_DATE)
       .build());
 
-    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, SC_VERSION).get();
+    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, SC_VERSION);
 
     assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodeNumberOfDays.class)
       .hasToString("From last 42 days");
@@ -142,14 +145,14 @@ class NewCodeApiTest {
   }
 
   @Test
-  void parsePreviousVersionPeriodFromSq() throws Exception {
+  void parsePreviousVersionPeriodFromSq() {
     prepareSqWsResponseWithPeriod(Measures.Period.newBuilder()
       .setMode("PREVIOUS_VERSION")
       .setParameter("version")
       .setDate(SOME_DATE)
       .build());
 
-    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION).get();
+    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION);
 
     assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodePreviousVersion.class)
       .hasToString("Since version version");
@@ -159,14 +162,14 @@ class NewCodeApiTest {
   }
 
   @Test
-  void parsePreviousVersionPeriodFromSc() throws Exception {
+  void parsePreviousVersionPeriodFromSc() {
     prepareScWsResponseWithPeriods(Measures.Period.newBuilder()
       .setMode("previous_version")
       .setParameter("version")
       .setDate(SOME_DATE)
       .build());
 
-    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, SC_VERSION).get();
+    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, SC_VERSION);
 
     assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodePreviousVersion.class)
       .hasToString("Since version version");
@@ -176,14 +179,14 @@ class NewCodeApiTest {
   }
 
   @Test
-  void parseSpecificAnalysisPeriodFromSq() throws Exception {
+  void parseSpecificAnalysisPeriodFromSq() {
     prepareSqWsResponseWithPeriod(Measures.Period.newBuilder()
       .setMode("SPECIFIC_ANALYSIS")
       .setParameter("someAnalysisKey")
       .setDate(SOME_DATE)
       .build());
 
-    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION).get();
+    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION);
 
     var date = NewCodeDefinition.formatEpochToDate(SOME_DATE_EPOCH_MILLIS);
     assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodeSpecificAnalysis.class)
@@ -194,14 +197,14 @@ class NewCodeApiTest {
   }
 
   @Test
-  void parseSpecificVersionPeriodFromSc() throws Exception {
+  void parseSpecificVersionPeriodFromSc() {
     prepareScWsResponseWithPeriods(Measures.Period.newBuilder()
       .setMode("version")
       .setParameter("X.Y.Z")
       .setDate(SOME_DATE)
       .build());
 
-    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, SC_VERSION).get();
+    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, SC_VERSION);
 
     var date = NewCodeDefinition.formatEpochToDate(SOME_DATE_EPOCH_MILLIS);
     assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodeSpecificAnalysis.class)
@@ -212,13 +215,13 @@ class NewCodeApiTest {
   }
 
   @Test
-  void parseSpecificDatePeriodFromSc() throws Exception {
+  void parseSpecificDatePeriodFromSc() {
     prepareScWsResponseWithPeriods(Measures.Period.newBuilder()
       .setMode("date")
       .setDate(SOME_DATE)
       .build());
 
-    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, SC_VERSION).get();
+    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, SC_VERSION);
 
     var date = NewCodeDefinition.formatEpochToDate(SOME_DATE_EPOCH_MILLIS);
     assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodeSpecificAnalysis.class)
@@ -229,21 +232,19 @@ class NewCodeApiTest {
   }
 
   @Test
-  void parseUnknownModePeriod() throws Exception {
+  void parseUnknownModePeriod() {
     prepareSqWsResponseWithPeriod(Measures.Period.newBuilder()
       .setMode("Definitely not a supported mode")
       .setParameter("Whatever")
       .build());
-    assertThat(underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION))
-      .isCompletedExceptionally();
+    assertThrows(IllegalArgumentException.class, () -> underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION));
   }
 
   @Test
-  void failHttpCall() throws Exception {
+  void failHttpCall() {
     when(mockApiHelper.get(anyString()))
       .thenThrow(new RuntimeException("Not good"));
-    assertThat(underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION))
-      .isCompletedExceptionally();
+    assertThrows(IllegalStateException.class, () -> underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION));
   }
 
   void prepareSqWsResponseWithPeriod(Measures.Period period) {
