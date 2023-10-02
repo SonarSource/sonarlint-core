@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.newcode;
 
-import java.io.IOException;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.Version;
@@ -43,7 +43,7 @@ public class NewCodeApi {
     this.helper = helper;
   }
 
-  public NewCodeDefinition getNewCodeDefinition(String projectKey, @Nullable String branch, Version serverVersion) {
+  public Optional<NewCodeDefinition> getNewCodeDefinition(String projectKey, @Nullable String branch, Version serverVersion) {
     Measures.ComponentWsResponse response;
     var period = getPeriodForServer(helper, serverVersion);
     var requestPath = new StringBuilder().append(GET_NEW_CODE_DEFINITION_URL)
@@ -60,28 +60,27 @@ public class NewCodeApi {
       response = Measures.ComponentWsResponse.parseFrom(is);
     } catch (Exception e) {
       LOG.error("Error while fetching new code definition", e);
-      throw new IllegalStateException("Error while fetching new code definition", e);
+      return Optional.empty();
     }
     var periodFromWs = getPeriodFromWs(response);
     var modeString = periodFromWs.getMode();
     var parameter = periodFromWs.hasParameter() ? periodFromWs.getParameter() : null;
     if (modeString.equals("REFERENCE_BRANCH") && parameter != null) {
-      return NewCodeDefinition.withReferenceBranch(parameter);
+      return Optional.of(NewCodeDefinition.withReferenceBranch(parameter));
     }
     var date = periodFromWs.hasDate() ? parseOffsetDateTime(periodFromWs.getDate()).toInstant().toEpochMilli() : 0;
     if ((modeString.equals("NUMBER_OF_DAYS") || modeString.equals("days")) && parameter != null) {
       var days = Integer.parseInt(parameter);
-      return NewCodeDefinition.withNumberOfDays(days, date);
+      return Optional.of(NewCodeDefinition.withNumberOfDays(days, date));
     }
     if (modeString.equalsIgnoreCase("PREVIOUS_VERSION")) {
-      return NewCodeDefinition.withPreviousVersion(date, parameter);
+      return Optional.of(NewCodeDefinition.withPreviousVersion(date, parameter));
     }
     if (modeString.equals("SPECIFIC_ANALYSIS") || modeString.equals("version") || modeString.equals("date")) {
-      return NewCodeDefinition.withSpecificAnalysis(date);
+      return Optional.of(NewCodeDefinition.withSpecificAnalysis(date));
     }
-    var errorMessage = "Unsupported mode of new code definition: " + modeString;
-    LOG.error(errorMessage);
-    throw new IllegalArgumentException(errorMessage);
+    LOG.warn("Unsupported mode of new code definition: " + modeString);
+    return Optional.empty();
   }
 
   static Measures.Period getPeriodFromWs(Measures.ComponentWsResponse response) {

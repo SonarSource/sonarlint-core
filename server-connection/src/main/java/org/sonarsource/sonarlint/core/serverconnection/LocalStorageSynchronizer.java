@@ -62,8 +62,8 @@ public class LocalStorageSynchronizer {
       .forEach((projectKey, branches) -> storage.project(projectKey).branches().store(branches));
     projectKeys.forEach(projectKey -> {
       progressMonitor.checkCancel();
-      var ncd = serverApi.newCodeApi().getNewCodeDefinition(projectKey, null, version);
-      storage.project(projectKey).newCodeDefinition().store(ncd);
+      serverApi.newCodeApi().getNewCodeDefinition(projectKey, null, version)
+        .ifPresent(ncd -> storage.project(projectKey).newCodeDefinition().store(ncd));
     });
 
     return new SynchronizationResult(anyPluginUpdated);
