@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.embedded.server;
 
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.apache.hc.core5.http.message.BasicClassicHttpRequest;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,7 @@ import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
@@ -39,6 +41,7 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -48,6 +51,15 @@ class ShowIssueRequestHandlerTest {
 
   @Test
   void should_transform_ServerIssueDetail_to_ShowIssueParams() {
+    var repository = mock(ConnectionConfigurationRepository.class);
+    var configurationService = mock(ConfigurationServiceImpl.class);
+    var bindingSuggestionProvider = mock(BindingSuggestionProviderImpl.class);
+    var serverApiProvider = mock(ServerApiProvider.class);
+    var telemetryService = mock(TelemetryServiceImpl.class);
+    var sonarLintClient = mock(SonarLintClient.class);
+    var serverApi = mock(ServerApi.class);
+    var issueApi = mock(IssueApi.class);
+
     var connectionId = "connectionId";
     var issueKey = "issueKey";
     var issueCreationDate = "2023-05-13T17:55:39+0200";
@@ -62,7 +74,16 @@ class ShowIssueRequestHandlerTest {
     var locationMessage_1 = "locationMessage_1";
     var locationComponentKey_1 = "LocationComponentKey_1";
     var locationComponentKey_2 = "LocationComponentKey_2";
+    var locationCodeSnippet_1 = "//todo comment";
     var issueComponentKey = "IssueComponentKey";
+    var codeSnippet = "//todo remove this";
+
+    when(serverApiProvider.getServerApi(any())).thenReturn(Optional.of(serverApi));
+    when(serverApi.issue()).thenReturn(issueApi);
+    when(issueApi.getCodeSnippet(eq(locationComponentKey_1), any())).thenReturn(Optional.of(locationCodeSnippet_1));
+
+    var showIssueRequestHandler = new ShowIssueRequestHandler(sonarLintClient, repository, configurationService,
+      bindingSuggestionProvider, serverApiProvider, telemetryService);
 
     var flow = Common.Flow.newBuilder()
       .addLocations(Common.Location.newBuilder().setTextRange(locationTextRange_1).setComponent(locationComponentKey_1).setMsg(locationMessage_1))
@@ -82,9 +103,9 @@ class ShowIssueRequestHandlerTest {
       Issues.Component.newBuilder().setKey(locationComponentKey_1).setPath(flowLocationPath_1).build(),
       Issues.Component.newBuilder().setKey(locationComponentKey_2).setPath(flowLocationPath_2).build()
     );
-    var serverIssueDetails = new IssueApi.ServerIssueDetails(issue, issuePath, components);
+    var serverIssueDetails = new IssueApi.ServerIssueDetails(issue, issuePath, components, codeSnippet);
 
-    var showIssueParams = ShowIssueRequestHandler.getShowIssueParams(serverIssueDetails, connectionId);
+    var showIssueParams = showIssueRequestHandler.getShowIssueParams(serverIssueDetails, connectionId);
     assertThat(showIssueParams.getConnectionId()).isEqualTo(connectionId);
     assertThat(showIssueParams.getIssueKey()).isEqualTo(issueKey);
     assertThat(showIssueParams.getCreationDate()).isEqualTo(issueCreationDate);
@@ -96,6 +117,7 @@ class ShowIssueRequestHandlerTest {
     assertThat(showIssueParams.getTextRange().getEndLineOffset()).isEqualTo(4);
     assertThat(showIssueParams.getFileUri()).isEqualTo(issuePath);
     assertThat(showIssueParams.getFlows()).hasSize(1);
+    assertThat(showIssueParams.getCodeSnippet()).isEqualTo(codeSnippet);
 
     var locations = showIssueParams.getFlows().get(0).getLocations();
     assertThat(locations).hasSize(2);
@@ -105,7 +127,9 @@ class ShowIssueRequestHandlerTest {
     assertThat(locations.get(0).getTextRange().getEndLineOffset()).isEqualTo(20);
     assertThat(locations.get(0).getFilePath()).isEqualTo(flowLocationPath_1);
     assertThat(locations.get(0).getMessage()).isEqualTo(locationMessage_1);
+    assertThat(locations.get(0).getCodeSnippet()).isEqualTo(locationCodeSnippet_1);
     assertThat(locations.get(1).getFilePath()).isEqualTo(flowLocationPath_2);
+    assertThat(locations.get(1).getCodeSnippet()).isEmpty();
   }
 
   @Test

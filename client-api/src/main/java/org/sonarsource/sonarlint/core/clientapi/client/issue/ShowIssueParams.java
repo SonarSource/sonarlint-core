@@ -30,11 +30,12 @@ public class ShowIssueParams {
   private final String ruleKey;
   private final String issueKey;
   private final String creationDate;
+  private final String codeSnippet;
   private final List<FlowDto> flows;
   private final TextRangeDto textRange;
 
   public ShowIssueParams(TextRangeDto textRange, String connectionId, String ruleKey, String issueKey, String filePath, String message,
-    String creationDate, List<FlowDto> flows) {
+    String creationDate, String codeSnippet, List<FlowDto> flows) {
     this.textRange = textRange;
     this.connectionId = connectionId;
     this.ruleKey = ruleKey;
@@ -42,6 +43,7 @@ public class ShowIssueParams {
     this.fileUri = filePath;
     this.message = message;
     this.creationDate = creationDate;
+    this.codeSnippet = codeSnippet;
     this.flows = flows;
   }
 
@@ -67,6 +69,10 @@ public class ShowIssueParams {
 
   public String getFileUri() {
     return fileUri;
+  }
+
+  public String getCodeSnippet() {
+    return codeSnippet;
   }
 
   public String getMessage() {

@@ -46,6 +46,8 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Component;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.Issue;
+import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
+import org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils;
 
 import static java.util.Objects.requireNonNull;
 import static org.sonarsource.sonarlint.core.http.HttpClient.FORM_URL_ENCODED_CONTENT_TYPE;
@@ -284,12 +286,30 @@ public class IssueApi {
         return Optional.empty();
       }
 
-      return Optional.of(new ServerIssueDetails(issue, optionalComponentWithPath.get().getPath(), response.getComponentsList()));
+      var fileKey = issue.getComponent();
+      var codeSnippet = getCodeSnippet(fileKey, issue.getTextRange());
+
+      return Optional.of(new ServerIssueDetails(issue, optionalComponentWithPath.get().getPath(), response.getComponentsList(), codeSnippet.orElse("")));
     } catch (Exception e) {
       LOG.warn("Error while fetching issue", e.getMessage());
       return Optional.empty();
     }
 
+  }
+
+  public Optional<String> getCodeSnippet(String fileKey, Common.TextRange textRange) {
+    var source = new SourceApi(serverApiHelper).getRawSourceCode(fileKey);
+    if (source.isPresent()) {
+      try {
+        var codeSnippet = ServerApiUtils.extractCodeSnippet(source.get(), textRange);
+        return Optional.of(codeSnippet);
+      } catch (Exception e) {
+        LOG.debug("Unable to compute code snippet of '" + fileKey + "' for text range: " + textRange, e);
+        return Optional.empty();
+      }
+    } else {
+      return Optional.empty();
+    }
   }
 
   public CompletableFuture<Void> anticipatedTransitions(String projectKey, List<LocalOnlyIssue> resolvedLocalOnlyIssues) {
@@ -343,8 +363,9 @@ public class IssueApi {
     public final Common.TextRange textRange;
     public final String message;
     public final List<Component> componentsList;
+    public final String codeSnippet;
 
-    public ServerIssueDetails(Issue issue, String path, List<Component> componentsList) {
+    public ServerIssueDetails(Issue issue, String path, List<Component> componentsList, String codeSnippet) {
       this.key = issue.getKey();
       this.ruleKey = issue.getRule();
       this.textRange = issue.getTextRange();
@@ -353,6 +374,7 @@ public class IssueApi {
       this.message = issue.getMessage();
       this.creationDate = issue.getCreationDate();
       this.componentsList = componentsList;
+      this.codeSnippet = codeSnippet;
     }
   }
 
