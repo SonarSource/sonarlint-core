@@ -264,12 +264,6 @@ public class ServerConnection {
     }
   }
 
-  public void syncNewCodeDefinitionForProject(ServerApi serverApi, String projectKey, String branchName) {
-    var serverVersion = readOrSynchronizeServerVersion(serverApi);
-    serverApi.newCodeApi().getNewCodeDefinition(projectKey, branchName, serverVersion)
-      .thenAccept(newCodeDefinition -> storage.project(projectKey).newCodeDefinition().store(newCodeDefinition));
-  }
-
   public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, ProgressMonitor monitor) {
     projectStorageUpdateExecutor.update(new ServerApi(new ServerApiHelper(endpoint, client)), projectKey, monitor);
   }

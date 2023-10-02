@@ -50,6 +50,7 @@ public class LocalStorageSynchronizer {
 
   public SynchronizationResult synchronize(ServerApi serverApi, Set<String> projectKeys, ProgressMonitor progressMonitor) {
     serverInfoSynchronizer.synchronize(serverApi);
+    var version = storage.serverInfo().read().orElseThrow().getVersion();
 
     var anyPluginUpdated = pluginsSynchronizer.synchronize(serverApi, progressMonitor);
     projectKeys.stream()
@@ -59,6 +60,11 @@ public class LocalStorageSynchronizer {
       .collect(Collectors.toMap(Function.identity(), projectKey -> synchronizeProjectBranches(serverApi, projectKey)));
     branchByProjectKey
       .forEach((projectKey, branches) -> storage.project(projectKey).branches().store(branches));
+    projectKeys.forEach(projectKey -> {
+      serverApi.newCodeApi().getNewCodeDefinition(projectKey, null, version)
+        .thenAccept(newCodeDefinition -> storage.project(projectKey).newCodeDefinition().store(newCodeDefinition));
+    });
+
     return new SynchronizationResult(anyPluginUpdated);
   }
 
