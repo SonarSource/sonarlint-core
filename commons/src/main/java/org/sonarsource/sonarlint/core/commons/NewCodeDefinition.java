@@ -172,7 +172,7 @@ public interface NewCodeDefinition {
 
     @Override
     public String toString() {
-      return String.format("Compared to branch %s (not supported)", branchName);
+      return "Current new code definition (reference branch) is not supported";
     }
   }
 
