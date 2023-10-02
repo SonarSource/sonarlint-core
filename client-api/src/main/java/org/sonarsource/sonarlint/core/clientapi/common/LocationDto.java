@@ -23,11 +23,13 @@ public class LocationDto {
   private final TextRangeDto textRange;
   private final String message;
   private final String filePath;
+  private final String codeSnippet;
 
-  public LocationDto(TextRangeDto textRange, String message, String filePath) {
+  public LocationDto(TextRangeDto textRange, String message, String filePath, String codeSnippet) {
     this.textRange = textRange;
     this.message = message;
     this.filePath = filePath;
+    this.codeSnippet = codeSnippet;
   }
 
   public TextRangeDto getTextRange() {
@@ -40,5 +42,9 @@ public class LocationDto {
 
   public String getFilePath() {
     return filePath;
+  }
+
+  public String getCodeSnippet() {
+    return codeSnippet;
   }
 }

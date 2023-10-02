@@ -49,6 +49,7 @@ import org.sonarsource.sonarlint.core.clientapi.common.LocationDto;
 import org.sonarsource.sonarlint.core.clientapi.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
@@ -125,16 +126,17 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
   }
 
   @VisibleForTesting
-  static ShowIssueParams getShowIssueParams(IssueApi.ServerIssueDetails issueDetails, String connectionId) {
+  ShowIssueParams getShowIssueParams(IssueApi.ServerIssueDetails issueDetails, String connectionId) {
     var flowLocations = issueDetails.flowList.stream().map(flow -> {
       var locations = flow.getLocationsList().stream().map(location -> {
         var locationComponent =
           issueDetails.componentsList.stream().filter(component -> component.getKey().equals(location.getComponent())).findFirst();
         var filePath = locationComponent.map(Issues.Component::getPath).orElse("");
         var locationTextRange = location.getTextRange();
+        var codeSnippet = tryFetchCodeSnippet(connectionId, locationComponent.map(Issues.Component::getKey).orElse(""), locationTextRange);
         var locationTextRangeDto = new TextRangeDto(locationTextRange.getStartLine(), locationTextRange.getStartOffset(),
           locationTextRange.getEndLine(), locationTextRange.getEndOffset());
-        return new LocationDto(locationTextRangeDto, location.getMsg(), filePath);
+        return new LocationDto(locationTextRangeDto, location.getMsg(), filePath, codeSnippet.orElse(""));
       }).collect(Collectors.toList());
       return new FlowDto(locations);
     }).collect(Collectors.toList());
@@ -154,6 +156,15 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
       return Optional.empty();
     }
     return serverApi.get().issue().fetchServerIssue(issueKey);
+  }
+
+  private Optional<String> tryFetchCodeSnippet(String connectionId, String fileKey, Common.TextRange textRange) {
+    var serverApi = serverApiProvider.getServerApi(connectionId);
+    if (serverApi.isEmpty() || fileKey.isEmpty()) {
+      // should not happen since we found the connection just before, improve the design ?
+      return Optional.empty();
+    }
+    return serverApi.get().issue().getCodeSnippet(fileKey, textRange);
   }
 
   @VisibleForTesting

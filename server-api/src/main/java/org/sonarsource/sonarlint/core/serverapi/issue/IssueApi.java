@@ -297,7 +297,7 @@ public class IssueApi {
 
   }
 
-  Optional<String> getCodeSnippet(String fileKey, Common.TextRange textRange) {
+  public Optional<String> getCodeSnippet(String fileKey, Common.TextRange textRange) {
     var source = new SourceApi(serverApiHelper).getRawSourceCode(fileKey);
     if (source.isPresent()) {
       try {
