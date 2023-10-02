@@ -63,6 +63,7 @@ class ShowIssueRequestHandlerTest {
     var locationComponentKey_1 = "LocationComponentKey_1";
     var locationComponentKey_2 = "LocationComponentKey_2";
     var issueComponentKey = "IssueComponentKey";
+    var codeSnippet = "//todo remove this";
 
     var flow = Common.Flow.newBuilder()
       .addLocations(Common.Location.newBuilder().setTextRange(locationTextRange_1).setComponent(locationComponentKey_1).setMsg(locationMessage_1))
@@ -82,7 +83,7 @@ class ShowIssueRequestHandlerTest {
       Issues.Component.newBuilder().setKey(locationComponentKey_1).setPath(flowLocationPath_1).build(),
       Issues.Component.newBuilder().setKey(locationComponentKey_2).setPath(flowLocationPath_2).build()
     );
-    var serverIssueDetails = new IssueApi.ServerIssueDetails(issue, issuePath, components);
+    var serverIssueDetails = new IssueApi.ServerIssueDetails(issue, issuePath, components, codeSnippet);
 
     var showIssueParams = ShowIssueRequestHandler.getShowIssueParams(serverIssueDetails, connectionId);
     assertThat(showIssueParams.getConnectionId()).isEqualTo(connectionId);
@@ -96,6 +97,7 @@ class ShowIssueRequestHandlerTest {
     assertThat(showIssueParams.getTextRange().getEndLineOffset()).isEqualTo(4);
     assertThat(showIssueParams.getFileUri()).isEqualTo(issuePath);
     assertThat(showIssueParams.getFlows()).hasSize(1);
+    assertThat(showIssueParams.getCodeSnippet()).isEqualTo(codeSnippet);
 
     var locations = showIssueParams.getFlows().get(0).getLocations();
     assertThat(locations).hasSize(2);

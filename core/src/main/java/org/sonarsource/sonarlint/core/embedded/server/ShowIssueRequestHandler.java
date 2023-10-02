@@ -144,7 +144,7 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
       textRange.getEndOffset());
 
     return new ShowIssueParams(textRangeDto, connectionId, issueDetails.ruleKey, issueDetails.key, issueDetails.path, issueDetails.message,
-      issueDetails.creationDate, flowLocations);
+      issueDetails.creationDate, issueDetails.codeSnippet, flowLocations);
   }
 
   private Optional<IssueApi.ServerIssueDetails> tryFetchIssue(String connectionId, String issueKey) {
