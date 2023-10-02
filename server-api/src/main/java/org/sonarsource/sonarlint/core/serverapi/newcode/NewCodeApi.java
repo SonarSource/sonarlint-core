@@ -85,16 +85,19 @@ public class NewCodeApi {
   }
 
   static Measures.Period getPeriodFromWs(Measures.ComponentWsResponse response) {
-    if (response.hasPeriods())
+    if (response.hasPeriods()) {
       return response.getPeriods().getPeriods(0);
+    }
     return response.getPeriod();
   }
 
   static String getPeriodForServer(ServerApiHelper helper, Version serverVersion) {
-    if (helper.isSonarCloud())
+    if (helper.isSonarCloud()) {
       return OLD_SQ_OR_SC_PERIOD;
-    if (serverVersion.compareToIgnoreQualifier(NEW_SQ_VERSION) < 0)
+    }
+    if (serverVersion.compareToIgnoreQualifier(NEW_SQ_VERSION) < 0) {
       return OLD_SQ_OR_SC_PERIOD;
+    }
     return NEW_SQ_PERIOD;
   }
 
