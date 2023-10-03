@@ -48,7 +48,7 @@ public class IssueTrackable implements Trackable<Issue> {
     this.lineHash = hashOrNull(lineContent);
   }
 
-  static TextRangeWithHash convertToTrackingTextRange(org.sonarsource.sonarlint.core.commons.TextRange fromAnalysis, String hash) {
+  private static TextRangeWithHash convertToTrackingTextRange(org.sonarsource.sonarlint.core.commons.TextRange fromAnalysis, @Nullable String hash) {
     return new TextRangeWithHash(fromAnalysis.getStartLine(), fromAnalysis.getStartLineOffset(), fromAnalysis.getEndLine(),
       fromAnalysis.getEndLineOffset(), hash != null ? hash : "");
   }
