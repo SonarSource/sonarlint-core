@@ -103,7 +103,7 @@ class NewCodeApiTest {
     var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION).orElseThrow();
 
     assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodeReferenceBranch.class)
-      .hasToString("Compared to branch referenceBranch (not supported)");
+      .hasToString("Current new code definition (reference branch) is not supported");
     assertThat(newCodeDefinition.isOnNewCode(0)).isTrue();
     assertThat(newCodeDefinition.isSupported()).isFalse();
 
@@ -155,6 +155,22 @@ class NewCodeApiTest {
 
     assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodePreviousVersion.class)
       .hasToString("Since version version");
+    assertThat(newCodeDefinition.isOnNewCode(SOME_DATE_EPOCH_MILLIS + 1)).isTrue();
+    assertThat(newCodeDefinition.isOnNewCode(SOME_DATE_EPOCH_MILLIS - 1)).isFalse();
+    assertThat(newCodeDefinition.isSupported()).isTrue();
+  }
+
+  @Test
+  void parsePreviousVersionPeriodWithoutVersionFromSq() {
+    prepareSqWsResponseWithPeriod(Measures.Period.newBuilder()
+      .setMode("PREVIOUS_VERSION")
+      .setDate(SOME_DATE)
+      .build());
+
+    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION).orElseThrow();
+
+    assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodePreviousVersion.class)
+      .hasToString("Since " + NewCodeDefinition.formatEpochToDate(SOME_DATE_EPOCH_MILLIS));
     assertThat(newCodeDefinition.isOnNewCode(SOME_DATE_EPOCH_MILLIS + 1)).isTrue();
     assertThat(newCodeDefinition.isOnNewCode(SOME_DATE_EPOCH_MILLIS - 1)).isFalse();
     assertThat(newCodeDefinition.isSupported()).isTrue();

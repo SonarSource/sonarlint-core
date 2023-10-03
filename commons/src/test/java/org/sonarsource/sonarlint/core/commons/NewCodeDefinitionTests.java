@@ -52,7 +52,7 @@ class NewCodeDefinitionTests {
     assertThat(previousVersionNull).hasToString("Since " + analysisDate);
     assertThat(previousVersion).hasToString("Since version version");
     assertThat(specificAnalysis).hasToString("Since analysis from " + analysisDate);
-    assertThat(referenceBranch).hasToString("Compared to branch referenceBranch (not supported)");
+    assertThat(referenceBranch).hasToString("Current new code definition (reference branch) is not supported");
   }
 
 }
