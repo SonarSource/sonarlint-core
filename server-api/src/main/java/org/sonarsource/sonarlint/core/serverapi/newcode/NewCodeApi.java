@@ -19,13 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.newcode;
 
-import java.util.concurrent.CompletableFuture;
-import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Measures;
+import java.util.Optional;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Measures;
 
 import static org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils.parseOffsetDateTime;
 
@@ -42,48 +43,60 @@ public class NewCodeApi {
     this.helper = helper;
   }
 
-  public CompletableFuture<NewCodeDefinition> getNewCodeDefinition(String projectKey, String branch, Version serverVersion) {
+  public Optional<NewCodeDefinition> getNewCodeDefinition(String projectKey, @Nullable String branch, Version serverVersion) {
     Measures.ComponentWsResponse response;
     var period = getPeriodForServer(helper, serverVersion);
+    var requestPath = new StringBuilder().append(GET_NEW_CODE_DEFINITION_URL)
+      .append("?additionalFields=")
+      .append(period)
+      .append("&metricKeys=projects&component=")
+      .append(UrlUtils.urlEncode(projectKey));
+    if (branch != null) {
+      requestPath.append("&branch=").append(UrlUtils.urlEncode(branch));
+    }
     try (
-      var wsResponse = helper.get(GET_NEW_CODE_DEFINITION_URL + "?additionalFields=" + period +
-        "&metricKeys=projects&component=" + UrlUtils.urlEncode(projectKey) + "&branch=" + UrlUtils.urlEncode(branch));
+      var wsResponse = helper.get(requestPath.toString());
       var is = wsResponse.bodyAsStream()) {
       response = Measures.ComponentWsResponse.parseFrom(is);
     } catch (Exception e) {
       LOG.error("Error while fetching new code definition", e);
-      return CompletableFuture.failedFuture(e);
+      return Optional.empty();
     }
     var periodFromWs = getPeriodFromWs(response);
     var modeString = periodFromWs.getMode();
     var parameter = periodFromWs.hasParameter() ? periodFromWs.getParameter() : null;
     if (modeString.equals("REFERENCE_BRANCH") && parameter != null) {
-      return CompletableFuture.completedFuture(NewCodeDefinition.withReferenceBranch(parameter));
+      return Optional.of(NewCodeDefinition.withReferenceBranch(parameter));
     }
     var date = periodFromWs.hasDate() ? parseOffsetDateTime(periodFromWs.getDate()).toInstant().toEpochMilli() : 0;
     if ((modeString.equals("NUMBER_OF_DAYS") || modeString.equals("days")) && parameter != null) {
       var days = Integer.parseInt(parameter);
-      return CompletableFuture.completedFuture(NewCodeDefinition.withNumberOfDays(days, date));
+      return Optional.of(NewCodeDefinition.withNumberOfDays(days, date));
     }
     if (modeString.equalsIgnoreCase("PREVIOUS_VERSION")) {
-      return CompletableFuture.completedFuture(NewCodeDefinition.withPreviousVersion(date, parameter));
+      return Optional.of(NewCodeDefinition.withPreviousVersion(date, parameter));
     }
     if (modeString.equals("SPECIFIC_ANALYSIS") || modeString.equals("version") || modeString.equals("date")) {
-      return CompletableFuture.completedFuture(NewCodeDefinition.withSpecificAnalysis(date));
+      return Optional.of(NewCodeDefinition.withSpecificAnalysis(date));
     }
-    var errorMessage = "Unsupported mode of new code definition: " + modeString;
-    LOG.error(errorMessage);
-    return CompletableFuture.failedFuture(new IllegalArgumentException(errorMessage));
+    LOG.warn("Unsupported mode of new code definition: " + modeString);
+    return Optional.empty();
   }
 
   static Measures.Period getPeriodFromWs(Measures.ComponentWsResponse response) {
-    if (response.hasPeriods()) return response.getPeriods().getPeriods(0);
+    if (response.hasPeriods()) {
+      return response.getPeriods().getPeriods(0);
+    }
     return response.getPeriod();
   }
 
   static String getPeriodForServer(ServerApiHelper helper, Version serverVersion) {
-    if (helper.isSonarCloud()) return OLD_SQ_OR_SC_PERIOD;
-    if (serverVersion.compareToIgnoreQualifier(NEW_SQ_VERSION) < 0) return OLD_SQ_OR_SC_PERIOD;
+    if (helper.isSonarCloud()) {
+      return OLD_SQ_OR_SC_PERIOD;
+    }
+    if (serverVersion.compareToIgnoreQualifier(NEW_SQ_VERSION) < 0) {
+      return OLD_SQ_OR_SC_PERIOD;
+    }
     return NEW_SQ_PERIOD;
   }
 

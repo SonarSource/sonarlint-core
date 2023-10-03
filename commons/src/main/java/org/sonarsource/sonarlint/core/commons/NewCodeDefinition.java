@@ -23,6 +23,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
 public interface NewCodeDefinition {
@@ -121,6 +122,7 @@ public interface NewCodeDefinition {
       return NewCodeMode.PREVIOUS_VERSION;
     }
 
+    @CheckForNull
     public String getVersion() {
       return version;
     }

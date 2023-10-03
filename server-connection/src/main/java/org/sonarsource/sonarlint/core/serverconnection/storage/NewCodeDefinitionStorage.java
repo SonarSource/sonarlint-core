@@ -70,7 +70,10 @@ public class NewCodeDefinitionStorage {
     }
     if (newCodeDefinition.getMode() == NewCodeMode.PREVIOUS_VERSION) {
       var newCodePreviousVersion = (NewCodeDefinition.NewCodePreviousVersion) newCodeDefinition;
-      builder.setVersion(newCodePreviousVersion.getVersion());
+      var version = newCodePreviousVersion.getVersion();
+      if (version != null) {
+        builder.setVersion(version);
+      }
     }
     return builder.build();
   }
@@ -82,7 +85,7 @@ public class NewCodeDefinitionStorage {
       case NUMBER_OF_DAYS:
         return NewCodeDefinition.withNumberOfDays(newCodeDefinition.getDays(), thresholdDate);
       case PREVIOUS_VERSION:
-        return NewCodeDefinition.withPreviousVersion(thresholdDate, newCodeDefinition.getVersion());
+        return NewCodeDefinition.withPreviousVersion(thresholdDate, newCodeDefinition.hasVersion() ? newCodeDefinition.getVersion() : null);
       case REFERENCE_BRANCH:
         return NewCodeDefinition.withReferenceBranch(newCodeDefinition.getReferenceBranch());
       case SPECIFIC_ANALYSIS:
