@@ -55,7 +55,7 @@
           <pluginKey>cobol</pluginKey>
           <skipDependenciesPackaging>true</skipDependenciesPackaging>
           <sonarLintSupported>true</sonarLintSupported>
-          <sonarQubeMinVersion>7.9</sonarQubeMinVersion>
+          <pluginApiMinVersion>7.9</pluginApiMinVersion>
         </configuration>
       </plugin>
       <plugin>

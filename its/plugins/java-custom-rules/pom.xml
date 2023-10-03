@@ -61,7 +61,7 @@
         <extensions>true</extensions>
         <configuration>
           <pluginClass>org.sonar.samples.java.MyJavaRulesPlugin</pluginClass>
-          <sonarQubeMinVersion>7.9</sonarQubeMinVersion>
+          <pluginApiMinVersion>7.9</pluginApiMinVersion>
           <pluginKey>custom</pluginKey>
           <sonarLintSupported>true</sonarLintSupported>
           <requirePlugins>java:${sonarjava.version}</requirePlugins>
