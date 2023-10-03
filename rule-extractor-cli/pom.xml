@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-parent</artifactId>
-    <version>9.3-SNAPSHOT</version>
+    <version>9.4-SNAPSHOT</version>
   </parent>
   <artifactId>sonarlint-rule-extractor-cli</artifactId>
   <name>SonarLint Core - Rule Extractor - CLI</name>
