@@ -24,7 +24,7 @@ import org.sonarsource.sonarlint.core.clientapi.common.FlowDto;
 import org.sonarsource.sonarlint.core.clientapi.common.TextRangeDto;
 
 public class ShowIssueParams {
-  private final String fileUri;
+  private final String serverRelativeFilePath;
   private final String message;
   private final String connectionId;
   private final String ruleKey;
@@ -34,13 +34,13 @@ public class ShowIssueParams {
   private final List<FlowDto> flows;
   private final TextRangeDto textRange;
 
-  public ShowIssueParams(TextRangeDto textRange, String connectionId, String ruleKey, String issueKey, String filePath, String message,
+  public ShowIssueParams(TextRangeDto textRange, String connectionId, String ruleKey, String issueKey, String serverRelativeFilePath, String message,
     String creationDate, String codeSnippet, List<FlowDto> flows) {
     this.textRange = textRange;
     this.connectionId = connectionId;
     this.ruleKey = ruleKey;
     this.issueKey = issueKey;
-    this.fileUri = filePath;
+    this.serverRelativeFilePath = serverRelativeFilePath;
     this.message = message;
     this.creationDate = creationDate;
     this.codeSnippet = codeSnippet;
@@ -67,8 +67,8 @@ public class ShowIssueParams {
     return creationDate;
   }
 
-  public String getFileUri() {
-    return fileUri;
+  public String getServerRelativeFilePath() {
+    return serverRelativeFilePath;
   }
 
   public String getCodeSnippet() {

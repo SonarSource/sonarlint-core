@@ -115,7 +115,7 @@ class ShowIssueRequestHandlerTest {
     assertThat(showIssueParams.getTextRange().getEndLine()).isEqualTo(2);
     assertThat(showIssueParams.getTextRange().getStartLineOffset()).isEqualTo(3);
     assertThat(showIssueParams.getTextRange().getEndLineOffset()).isEqualTo(4);
-    assertThat(showIssueParams.getFileUri()).isEqualTo(issuePath);
+    assertThat(showIssueParams.getServerRelativeFilePath()).isEqualTo(issuePath);
     assertThat(showIssueParams.getFlows()).hasSize(1);
     assertThat(showIssueParams.getCodeSnippet()).isEqualTo(codeSnippet);
 
