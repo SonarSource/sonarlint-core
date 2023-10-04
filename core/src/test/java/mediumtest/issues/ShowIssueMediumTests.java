@@ -19,13 +19,19 @@
  */
 package mediumtest.issues;
 
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Instant;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import mediumtest.fixtures.ServerFixture;
 import mediumtest.fixtures.SonarLintTestBackend;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.clientapi.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.embedded.server.ShowIssueRequestHandler;
 
@@ -34,6 +40,7 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static mediumtest.fixtures.storage.ServerIssueFixtures.aServerIssue;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 class ShowIssueMediumTests {
 
@@ -66,6 +73,10 @@ class ShowIssueMediumTests {
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
       .build();
 
+    assertThat(backend.telemetryFilePath())
+      .content().asBase64Decoded().asString()
+      .contains("\"showIssueRequestsCount\":0");
+
     var showIssueRequestHandler = new ShowIssueRequestHandler(newFakeClient().build(), backend.getConnectionConfigurationRepository(),
       backend.getConfigurationServiceImpl(), backend.getBindingSuggestionProviderImpl(), backend.getServerApiProvider(),
       backend.getTelemetryServiceImpl());
@@ -75,5 +86,74 @@ class ShowIssueMediumTests {
     assertThat(backend.telemetryFilePath())
       .content().asBase64Decoded().asString()
       .contains("\"showIssueRequestsCount\":1");
+  }
+
+  @Test
+  void it_should_open_an_issue_in_ide() throws Exception{
+    var issueKey = "myIssueKey";
+    var projectKey = "projectKey";
+    var connectionId = "connectionId";
+    server = newSonarQubeServer("10.2")
+      .withProject(projectKey,
+        project -> project.withBranch("branchName",
+          branch -> branch.withIssue(issueKey, "ruleKey", "msg", "author", "file/path", "OPEN", "", "2023-05-13T17:55:39+0202",
+            new TextRange(1, 0, 3, 4))))
+      .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))
+      .start();
+
+    var fakeClient = newFakeClient().build();
+    backend = newBackend()
+      .withSonarQubeConnection(connectionId, server)
+      .withBoundConfigScope("configScopeId", connectionId, projectKey)
+      .withEmbeddedServer()
+      .build(fakeClient);
+
+    HttpRequest request = openIssueWithProjectAndKeyRequest("&issue=" + issueKey, "&project=" + projectKey);
+
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    assertThat(response.statusCode()).isEqualTo(200);
+
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getIssueParamsToShowByIssueKey()).containsOnlyKeys(issueKey));
+    var showIssueParams = fakeClient.getIssueParamsToShowByIssueKey().get(issueKey);
+    assertThat(showIssueParams.getIssueKey()).isEqualTo(issueKey);
+    assertThat(showIssueParams.getMessage()).isEqualTo("msg");
+    assertThat(showIssueParams.getRuleKey()).isEqualTo("ruleKey");
+    assertThat(showIssueParams.getCreationDate()).isEqualTo("2023-05-13T17:55:39+0202");
+    assertThat(showIssueParams.getTextRange()).extracting(TextRangeDto::getStartLine, TextRangeDto::getStartLineOffset, TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
+      .contains(1,0,3,4);
+  }
+
+  @Test
+  void it_should_fail_request_when_issue_parameter_missing() throws Exception{
+    server = newSonarQubeServer("10.2").start();
+
+    backend = newBackend()
+      .withEmbeddedServer()
+      .build();
+
+    HttpRequest request = openIssueWithProjectAndKeyRequest("&issue=issueKey", "");
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    assertThat(response.statusCode()).isEqualTo(400);
+  }
+
+  @Test
+  void it_should_fail_request_when_project_parameter_missing() throws Exception{
+    server = newSonarQubeServer("10.2").start();
+
+    backend = newBackend()
+      .withEmbeddedServer()
+      .build();
+
+    HttpRequest request = openIssueWithProjectAndKeyRequest("", "&project=projectKey");
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    assertThat(response.statusCode()).isEqualTo(400);
+  }
+
+  private HttpRequest openIssueWithProjectAndKeyRequest(String issueParam, String projectParam) {
+    var request = HttpRequest.newBuilder()
+      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/issues/show?server=" + server.baseUrl() + projectParam + issueParam))
+      .header("Origin", "https://sonar.my")
+      .GET().build();
+    return request;
   }
 }

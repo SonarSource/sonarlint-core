@@ -139,11 +139,9 @@ public class IssueApi {
   }
 
   public List<ScannerInput.ServerIssue> downloadAllFromBatchIssues(String key, @Nullable String branchName) {
-    var batchIssueUrl = new StringBuilder();
-    batchIssueUrl.append(getBatchIssuesUrl(key));
-    batchIssueUrl.append(getUrlBranchParameter(branchName));
+    String batchIssueUrl = getBatchIssuesUrl(key) + getUrlBranchParameter(branchName);
     return ServerApiHelper.processTimed(
-      () -> serverApiHelper.rawGet(batchIssueUrl.toString()),
+      () -> serverApiHelper.rawGet(batchIssueUrl),
       response -> {
         if (response.code() == 403 || response.code() == 404) {
           return Collections.emptyList();
@@ -267,13 +265,9 @@ public class IssueApi {
   }
 
   public Optional<ServerIssueDetails> fetchServerIssue(String issueKey) {
-    var searchUrl = new StringBuilder();
-    searchUrl.append("/api/issues/search.protobuf?issues=").append(urlEncode(issueKey));
-    serverApiHelper.getOrganizationKey()
-      .ifPresent(org -> searchUrl.append(ORGANIZATION_PARAM).append(UrlUtils.urlEncode(org)));
-    searchUrl.append("&ps=1&p=1");
+    String searchUrl = "/api/issues/search.protobuf?issues=" + urlEncode(issueKey) + "&ps=1&p=1";
 
-    try (var wsResponse = serverApiHelper.get(searchUrl.toString()); var is = wsResponse.bodyAsStream()) {
+    try (var wsResponse = serverApiHelper.get(searchUrl); var is = wsResponse.bodyAsStream()) {
       var response = Issues.SearchWsResponse.parseFrom(is);
       if (response.getIssuesList().isEmpty() || response.getComponentsList().isEmpty()) {
         LOG.warn("No issue found with key '" + issueKey + "'");

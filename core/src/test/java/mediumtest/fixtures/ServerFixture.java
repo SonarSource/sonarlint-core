@@ -149,8 +149,8 @@ public class ServerFixture {
       }
 
       public ServerProjectBranchBuilder withIssue(String issueKey, String ruleKey, String message, String author, String filePath,
-        String status, String resolution, TextRange textRange) {
-        this.issues.add(new ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, textRange));
+        String status, String resolution, String creationDate, TextRange textRange) {
+        this.issues.add(new ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, creationDate, textRange));
         return this;
       }
 
@@ -193,10 +193,11 @@ public class ServerFixture {
         private final String filePath;
         private final String status;
         private final String resolution;
+        private final String creationDate;
         private final TextRange textRange;
 
         private ServerIssue(String issueKey, String ruleKey, String message, String author, String filePath, String status,
-          String resolution, TextRange textRange) {
+          String resolution, String creationDate, TextRange textRange) {
           this.issueKey = issueKey;
           this.ruleKey = ruleKey;
           this.message = message;
@@ -204,7 +205,12 @@ public class ServerFixture {
           this.filePath = filePath;
           this.status = status;
           this.resolution = resolution;
+          this.creationDate = creationDate;
           this.textRange = textRange;
+        }
+
+        public String getFilePath() {
+          return filePath;
         }
       }
     }
@@ -378,6 +384,42 @@ public class ServerFixture {
       }));
     }
 
+    private void registerSearchIssueApiResponses() {
+      projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
+        var issuesPerFilePath = branch.issues.stream()
+          .collect(groupingBy(ServerBuilder.ServerProjectBranchBuilder.ServerIssue::getFilePath,
+            mapping(issue -> {
+              var builder =
+                Issues.Issue.newBuilder()
+                  .setKey(issue.issueKey)
+                  .setComponent(projectKey + ":" + issue.filePath)
+                  .setRule(issue.ruleKey)
+                  .setMessage(issue.message)
+                  .setTextRange(Common.TextRange.newBuilder()
+                    .setStartLine(issue.textRange.getStartLine())
+                    .setStartOffset(issue.textRange.getStartLineOffset())
+                    .setEndLine(issue.textRange.getEndLine())
+                    .setEndOffset(issue.textRange.getEndLineOffset())
+                    .build())
+                  .setCreationDate(issue.creationDate)
+                  .setStatus(issue.status)
+                  .setAssignee(issue.author);
+              return builder.build();
+            }, toList())));
+
+        var allIssues = issuesPerFilePath.values().stream().flatMap(Collection::stream).collect(toList());
+        allIssues.forEach(issue -> mockWebServer.addProtobufResponse("/api/issues/search.protobuf?issues=".concat(urlEncode(issue.getKey())).concat("&ps=1&p=1"),
+          Issues.SearchWsResponse.newBuilder()
+            .addIssues(
+              Issues.Issue.newBuilder()
+                .setKey(issue.getKey()).setRule(issue.getRule()).setCreationDate(issue.getCreationDate()).setMessage(issue.getMessage())
+              .setTextRange(issue.getTextRange()).build())
+            .addComponents(Issues.Component.newBuilder().setPath(issue.getComponent()).build())
+            .setRules(Issues.SearchWsResponse.newBuilder().getRulesBuilder().addRules(Common.Rule.newBuilder().setKey(issue.getRule()).build()))
+            .build()));
+      }));
+    }
+
     private void registerApiHotspotsPullResponses() {
 
     }
@@ -426,6 +468,7 @@ public class ServerFixture {
       }
       registerIssuesStatusChangeApiResponses();
       registerAddIssueCommentApiResponses();
+      registerSearchIssueApiResponses();
       if (version != null && version.satisfiesMinRequirement(Version.create("10.2"))) {
         registerIssueAnticipateTransitionResponses();
       }

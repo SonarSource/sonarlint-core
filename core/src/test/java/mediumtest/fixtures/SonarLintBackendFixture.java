@@ -439,6 +439,7 @@ public class SonarLintBackendFixture {
     private final LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey;
     private final boolean rejectingProgress;
     private final Map<String, Collection<HotspotDetailsDto>> hotspotToShowByConfigScopeId = new HashMap<>();
+    private final Map<String, ShowIssueParams> issueParamsToShowByIssueKey = new HashMap<>();
     private final Map<String, ProgressReport> progressReportsByTaskId = new ConcurrentHashMap<>();
     private final Set<String> synchronizedConfigScopeIds = new HashSet<>();
     private final ProxyDto proxy;
@@ -507,7 +508,7 @@ public class SonarLintBackendFixture {
 
     @Override
     public void showIssue(ShowIssueParams params) {
-
+      issueParamsToShowByIssueKey.putIfAbsent(params.getIssueKey(), params);
     }
 
     @Override
@@ -623,6 +624,10 @@ public class SonarLintBackendFixture {
 
     public Map<String, Collection<HotspotDetailsDto>> getHotspotToShowByConfigScopeId() {
       return hotspotToShowByConfigScopeId;
+    }
+
+    public Map<String, ShowIssueParams> getIssueParamsToShowByIssueKey() {
+      return issueParamsToShowByIssueKey;
     }
 
     @Override

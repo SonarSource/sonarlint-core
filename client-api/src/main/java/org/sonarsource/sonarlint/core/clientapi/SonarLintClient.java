@@ -100,7 +100,7 @@ public interface SonarLintClient {
   void showHotspot(ShowHotspotParams params);
 
   /**
-   * Sends a notification to the client to show a specific issue (specified by {@link ShowIssueParams} in the IDE
+   * Sends a notification to the client to show a specific issue (specified by {@link ShowIssueParams}) in the IDE
    */
   @JsonNotification
   void showIssue(ShowIssueParams params);
