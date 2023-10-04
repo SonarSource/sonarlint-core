@@ -93,6 +93,8 @@ class ShowIssueMediumTests {
     var issueKey = "myIssueKey";
     var projectKey = "projectKey";
     var connectionId = "connectionId";
+    var configScopeId = "configScopeId";
+
     server = newSonarQubeServer("10.2")
       .withProject(projectKey,
         project -> project.withBranch("branchName",
@@ -104,7 +106,7 @@ class ShowIssueMediumTests {
     var fakeClient = newFakeClient().build();
     backend = newBackend()
       .withSonarQubeConnection(connectionId, server)
-      .withBoundConfigScope("configScopeId", connectionId, projectKey)
+      .withBoundConfigScope(configScopeId, connectionId, projectKey)
       .withEmbeddedServer()
       .build(fakeClient);
 
@@ -117,6 +119,7 @@ class ShowIssueMediumTests {
     var showIssueParams = fakeClient.getIssueParamsToShowByIssueKey().get(issueKey);
     assertThat(showIssueParams.getIssueKey()).isEqualTo(issueKey);
     assertThat(showIssueParams.getMessage()).isEqualTo("msg");
+    assertThat(showIssueParams.getConfigScopeId()).isEqualTo(configScopeId);
     assertThat(showIssueParams.getRuleKey()).isEqualTo("ruleKey");
     assertThat(showIssueParams.getCreationDate()).isEqualTo("2023-05-13T17:55:39+0202");
     assertThat(showIssueParams.getTextRange()).extracting(TextRangeDto::getStartLine, TextRangeDto::getStartLineOffset, TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)

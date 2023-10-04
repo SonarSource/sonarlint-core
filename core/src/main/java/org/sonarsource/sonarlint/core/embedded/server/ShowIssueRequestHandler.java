@@ -99,7 +99,7 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
       startFullBindingProcess();
       assistCreatingConnection(query.serverUrl)
         .thenCompose(response -> assistBinding(response.getNewConnectionId(), query.projectKey))
-        .thenAccept(response -> showIssueForScope(response.getConnectionId(), query.issueKey))
+        .thenAccept(response -> showIssueForScope(response.getConnectionId(), response.getConfigurationScopeId(), query.issueKey))
         .whenComplete((v, e) -> endFullBindingProcess());
     } else {
       // we pick the first connection but this could lead to issues later if there were several matches (make the user select the right
@@ -112,21 +112,22 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
     var scopes = configurationService.getConfigScopesWithBindingConfiguredTo(connectionId, projectKey);
     if (scopes.isEmpty()) {
       assistBinding(connectionId, projectKey)
-        .thenAccept(newBinding -> showIssueForScope(connectionId, issueKey));
+        .thenAccept(newBinding -> showIssueForScope(connectionId, newBinding.getConfigurationScopeId(), issueKey));
     } else {
-      showIssueForScope(connectionId, issueKey);
+      // we pick the first bound scope but this could lead to issues later if there were several matches (make the user select the right one?)
+      showIssueForScope(connectionId, scopes.get(0).getId(), issueKey);
     }
   }
 
-  private void showIssueForScope(String connectionId, String issueKey) {
+  private void showIssueForScope(String connectionId, String configScopeId, String issueKey) {
     tryFetchIssue(connectionId, issueKey)
       .ifPresentOrElse(
-        issueDetails -> client.showIssue(getShowIssueParams(issueDetails, connectionId)),
+        issueDetails -> client.showIssue(getShowIssueParams(issueDetails, connectionId, configScopeId)),
         () -> client.showMessage(new ShowMessageParams(MessageType.ERROR, "Could not show the issue. See logs for more details")));
   }
 
   @VisibleForTesting
-  ShowIssueParams getShowIssueParams(IssueApi.ServerIssueDetails issueDetails, String connectionId) {
+  ShowIssueParams getShowIssueParams(IssueApi.ServerIssueDetails issueDetails, String connectionId, String configScopeId) {
     var flowLocations = issueDetails.flowList.stream().map(flow -> {
       var locations = flow.getLocationsList().stream().map(location -> {
         var locationComponent =
@@ -145,7 +146,7 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
     var textRangeDto = new TextRangeDto(textRange.getStartLine(), textRange.getStartOffset(), textRange.getEndLine(),
       textRange.getEndOffset());
 
-    return new ShowIssueParams(textRangeDto, connectionId, issueDetails.ruleKey, issueDetails.key, issueDetails.path, issueDetails.message,
+    return new ShowIssueParams(textRangeDto, configScopeId, issueDetails.ruleKey, issueDetails.key, issueDetails.path, issueDetails.message,
       issueDetails.creationDate, issueDetails.codeSnippet, flowLocations);
   }
 

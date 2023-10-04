@@ -61,6 +61,7 @@ class ShowIssueRequestHandlerTest {
     var issueApi = mock(IssueApi.class);
 
     var connectionId = "connectionId";
+    var configScopeId = "configScopeId";
     var issueKey = "issueKey";
     var issueCreationDate = "2023-05-13T17:55:39+0200";
     var issueMessage = "issue message";
@@ -105,8 +106,8 @@ class ShowIssueRequestHandlerTest {
     );
     var serverIssueDetails = new IssueApi.ServerIssueDetails(issue, issuePath, components, codeSnippet);
 
-    var showIssueParams = showIssueRequestHandler.getShowIssueParams(serverIssueDetails, connectionId);
-    assertThat(showIssueParams.getConnectionId()).isEqualTo(connectionId);
+    var showIssueParams = showIssueRequestHandler.getShowIssueParams(serverIssueDetails, connectionId, configScopeId);
+    assertThat(showIssueParams.getConfigScopeId()).isEqualTo(configScopeId);
     assertThat(showIssueParams.getIssueKey()).isEqualTo(issueKey);
     assertThat(showIssueParams.getCreationDate()).isEqualTo(issueCreationDate);
     assertThat(showIssueParams.getRuleKey()).isEqualTo(issueRuleKey);
