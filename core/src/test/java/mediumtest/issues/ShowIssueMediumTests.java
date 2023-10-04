@@ -22,7 +22,6 @@ package mediumtest.issues;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import mediumtest.fixtures.ServerFixture;
@@ -30,48 +29,48 @@ import mediumtest.fixtures.SonarLintTestBackend;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.clientapi.common.TextRangeDto;
-import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRange;
-import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.embedded.server.ShowIssueRequestHandler;
 
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
-import static mediumtest.fixtures.storage.ServerIssueFixtures.aServerIssue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 class ShowIssueMediumTests {
 
+  private static final String ISSUE_KEY = "myIssueKey";
+  private static final String PROJECT_KEY = "projectKey";
+  private static final String CONNECTION_ID = "connectionId";
+  private static final String CONFIG_SCOPE_ID = "configScopeId";
+  public static final String RULE_KEY = "ruleKey";
+  private ServerFixture.Server serverWithIssue = newSonarQubeServer("10.2")
+    .withProject(PROJECT_KEY,
+      project -> project.withBranch("branchName",
+        branch -> branch.withIssue(ISSUE_KEY, RULE_KEY, "msg", "author", "file/path", "OPEN", "", "2023-05-13T17:55:39+0202",
+          new TextRange(1, 0, 3, 4))))
+    .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))
+    .start();;
   private SonarLintTestBackend backend;
-  private ServerFixture.Server server;
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
     backend.shutdown().get();
-    if (server != null) {
-      server.shutdown();
-      server = null;
+    if (serverWithIssue != null) {
+      serverWithIssue.shutdown();
+      serverWithIssue = null;
     }
   }
 
   @Test
   void it_should_update_the_telemetry_on_show_issue() {
-    server = newSonarQubeServer().start();
+    var fakeClient = newFakeClient().build();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage
-        .withProject("projectKey",
-          project -> project.withBranch("main",
-            branch -> branch.withIssue(
-              aServerIssue("myIssueKey")
-                .withRuleKey("rule:key")
-                .withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
-                .withIntroductionDate(Instant.EPOCH.plusSeconds(1))
-                .withType(RuleType.BUG))))
-        .withServerVersion("9.8"))
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
-      .build();
+      .withSonarQubeConnection(CONNECTION_ID, serverWithIssue)
+      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
+      .withEmbeddedServer()
+      .build(fakeClient);
 
     assertThat(backend.telemetryFilePath())
       .content().asBase64Decoded().asString()
@@ -81,7 +80,7 @@ class ShowIssueMediumTests {
       backend.getConfigurationServiceImpl(), backend.getBindingSuggestionProviderImpl(), backend.getServerApiProvider(),
       backend.getTelemetryServiceImpl());
 
-    showIssueRequestHandler.showIssue(new ShowIssueRequestHandler.ShowIssueQuery(server.baseUrl(), "projectKey", "issueKey"));
+    showIssueRequestHandler.showIssue(new ShowIssueRequestHandler.ShowIssueQuery(serverWithIssue.baseUrl(), "projectKey", "issueKey"));
 
     assertThat(backend.telemetryFilePath())
       .content().asBase64Decoded().asString()
@@ -95,17 +94,9 @@ class ShowIssueMediumTests {
     var connectionId = "connectionId";
     var configScopeId = "configScopeId";
 
-    server = newSonarQubeServer("10.2")
-      .withProject(projectKey,
-        project -> project.withBranch("branchName",
-          branch -> branch.withIssue(issueKey, "ruleKey", "msg", "author", "file/path", "OPEN", "", "2023-05-13T17:55:39+0202",
-            new TextRange(1, 0, 3, 4))))
-      .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))
-      .start();
-
     var fakeClient = newFakeClient().build();
     backend = newBackend()
-      .withSonarQubeConnection(connectionId, server)
+      .withSonarQubeConnection(connectionId, serverWithIssue)
       .withBoundConfigScope(configScopeId, connectionId, projectKey)
       .withEmbeddedServer()
       .build(fakeClient);
@@ -127,9 +118,42 @@ class ShowIssueMediumTests {
   }
 
   @Test
-  void it_should_fail_request_when_issue_parameter_missing() throws Exception{
-    server = newSonarQubeServer("10.2").start();
+  void it_should_assist_creating_the_binding_if_scope_not_bound() throws Exception{
+    var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", CONNECTION_ID, serverWithIssue.baseUrl(), "projectKey").build();
+    backend = newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, serverWithIssue)
+      .withUnboundConfigScope("scopeId")
+      .withEmbeddedServer()
+      .build(fakeClient);
 
+    HttpRequest request = openIssueWithProjectAndKeyRequest("&issue=" + ISSUE_KEY, "&project=" + PROJECT_KEY);
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+    assertThat(response.statusCode()).isEqualTo(200);
+    assertThat(fakeClient.getMessagesToShow()).isEmpty();
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getIssueParamsToShowByIssueKey()).containsOnlyKeys(ISSUE_KEY));
+    assertThat(fakeClient.getIssueParamsToShowByIssueKey().get(ISSUE_KEY).getRuleKey()).isEqualTo(RULE_KEY);
+  }
+
+  @Test
+  void it_should_assist_creating_the_connection_when_server_url_unknown() throws Exception {
+    var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", CONNECTION_ID, serverWithIssue.baseUrl(), "projectKey").build();
+    backend = newBackend()
+      .withUnboundConfigScope("scopeId")
+      .withEmbeddedServer()
+      .build(fakeClient);
+
+    HttpRequest request = openIssueWithProjectAndKeyRequest("&issue=" + ISSUE_KEY, "&project=" + PROJECT_KEY);
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+    assertThat(response.statusCode()).isEqualTo(200);
+    assertThat(fakeClient.getMessagesToShow()).isEmpty();
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getIssueParamsToShowByIssueKey()).containsOnlyKeys(ISSUE_KEY));
+    assertThat(fakeClient.getIssueParamsToShowByIssueKey().get(ISSUE_KEY).getRuleKey()).isEqualTo(RULE_KEY);
+  }
+
+  @Test
+  void it_should_fail_request_when_issue_parameter_missing() throws Exception{
     backend = newBackend()
       .withEmbeddedServer()
       .build();
@@ -141,8 +165,6 @@ class ShowIssueMediumTests {
 
   @Test
   void it_should_fail_request_when_project_parameter_missing() throws Exception{
-    server = newSonarQubeServer("10.2").start();
-
     backend = newBackend()
       .withEmbeddedServer()
       .build();
@@ -153,10 +175,9 @@ class ShowIssueMediumTests {
   }
 
   private HttpRequest openIssueWithProjectAndKeyRequest(String issueParam, String projectParam) {
-    var request = HttpRequest.newBuilder()
-      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/issues/show?server=" + server.baseUrl() + projectParam + issueParam))
+    return HttpRequest.newBuilder()
+      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/issues/show?server=" + serverWithIssue.baseUrl() + projectParam + issueParam))
       .header("Origin", "https://sonar.my")
       .GET().build();
-    return request;
   }
 }
