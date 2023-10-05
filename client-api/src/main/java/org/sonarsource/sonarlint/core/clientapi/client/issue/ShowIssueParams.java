@@ -24,11 +24,11 @@ import org.sonarsource.sonarlint.core.clientapi.common.FlowDto;
 import org.sonarsource.sonarlint.core.clientapi.common.TextRangeDto;
 
 public class ShowIssueParams {
+  private final String configScopeId;
+  private final String issueKey;
+  private final String ruleKey;
   private final String serverRelativeFilePath;
   private final String message;
-  private final String configScopeId;
-  private final String ruleKey;
-  private final String issueKey;
   private final String creationDate;
   private final String codeSnippet;
   private final boolean isTaint;
@@ -37,10 +37,10 @@ public class ShowIssueParams {
 
   public ShowIssueParams(TextRangeDto textRange, String configScopeId, String ruleKey, String issueKey, String serverRelativeFilePath, String message,
     String creationDate, String codeSnippet, boolean isTaint, List<FlowDto> flows) {
-    this.textRange = textRange;
     this.configScopeId = configScopeId;
-    this.ruleKey = ruleKey;
     this.issueKey = issueKey;
+    this.ruleKey = ruleKey;
+    this.textRange = textRange;
     this.serverRelativeFilePath = serverRelativeFilePath;
     this.message = message;
     this.creationDate = creationDate;

@@ -91,8 +91,7 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
     response.setEntity(new StringEntity("OK"));
   }
 
-  @VisibleForTesting
-  public void showIssue(ShowIssueQuery query) {
+  private void showIssue(ShowIssueQuery query) {
     telemetryService.showIssueRequestReceived();
 
     var connectionsMatchingOrigin = repository.findByUrl(query.serverUrl);

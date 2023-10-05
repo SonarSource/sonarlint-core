@@ -19,6 +19,7 @@
  */
 package mediumtest.issues;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -30,7 +31,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.clientapi.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.commons.TextRange;
-import org.sonarsource.sonarlint.core.embedded.server.ShowIssueRequestHandler;
 
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
@@ -64,7 +64,7 @@ class ShowIssueMediumTests {
   }
 
   @Test
-  void it_should_update_the_telemetry_on_show_issue() {
+  void it_should_update_the_telemetry_on_show_issue() throws Exception {
     var fakeClient = newFakeClient().build();
     backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, serverWithIssue)
@@ -76,19 +76,17 @@ class ShowIssueMediumTests {
       .content().asBase64Decoded().asString()
       .contains("\"showIssueRequestsCount\":0");
 
-    var showIssueRequestHandler = new ShowIssueRequestHandler(newFakeClient().build(), backend.getConnectionConfigurationRepository(),
-      backend.getConfigurationServiceImpl(), backend.getBindingSuggestionProviderImpl(), backend.getServerApiProvider(),
-      backend.getTelemetryServiceImpl());
+    var statusCode = executeOpenIssueRequest(ISSUE_KEY, PROJECT_KEY);
 
-    showIssueRequestHandler.showIssue(new ShowIssueRequestHandler.ShowIssueQuery(serverWithIssue.baseUrl(), "projectKey", "issueKey"));
-
-    assertThat(backend.telemetryFilePath())
-      .content().asBase64Decoded().asString()
-      .contains("\"showIssueRequestsCount\":1");
+    assertThat(statusCode).isEqualTo(200);
+    await().atMost(2, TimeUnit.SECONDS)
+      .untilAsserted(() -> assertThat(backend.telemetryFilePath())
+        .content().asBase64Decoded().asString()
+        .contains("\"showIssueRequestsCount\":1"));
   }
 
   @Test
-  void it_should_open_an_issue_in_ide() throws Exception{
+  void it_should_open_an_issue_in_ide() throws Exception {
     var issueKey = "myIssueKey";
     var projectKey = "projectKey";
     var connectionId = "connectionId";
@@ -101,11 +99,9 @@ class ShowIssueMediumTests {
       .withEmbeddedServer()
       .build(fakeClient);
 
-    HttpRequest request = openIssueWithProjectAndKeyRequest("&issue=" + issueKey, "&project=" + projectKey);
+    var statusCode = executeOpenIssueRequest(ISSUE_KEY, PROJECT_KEY);
 
-    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-    assertThat(response.statusCode()).isEqualTo(200);
-
+    assertThat(statusCode).isEqualTo(200);
     await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getIssueParamsToShowByIssueKey()).containsOnlyKeys(issueKey));
     var showIssueParams = fakeClient.getIssueParamsToShowByIssueKey().get(issueKey);
     assertThat(showIssueParams.getIssueKey()).isEqualTo(issueKey);
@@ -114,23 +110,24 @@ class ShowIssueMediumTests {
     assertThat(showIssueParams.getConfigScopeId()).isEqualTo(configScopeId);
     assertThat(showIssueParams.getRuleKey()).isEqualTo("ruleKey");
     assertThat(showIssueParams.getCreationDate()).isEqualTo("2023-05-13T17:55:39+0202");
-    assertThat(showIssueParams.getTextRange()).extracting(TextRangeDto::getStartLine, TextRangeDto::getStartLineOffset, TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
-      .contains(1,0,3,4);
+    assertThat(showIssueParams.getTextRange()).extracting(TextRangeDto::getStartLine, TextRangeDto::getStartLineOffset,
+        TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
+      .contains(1, 0, 3, 4);
   }
 
   @Test
-  void it_should_assist_creating_the_binding_if_scope_not_bound() throws Exception{
-    var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", CONNECTION_ID, serverWithIssue.baseUrl(), "projectKey").build();
+  void it_should_assist_creating_the_binding_if_scope_not_bound() throws Exception {
+    var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", CONNECTION_ID, serverWithIssue.baseUrl(),
+      "projectKey").build();
     backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, serverWithIssue)
       .withUnboundConfigScope("scopeId")
       .withEmbeddedServer()
       .build(fakeClient);
 
-    HttpRequest request = openIssueWithProjectAndKeyRequest("&issue=" + ISSUE_KEY, "&project=" + PROJECT_KEY);
-    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    var statusCode = executeOpenIssueRequest(ISSUE_KEY, PROJECT_KEY);
 
-    assertThat(response.statusCode()).isEqualTo(200);
+    assertThat(statusCode).isEqualTo(200);
     assertThat(fakeClient.getMessagesToShow()).isEmpty();
     await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getIssueParamsToShowByIssueKey()).containsOnlyKeys(ISSUE_KEY));
     assertThat(fakeClient.getIssueParamsToShowByIssueKey().get(ISSUE_KEY).getRuleKey()).isEqualTo(RULE_KEY);
@@ -138,41 +135,47 @@ class ShowIssueMediumTests {
 
   @Test
   void it_should_assist_creating_the_connection_when_server_url_unknown() throws Exception {
-    var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", CONNECTION_ID, serverWithIssue.baseUrl(), "projectKey").build();
+    var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", CONNECTION_ID, serverWithIssue.baseUrl(),
+      "projectKey").build();
     backend = newBackend()
       .withUnboundConfigScope("scopeId")
       .withEmbeddedServer()
       .build(fakeClient);
 
-    HttpRequest request = openIssueWithProjectAndKeyRequest("&issue=" + ISSUE_KEY, "&project=" + PROJECT_KEY);
-    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    var statusCode = executeOpenIssueRequest(ISSUE_KEY, PROJECT_KEY);
 
-    assertThat(response.statusCode()).isEqualTo(200);
+    assertThat(statusCode).isEqualTo(200);
     assertThat(fakeClient.getMessagesToShow()).isEmpty();
     await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getIssueParamsToShowByIssueKey()).containsOnlyKeys(ISSUE_KEY));
     assertThat(fakeClient.getIssueParamsToShowByIssueKey().get(ISSUE_KEY).getRuleKey()).isEqualTo(RULE_KEY);
   }
 
   @Test
-  void it_should_fail_request_when_issue_parameter_missing() throws Exception{
+  void it_should_fail_request_when_issue_parameter_missing() throws Exception {
     backend = newBackend()
       .withEmbeddedServer()
       .build();
 
-    HttpRequest request = openIssueWithProjectAndKeyRequest("&issue=issueKey", "");
-    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-    assertThat(response.statusCode()).isEqualTo(400);
+    var statusCode = executeOpenIssueRequest("", PROJECT_KEY);
+
+    assertThat(statusCode).isEqualTo(400);
   }
 
   @Test
-  void it_should_fail_request_when_project_parameter_missing() throws Exception{
+  void it_should_fail_request_when_project_parameter_missing() throws Exception {
     backend = newBackend()
       .withEmbeddedServer()
       .build();
 
-    HttpRequest request = openIssueWithProjectAndKeyRequest("", "&project=projectKey");
+    var statusCode = executeOpenIssueRequest(ISSUE_KEY, "");
+
+    assertThat(statusCode).isEqualTo(400);
+  }
+
+  private int executeOpenIssueRequest(String issueKey, String projectKey) throws IOException, InterruptedException {
+    HttpRequest request = openIssueWithProjectAndKeyRequest("&issue=" + issueKey, "&project=" + projectKey);
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-    assertThat(response.statusCode()).isEqualTo(400);
+    return response.statusCode();
   }
 
   private HttpRequest openIssueWithProjectAndKeyRequest(String issueParam, String projectParam) {

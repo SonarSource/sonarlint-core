@@ -74,27 +74,6 @@ public class SonarLintTestBackend extends SonarLintBackendImpl {
     return getInitializedApplicationContext().getBean(LocalOnlyIssueStorageService.class);
   }
 
-  public ConnectionConfigurationRepository getConnectionConfigurationRepository() {
-    return getInitializedApplicationContext().getBean(ConnectionConfigurationRepository.class);
-  }
-
-  public BindingSuggestionProviderImpl getBindingSuggestionProviderImpl() {
-    return getInitializedApplicationContext().getBean(BindingSuggestionProviderImpl.class);
-  }
-
-  public ConfigurationServiceImpl getConfigurationServiceImpl() {
-    return getInitializedApplicationContext().getBean(ConfigurationServiceImpl.class);
-  }
-
-  public ServerApiProvider getServerApiProvider() {
-    return getInitializedApplicationContext().getBean(ServerApiProvider.class);
-  }
-
-  public TelemetryServiceImpl getTelemetryServiceImpl() {
-    return getInitializedApplicationContext().getBean(TelemetryServiceImpl.class);
-  }
-
-
   @Override
   public CompletableFuture<Void> shutdown() {
     return super.shutdown().whenComplete((v, t) -> {

@@ -288,7 +288,6 @@ public class IssueApi {
       LOG.warn("Error while fetching issue", e.getMessage());
       return Optional.empty();
     }
-
   }
 
   public Optional<String> getCodeSnippet(String fileKey, Common.TextRange textRange) {
@@ -350,14 +349,14 @@ public class IssueApi {
 
   public static class ServerIssueDetails {
     public final String key;
-    public final String creationDate;
     public final String ruleKey;
-    public final String path;
-    public final List<Common.Flow> flowList;
-    public final Common.TextRange textRange;
-    public final String message;
-    public final List<Component> componentsList;
     public final String codeSnippet;
+    public final String creationDate;
+    public final String message;
+    public final String path;
+    public final Common.TextRange textRange;
+    public final List<Common.Flow> flowList;
+    public final List<Component> componentsList;
 
     public ServerIssueDetails(Issue issue, String path, List<Component> componentsList, String codeSnippet) {
       this.key = issue.getKey();

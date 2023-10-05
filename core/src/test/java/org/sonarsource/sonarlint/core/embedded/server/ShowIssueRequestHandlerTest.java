@@ -22,15 +22,12 @@ package org.sonarsource.sonarlint.core.embedded.server;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import org.apache.hc.core5.http.message.BasicClassicHttpRequest;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.BindingSuggestionProviderImpl;
 import org.sonarsource.sonarlint.core.ConfigurationServiceImpl;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResponse;
-import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
@@ -40,11 +37,8 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ShowIssueRequestHandlerTest {
@@ -152,31 +146,6 @@ class ShowIssueRequestHandlerTest {
     assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "", "issue").isValid()).isFalse();
     assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "").isValid()).isFalse();
   }
-
-  @Test
-  void should_assist_creating_connection_if_non_available () {
-    var connectionId = "newConnectionId";
-    var serverUrl = "wrong url";
-    var repository = mock(ConnectionConfigurationRepository.class);
-    var configurationService = mock(ConfigurationServiceImpl.class);
-    var bindingSuggestionProvider = mock(BindingSuggestionProviderImpl.class);
-    var serverApiProvider = mock(ServerApiProvider.class);
-    var telemetryService = mock(TelemetryServiceImpl.class);
-    var sonarLintClient = mock(SonarLintClient.class);
-
-    when(sonarLintClient.assistCreatingConnection(any())).thenReturn(CompletableFuture.completedFuture(new AssistCreatingConnectionResponse(connectionId)));
-    when(sonarLintClient.assistBinding(any())).thenReturn(CompletableFuture.completedFuture(new AssistBindingResponse("configScopeId")));
-
-    var showIssueRequestHandler = new ShowIssueRequestHandler(sonarLintClient, repository, configurationService,
-      bindingSuggestionProvider, serverApiProvider, telemetryService);
-
-    showIssueRequestHandler.showIssue(new ShowIssueRequestHandler.ShowIssueQuery(serverUrl, "projectKey", "myIssueKey"));
-    verify(sonarLintClient, times(1)).assistCreatingConnection(argThat(assistCreatingConnectionParams -> assistCreatingConnectionParams.getServerUrl().equals(serverUrl)));
-    verify(sonarLintClient, times(1)).assistBinding(argThat(assistBindingParams -> assistBindingParams.getConnectionId().equals(connectionId)));
-    verify(bindingSuggestionProvider, times(1)).enable();
-    verify(bindingSuggestionProvider, times(1)).disable();
-  }
-
 
   @Test
   void should_detect_taint_issues(){
