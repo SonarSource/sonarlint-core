@@ -66,7 +66,7 @@ class ShowIssueRequestHandlerTest {
     var issueCreationDate = "2023-05-13T17:55:39+0200";
     var issueMessage = "issue message";
     var issuePath = "/home/file.java";
-    var issueRuleKey = "issueRuleKey";
+    var issueRuleKey = "javasecurity:S3649";
     var flowLocationPath_1 = "/home/file_1.java";
     var flowLocationPath_2 = "/home/file_2.java";
     var issueTextRange = Common.TextRange.newBuilder().setStartLine(1).setEndLine(2).setStartOffset(3).setEndOffset(4).build();
@@ -111,6 +111,7 @@ class ShowIssueRequestHandlerTest {
     assertThat(showIssueParams.getIssueKey()).isEqualTo(issueKey);
     assertThat(showIssueParams.getCreationDate()).isEqualTo(issueCreationDate);
     assertThat(showIssueParams.getRuleKey()).isEqualTo(issueRuleKey);
+    assertThat(showIssueParams.isTaint()).isTrue();
     assertThat(showIssueParams.getMessage()).isEqualTo(issueMessage);
     assertThat(showIssueParams.getTextRange().getStartLine()).isEqualTo(1);
     assertThat(showIssueParams.getTextRange().getEndLine()).isEqualTo(2);
@@ -176,4 +177,10 @@ class ShowIssueRequestHandlerTest {
     verify(bindingSuggestionProvider, times(1)).disable();
   }
 
+
+  @Test
+  void should_detect_taint_issues(){
+    assertThat(ShowIssueRequestHandler.isIssueTaint("java:S1144")).isFalse();
+    assertThat(ShowIssueRequestHandler.isIssueTaint("javasecurity:S3649")).isTrue();
+  }
 }

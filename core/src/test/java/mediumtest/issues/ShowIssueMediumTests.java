@@ -51,7 +51,7 @@ class ShowIssueMediumTests {
         branch -> branch.withIssue(ISSUE_KEY, RULE_KEY, "msg", "author", "file/path", "OPEN", "", "2023-05-13T17:55:39+0202",
           new TextRange(1, 0, 3, 4))))
     .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))
-    .start();;
+    .start();
   private SonarLintTestBackend backend;
 
   @AfterEach
@@ -109,6 +109,7 @@ class ShowIssueMediumTests {
     await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getIssueParamsToShowByIssueKey()).containsOnlyKeys(issueKey));
     var showIssueParams = fakeClient.getIssueParamsToShowByIssueKey().get(issueKey);
     assertThat(showIssueParams.getIssueKey()).isEqualTo(issueKey);
+    assertThat(showIssueParams.isTaint()).isFalse();
     assertThat(showIssueParams.getMessage()).isEqualTo("msg");
     assertThat(showIssueParams.getConfigScopeId()).isEqualTo(configScopeId);
     assertThat(showIssueParams.getRuleKey()).isEqualTo("ruleKey");

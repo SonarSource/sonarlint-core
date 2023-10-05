@@ -51,6 +51,7 @@ import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurat
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
+import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -146,8 +147,14 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
     var textRangeDto = new TextRangeDto(textRange.getStartLine(), textRange.getStartOffset(), textRange.getEndLine(),
       textRange.getEndOffset());
 
+    var isTaint = isIssueTaint(issueDetails.ruleKey);
+
     return new ShowIssueParams(textRangeDto, configScopeId, issueDetails.ruleKey, issueDetails.key, issueDetails.path, issueDetails.message,
-      issueDetails.creationDate, issueDetails.codeSnippet, flowLocations);
+      issueDetails.creationDate, issueDetails.codeSnippet, isTaint, flowLocations);
+  }
+
+  static boolean isIssueTaint(String ruleKey) {
+    return RulesApi.TAINT_REPOS.stream().anyMatch(ruleKey::startsWith);
   }
 
   private Optional<IssueApi.ServerIssueDetails> tryFetchIssue(String connectionId, String issueKey) {

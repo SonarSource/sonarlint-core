@@ -31,11 +31,12 @@ public class ShowIssueParams {
   private final String issueKey;
   private final String creationDate;
   private final String codeSnippet;
+  private final boolean isTaint;
   private final List<FlowDto> flows;
   private final TextRangeDto textRange;
 
   public ShowIssueParams(TextRangeDto textRange, String configScopeId, String ruleKey, String issueKey, String serverRelativeFilePath, String message,
-    String creationDate, String codeSnippet, List<FlowDto> flows) {
+    String creationDate, String codeSnippet, boolean isTaint, List<FlowDto> flows) {
     this.textRange = textRange;
     this.configScopeId = configScopeId;
     this.ruleKey = ruleKey;
@@ -44,6 +45,7 @@ public class ShowIssueParams {
     this.message = message;
     this.creationDate = creationDate;
     this.codeSnippet = codeSnippet;
+    this.isTaint = isTaint;
     this.flows = flows;
   }
 
@@ -77,6 +79,10 @@ public class ShowIssueParams {
 
   public String getMessage() {
     return message;
+  }
+
+  public boolean isTaint() {
+    return isTaint;
   }
 
   public List<FlowDto> getFlows() {
