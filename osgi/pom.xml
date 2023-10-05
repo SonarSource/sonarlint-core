@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-parent</artifactId>
-    <version>9.4-SNAPSHOT</version>
+    <version>9.3.1-SNAPSHOT</version>
   </parent>
   <artifactId>sonarlint-core-osgi</artifactId>
   <name>SonarLint Core - OSGi bundle</name>
