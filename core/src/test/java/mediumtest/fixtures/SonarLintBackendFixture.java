@@ -77,6 +77,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.http.ProxyDto;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.clientapi.client.http.SelectProxiesResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.info.GetClientInfoResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowSoonUnsupportedMessageParams;
 import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
@@ -438,6 +439,7 @@ public class SonarLintBackendFixture {
     private final LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey;
     private final boolean rejectingProgress;
     private final Map<String, Collection<HotspotDetailsDto>> hotspotToShowByConfigScopeId = new HashMap<>();
+    private final Map<String, ShowIssueParams> issueParamsToShowByIssueKey = new HashMap<>();
     private final Map<String, ProgressReport> progressReportsByTaskId = new ConcurrentHashMap<>();
     private final Set<String> synchronizedConfigScopeIds = new HashSet<>();
     private final ProxyDto proxy;
@@ -502,6 +504,11 @@ public class SonarLintBackendFixture {
     @Override
     public void showHotspot(ShowHotspotParams params) {
       hotspotToShowByConfigScopeId.computeIfAbsent(params.getConfigurationScopeId(), k -> new ArrayList<>()).add(params.getHotspotDetails());
+    }
+
+    @Override
+    public void showIssue(ShowIssueParams params) {
+      issueParamsToShowByIssueKey.putIfAbsent(params.getIssueKey(), params);
     }
 
     @Override
@@ -617,6 +624,10 @@ public class SonarLintBackendFixture {
 
     public Map<String, Collection<HotspotDetailsDto>> getHotspotToShowByConfigScopeId() {
       return hotspotToShowByConfigScopeId;
+    }
+
+    public Map<String, ShowIssueParams> getIssueParamsToShowByIssueKey() {
+      return issueParamsToShowByIssueKey;
     }
 
     @Override

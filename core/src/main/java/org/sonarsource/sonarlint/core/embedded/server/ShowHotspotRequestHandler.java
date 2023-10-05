@@ -39,13 +39,11 @@ import org.sonarsource.sonarlint.core.BindingSuggestionProviderImpl;
 import org.sonarsource.sonarlint.core.ConfigurationServiceImpl;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
-import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionParams;
-import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.clientapi.client.message.MessageType;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
+import org.sonarsource.sonarlint.core.clientapi.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspotDetails;
@@ -55,21 +53,20 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @Named
 @Singleton
-public class ShowHotspotRequestHandler implements HttpRequestHandler {
+public class ShowHotspotRequestHandler extends ShowHotspotOrIssueRequestHandler implements HttpRequestHandler {
 
   private final SonarLintClient client;
   private final ConnectionConfigurationRepository repository;
   private final ConfigurationServiceImpl configurationService;
-  private final BindingSuggestionProviderImpl bindingSuggestionProvider;
   private final ServerApiProvider serverApiProvider;
   private final TelemetryServiceImpl telemetryService;
 
   public ShowHotspotRequestHandler(SonarLintClient client, ConnectionConfigurationRepository repository, ConfigurationServiceImpl configurationService,
     BindingSuggestionProviderImpl bindingSuggestionProvider, ServerApiProvider serverApiProvider, TelemetryServiceImpl telemetryService) {
+    super(bindingSuggestionProvider, client);
     this.client = client;
     this.repository = repository;
     this.configurationService = configurationService;
-    this.bindingSuggestionProvider = bindingSuggestionProvider;
     this.serverApiProvider = serverApiProvider;
     this.telemetryService = telemetryService;
   }
@@ -96,7 +93,7 @@ public class ShowHotspotRequestHandler implements HttpRequestHandler {
       startFullBindingProcess();
       assistCreatingConnection(query.serverUrl)
         .thenCompose(response -> assistBinding(response.getNewConnectionId(), query.projectKey))
-        .thenAccept(response -> showHotspotForScope(response.connectionId, response.configurationScopeId, query.hotspotKey))
+        .thenAccept(response -> showHotspotForScope(response.getConnectionId(), response.getConfigurationScopeId(), query.hotspotKey))
         .whenComplete((v, e) -> endFullBindingProcess());
     } else {
       // we pick the first connection but this could lead to issues later if there were several matches (make the user select the right one?)
@@ -104,22 +101,11 @@ public class ShowHotspotRequestHandler implements HttpRequestHandler {
     }
   }
 
-  private void startFullBindingProcess() {
-    // we don't want binding suggestions to appear in the middle of a full binding creation process (connection + binding)
-    // the other possibility would be to still notify the client anyway and let it handle UI interactions one at a time (assists, messages,
-    // suggestions, ...)
-    bindingSuggestionProvider.disable();
-  }
-
-  private void endFullBindingProcess() {
-    bindingSuggestionProvider.enable();
-  }
-
   private void showHotspotForConnection(String connectionId, String projectKey, String hotspotKey) {
     var scopes = configurationService.getConfigScopesWithBindingConfiguredTo(connectionId, projectKey);
     if (scopes.isEmpty()) {
       assistBinding(connectionId, projectKey)
-        .thenAccept(newBinding -> showHotspotForScope(connectionId, newBinding.configurationScopeId, hotspotKey));
+        .thenAccept(newBinding -> showHotspotForScope(connectionId, newBinding.getConfigurationScopeId(), hotspotKey));
     } else {
       // we pick the first bound scope but this could lead to issues later if there were several matches (make the user select the right one?)
       var firstBoundScope = scopes.get(0);
@@ -143,24 +129,6 @@ public class ShowHotspotRequestHandler implements HttpRequestHandler {
     return serverApi.get().hotspot().fetch(hotspotKey);
   }
 
-  private CompletableFuture<AssistCreatingConnectionResponse> assistCreatingConnection(String serverUrl) {
-    return client.assistCreatingConnection(new AssistCreatingConnectionParams(serverUrl));
-  }
-
-  private CompletableFuture<NewBinding> assistBinding(String connectionId, String projectKey) {
-    return client.assistBinding(new AssistBindingParams(connectionId, projectKey))
-      .thenApply(response -> new NewBinding(connectionId, response.getConfigurationScopeId()));
-  }
-
-  private static class NewBinding {
-    private final String connectionId;
-    private final String configurationScopeId;
-
-    private NewBinding(String connectionId, String configurationScopeId) {
-      this.connectionId = connectionId;
-      this.configurationScopeId = configurationScopeId;
-    }
-  }
 
   private static HotspotDetailsDto adapt(String hotspotKey, ServerHotspotDetails hotspot) {
     return new HotspotDetailsDto(
@@ -186,8 +154,8 @@ public class ShowHotspotRequestHandler implements HttpRequestHandler {
       rule.fixRecommendations);
   }
 
-  private static HotspotDetailsDto.TextRangeDto adapt(TextRange textRange) {
-    return new HotspotDetailsDto.TextRangeDto(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset());
+  private static TextRangeDto adapt(TextRange textRange) {
+    return new TextRangeDto(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset());
   }
 
   private static ShowHotspotQuery extractQuery(ClassicHttpRequest request) {

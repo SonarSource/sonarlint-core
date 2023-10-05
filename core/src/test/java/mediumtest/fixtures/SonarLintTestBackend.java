@@ -22,11 +22,16 @@ package mediumtest.fixtures;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import org.apache.commons.io.FileUtils;
+import org.sonarsource.sonarlint.core.BindingSuggestionProviderImpl;
+import org.sonarsource.sonarlint.core.ConfigurationServiceImpl;
+import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
+import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
 import static java.util.Objects.requireNonNull;
 

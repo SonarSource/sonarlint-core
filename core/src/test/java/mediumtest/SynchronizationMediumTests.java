@@ -46,7 +46,7 @@ class SynchronizationMediumTests {
     var serverWithIssues = newSonarQubeServer("9.6")
       .withProject("projectKey",
         project -> project.withBranch("branchName",
-          branch -> branch.withIssue("key", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", new TextRange(1, 0, 3, 4))))
+          branch -> branch.withIssue("key", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", "", new TextRange(1, 0, 3, 4))))
       .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))
       .start();
     backend = newBackend()
@@ -67,7 +67,7 @@ class SynchronizationMediumTests {
     var serverWithIssues = newSonarQubeServer("9.6")
       .withProject("projectKey",
         project -> project.withBranch("branchName",
-          branch -> branch.withIssue("key", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", new TextRange(1, 0, 3, 4))))
+          branch -> branch.withIssue("key", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", "", new TextRange(1, 0, 3, 4))))
       .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))
       .start();
     backend = newBackend()

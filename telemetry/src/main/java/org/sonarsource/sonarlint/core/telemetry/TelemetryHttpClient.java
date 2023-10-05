@@ -27,6 +27,7 @@ import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.telemetry.payload.HotspotPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.IssuePayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.ShowHotspotPayload;
+import org.sonarsource.sonarlint.core.telemetry.payload.ShowIssuePayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.TaintVulnerabilitiesPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryHelpAndFeedbackPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryPayload;
@@ -88,6 +89,7 @@ public class TelemetryHttpClient {
     var analyzers = TelemetryUtils.toPayload(data.analyzers());
     var notifications = TelemetryUtils.toPayload(attributesProvider.devNotificationsDisabled(), data.notifications());
     var showHotspotPayload = new ShowHotspotPayload(data.showHotspotRequestsCount());
+    var showIssuePayload = new ShowIssuePayload(data.getShowIssueRequestsCount());
     var hotspotPayload = new HotspotPayload(data.openHotspotInBrowserCount(), data.hotspotStatusChangedCount());
     var taintVulnerabilitiesPayload = new TaintVulnerabilitiesPayload(data.taintVulnerabilitiesInvestigatedLocallyCount(),
       data.taintVulnerabilitiesInvestigatedRemotelyCount());
@@ -101,7 +103,7 @@ public class TelemetryHttpClient {
     return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version, ideVersion, platform, architecture,
       attributesProvider.usesConnectedMode(), attributesProvider.useSonarCloud(), systemTime, data.installTime(), os, jre,
       attributesProvider.nodeVersion().orElse(null), analyzers, notifications, showHotspotPayload,
-      taintVulnerabilitiesPayload, telemetryRulesPayload,
+      showIssuePayload, taintVulnerabilitiesPayload, telemetryRulesPayload,
       hotspotPayload, issuePayload, helpAndFeedbackPayload, cleanAsYouCodePayload, attributesProvider.additionalAttributes());
   }
 
