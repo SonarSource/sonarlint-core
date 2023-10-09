@@ -71,6 +71,22 @@ public interface IssueService {
   CompletableFuture<Void> addComment(AddIssueCommentParams params);
 
   /**
+   * Checks if the anticipated transitions are supported
+   * <ul>
+   *   <li>The provided connection should link to a SonarQube 10.2+ instance</li>
+   * <p>
+   * This method will fail if:
+   * <ul>
+   *   <li>the connectionId provided as a parameter is unknown</li>
+   *   <li>there is a communication problem with the server: network outage, server is down, unauthorized</li>
+   * </ul>
+   * In those cases, a failed future will be returned.
+   * </p>
+   */
+  @JsonRequest
+  CompletableFuture<CheckAnticipatedStatusChangeSupportedResponse> checkAnticipatedStatusChangeSupported(CheckAnticipatedStatusChangeSupportedParams params);
+
+  /**
    * Checks if the user can change the issue status. They are allowed in two cases:
    * <ul>
    *   <li>If it is a server-matched issue, users need the 'Administer Issues' permission</li>
