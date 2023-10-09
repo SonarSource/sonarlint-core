@@ -93,7 +93,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreating
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsResponse;
-import org.sonarsource.sonarlint.core.clientapi.client.event.DidReceiveServerEventParams;
+import org.sonarsource.sonarlint.core.clientapi.client.event.DidReceiveServerTaintVulnerabilityEvent;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
@@ -173,7 +173,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   @TempDir
   private static Path sonarUserHome;
 
-  private static Deque<DidReceiveServerEventParams> events = new ConcurrentLinkedDeque<>();
+  private static Deque<DidReceiveServerTaintVulnerabilityEvent> events = new ConcurrentLinkedDeque<>();
 
   @BeforeAll
   static void start() {
@@ -1551,7 +1551,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       }
 
       @Override
-      public void didReceiveServerEvent(DidReceiveServerEventParams params) {
+      public void didReceiveServerEvent(DidReceiveServerTaintVulnerabilityEvent params) {
         events.add(params);
       }
     };

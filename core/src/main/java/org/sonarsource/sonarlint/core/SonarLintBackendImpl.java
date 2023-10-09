@@ -43,13 +43,15 @@ import org.sonarsource.sonarlint.core.spring.SonarLintSpringAppConfig;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+import static java.util.Objects.requireNonNull;
+
 public class SonarLintBackendImpl implements SonarLintBackend {
-  private final SonarLintClient client;
+  private SonarLintClient client;
   private final AtomicBoolean initializeCalled = new AtomicBoolean(false);
   private final AtomicBoolean initialized = new AtomicBoolean(false);
   private final AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
 
-  public SonarLintBackendImpl(SonarLintClient client) {
+  public void setClient(SonarLintClient client) {
     this.client = client;
   }
 
@@ -58,7 +60,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     return CompletableFuture.runAsync(() -> {
       if (initializeCalled.compareAndSet(false, true) && !initialized.get()) {
         applicationContext.register(SonarLintSpringAppConfig.class);
-        applicationContext.registerBean("sonarlintClient", SonarLintClient.class, () -> client);
+        applicationContext.registerBean("sonarlintClient", SonarLintClient.class, () -> requireNonNull(client));
         applicationContext.registerBean("initializeParams", InitializeParams.class, () -> params);
         applicationContext.refresh();
         initialized.set(true);

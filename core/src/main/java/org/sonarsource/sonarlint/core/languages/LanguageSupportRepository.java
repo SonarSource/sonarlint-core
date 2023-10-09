@@ -21,9 +21,12 @@ package org.sonarsource.sonarlint.core.languages;
 
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.Language;
 
@@ -35,9 +38,15 @@ public class LanguageSupportRepository {
   private final EnumSet<Language> enabledLanguagesInConnectedMode;
 
   public LanguageSupportRepository(InitializeParams params) {
-    this.enabledLanguagesInStandaloneMode = toEnumSet(params.getEnabledLanguagesInStandaloneMode(), Language.class);
+    this.enabledLanguagesInStandaloneMode = toEnumSet(
+      adaptLanguage(params.getEnabledLanguagesInStandaloneMode()), Language.class);
     this.enabledLanguagesInConnectedMode = EnumSet.copyOf(this.enabledLanguagesInStandaloneMode);
-    this.enabledLanguagesInConnectedMode.addAll(params.getExtraEnabledLanguagesInConnectedMode());
+    this.enabledLanguagesInConnectedMode.addAll(adaptLanguage(params.getExtraEnabledLanguagesInConnectedMode()));
+  }
+
+  @NotNull
+  private static List<Language> adaptLanguage(Set<org.sonarsource.sonarlint.core.clientapi.common.Language> languagesDto) {
+    return languagesDto.stream().map(e -> Language.forKey(e.getLanguageKey()).orElseThrow()).collect(Collectors.toList());
   }
 
   private static <T extends Enum<T>> EnumSet<T> toEnumSet(Collection<T> collection, Class<T> clazz) {

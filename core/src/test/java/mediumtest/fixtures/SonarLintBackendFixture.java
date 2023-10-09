@@ -65,7 +65,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreating
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsResponse;
-import org.sonarsource.sonarlint.core.clientapi.client.event.DidReceiveServerEventParams;
+import org.sonarsource.sonarlint.core.clientapi.client.event.DidReceiveServerTaintVulnerabilityEvent;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FoundFileDto;
@@ -84,9 +84,9 @@ import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressPa
 import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.clientapi.client.sync.DidSynchronizeConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.clientapi.common.Language;
 import org.sonarsource.sonarlint.core.clientapi.common.TokenDto;
 import org.sonarsource.sonarlint.core.clientapi.common.UsernamePasswordDto;
-import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 
 import static mediumtest.fixtures.storage.StorageFixture.newStorage;
@@ -179,7 +179,8 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintBackendBuilder withSonarCloudConnection(String connectionId, String organizationKey, boolean disableNotifications, Consumer<StorageFixture.StorageBuilder> storageBuilder) {
+    public SonarLintBackendBuilder withSonarCloudConnection(String connectionId, String organizationKey, boolean disableNotifications,
+      Consumer<StorageFixture.StorageBuilder> storageBuilder) {
       if (storageBuilder != null) {
         var storage = newStorage(connectionId);
         storageBuilder.accept(storage);
@@ -256,7 +257,7 @@ public class SonarLintBackendFixture {
 
     public SonarLintBackendBuilder withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin plugin) {
       this.embeddedPluginPaths.add(plugin.getPath());
-      this.connectedModeEmbeddedPluginPathsByKey.put(plugin.getLanguage().getPluginKey(), plugin.getPath());
+      this.connectedModeEmbeddedPluginPathsByKey.put(org.sonarsource.sonarlint.core.commons.Language.valueOf(plugin.getLanguage().name()).getPluginKey(), plugin.getPath());
       return withEnabledLanguageInStandaloneMode(plugin.getLanguage());
     }
 
@@ -332,7 +333,8 @@ public class SonarLintBackendFixture {
       var sonarLintBackend = new SonarLintTestBackend(client);
       client.setBackend(sonarLintBackend);
       var clientInfo = new ClientInfoDto(clientName, "mediumTests", userAgent);
-      var featureFlags = new FeatureFlagsDto(manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, startEmbeddedServer, areSecurityHotspotsEnabled, manageServerSentEvents);
+      var featureFlags = new FeatureFlagsDto(manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, startEmbeddedServer, areSecurityHotspotsEnabled,
+        manageServerSentEvents);
       try {
         sonarLintBackend
           .initialize(new InitializeParams(clientInfo, featureFlags,
@@ -631,7 +633,7 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public void didReceiveServerEvent(DidReceiveServerEventParams params) {
+    public void didReceiveServerEvent(DidReceiveServerTaintVulnerabilityEvent params) {
       this.receivedServerEventsByConnectionId.computeIfAbsent(params.getConnectionId(), k -> new CopyOnWriteArrayList<>()).add(params.getServerEvent());
     }
 

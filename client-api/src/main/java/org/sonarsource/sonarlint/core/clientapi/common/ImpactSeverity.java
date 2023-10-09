@@ -17,20 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons;
+package org.sonarsource.sonarlint.core.clientapi.common;
 
-public enum SoftwareQuality {
-  MAINTAINABILITY("Maintainability"),
-  RELIABILITY("Reliability"),
-  SECURITY("Security");
+public enum ImpactSeverity {
+  LOW(1),
+  MEDIUM(2),
+  HIGH(3);
 
-  private final String label;
+  private final int value;
 
-  SoftwareQuality(String label) {
-    this.label = label;
+  ImpactSeverity(int value) {
+    this.value = value;
   }
 
-  public String getLabel() {
-    return label;
+  public int getValue() {
+    return value;
   }
 }

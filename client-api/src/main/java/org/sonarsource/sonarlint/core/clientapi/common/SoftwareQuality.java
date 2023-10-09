@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Commons
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,27 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.client.event;
+package org.sonarsource.sonarlint.core.clientapi.common;
 
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
-import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
+public enum SoftwareQuality {
+  MAINTAINABILITY(1),
+  RELIABILITY(2),
+  SECURITY(3);
 
-public class DidReceiveServerEventParams {
+  private final int value;
 
-  @NonNull
-  private final String connectionId;
-  private final ServerEvent serverEvent;
-
-  public DidReceiveServerEventParams(String connectionId, ServerEvent serverEvent) {
-    this.connectionId = connectionId;
-    this.serverEvent = serverEvent;
+  SoftwareQuality(int value) {
+    this.value = value;
   }
 
-  public ServerEvent getServerEvent() {
-    return serverEvent;
-  }
-
-  public String getConnectionId() {
-    return connectionId;
+  public int getValue() {
+    return value;
   }
 }

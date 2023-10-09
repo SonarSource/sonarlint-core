@@ -82,7 +82,8 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void mergeTaintIssues(String branchName, List<ServerTaintIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp, Set<Language> enabledLanguages) {
+  public void mergeTaintIssues(String branchName, List<ServerTaintIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp,
+    Set<Language> enabledLanguages) {
     var issuesToMergeByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerTaintIssue::getFilePath));
     // does not handle issue moving file (e.g. file renaming)
     taintIssuesByFileByBranch
@@ -248,20 +249,19 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   @Override
   public Optional<ServerFinding> updateIssueResolutionStatus(String issueKey, boolean isTaintIssue, boolean isResolved) {
     if (isTaintIssue) {
-      return Optional.ofNullable(taintIssuesByKey.computeIfPresent(issueKey, (s, serverIssue) ->  serverIssue.setResolved(isResolved)));
+      return Optional.ofNullable(taintIssuesByKey.computeIfPresent(issueKey, (s, serverIssue) -> serverIssue.setResolved(isResolved)));
     } else {
-      return Optional.ofNullable(issuesByKey.computeIfPresent(issueKey, (s, serverIssue) ->  serverIssue.setResolved(isResolved)));
+      return Optional.ofNullable(issuesByKey.computeIfPresent(issueKey, (s, serverIssue) -> serverIssue.setResolved(isResolved)));
     }
   }
 
   @Override
-  public void updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater) {
-    taintIssuesByFileByBranch.forEach(
-      (branchName, taintIssuesByFile) -> taintIssuesByFile.forEach((file, taintIssues) -> taintIssues.forEach(taintIssue -> {
-        if (taintIssue.getKey().equals(issueKey)) {
-          taintIssueUpdater.accept(taintIssue);
-        }
-      })));
+  public boolean updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater) {
+    if (taintIssuesByKey.containsKey(issueKey)) {
+      taintIssueUpdater.accept(taintIssuesByKey.get(issueKey));
+      return true;
+    }
+    return false;
   }
 
   @Override
@@ -289,8 +289,7 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   @Override
   public void deleteHotspot(String hotspotKey) {
     hotspotsByFileByBranch.forEach(
-      (branchName, hotspotsByFile) ->
-        hotspotsByFile.forEach((file, hotspots) -> hotspots.removeIf(hotspot -> hotspotKey.equals(hotspot.getKey()))));
+      (branchName, hotspotsByFile) -> hotspotsByFile.forEach((file, hotspots) -> hotspots.removeIf(hotspot -> hotspotKey.equals(hotspot.getKey()))));
   }
 
   @Override

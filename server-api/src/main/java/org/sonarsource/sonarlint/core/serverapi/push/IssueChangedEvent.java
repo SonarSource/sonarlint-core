@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.push;
 
+import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -33,12 +34,23 @@ public class IssueChangedEvent implements ServerEvent {
   private final RuleType userType;
   private final Boolean resolved;
 
+  // This is a hack since we can only tell if the issue is a taint after updating the local storage
+  private List<String> impactedTaintIssueKeys = new ArrayList<>();
+
   public IssueChangedEvent(String projectKey, List<String> impactedIssueKeys, @Nullable IssueSeverity userSeverity, @Nullable RuleType userType, @Nullable Boolean resolved) {
     this.projectKey = projectKey;
     this.impactedIssueKeys = impactedIssueKeys;
     this.userSeverity = userSeverity;
     this.userType = userType;
     this.resolved = resolved;
+  }
+
+  public void addImpactedTaintIssueKey(String taintKey) {
+    impactedTaintIssueKeys.add(taintKey);
+  }
+
+  public List<String> getImpactedTaintIssueKeys() {
+    return impactedTaintIssueKeys;
   }
 
   public String getProjectKey() {

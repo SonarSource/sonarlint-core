@@ -30,7 +30,8 @@ import javax.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.clientapi.client.event.DidReceiveServerEventParams;
+import org.sonarsource.sonarlint.core.clientapi.client.event.DidReceiveServerHotspotEvent;
+import org.sonarsource.sonarlint.core.clientapi.client.event.DidReceiveServerTaintVulnerabilityEvent;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
@@ -46,6 +47,13 @@ import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
+import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotChangedEvent;
+import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotClosedEvent;
+import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotRaisedEvent;
+import org.sonarsource.sonarlint.core.serverapi.push.ServerHotspotEvent;
+import org.sonarsource.sonarlint.core.serverapi.push.TaintVulnerabilityClosedEvent;
+import org.sonarsource.sonarlint.core.serverapi.push.TaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 
 import static java.util.Objects.requireNonNull;
@@ -179,7 +187,39 @@ public class ServerEventsService {
   }
 
   private void notifyClient(String connectionId, ServerEvent serverEvent) {
-    client.didReceiveServerEvent(new DidReceiveServerEventParams(connectionId, serverEvent));
+    if (serverEvent instanceof TaintVulnerabilityRaisedEvent ||
+      serverEvent instanceof TaintVulnerabilityClosedEvent ||
+      ((serverEvent instanceof IssueChangedEvent) && !((IssueChangedEvent) serverEvent).getImpactedTaintIssueKeys().isEmpty())) {
+      var projectKey = extractProjectKey(serverEvent);
+      client.didReceiveServerTaintVulnerabilityEvent(new DidReceiveServerTaintVulnerabilityEvent(connectionId, projectKey));
+    } else if (serverEvent instanceof SecurityHotspotChangedEvent ||
+      serverEvent instanceof SecurityHotspotClosedEvent ||
+      serverEvent instanceof SecurityHotspotRaisedEvent) {
+        var projectKey = extractProjectKey(serverEvent);
+        client.didReceiveServerHotspotEvent(new DidReceiveServerHotspotEvent(connectionId, projectKey, ((ServerHotspotEvent) serverEvent).getFilePath()));
+      }
+  }
+
+  private String extractProjectKey(ServerEvent serverEvent) {
+    if (serverEvent instanceof TaintVulnerabilityRaisedEvent) {
+      return ((TaintVulnerabilityRaisedEvent) serverEvent).getProjectKey();
+    }
+    if (serverEvent instanceof TaintVulnerabilityClosedEvent) {
+      return ((TaintVulnerabilityClosedEvent) serverEvent).getProjectKey();
+    }
+    if (serverEvent instanceof IssueChangedEvent) {
+      return ((IssueChangedEvent) serverEvent).getProjectKey();
+    }
+    if (serverEvent instanceof SecurityHotspotClosedEvent) {
+      return ((SecurityHotspotClosedEvent) serverEvent).getProjectKey();
+    }
+    if (serverEvent instanceof SecurityHotspotRaisedEvent) {
+      return ((SecurityHotspotRaisedEvent) serverEvent).getProjectKey();
+    }
+    if (serverEvent instanceof SecurityHotspotChangedEvent) {
+      return ((SecurityHotspotChangedEvent) serverEvent).getProjectKey();
+    }
+    throw new UnsupportedOperationException("Unable to extract projectKey from event of type: " + serverEvent.getClass().getName());
   }
 
   private boolean supportsServerSentEvents(String connectionId) {
