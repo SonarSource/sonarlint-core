@@ -27,6 +27,7 @@ import org.apache.hc.core5.http.HttpStatus;
 import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.http.io.HttpFilterChain;
 import org.apache.hc.core5.http.io.HttpFilterHandler;
+import org.apache.hc.core5.http.message.BasicClassicHttpResponse;
 import org.apache.hc.core5.http.protocol.HttpContext;
 
 class CorsFilter implements HttpFilterHandler {
@@ -35,25 +36,30 @@ class CorsFilter implements HttpFilterHandler {
   public void handle(ClassicHttpRequest request, HttpFilterChain.ResponseTrigger responseTrigger, HttpContext context, HttpFilterChain chain)
     throws HttpException, IOException {
     var origin = request.getHeader("Origin");
-    var method = request.getMethod();
-    chain.proceed(request, new HttpFilterChain.ResponseTrigger() {
-      @Override
-      public void sendInformation(ClassicHttpResponse classicHttpResponse) throws HttpException, IOException {
-        responseTrigger.sendInformation(classicHttpResponse);
-      }
 
-      @Override
-      public void submitResponse(ClassicHttpResponse classicHttpResponse) throws HttpException, IOException {
-        if (origin != null) {
-          classicHttpResponse.addHeader("Access-Control-Allow-Origin", origin.getValue());
-        }
-        if (Method.OPTIONS.name().equalsIgnoreCase(method)) {
-          classicHttpResponse.addHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-          classicHttpResponse.addHeader("Access-Control-Allow-Private-Network", true);
-          classicHttpResponse.setCode(HttpStatus.SC_OK);
-        }
-        responseTrigger.submitResponse(classicHttpResponse);
+    if (Method.OPTIONS.name().equalsIgnoreCase(request.getMethod())) {
+      var response = new BasicClassicHttpResponse(HttpStatus.SC_OK);
+      if (origin != null) {
+        response.addHeader("Access-Control-Allow-Origin", origin.getValue());
       }
-    }, context);
+      response.addHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+      response.addHeader("Access-Control-Allow-Private-Network", true);
+      responseTrigger.submitResponse(response);
+    } else {
+      chain.proceed(request, new HttpFilterChain.ResponseTrigger() {
+        @Override
+        public void sendInformation(ClassicHttpResponse classicHttpResponse) throws HttpException, IOException {
+          responseTrigger.sendInformation(classicHttpResponse);
+        }
+
+        @Override
+        public void submitResponse(ClassicHttpResponse classicHttpResponse) throws HttpException, IOException {
+          if (origin != null) {
+            classicHttpResponse.addHeader("Access-Control-Allow-Origin", origin.getValue());
+          }
+          responseTrigger.submitResponse(classicHttpResponse);
+        }
+      }, context);
+    }
   }
 }
