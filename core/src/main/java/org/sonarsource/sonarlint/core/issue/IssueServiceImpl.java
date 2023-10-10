@@ -34,6 +34,8 @@ import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.AddIssueCommentParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ChangeIssueStatusParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckAnticipatedStatusChangeSupportedParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckAnticipatedStatusChangeSupportedResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangePermittedParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueService;
@@ -132,6 +134,38 @@ public class IssueServiceImpl implements IssueService {
       .collect(Collectors.toList());
   }
 
+  /**
+   *  Check if the anticipated transitions are supported on the server side (requires SonarQube 10.2+)
+   *
+   *  @param api used for checking if server is a SonarQube instance
+   *  @param connectionId required to get the version information from the server
+   *  @return whether server is SonarQube instance and matches version requirement
+   */
+  private boolean checkAnticipatedStatusChangeSupported(ServerApi api, String connectionId) {
+    return !api.isSonarCloud() && storageService.connection(connectionId).serverInfo().read()
+            .map(version -> version.getVersion().satisfiesMinRequirement(SQ_ANTICIPATED_TRANSITIONS_MIN_VERSION))
+            .orElse(false);
+  }
+
+  @Override
+  public CompletableFuture<CheckAnticipatedStatusChangeSupportedResponse> checkAnticipatedStatusChangeSupported(CheckAnticipatedStatusChangeSupportedParams params) {
+    var configScopeId = params.getConfigScopeId();
+    var bindingOpt = configurationRepository.getEffectiveBinding(configScopeId);
+    if (bindingOpt.isEmpty()) {
+      return CompletableFuture.failedFuture(new IllegalArgumentException("Binding for configuration scope ID '" + configScopeId + "' does not exist"));
+    }
+    var binding = bindingOpt.get();
+    var connectionId = binding.getConnectionId();
+    var serverApiOpt = serverApiProvider.getServerApi(connectionId);
+    if (serverApiOpt.isEmpty()) {
+      // This (not very testable) corner case can only happen on one occasion:
+      //   When the binding was removed between `ConfigurationRepository.getEffectiveBinding(configScopeId)` and now!
+      return CompletableFuture.failedFuture(new IllegalArgumentException("Connection with ID '" + connectionId + "' does not exist"));
+    }
+    var serverApi = serverApiOpt.get();
+    return CompletableFuture.completedFuture(new CheckAnticipatedStatusChangeSupportedResponse(checkAnticipatedStatusChangeSupported(serverApi, connectionId)));
+  }
+
   @Override
   public CompletableFuture<CheckStatusChangePermittedResponse> checkStatusChangePermitted(CheckStatusChangePermittedParams params) {
     var connectionId = params.getConnectionId();
@@ -144,8 +178,7 @@ public class IssueServiceImpl implements IssueService {
     return asUUID(issueKey)
       .flatMap(localOnlyIssueRepository::findByKey)
       .map(r -> {
-        var anticipateTransitionsSupported = !serverApi.isSonarCloud() && storageService.connection(connectionId).serverInfo().read()
-          .map(version -> version.getVersion().satisfiesMinRequirement(SQ_ANTICIPATED_TRANSITIONS_MIN_VERSION)).orElse(false);
+        var anticipateTransitionsSupported = checkAnticipatedStatusChangeSupported(serverApi, connectionId);
         // no way to easily check if 'Administer Issue' permission is granted, might fail later
         return CompletableFuture.completedFuture(toResponse(anticipateTransitionsSupported, UNSUPPORTED_SQ_VERSION_REASON));
       })
