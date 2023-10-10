@@ -71,13 +71,14 @@ public interface IssueService {
   CompletableFuture<Void> addComment(AddIssueCommentParams params);
 
   /**
-   * Checks if the anticipated transitions are supported
+   * Checks if the anticipated transitions are supported. They are allowed in one case:
    * <ul>
-   *   <li>The provided connection should link to a SonarQube 10.2+ instance</li>
+   *   <li>If the configScopeId is bound, its connection should link to a SonarQube 10.2+ instance</li>
    * <p>
    * This method will fail if:
    * <ul>
-   *   <li>the connectionId provided as a parameter is unknown</li>
+   *   <li>the configScopeId provided as a parameter has no binding</li>
+   *   <li>the configScopeId provided loses its binding in the middle of the function call</li>
    *   <li>there is a communication problem with the server: network outage, server is down, unauthorized</li>
    * </ul>
    * In those cases, a failed future will be returned.

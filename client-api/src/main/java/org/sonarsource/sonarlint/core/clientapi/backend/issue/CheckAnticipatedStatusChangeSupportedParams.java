@@ -20,13 +20,13 @@
 package org.sonarsource.sonarlint.core.clientapi.backend.issue;
 
 public class CheckAnticipatedStatusChangeSupportedParams {
-  private final String connectionId;
+  private final String configScopeId;
 
-  public CheckAnticipatedStatusChangeSupportedParams(String connectionId) {
-    this.connectionId = connectionId;
+  public CheckAnticipatedStatusChangeSupportedParams(String configScopeId) {
+    this.configScopeId = configScopeId;
   }
 
-  public String getConnectionId() {
-    return connectionId;
+  public String getConfigScopeId() {
+    return configScopeId;
   }
 }

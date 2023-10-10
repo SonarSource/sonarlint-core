@@ -61,12 +61,12 @@ class CheckAnticipatedStatusChangeSupportedMediumTests {
   void it_should_fail_when_the_connection_is_unknown() {
     backend = newBackend().build();
 
-    assertThat(checkAnticipatedStatusChangeSupported("connectionId"))
+    assertThat(checkAnticipatedStatusChangeSupported("configScopeId"))
       .failsWithin(Duration.ofSeconds(2))
       .withThrowableOfType(ExecutionException.class)
       .havingCause()
       .isInstanceOf(IllegalArgumentException.class)
-      .withMessage("Connection with ID 'connectionId' does not exist");
+      .withMessage("Binding for configuration scope ID 'configScopeId' does not exist");
   }
 
   @Test
@@ -77,7 +77,7 @@ class CheckAnticipatedStatusChangeSupportedMediumTests {
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
-    assertThat(checkAnticipatedStatusChangeSupported("connectionId"))
+    assertThat(checkAnticipatedStatusChangeSupported("configScopeId"))
       .succeedsWithin(Duration.ofSeconds(2))
       .extracting(CheckAnticipatedStatusChangeSupportedResponse::isSupported)
       .isEqualTo(false);
@@ -91,7 +91,7 @@ class CheckAnticipatedStatusChangeSupportedMediumTests {
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
-    assertThat(checkAnticipatedStatusChangeSupported("connectionId"))
+    assertThat(checkAnticipatedStatusChangeSupported("configScopeId"))
       .succeedsWithin(Duration.ofSeconds(2))
       .extracting(CheckAnticipatedStatusChangeSupportedResponse::isSupported)
       .isEqualTo(false);
@@ -105,13 +105,13 @@ class CheckAnticipatedStatusChangeSupportedMediumTests {
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
-    assertThat(checkAnticipatedStatusChangeSupported("connectionId"))
+    assertThat(checkAnticipatedStatusChangeSupported("configScopeId"))
       .succeedsWithin(Duration.ofSeconds(2))
       .extracting(CheckAnticipatedStatusChangeSupportedResponse::isSupported)
       .isEqualTo(true);
   }
 
-  private CompletableFuture<CheckAnticipatedStatusChangeSupportedResponse> checkAnticipatedStatusChangeSupported(String connectionId) {
-    return backend.getIssueService().checkAnticipatedStatusChangeSupported(new CheckAnticipatedStatusChangeSupportedParams(connectionId));
+  private CompletableFuture<CheckAnticipatedStatusChangeSupportedResponse> checkAnticipatedStatusChangeSupported(String configScopeId) {
+    return backend.getIssueService().checkAnticipatedStatusChangeSupported(new CheckAnticipatedStatusChangeSupportedParams(configScopeId));
   }
 }

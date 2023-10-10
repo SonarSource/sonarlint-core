@@ -149,9 +149,17 @@ public class IssueServiceImpl implements IssueService {
 
   @Override
   public CompletableFuture<CheckAnticipatedStatusChangeSupportedResponse> checkAnticipatedStatusChangeSupported(CheckAnticipatedStatusChangeSupportedParams params) {
-    var connectionId = params.getConnectionId();
+    var configScopeId = params.getConfigScopeId();
+    var bindingOpt = configurationRepository.getEffectiveBinding(configScopeId);
+    if (bindingOpt.isEmpty()) {
+      return CompletableFuture.failedFuture(new IllegalArgumentException("Binding for configuration scope ID '" + configScopeId + "' does not exist"));
+    }
+    var binding = bindingOpt.get();
+    var connectionId = binding.getConnectionId();
     var serverApiOpt = serverApiProvider.getServerApi(connectionId);
     if (serverApiOpt.isEmpty()) {
+      // This (not very testable) corner case can only happen on one occasion:
+      //   When the binding was removed between `ConfigurationRepository.getEffectiveBinding(configScopeId)` and now!
       return CompletableFuture.failedFuture(new IllegalArgumentException("Connection with ID '" + connectionId + "' does not exist"));
     }
     var serverApi = serverApiOpt.get();
