@@ -78,7 +78,7 @@ class OpenHotspotInIdeMediumTests {
       .withEmbeddedServer()
       .build();
 
-    var statusCode = requestOpenHotspotWithParams("project=projectKey&hotspot=key");
+    var statusCode = requestGetOpenHotspotWithParams("project=projectKey&hotspot=key");
 
     assertThat(statusCode).isEqualTo(400);
   }
@@ -89,7 +89,7 @@ class OpenHotspotInIdeMediumTests {
       .withEmbeddedServer()
       .build();
 
-    var statusCode = requestOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&hotspot=key");
+    var statusCode = requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&hotspot=key");
 
     assertThat(statusCode).isEqualTo(400);
   }
@@ -100,7 +100,7 @@ class OpenHotspotInIdeMediumTests {
       .withEmbeddedServer()
       .build();
 
-    var statusCode = requestOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey");
+    var statusCode = requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey");
 
     assertThat(statusCode).isEqualTo(400);
   }
@@ -114,7 +114,7 @@ class OpenHotspotInIdeMediumTests {
       .withEmbeddedServer()
       .build(fakeClient);
 
-    var statusCode = requestOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
+    var statusCode = requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
 
     assertThat(statusCode).isEqualTo(200);
     assertThat(fakeClient.getMessagesToShow()).isEmpty();
@@ -133,7 +133,7 @@ class OpenHotspotInIdeMediumTests {
       .withEmbeddedServer()
       .build();
 
-    requestOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
+    requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
 
     await().atMost(2, TimeUnit.SECONDS)
       .untilAsserted(() ->
@@ -150,7 +150,7 @@ class OpenHotspotInIdeMediumTests {
       .withEmbeddedServer()
       .build(fakeClient);
 
-    var statusCode = requestOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
+    var statusCode = requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
 
     assertThat(statusCode).isEqualTo(200);
     assertThat(fakeClient.getMessagesToShow()).isEmpty();
@@ -169,7 +169,7 @@ class OpenHotspotInIdeMediumTests {
       .withEmbeddedServer()
       .build(fakeClient);
 
-    var statusCode = requestOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
+    var statusCode = requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
 
     assertThat(statusCode).isEqualTo(200);
     assertThat(fakeClient.getMessagesToShow()).isEmpty();
@@ -188,7 +188,7 @@ class OpenHotspotInIdeMediumTests {
       .withEmbeddedServer()
       .build(fakeClient);
 
-    var statusCode = requestOpenHotspotWithParams("server=" + urlEncode(serverWithoutHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
+    var statusCode = requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithoutHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
 
     assertThat(statusCode).isEqualTo(200);
     await().atMost(2, TimeUnit.SECONDS).until(() -> !fakeClient.getMessagesToShow().isEmpty());
@@ -198,9 +198,31 @@ class OpenHotspotInIdeMediumTests {
     assertThat(fakeClient.getHotspotToShowByConfigScopeId()).isEmpty();
   }
 
-  private int requestOpenHotspotWithParams(String query) {
+  @Test
+  void it_should_not_accept_post_method() {
+    var fakeClient = newFakeClient().build();
+    backend = newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, serverWithoutHotspot)
+      .withBoundConfigScope("scopeId", CONNECTION_ID, "projectKey")
+      .withEmbeddedServer()
+      .build(fakeClient);
+
+    var statusCode = requestPostOpenHotspotWithParams("server=" + urlEncode(serverWithoutHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
+
+    assertThat(statusCode).isEqualTo(400);
+  }
+
+  private int requestGetOpenHotspotWithParams(String query) {
     var embeddedServerPort = backend.getEmbeddedServerPort();
     var response = backend.getHttpClient(CONNECTION_ID).get("http://localhost:" + embeddedServerPort + "/sonarlint/api/hotspots/show?" + query);
+    var statusCode = response.code();
+    response.close();
+    return statusCode;
+  }
+
+  private int requestPostOpenHotspotWithParams(String query) {
+    var embeddedServerPort = backend.getEmbeddedServerPort();
+    var response = backend.getHttpClient(CONNECTION_ID).post("http://localhost:" + embeddedServerPort + "/sonarlint/api/hotspots/show?" + query, "application/json", "");
     var statusCode = response.code();
     response.close();
     return statusCode;

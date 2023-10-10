@@ -31,6 +31,8 @@ import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.HttpException;
+import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.http.io.HttpRequestHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
@@ -56,6 +58,11 @@ public class StatusRequestHandler implements HttpRequestHandler {
 
   @Override
   public void handle(ClassicHttpRequest request, ClassicHttpResponse response, HttpContext context) throws HttpException, IOException {
+    if (!Method.GET.isSame(request.getMethod())) {
+      response.setCode(HttpStatus.SC_BAD_REQUEST);
+      return;
+    }
+
     boolean trustedServer = Optional.ofNullable(request.getHeader("Origin"))
       .map(Header::getValue)
       .map(this::isTrustedServer)

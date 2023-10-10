@@ -111,13 +111,19 @@ class EmbeddedServerMediumTests {
     var fakeClient = newFakeClient().withClientDescription("WorkspaceTitle").build();
     backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").build(fakeClient);
 
-    var request = HttpRequest.newBuilder()
+    var requestToken = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
       .header("Origin", "https://sonar.my")
       .GET().build();
-    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    var requestStatus = HttpRequest.newBuilder()
+      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/status"))
+      .header("Origin", "https://sonar.my")
+      .DELETE().build();
+    var responseToken = java.net.http.HttpClient.newHttpClient().send(requestToken, HttpResponse.BodyHandlers.ofString());
+    var responseStatus = java.net.http.HttpClient.newHttpClient().send(requestStatus, HttpResponse.BodyHandlers.ofString());
 
-    assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST_400);
+    assertThat(responseToken.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST_400);
+    assertThat(responseStatus.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST_400);
   }
 
   private SonarLintBackendImpl backend;
