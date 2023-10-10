@@ -38,7 +38,7 @@ class CorsFilter implements HttpFilterHandler {
     var origin = request.getHeader("Origin");
 
     if (Method.OPTIONS.name().equalsIgnoreCase(request.getMethod())) {
-      var response = new BasicClassicHttpResponse(HttpStatus.SC_NO_CONTENT);
+      var response = new BasicClassicHttpResponse(HttpStatus.SC_OK);
       if (origin != null) {
         response.addHeader("Access-Control-Allow-Origin", origin.getValue());
       }

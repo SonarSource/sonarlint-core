@@ -103,7 +103,7 @@ class EmbeddedServerMediumTests {
     assertThat(response.headers().map())
       .extracting("access-control-allow-methods", "access-control-allow-origin", "access-control-allow-private-network")
       .containsExactly(List.of("GET, POST, OPTIONS"), List.of("http://sonar.my"), List.of("true"));
-    assertThat(response.statusCode()).isEqualTo(HttpStatus.NO_CONTENT_204);
+    assertThat(response.statusCode()).isEqualTo(HttpStatus.OK_200);
   }
 
   @Test
