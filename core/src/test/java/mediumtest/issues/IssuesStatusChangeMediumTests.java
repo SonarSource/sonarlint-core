@@ -19,7 +19,7 @@
  */
 package mediumtest.issues;
 
-import java.nio.charset.StandardCharsets;
+import com.github.tomakehurst.wiremock.client.WireMock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -33,9 +33,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.AddIssueCommentParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ChangeIssueStatusParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.ResolutionStatus;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenAllIssuesForFileParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenIssueParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.ResolutionStatus;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedFindingDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LocalOnlyIssueDto;
@@ -49,6 +49,9 @@ import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.issue.AddIssueCommentException;
 import org.sonarsource.sonarlint.core.issue.IssueStatusChangeException;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.ServerFixture.ServerStatus.DOWN;
@@ -90,10 +93,10 @@ class IssuesStatusChangeMediumTests {
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     waitAtMost(2, SECONDS).untilAsserted(() -> {
-      var lastRequest = server.lastRequest();
-      assertThat(lastRequest.getPath()).isEqualTo("/api/issues/do_transition");
-      assertThat(lastRequest.getHeader("Content-Type")).isEqualTo("application/x-www-form-urlencoded");
-      assertThat(lastRequest.getBody().readString(StandardCharsets.UTF_8)).isEqualTo("issue=myIssueKey&transition=wontfix");
+      server.getMockServer()
+        .verify(WireMock.postRequestedFor(urlEqualTo("/api/issues/do_transition"))
+          .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
+          .withRequestBody(equalTo("issue=myIssueKey&transition=wontfix")));
     });
   }
 
@@ -200,11 +203,10 @@ class IssuesStatusChangeMediumTests {
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     waitAtMost(2, SECONDS).untilAsserted(() -> {
-      var lastRequest = server.lastRequest();
-      assertThat(lastRequest.getPath()).isEqualTo("/api/issues/anticipated_transitions?projectKey=projectKey");
-      assertThat(lastRequest.getHeader("Content-Type")).isEqualTo("application/json; charset=utf-8");
-      assertThat(lastRequest.getBody().readString(StandardCharsets.UTF_8)).isEqualTo(
-        "[{\"filePath\":\"file/path\",\"line\":1,\"hash\":\"linehash\",\"ruleKey\":\"ruleKey\",\"issueMessage\":\"message\",\"transition\":\"wontfix\"}]");
+      server.getMockServer()
+        .verify(WireMock.postRequestedFor(urlEqualTo("/api/issues/anticipated_transitions?projectKey=projectKey"))
+          .withHeader("Content-Type", equalTo("application/json; charset=UTF-8"))
+          .withRequestBody(equalToJson("[{\"filePath\":\"file/path\",\"line\":1,\"hash\":\"linehash\",\"ruleKey\":\"ruleKey\",\"issueMessage\":\"message\",\"transition\":\"wontfix\"}]")));
     });
   }
 
@@ -264,10 +266,10 @@ class IssuesStatusChangeMediumTests {
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     waitAtMost(2, SECONDS).untilAsserted(() -> {
-      var lastRequest = server.lastRequest();
-      assertThat(lastRequest.getPath()).isEqualTo("/api/issues/add_comment");
-      assertThat(lastRequest.getHeader("Content-Type")).isEqualTo("application/x-www-form-urlencoded");
-      assertThat(lastRequest.getBody().readString(StandardCharsets.UTF_8)).isEqualTo("issue=myIssueKey&text=That%27s+serious+issue");
+      server.getMockServer()
+        .verify(WireMock.postRequestedFor(urlEqualTo("/api/issues/add_comment"))
+          .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
+          .withRequestBody(equalTo("issue=myIssueKey&text=That%27s+serious+issue")));
     });
   }
 
@@ -346,8 +348,7 @@ class IssuesStatusChangeMediumTests {
             new LineWithHash(1, "linehash"),
             "ruleKey",
             "message",
-            new LocalOnlyIssueResolution(org.sonarsource.sonarlint.core.commons.IssueStatus.WONT_FIX, Instant.now().truncatedTo(ChronoUnit.MILLIS), "comment")
-          ))
+            new LocalOnlyIssueResolution(org.sonarsource.sonarlint.core.commons.IssueStatus.WONT_FIX, Instant.now().truncatedTo(ChronoUnit.MILLIS), "comment")))
           .withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId1))
           .withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId2)))
       .build();
@@ -359,7 +360,6 @@ class IssuesStatusChangeMediumTests {
     assertThat(issuesForOtherFile).extracting(LocalOnlyIssue::getId).containsOnly(otherFileIssueId);
     assertThat(allIssues).extracting(LocalOnlyIssue::getId).containsOnly(issueId1, issueId2, otherFileIssueId);
   }
-
 
   @Test
   void it_should_reopen_all_issues_for_file() throws ExecutionException, InterruptedException {
@@ -380,8 +380,7 @@ class IssuesStatusChangeMediumTests {
             new LineWithHash(1, "linehash"),
             "ruleKey",
             "message",
-            new LocalOnlyIssueResolution(org.sonarsource.sonarlint.core.commons.IssueStatus.WONT_FIX, Instant.now().truncatedTo(ChronoUnit.MILLIS), "comment")
-          )))
+            new LocalOnlyIssueResolution(org.sonarsource.sonarlint.core.commons.IssueStatus.WONT_FIX, Instant.now().truncatedTo(ChronoUnit.MILLIS), "comment"))))
       .build();
     var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll("configScopeId");
     assertThat(storedIssues).extracting(LocalOnlyIssue::getId).containsOnly(issueId1, issueId2, otherFileIssueId);
@@ -435,7 +434,8 @@ class IssuesStatusChangeMediumTests {
 
   @Test
   void it_should_return_true_on_reopening_server_issue() throws ExecutionException, InterruptedException {
-    var serverIssue = aServerIssue("myIssueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG).resolved();
+    var serverIssue = aServerIssue("myIssueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG)
+      .resolved();
     server = newSonarQubeServer().start();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage
