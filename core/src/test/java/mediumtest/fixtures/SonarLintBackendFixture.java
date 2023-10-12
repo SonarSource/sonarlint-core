@@ -35,7 +35,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import javax.annotation.CheckForNull;
 import mediumtest.fixtures.storage.ConfigurationScopeStorageFixture;
@@ -65,7 +64,6 @@ import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreating
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsResponse;
-import org.sonarsource.sonarlint.core.clientapi.client.event.DidReceiveServerTaintVulnerabilityChangedOrClosedEvent;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FoundFileDto;
@@ -87,7 +85,6 @@ import org.sonarsource.sonarlint.core.clientapi.client.sync.DidSynchronizeConfig
 import org.sonarsource.sonarlint.core.clientapi.common.Language;
 import org.sonarsource.sonarlint.core.clientapi.common.TokenDto;
 import org.sonarsource.sonarlint.core.clientapi.common.UsernamePasswordDto;
-import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 
 import static mediumtest.fixtures.storage.StorageFixture.newStorage;
 
@@ -447,7 +444,6 @@ public class SonarLintBackendFixture {
     private final ProxyDto proxy;
     private final GetProxyPasswordAuthenticationResponse proxyAuth;
     private final Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId;
-    private final Map<String, List<ServerEvent>> receivedServerEventsByConnectionId = new ConcurrentHashMap<>();
     private SonarLintBackendImpl backend;
 
     public FakeSonarLintClient(List<FoundFileDto> foundFiles, String clientDescription,
@@ -630,15 +626,6 @@ public class SonarLintBackendFixture {
 
     public Map<String, ShowIssueParams> getIssueParamsToShowByIssueKey() {
       return issueParamsToShowByIssueKey;
-    }
-
-    @Override
-    public void didReceiveServerEvent(DidReceiveServerTaintVulnerabilityChangedOrClosedEvent params) {
-      this.receivedServerEventsByConnectionId.computeIfAbsent(params.getConnectionId(), k -> new CopyOnWriteArrayList<>()).add(params.getServerEvent());
-    }
-
-    public Map<String, List<ServerEvent>> getReceivedServerEventsByConnectionId() {
-      return receivedServerEventsByConnectionId;
     }
 
     private static <T> CompletableFuture<T> canceledFuture() {

@@ -42,7 +42,8 @@ public class SonarLintTestBackend extends SonarLintBackendImpl {
   private Path storageRoot;
 
   public SonarLintTestBackend(SonarLintClient client) {
-    super(client);
+    super();
+    setClient(client);
   }
 
   @Override

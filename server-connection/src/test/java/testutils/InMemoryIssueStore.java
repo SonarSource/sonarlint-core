@@ -209,9 +209,17 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
 
   @Override
   public void replaceAllTaintOfFile(String branchName, String filePath, List<ServerTaintIssue> issues) {
+    var branchTaints = taintIssuesByFileByBranch.get(branchName);
+    if (branchTaints != null) {
+      var fileTaints = branchTaints.get(filePath);
+      if (fileTaints != null) {
+        fileTaints.forEach(taint -> taintIssuesByKey.remove(taint.getKey()));
+      }
+    }
     taintIssuesByFileByBranch
       .computeIfAbsent(branchName, __ -> new HashMap<>())
       .put(filePath, issues);
+    taintIssuesByKey.putAll(issues.stream().collect(Collectors.toMap(ServerTaintIssue::getKey, Function.identity())));
   }
 
   @Override

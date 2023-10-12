@@ -37,9 +37,6 @@ import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleDescriptionTab
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleNonContextualSectionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.UpdateStandaloneRulesConfigurationParams;
-import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import testutils.MockWebServerExtensionWithProtobuf;
@@ -48,6 +45,16 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.apache.commons.lang3.StringUtils.abbreviate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.sonarsource.sonarlint.core.clientapi.common.IssueSeverity.BLOCKER;
+import static org.sonarsource.sonarlint.core.clientapi.common.IssueSeverity.INFO;
+import static org.sonarsource.sonarlint.core.clientapi.common.IssueSeverity.MAJOR;
+import static org.sonarsource.sonarlint.core.clientapi.common.IssueSeverity.MINOR;
+import static org.sonarsource.sonarlint.core.clientapi.common.Language.JAVA;
+import static org.sonarsource.sonarlint.core.clientapi.common.Language.JS;
+import static org.sonarsource.sonarlint.core.clientapi.common.Language.PYTHON;
+import static org.sonarsource.sonarlint.core.clientapi.common.RuleType.BUG;
+import static org.sonarsource.sonarlint.core.clientapi.common.RuleType.CODE_SMELL;
+import static org.sonarsource.sonarlint.core.clientapi.common.RuleType.VULNERABILITY;
 
 class EffectiveRulesMediumTests {
   private SonarLintBackend backend;
@@ -73,7 +80,7 @@ class EffectiveRulesMediumTests {
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
         EffectiveRuleDetailsDto::getSeverity, r -> r.getDescription().getLeft().getHtmlContent())
-      .containsExactly("python:S139", "Comments should not be located at the end of lines of code", RuleType.CODE_SMELL, Language.PYTHON, IssueSeverity.MINOR,
+      .containsExactly("python:S139", "Comments should not be located at the end of lines of code", CODE_SMELL, PYTHON, MINOR,
         PYTHON_S139_DESCRIPTION);
     assertThat(details.getParams())
       .extracting(EffectiveRuleParamDto::getName, EffectiveRuleParamDto::getDescription, EffectiveRuleParamDto::getValue, EffectiveRuleParamDto::getDefaultValue)
@@ -133,7 +140,7 @@ class EffectiveRulesMediumTests {
     backend = newBackend()
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withSonarQubeConnection("connectionId", storage -> storage.withJavaPlugin())
-      .withEnabledLanguageInStandaloneMode(Language.JAVA)
+      .withEnabledLanguageInStandaloneMode(JAVA)
       .build();
 
     var details = getEffectiveRuleDetails("scopeId", "java:S106");
@@ -141,7 +148,7 @@ class EffectiveRulesMediumTests {
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
         EffectiveRuleDetailsDto::getSeverity, r -> r.getDescription().getLeft().getHtmlContent())
-      .containsExactly("java:S106", "Standard outputs should not be used directly to log anything", RuleType.CODE_SMELL, Language.JAVA, IssueSeverity.MAJOR,
+      .containsExactly("java:S106", "Standard outputs should not be used directly to log anything", CODE_SMELL, JAVA, MAJOR,
         JAVA_S106_DESCRIPTION);
     assertThat(details.getParams()).isEmpty();
   }
@@ -150,7 +157,7 @@ class EffectiveRulesMediumTests {
   void it_should_merge_rule_from_storage_and_server_when_project_is_bound() {
     backend = newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+        projectStorage -> projectStorage.withRuleSet(PYTHON.getLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
@@ -164,7 +171,7 @@ class EffectiveRulesMediumTests {
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
         EffectiveRuleDetailsDto::getSeverity, r -> r.getDescription().getLeft().getHtmlContent())
-      .containsExactly("python:S139", "Comments should not be located at the end of lines of code", RuleType.CODE_SMELL, Language.PYTHON, IssueSeverity.INFO,
+      .containsExactly("python:S139", "Comments should not be located at the end of lines of code", CODE_SMELL, PYTHON, INFO,
         PYTHON_S139_DESCRIPTION + "extendedDesc");
     assertThat(details.getParams()).isEmpty();
   }
@@ -173,7 +180,7 @@ class EffectiveRulesMediumTests {
   void it_should_merge_rule_from_storage_and_server_when_parent_project_is_bound() {
     backend = newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+        projectStorage -> projectStorage.withRuleSet(PYTHON.getLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withChildConfigScope("childScopeId", "scopeId")
@@ -188,7 +195,7 @@ class EffectiveRulesMediumTests {
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
         EffectiveRuleDetailsDto::getSeverity, r -> r.getDescription().getLeft().getHtmlContent())
-      .containsExactly("python:S139", "Comments should not be located at the end of lines of code", RuleType.CODE_SMELL, Language.PYTHON, IssueSeverity.INFO,
+      .containsExactly("python:S139", "Comments should not be located at the end of lines of code", CODE_SMELL, PYTHON, INFO,
         PYTHON_S139_DESCRIPTION + "extendedDesc");
     assertThat(details.getParams()).isEmpty();
   }
@@ -199,7 +206,7 @@ class EffectiveRulesMediumTests {
     var desc = "desc";
     backend = newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.JS.getLanguageKey(),
+        projectStorage -> projectStorage.withRuleSet(JS.getLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("jssecurity:S5696", "BLOCKER"))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .build();
@@ -220,7 +227,7 @@ class EffectiveRulesMediumTests {
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
         EffectiveRuleDetailsDto::getSeverity, r -> r.getDescription().getLeft().getHtmlContent())
-      .containsExactly("jssecurity:S5696", name, RuleType.VULNERABILITY, Language.JS, IssueSeverity.BLOCKER, desc);
+      .containsExactly("jssecurity:S5696", name, VULNERABILITY, org.sonarsource.sonarlint.core.clientapi.common.Language.JS, BLOCKER, desc);
     assertThat(details.getParams()).isEmpty();
   }
 
@@ -228,7 +235,7 @@ class EffectiveRulesMediumTests {
   void it_should_fail_to_merge_rule_from_storage_and_server_when_connection_is_unknown() {
     backend = newBackend()
       .withStorage("connectionId", storage -> storage.withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+        projectStorage -> projectStorage.withRuleSet(PYTHON.getLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .build();
@@ -248,7 +255,7 @@ class EffectiveRulesMediumTests {
   void it_should_fail_to_merge_rule_from_storage_and_server_when_rule_does_not_exist_on_server() {
     backend = newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+        projectStorage -> projectStorage.withRuleSet(PYTHON.getLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .build();
@@ -265,7 +272,7 @@ class EffectiveRulesMediumTests {
   void it_should_merge_template_rule_from_storage_and_server_when_project_is_bound() {
     backend = newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+        projectStorage -> projectStorage.withRuleSet(PYTHON.getLanguageKey(),
           ruleSet -> ruleSet.withCustomActiveRule("python:custom", "python:CommentRegularExpression", "INFO", Map.of("message", "msg", "regularExpression", "regExp")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
@@ -279,7 +286,7 @@ class EffectiveRulesMediumTests {
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
         EffectiveRuleDetailsDto::getSeverity, r -> r.getDescription().getLeft().getHtmlContent())
-      .containsExactly("python:custom", "newName", RuleType.CODE_SMELL, Language.PYTHON, IssueSeverity.INFO, "descextendedDesc");
+      .containsExactly("python:custom", "newName", CODE_SMELL, PYTHON, INFO, "descextendedDesc");
     assertThat(details.getParams()).isEmpty();
   }
 
@@ -287,10 +294,10 @@ class EffectiveRulesMediumTests {
   void it_should_merge_rule_from_storage_and_server_rule_when_rule_is_unknown_in_loaded_plugins() {
     backend = newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+        projectStorage -> projectStorage.withRuleSet(PYTHON.getLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withEnabledLanguageInStandaloneMode(Language.PYTHON)
+      .withEnabledLanguageInStandaloneMode(PYTHON)
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
@@ -301,7 +308,7 @@ class EffectiveRulesMediumTests {
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
         EffectiveRuleDetailsDto::getSeverity, r -> r.getDescription().getLeft().getHtmlContent())
-      .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO, "descextendedDesc");
+      .containsExactly("python:S139", "newName", BUG, PYTHON, INFO, "descextendedDesc");
     assertThat(details.getParams()).isEmpty();
   }
 
@@ -314,7 +321,7 @@ class EffectiveRulesMediumTests {
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
         EffectiveRuleDetailsDto::getSeverity)
-      .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO);
+      .containsExactly("python:S139", "newName", BUG, PYTHON, INFO);
     assertThat(details.getParams()).isEmpty();
     assertThat(details.getDescription().getRight().getIntroductionHtmlContent())
       .isEqualTo("intro content");
@@ -341,7 +348,7 @@ class EffectiveRulesMediumTests {
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
         EffectiveRuleDetailsDto::getSeverity)
-      .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO);
+      .containsExactly("python:S139", "newName", BUG, PYTHON, INFO);
     assertThat(details.getParams()).isEmpty();
     assertThat(details.getDescription().getRight().getIntroductionHtmlContent())
       .isEqualTo("intro content");
@@ -371,7 +378,7 @@ class EffectiveRulesMediumTests {
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
         EffectiveRuleDetailsDto::getSeverity)
-      .containsExactly("python:S139", "newName", RuleType.BUG, Language.PYTHON, IssueSeverity.INFO);
+      .containsExactly("python:S139", "newName", BUG, PYTHON, INFO);
     assertThat(details.getParams()).isEmpty();
     assertThat(details.getDescription())
       .extracting("right.introductionHtmlContent")
@@ -379,15 +386,15 @@ class EffectiveRulesMediumTests {
     assertThat(details.getDescription().getRight().getTabs())
       .flatExtracting(EffectiveRulesMediumTests::flattenTabContent)
       .containsExactly(
-      "How can I fix it?",
-      "--> Spring (spring)",
-      "    fix spring",
-      "--> Struts (struts)",
-      "    fix struts",
-      "--> Others (others)",
-      "    <h4>How can I fix it in another component or fr...",
-      "More Info",
-      "htmlContent3extendedDesc<h3>Clean Code Principl...");
+        "How can I fix it?",
+        "--> Spring (spring)",
+        "    fix spring",
+        "--> Struts (struts)",
+        "    fix struts",
+        "--> Others (others)",
+        "    <h4>How can I fix it in another component or fr...",
+        "More Info",
+        "htmlContent3extendedDesc<h3>Clean Code Principl...");
 
     assertThat(details.getDescription().getRight().getTabs().iterator().next().getContent().getRight().getDefaultContextKey())
       .isEqualTo("spring");
@@ -397,10 +404,10 @@ class EffectiveRulesMediumTests {
   void it_should_add_a_more_info_tab_if_no_resource_section_exists_and_extended_description_exists() {
     backend = newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+        projectStorage -> projectStorage.withRuleSet(PYTHON.getLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withEnabledLanguageInStandaloneMode(Language.PYTHON)
+      .withEnabledLanguageInStandaloneMode(PYTHON)
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc")
@@ -473,10 +480,10 @@ class EffectiveRulesMediumTests {
   private void prepareForRuleDescriptionSectionsAndContext() {
     backend = newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+        projectStorage -> projectStorage.withRuleSet(PYTHON.getLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withEnabledLanguageInStandaloneMode(Language.PYTHON)
+      .withEnabledLanguageInStandaloneMode(PYTHON)
       .build();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc")
@@ -521,6 +528,7 @@ class EffectiveRulesMediumTests {
       throw new RuntimeException(e);
     }
   }
+
   private static final String PYTHON_S139_DESCRIPTION = "<p>This rule verifies that single-line comments are not located at the ends of lines of code. The main idea behind this rule is that in order to be\n"
     +
     "really readable, trailing comments would have to be properly written and formatted (correct alignment, no interference with the visual structure of\n" +
