@@ -19,6 +19,7 @@
  */
 package mediumtest.fixtures;
 
+import com.github.tomakehurst.wiremock.WireMockServer;
 import com.google.protobuf.Message;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -29,11 +30,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
-import mockwebserver3.MockResponse;
-import mockwebserver3.RecordedRequest;
 import org.sonar.scanner.protocol.Constants;
 import org.sonar.scanner.protocol.input.ScannerInput;
-import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Measures;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.TextRange;
@@ -44,12 +42,18 @@ import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
-import testutils.MockWebServerExtensionWithProtobuf;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Measures;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
+import static testutils.TestUtils.protobufBody;
+import static testutils.TestUtils.protobufBodyDelimited;
 
 public class ServerFixture {
   public static ServerBuilder newSonarQubeServer() {
@@ -289,7 +293,8 @@ public class ServerFixture {
 
   public static class Server {
 
-    private final MockWebServerExtensionWithProtobuf mockWebServer = new MockWebServerExtensionWithProtobuf();
+    private final WireMockServer mockServer = new WireMockServer(options().dynamicPort());
+
     private final ServerKind serverKind;
     private final ServerStatus serverStatus;
     @Nullable
@@ -310,7 +315,7 @@ public class ServerFixture {
     }
 
     public void start() {
-      mockWebServer.start();
+      mockServer.start();
       registerWebApiResponses();
     }
 
@@ -326,8 +331,9 @@ public class ServerFixture {
     }
 
     private void registerSystemApiResponses() {
-      mockWebServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"" + version + "\",\"status\": " +
-        "\"UP\"}");
+      mockServer.stubFor(get("/api/system/status")
+        .willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"" + version + "\",\"status\": " +
+          "\"UP\"}")));
     }
 
     private void registerHotspotsApiResponses() {
@@ -367,20 +373,20 @@ public class ServerFixture {
               return builder.build();
             }, toList())));
         var branchParameter = branchName == null ? "" : "&branch=" + urlEncode(branchName);
-        messagesPerFilePath.forEach((filePath, messages) -> mockWebServer.addProtobufResponse(
-          "/api/hotspots/search.protobuf?projectKey=" + projectKey + "&files=" + urlEncode(filePath) + branchParameter + "&ps=500&p=1",
-          Hotspots.SearchWsResponse.newBuilder()
-            .addComponents(Hotspots.Component.newBuilder().setPath(filePath).setKey(projectKey + ":" + filePath).build())
-            .addAllHotspots(messages)
-            .setPaging(Common.Paging.newBuilder().setTotal(messages.size()).build())
-            .build()));
+        messagesPerFilePath.forEach((filePath,
+          messages) -> mockServer.stubFor(get("/api/hotspots/search.protobuf?projectKey=" + projectKey + "&files=" + urlEncode(filePath) + branchParameter + "&ps=500&p=1")
+            .willReturn(aResponse().withResponseBody(protobufBody(Hotspots.SearchWsResponse.newBuilder()
+              .addComponents(Hotspots.Component.newBuilder().setPath(filePath).setKey(projectKey + ":" + filePath).build())
+              .addAllHotspots(messages)
+              .setPaging(Common.Paging.newBuilder().setTotal(messages.size()).build())
+              .build())))));
         var allMessages = messagesPerFilePath.values().stream().flatMap(Collection::stream).collect(toList());
-        mockWebServer.addProtobufResponse("/api/hotspots/search.protobuf?projectKey=" + projectKey + branchParameter + "&ps=500&p=1",
-          Hotspots.SearchWsResponse.newBuilder()
+        mockServer.stubFor(get("/api/hotspots/search.protobuf?projectKey=" + projectKey + branchParameter + "&ps=500&p=1")
+          .willReturn(aResponse().withResponseBody(protobufBody(Hotspots.SearchWsResponse.newBuilder()
             .addAllComponents(messagesPerFilePath.keySet().stream().map(filePath -> Hotspots.Component.newBuilder().setPath(filePath).setKey(projectKey + ":" + filePath).build())
               .collect(toList()))
             .setPaging(Common.Paging.newBuilder().setTotal(allMessages.size()).build())
-            .addAllHotspots(allMessages).build());
+            .addAllHotspots(allMessages).build()))));
       }));
     }
 
@@ -389,34 +395,34 @@ public class ServerFixture {
         var issuesPerFilePath = branch.issues.stream()
           .collect(groupingBy(ServerBuilder.ServerProjectBranchBuilder.ServerIssue::getFilePath,
             mapping(issue -> {
-              var builder =
-                Issues.Issue.newBuilder()
-                  .setKey(issue.issueKey)
-                  .setComponent(projectKey + ":" + issue.filePath)
-                  .setRule(issue.ruleKey)
-                  .setMessage(issue.message)
-                  .setTextRange(Common.TextRange.newBuilder()
-                    .setStartLine(issue.textRange.getStartLine())
-                    .setStartOffset(issue.textRange.getStartLineOffset())
-                    .setEndLine(issue.textRange.getEndLine())
-                    .setEndOffset(issue.textRange.getEndLineOffset())
-                    .build())
-                  .setCreationDate(issue.creationDate)
-                  .setStatus(issue.status)
-                  .setAssignee(issue.author);
+              var builder = Issues.Issue.newBuilder()
+                .setKey(issue.issueKey)
+                .setComponent(projectKey + ":" + issue.filePath)
+                .setRule(issue.ruleKey)
+                .setMessage(issue.message)
+                .setTextRange(Common.TextRange.newBuilder()
+                  .setStartLine(issue.textRange.getStartLine())
+                  .setStartOffset(issue.textRange.getStartLineOffset())
+                  .setEndLine(issue.textRange.getEndLine())
+                  .setEndOffset(issue.textRange.getEndLineOffset())
+                  .build())
+                .setCreationDate(issue.creationDate)
+                .setStatus(issue.status)
+                .setAssignee(issue.author);
               return builder.build();
             }, toList())));
 
         var allIssues = issuesPerFilePath.values().stream().flatMap(Collection::stream).collect(toList());
-        allIssues.forEach(issue -> mockWebServer.addProtobufResponse("/api/issues/search.protobuf?issues=".concat(urlEncode(issue.getKey())).concat("&ps=1&p=1"),
-          Issues.SearchWsResponse.newBuilder()
+
+        allIssues.forEach(issue -> mockServer.stubFor(get("/api/issues/search.protobuf?issues=".concat(urlEncode(issue.getKey())).concat("&ps=1&p=1"))
+          .willReturn(aResponse().withResponseBody(protobufBody(Issues.SearchWsResponse.newBuilder()
             .addIssues(
               Issues.Issue.newBuilder()
                 .setKey(issue.getKey()).setRule(issue.getRule()).setCreationDate(issue.getCreationDate()).setMessage(issue.getMessage())
-              .setTextRange(issue.getTextRange()).build())
+                .setTextRange(issue.getTextRange()).build())
             .addComponents(Issues.Component.newBuilder().setPath(issue.getComponent()).build())
             .setRules(Issues.SearchWsResponse.newBuilder().getRulesBuilder().addRules(Common.Rule.newBuilder().setKey(issue.getRule()).build()))
-            .build()));
+            .build())))));
       }));
     }
 
@@ -449,14 +455,14 @@ public class ServerFixture {
           if (reviewStatus.isReviewed()) {
             builder = builder.setResolution(reviewStatus.name());
           }
-          mockWebServer.addProtobufResponse("/api/hotspots/show.protobuf?hotspot=" + hotspot.hotspotKey,
-            builder.build());
+          mockServer.stubFor(get("/api/hotspots/show.protobuf?hotspot=" + hotspot.hotspotKey)
+            .willReturn(aResponse().withResponseBody(protobufBody(builder.build()))));
         });
       }));
     }
 
     private void registerHotspotsStatusChangeApiResponses() {
-      mockWebServer.addResponse("/api/hotspots/change_status", new MockResponse().setResponseCode(200));
+      mockServer.stubFor(post("/api/hotspots/change_status").willReturn(aResponse().withStatus(200)));
     }
 
     private void registerIssuesApiResponses() {
@@ -497,19 +503,21 @@ public class ServerFixture {
             return serverIssue;
           }).toArray(Message[]::new);
           var branchParameter = branchName == null ? "" : "&branch=" + urlEncode(branchName);
-          mockWebServer.addProtobufResponseDelimited("/batch/issues?key=" + urlEncode(projectKey + ':' + filePath) + branchParameter, messages);
+          mockServer.stubFor(get("/batch/issues?key=" + urlEncode(projectKey + ':' + filePath) + branchParameter)
+            .willReturn(aResponse().withResponseBody(protobufBodyDelimited(messages))));
         });
         var branchParameter = branchName == null ? "" : "&branch=" + urlEncode(branchName);
-        mockWebServer.addProtobufResponseDelimited("/batch/issues?key=" + urlEncode(projectKey) + branchParameter, allBranchIssues.toArray(new Message[0]));
+        mockServer.stubFor(get("/batch/issues?key=" + urlEncode(projectKey) + branchParameter)
+          .willReturn(aResponse().withResponseBody(protobufBodyDelimited(allBranchIssues.toArray(new Message[0])))));
       }));
     }
 
     private void registerIssuesStatusChangeApiResponses() {
-      mockWebServer.addResponse("/api/issues/do_transition", new MockResponse().setResponseCode(200));
+      mockServer.stubFor(post("/api/issues/do_transition").willReturn(aResponse().withStatus(200)));
     }
 
     private void registerAddIssueCommentApiResponses() {
-      mockWebServer.addResponse("/api/issues/add_comment", new MockResponse().setResponseCode(200));
+      mockServer.stubFor(post("/api/issues/add_comment").willReturn(aResponse().withStatus(200)));
     }
 
     private void registerApiIssuesPullResponses() {
@@ -533,31 +541,34 @@ public class ServerFixture {
         var messages = new Message[issuesArray.length + 1];
         messages[0] = timestamp;
         System.arraycopy(issuesArray, 0, messages, 1, issuesArray.length);
-        mockWebServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + projectKey + branchParameter, messages);
-        mockWebServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + projectKey + branchParameter + "&changedSince=" + timestamp.getQueryTimestamp(), messages);
+        var response = aResponse().withResponseBody(protobufBodyDelimited(messages));
+        mockServer.stubFor(get("/api/issues/pull?projectKey=" + projectKey + branchParameter).willReturn(response));
+        mockServer.stubFor(get("/api/issues/pull?projectKey=" + projectKey + branchParameter + "&changedSince=" + timestamp.getQueryTimestamp()).willReturn(response));
       }));
     }
 
     private void registerApiIssuesPullTaintResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
+        var branchParameter = branchName == null ? "" : "&branchName=" + branchName;
         var timestamp = Issues.IssuesPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
-        mockWebServer.addProtobufResponseDelimited("/api/issues/pull_taint?projectKey=" + projectKey + "&branchName=" + branchName, timestamp);
-        mockWebServer.addProtobufResponseDelimited(
-          "/api/issues/pull_taint?projectKey=" + projectKey + "&branchName=" + branchName + "&changedSince=" + timestamp.getQueryTimestamp(), timestamp);
+        var response = aResponse().withResponseBody(protobufBodyDelimited(timestamp));
+        mockServer.stubFor(get("/api/issues/pull_taint?projectKey=" + projectKey + branchParameter).willReturn(response));
+        mockServer.stubFor(get("/api/issues/pull_taint?projectKey=" + projectKey + branchParameter + "&changedSince=" + timestamp.getQueryTimestamp()).willReturn(response));
       }));
     }
 
     private void registerIssueAnticipateTransitionResponses() {
-      mockWebServer.addResponse("/api/issues/anticipated_transitions?projectKey=projectKey", new MockResponse().setResponseCode(200));
+      mockServer.stubFor(post("/api/issues/anticipated_transitions?projectKey=projectKey").willReturn(aResponse().withStatus(200)));
     }
 
     private void registerSourceApiResponses() {
-      sourceFileByComponentKey.forEach((componentKey, sourceFile) -> mockWebServer.addStringResponse("/api/sources/raw?key=" + urlEncode(componentKey), sourceFile.code));
+      sourceFileByComponentKey
+        .forEach((componentKey, sourceFile) -> mockServer.stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey)).willReturn(aResponse().withBody(sourceFile.code))));
     }
 
     private void registerDevelopersApiResponses() {
       if (smartNotificationsSupported) {
-        mockWebServer.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
+        mockServer.stubFor(get("/api/developers/search_events?projects=&from=").willReturn(aResponse().withStatus(200)));
       }
     }
 
@@ -565,37 +576,37 @@ public class ServerFixture {
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
         var branchParameter = branchName == null ? "" : "&branch=" + branchName;
         var uriPath = "/api/measures/component.protobuf?additionalFields=period&metricKeys=projects&component=" + projectKey + branchParameter;
-        mockWebServer.addProtobufResponse(
-          uriPath,
-          // TODO Override with whatever is set on the branch fixture?
-          Measures.ComponentWsResponse.newBuilder()
-            .setComponent(Measures.Component.newBuilder()
-              .setKey(projectKey)
-              .setQualifier("TRK")
-              .build())
-            .setPeriod(Measures.Period.newBuilder()
-              .setMode("PREVIOUS_VERSION")
-              .setDate("2023-08-29T09:37:59+0000")
-              .setParameter("9.2")
-              .build())
-            .build());
+        mockServer.stubFor(get(uriPath)
+          .willReturn(aResponse().withResponseBody(protobufBody(
+            // TODO Override with whatever is set on the branch fixture?
+            Measures.ComponentWsResponse.newBuilder()
+              .setComponent(Measures.Component.newBuilder()
+                .setKey(projectKey)
+                .setQualifier("TRK")
+                .build())
+              .setPeriod(Measures.Period.newBuilder()
+                .setMode("PREVIOUS_VERSION")
+                .setDate("2023-08-29T09:37:59+0000")
+                .setParameter("9.2")
+                .build())
+              .build()))));
       }));
     }
 
     public void shutdown() {
-      mockWebServer.shutdown();
+      mockServer.stop();
     }
 
     public String baseUrl() {
-      return mockWebServer.url("");
+      return mockServer.url("");
     }
 
     public String url(String path) {
-      return mockWebServer.url(path);
+      return mockServer.url(path);
     }
 
-    public RecordedRequest lastRequest() {
-      return mockWebServer.takeRequest();
+    public WireMockServer getMockServer() {
+      return mockServer;
     }
   }
 }

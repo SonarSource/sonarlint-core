@@ -19,7 +19,7 @@
  */
 package mediumtest.hotspots;
 
-import java.nio.charset.StandardCharsets;
+import com.github.tomakehurst.wiremock.client.WireMock;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -35,10 +35,12 @@ import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.ChangeHotspotSta
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.hotspot.HotspotStatusChangeException;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static mediumtest.fixtures.ServerFixture.ServerStatus.DOWN;
 import static mediumtest.fixtures.ServerFixture.newSonarCloudServer;
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
+import static mediumtest.fixtures.ServerFixture.ServerStatus.DOWN;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
@@ -122,10 +124,10 @@ class HotspotStatusChangeMediumTests {
     var response = setStatusToSafe("configScopeId", "hotspotKey");
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    var lastRequest = server.lastRequest();
-    assertThat(lastRequest.getPath()).isEqualTo("/api/hotspots/change_status");
-    assertThat(lastRequest.getHeader("Content-Type")).isEqualTo("application/x-www-form-urlencoded");
-    assertThat(lastRequest.getBody().readString(StandardCharsets.UTF_8)).isEqualTo("hotspot=hotspotKey&status=REVIEWED&resolution=SAFE");
+    server.getMockServer()
+      .verify(WireMock.postRequestedFor(urlEqualTo("/api/hotspots/change_status"))
+        .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
+        .withRequestBody(equalTo("hotspot=hotspotKey&status=REVIEWED&resolution=SAFE")));
   }
 
   @Test
@@ -140,10 +142,10 @@ class HotspotStatusChangeMediumTests {
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     waitAtMost(2, SECONDS).untilAsserted(() -> {
-      var lastRequest = server.lastRequest();
-      assertThat(lastRequest.getPath()).isEqualTo("/api/hotspots/change_status");
-      assertThat(lastRequest.getHeader("Content-Type")).isEqualTo("application/x-www-form-urlencoded");
-      assertThat(lastRequest.getBody().readString(StandardCharsets.UTF_8)).isEqualTo("hotspot=hotspotKey&status=REVIEWED&resolution=SAFE");
+      server.getMockServer()
+        .verify(WireMock.postRequestedFor(urlEqualTo("/api/hotspots/change_status"))
+          .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
+          .withRequestBody(equalTo("hotspot=hotspotKey&status=REVIEWED&resolution=SAFE")));
     });
   }
 
@@ -160,10 +162,10 @@ class HotspotStatusChangeMediumTests {
     var response = setStatusToSafe("configScopeId", "hotspotKey");
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    var lastRequest = server.lastRequest();
-    assertThat(lastRequest.getPath()).isEqualTo("/api/hotspots/change_status");
-    assertThat(lastRequest.getHeader("Content-Type")).isEqualTo("application/x-www-form-urlencoded");
-    assertThat(lastRequest.getBody().readString(StandardCharsets.UTF_8)).isEqualTo("hotspot=hotspotKey&status=REVIEWED&resolution=SAFE");
+    server.getMockServer()
+      .verify(WireMock.postRequestedFor(urlEqualTo("/api/hotspots/change_status"))
+        .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
+        .withRequestBody(equalTo("hotspot=hotspotKey&status=REVIEWED&resolution=SAFE")));
   }
 
   @Test

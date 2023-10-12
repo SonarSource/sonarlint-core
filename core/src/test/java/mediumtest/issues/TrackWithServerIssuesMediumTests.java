@@ -43,6 +43,8 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.storage.ServerIssueFixtures.aServerIssue;
@@ -143,14 +145,16 @@ class TrackWithServerIssuesMediumTests {
   @Test
   void it_should_track_with_a_server_only_issue_when_fetching_from_legacy_server_requested() {
     server = ServerFixture.newSonarQubeServer("9.5").withProject("projectKey",
-      project -> project.withBranch("main", branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, "", new TextRange(1, 2, 3, 4)))).start();
+      project -> project.withBranch("main", branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, "", new TextRange(1, 2, 3, 4))))
+      .start();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
       .build();
 
     var response = trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "rule:key", "message"))),
+      Map.of("file/path",
+        List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "rule:key", "message"))),
       true));
 
     assertThat(response)
@@ -163,7 +167,8 @@ class TrackWithServerIssuesMediumTests {
   @Test
   void it_should_download_all_issues_at_once_when_tracking_issues_from_more_than_10_files() {
     server = ServerFixture.newSonarQubeServer("9.5").withProject("projectKey",
-      project -> project.withBranch("main", branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, "", new TextRange(1, 2, 3, 4)))).start();
+      project -> project.withBranch("main", branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, "", new TextRange(1, 2, 3, 4))))
+      .start();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage.withServerVersion("9.5"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
@@ -177,7 +182,7 @@ class TrackWithServerIssuesMediumTests {
       .succeedsWithin(Duration.ofSeconds(4))
       .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
         .hasSize(11));
-    waitAtMost(2, SECONDS).untilAsserted(() -> assertThat(server.lastRequest().getPath()).isEqualTo("/batch/issues?key=projectKey&branch=main"));
+    waitAtMost(2, SECONDS).untilAsserted(() -> server.getMockServer().verify(getRequestedFor(urlEqualTo("/batch/issues?key=projectKey&branch=main"))));
   }
 
   private CompletableFuture<TrackWithServerIssuesResponse> trackWithServerIssues(TrackWithServerIssuesParams params) {
