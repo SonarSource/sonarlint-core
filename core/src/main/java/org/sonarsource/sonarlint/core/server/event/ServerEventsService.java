@@ -31,7 +31,8 @@ import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.event.DidReceiveServerHotspotEvent;
-import org.sonarsource.sonarlint.core.clientapi.client.event.DidReceiveServerTaintVulnerabilityEvent;
+import org.sonarsource.sonarlint.core.clientapi.client.event.DidReceiveServerTaintVulnerabilityChangedOrClosedEvent;
+import org.sonarsource.sonarlint.core.clientapi.client.event.DidReceiveServerTaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
@@ -187,17 +188,19 @@ public class ServerEventsService {
   }
 
   private void notifyClient(String connectionId, ServerEvent serverEvent) {
-    if (serverEvent instanceof TaintVulnerabilityRaisedEvent ||
-      serverEvent instanceof TaintVulnerabilityClosedEvent ||
+    var projectKey = extractProjectKey(serverEvent);
+    if (serverEvent instanceof TaintVulnerabilityRaisedEvent) {
+      var taintEvent = (TaintVulnerabilityRaisedEvent) serverEvent;
+      client.didReceiveServerTaintVulnerabilityRaisedEvent(new DidReceiveServerTaintVulnerabilityRaisedEvent(connectionId, projectKey,
+        taintEvent.getMainLocation().getFilePath(), taintEvent.getBranchName(), taintEvent.getKey()));
+    } else if (serverEvent instanceof TaintVulnerabilityClosedEvent ||
       ((serverEvent instanceof IssueChangedEvent) && !((IssueChangedEvent) serverEvent).getImpactedTaintIssueKeys().isEmpty())) {
-      var projectKey = extractProjectKey(serverEvent);
-      client.didReceiveServerTaintVulnerabilityEvent(new DidReceiveServerTaintVulnerabilityEvent(connectionId, projectKey));
+      client.didReceiveServerTaintVulnerabilityChangedOrClosedEvent(new DidReceiveServerTaintVulnerabilityChangedOrClosedEvent(connectionId, projectKey));
     } else if (serverEvent instanceof SecurityHotspotChangedEvent ||
       serverEvent instanceof SecurityHotspotClosedEvent ||
       serverEvent instanceof SecurityHotspotRaisedEvent) {
-        var projectKey = extractProjectKey(serverEvent);
-        client.didReceiveServerHotspotEvent(new DidReceiveServerHotspotEvent(connectionId, projectKey, ((ServerHotspotEvent) serverEvent).getFilePath()));
-      }
+      client.didReceiveServerHotspotEvent(new DidReceiveServerHotspotEvent(connectionId, projectKey, ((ServerHotspotEvent) serverEvent).getFilePath()));
+    }
   }
 
   private String extractProjectKey(ServerEvent serverEvent) {

@@ -40,7 +40,8 @@ import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreating
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.event.DidReceiveServerHotspotEvent;
-import org.sonarsource.sonarlint.core.clientapi.client.event.DidReceiveServerTaintVulnerabilityEvent;
+import org.sonarsource.sonarlint.core.clientapi.client.event.DidReceiveServerTaintVulnerabilityChangedOrClosedEvent;
+import org.sonarsource.sonarlint.core.clientapi.client.event.DidReceiveServerTaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
@@ -178,7 +179,13 @@ public interface SonarLintClient {
   }
 
   @JsonNotification
-  default void didReceiveServerTaintVulnerabilityEvent(DidReceiveServerTaintVulnerabilityEvent params) {
+  default void didReceiveServerTaintVulnerabilityRaisedEvent(DidReceiveServerTaintVulnerabilityRaisedEvent params) {
+    // not implemented
+  }
+
+
+  @JsonNotification
+  default void didReceiveServerTaintVulnerabilityChangedOrClosedEvent(DidReceiveServerTaintVulnerabilityChangedOrClosedEvent params) {
     // not implemented
   }
 

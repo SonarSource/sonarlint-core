@@ -65,7 +65,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreating
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsResponse;
-import org.sonarsource.sonarlint.core.clientapi.client.event.DidReceiveServerTaintVulnerabilityEvent;
+import org.sonarsource.sonarlint.core.clientapi.client.event.DidReceiveServerTaintVulnerabilityChangedOrClosedEvent;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FoundFileDto;
@@ -633,7 +633,7 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public void didReceiveServerEvent(DidReceiveServerTaintVulnerabilityEvent params) {
+    public void didReceiveServerEvent(DidReceiveServerTaintVulnerabilityChangedOrClosedEvent params) {
       this.receivedServerEventsByConnectionId.computeIfAbsent(params.getConnectionId(), k -> new CopyOnWriteArrayList<>()).add(params.getServerEvent());
     }
 
