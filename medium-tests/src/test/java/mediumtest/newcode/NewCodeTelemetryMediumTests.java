@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 class NewCodeTelemetryMediumTests {
 
@@ -56,7 +57,7 @@ class NewCodeTelemetryMediumTests {
 
     backend.getNewCodeService().didToggleFocus();
 
-    assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"isFocusOnNewCode\":true,\"codeFocusChangedCount\":1");
+    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"isFocusOnNewCode\":true,\"codeFocusChangedCount\":1"));
   }
 
   @Test
@@ -65,6 +66,6 @@ class NewCodeTelemetryMediumTests {
 
     backend.getNewCodeService().didToggleFocus();
 
-    assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"isFocusOnNewCode\":false,\"codeFocusChangedCount\":1");
+    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"isFocusOnNewCode\":false,\"codeFocusChangedCount\":1"));
   }
 }

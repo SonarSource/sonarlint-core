@@ -26,13 +26,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.ServerFixture;
 import mediumtest.fixtures.SonarLintTestBackend;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.ChangeHotspotStatusParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.ChangeHotspotStatusParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.hotspot.HotspotStatusChangeException;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
@@ -87,8 +88,7 @@ class HotspotStatusChangeMediumTests {
       .failsWithin(Duration.ofSeconds(2))
       .withThrowableOfType(ExecutionException.class)
       .havingCause()
-      .isInstanceOf(HotspotStatusChangeException.class)
-      .withMessage("Cannot change status on the hotspot");
+      .isInstanceOf(ResponseErrorException.class);
   }
 
   @Test
