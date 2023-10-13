@@ -23,13 +23,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.clientapi.backend.binding.BindingService;
 import org.sonarsource.sonarlint.core.clientapi.backend.branch.SonarProjectBranchService;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.ConnectionService;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
+import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueService;
 import org.sonarsource.sonarlint.core.clientapi.backend.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RulesService;
@@ -43,13 +43,15 @@ import org.sonarsource.sonarlint.core.spring.SonarLintSpringAppConfig;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+import static java.util.Objects.requireNonNull;
+
 public class SonarLintBackendImpl implements SonarLintBackend {
-  private final SonarLintClient client;
+  private SonarLintClient client;
   private final AtomicBoolean initializeCalled = new AtomicBoolean(false);
   private final AtomicBoolean initialized = new AtomicBoolean(false);
   private final AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
 
-  public SonarLintBackendImpl(SonarLintClient client) {
+  public void setClient(SonarLintClient client) {
     this.client = client;
   }
 
@@ -58,7 +60,7 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     return CompletableFuture.runAsync(() -> {
       if (initializeCalled.compareAndSet(false, true) && !initialized.get()) {
         applicationContext.register(SonarLintSpringAppConfig.class);
-        applicationContext.registerBean("sonarlintClient", SonarLintClient.class, () -> client);
+        applicationContext.registerBean("sonarlintClient", SonarLintClient.class, () -> requireNonNull(client));
         applicationContext.registerBean("initializeParams", InitializeParams.class, () -> params);
         applicationContext.refresh();
         initialized.set(true);
@@ -146,12 +148,10 @@ public class SonarLintBackendImpl implements SonarLintBackend {
     return getInitializedApplicationContext().getBean(EmbeddedServer.class).getPort();
   }
 
-  @Override
   public HttpClient getHttpClientNoAuth() {
     return getInitializedApplicationContext().getBean(ConnectionAwareHttpClientProvider.class).getHttpClient();
   }
 
-  @Override
   public HttpClient getHttpClient(String connectionId) {
     return getInitializedApplicationContext().getBean(ConnectionAwareHttpClientProvider.class).getHttpClient(connectionId);
   }

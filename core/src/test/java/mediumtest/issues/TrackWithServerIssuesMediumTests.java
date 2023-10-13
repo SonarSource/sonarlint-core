@@ -50,6 +50,7 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.storage.ServerIssueFixtures.aServerIssue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
+import static org.sonarsource.sonarlint.core.clientapi.common.RuleType.BUG;
 
 class TrackWithServerIssuesMediumTests {
 
@@ -139,7 +140,7 @@ class TrackWithServerIssuesMediumTests {
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
         .hasEntrySatisfying("file/path", issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("left.id")
-          .isEqualTo(List.of(Either.<ServerMatchedIssueDto, LocalOnlyIssueDto>forLeft(new ServerMatchedIssueDto(null, "issueKey", 1000L, false, null, RuleType.BUG, true))))));
+          .isEqualTo(List.of(Either.<ServerMatchedIssueDto, LocalOnlyIssueDto>forLeft(new ServerMatchedIssueDto(null, "issueKey", 1000L, false, null, BUG, true))))));
   }
 
   @Test
@@ -161,7 +162,7 @@ class TrackWithServerIssuesMediumTests {
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
         .hasEntrySatisfying("file/path", issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("left.id")
-          .isEqualTo(List.of(Either.<ServerMatchedIssueDto, LocalOnlyIssueDto>forLeft(new ServerMatchedIssueDto(null, "issueKey", 123456789L, false, null, RuleType.BUG, true))))));
+          .isEqualTo(List.of(Either.<ServerMatchedIssueDto, LocalOnlyIssueDto>forLeft(new ServerMatchedIssueDto(null, "issueKey", 123456789L, false, null, BUG, true))))));
   }
 
   @Test

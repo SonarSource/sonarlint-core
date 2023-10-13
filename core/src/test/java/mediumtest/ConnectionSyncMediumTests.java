@@ -28,13 +28,13 @@ import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetEffectiveRuleDetailsParams;
-import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.sonarsource.sonarlint.core.clientapi.common.Language.JAVA;
 
 class ConnectionSyncMediumTests {
   private SonarLintBackend backend;
@@ -57,7 +57,7 @@ class ConnectionSyncMediumTests {
     backend = newBackend()
       .withSonarQubeConnection("connectionId", storage -> storage.withJavaPlugin())
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withEnabledLanguageInStandaloneMode(Language.JAVA)
+      .withEnabledLanguageInStandaloneMode(JAVA)
       .build(client);
     await().untilAsserted(() -> assertThat(logTester.logs()).contains("Binding suggestion computation queued for config scopes 'scopeId'..."));
 
@@ -83,7 +83,7 @@ class ConnectionSyncMediumTests {
     backend = newBackend()
       .withSonarQubeConnection("connectionId", storage -> storage.withJavaPlugin())
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withEnabledLanguageInStandaloneMode(Language.JAVA)
+      .withEnabledLanguageInStandaloneMode(JAVA)
       .build(client);
     await().untilAsserted(() -> assertThat(logTester.logs()).contains("Binding suggestion computation queued for config scopes 'scopeId'..."));
     getEffectiveRuleDetails("scopeId", "java:S106");
