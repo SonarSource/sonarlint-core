@@ -22,9 +22,12 @@ package org.sonarsource.sonarlint.core;
 import java.util.Optional;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.BackendErrorCode;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 
 @Named
@@ -47,6 +50,13 @@ public class ServerApiProvider {
       return Optional.empty();
     }
     return Optional.of(new ServerApi(params.get(), httpClientProvider.getHttpClient(connectionId)));
+  }
+
+  public ServerApi getServerApiOrThrow(String connectionId) {
+    return getServerApi(connectionId).orElseThrow(() -> {
+      ResponseError error = new ResponseError(BackendErrorCode.CONNECTION_NOT_FOUND, "Connection '" + connectionId + "' is gone", connectionId);
+      throw new ResponseErrorException(error);
+    });
   }
 
 }

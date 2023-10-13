@@ -22,12 +22,14 @@ package mediumtest;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
-import org.sonarsource.sonarlint.core.clientapi.backend.initialize.ClientInfoDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.initialize.FeatureFlagsDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.SpringApplicationContextInitializer;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientInfoDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -39,7 +41,7 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 
 class InitializationMediumTests {
 
-  private SonarLintBackendImpl backend;
+  private SonarLintBackend backend;
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
@@ -61,30 +63,8 @@ class InitializationMediumTests {
       .failsWithin(Duration.ofSeconds(1))
       .withThrowableOfType(ExecutionException.class)
       .havingCause()
-      .isInstanceOf(UnsupportedOperationException.class)
-      .withMessage("Already initialized");
+      .isInstanceOf(ResponseErrorException.class)
+      .withMessage("Backend already initialized");
   }
 
-  @Test
-  void it_should_fail_to_use_services_if_the_backend_is_not_initialized() {
-    backend = new SonarLintBackendImpl();
-    backend.setClient(newFakeClient().build());
-
-    var error = catchThrowable(() -> backend.getConnectionService());
-
-    assertThat(error)
-      .isInstanceOf(IllegalStateException.class)
-      .hasMessage("Backend is not initialized");
-  }
-
-  @Test
-  void it_should_silently_shutdown_the_backend_if_it_was_not_initialized() {
-    backend = new SonarLintBackendImpl();
-    backend.setClient(newFakeClient().build());
-
-    var future = backend.shutdown();
-
-    assertThat(future)
-      .succeedsWithin(Duration.ofSeconds(1));
-  }
 }
