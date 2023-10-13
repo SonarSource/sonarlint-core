@@ -1,5 +1,9 @@
 /*
+<<<<<<<< HEAD:core/src/main/java/org/sonarsource/sonarlint/core/http/package-info.java
  * SonarLint Core - Implementation
+========
+ * SonarLint Core - RPC Protocol
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/package-info.java
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -18,6 +22,10 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 @ParametersAreNonnullByDefault
+<<<<<<<< HEAD:core/src/main/java/org/sonarsource/sonarlint/core/http/package-info.java
 package org.sonarsource.sonarlint.core.http;
+========
+package org.sonarsource.sonarlint.core.rpc.protocol;
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/package-info.java
 
 import javax.annotation.ParametersAreNonnullByDefault;

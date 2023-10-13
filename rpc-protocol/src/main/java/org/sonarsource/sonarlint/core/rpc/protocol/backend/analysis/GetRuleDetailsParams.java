@@ -17,7 +17,11 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+<<<<<<<< HEAD:rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/analysis/GetRuleDetailsParams.java
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis;
+========
+package org.sonarsource.sonarlint.core.rpc.protocol.client.fs;
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/client/fs/FindFileByNamesInScopeParams.java
 
 public class GetRuleDetailsParams {
 

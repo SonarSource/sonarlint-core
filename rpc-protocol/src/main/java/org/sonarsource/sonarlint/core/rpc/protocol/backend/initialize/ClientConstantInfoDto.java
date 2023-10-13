@@ -20,7 +20,11 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
 
 import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
+<<<<<<<< HEAD:rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/initialize/ClientConstantInfoDto.java
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+========
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/initialize/ClientInfoDto.java
 
 /**
  * Static information to describe the client. Dynamic information will be provided when needed by calling {@link SonarLintRpcClient#getClientLiveInfo()}

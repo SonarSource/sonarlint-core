@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - RPC Implementation
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,32 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.client.event;
+package org.sonarsource.sonarlint.core.rpc.impl;
 
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
+import java.util.function.Supplier;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.DidChangeActiveSonarProjectBranchParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.SonarProjectBranchService;
 
-public class DidReceiveServerHotspotEvent {
+class SonarProjectBranchServiceDelegate extends AbstractSpringServiceDelegate<SonarProjectBranchService> implements SonarProjectBranchService {
 
-  @NonNull
-  private final String connectionId;
-  private final String sonarProjectKey;
-  private final String serverFilePath;
-
-  public DidReceiveServerHotspotEvent(String connectionId, String sonarProjectKey, String serverFilePath) {
-    this.connectionId = connectionId;
-    this.sonarProjectKey = sonarProjectKey;
-    this.serverFilePath = serverFilePath;
+  public SonarProjectBranchServiceDelegate(Supplier<SonarProjectBranchService> beanSupplier) {
+    super(beanSupplier);
   }
 
-  public String getConnectionId() {
-    return connectionId;
-  }
-
-  public String getSonarProjectKey() {
-    return sonarProjectKey;
-  }
-
-  public String getServerFilePath() {
-    return serverFilePath;
+  @Override
+  public void didChangeActiveSonarProjectBranch(DidChangeActiveSonarProjectBranchParams params) {
+    beanSupplier.get().didChangeActiveSonarProjectBranch(params);
   }
 }

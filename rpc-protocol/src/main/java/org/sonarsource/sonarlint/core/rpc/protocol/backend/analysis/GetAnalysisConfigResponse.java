@@ -17,6 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+<<<<<<<< HEAD:rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/analysis/GetAnalysisConfigResponse.java
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis;
 
 import java.util.List;
@@ -39,5 +40,34 @@ public class GetAnalysisConfigResponse {
 
   public Map<String, String> getAnalysisProperties() {
     return analysisProperties;
+========
+package org.sonarsource.sonarlint.core.rpc.protocol.client.event;
+
+import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
+
+public class DidReceiveServerHotspotEvent {
+
+  @NonNull
+  private final String connectionId;
+  private final String sonarProjectKey;
+  private final String serverFilePath;
+
+  public DidReceiveServerHotspotEvent(String connectionId, String sonarProjectKey, String serverFilePath) {
+    this.connectionId = connectionId;
+    this.sonarProjectKey = sonarProjectKey;
+    this.serverFilePath = serverFilePath;
+  }
+
+  public String getConnectionId() {
+    return connectionId;
+  }
+
+  public String getSonarProjectKey() {
+    return sonarProjectKey;
+  }
+
+  public String getServerFilePath() {
+    return serverFilePath;
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/client/event/DidReceiveServerHotspotEvent.java
   }
 }

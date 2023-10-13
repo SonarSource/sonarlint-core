@@ -18,7 +18,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 @ParametersAreNonnullByDefault
+<<<<<<<< HEAD:rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/client/http/package-info.java
 package org.sonarsource.sonarlint.core.rpc.protocol.client.http;
+========
+package org.sonarsource.sonarlint.core.rpc.protocol.client.info;
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/client/info/package-info.java
 
 import javax.annotation.ParametersAreNonnullByDefault;
 

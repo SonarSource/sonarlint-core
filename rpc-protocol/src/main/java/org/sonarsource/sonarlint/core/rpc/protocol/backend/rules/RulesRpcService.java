@@ -25,7 +25,11 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
 
 @JsonSegment("rule")
+<<<<<<<< HEAD:rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/rules/RulesRpcService.java
 public interface RulesRpcService {
+========
+public interface RulesService {
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/rules/RulesService.java
 
   /**
    * Returns the effective details about a rule. "Effective" means that returned rule details will take into account

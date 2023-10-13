@@ -23,8 +23,11 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
+<<<<<<<< HEAD:rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/connection/ConnectionRpcService.java
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
+========
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/connection/ConnectionService.java
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.check.CheckSmartNotificationsSupportedParams;
@@ -35,16 +38,28 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrg
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsResponse;
+<<<<<<<< HEAD:rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/connection/ConnectionRpcService.java
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsResponse;
+========
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/connection/ConnectionService.java
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsParams;
+<<<<<<<< HEAD:rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/connection/ConnectionRpcService.java
 
 /**
  * The client is the source of truth for connection configuration, but the backend also need to be kept in sync.
  * The client will use {@link SonarLintRpcServer#initialize(InitializeParams)} to register existing connection configurations at startup, and then
+========
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+
+/**
+ * The client is the source of truth for connection configuration, but the backend also need to be kept in sync.
+ * The client will use {@link SonarLintBackend#initialize(InitializeParams)} to register existing connection configurations at startup, and then
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/connection/ConnectionService.java
  * update the service as needed using {@link #didUpdateConnections(DidUpdateConnectionsParams)}, when a connection configuration is added/removed/updated.
  *
  * One source of complexity for connection configuration is that some attributes (like credentials) should be stored in
@@ -53,7 +68,11 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredenti
  * credentials are missing.
  */
 @JsonSegment("connection")
+<<<<<<<< HEAD:rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/connection/ConnectionRpcService.java
 public interface ConnectionRpcService {
+========
+public interface ConnectionService {
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/connection/ConnectionService.java
 
   /**
    * Called by the client when connection configurations have been changed.
@@ -63,7 +82,11 @@ public interface ConnectionRpcService {
 
   /**
    * Called by the client when connection credentials have been changed. The backend might later retrieve them with
+<<<<<<<< HEAD:rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/connection/ConnectionRpcService.java
    * {@link SonarLintRpcClient#getCredentials(GetCredentialsParams)}.
+========
+   * {@link SonarLintClient#getCredentials(GetCredentialsParams)}.
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/connection/ConnectionService.java
    */
   @JsonNotification
   void didChangeCredentials(DidChangeCredentialsParams params);

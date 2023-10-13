@@ -1,5 +1,9 @@
 /*
+<<<<<<<< HEAD:client/java-client-legacy/src/main/java/org/sonarsource/sonarlint/core/client/legacy/objectstore/ObjectStore.java
  * SonarLint Core - Java Client Legacy
+========
+ * SonarLint Core - RPC Protocol
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/branch/SonarProjectBranchService.java
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,6 +21,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+<<<<<<<< HEAD:client/java-client-legacy/src/main/java/org/sonarsource/sonarlint/core/client/legacy/objectstore/ObjectStore.java
 package org.sonarsource.sonarlint.core.client.legacy.objectstore;
 
 import java.io.IOException;
@@ -29,6 +34,15 @@ import java.util.Optional;
  * @param <V> type of the value to store
  */
 public interface ObjectStore<K, V> {
+========
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.branch;
+
+import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
+import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
+
+@JsonSegment("branch")
+public interface SonarProjectBranchService {
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/branch/SonarProjectBranchService.java
 
   void write(K key, V values) throws IOException;
   

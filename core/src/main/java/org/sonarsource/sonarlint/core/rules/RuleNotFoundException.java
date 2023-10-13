@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,6 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+<<<<<<<< HEAD:core/src/main/java/org/sonarsource/sonarlint/core/rules/RuleNotFoundException.java
 package org.sonarsource.sonarlint.core.rules;
 
 public class RuleNotFoundException extends Exception {
@@ -30,4 +31,19 @@ public class RuleNotFoundException extends Exception {
   public String getRuleKey() {
     return ruleKey;
   }
+========
+package org.sonarsource.sonarlint.core.rpc.protocol.backend;
+
+public class BackendErrorCode {
+
+  public static final int CONNECTION_NOT_FOUND = -1;
+  public static final int CONFIG_SCOPE_NOT_FOUND = -2;
+  public static final int RULE_NOT_FOUND = -3;
+  public static final int BACKEND_ALREADY_INITIALIZED = -4;
+  public static final int ISSUE_NOT_FOUND = -5;
+  public static final int CONFIG_SCOPE_NOT_BOUND = -6;
+  public static final int HTTP_REQUEST_TIMEOUT = -7;
+  public static final int HTTP_REQUEST_FAILED = -8;
+  public static final int TASK_EXECUTION_TIMEOUT = -9;
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/BackendErrorCode.java
 }

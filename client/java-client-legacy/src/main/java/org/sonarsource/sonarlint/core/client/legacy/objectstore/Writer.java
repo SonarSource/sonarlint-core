@@ -1,5 +1,9 @@
 /*
+<<<<<<<< HEAD:client/java-client-legacy/src/main/java/org/sonarsource/sonarlint/core/client/legacy/objectstore/Writer.java
  * SonarLint Core - Java Client Legacy
+========
+ * SonarLint Core - RPC Protocol
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/telemetry/TelemetryService.java
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,6 +21,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+<<<<<<<< HEAD:client/java-client-legacy/src/main/java/org/sonarsource/sonarlint/core/client/legacy/objectstore/Writer.java
 package org.sonarsource.sonarlint.core.client.legacy.objectstore;
 
 import java.io.OutputStream;
@@ -24,4 +29,17 @@ import java.util.function.BiConsumer;
 
 @FunctionalInterface
 public interface Writer<V> extends BiConsumer<OutputStream, V> {
+========
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry;
+
+import java.util.concurrent.CompletableFuture;
+import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
+import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
+
+@JsonSegment("telemetry")
+public interface TelemetryService {
+
+  @JsonRequest
+  CompletableFuture<GetStatusResponse> getStatus();
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/telemetry/TelemetryService.java
 }

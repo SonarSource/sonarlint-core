@@ -24,7 +24,11 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
 
 @JsonSegment("issue")
+<<<<<<<< HEAD:rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/issue/IssueRpcService.java
 public interface IssueRpcService {
+========
+public interface IssueService {
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/issue/IssueService.java
 
   /**
    * <p> It changes a status of an issue that is existing on the server or local-only. In detail, it is responsible for:

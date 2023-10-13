@@ -29,7 +29,11 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemov
  * The client is the source of truth for the configuration, but the backend needs to be kept in sync.
  */
 @JsonSegment("configuration")
+<<<<<<<< HEAD:rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/config/ConfigurationRpcService.java
 public interface ConfigurationRpcService {
+========
+public interface ConfigurationService {
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/config/ConfigurationService.java
 
   /**
    * Called by the client when configuration scopes have been added.

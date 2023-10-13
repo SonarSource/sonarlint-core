@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - RPC Implementation
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,6 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+<<<<<<<< HEAD:core/src/test/java/testutils/NoopCancelChecker.java
 package testutils;
 
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
@@ -25,5 +26,18 @@ public class NoopCancelChecker implements CancelChecker {
   @Override
   public void checkCanceled() {
     // do nothing
+========
+package org.sonarsource.sonarlint.core.rpc.impl;
+
+import java.util.function.Supplier;
+
+class AbstractSpringServiceDelegate<G> {
+
+  protected final Supplier<G> beanSupplier;
+
+  public AbstractSpringServiceDelegate(Supplier<G> beanSupplier) {
+    this.beanSupplier = beanSupplier;
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-impl/src/main/java/org/sonarsource/sonarlint/core/rpc/impl/AbstractSpringServiceDelegate.java
   }
+
 }

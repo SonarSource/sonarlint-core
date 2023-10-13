@@ -17,7 +17,11 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+<<<<<<<< HEAD:rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/client/issue/ShowIssueParams.java
 package org.sonarsource.sonarlint.core.rpc.protocol.client.issue;
+========
+package org.sonarsource.sonarlint.core.rpc.protocol.client.fs;
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/client/fs/FoundFileDto.java
 
 public class ShowIssueParams {
 

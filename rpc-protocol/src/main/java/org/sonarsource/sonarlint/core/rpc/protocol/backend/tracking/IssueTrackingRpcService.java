@@ -24,7 +24,11 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
 
 @JsonSegment("issueTracking")
+<<<<<<<< HEAD:rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/tracking/IssueTrackingRpcService.java
 public interface IssueTrackingRpcService {
+========
+public interface IssueTrackingService {
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/tracking/IssueTrackingService.java
   /**
    * Warning: this method will eventually become internal to the backend. It is exposed as an intermediate step during migration.
    *

@@ -25,7 +25,11 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
 
 @JsonSegment("hotspot")
+<<<<<<<< HEAD:rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/hotspot/HotspotRpcService.java
 public interface HotspotRpcService {
+========
+public interface HotspotService {
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/hotspot/HotspotService.java
 
   @JsonNotification
   void openHotspotInBrowser(OpenHotspotInBrowserParams params);

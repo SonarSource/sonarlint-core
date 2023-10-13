@@ -24,7 +24,11 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
 
 @JsonSegment("hotspotMatching")
+<<<<<<<< HEAD:rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/tracking/SecurityHotspotMatchingRpcService.java
 public interface SecurityHotspotMatchingRpcService {
+========
+public interface SecurityHotspotMatchingService {
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/tracking/SecurityHotspotMatchingService.java
   /**
    * Warning: this method will eventually become internal to the backend. It is exposed as an intermediate step during migration.
    *

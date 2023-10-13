@@ -25,7 +25,11 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.GetBindingSuggestionsResponse;
 
 @JsonSegment("binding")
+<<<<<<<< HEAD:rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/binding/BindingRpcService.java
 public interface BindingRpcService {
+========
+public interface BindingService {
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/binding/BindingService.java
 
   /**
    * Calculates a suggested binding for a 'configScopeId' and 'connectionId' specified in the {@link GetBindingSuggestionParams}

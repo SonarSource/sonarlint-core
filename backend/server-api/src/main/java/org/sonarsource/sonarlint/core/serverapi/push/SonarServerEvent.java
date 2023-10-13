@@ -1,5 +1,9 @@
 /*
+<<<<<<<< HEAD:backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/push/SonarServerEvent.java
  * SonarLint Core - Server API
+========
+ * SonarLint Core - RPC Protocol
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/plugin/PluginsService.java
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +21,11 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+<<<<<<<< HEAD:backend/server-api/src/main/java/org/sonarsource/sonarlint/core/serverapi/push/SonarServerEvent.java
 package org.sonarsource.sonarlint.core.serverapi.push;
+========
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.plugin;
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/plugin/PluginsService.java
 
 public interface SonarServerEvent {
 }

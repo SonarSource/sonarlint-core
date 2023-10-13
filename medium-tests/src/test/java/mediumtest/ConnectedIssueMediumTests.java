@@ -62,14 +62,14 @@ import testutils.MockWebServerExtensionWithProtobuf;
 import testutils.OnDiskTestClientInputFile;
 import testutils.TestUtils;
 
-import static mediumtest.fixtures.ClientFileSystemFixtures.aClientFileSystemWith;
-import static mediumtest.fixtures.ClientFileSystemFixtures.anEmptyClientFileSystem;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static mediumtest.fixtures.storage.StorageFixture.newStorage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.mock;
+import static mediumtest.fixtures.ClientFileSystemFixtures.aClientFileSystemWith;
+import static mediumtest.fixtures.ClientFileSystemFixtures.anEmptyClientFileSystem;
 import static testutils.TestUtils.createNoOpLogOutput;
 
 class ConnectedIssueMediumTests {

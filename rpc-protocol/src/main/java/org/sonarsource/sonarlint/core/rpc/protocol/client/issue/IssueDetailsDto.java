@@ -20,6 +20,12 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.client.issue;
 
 import java.util.List;
+<<<<<<<< HEAD:rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/client/issue/IssueDetailsDto.java
+========
+import org.sonarsource.sonarlint.core.rpc.protocol.common.FlowDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
+
+>>>>>>>> 42594bc97 (SLCORE-571 Make the client-api JSON-RPC friendly):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/client/issue/ShowIssueParams.java
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.FlowDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
