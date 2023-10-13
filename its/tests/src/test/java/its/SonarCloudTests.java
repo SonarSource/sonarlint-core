@@ -147,10 +147,12 @@ class SonarCloudTests extends AbstractConnectedTests {
   static void prepare() throws Exception {
     System.setProperty("sonarlint.internal.sonarcloud.url", SONARCLOUD_STAGING_URL);
 
-    backend = new SonarLintBackendImpl(newDummySonarLintClient());
+    var backendImpl = new SonarLintBackendImpl();
+    backendImpl.setClient(newDummySonarLintClient());
+    backend = backendImpl;
     backend.initialize(
       new InitializeParams(IT_CLIENT_INFO, new FeatureFlagsDto(false, true, false, false, false, false, false), sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
-        Collections.emptySet(), Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(),
+        Collections.emptySet(), Collections.emptyMap(), Set.of(org.sonarsource.sonarlint.core.clientapi.common.Language.JAVA), Collections.emptySet(),
         Collections.emptyList(), List.of(new SonarCloudConnectionConfigurationDto(CONNECTION_ID, SONARCLOUD_ORGANIZATION, true)), sonarUserHome.toString(),
         Map.of(), false));
 
@@ -230,8 +232,8 @@ class SonarCloudTests extends AbstractConnectedTests {
       projectKey(PROJECT_KEY_SCALA),
       projectKey(PROJECT_KEY_XML));
 
-    ALL_PROJECTS.forEach(p -> engine.updateProject(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), p, null));
-    engine.sync(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), ALL_PROJECTS, null);
+    ALL_PROJECTS.forEach(p -> engine.updateProject(sonarcloudEndpointITOrg(), ((SonarLintBackendImpl) backend).getHttpClient(CONNECTION_ID), p, null));
+    engine.sync(sonarcloudEndpointITOrg(), ((SonarLintBackendImpl) backend).getHttpClient(CONNECTION_ID), ALL_PROJECTS, null);
   }
 
   @AfterAll
@@ -296,7 +298,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     adminWsClient.settings().reset(new ResetRequest()
       .setKeys(Collections.singletonList(SONAR_JAVA_FILE_SUFFIXES))
       .setComponent(projectKey(PROJECT_KEY_JAVA)));
-    engine.sync(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), Set.of(projectKey(PROJECT_KEY_JAVA)), null);
+    engine.sync(sonarcloudEndpointITOrg(), ((SonarLintBackendImpl) backend).getHttpClient(CONNECTION_ID), Set.of(projectKey(PROJECT_KEY_JAVA)), null);
 
     // This profile is altered in a test
     restoreProfile("java-sonarlint.xml");
@@ -312,7 +314,7 @@ class SonarCloudTests extends AbstractConnectedTests {
   void downloadProjects() {
     provisionProject("foo-bar", "Foo");
     waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
-      assertThat(engine.downloadAllProjects(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), null)).containsKeys(projectKey("foo-bar"),
+      assertThat(engine.downloadAllProjects(sonarcloudEndpointITOrg(), ((SonarLintBackendImpl) backend).getHttpClient(CONNECTION_ID), null)).containsKeys(projectKey("foo-bar"),
         projectKey(PROJECT_KEY_JAVA),
         projectKey(PROJECT_KEY_PHP));
     });
@@ -321,7 +323,8 @@ class SonarCloudTests extends AbstractConnectedTests {
   @Test
   void testRuleDescription() throws Exception {
     assertThat(
-      engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), "java:S106", projectKey(PROJECT_KEY_JAVA)).get().getHtmlDescription())
+      engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), ((SonarLintBackendImpl) backend).getHttpClient(CONNECTION_ID), "java:S106", projectKey(PROJECT_KEY_JAVA)).get()
+        .getHtmlDescription())
       .contains("logs serve as a record of events within an application");
   }
 
@@ -340,7 +343,8 @@ class SonarCloudTests extends AbstractConnectedTests {
     }
 
     assertThat(
-      engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), ruleKey, projectKey(PROJECT_KEY_JAVA)).get().getExtendedDescription())
+      engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), ((SonarLintBackendImpl) backend).getHttpClient(CONNECTION_ID), ruleKey, projectKey(PROJECT_KEY_JAVA)).get()
+        .getExtendedDescription())
       .isEqualTo(extendedDescription);
   }
 
@@ -376,20 +380,20 @@ class SonarCloudTests extends AbstractConnectedTests {
   void analysisUseConfiguration() throws Exception {
     var issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA), PROJECT_KEY_JAVA,
-      "src/main/java/foo/Foo.java",
-      "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+        "src/main/java/foo/Foo.java",
+        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
       issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(2);
 
     // Override default file suffixes in project props so that input file is not considered as a Java file
     setSettingsMultiValue(projectKey(PROJECT_KEY_JAVA), SONAR_JAVA_FILE_SUFFIXES, ".foo");
 
-    engine.sync(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), Set.of(projectKey(PROJECT_KEY_JAVA)), null);
+    engine.sync(sonarcloudEndpointITOrg(), ((SonarLintBackendImpl) backend).getHttpClient(CONNECTION_ID), Set.of(projectKey(PROJECT_KEY_JAVA)), null);
 
     issueListener.clear();
     engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA), PROJECT_KEY_JAVA,
-      "src/main/java/foo/Foo.java",
-      "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+        "src/main/java/foo/Foo.java",
+        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
       issueListener, null, null);
     assertThat(issueListener.getIssues()).isEmpty();
   }
@@ -413,7 +417,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
   @Test
   void getProject() {
-    var api = new ServerApi(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID)).component();
+    var api = new ServerApi(sonarcloudEndpointITOrg(), ((SonarLintBackendImpl) backend).getHttpClient(CONNECTION_ID)).component();
     assertThat(api.getProject(projectKey("foo"))).isNotPresent();
     assertThat(api.getProject(projectKey(PROJECT_KEY_RUBY))).isPresent();
   }
@@ -478,16 +482,16 @@ class SonarCloudTests extends AbstractConnectedTests {
       associateProjectToQualityProfile(PROJECT_KEY_JAVA_HOTSPOT, "java", "SonarLint IT Java Hotspot");
       analyzeMavenProject(projectKey(PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT);
 
-      engine.updateProject(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), projectKey(PROJECT_KEY_JAVA_HOTSPOT), null);
-      engine.sync(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), Set.of(projectKey(PROJECT_KEY_JAVA_HOTSPOT)), null);
+      engine.updateProject(sonarcloudEndpointITOrg(), ((SonarLintBackendImpl) backend).getHttpClient(CONNECTION_ID), projectKey(PROJECT_KEY_JAVA_HOTSPOT), null);
+      engine.sync(sonarcloudEndpointITOrg(), ((SonarLintBackendImpl) backend).getHttpClient(CONNECTION_ID), Set.of(projectKey(PROJECT_KEY_JAVA_HOTSPOT)), null);
     }
 
     @Test
     void reportHotspots() throws Exception {
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT,
-        "src/main/java/foo/Foo.java",
-        "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath()),
+          "src/main/java/foo/Foo.java",
+          "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath()),
         issueListener, null, null);
 
       assertThat(issueListener.getIssues()).hasSize(1)
@@ -497,7 +501,8 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     @Test
     void loadHotspotRuleDescription() throws Exception {
-      var ruleDetails = engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), "java:S4792", projectKey(PROJECT_KEY_JAVA_HOTSPOT)).get();
+      var ruleDetails = engine
+        .getActiveRuleDetails(sonarcloudEndpointITOrg(), ((SonarLintBackendImpl) backend).getHttpClient(CONNECTION_ID), "java:S4792", projectKey(PROJECT_KEY_JAVA_HOTSPOT)).get();
 
       assertThat(ruleDetails.getName()).isEqualTo("Configuring loggers is security-sensitive");
       // HTML description is null for security hotspots when accessed through the deprecated engine API
@@ -508,7 +513,8 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     @Test
     void downloadsServerHotspotsForProject() {
-      engine.downloadAllServerHotspots(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), projectKey(PROJECT_KEY_JAVA_HOTSPOT), "master", null);
+      engine.downloadAllServerHotspots(sonarcloudEndpointITOrg(), ((SonarLintBackendImpl) backend).getHttpClient(CONNECTION_ID), projectKey(PROJECT_KEY_JAVA_HOTSPOT), "master",
+        null);
 
       var serverHotspots = engine.getServerHotspots(new ProjectBinding(projectKey(PROJECT_KEY_JAVA_HOTSPOT), "", "ide"), "master", "ide/src/main/java/foo/Foo.java");
       assertThat(serverHotspots)
@@ -520,7 +526,8 @@ class SonarCloudTests extends AbstractConnectedTests {
     void downloadsServerHotspotsForFile() {
       var projectBinding = new ProjectBinding(projectKey(PROJECT_KEY_JAVA_HOTSPOT), "", "ide");
 
-      engine.downloadAllServerHotspotsForFile(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), projectBinding, "ide/src/main/java/foo/Foo.java", "master", null);
+      engine.downloadAllServerHotspotsForFile(sonarcloudEndpointITOrg(), ((SonarLintBackendImpl) backend).getHttpClient(CONNECTION_ID), projectBinding,
+        "ide/src/main/java/foo/Foo.java", "master", null);
 
       var serverHotspots = engine.getServerHotspots(projectBinding, "master", "ide/src/main/java/foo/Foo.java");
       assertThat(serverHotspots)
@@ -541,15 +548,16 @@ class SonarCloudTests extends AbstractConnectedTests {
       associateProjectToQualityProfile(PROJECT_KEY_JAVA_TAINT, "java", "SonarLint Taint Java");
       analyzeMavenProject(projectKey(PROJECT_KEY_JAVA_TAINT), PROJECT_KEY_JAVA_TAINT);
 
-      engine.updateProject(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), projectKey(PROJECT_KEY_JAVA_TAINT), null);
-      engine.sync(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), Set.of(projectKey(PROJECT_KEY_JAVA_TAINT)), null);
+      engine.updateProject(sonarcloudEndpointITOrg(), ((SonarLintBackendImpl) backend).getHttpClient(CONNECTION_ID), projectKey(PROJECT_KEY_JAVA_TAINT), null);
+      engine.sync(sonarcloudEndpointITOrg(), ((SonarLintBackendImpl) backend).getHttpClient(CONNECTION_ID), Set.of(projectKey(PROJECT_KEY_JAVA_TAINT)), null);
     }
 
     @Test
     void download_taint_vulnerabilities_for_file() {
       ProjectBinding projectBinding = new ProjectBinding(projectKey(PROJECT_KEY_JAVA_TAINT), "", "");
 
-      engine.downloadAllServerTaintIssuesForFile(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), projectBinding, "src/main/java/foo/DbHelper.java",
+      engine.downloadAllServerTaintIssuesForFile(sonarcloudEndpointITOrg(), ((SonarLintBackendImpl) backend).getHttpClient(CONNECTION_ID), projectBinding,
+        "src/main/java/foo/DbHelper.java",
         MAIN_BRANCH_NAME,
         null);
 
@@ -611,7 +619,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
   private static void runMaven(Path workDir, String... args) throws IOException {
     var cmdLine = CommandLine.parse("mvn");
-    cmdLine.addArguments(new String[] {"--batch-mode", "--show-version", "--errors"});
+    cmdLine.addArguments(new String[]{"--batch-mode", "--show-version", "--errors"});
     cmdLine.addArguments(args);
     var executor = new DefaultExecutor();
     executor.setWorkingDirectory(workDir.toFile());

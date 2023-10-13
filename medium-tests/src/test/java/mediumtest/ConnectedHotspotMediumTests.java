@@ -61,8 +61,6 @@ import static testutils.TestUtils.createNoOpLogOutput;
 
 class ConnectedHotspotMediumTests {
 
-  public static final String CONNECTION_ID = "connectionId";
-
   @AfterEach
   void stop() {
     if (sonarlint != null) {
@@ -195,7 +193,7 @@ class ConnectedHotspotMediumTests {
       .build();
     backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, mockWebServer.url("/"))
-      .withStorage(SERVER_ID, b -> b
+      .withStorage(CONNECTION_ID, b -> b
         .withServerVersion(serverVersion)
         .withJavaPlugin()
         .withProject(JAVA_MODULE_KEY, project -> project
@@ -204,7 +202,7 @@ class ConnectedHotspotMediumTests {
       .build(fakeClient);
 
     var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
-      .setConnectionId(SERVER_ID)
+      .setConnectionId(CONNECTION_ID)
       .setSonarLintUserHome(backend.getUserHome())
       .setStorageRoot(backend.getStorageRoot())
       .setLogOutput(createNoOpLogOutput())
@@ -247,7 +245,7 @@ class ConnectedHotspotMediumTests {
   @RegisterExtension
   private final MockWebServerExtensionWithProtobuf mockWebServer = new MockWebServerExtensionWithProtobuf();
 
-  private static final String SERVER_ID = StringUtils.repeat("very-long-id", 30);
+  private static final String CONNECTION_ID = StringUtils.repeat("very-long-id", 30);
   private static final String JAVA_MODULE_KEY = "test-project-2";
   private static ConnectedSonarLintEngineImpl sonarlint;
 
