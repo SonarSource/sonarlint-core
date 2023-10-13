@@ -22,17 +22,17 @@ package mediumtest;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
-import org.sonarsource.sonarlint.core.clientapi.backend.analysis.GetSupportedFilePatternsParams;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.SpringApplicationContextInitializer;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetSupportedFilePatternsParams;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.sonarsource.sonarlint.core.clientapi.common.Language.*;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 
 class AnalysisServiceMediumTests {
 
-  private SonarLintBackendImpl backend;
+  private SonarLintBackend backend;
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {

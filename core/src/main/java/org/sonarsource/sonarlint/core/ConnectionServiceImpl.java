@@ -25,34 +25,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectionValidator;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.ConnectionService;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.auth.HelpGenerateUserTokenParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.auth.HelpGenerateUserTokenResponse;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.check.CheckSmartNotificationsSupportedParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.check.CheckSmartNotificationsSupportedResponse;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.common.TransientSonarCloudConnectionDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.common.TransientSonarQubeConnectionDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidChangeCredentialsParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.GetOrganizationParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.GetOrganizationResponse;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.ListUserOrganizationsParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.ListUserOrganizationsResponse;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.OrganizationDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.ValidateConnectionParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.ValidateConnectionResponse;
-import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.clientapi.common.TokenDto;
-import org.sonarsource.sonarlint.core.clientapi.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
@@ -65,6 +48,27 @@ import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionCo
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.check.CheckSmartNotificationsSupportedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.check.CheckSmartNotificationsSupportedResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidChangeCredentialsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.OrganizationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -169,22 +173,36 @@ public class ConnectionServiceImpl implements ConnectionService {
 
   @Override
   public CompletableFuture<ValidateConnectionResponse> validateConnection(ValidateConnectionParams params) {
-    var helper = buildServerApiHelper(params.getTransientConnection());
-    var connectionValidator = new ConnectionValidator(helper);
-    return connectionValidator.validateConnection().thenApply(r -> new ValidateConnectionResponse(r.success(), r.message()));
+    return CompletableFutures.computeAsync(cancelChecker -> {
+      var helper = buildServerApiHelper(params.getTransientConnection());
+      var connectionValidator = new ConnectionValidator(helper);
+      try {
+        var r = connectionValidator.validateConnection().get(1, TimeUnit.MINUTES);
+        return new ValidateConnectionResponse(r.success(), r.message());
+        // FIXME
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      } catch (ExecutionException e) {
+        throw new RuntimeException(e);
+      } catch (TimeoutException e) {
+        throw new RuntimeException(e);
+      }
+    });
   }
 
   @Override
   public CompletableFuture<CheckSmartNotificationsSupportedResponse> checkSmartNotificationsSupported(CheckSmartNotificationsSupportedParams params) {
-    var helper = buildServerApiHelper(params.getTransientConnection());
-    var developersApi = new ServerApi(helper).developers();
-    return CompletableFuture.supplyAsync(() -> new CheckSmartNotificationsSupportedResponse(developersApi.isSupported()));
+    return CompletableFutures.computeAsync(cancelChecker -> {
+      var helper = buildServerApiHelper(params.getTransientConnection());
+      var developersApi = new ServerApi(helper).developers();
+      return new CheckSmartNotificationsSupportedResponse(developersApi.isSupported());
+    });
   }
 
   @Override
   public CompletableFuture<ListUserOrganizationsResponse> listUserOrganizations(ListUserOrganizationsParams params) {
-    var helper = buildSonarCloudNoOrgApiHelper(params.getCredentials());
-    return CompletableFuture.supplyAsync(() -> {
+    return CompletableFutures.computeAsync(cancelChecker -> {
+      var helper = buildSonarCloudNoOrgApiHelper(params.getCredentials());
       var serverOrganizations = new OrganizationApi(helper).listUserOrganizations(new ProgressMonitor(null));
       return new ListUserOrganizationsResponse(
         serverOrganizations.stream().map(o -> new OrganizationDto(o.getKey(), o.getName(), o.getDescription())).collect(Collectors.toList()));
@@ -193,8 +211,8 @@ public class ConnectionServiceImpl implements ConnectionService {
 
   @Override
   public CompletableFuture<GetOrganizationResponse> getOrganization(GetOrganizationParams params) {
-    var helper = buildSonarCloudNoOrgApiHelper(params.getCredentials());
-    return CompletableFuture.supplyAsync(() -> {
+    return CompletableFutures.computeAsync(cancelChecker -> {
+      var helper = buildSonarCloudNoOrgApiHelper(params.getCredentials());
       var serverOrganization = new OrganizationApi(helper).getOrganization(params.getOrganizationKey(), new ProgressMonitor(null));
       return new GetOrganizationResponse(serverOrganization.map(o -> new OrganizationDto(o.getKey(), o.getName(), o.getDescription())).orElse(null));
     });

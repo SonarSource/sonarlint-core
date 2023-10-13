@@ -10,12 +10,6 @@
   <name>SonarLint Core - Implementation</name>
   <description>Common library used by some SonarLint flavors</description>
 
-  <properties>
-    <!-- For coverage computation, it is better to skip shading, else JaCoCo will fail with
-     Classes in bundle 'sonarlint-core' do not match with execution data. For report generation the same class files must be used as at runtime.-->
-    <maven.shade.skip>false</maven.shade.skip>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
@@ -29,16 +23,6 @@
     <dependency>
       <groupId>javax.annotation</groupId>
       <artifactId>javax.annotation-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>info.picocli</groupId>
-      <artifactId>picocli</artifactId>
-      <version>4.7.1</version>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>sonarlint-server-api</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
@@ -83,7 +67,7 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>sonarlint-client-api</artifactId>
+      <artifactId>sonarlint-rpc-protocol</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -231,100 +215,6 @@
             <configuration>
               <!-- Disable source jar configured in the parent-oss, to not override the one produced by the shade plugin -->
               <skipSource>true</skipSource>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>shade</id>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <configuration>
-              <skip>${maven.shade.skip}</skip>
-              <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>org.sonarsource.sonarlint.core.SonarLintCoreProcess</mainClass>
-                </transformer>
-              </transformers>
-              <createDependencyReducedPom>true</createDependencyReducedPom>
-              <minimizeJar>true</minimizeJar>
-              <createSourcesJar>true</createSourcesJar>
-              <relocations>
-                <relocation>
-                  <pattern/>
-                  <shadedPattern>org.sonarsource.sonarlint.shaded.</shadedPattern>
-                  <includes>
-                    <include>org.apache.**</include>
-                    <include>org.checkerframework.**</include>
-                    <include>com.google.gson.**</include>
-                    <include>org.springframework.**</include>
-                    <include>org.sonarqube.ws.**</include>
-                  </includes>
-                  <excludes>
-                    <exclude>org.apache.hc.**</exclude>
-                  </excludes>
-                </relocation>
-              </relocations>
-              <artifactSet>
-                <excludes>
-                  <exclude>org.jetbrains.kotlin:*</exclude>
-                </excludes>
-              </artifactSet>
-              <filters>
-                <filter>
-                  <artifact>*:*</artifact>
-                  <excludes>
-                    <exclude>module-info.class</exclude>
-                    <exclude>META-INF/*.SF</exclude>
-                    <exclude>META-INF/*.DSA</exclude>
-                    <exclude>META-INF/*.RSA</exclude>
-                    <exclude>META-INF/LICENSE*</exclude>
-                    <exclude>META-INF/NOTICE*</exclude>
-                    <exclude>LICENSE*</exclude>
-                    <exclude>NOTICE*</exclude>
-                    <exclude>*.proto</exclude>
-                  </excludes>
-                </filter>
-                <filter>
-                  <artifact>org.sonarsource.api.plugin:sonar-plugin-api</artifact>
-                  <includes>
-                    <include>**</include>
-                  </includes>
-                  <excludes>
-                    <exclude>**/JsonWriter.class</exclude>
-                    <exclude>**/internal/google/gson/**</exclude>
-                    <!-- Overridden by SonarLint -->
-                    <exclude>org/sonar/api/utils/log/Loggers.class</exclude>
-                  </excludes>
-                </filter>
-                <filter>
-                  <!-- Shade the SonarLint Plugin API (avoids minimization) as it is used by plugins -->
-                  <artifact>org.sonarsource.sonarlint.core:sonarlint-plugin-api</artifact>
-                  <includes>
-                    <include>**</include>
-                  </includes>
-                </filter>
-                <filter>
-                  <!-- Shade protobuf (avoids minimization) as it is used by IDEs -->
-                  <artifact>com.google.protobuf:protobuf-java</artifact>
-                  <includes>
-                    <include>**</include>
-                  </includes>
-                </filter>
-                <filter>
-                  <!-- Shade the SonarLint Core modules (avoids minimization) as it contains classes used at Runtime (like telemetry or ProfileDefinition) -->
-                  <artifact>org.sonarsource.sonarlint.core:*</artifact>
-                  <includes>
-                    <include>**</include>
-                  </includes>
-                </filter>
-              </filters>
             </configuration>
           </execution>
         </executions>
