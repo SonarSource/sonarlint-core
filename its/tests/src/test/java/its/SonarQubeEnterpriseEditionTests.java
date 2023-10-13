@@ -85,6 +85,7 @@ import org.sonarsource.sonarlint.core.clientapi.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.commons.Language;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.sonarsource.sonarlint.core.clientapi.common.Language.JAVA;
 
 class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   public static final String CONNECTION_ID = "orchestrator";
@@ -112,12 +113,14 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
   @BeforeAll
   static void startBackend() {
-    backend = new SonarLintBackendImpl(newDummySonarLintClient());
+    var backendImpl = new SonarLintBackendImpl();
+    backendImpl.setClient(newDummySonarLintClient());
+    backend = backendImpl;
     try {
       backend.initialize(
         new InitializeParams(IT_CLIENT_INFO, new FeatureFlagsDto(false, true, false, false, false, false), sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
           Collections.emptySet(),
-          Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(),
+          Collections.emptyMap(), Set.of(JAVA), Collections.emptySet(),
           List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(),
           Map.of(), false))
         .get();
@@ -327,8 +330,8 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   }
 
   private void updateProject(String projectKey) {
-    engine.updateProject(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), projectKey, null);
-    engine.sync(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), Set.of(projectKey), null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), ((SonarLintBackendImpl) backend).getHttpClient(CONNECTION_ID), projectKey, null);
+    engine.sync(endpointParams(ORCHESTRATOR), ((SonarLintBackendImpl) backend).getHttpClient(CONNECTION_ID), Set.of(projectKey), null);
   }
 
   private static void removeGroupPermission(String groupName, String permission) {
