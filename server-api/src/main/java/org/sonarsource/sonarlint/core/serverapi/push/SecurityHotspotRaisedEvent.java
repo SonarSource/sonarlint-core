@@ -57,6 +57,7 @@ public class SecurityHotspotRaisedEvent implements ServerHotspotEvent {
     return hotspotKey;
   }
 
+  @Override
   public String getProjectKey() {
     return projectKey;
   }

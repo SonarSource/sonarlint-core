@@ -20,25 +20,22 @@
 package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
 import java.util.Collection;
-import java.util.Map;
+import java.util.List;
 import javax.annotation.Nullable;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
-import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
-import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.RuleType;
-import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
+import org.sonarsource.sonarlint.core.clientapi.common.IssueSeverity;
+import org.sonarsource.sonarlint.core.clientapi.common.Language;
+import org.sonarsource.sonarlint.core.clientapi.common.RuleType;
 
 public class EffectiveRuleDetailsDto extends AbstractRuleDto {
   private final Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> description;
   private final Collection<EffectiveRuleParamDto> params;
 
   public EffectiveRuleDetailsDto(String key, String name, IssueSeverity severity, RuleType type,
-    @Nullable CleanCodeAttribute cleanCodeAttribute, Map<SoftwareQuality, ImpactSeverity> defaultImpacts,
+    @Nullable CleanCodeAttributeDto cleanCodeAttributeDetails, List<ImpactDto> defaultImpacts,
     Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> description, Collection<EffectiveRuleParamDto> params,
     Language language) {
-    super(key, name, severity, type, cleanCodeAttribute, defaultImpacts, language);
+    super(key, name, severity, type, cleanCodeAttributeDetails, defaultImpacts, language);
     this.description = description;
     this.params = params;
   }

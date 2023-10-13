@@ -61,7 +61,7 @@ import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssu
 class XodusServerIssueStoreTests {
 
   @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester(true);
+  SonarLintLogTester logTester = new SonarLintLogTester(false);
 
   @TempDir
   Path workDir;
