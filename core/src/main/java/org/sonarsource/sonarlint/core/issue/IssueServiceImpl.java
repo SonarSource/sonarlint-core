@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.issue;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -29,26 +30,33 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
+import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.AddIssueCommentParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.ChangeIssueStatusParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckAnticipatedStatusChangeSupportedParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckAnticipatedStatusChangeSupportedResponse;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangePermittedParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangePermittedResponse;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueService;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenAllIssuesForFileParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenIssueParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenIssueResponse;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.ResolutionStatus;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.Transition;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.local.only.XodusLocalOnlyIssueStore;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.BackendErrorCode;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.AddIssueCommentParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ChangeIssueStatusParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckAnticipatedStatusChangeSupportedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckAnticipatedStatusChangeSupportedResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.IssueService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenIssueParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenIssueResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
@@ -56,9 +64,15 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 
+import static org.sonarsource.sonarlint.core.utils.FutureUtils.waitForHttpRequest;
+import static org.sonarsource.sonarlint.core.utils.FutureUtils.waitForTask;
+import static org.sonarsource.sonarlint.core.utils.FutureUtils.waitForTaskWithResult;
+
 @Named
 @Singleton
 public class IssueServiceImpl implements IssueService {
+
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private static final String STATUS_CHANGE_PERMISSION_MISSING_REASON = "Marking an issue as resolved requires the 'Administer Issues' permission";
   private static final String UNSUPPORTED_SQ_VERSION_REASON = "Marking a local-only issue as resolved requires SonarQube 10.2+";
@@ -89,39 +103,36 @@ public class IssueServiceImpl implements IssueService {
 
   @Override
   public CompletableFuture<Void> changeStatus(ChangeIssueStatusParams params) {
-    var configurationScopeId = params.getConfigurationScopeId();
-    var optionalBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
-    return optionalBinding
-      .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
-      .map(connection -> {
-        var reviewStatus = transitionByResolutionStatus.get(params.getNewStatus());
-        var binding = optionalBinding.get();
-        var projectServerIssueStore = storageService.binding(binding).findings();
-        var issueKey = params.getIssueKey();
-        boolean isServerIssue = projectServerIssueStore.containsIssue(issueKey, params.isTaintIssue());
-        if (isServerIssue) {
-          return connection.issue().changeStatusAsync(issueKey, reviewStatus)
-            .thenAccept(nothing -> projectServerIssueStore.updateIssueResolutionStatus(issueKey, params.isTaintIssue(), true)
-              .ifPresent(issue -> telemetryService.issueStatusChanged(issue.getRuleKey())))
-            .exceptionally(throwable -> {
-              throw new IssueStatusChangeException(throwable);
-            });
+    return CompletableFutures.computeAsync(cancelChecker -> {
+      var configurationScopeId = params.getConfigurationScopeId();
+      var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
+      var serverApi = serverApiProvider.getServerApiOrThrow(binding.getConnectionId());
+      var reviewStatus = transitionByResolutionStatus.get(params.getNewStatus());
+      var projectServerIssueStore = storageService.binding(binding).findings();
+      var issueKey = params.getIssueKey();
+      boolean isServerIssue = projectServerIssueStore.containsIssue(issueKey, params.isTaintIssue());
+      if (isServerIssue) {
+        waitForHttpRequest(cancelChecker, serverApi.issue().changeStatusAsync(issueKey, reviewStatus), "change status");
+        projectServerIssueStore.updateIssueResolutionStatus(issueKey, params.isTaintIssue(), true)
+          .ifPresent(issue -> telemetryService.issueStatusChanged(issue.getRuleKey()));
+      } else {
+        var localIssueOpt = asUUID(issueKey)
+          .flatMap(localOnlyIssueRepository::findByKey);
+        if (localIssueOpt.isEmpty()) {
+          var error = new ResponseError(BackendErrorCode.ISSUE_NOT_FOUND, "Issue key " + issueKey + " was not found", issueKey);
+          throw new ResponseErrorException(error);
         }
-        return asUUID(issueKey)
-          .flatMap(localOnlyIssueRepository::findByKey)
-          .map(issue -> {
-            var coreStatus = org.sonarsource.sonarlint.core.commons.IssueStatus.valueOf(params.getNewStatus().name());
-            issue.resolve(coreStatus);
-            var localOnlyIssueStore = localOnlyIssueStorageService.get();
-            return connection.issue()
-              .anticipatedTransitions(binding.getSonarProjectKey(), concat(localOnlyIssueStore.loadAll(configurationScopeId), issue))
-              .thenAccept(nothing -> {
-                localOnlyIssueStore.storeLocalOnlyIssue(params.getConfigurationScopeId(), issue);
-                telemetryService.issueStatusChanged(issue.getRuleKey());
-              });
-          }).orElseThrow(() -> new IssueStatusChangeException("Issue key " + issueKey + " was not found"));
-      })
-      .orElseGet(() -> CompletableFuture.completedFuture(null));
+        var coreStatus = org.sonarsource.sonarlint.core.commons.IssueStatus.valueOf(params.getNewStatus().name());
+        var issue = localIssueOpt.get();
+        issue.resolve(coreStatus);
+        var localOnlyIssueStore = localOnlyIssueStorageService.get();
+        waitForHttpRequest(cancelChecker, serverApi.issue()
+          .anticipatedTransitions(binding.getSonarProjectKey(), concat(localOnlyIssueStore.loadAll(configurationScopeId), issue)), "update anticipated transitions");
+        localOnlyIssueStore.storeLocalOnlyIssue(params.getConfigurationScopeId(), issue);
+        telemetryService.issueStatusChanged(issue.getRuleKey());
+      }
+      return null;
+    });
   }
 
   private static List<LocalOnlyIssue> concat(List<LocalOnlyIssue> issues, LocalOnlyIssue issue) {
@@ -134,56 +145,47 @@ public class IssueServiceImpl implements IssueService {
       .collect(Collectors.toList());
   }
 
+  @Override
+  public CompletableFuture<CheckAnticipatedStatusChangeSupportedResponse> checkAnticipatedStatusChangeSupported(CheckAnticipatedStatusChangeSupportedParams params) {
+    return CompletableFutures.computeAsync(cancelChecker -> {
+      var configScopeId = params.getConfigScopeId();
+      var binding = configurationRepository.getEffectiveBindingOrThrow(configScopeId);
+      var connectionId = binding.getConnectionId();
+      var serverApi = serverApiProvider.getServerApiOrThrow(binding.getConnectionId());
+      return new CheckAnticipatedStatusChangeSupportedResponse(checkAnticipatedStatusChangeSupported(serverApi, connectionId));
+    });
+  }
+
   /**
-   *  Check if the anticipated transitions are supported on the server side (requires SonarQube 10.2+)
+   * Check if the anticipated transitions are supported on the server side (requires SonarQube 10.2+)
    *
-   *  @param api used for checking if server is a SonarQube instance
-   *  @param connectionId required to get the version information from the server
-   *  @return whether server is SonarQube instance and matches version requirement
+   * @param api          used for checking if server is a SonarQube instance
+   * @param connectionId required to get the version information from the server
+   * @return whether server is SonarQube instance and matches version requirement
    */
   private boolean checkAnticipatedStatusChangeSupported(ServerApi api, String connectionId) {
     return !api.isSonarCloud() && storageService.connection(connectionId).serverInfo().read()
-            .map(version -> version.getVersion().satisfiesMinRequirement(SQ_ANTICIPATED_TRANSITIONS_MIN_VERSION))
-            .orElse(false);
-  }
-
-  @Override
-  public CompletableFuture<CheckAnticipatedStatusChangeSupportedResponse> checkAnticipatedStatusChangeSupported(CheckAnticipatedStatusChangeSupportedParams params) {
-    var configScopeId = params.getConfigScopeId();
-    var bindingOpt = configurationRepository.getEffectiveBinding(configScopeId);
-    if (bindingOpt.isEmpty()) {
-      return CompletableFuture.failedFuture(new IllegalArgumentException("Binding for configuration scope ID '" + configScopeId + "' does not exist"));
-    }
-    var binding = bindingOpt.get();
-    var connectionId = binding.getConnectionId();
-    var serverApiOpt = serverApiProvider.getServerApi(connectionId);
-    if (serverApiOpt.isEmpty()) {
-      // This (not very testable) corner case can only happen on one occasion:
-      //   When the binding was removed between `ConfigurationRepository.getEffectiveBinding(configScopeId)` and now!
-      return CompletableFuture.failedFuture(new IllegalArgumentException("Connection with ID '" + connectionId + "' does not exist"));
-    }
-    var serverApi = serverApiOpt.get();
-    return CompletableFuture.completedFuture(new CheckAnticipatedStatusChangeSupportedResponse(checkAnticipatedStatusChangeSupported(serverApi, connectionId)));
+      .map(version -> version.getVersion().satisfiesMinRequirement(SQ_ANTICIPATED_TRANSITIONS_MIN_VERSION))
+      .orElse(false);
   }
 
   @Override
   public CompletableFuture<CheckStatusChangePermittedResponse> checkStatusChangePermitted(CheckStatusChangePermittedParams params) {
-    var connectionId = params.getConnectionId();
-    var serverApiOpt = serverApiProvider.getServerApi(connectionId);
-    if (serverApiOpt.isEmpty()) {
-      return CompletableFuture.failedFuture(new IllegalArgumentException("Connection with ID '" + connectionId + "' does not exist"));
-    }
-    var issueKey = params.getIssueKey();
-    var serverApi = serverApiOpt.get();
-    return asUUID(issueKey)
-      .flatMap(localOnlyIssueRepository::findByKey)
-      .map(r -> {
-        var anticipateTransitionsSupported = checkAnticipatedStatusChangeSupported(serverApi, connectionId);
-        // no way to easily check if 'Administer Issue' permission is granted, might fail later
-        return CompletableFuture.completedFuture(toResponse(anticipateTransitionsSupported, UNSUPPORTED_SQ_VERSION_REASON));
-      })
-      .orElseGet(() -> serverApi.issue().searchByKey(params.getIssueKey())
-        .thenApply(issue -> toResponse(hasAdministerIssuePermission(issue), STATUS_CHANGE_PERMISSION_MISSING_REASON)));
+    return CompletableFutures.computeAsync(cancelChecker -> {
+      var connectionId = params.getConnectionId();
+      var serverApi = serverApiProvider.getServerApiOrThrow(connectionId);
+      var issueKey = params.getIssueKey();
+      return asUUID(issueKey)
+        .flatMap(localOnlyIssueRepository::findByKey)
+        .map(r -> {
+          var anticipateTransitionsSupported = checkAnticipatedStatusChangeSupported(serverApi, connectionId);
+          return toResponse(anticipateTransitionsSupported, UNSUPPORTED_SQ_VERSION_REASON);
+        })
+        .orElseGet(() -> {
+          Issues.Issue issue = waitForTaskWithResult(cancelChecker, serverApi.issue().searchByKey(params.getIssueKey()), "check status change permitted", Duration.ofSeconds(10));
+          return toResponse(hasAdministerIssuePermission(issue), STATUS_CHANGE_PERMISSION_MISSING_REASON);
+        });
+    });
   }
 
   private static CheckStatusChangePermittedResponse toResponse(boolean permitted, String reason) {
@@ -193,126 +195,130 @@ public class IssueServiceImpl implements IssueService {
       Arrays.asList(ResolutionStatus.values()));
   }
 
-  private static boolean hasAdministerIssuePermission(Issues.Issue issue) {
+  private static boolean hasAdministerIssuePermission(@Nullable Issues.Issue issue) {
     // the 2 required transitions are not available when the 'Administer Issues' permission is missing
     // normally the 'Browse' permission is also required, but we assume it's present as the client knows the issue key
+    if (issue == null) {
+      return false;
+    }
     var possibleTransitions = new HashSet<>(issue.getTransitions().getTransitionsList());
     return possibleTransitions.containsAll(requiredTransitions);
   }
 
   @Override
   public CompletableFuture<Void> addComment(AddIssueCommentParams params) {
-    var configurationScopeId = params.getConfigurationScopeId();
-    var issueKey = params.getIssueKey();
-    return asUUID(issueKey)
-      .flatMap(issueId -> setCommentOnLocalOnlyIssue(configurationScopeId, issueId, params.getText()))
-      .orElseGet(() -> addCommentOnServerIssue(configurationScopeId, issueKey, params.getText()));
+    return CompletableFutures.computeAsync(cancelChecker -> {
+      var configurationScopeId = params.getConfigurationScopeId();
+      var issueKey = params.getIssueKey();
+      var optionalId = asUUID(issueKey);
+      if (optionalId.isPresent()) {
+        setCommentOnLocalOnlyIssue(configurationScopeId, optionalId.get(), params.getText(), cancelChecker);
+      } else {
+        addCommentOnServerIssue(configurationScopeId, issueKey, params.getText(), cancelChecker);
+      }
+      return null;
+    });
   }
 
   @Override
   public CompletableFuture<ReopenIssueResponse> reopenIssue(ReopenIssueParams params) {
-    var configurationScopeId = params.getConfigurationScopeId();
-    var optionalBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
-    return optionalBinding
-      .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
-      .map(connection -> {
-        var binding = optionalBinding.get();
-        var projectServerIssueStore = storageService.binding(binding).findings();
-        var issueId = params.getIssueId();
-        boolean isServerIssue = projectServerIssueStore.containsIssue(issueId, params.isTaintIssue());
-        if (isServerIssue) {
-          return reopenServerIssue(connection, issueId, projectServerIssueStore);
-        } else {
-          return reopenLocalIssue(issueId, configurationScopeId);
-        }
-      })
-      .orElseGet(() -> CompletableFuture.completedFuture(new ReopenIssueResponse(false)));
+    return CompletableFutures.computeAsync(cancelChecker -> {
+      var configurationScopeId = params.getConfigurationScopeId();
+      var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
+      var serverApiConnection = serverApiProvider.getServerApiOrThrow(binding.getConnectionId());
+      var projectServerIssueStore = storageService.binding(binding).findings();
+      var issueId = params.getIssueId();
+      boolean isServerIssue = projectServerIssueStore.containsIssue(issueId, false);
+      if (isServerIssue) {
+        return waitForTaskWithResult(cancelChecker, reopenServerIssue(serverApiConnection, issueId, projectServerIssueStore), "Reopen server issue", Duration.ofMinutes(1));
+      } else {
+        return waitForTaskWithResult(cancelChecker, reopenLocalIssue(issueId, configurationScopeId), "Reopen local issue", Duration.ofMinutes(1));
+      }
+    });
   }
 
   @Override
   public CompletableFuture<ReopenIssueResponse> reopenAllIssuesForFile(ReopenAllIssuesForFileParams params) {
-    var configurationScopeId = params.getConfigurationScopeId();
-    var filePath = params.getRelativePath();
-    var localOnlyIssueStore = localOnlyIssueStorageService.get();
-    return removeAllIssuesForFile(localOnlyIssueStore, configurationScopeId, filePath)
-      .thenApply(v -> localOnlyIssueStorageService.get().removeAllIssuesForFile(configurationScopeId, filePath))
-      .thenApply(ReopenIssueResponse::new);
+    return CompletableFutures.computeAsync(cancelChecker -> {
+      var configurationScopeId = params.getConfigurationScopeId();
+      var filePath = params.getRelativePath();
+      var localOnlyIssueStore = localOnlyIssueStorageService.get();
+      waitForTask(cancelChecker, removeAllIssuesForFile(localOnlyIssueStore, configurationScopeId, filePath), "Reopen all issues for file", Duration.ofMinutes(1));
+      var result = localOnlyIssueStorageService.get().removeAllIssuesForFile(configurationScopeId, filePath);
+      return new ReopenIssueResponse(result);
+    });
   }
 
   private CompletableFuture<Void> removeAllIssuesForFile(XodusLocalOnlyIssueStore localOnlyIssueStore,
     String configurationScopeId, String filePath) {
-    var allIssues = localOnlyIssueStore.loadAll(configurationScopeId);
-    var issuesForFile = localOnlyIssueStore.loadForFile(configurationScopeId, filePath);
-    var issuesToSync = subtract(allIssues, issuesForFile);
-    var optionalBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
-    return optionalBinding
-      .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
-      .map(connection -> connection.issue().anticipatedTransitions(optionalBinding.get().getSonarProjectKey(), issuesToSync))
-      .orElseGet(() -> CompletableFuture.completedFuture(null));
+    return CompletableFutures.computeAsync(cancelChecker -> {
+      var allIssues = localOnlyIssueStore.loadAll(configurationScopeId);
+      var issuesForFile = localOnlyIssueStore.loadForFile(configurationScopeId, filePath);
+      var issuesToSync = subtract(allIssues, issuesForFile);
+      var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
+      var serverConnection = serverApiProvider.getServerApiOrThrow(binding.getConnectionId());
+      waitForHttpRequest(cancelChecker, serverConnection.issue().anticipatedTransitions(binding.getSonarProjectKey(), issuesToSync), "Reopen all issues for file");
+      return null;
+    });
   }
 
   private CompletableFuture<Void> removeIssueOnServer(XodusLocalOnlyIssueStore localOnlyIssueStore,
     String configurationScopeId, UUID issueId) {
-    var allIssues = localOnlyIssueStore.loadAll(configurationScopeId);
-    var issuesToSync = allIssues.stream().filter(it -> !it.getId().equals(issueId)).collect(Collectors.toList());
-    var optionalBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
-    return optionalBinding
-      .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
-      .map(connection -> connection.issue().anticipatedTransitions(optionalBinding.get().getSonarProjectKey(), issuesToSync))
-      .orElseGet(() -> CompletableFuture.completedFuture(null));
+    return CompletableFutures.computeAsync(cancelChecker -> {
+      var allIssues = localOnlyIssueStore.loadAll(configurationScopeId);
+      var issuesToSync = allIssues.stream().filter(it -> !it.getId().equals(issueId)).collect(Collectors.toList());
+      var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
+      var serverConnection = serverApiProvider.getServerApiOrThrow(binding.getConnectionId());
+      waitForHttpRequest(cancelChecker, serverConnection.issue().anticipatedTransitions(binding.getSonarProjectKey(), issuesToSync), "Remove issue on server");
+      return null;
+    });
   }
 
-  private Optional<CompletableFuture<Void>> setCommentOnLocalOnlyIssue(String configurationScopeId, UUID issueId, String comment) {
+  private void setCommentOnLocalOnlyIssue(String configurationScopeId, UUID issueId, String comment, CancelChecker cancelChecker) {
     var localOnlyIssueStore = localOnlyIssueStorageService.get();
-    return localOnlyIssueStore.find(issueId)
-      .flatMap(commentedIssue -> {
-        var resolution = commentedIssue.getResolution();
-        if (resolution != null) {
-          // should always be true, we store only resolved local-only issues
-          resolution.setComment(comment);
-          var issuesToSync = localOnlyIssueStore.loadAll(configurationScopeId);
-          issuesToSync.replaceAll(issue -> issue.getId().equals(issueId) ? commentedIssue : issue);
-          var optionalBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
-          return optionalBinding
-            .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
-            .map(connection -> connection.issue().anticipatedTransitions(optionalBinding.get().getSonarProjectKey(), issuesToSync))
-            .map(future -> future.thenAccept(nothing -> localOnlyIssueStore.storeLocalOnlyIssue(configurationScopeId, commentedIssue)));
-        }
-        return Optional.empty();
-      });
+    var optionalLocalOnlyIssue = localOnlyIssueStore.find(issueId);
+    if (optionalLocalOnlyIssue.isPresent()) {
+      var commentedIssue = optionalLocalOnlyIssue.get();
+      var resolution = commentedIssue.getResolution();
+      if (resolution != null) {
+        resolution.setComment(comment);
+        var issuesToSync = localOnlyIssueStore.loadAll(configurationScopeId);
+        issuesToSync.replaceAll(issue -> issue.getId().equals(issueId) ? commentedIssue : issue);
+        var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
+        var serverApi = serverApiProvider.getServerApiOrThrow(binding.getConnectionId());
+        waitForHttpRequest(cancelChecker, serverApi.issue().anticipatedTransitions(binding.getSonarProjectKey(), issuesToSync), "Add comment to local issue");
+        localOnlyIssueStore.storeLocalOnlyIssue(configurationScopeId, commentedIssue);
+      }
+    }
   }
 
-  private CompletableFuture<Void> addCommentOnServerIssue(String configurationScopeId, String issueKey, String comment) {
-    var optionalBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
-    return optionalBinding
-      .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
-      .map(connection -> connection.issue().addComment(issueKey, comment)
-        .exceptionally(throwable -> {
-          throw new AddIssueCommentException(throwable);
-        }))
-      .orElseGet(() -> CompletableFuture.completedFuture(null));
+  private void addCommentOnServerIssue(String configurationScopeId, String issueKey, String comment, CancelChecker cancelChecker) {
+    var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
+    var serverApi = serverApiProvider.getServerApiOrThrow(binding.getConnectionId());
+    waitForHttpRequest(cancelChecker, serverApi.issue().addComment(issueKey, comment), "Add comment to server issue");
   }
 
   private CompletableFuture<ReopenIssueResponse> reopenServerIssue(ServerApi connection, String issueId, ProjectServerIssueStore projectServerIssueStore) {
-    return connection.issue().changeStatusAsync(issueId, Transition.REOPEN)
-      .thenAccept(nothing -> projectServerIssueStore.updateIssueResolutionStatus(issueId, false, false)
-        .ifPresent(issue -> telemetryService.issueStatusChanged(issue.getRuleKey())))
-      .thenApply(nothing -> new ReopenIssueResponse(true))
-      .exceptionally(throwable -> {
-        throw new IssueStatusChangeException(throwable);
-      });
+    return CompletableFutures.computeAsync(cancelChecker -> {
+      waitForHttpRequest(cancelChecker, connection.issue().changeStatusAsync(issueId, Transition.REOPEN), "Reopen server issue");
+      var serverIssue = projectServerIssueStore.updateIssueResolutionStatus(issueId, false, false);
+      serverIssue.ifPresent(issue -> telemetryService.issueStatusChanged(issue.getRuleKey()));
+      return new ReopenIssueResponse(true);
+    });
   }
 
   private CompletableFuture<ReopenIssueResponse> reopenLocalIssue(String issueId, String configurationScopeId) {
-    var issueUuidOptional = asUUID(issueId);
-    if (issueUuidOptional.isEmpty()) {
-      return CompletableFuture.completedFuture(new ReopenIssueResponse(false));
-    }
-    var issueUuid = issueUuidOptional.get();
-    var localOnlyIssueStore = localOnlyIssueStorageService.get();
-    return removeIssueOnServer(localOnlyIssueStore, configurationScopeId, issueUuid)
-      .thenApply(v -> localOnlyIssueStorageService.get().removeIssue(issueUuid))
-      .thenApply(ReopenIssueResponse::new);
+    return CompletableFutures.computeAsync(cancelChecker -> {
+      var issueUuidOptional = asUUID(issueId);
+      if (issueUuidOptional.isEmpty()) {
+        return new ReopenIssueResponse(false);
+      }
+      var issueUuid = issueUuidOptional.get();
+      var localOnlyIssueStore = localOnlyIssueStorageService.get();
+      waitForTask(cancelChecker, removeIssueOnServer(localOnlyIssueStore, configurationScopeId, issueUuid), "Reopen local issue", Duration.ofMinutes(1));
+      var result = localOnlyIssueStorageService.get().removeIssue(issueUuid);
+      return new ReopenIssueResponse(result);
+    });
   }
 
   private static Optional<UUID> asUUID(String key) {
@@ -322,5 +328,4 @@ public class IssueServiceImpl implements IssueService {
       return Optional.empty();
     }
   }
-
 }

@@ -32,8 +32,8 @@ import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.http.URIScheme;
 import org.apache.hc.core5.http.protocol.HttpContext;
-import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.client.http.GetProxyPasswordAuthenticationParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordAuthenticationParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 /**

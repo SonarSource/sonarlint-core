@@ -24,6 +24,9 @@ import com.google.gson.annotations.Expose;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.hc.core5.http.ClassicHttpRequest;
@@ -36,11 +39,13 @@ import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.http.io.HttpRequestHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
-import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.backend.initialize.ClientInfoDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.clientapi.client.info.GetClientInfoResponse;
+import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientInfoDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.info.GetClientInfoResponse;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.utils.FutureUtils;
 
 @Named
 @Singleton
@@ -67,16 +72,25 @@ public class StatusRequestHandler implements HttpRequestHandler {
       .map(Header::getValue)
       .map(this::isTrustedServer)
       .orElse(false);
-    getDescription(trustedServer)
-      .thenAccept(description -> response.setEntity(new StringEntity(new Gson().toJson(new StatusResponse(clientInfo.getName(), description)), ContentType.APPLICATION_JSON)));
+    var description = getDescription(trustedServer);
+    response.setEntity(new StringEntity(new Gson().toJson(new StatusResponse(clientInfo.getName(), description)), ContentType.APPLICATION_JSON));
 
   }
 
-  private CompletableFuture<String> getDescription(boolean trustedServer) {
+  private String getDescription(boolean trustedServer) {
     if (trustedServer) {
-      return client.getClientInfo().thenApply(GetClientInfoResponse::getDescription);
+      try {
+        var getClientInfoResponse = client.getClientInfo().get(1, TimeUnit.SECONDS);
+        return getClientInfoResponse.getDescription();
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      } catch (ExecutionException e) {
+        throw new RuntimeException(e);
+      } catch (TimeoutException e) {
+        throw new RuntimeException(e);
+      }
     }
-    return CompletableFuture.completedFuture("");
+    return "";
   }
 
   private boolean isTrustedServer(String serverOrigin) {
