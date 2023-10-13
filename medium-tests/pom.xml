@@ -17,7 +17,13 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>sonarlint-core</artifactId>
+      <artifactId>sonarlint-rpc-java-client</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>sonarlint-rpc-impl</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

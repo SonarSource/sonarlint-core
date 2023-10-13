@@ -109,4 +109,8 @@ public class TestUtils {
     return dump.toString();
   }
 
+  public static void printThreadDump() {
+    System.out.println(generateThreadDump());
+  }
+
 }

@@ -24,13 +24,15 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.ServerFixture;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
-import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.CheckStatusChangePermittedParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.CheckStatusChangePermittedResponse;
-import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotStatus;
+import org.sonarsource.sonarlint.core.SpringApplicationContextInitializer;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckStatusChangePermittedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckStatusChangePermittedResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
@@ -38,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class HotspotCheckStatusChangePermittedMediumTests {
 
-  private SonarLintBackendImpl backend;
+  private SonarLintBackend backend;
   private ServerFixture.Server server;
   private String oldSonarCloudUrl;
 
@@ -72,8 +74,8 @@ class HotspotCheckStatusChangePermittedMediumTests {
       .failsWithin(Duration.ofSeconds(2))
       .withThrowableOfType(ExecutionException.class)
       .havingCause()
-      .isInstanceOf(IllegalArgumentException.class)
-      .withMessage("Connection with ID 'connectionId' does not exist");
+      .isInstanceOf(ResponseErrorException.class)
+      .withMessage("Connection 'connectionId' is gone");
   }
 
   @Test

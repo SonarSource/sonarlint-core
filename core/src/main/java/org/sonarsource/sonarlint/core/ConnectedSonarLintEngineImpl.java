@@ -334,6 +334,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
 
   @Override
   public CompletableFuture<ConnectedRuleDetails> getActiveRuleDetails(EndpointParams endpoint, HttpClient client, String ruleKey, @Nullable String projectKey) {
+    // TODO migrate?
     var ruleDefFromPluginOpt = analysisContext.get().findRule(ruleKey);
     if (ruleDefFromPluginOpt.isPresent()) {
       var ruleDefFromPlugin = ruleDefFromPluginOpt.get();
