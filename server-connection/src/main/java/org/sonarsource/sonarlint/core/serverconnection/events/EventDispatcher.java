@@ -38,7 +38,7 @@ public class EventDispatcher implements ServerEventHandler<ServerEvent> {
 
   @Override
   public void handle(ServerEvent event) {
-    Class<? extends ServerEvent> eventType = event.getClass();
+    var eventType = event.getClass();
     if (routes.containsKey(eventType)) {
       routes.get(eventType).forEach(handler -> handler.handle(event));
     } else {

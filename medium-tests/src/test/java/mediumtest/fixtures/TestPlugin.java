@@ -20,7 +20,7 @@
 package mediumtest.fixtures;
 
 import java.nio.file.Path;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.clientapi.common.Language;
 import testutils.PluginLocator;
 
 public enum TestPlugin {

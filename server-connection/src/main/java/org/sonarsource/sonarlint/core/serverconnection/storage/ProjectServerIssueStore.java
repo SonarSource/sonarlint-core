@@ -185,7 +185,7 @@ public interface ProjectServerIssueStore {
    */
   Optional<ServerFinding> updateIssueResolutionStatus(String issueKey, boolean isTaintIssue, boolean isResolved);
 
-  void updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater);
+  boolean updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater);
 
   void insert(String branchName, ServerTaintIssue taintIssue);
   void insert(String branchName, ServerHotspot hotspot);

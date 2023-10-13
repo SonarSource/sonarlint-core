@@ -19,25 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.push;
 
-public class SecurityHotspotClosedEvent implements ServerHotspotEvent {
-  private final String projectKey;
-  private final String hotspotKey;
-  private String filePath;
+import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 
-  public SecurityHotspotClosedEvent(String projectKey, String hotspotKey, String filePath) {
-    this.projectKey = projectKey;
-    this.hotspotKey = hotspotKey;
-    this.filePath = filePath;
-  }
-  @Override
-  public String getProjectKey() {
-    return projectKey;
-  }
-  public String getHotspotKey() {
-    return hotspotKey;
-  }
-  @Override
-  public String getFilePath() {
-    return filePath;
-  }
+public interface SonarProjectEvent extends ServerEvent {
+  String getProjectKey();
 }

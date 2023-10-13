@@ -30,17 +30,25 @@ import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.jetbrains.annotations.NotNull;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.CleanCodeAttributeDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.EffectiveRuleParamDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.ImpactDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleContextualSectionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleContextualSectionWithDefaultContextKeyDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleDescriptionTabDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleMonolithicDescriptionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleNonContextualSectionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleSplitDescriptionDto;
+import org.sonarsource.sonarlint.core.clientapi.common.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.clientapi.common.CleanCodeAttributeCategory;
+import org.sonarsource.sonarlint.core.clientapi.common.ImpactSeverity;
+import org.sonarsource.sonarlint.core.clientapi.common.IssueSeverity;
+import org.sonarsource.sonarlint.core.clientapi.common.Language;
+import org.sonarsource.sonarlint.core.clientapi.common.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 
-class RuleDetailsAdapter {
+public class RuleDetailsAdapter {
   public static final String INTRODUCTION_SECTION_KEY = "introduction";
   public static final String ROOT_CAUSE_SECTION_KEY = "root_cause";
   public static final String ASSESS_THE_PROBLEM_SECTION_KEY = "assess_the_problem";
@@ -51,17 +59,21 @@ class RuleDetailsAdapter {
   private static final List<String> SECTION_KEYS_ORDERED = List.of(ROOT_CAUSE_SECTION_KEY, ASSESS_THE_PROBLEM_SECTION_KEY,
     HOW_TO_FIX_SECTION_KEY, RESOURCES_SECTION_KEY);
 
+  private RuleDetailsAdapter() {
+    // utility class
+  }
+
   public static EffectiveRuleDetailsDto transform(RuleDetails ruleDetails, @Nullable String contextKey) {
     return new EffectiveRuleDetailsDto(
       ruleDetails.getKey(),
       ruleDetails.getName(),
-      ruleDetails.getDefaultSeverity(),
-      ruleDetails.getType(),
-      ruleDetails.getCleanCodeAttribute().orElse(null),
-      ruleDetails.getDefaultImpacts(),
+      adapt(ruleDetails.getDefaultSeverity()),
+      adapt(ruleDetails.getType()),
+      ruleDetails.getCleanCodeAttribute().map(RuleDetailsAdapter::toDto).orElse(null),
+      toDto(ruleDetails.getDefaultImpacts()),
       transformDescriptions(ruleDetails, contextKey),
       transform(ruleDetails.getParams()),
-      ruleDetails.getLanguage());
+      adapt(ruleDetails.getLanguage()));
   }
 
   static Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> transformDescriptions(RuleDetails ruleDetails, @Nullable String contextKey) {
@@ -187,14 +199,48 @@ class RuleDetailsAdapter {
     return builder;
   }
 
-  private RuleDetailsAdapter() {
-    // utility class
-  }
-
   @NotNull
   private static Either<RuleNonContextualSectionDto, RuleContextualSectionWithDefaultContextKeyDto> buildNonContextualSectionDto(RuleDetails ruleDetails,
     RuleDetails.DescriptionSection matchingContext) {
     return Either.forLeft(new RuleNonContextualSectionDto(getTabContent(matchingContext, ruleDetails.getExtendedDescription(), ruleDetails.getCleanCodePrincipleKeys())));
+  }
+
+  public static CleanCodeAttributeDto toDto(org.sonarsource.sonarlint.core.commons.CleanCodeAttribute cca) {
+    return new CleanCodeAttributeDto(adapt(cca), cca.getLabel(), adapt(cca.getAttributeCategory()), cca.getAttributeCategory().getLabel());
+  }
+
+  public static List<ImpactDto> toDto(Map<org.sonarsource.sonarlint.core.commons.SoftwareQuality, org.sonarsource.sonarlint.core.commons.ImpactSeverity> defaultImpacts) {
+    return defaultImpacts.entrySet().stream()
+      .map(e -> new ImpactDto(adapt(e.getKey()), e.getKey().getLabel(), adapt(e.getValue()), e.getValue().getLabel()))
+      .collect(Collectors.toList());
+  }
+
+  public static CleanCodeAttribute adapt(org.sonarsource.sonarlint.core.commons.CleanCodeAttribute cca) {
+    return CleanCodeAttribute.valueOf(cca.name());
+  }
+
+  public static CleanCodeAttributeCategory adapt(org.sonarsource.sonarlint.core.commons.CleanCodeAttributeCategory ccac) {
+    return CleanCodeAttributeCategory.valueOf(ccac.name());
+  }
+
+  public static IssueSeverity adapt(org.sonarsource.sonarlint.core.commons.IssueSeverity s) {
+    return IssueSeverity.valueOf(s.name());
+  }
+
+  public static org.sonarsource.sonarlint.core.clientapi.common.RuleType adapt(org.sonarsource.sonarlint.core.commons.RuleType t) {
+    return org.sonarsource.sonarlint.core.clientapi.common.RuleType.valueOf(t.name());
+  }
+
+  public static Language adapt(org.sonarsource.sonarlint.core.commons.Language l) {
+    return Language.valueOf(l.name());
+  }
+
+  public static SoftwareQuality adapt(org.sonarsource.sonarlint.core.commons.SoftwareQuality sq) {
+    return SoftwareQuality.valueOf(sq.name());
+  }
+
+  public static ImpactSeverity adapt(org.sonarsource.sonarlint.core.commons.ImpactSeverity is) {
+    return ImpactSeverity.valueOf(is.name());
   }
 
 }

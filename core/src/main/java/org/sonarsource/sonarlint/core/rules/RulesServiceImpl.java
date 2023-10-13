@@ -59,6 +59,9 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
 
+import static org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter.adapt;
+import static org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter.toDto;
+
 @Named
 @Singleton
 public class RulesServiceImpl implements RulesService {
@@ -209,8 +212,10 @@ public class RulesServiceImpl implements RulesService {
 
   @NotNull
   private static RuleDefinitionDto convert(SonarLintRuleDefinition r) {
-    return new RuleDefinitionDto(r.getKey(), r.getName(), r.getDefaultSeverity(), r.getType(), r.getCleanCodeAttribute().orElse(null), r.getDefaultImpacts(),
-      convert(r.getParams()), r.isActiveByDefault(), r.getLanguage());
+    return new RuleDefinitionDto(r.getKey(), r.getName(), adapt(r.getDefaultSeverity()), adapt(r.getType()),
+      r.getCleanCodeAttribute().map(RuleDetailsAdapter::toDto).orElse(null),
+      toDto(r.getDefaultImpacts()),
+      convert(r.getParams()), r.isActiveByDefault(), adapt(r.getLanguage()));
   }
 
   private static Map<String, RuleParamDefinitionDto> convert(Map<String, SonarLintRuleParamDefinition> params) {

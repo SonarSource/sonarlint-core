@@ -22,13 +22,13 @@ package org.sonarsource.sonarlint.core.clientapi;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.services.JsonDelegate;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
-import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.clientapi.backend.binding.BindingService;
 import org.sonarsource.sonarlint.core.clientapi.backend.branch.SonarProjectBranchService;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.ConnectionService;
 import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
+import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueService;
 import org.sonarsource.sonarlint.core.clientapi.backend.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.clientapi.backend.rules.RulesService;
@@ -36,7 +36,6 @@ import org.sonarsource.sonarlint.core.clientapi.backend.telemetry.TelemetryServi
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.IssueTrackingService;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.SecurityHotspotMatchingService;
 import org.sonarsource.sonarlint.core.clientapi.backend.usertoken.UserTokenService;
-import org.sonarsource.sonarlint.core.http.HttpClient;
 
 public interface SonarLintBackend {
 
@@ -87,19 +86,5 @@ public interface SonarLintBackend {
 
   @JsonRequest
   CompletableFuture<Void> shutdown();
-
-  /**
-   * Used as a transition toward having the Http Client totally hidden in the backend.
-   * Client still using methods requiring an {@link HttpClient} ca use this methods to reuse the client managed by the backend.
-   */
-  @Deprecated
-  HttpClient getHttpClientNoAuth();
-
-  /**
-   * Used as a transition toward having the Http Client totally hidden in the backend.
-   * Client still using methods requiring an {@link HttpClient} ca use this methods to reuse the client managed by the backend.
-   */
-  @Deprecated
-  HttpClient getHttpClient(String connectionId);
 
 }

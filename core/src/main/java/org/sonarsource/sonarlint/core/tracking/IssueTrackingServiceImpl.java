@@ -63,6 +63,7 @@ import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.newcode.NewCodeServiceImpl;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.vcs.ActiveSonarProjectBranchRepository;
+import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
@@ -98,7 +99,6 @@ public class IssueTrackingServiceImpl implements IssueTrackingService {
     this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-server-tracking-issue-updater"));
   }
 
-
   @Override
   public CompletableFuture<TrackWithServerIssuesResponse> trackWithServerIssues(TrackWithServerIssuesParams params) {
     return CompletableFutures.computeAsync(cancelChecker -> {
@@ -130,8 +130,9 @@ public class IssueTrackingServiceImpl implements IssueTrackingService {
               var serverIssue = result.getLeft();
               var creationDate = serverIssue.getCreationDate().toEpochMilli();
               var isOnNewCode = newCodeDefinition.isOnNewCode(creationDate);
+              var userSeverity = serverIssue.getUserSeverity();
               return Either.forLeft(new ServerMatchedIssueDto(UUID.randomUUID(), serverIssue.getKey(), creationDate, serverIssue.isResolved(),
-                serverIssue.getUserSeverity(), serverIssue.getType(), isOnNewCode));
+                userSeverity != null ? RuleDetailsAdapter.adapt(userSeverity) : null, RuleDetailsAdapter.adapt(serverIssue.getType()), isOnNewCode));
             } else {
               var localOnlyIssue = result.getRight();
               var resolution = localOnlyIssue.getResolution();

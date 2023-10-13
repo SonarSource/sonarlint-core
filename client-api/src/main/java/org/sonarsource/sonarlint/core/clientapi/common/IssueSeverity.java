@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Server API
+ * SonarLint Core - Client API
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,27 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverapi.push;
+package org.sonarsource.sonarlint.core.clientapi.common;
 
-public class SecurityHotspotClosedEvent implements ServerHotspotEvent {
-  private final String projectKey;
-  private final String hotspotKey;
-  private String filePath;
+public enum IssueSeverity {
 
-  public SecurityHotspotClosedEvent(String projectKey, String hotspotKey, String filePath) {
-    this.projectKey = projectKey;
-    this.hotspotKey = hotspotKey;
-    this.filePath = filePath;
-  }
-  @Override
-  public String getProjectKey() {
-    return projectKey;
-  }
-  public String getHotspotKey() {
-    return hotspotKey;
-  }
-  @Override
-  public String getFilePath() {
-    return filePath;
-  }
+  INFO,
+  MINOR,
+  MAJOR,
+  CRITICAL,
+  BLOCKER;
+
 }

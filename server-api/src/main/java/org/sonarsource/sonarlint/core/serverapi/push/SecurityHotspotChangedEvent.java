@@ -43,6 +43,7 @@ public class SecurityHotspotChangedEvent implements ServerHotspotEvent {
     return hotspotKey;
   }
 
+  @Override
   public String getProjectKey() {
     return projectKey;
   }

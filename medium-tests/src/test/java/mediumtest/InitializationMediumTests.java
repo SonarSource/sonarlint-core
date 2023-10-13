@@ -67,7 +67,8 @@ class InitializationMediumTests {
 
   @Test
   void it_should_fail_to_use_services_if_the_backend_is_not_initialized() {
-    backend = new SonarLintBackendImpl(newFakeClient().build());
+    backend = new SonarLintBackendImpl();
+    backend.setClient(newFakeClient().build());
 
     var error = catchThrowable(() -> backend.getConnectionService());
 
@@ -78,7 +79,8 @@ class InitializationMediumTests {
 
   @Test
   void it_should_silently_shutdown_the_backend_if_it_was_not_initialized() {
-    backend = new SonarLintBackendImpl(newFakeClient().build());
+    backend = new SonarLintBackendImpl();
+    backend.setClient(newFakeClient().build());
 
     var future = backend.shutdown();
 

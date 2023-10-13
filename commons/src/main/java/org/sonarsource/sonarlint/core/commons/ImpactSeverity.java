@@ -24,13 +24,13 @@ public enum ImpactSeverity {
   MEDIUM("Medium"),
   HIGH("High");
 
-  private final String displayLabel;
+  private final String label;
 
-  ImpactSeverity(String displayLabel) {
-    this.displayLabel = displayLabel;
+  ImpactSeverity(String label) {
+    this.label = label;
   }
 
-  public String getDisplayLabel() {
-    return displayLabel;
+  public String getLabel() {
+    return label;
   }
 }

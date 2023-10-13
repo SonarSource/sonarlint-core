@@ -55,4 +55,5 @@ class RulesServiceImplTest {
       .extracting(RuleDefinitionDto::getKey, RuleDefinitionDto::getName)
       .containsExactly(tuple("repo:ruleKey", "ruleName"));
   }
+
 }

@@ -22,8 +22,8 @@ package org.sonarsource.sonarlint.core.clientapi.backend.tracking;
 import java.util.UUID;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.clientapi.common.IssueSeverity;
+import org.sonarsource.sonarlint.core.clientapi.common.RuleType;
 
 public class ServerMatchedIssueDto {
   private final UUID id;

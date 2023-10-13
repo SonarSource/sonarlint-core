@@ -46,15 +46,15 @@ public enum CleanCodeAttribute {
 
   private final CleanCodeAttributeCategory attributeCategory;
 
-  private final String issueLabel;
+  private final String label;
 
-  CleanCodeAttribute(String issueLabel, CleanCodeAttributeCategory attributeCategory) {
-    this.issueLabel = issueLabel;
+  CleanCodeAttribute(String label, CleanCodeAttributeCategory attributeCategory) {
+    this.label = label;
     this.attributeCategory = attributeCategory;
   }
 
-  public String getIssueLabel() {
-    return issueLabel;
+  public String getLabel() {
+    return label;
   }
 
   public CleanCodeAttributeCategory getAttributeCategory() {

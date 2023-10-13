@@ -25,13 +25,13 @@ public enum CleanCodeAttributeCategory {
   INTENTIONAL("Intentionality"),
   RESPONSIBLE("Responsibility");
 
-  private final String issueLabel;
+  private final String label;
 
-  CleanCodeAttributeCategory(String issueLabel) {
-    this.issueLabel = issueLabel;
+  CleanCodeAttributeCategory(String label) {
+    this.label = label;
   }
 
-  public String getIssueLabel() {
-    return issueLabel;
+  public String getLabel() {
+    return label;
   }
 }
