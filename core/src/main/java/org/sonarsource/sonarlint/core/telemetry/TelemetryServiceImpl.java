@@ -22,8 +22,9 @@ package org.sonarsource.sonarlint.core.telemetry;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import javax.annotation.CheckForNull;
-import org.sonarsource.sonarlint.core.clientapi.backend.telemetry.GetStatusResponse;
-import org.sonarsource.sonarlint.core.clientapi.backend.telemetry.TelemetryService;
+import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class TelemetryServiceImpl implements TelemetryService {
@@ -57,7 +58,7 @@ public class TelemetryServiceImpl implements TelemetryService {
 
   @Override
   public CompletableFuture<GetStatusResponse> getStatus() {
-    return CompletableFuture.completedFuture(new GetStatusResponse(isEnabled()));
+    return CompletableFutures.computeAsync(cancelChecker -> new GetStatusResponse(isEnabled()));
   }
 
   private boolean isEnabled() {

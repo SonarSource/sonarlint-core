@@ -26,6 +26,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -41,13 +44,14 @@ import org.apache.hc.core5.net.URIBuilder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProviderImpl;
 import org.sonarsource.sonarlint.core.ConfigurationServiceImpl;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
-import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.client.issue.ShowIssueParams;
-import org.sonarsource.sonarlint.core.clientapi.client.message.MessageType;
-import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
-import org.sonarsource.sonarlint.core.clientapi.common.FlowDto;
-import org.sonarsource.sonarlint.core.clientapi.common.LocationDto;
-import org.sonarsource.sonarlint.core.clientapi.common.TextRangeDto;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.FlowDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.LocationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
@@ -60,6 +64,8 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 @Named
 @Singleton
 public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler implements HttpRequestHandler {
+
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final SonarLintClient client;
   private final ConnectionConfigurationRepository repository;
@@ -86,7 +92,10 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
       return;
     }
 
-    CompletableFuture.runAsync(() -> showIssue(showIssueQuery));
+    CompletableFuture.runAsync(() -> showIssue(showIssueQuery)).exceptionally(e -> {
+      LOG.error("Unable to show issue", e);
+      return null;
+    });
 
     response.setCode(HttpStatus.SC_OK);
     response.setEntity(new StringEntity("OK"));
@@ -98,10 +107,17 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
     var connectionsMatchingOrigin = repository.findByUrl(query.serverUrl);
     if (connectionsMatchingOrigin.isEmpty()) {
       startFullBindingProcess();
-      assistCreatingConnection(query.serverUrl)
-        .thenCompose(response -> assistBinding(response.getNewConnectionId(), query.projectKey))
-        .thenAccept(response -> showIssueForScope(response.getConnectionId(), response.getConfigurationScopeId(), query.issueKey))
-        .whenComplete((v, e) -> endFullBindingProcess());
+      try {
+        var assistNewConnectionResult = assistCreatingConnection(query.serverUrl).get(10, TimeUnit.MINUTES);
+        var assistNewBindingResult = assistBinding(assistNewConnectionResult.getNewConnectionId(), query.projectKey).get(10, TimeUnit.MINUTES);
+        showIssueForScope(assistNewConnectionResult.getNewConnectionId(), assistNewBindingResult.getConfigurationScopeId(), query.issueKey);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      } catch (Exception e) {
+        throw new IllegalStateException(e);
+      } finally {
+        endFullBindingProcess();
+      }
     } else {
       // we pick the first connection but this could lead to issues later if there were several matches (make the user select the right
       // one?)
@@ -112,8 +128,14 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
   private void showIssueForConnection(String connectionId, String projectKey, String issueKey) {
     var scopes = configurationService.getConfigScopesWithBindingConfiguredTo(connectionId, projectKey);
     if (scopes.isEmpty()) {
-      assistBinding(connectionId, projectKey)
-        .thenAccept(newBinding -> showIssueForScope(connectionId, newBinding.getConfigurationScopeId(), issueKey));
+      try {
+        var assistNewBindingResult = assistBinding(connectionId, projectKey).get(10, TimeUnit.MINUTES);
+        showIssueForScope(connectionId, assistNewBindingResult.getConfigurationScopeId(), issueKey);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      } catch (Exception e) {
+        throw new IllegalStateException(e);
+      }
     } else {
       // we pick the first bound scope but this could lead to issues later if there were several matches (make the user select the right one?)
       showIssueForScope(connectionId, scopes.get(0).getId(), issueKey);
