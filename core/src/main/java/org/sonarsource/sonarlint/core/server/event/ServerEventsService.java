@@ -53,6 +53,7 @@ import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotChangedEvent
 import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotClosedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotRaisedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.ServerHotspotEvent;
+import org.sonarsource.sonarlint.core.serverapi.push.SonarProjectEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.TaintVulnerabilityClosedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.TaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.storage.StorageService;
@@ -188,41 +189,21 @@ public class ServerEventsService {
   }
 
   private void notifyClient(String connectionId, ServerEvent serverEvent) {
-    var projectKey = extractProjectKey(serverEvent);
     if (serverEvent instanceof TaintVulnerabilityRaisedEvent) {
+      var projectKey = ((TaintVulnerabilityRaisedEvent) serverEvent).getProjectKey();
       var taintEvent = (TaintVulnerabilityRaisedEvent) serverEvent;
       client.didReceiveServerTaintVulnerabilityRaisedEvent(new DidReceiveServerTaintVulnerabilityRaisedEvent(connectionId, projectKey,
         taintEvent.getMainLocation().getFilePath(), taintEvent.getBranchName(), taintEvent.getKey()));
     } else if (serverEvent instanceof TaintVulnerabilityClosedEvent ||
       ((serverEvent instanceof IssueChangedEvent) && !((IssueChangedEvent) serverEvent).getImpactedTaintIssueKeys().isEmpty())) {
-      client.didReceiveServerTaintVulnerabilityChangedOrClosedEvent(new DidReceiveServerTaintVulnerabilityChangedOrClosedEvent(connectionId, projectKey));
-    } else if (serverEvent instanceof SecurityHotspotChangedEvent ||
-      serverEvent instanceof SecurityHotspotClosedEvent ||
-      serverEvent instanceof SecurityHotspotRaisedEvent) {
-      client.didReceiveServerHotspotEvent(new DidReceiveServerHotspotEvent(connectionId, projectKey, ((ServerHotspotEvent) serverEvent).getFilePath()));
-    }
-  }
-
-  private String extractProjectKey(ServerEvent serverEvent) {
-    if (serverEvent instanceof TaintVulnerabilityRaisedEvent) {
-      return ((TaintVulnerabilityRaisedEvent) serverEvent).getProjectKey();
-    }
-    if (serverEvent instanceof TaintVulnerabilityClosedEvent) {
-      return ((TaintVulnerabilityClosedEvent) serverEvent).getProjectKey();
-    }
-    if (serverEvent instanceof IssueChangedEvent) {
-      return ((IssueChangedEvent) serverEvent).getProjectKey();
-    }
-    if (serverEvent instanceof SecurityHotspotClosedEvent) {
-      return ((SecurityHotspotClosedEvent) serverEvent).getProjectKey();
-    }
-    if (serverEvent instanceof SecurityHotspotRaisedEvent) {
-      return ((SecurityHotspotRaisedEvent) serverEvent).getProjectKey();
-    }
-    if (serverEvent instanceof SecurityHotspotChangedEvent) {
-      return ((SecurityHotspotChangedEvent) serverEvent).getProjectKey();
-    }
-    throw new UnsupportedOperationException("Unable to extract projectKey from event of type: " + serverEvent.getClass().getName());
+        var projectKey = ((SonarProjectEvent) serverEvent).getProjectKey();
+        client.didReceiveServerTaintVulnerabilityChangedOrClosedEvent(new DidReceiveServerTaintVulnerabilityChangedOrClosedEvent(connectionId, projectKey));
+      } else if (serverEvent instanceof SecurityHotspotChangedEvent ||
+        serverEvent instanceof SecurityHotspotClosedEvent ||
+        serverEvent instanceof SecurityHotspotRaisedEvent) {
+          var projectKey = ((SonarProjectEvent) serverEvent).getProjectKey();
+          client.didReceiveServerHotspotEvent(new DidReceiveServerHotspotEvent(connectionId, projectKey, ((ServerHotspotEvent) serverEvent).getFilePath()));
+        }
   }
 
   private boolean supportsServerSentEvents(String connectionId) {

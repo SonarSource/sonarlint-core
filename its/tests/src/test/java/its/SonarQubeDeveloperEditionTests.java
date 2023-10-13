@@ -642,7 +642,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var qualityProfile = getQualityProfile(adminWsClient, "SonarLint IT Java");
       deactivateRule(adminWsClient, qualityProfile, "java:S106");
-      waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
+      waitAtMost(1, TimeUnit.MINUTES).pollDelay(Duration.ofSeconds(10)).untilAsserted(() -> {
         var issueListener = new SaveIssueListener();
         engine.analyze(createAnalysisConfiguration(projectKey, "sample-java", "src/main/java/foo/Foo.java"), issueListener, null, null);
         assertThat(issueListener.getIssues())

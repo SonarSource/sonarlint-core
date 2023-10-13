@@ -27,7 +27,7 @@ import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 
-public class IssueChangedEvent implements ServerEvent {
+public class IssueChangedEvent implements SonarProjectEvent {
   private final String projectKey;
   private final List<String> impactedIssueKeys;
   private final IssueSeverity userSeverity;
@@ -53,6 +53,7 @@ public class IssueChangedEvent implements ServerEvent {
     return impactedTaintIssueKeys;
   }
 
+  @Override
   public String getProjectKey() {
     return projectKey;
   }

@@ -29,6 +29,7 @@ public class SecurityHotspotClosedEvent implements ServerHotspotEvent {
     this.hotspotKey = hotspotKey;
     this.filePath = filePath;
   }
+  @Override
   public String getProjectKey() {
     return projectKey;
   }
