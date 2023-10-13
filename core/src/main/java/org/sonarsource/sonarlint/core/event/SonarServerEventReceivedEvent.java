@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.event;
 
+<<<<<<<< HEAD:core/src/main/java/org/sonarsource/sonarlint/core/event/SonarServerEventReceivedEvent.java
 import org.sonarsource.sonarlint.core.serverapi.push.SonarServerEvent;
 
 public class SonarServerEventReceivedEvent {
@@ -28,13 +29,31 @@ public class SonarServerEventReceivedEvent {
   public SonarServerEventReceivedEvent(String connectionId, SonarServerEvent event) {
     this.connectionId = connectionId;
     this.event = event;
+========
+import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
+
+public class DidReceiveServerTaintVulnerabilityChangedOrClosedEvent {
+
+  @NonNull
+  private final String connectionId;
+  private final String sonarProjectKey;
+
+  public DidReceiveServerTaintVulnerabilityChangedOrClosedEvent(String connectionId, String sonarProjectKey) {
+    this.connectionId = connectionId;
+    this.sonarProjectKey = sonarProjectKey;
+>>>>>>>> c02a9742b (SLCORE-571 Make the client-api JSON-RPC friendly (#738)):client-api/src/main/java/org/sonarsource/sonarlint/core/clientapi/client/event/DidReceiveServerTaintVulnerabilityChangedOrClosedEvent.java
   }
 
   public String getConnectionId() {
     return connectionId;
   }
 
+<<<<<<<< HEAD:core/src/main/java/org/sonarsource/sonarlint/core/event/SonarServerEventReceivedEvent.java
   public SonarServerEvent getEvent() {
     return event;
+========
+  public String getSonarProjectKey() {
+    return sonarProjectKey;
+>>>>>>>> c02a9742b (SLCORE-571 Make the client-api JSON-RPC friendly (#738)):client-api/src/main/java/org/sonarsource/sonarlint/core/clientapi/client/event/DidReceiveServerTaintVulnerabilityChangedOrClosedEvent.java
   }
 }
