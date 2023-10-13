@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
 import org.sonar.scanner.protocol.Constants;
@@ -49,6 +50,7 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Measures;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
@@ -142,6 +144,7 @@ public class ServerFixture {
     public static class ServerProjectBranchBuilder {
       protected final Collection<ServerHotspot> hotspots = new ArrayList<>();
       protected final Collection<ServerIssue> issues = new ArrayList<>();
+      private final Collection<ServerIssue> taintIssues = new ArrayList<>();
       protected final Map<String, ServerSourceFileBuilder> sourceFileByComponentKey = new HashMap<>();
 
       public ServerProjectBranchBuilder withHotspot(String hotspotKey) {
@@ -167,7 +170,13 @@ public class ServerFixture {
         return this;
       }
 
-      protected static class ServerHotspot {
+      public ServerProjectBranchBuilder withTaintIssue(String issueKey, String ruleKey, String message, String author, String filePath,
+        String status, String resolution, String creationDate, TextRange textRange) {
+        this.taintIssues.add(new ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, creationDate, textRange));
+        return this;
+      }
+
+      private static class ServerHotspot {
         private final String hotspotKey;
         private final String ruleKey;
         private final String message;
@@ -449,7 +458,7 @@ public class ServerFixture {
 
     @NotNull
     private static Map<String, List<Issues.Issue>> getIssuesPerFilePath(String projectKey, ServerBuilder.ServerProjectBranchBuilder pullRequestOrBranch) {
-      return pullRequestOrBranch.issues.stream()
+      return Stream.concat(pullRequestOrBranch.issues.stream(), pullRequestOrBranch.taintIssues.stream())
         .collect(groupingBy(ServerBuilder.ServerProjectBranchBuilder.ServerIssue::getFilePath,
           mapping(issue -> {
             var builder = Issues.Issue.newBuilder()
@@ -586,18 +595,33 @@ public class ServerFixture {
         messages[0] = timestamp;
         System.arraycopy(issuesArray, 0, messages, 1, issuesArray.length);
         var response = aResponse().withResponseBody(protobufBodyDelimited(messages));
-        mockServer.stubFor(get("/api/issues/pull?projectKey=" + projectKey + branchParameter).willReturn(response));
-        mockServer.stubFor(get("/api/issues/pull?projectKey=" + projectKey + branchParameter + "&changedSince=" + timestamp.getQueryTimestamp()).willReturn(response));
+        mockServer.stubFor(get(urlMatching("\\Q/api/issues/pull?projectKey=" + projectKey + branchParameter + "\\E(&languages=.*)?(\\Q&changedSince="+ timestamp.getQueryTimestamp()+"\\E)?")).willReturn(response));
       }));
     }
 
     private void registerApiIssuesPullTaintResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
         var branchParameter = branchName == null ? "" : "&branchName=" + branchName;
-        var timestamp = Issues.IssuesPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
-        var response = aResponse().withResponseBody(protobufBodyDelimited(timestamp));
-        mockServer.stubFor(get("/api/issues/pull_taint?projectKey=" + projectKey + branchParameter).willReturn(response));
-        mockServer.stubFor(get("/api/issues/pull_taint?projectKey=" + projectKey + branchParameter + "&changedSince=" + timestamp.getQueryTimestamp()).willReturn(response));
+        var timestamp = Issues.TaintVulnerabilityPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
+        var issuesArray = branch.taintIssues.stream().map(issue -> Issues.TaintVulnerabilityLite.newBuilder()
+          .setKey(issue.issueKey)
+          .setRuleKey(issue.ruleKey)
+          .setType(Common.RuleType.BUG)
+          .setSeverity(Common.Severity.MAJOR)
+          .setMainLocation(Issues.Location.newBuilder().setFilePath(issue.filePath).setMessage(issue.message)
+            .setTextRange(Issues.TextRange.newBuilder()
+              .setStartLine(issue.textRange.getStartLine())
+              .setStartLineOffset(issue.textRange.getStartLineOffset())
+              .setEndLine(issue.textRange.getEndLine())
+              .setEndLineOffset(issue.textRange.getEndLineOffset())
+              .setHash("hash")))
+          .setCreationDate(123456789L)
+          .build()).toArray(Issues.TaintVulnerabilityLite[]::new);
+        var messages = new Message[issuesArray.length + 1];
+        messages[0] = timestamp;
+        System.arraycopy(issuesArray, 0, messages, 1, issuesArray.length);
+        var response = aResponse().withResponseBody(protobufBodyDelimited(messages));
+        mockServer.stubFor(get(urlMatching("\\Q/api/issues/pull_taint?projectKey=" + projectKey + branchParameter + "\\E(&languages=.*)?(\\Q&changedSince="+ timestamp.getQueryTimestamp()+"\\E)?")).willReturn(response));
       }));
     }
 

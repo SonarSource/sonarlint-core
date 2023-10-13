@@ -38,13 +38,16 @@ public class UpdateStorageOnIssueChanged implements ServerEventHandler<IssueChan
     var userType = event.getUserType();
     var resolved = event.getResolved();
     var projectKey = event.getProjectKey();
-    event.getImpactedIssueKeys().forEach(issueKey -> update(projectKey, userSeverity, userType, resolved, issueKey));
+    event.getImpactedIssueKeys().forEach(issueKey -> update(event, projectKey, userSeverity, userType, resolved, issueKey));
   }
 
-  private void update(String projectKey, IssueSeverity userSeverity, RuleType userType, Boolean resolved, String issueKey) {
+  private void update(IssueChangedEvent event, String projectKey, IssueSeverity userSeverity, RuleType userType, Boolean resolved, String issueKey) {
     var updated = updateNormalIssue(projectKey, userSeverity, userType, resolved, issueKey);
     if (!updated) {
-      updateTaintIssue(projectKey, userSeverity, userType, resolved, issueKey);
+      var isTaintUpdate = updateTaintIssue(projectKey, userSeverity, userType, resolved, issueKey);
+      if (isTaintUpdate) {
+        event.addImpactedTaintIssueKey(issueKey);
+      }
     }
   }
 
@@ -62,8 +65,8 @@ public class UpdateStorageOnIssueChanged implements ServerEventHandler<IssueChan
     });
   }
 
-  private void updateTaintIssue(String projectKey, IssueSeverity userSeverity, RuleType userType, Boolean resolved, String issueKey) {
-    storage.project(projectKey).findings().updateTaintIssue(issueKey, issue -> {
+  private boolean updateTaintIssue(String projectKey, IssueSeverity userSeverity, RuleType userType, Boolean resolved, String issueKey) {
+    return storage.project(projectKey).findings().updateTaintIssue(issueKey, issue -> {
       if (userSeverity != null) {
         issue.setSeverity(userSeverity);
       }
