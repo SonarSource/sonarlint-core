@@ -407,8 +407,8 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
-  public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName, String ideFilePath) {
-    return serverConnection.getServerTaintIssues(projectBinding, branchName, ideFilePath);
+  public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName, String ideFilePath, boolean includeResolved) {
+    return serverConnection.getServerTaintIssues(projectBinding, branchName, ideFilePath, includeResolved);
   }
 
   @Override

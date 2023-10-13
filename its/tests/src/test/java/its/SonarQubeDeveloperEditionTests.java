@@ -881,7 +881,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       engine.downloadAllServerTaintIssuesForFile(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), projectBinding, "src/main/java/foo/DbHelper.java",
         MAIN_BRANCH_NAME, null);
 
-      var sinkIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java");
+      var sinkIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", false);
 
       assertThat(sinkIssues).hasSize(1);
 
@@ -923,7 +923,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       Deque<ServerEvent> events = new ConcurrentLinkedDeque<>();
       engine.subscribeForEvents(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), Set.of(PROJECT_KEY_JAVA_TAINT), events::add, null);
       var projectBinding = new ProjectBinding(PROJECT_KEY_JAVA_TAINT, "", "");
-      assertThat(engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java")).isEmpty();
+      assertThat(engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", false)).isEmpty();
 
       // check TaintVulnerabilityRaised is received
       analyzeMavenProject("sample-java-taint", PROJECT_KEY_JAVA_TAINT);
@@ -941,7 +941,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       assertThat(issues).isNotEmpty();
       var issueKey = issues.get(0);
 
-      var taintIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java");
+      var taintIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", false);
       assertThat(taintIssues)
         .extracting("key", "resolved", "ruleKey", "message", "filePath", "severity", "type")
         .containsOnly(
@@ -977,7 +977,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           });
       });
 
-      taintIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java");
+      taintIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", false);
       assertThat(taintIssues).isEmpty();
 
       // check IssueChangedEvent is received
@@ -991,7 +991,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
             assertThat(e.getProjectKey()).isEqualTo(PROJECT_KEY_JAVA_TAINT);
           });
       });
-      taintIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java");
+      taintIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", false);
       assertThat(taintIssues).isNotEmpty();
 
       // analyze another project under the same project key to close the taint issue
@@ -1006,7 +1006,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
             assertThat(e.getProjectKey()).isEqualTo(PROJECT_KEY_JAVA_TAINT);
           });
       });
-      taintIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java");
+      taintIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", false);
       assertThat(taintIssues).isEmpty();
     }
   }

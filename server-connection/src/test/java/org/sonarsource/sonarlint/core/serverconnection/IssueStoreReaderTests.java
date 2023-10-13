@@ -129,6 +129,33 @@ class IssueStoreReaderTests {
   }
 
   @Test
+  void canReadFlowsFromStorage_includeResolved() {
+    // setup issues
+    issueStore.replaceAllTaintOfFile("branch", "src/path1", List.of(aServerTaintIssue()
+      .setFilePath("src/path1")
+      .setMessage("Primary")
+      .setTextRange(new TextRangeWithHash(1, 2, 3, 4, "ab12"))
+      .setFlows(List.of(
+        new ServerTaintIssue.Flow(List.of(
+          new ServerTaintIssue.ServerIssueLocation("src/path2", null, null)))))));
+
+    var issuesReadFromStorage = issueStoreReader.getServerTaintIssues(projectBinding, "branch", "src/path1", true);
+    assertThat(issuesReadFromStorage).hasSize(1);
+    var loadedIssue = issuesReadFromStorage.get(0);
+    assertThat(loadedIssue.getFilePath()).isEqualTo("src/path1");
+    assertThat(loadedIssue.getMessage()).isEqualTo("Primary");
+    assertThat(loadedIssue.getTextRange().getStartLine()).isEqualTo(1);
+    assertThat(loadedIssue.getTextRange().getStartLineOffset()).isEqualTo(2);
+    assertThat(loadedIssue.getTextRange().getEndLine()).isEqualTo(3);
+    assertThat(loadedIssue.getTextRange().getEndLineOffset()).isEqualTo(4);
+    assertThat(loadedIssue.getTextRange().getHash()).isEqualTo("ab12");
+
+    assertThat(loadedIssue.getFlows().get(0).locations().get(0).getFilePath()).isEqualTo("src/path2");
+    assertThat(loadedIssue.getFlows().get(0).locations().get(0).getMessage()).isNull();
+    assertThat(loadedIssue.getFlows().get(0).locations().get(0).getTextRange()).isNull();
+  }
+
+  @Test
   void canReadFlowsFromStorage() {
     // setup issues
     issueStore.replaceAllTaintOfFile("branch", "src/path1", List.of(aServerTaintIssue()
@@ -141,7 +168,7 @@ class IssueStoreReaderTests {
           new ServerTaintIssue.ServerIssueLocation("src/path1", null, "Flow 1 - Location 2 - Without text range"),
           new ServerTaintIssue.ServerIssueLocation("src/path2", null, null)))))));
 
-    var issuesReadFromStorage = issueStoreReader.getServerTaintIssues(projectBinding, "branch", "src/path1");
+    var issuesReadFromStorage = issueStoreReader.getServerTaintIssues(projectBinding, "branch", "src/path1", false);
     assertThat(issuesReadFromStorage).hasSize(1);
     var loadedIssue = issuesReadFromStorage.get(0);
     assertThat(loadedIssue.getFilePath()).isEqualTo("src/path1");

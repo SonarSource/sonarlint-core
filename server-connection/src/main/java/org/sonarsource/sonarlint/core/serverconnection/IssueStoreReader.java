@@ -47,13 +47,17 @@ public class IssueStoreReader {
     return loadedIssues;
   }
 
-  public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName, String ideFilePath) {
+  public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName, String ideFilePath, boolean includeResolved) {
     var sqPath = IssueStorePaths.idePathToServerPath(projectBinding, ideFilePath);
     if (sqPath == null) {
       return Collections.emptyList();
     }
     var loadedIssues = storage.project(projectBinding.projectKey()).findings().loadTaint(branchName, sqPath);
-    loadedIssues = filterOutResolvedIssues(loadedIssues);
+
+    if (!includeResolved) {
+      loadedIssues = filterOutResolvedIssues(loadedIssues);
+    }
+
     loadedIssues.forEach(issue -> issue.setFilePath(ideFilePath));
     return loadedIssues;
   }

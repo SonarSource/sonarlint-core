@@ -116,8 +116,8 @@ public class ServerConnection {
     return issueStoreReader.getServerIssues(projectBinding, branchName, ideFilePath);
   }
 
-  public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName, String ideFilePath) {
-    return enhanceWithNewCodeInformation(projectBinding.projectKey(), issueStoreReader.getServerTaintIssues(projectBinding, branchName, ideFilePath));
+  public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName, String ideFilePath, boolean includeResolved) {
+    return enhanceWithNewCodeInformation(projectBinding.projectKey(), issueStoreReader.getServerTaintIssues(projectBinding, branchName, ideFilePath, includeResolved));
   }
 
   public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName) {
