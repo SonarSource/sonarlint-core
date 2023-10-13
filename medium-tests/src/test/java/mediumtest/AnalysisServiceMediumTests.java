@@ -28,6 +28,7 @@ import org.sonarsource.sonarlint.core.commons.Language;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.sonarsource.sonarlint.core.clientapi.common.Language.*;
 
 class AnalysisServiceMediumTests {
 
@@ -41,7 +42,7 @@ class AnalysisServiceMediumTests {
   @Test
   void it_should_return_default_supported_file_patterns_in_standalone_mode() throws ExecutionException, InterruptedException {
     backend = newBackend()
-      .withEnabledLanguageInStandaloneMode(Language.JAVA)
+      .withEnabledLanguageInStandaloneMode(JAVA)
       .build();
 
     var patterns = backend.getAnalysisService().getSupportedFilePatterns(new GetSupportedFilePatternsParams("configScopeId")).get().getPatterns();
@@ -54,7 +55,7 @@ class AnalysisServiceMediumTests {
       .withSonarQubeConnection("connectionId", storage -> storage.withJavaPlugin()
         .withProject("projectKey"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "branchName")
-      .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+      .withExtraEnabledLanguagesInConnectedMode(JAVA)
       .build();
 
     var patterns = backend.getAnalysisService().getSupportedFilePatterns(new GetSupportedFilePatternsParams("configScopeId")).get().getPatterns();
@@ -69,7 +70,7 @@ class AnalysisServiceMediumTests {
           projectStorageBuilder.withSetting("sonar.java.file.suffixes", ".foo, .bar");
         })))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "branchName")
-      .withEnabledLanguageInStandaloneMode(Language.JAVA)
+      .withEnabledLanguageInStandaloneMode(JAVA)
       .build();
 
     var patterns = backend.getAnalysisService().getSupportedFilePatterns(new GetSupportedFilePatternsParams("configScopeId")).get().getPatterns();

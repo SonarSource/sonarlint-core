@@ -34,6 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.ConfigurationScopeDto;
@@ -43,21 +44,35 @@ import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidCha
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.RuleType;
-import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
+import org.sonarsource.sonarlint.core.clientapi.backend.newcode.GetNewCodeDefinitionParams;
+import org.sonarsource.sonarlint.core.clientapi.client.event.DidReceiveServerTaintVulnerabilityChangedOrClosedEvent;
+import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.notFound;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
+import static com.github.tomakehurst.wiremock.client.WireMock.okForContentType;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.awaitility.Awaitility.waitAtMost;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import static org.sonarsource.sonarlint.core.clientapi.common.Language.JAVA;
+import static org.sonarsource.sonarlint.core.clientapi.common.Language.JS;
 
 class ServerSentEventsMediumTests {
+
+  @RegisterExtension
+  SonarLintLogTester logTester = new SonarLintLogTester(true);
   private SonarLintTestBackend backend;
   private String oldSonarCloudUrl;
 
@@ -88,8 +103,8 @@ class ServerSentEventsMediumTests {
     @Test
     void should_subscribe_for_events_if_connected_to_sonarqube() {
       backend = newBackend()
-        .withEnabledLanguageInStandaloneMode(Language.JS)
-        .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withUnboundConfigScope("configScope")
@@ -105,8 +120,8 @@ class ServerSentEventsMediumTests {
     void should_not_subscribe_for_events_if_sonarcloud_connection() {
       System.setProperty("sonarlint.internal.sonarcloud.url", sonarServerMock.baseUrl());
       backend = newBackend()
-        .withEnabledLanguageInStandaloneMode(Language.JS)
-        .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarCloudConnection("connectionId")
         .withUnboundConfigScope("configScope")
@@ -124,8 +139,8 @@ class ServerSentEventsMediumTests {
     @Test
     void should_not_resubscribe_for_events_if_sonarqube_connection_and_binding_is_the_same() {
       backend = newBackend()
-        .withEnabledLanguageInStandaloneMode(Language.JS)
-        .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -143,8 +158,8 @@ class ServerSentEventsMediumTests {
     @Test
     void should_not_resubscribe_for_events_if_sonarqube_connection() {
       backend = newBackend()
-        .withEnabledLanguageInStandaloneMode(Language.JS)
-        .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -159,8 +174,8 @@ class ServerSentEventsMediumTests {
     @Test
     void should_unsubscribe_for_events_if_sonarqube_connection_and_other_projects_bound() {
       backend = newBackend()
-        .withEnabledLanguageInStandaloneMode(Language.JS)
-        .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope1", "connectionId", "projectKey1")
@@ -186,8 +201,8 @@ class ServerSentEventsMediumTests {
     @Test
     void should_subscribe_if_bound_to_sonarqube() {
       backend = newBackend()
-        .withEnabledLanguageInStandaloneMode(Language.JS)
-        .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .build();
@@ -201,8 +216,8 @@ class ServerSentEventsMediumTests {
     @Test
     void should_not_subscribe_if_not_bound() {
       backend = newBackend()
-        .withEnabledLanguageInStandaloneMode(Language.JS)
-        .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .build();
@@ -216,8 +231,8 @@ class ServerSentEventsMediumTests {
     void should_not_subscribe_if_bound_to_sonarcloud() {
       System.setProperty("sonarlint.internal.sonarcloud.url", sonarServerMock.baseUrl());
       backend = newBackend()
-        .withEnabledLanguageInStandaloneMode(Language.JS)
-        .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarCloudConnection("connectionId")
         .build();
@@ -239,8 +254,8 @@ class ServerSentEventsMediumTests {
     @Test
     void should_do_nothing_if_scope_was_not_bound() {
       backend = newBackend()
-        .withEnabledLanguageInStandaloneMode(Language.JS)
-        .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withUnboundConfigScope("configScope")
@@ -255,8 +270,8 @@ class ServerSentEventsMediumTests {
     void should_do_nothing_if_scope_was_bound_to_sonarcloud() {
       System.setProperty("sonarlint.internal.sonarcloud.url", sonarServerMock.baseUrl());
       backend = newBackend()
-        .withEnabledLanguageInStandaloneMode(Language.JS)
-        .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarCloudConnection("connectionId")
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -270,8 +285,8 @@ class ServerSentEventsMediumTests {
     @Test
     void should_close_connection_when_if_scope_was_bound_to_sonarcloud_and_no_other_project_interested() {
       backend = newBackend()
-        .withEnabledLanguageInStandaloneMode(Language.JS)
-        .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -286,8 +301,8 @@ class ServerSentEventsMediumTests {
     @Test
     void should_keep_connection_if_scope_was_bound_to_sonarqube_and_another_scope_is_interested_in_the_same_project() {
       backend = newBackend()
-        .withEnabledLanguageInStandaloneMode(Language.JS)
-        .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope1", "connectionId", "projectKey")
@@ -305,8 +320,8 @@ class ServerSentEventsMediumTests {
     @Test
     void should_reopen_connection_if_scope_was_bound_to_sonarqube_and_another_scope_is_interested_in_a_different_project() {
       backend = newBackend()
-        .withEnabledLanguageInStandaloneMode(Language.JS)
-        .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope1", "connectionId", "projectKey1")
@@ -333,8 +348,8 @@ class ServerSentEventsMediumTests {
     @Test
     void should_resubscribe_if_sonarqube_connection_was_open() {
       backend = newBackend()
-        .withEnabledLanguageInStandaloneMode(Language.JS)
-        .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -353,8 +368,8 @@ class ServerSentEventsMediumTests {
     void should_do_nothing_if_sonarcloud() {
       System.setProperty("sonarlint.internal.sonarcloud.url", sonarServerMock.baseUrl());
       backend = newBackend()
-        .withEnabledLanguageInStandaloneMode(Language.JS)
-        .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarCloudConnection("connectionId")
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -368,8 +383,8 @@ class ServerSentEventsMediumTests {
     @Test
     void should_do_nothing_if_sonarqube_connection_was_not_open() {
       backend = newBackend()
-        .withEnabledLanguageInStandaloneMode(Language.JS)
-        .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .build();
@@ -390,8 +405,8 @@ class ServerSentEventsMediumTests {
     @Test
     void should_do_nothing_if_no_scope_is_bound() {
       backend = newBackend()
-        .withEnabledLanguageInStandaloneMode(Language.JS)
-        .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withUnboundConfigScope("configScope")
         .build();
@@ -405,8 +420,8 @@ class ServerSentEventsMediumTests {
     @Test
     void should_do_nothing_if_sonarcloud() {
       backend = newBackend()
-        .withEnabledLanguageInStandaloneMode(Language.JS)
-        .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build();
@@ -420,8 +435,8 @@ class ServerSentEventsMediumTests {
     @Test
     void should_open_connection_when_bound_scope_exists() {
       backend = newBackend()
-        .withEnabledLanguageInStandaloneMode(Language.JS)
-        .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build();
@@ -441,8 +456,8 @@ class ServerSentEventsMediumTests {
     void should_do_nothing_if_sonarcloud() {
       System.setProperty("sonarlint.internal.sonarcloud.url", sonarServerMock.baseUrl());
       backend = newBackend()
-        .withEnabledLanguageInStandaloneMode(Language.JS)
-        .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarCloudConnection("connectionId")
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -456,8 +471,8 @@ class ServerSentEventsMediumTests {
     @Test
     void should_close_active_connection_if_sonarqube() {
       backend = newBackend()
-        .withEnabledLanguageInStandaloneMode(Language.JS)
-        .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -476,8 +491,8 @@ class ServerSentEventsMediumTests {
     @Test
     void should_resubscribe_if_sonarqube_connection_active() {
       backend = newBackend()
-        .withEnabledLanguageInStandaloneMode(Language.JS)
-        .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -497,8 +512,8 @@ class ServerSentEventsMediumTests {
     void should_not_resubscribe_if_sonarcloud() {
       System.setProperty("sonarlint.internal.sonarcloud.url", sonarServerMock.baseUrl());
       backend = newBackend()
-        .withEnabledLanguageInStandaloneMode(Language.JS)
-        .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarCloudConnection("connectionId")
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -514,38 +529,54 @@ class ServerSentEventsMediumTests {
   class WhenReceivingIssueChangedEvent {
 
     @Test
-    void should_forward_to_client() {
-      var fakeClient = newFakeClient()
-        .build();
-      sonarServerMock.stubFor(get("/api/push/sonarlint_events?projectKeys=projectKey&languages=java,js")
+    void should_forward_taint_events_to_client() {
+      var fakeClient = spy(newFakeClient()
+        .build());
+
+      var projectKey = "projectKey";
+      var branchName = "branchName";
+      var serverWithTaintIssues = newSonarQubeServer("10.0")
+        .withProject(projectKey,
+          project -> project.withBranch(branchName,
+            branch -> branch.withTaintIssue("key1", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", "", new TextRange(1, 0, 3, 4))))
+        .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))
+        .start();
+
+      serverWithTaintIssues.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java,js")
         .inScenario("Single event")
         .whenScenarioStateIs(STARTED)
-        .willReturn(ok("event: IssueChanged\n" +
+        .willReturn(okForContentType("text/event-stream", "event: IssueChanged\n" +
           "data: {" +
-          "\"projectKey\": \"projectKey\"," +
+          "\"projectKey\": \"" + projectKey + "\"," +
           "\"issues\": [{" +
           "  \"issueKey\": \"key1\"," +
-          "  \"branchName\": \"master\"" +
+          "  \"branchName\": \"" + branchName + "\"" +
           "}]," +
           "\"userType\": \"BUG\"" +
-          "}\n\n"))
+          "}\n\n")
+          // Add a delay to ensure the auto-sync of the issue storage had been completed
+          .withFixedDelay(2000))
         .willSetStateTo("Event delivered"));
       // avoid later reconnection
-      sonarServerMock.stubFor(get("/api/push/sonarlint_events?projectKeys=projectKey&languages=java,js")
+      serverWithTaintIssues.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java,js")
         .inScenario("Single event")
         .whenScenarioStateIs("Event delivered")
         .willReturn(notFound()));
+
       backend = newBackend()
-        .withEnabledLanguageInStandaloneMode(Language.JS)
-        .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
-        .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
-        .withBoundConfigScope("configScope", "connectionId", "projectKey")
+        .withProjectSynchronization()
+        .withSonarQubeConnection("connectionId", serverWithTaintIssues)
+        .withBoundConfigScope("configScope", "connectionId", projectKey, branchName)
         .build(fakeClient);
 
-      await().atMost(Duration.ofSeconds(2))
-        .untilAsserted(() -> assertThat(fakeClient.getReceivedServerEventsByConnectionId().get("connectionId")).usingRecursiveFieldByFieldElementComparator()
-          .containsOnly(new IssueChangedEvent("projectKey", List.of("key1"), null, RuleType.BUG, null)));
+      var captor = ArgumentCaptor.forClass(DidReceiveServerTaintVulnerabilityChangedOrClosedEvent.class);
+      verify(fakeClient, timeout(3000)).didReceiveServerTaintVulnerabilityChangedOrClosedEvent(captor.capture());
+
+      assertThat(captor.getValue().getConnectionId()).isEqualTo("connectionId");
+      assertThat(captor.getValue().getSonarProjectKey()).isEqualTo(projectKey);
     }
   }
 

@@ -19,12 +19,6 @@
       <artifactId>jsr305</artifactId>
       <scope>provided</scope>
     </dependency>
-    <!-- TODO remove this dependency once we remove the getHttpClient method -->
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>sonarlint-http</artifactId>
-      <version>${project.version}</version>
-    </dependency>
     <dependency>
       <groupId>org.eclipse.lsp4j</groupId>
       <artifactId>org.eclipse.lsp4j.jsonrpc</artifactId>
