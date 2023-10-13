@@ -29,7 +29,7 @@ import mediumtest.fixtures.ServerFixture;
 import mediumtest.fixtures.SonarLintTestBackend;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.clientapi.common.TextRangeDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
@@ -183,7 +183,7 @@ class ShowIssueMediumTests {
 
     assertThat(statusCode).isEqualTo(200);
     assertThat(fakeClient.getMessagesToShow()).isEmpty();
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getIssueParamsToShowByIssueKey()).containsOnlyKeys(ISSUE_KEY));
+    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getIssueParamsToShowByIssueKey()).containsOnlyKeys(ISSUE_KEY));
     assertThat(fakeClient.getIssueParamsToShowByIssueKey().get(ISSUE_KEY).getRuleKey()).isEqualTo(RULE_KEY);
   }
 

@@ -21,10 +21,10 @@ package org.sonarsource.sonarlint.core.embedded.server;
 
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.BindingSuggestionProviderImpl;
-import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
-import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionParams;
-import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 
 public class ShowHotspotOrIssueRequestHandler {
   private final BindingSuggestionProviderImpl bindingSuggestionProvider;

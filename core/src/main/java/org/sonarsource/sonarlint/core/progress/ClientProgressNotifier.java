@@ -21,9 +21,9 @@ package org.sonarsource.sonarlint.core.progress;
 
 import java.util.UUID;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.client.progress.ProgressUpdateNotification;
-import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ProgressUpdateNotification;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 
 public class ClientProgressNotifier implements ProgressNotifier {
   private final SonarLintClient client;

@@ -33,8 +33,11 @@ import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.BackendErrorCode;
 
 import static java.util.Objects.requireNonNull;
 
@@ -85,6 +88,13 @@ public class ConfigurationRepository {
       }
       configScopeIdToSearchIn = parentId.get();
     }
+  }
+
+  public Binding getEffectiveBindingOrThrow(String configScopeId) {
+    return getEffectiveBinding(configScopeId).orElseThrow(() -> {
+      ResponseError error = new ResponseError(BackendErrorCode.CONFIG_SCOPE_NOT_BOUND, "No binding for config scope '" + configScopeId + "'", configScopeId);
+      throw new ResponseErrorException(error);
+    });
   }
 
   public Optional<Binding> getConfiguredBinding(String configScopeId) {

@@ -24,7 +24,7 @@ import mediumtest.fixtures.SonarLintTestBackend;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.OpenHotspotInBrowserParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.OpenHotspotInBrowserParams;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorageManager;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
