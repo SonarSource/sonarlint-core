@@ -79,12 +79,13 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
   /**
    * Gets locally stored server taint issues for a given file.
    *
-   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ClientProgressMonitor)})
-   * @param branchName     branch name
-   * @param filePath       relative to the project.
+   * @param projectBinding  information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ClientProgressMonitor)})
+   * @param branchName      branch name
+   * @param filePath        relative to the project.
+   * @param includeResolved whether the resolved Taint Vulnerabilities should be included or not
    * @return All server taint issues in the local storage for the given file. If file has no issues, an empty list is returned.
    */
-  List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName, String filePath);
+  List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName, String filePath, boolean includeResolved);
 
   /**
    * Gets locally stored server taint issues.

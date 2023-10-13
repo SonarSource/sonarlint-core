@@ -553,7 +553,7 @@ class SonarCloudTests extends AbstractConnectedTests {
         MAIN_BRANCH_NAME,
         null);
 
-      var sinkIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java");
+      var sinkIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", false);
 
       assertThat(sinkIssues).hasSize(1);
 
