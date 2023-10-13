@@ -31,10 +31,11 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
-import javax.net.ssl.SSLHandshakeException;
+import java.util.concurrent.TimeUnit;
 import mediumtest.fixtures.SonarLintTestBackend;
 import nl.altindag.ssl.util.CertificateUtils;
 import nl.altindag.ssl.util.KeyStoreUtils;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -45,12 +46,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.GetOrganizationParams;
-import org.sonarsource.sonarlint.core.clientapi.client.http.CheckServerTrustedParams;
-import org.sonarsource.sonarlint.core.clientapi.client.http.CheckServerTrustedResponse;
-import org.sonarsource.sonarlint.core.clientapi.common.TokenDto;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.http.CheckServerTrustedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.http.CheckServerTrustedResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 
@@ -62,6 +63,7 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -132,19 +134,20 @@ class SslMediumTests {
 
       var future = backend.getConnectionService().getOrganization(new GetOrganizationParams(Either.forLeft(new TokenDto("token")), "myOrg"));
       var thrown = assertThrows(CompletionException.class, future::join);
-      assertThat(thrown).hasRootCauseInstanceOf(java.security.cert.CertificateException.class).hasRootCauseMessage("None of the TrustManagers trust this certificate chain");
+      assertThat(thrown).hasRootCauseInstanceOf(ResponseErrorException.class).hasRootCauseMessage("Internal error.");
       assertThat(future).isCompletedExceptionally();
     }
 
     @Test
     void it_should_ask_user_only_once_if_server_certificate_is_trusted() throws ExecutionException, InterruptedException, KeyStoreException {
-      var fakeClient = newFakeClient().build();
-      fakeClient = Mockito.spy(fakeClient);
+      var sonarLintClientMock = mock(SonarLintClient.class);
+      var fakeClient = newFakeClient(sonarLintClientMock).build();
+
       backend = newBackend().build(fakeClient);
 
       var captor = ArgumentCaptor.forClass(CheckServerTrustedParams.class);
 
-      when(fakeClient.checkServerTrusted(captor.capture()))
+      when(sonarLintClientMock.checkServerTrusted(captor.capture()))
         .thenReturn(CompletableFuture.completedFuture(new CheckServerTrustedResponse(true)));
 
       // Two concurrent requests should only trigger checkServerTrusted once
@@ -154,7 +157,7 @@ class SslMediumTests {
       future.get();
       future2.get();
 
-      verify(fakeClient, times(1)).checkServerTrusted(any());
+      verify(sonarLintClientMock, times(1)).checkServerTrusted(any());
 
       var params = captor.getValue();
 
@@ -218,17 +221,17 @@ class SslMediumTests {
 
     @Test
     void it_should_fail_if_client_certificate_not_provided() {
-      var fakeClient = newFakeClient().build();
-      fakeClient = Mockito.spy(fakeClient);
+      var sonarLintClientMock = mock(SonarLintClient.class);
+      var fakeClient = newFakeClient(sonarLintClientMock).build();
       backend = newBackend().build(fakeClient);
 
-      when(fakeClient.checkServerTrusted(any()))
+      when(sonarLintClientMock.checkServerTrusted(any()))
         .thenReturn(CompletableFuture.completedFuture(new CheckServerTrustedResponse(true)));
 
       var future = backend.getConnectionService().getOrganization(new GetOrganizationParams(Either.forLeft(new TokenDto("token")), "myOrg"));
 
       var thrown = assertThrows(CompletionException.class, future::join);
-      assertThat(thrown).hasRootCauseInstanceOf(SSLHandshakeException.class).hasRootCauseMessage("Received fatal alert: bad_certificate");
+      assertThat(thrown).hasRootCauseInstanceOf(ResponseErrorException.class).hasRootCauseMessage("Internal error.");
       assertThat(future).isCompletedExceptionally();
 
     }
@@ -238,9 +241,8 @@ class SslMediumTests {
 
       System.setProperty("sonarlint.ssl.keyStorePath", toPath(Objects.requireNonNull(SslMediumTests.class.getResource("/ssl/client.p12"))).toString());
       System.setProperty("sonarlint.ssl.keyStorePassword", "pwdClientCertP12");
-
-      var fakeClient = newFakeClient().build();
-      fakeClient = Mockito.spy(fakeClient);
+      var sonarLintClientMock = mock(SonarLintClient.class);
+      var fakeClient = newFakeClient(sonarLintClientMock).build();
       backend = newBackend().build(fakeClient);
 
       when(fakeClient.checkServerTrusted(any()))
@@ -248,7 +250,7 @@ class SslMediumTests {
 
       var future = backend.getConnectionService().getOrganization(new GetOrganizationParams(Either.forLeft(new TokenDto("token")), "myOrg"));
 
-      future.get();
+      assertThat(future).succeedsWithin(1, TimeUnit.MINUTES);
     }
   }
 

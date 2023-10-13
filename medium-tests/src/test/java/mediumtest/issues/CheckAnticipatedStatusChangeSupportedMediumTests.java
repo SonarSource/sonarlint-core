@@ -22,20 +22,22 @@ package mediumtest.issues;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import mediumtest.fixtures.SonarLintTestBackend;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckAnticipatedStatusChangeSupportedParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckAnticipatedStatusChangeSupportedResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckAnticipatedStatusChangeSupportedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckAnticipatedStatusChangeSupportedResponse;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class CheckAnticipatedStatusChangeSupportedMediumTests {
-  private SonarLintBackendImpl backend;
+  private SonarLintTestBackend backend;
+
   @RegisterExtension
   public final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
   private String oldSonarCloudUrl;
@@ -65,8 +67,8 @@ class CheckAnticipatedStatusChangeSupportedMediumTests {
       .failsWithin(Duration.ofSeconds(2))
       .withThrowableOfType(ExecutionException.class)
       .havingCause()
-      .isInstanceOf(IllegalArgumentException.class)
-      .withMessage("Binding for configuration scope ID 'configScopeId' does not exist");
+      .isInstanceOf(ResponseErrorException.class)
+      .withMessage("No binding for config scope 'configScopeId'");
   }
 
   @Test

@@ -42,15 +42,6 @@ import javax.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.ResolutionStatus;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedFindingDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.IssueTrackingService;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LocalOnlyIssueDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ServerMatchedIssueDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TextRangeWithHashDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TrackWithServerIssuesParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TrackWithServerIssuesResponse;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
@@ -63,12 +54,21 @@ import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.newcode.NewCodeServiceImpl;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.vcs.ActiveSonarProjectBranchRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.IssueTrackingService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LineWithHashDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlyIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ServerMatchedIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesResponse;
 import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
+import org.sonarsource.sonarlint.core.utils.FutureUtils;
 
-import static org.sonarsource.sonarlint.core.utils.FutureUtils.waitForTask;
 import static org.sonarsource.sonarlint.core.utils.FutureUtils.waitForTasks;
 
 @Named
@@ -108,7 +108,7 @@ public class IssueTrackingServiceImpl implements IssueTrackingService {
       if (effectiveBindingOpt.isEmpty() || activeBranchOpt.isEmpty()) {
         return new TrackWithServerIssuesResponse(params.getClientTrackedIssuesByServerRelativePath().entrySet().stream()
           .map(e -> Map.entry(e.getKey(), e.getValue().stream()
-            .<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>map(issue -> Either.forRight(new LocalOnlyIssueDto(UUID.randomUUID(), null))).collect(Collectors.toList())))
+            .map(issue -> TrackWithServerIssuesResponse.ServerOrLocalIssueDto.forRight(new LocalOnlyIssueDto(UUID.randomUUID(), null))).collect(Collectors.toList())))
           .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
       }
       var binding = effectiveBindingOpt.get();
@@ -125,18 +125,18 @@ public class IssueTrackingServiceImpl implements IssueTrackingService {
         var localOnlyIssues = localOnlyIssueStorageService.get().loadForFile(configurationScopeId, serverRelativePath);
         var clientIssueTrackables = toTrackables(e.getValue());
         var matches = matchIssues(serverRelativePath, serverIssues, localOnlyIssues, clientIssueTrackables)
-          .stream().<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>map(result -> {
+          .stream().map(result -> {
             if (result.isLeft()) {
               var serverIssue = result.getLeft();
               var creationDate = serverIssue.getCreationDate().toEpochMilli();
               var isOnNewCode = newCodeDefinition.isOnNewCode(creationDate);
               var userSeverity = serverIssue.getUserSeverity();
-              return Either.forLeft(new ServerMatchedIssueDto(UUID.randomUUID(), serverIssue.getKey(), creationDate, serverIssue.isResolved(),
+              return TrackWithServerIssuesResponse.ServerOrLocalIssueDto.forLeft(new ServerMatchedIssueDto(UUID.randomUUID(), serverIssue.getKey(), creationDate, serverIssue.isResolved(),
                 userSeverity != null ? RuleDetailsAdapter.adapt(userSeverity) : null, RuleDetailsAdapter.adapt(serverIssue.getType()), isOnNewCode));
             } else {
               var localOnlyIssue = result.getRight();
               var resolution = localOnlyIssue.getResolution();
-              return Either.forRight(new LocalOnlyIssueDto(localOnlyIssue.getId(), resolution == null ? null : ResolutionStatus.valueOf(resolution.getStatus().name())));
+              return TrackWithServerIssuesResponse.ServerOrLocalIssueDto.forRight(new LocalOnlyIssueDto(localOnlyIssue.getId(), resolution == null ? null : ResolutionStatus.valueOf(resolution.getStatus().name())));
             }
           }).collect(Collectors.toList());
         return Map.entry(serverRelativePath, matches);
@@ -156,7 +156,7 @@ public class IssueTrackingServiceImpl implements IssueTrackingService {
         .collect(Collectors.toList()));
     }
     var waitForTasksTask = executorService.submit(() -> waitForTasks(cancelChecker, fetchTasks, "Wait for server issues", Duration.ofSeconds(20)));
-    waitForTask(cancelChecker, waitForTasksTask, "Wait for server issues (global timeout)", Duration.ofSeconds(60));
+    FutureUtils.waitForTask(cancelChecker, waitForTasksTask, "Wait for server issues (global timeout)", Duration.ofSeconds(60));
   }
 
   private List<Either<ServerIssue, LocalOnlyIssue>> matchIssues(String serverRelativePath, List<ServerIssue> serverIssues,

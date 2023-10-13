@@ -39,13 +39,14 @@ import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
-import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.backend.binding.BindingService;
-import org.sonarsource.sonarlint.core.clientapi.backend.binding.GetBindingSuggestionParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingSuggestionDto;
-import org.sonarsource.sonarlint.core.clientapi.client.binding.GetBindingSuggestionsResponse;
-import org.sonarsource.sonarlint.core.clientapi.client.binding.SuggestBindingParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.BindingService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetBindingSuggestionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.GetBindingSuggestionsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
@@ -137,10 +138,10 @@ public class BindingSuggestionProviderImpl implements BindingService {
 
   @Override
   public CompletableFuture<GetBindingSuggestionsResponse> getBindingSuggestions(GetBindingSuggestionParams params) {
-    return CompletableFuture.supplyAsync(() -> {
+    return CompletableFutures.computeAsync(cancelChecker -> {
       var suggestions = computeBindingSuggestions(Set.of(params.getConfigScopeId()), Set.of(params.getConnectionId()));
       return new GetBindingSuggestionsResponse(suggestions);
-    }, executorService);
+    });
   }
 
   private void queueBindingSuggestionComputation(Set<String> configScopeIds, Set<String> candidateConnectionIds) {

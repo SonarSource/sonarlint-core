@@ -21,26 +21,33 @@ package org.sonarsource.sonarlint.core.hotspot;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
-import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.ChangeHotspotStatusParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.CheckLocalDetectionSupportedParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.CheckLocalDetectionSupportedResponse;
-import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.CheckStatusChangePermittedParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.CheckStatusChangePermittedResponse;
-import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotService;
-import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotStatus;
-import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.OpenHotspotInBrowserParams;
-import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.BackendErrorCode;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.ChangeHotspotStatusParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckLocalDetectionSupportedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckLocalDetectionSupportedResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckStatusChangePermittedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckStatusChangePermittedResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.OpenHotspotInBrowserParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
@@ -96,40 +103,53 @@ public class HotspotServiceImpl implements HotspotService {
 
   @Override
   public CompletableFuture<CheckLocalDetectionSupportedResponse> checkLocalDetectionSupported(CheckLocalDetectionSupportedParams params) {
-    var configScopeId = params.getConfigScopeId();
-    var configScope = configurationRepository.getConfigurationScope(configScopeId);
-    if (configScope == null) {
-      return CompletableFuture.failedFuture(new IllegalArgumentException("The provided configuration scope does not exist: " + configScopeId));
-    }
-    var effectiveBinding = configurationRepository.getEffectiveBinding(configScopeId);
-    if (effectiveBinding.isEmpty()) {
-      return CompletableFuture.completedFuture(new CheckLocalDetectionSupportedResponse(false, NO_BINDING_REASON));
-    }
-    var connectionId = effectiveBinding.get().getConnectionId();
-    var connection = connectionRepository.getConnectionById(connectionId);
-    if (connection == null) {
-      return CompletableFuture.failedFuture(new IllegalArgumentException("The provided configuration scope is bound to an unknown connection: " + connectionId));
-    }
+    return CompletableFutures.computeAsync(cancelChecker -> {
+      var configScopeId = params.getConfigScopeId();
+      var configScope = configurationRepository.getConfigurationScope(configScopeId);
+      if (configScope == null) {
+        ResponseError error = new ResponseError(BackendErrorCode.CONFIG_SCOPE_NOT_FOUND, "The provided configuration scope does not exist: " + configScopeId, configScopeId);
+        throw new ResponseErrorException(error);
+      }
+      var effectiveBinding = configurationRepository.getEffectiveBinding(configScopeId);
+      if (effectiveBinding.isEmpty()) {
+        return new CheckLocalDetectionSupportedResponse(false, NO_BINDING_REASON);
+      }
+      var connectionId = effectiveBinding.get().getConnectionId();
+      var connection = connectionRepository.getConnectionById(connectionId);
+      if (connection == null) {
+        ResponseError error = new ResponseError(BackendErrorCode.CONNECTION_NOT_FOUND, "The provided configuration scope is bound to an unknown connection: " + connectionId, connectionId);
+        throw new ResponseErrorException(error);
+      }
 
-    var supported = isLocalDetectionSupported(connection.getKind() == ConnectionKind.SONARCLOUD, effectiveBinding.get().getConnectionId());
-    return CompletableFuture.completedFuture(new CheckLocalDetectionSupportedResponse(supported, supported ? null : UNSUPPORTED_SONARQUBE_REASON));
+      var supported = isLocalDetectionSupported(connection.getKind() == ConnectionKind.SONARCLOUD, effectiveBinding.get().getConnectionId());
+      return new CheckLocalDetectionSupportedResponse(supported, supported ? null : UNSUPPORTED_SONARQUBE_REASON);
+    });
   }
 
   @Override
   public CompletableFuture<CheckStatusChangePermittedResponse> checkStatusChangePermitted(CheckStatusChangePermittedParams params) {
-    var connectionId = params.getConnectionId();
-    var connection = connectionRepository.getConnectionById(connectionId);
-    var serverApiOpt = serverApiProvider.getServerApi(connectionId);
-    if (connection == null || serverApiOpt.isEmpty()) {
-      return CompletableFuture.failedFuture(new IllegalArgumentException("Connection with ID '" + connectionId + "' does not exist"));
-    }
-    return serverApiOpt.get().hotspot().show(params.getHotspotKey())
-      .thenApply(hotspot -> {
-        var allowedStatuses = HotspotReviewStatus.allowedStatusesOn(connection.getKind());
-        // canChangeStatus is false when the 'Administer Hotspots' permission is missing
-        // normally the 'Browse' permission is also required, but we assume it's present as the client knows the hotspot key
-        return toResponse(hotspot.canChangeStatus, allowedStatuses);
-      });
+    return CompletableFutures.computeAsync(cancelChecker -> {
+      var connectionId = params.getConnectionId();
+      // fixme add getConnectionByIdOrThrow
+      var connection = connectionRepository.getConnectionById(connectionId);
+      var serverApi = serverApiProvider.getServerApiOrThrow(connectionId);
+      try {
+        return serverApi.hotspot().show(params.getHotspotKey())
+          .thenApply(hotspot -> {
+            var allowedStatuses = HotspotReviewStatus.allowedStatusesOn(connection.getKind());
+            // canChangeStatus is false when the 'Administer Hotspots' permission is missing
+            // normally the 'Browse' permission is also required, but we assume it's present as the client knows the hotspot key
+            return toResponse(hotspot.canChangeStatus, allowedStatuses);
+          }).get(1, TimeUnit.MINUTES);
+        // FIXME
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      } catch (ExecutionException e) {
+        throw new RuntimeException(e);
+      } catch (TimeoutException e) {
+        throw new RuntimeException(e);
+      }
+    });
   }
 
   private static CheckStatusChangePermittedResponse toResponse(boolean canChangeStatus, List<HotspotReviewStatus> coreStatuses) {
@@ -143,22 +163,28 @@ public class HotspotServiceImpl implements HotspotService {
 
   @Override
   public CompletableFuture<Void> changeStatus(ChangeHotspotStatusParams params) {
-    var configurationScopeId = params.getConfigurationScopeId();
-    var optionalBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
-    return optionalBinding
-      .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
-      .map(connection -> {
-        var reviewStatus = toCore(params.getNewStatus());
-        return connection.hotspot().changeStatusAsync(params.getHotspotKey(), reviewStatus)
-          .thenAccept(nothing -> {
-            saveStatusInStorage(optionalBinding.get(), params.getHotspotKey(), reviewStatus);
-            telemetryService.hotspotStatusChanged();
-          })
-          .exceptionally(throwable -> {
-            throw new HotspotStatusChangeException(throwable);
-          });
-      })
-      .orElseGet(() -> CompletableFuture.completedFuture(null));
+    return CompletableFutures.computeAsync(cancelChecker -> {
+      var configurationScopeId = params.getConfigurationScopeId();
+      var optionalBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
+      optionalBinding
+        .flatMap(effectiveBinding -> serverApiProvider.getServerApi(effectiveBinding.getConnectionId()))
+        .ifPresent(connection -> {
+          var reviewStatus = toCore(params.getNewStatus());
+          try {
+            connection.hotspot().changeStatusAsync(params.getHotspotKey(), reviewStatus).get(1, TimeUnit.MINUTES);
+            // FIXME
+          } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+          } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+          } catch (TimeoutException e) {
+            throw new RuntimeException(e);
+          }
+          saveStatusInStorage(optionalBinding.get(), params.getHotspotKey(), reviewStatus);
+          telemetryService.hotspotStatusChanged();
+        });
+      return null;
+    });
   }
 
   private static HotspotReviewStatus toCore(HotspotStatus newStatus) {

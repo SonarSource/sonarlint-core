@@ -27,27 +27,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import mediumtest.fixtures.ServerFixture;
 import mediumtest.fixtures.SonarLintTestBackend;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.AddIssueCommentParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.ChangeIssueStatusParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenAllIssuesForFileParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenIssueParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.ResolutionStatus;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedFindingDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LocalOnlyIssueDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TextRangeWithHashDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TrackWithServerIssuesParams;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssueResolution;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
-import org.sonarsource.sonarlint.core.issue.AddIssueCommentException;
-import org.sonarsource.sonarlint.core.issue.IssueStatusChangeException;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.AddIssueCommentParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ChangeIssueStatusParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenIssueParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LineWithHashDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlyIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesParams;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
@@ -60,7 +60,6 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.storage.ServerIssueFixtures.aServerIssue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class IssuesStatusChangeMediumTests {
@@ -144,8 +143,8 @@ class IssuesStatusChangeMediumTests {
       .failsWithin(Duration.ofSeconds(2))
       .withThrowableOfType(ExecutionException.class)
       .havingCause()
-      .isInstanceOf(IssueStatusChangeException.class)
-      .withMessage("Cannot change status on the issue");
+      .isInstanceOf(ResponseErrorException.class)
+      .withMessageContaining("Request 'change status' failed:");
   }
 
   @Test
@@ -248,9 +247,12 @@ class IssuesStatusChangeMediumTests {
 
     var params = new ChangeIssueStatusParams("configScopeId", "myIssueKey", ResolutionStatus.WONT_FIX, false);
     var issueService = backend.getIssueService();
-    var thrown = assertThrows(IssueStatusChangeException.class, () -> issueService.changeStatus(params));
 
-    assertThat(thrown).hasMessageStartingWith("Cannot change status on the issue: Issue key myIssueKey was not found");
+    assertThat(issueService.changeStatus(params))
+      .failsWithin(2, TimeUnit.SECONDS)
+      .withThrowableOfType(ExecutionException.class)
+      .withCauseExactlyInstanceOf(ResponseErrorException.class)
+      .withMessageContaining("Issue key myIssueKey was not found");
   }
 
   @Test
@@ -308,8 +310,8 @@ class IssuesStatusChangeMediumTests {
       .failsWithin(Duration.ofSeconds(2))
       .withThrowableOfType(ExecutionException.class)
       .havingCause()
-      .isInstanceOf(AddIssueCommentException.class)
-      .withMessage("Cannot add comment to the issue");
+      .isInstanceOf(ResponseErrorException.class)
+      .withMessageContaining("Request 'Add comment to server issue' failed: org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException:");
   }
 
   @Test

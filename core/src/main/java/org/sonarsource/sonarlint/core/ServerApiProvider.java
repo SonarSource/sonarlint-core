@@ -23,11 +23,14 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.ConnectionUnawareHttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.BackendErrorCode;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 
@@ -61,4 +64,12 @@ public class ServerApiProvider {
     var params = new EndpointParams(baseUrl, SonarCloudConnectionConfiguration.getSonarCloudUrl().equals(baseUrl), organization);
     return new ServerApi(params, unawareHttpClientProvider.getHttpClient(token));
   }
+
+  public ServerApi getServerApiOrThrow(String connectionId) {
+    return getServerApi(connectionId).orElseThrow(() -> {
+      var error = new ResponseError(BackendErrorCode.CONNECTION_NOT_FOUND, "Connection '" + connectionId + "' is gone", connectionId);
+      return new ResponseErrorException(error);
+    });
+  }
+
 }

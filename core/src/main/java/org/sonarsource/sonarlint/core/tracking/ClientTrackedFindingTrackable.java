@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import org.jetbrains.annotations.Nullable;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedFindingDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;

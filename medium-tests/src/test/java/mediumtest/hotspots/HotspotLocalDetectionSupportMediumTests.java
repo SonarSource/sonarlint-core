@@ -23,12 +23,14 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
-import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.CheckLocalDetectionSupportedParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.CheckLocalDetectionSupportedResponse;
+import org.sonarsource.sonarlint.core.SpringApplicationContextInitializer;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckLocalDetectionSupportedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckLocalDetectionSupportedResponse;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,7 +39,7 @@ class HotspotLocalDetectionSupportMediumTests {
   @TempDir
   Path storageDir;
 
-  private SonarLintBackendImpl backend;
+  private SonarLintBackend backend;
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
@@ -54,7 +56,7 @@ class HotspotLocalDetectionSupportMediumTests {
       .failsWithin(Duration.ofSeconds(2))
       .withThrowableOfType(ExecutionException.class)
       .havingCause()
-      .isInstanceOf(IllegalArgumentException.class)
+      .isInstanceOf(ResponseErrorException.class)
       .withMessage("The provided configuration scope does not exist: configScopeId");
   }
 
@@ -70,7 +72,7 @@ class HotspotLocalDetectionSupportMediumTests {
       .failsWithin(Duration.ofSeconds(2))
       .withThrowableOfType(ExecutionException.class)
       .havingCause()
-      .isInstanceOf(IllegalArgumentException.class)
+      .isInstanceOf(ResponseErrorException.class)
       .withMessage("The provided configuration scope is bound to an unknown connection: connectionId");
   }
 

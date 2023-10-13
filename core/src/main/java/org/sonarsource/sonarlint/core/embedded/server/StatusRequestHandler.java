@@ -23,7 +23,6 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import java.io.IOException;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.hc.core5.http.ClassicHttpRequest;
@@ -36,11 +35,10 @@ import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.http.io.HttpRequestHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
-import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.backend.initialize.ClientInfoDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.clientapi.client.info.GetClientInfoResponse;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientInfoDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 
 @Named
 @Singleton
@@ -68,19 +66,18 @@ public class StatusRequestHandler implements HttpRequestHandler {
       .map(this::isTrustedServer)
       .orElse(false);
 
+    var description = getDescription(trustedServer);
     // We need a token when the requesting server is not a trusted one (in order to automatically create a connection).
-    getDescription(trustedServer)
-      .thenAccept(description -> response.setEntity(
-        new StringEntity(new Gson().toJson(new StatusResponse(clientInfo.getName(), description, !trustedServer)),
-        ContentType.APPLICATION_JSON)));
+    response.setEntity(new StringEntity(new Gson().toJson(new StatusResponse(clientInfo.getName(), description, !trustedServer)), ContentType.APPLICATION_JSON));
 
   }
 
-  private CompletableFuture<String> getDescription(boolean trustedServer) {
+  private String getDescription(boolean trustedServer) {
     if (trustedServer) {
-      return client.getClientInfo().thenApply(GetClientInfoResponse::getDescription);
+      var getClientInfoResponse = client.getClientInfo().join();
+      return getClientInfoResponse.getDescription();
     }
-    return CompletableFuture.completedFuture("");
+    return "";
   }
 
   private boolean isTrustedServer(String serverOrigin) {

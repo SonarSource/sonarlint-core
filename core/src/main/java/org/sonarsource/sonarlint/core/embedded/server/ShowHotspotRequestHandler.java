@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.hc.core5.http.ClassicHttpRequest;
@@ -39,14 +40,15 @@ import org.apache.hc.core5.net.URIBuilder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProviderImpl;
 import org.sonarsource.sonarlint.core.ConfigurationServiceImpl;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
-import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.client.hotspot.HotspotDetailsDto;
-import org.sonarsource.sonarlint.core.clientapi.client.hotspot.ShowHotspotParams;
-import org.sonarsource.sonarlint.core.clientapi.client.message.MessageType;
-import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
-import org.sonarsource.sonarlint.core.clientapi.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.ShowHotspotParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspotDetails;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
@@ -56,6 +58,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 @Singleton
 public class ShowHotspotRequestHandler extends ShowHotspotOrIssueRequestHandler implements HttpRequestHandler {
 
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final SonarLintClient client;
   private final ConnectionConfigurationRepository repository;
   private final ConfigurationServiceImpl configurationService;
@@ -80,7 +83,10 @@ public class ShowHotspotRequestHandler extends ShowHotspotOrIssueRequestHandler 
       return;
     }
 
-    CompletableFuture.runAsync(() -> showHotspot(showHotspotQuery));
+    CompletableFuture.runAsync(() -> showHotspot(showHotspotQuery)).exceptionally(e -> {
+      LOG.error("Unable to show hotspot", e);
+      return null;
+    });
 
     response.setCode(HttpStatus.SC_OK);
     response.setEntity(new StringEntity("OK"));
@@ -92,10 +98,17 @@ public class ShowHotspotRequestHandler extends ShowHotspotOrIssueRequestHandler 
     var connectionsMatchingOrigin = repository.findByUrl(query.serverUrl);
     if (connectionsMatchingOrigin.isEmpty()) {
       startFullBindingProcess();
-      assistCreatingConnection(query.serverUrl)
-        .thenCompose(response -> assistBinding(response.getNewConnectionId(), query.projectKey))
-        .thenAccept(response -> showHotspotForScope(response.getConnectionId(), response.getConfigurationScopeId(), query.hotspotKey))
-        .whenComplete((v, e) -> endFullBindingProcess());
+      try {
+        var assistNewConnectionResult = assistCreatingConnection(query.serverUrl).get(10, TimeUnit.MINUTES);
+        var assistNewBindingResult = assistBinding(assistNewConnectionResult.getNewConnectionId(), query.projectKey).get(10, TimeUnit.MINUTES);
+        showHotspotForScope(assistNewConnectionResult.getNewConnectionId(), assistNewBindingResult.getConfigurationScopeId(), query.hotspotKey);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      } catch (Exception e) {
+        throw new IllegalStateException(e);
+      } finally {
+        endFullBindingProcess();
+      }
     } else {
       // we pick the first connection but this could lead to issues later if there were several matches (make the user select the right one?)
       showHotspotForConnection(connectionsMatchingOrigin.get(0).getConnectionId(), query.projectKey, query.hotspotKey);
@@ -105,8 +118,14 @@ public class ShowHotspotRequestHandler extends ShowHotspotOrIssueRequestHandler 
   private void showHotspotForConnection(String connectionId, String projectKey, String hotspotKey) {
     var scopes = configurationService.getConfigScopesWithBindingConfiguredTo(connectionId, projectKey);
     if (scopes.isEmpty()) {
-      assistBinding(connectionId, projectKey)
-        .thenAccept(newBinding -> showHotspotForScope(connectionId, newBinding.getConfigurationScopeId(), hotspotKey));
+      try {
+        var assistNewBindingResult = assistBinding(connectionId, projectKey).get(10, TimeUnit.MINUTES);
+        showHotspotForScope(connectionId, assistNewBindingResult.getConfigurationScopeId(), hotspotKey);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      } catch (Exception e) {
+        throw new IllegalStateException(e);
+      }
     } else {
       // we pick the first bound scope but this could lead to issues later if there were several matches (make the user select the right one?)
       var firstBoundScope = scopes.get(0);

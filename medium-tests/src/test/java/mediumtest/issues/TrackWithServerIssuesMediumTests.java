@@ -23,6 +23,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -31,17 +32,17 @@ import mediumtest.fixtures.ServerFixture;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedFindingDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LocalOnlyIssueDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ServerMatchedIssueDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TextRangeWithHashDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TrackWithServerIssuesParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TrackWithServerIssuesResponse;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LineWithHashDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlyIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ServerMatchedIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesResponse;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
@@ -50,11 +51,11 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.storage.ServerIssueFixtures.aServerIssue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
-import static org.sonarsource.sonarlint.core.clientapi.common.RuleType.BUG;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.BUG;
 
 class TrackWithServerIssuesMediumTests {
 
-  private SonarLintBackendImpl backend;
+  private SonarLintBackend backend;
   private ServerFixture.Server server;
 
   @AfterEach
@@ -97,8 +98,8 @@ class TrackWithServerIssuesMediumTests {
       .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
         .hasEntrySatisfying("file/path", issues -> {
           assertThat(issues).hasSize(1).allSatisfy(issue -> assertThat(issue.isRight()).isTrue());
-          assertThat(issues).usingRecursiveComparison().ignoringFields("right.id")
-            .isEqualTo(List.of(Either.<ServerMatchedIssueDto, LocalOnlyIssueDto>forRight(new LocalOnlyIssueDto(null, null))));
+          assertThat(issues).usingRecursiveComparison().ignoringFields("wrapped.right.id")
+            .isEqualTo(List.of(new TrackWithServerIssuesResponse.ServerOrLocalIssueDto(Either.forRight(new LocalOnlyIssueDto(null, null)))));
         }));
   }
 
@@ -118,8 +119,8 @@ class TrackWithServerIssuesMediumTests {
       .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
         .hasEntrySatisfying("file/path", issues -> {
           assertThat(issues).hasSize(1).allSatisfy(issue -> assertThat(issue.isRight()).isTrue());
-          assertThat(issues).usingRecursiveComparison().ignoringFields("right.id")
-            .isEqualTo(List.of(Either.<ServerMatchedIssueDto, LocalOnlyIssueDto>forRight(new LocalOnlyIssueDto(null, null))));
+          assertThat(issues).usingRecursiveComparison().ignoringFields("wrapped.right.id")
+            .isEqualTo(List.of(new TrackWithServerIssuesResponse.ServerOrLocalIssueDto(Either.forRight(new LocalOnlyIssueDto(null, null)))));
         }));
   }
 
@@ -131,7 +132,6 @@ class TrackWithServerIssuesMediumTests {
         .withProject("projectKey", project -> project.withBranch("main", branch -> branch.withIssue(serverIssue))))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
       .build();
-
     var response = trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
       Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
@@ -139,14 +139,14 @@ class TrackWithServerIssuesMediumTests {
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
-        .hasEntrySatisfying("file/path", issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("left.id")
-          .isEqualTo(List.of(Either.<ServerMatchedIssueDto, LocalOnlyIssueDto>forLeft(new ServerMatchedIssueDto(null, "issueKey", 1000L, false, null, BUG, true))))));
+        .hasEntrySatisfying("file/path", issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("wrapped.left.id")
+          .isEqualTo(List.of((new TrackWithServerIssuesResponse.ServerOrLocalIssueDto(Either.forLeft(new ServerMatchedIssueDto(null, "issueKey", 1000L, false, null, BUG, true))))))));
   }
 
   @Test
   void it_should_track_with_a_server_only_issue_when_fetching_from_legacy_server_requested() {
     server = ServerFixture.newSonarQubeServer("9.5").withProject("projectKey",
-      project -> project.withBranch("main", branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, "", new TextRange(1, 2, 3, 4))))
+        project -> project.withBranch("main", branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, "", new TextRange(1, 2, 3, 4))))
       .start();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server)
@@ -161,14 +161,14 @@ class TrackWithServerIssuesMediumTests {
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
-        .hasEntrySatisfying("file/path", issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("left.id")
-          .isEqualTo(List.of(Either.<ServerMatchedIssueDto, LocalOnlyIssueDto>forLeft(new ServerMatchedIssueDto(null, "issueKey", 123456789L, false, null, BUG, true))))));
+        .hasEntrySatisfying("file/path", issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("wrapped.left.id")
+          .isEqualTo(List.of(new TrackWithServerIssuesResponse.ServerOrLocalIssueDto(Either.forLeft(new ServerMatchedIssueDto(null, "issueKey", 123456789L, false, null, BUG, true)))))));
   }
 
   @Test
   void it_should_download_all_issues_at_once_when_tracking_issues_from_more_than_10_files() {
     server = ServerFixture.newSonarQubeServer("9.5").withProject("projectKey",
-      project -> project.withBranch("main", branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, "", new TextRange(1, 2, 3, 4))))
+        project -> project.withBranch("main", branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, "", new TextRange(1, 2, 3, 4))))
       .start();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage.withServerVersion("9.5"))

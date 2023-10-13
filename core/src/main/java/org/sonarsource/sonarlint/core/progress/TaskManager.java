@@ -21,12 +21,13 @@ package org.sonarsource.sonarlint.core.progress;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.client.progress.ProgressEndNotification;
-import org.sonarsource.sonarlint.core.clientapi.client.progress.ReportProgressParams;
-import org.sonarsource.sonarlint.core.clientapi.client.progress.StartProgressParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ProgressEndNotification;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class TaskManager {
@@ -37,27 +38,29 @@ public class TaskManager {
     this.client = client;
   }
 
-  public CompletableFuture<Void> startTask(@Nullable String configurationScopeId, String title, @Nullable String message, boolean indeterminate, boolean cancellable,
+  public void startTask(@Nullable String configurationScopeId, String title, @Nullable String message, boolean indeterminate, boolean cancellable,
     Consumer<ProgressNotifier> task) {
     var taskId = UUID.randomUUID();
-    return client.startProgress(new StartProgressParams(taskId.toString(), configurationScopeId, title, message, indeterminate, cancellable))
-      .thenAccept(nothing -> {
-        try {
-          task.accept(new ClientProgressNotifier(client, taskId));
-        } catch (Exception e) {
-          LOG.error("Error running task '" + title + "'", e);
-        } finally {
-          client.reportProgress(new ReportProgressParams(taskId.toString(), new ProgressEndNotification()));
-        }
-      })
-      .exceptionally(error -> {
-        LOG.error("The client was unable to start progress, cause:", error);
-        try {
-          task.accept(new NoOpProgressNotifier());
-        } catch (Exception e) {
-          LOG.error("Error running task '" + title + "'", e);
-        }
-        return null;
-      });
+    // fixme improve method structure
+    try {
+      client.startProgress(new StartProgressParams(taskId.toString(), configurationScopeId, title, message, indeterminate, cancellable)).get();
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    } catch (ExecutionException e) {
+      LOG.error("The client was unable to start progress, cause:", e);
+      try {
+        task.accept(new NoOpProgressNotifier());
+      } catch (Exception ex) {
+        LOG.error("Error running task '" + title + "'", ex);
+      }
+      return;
+    }
+    try {
+      task.accept(new ClientProgressNotifier(client, taskId));
+    } catch (Exception e) {
+      LOG.error("Error running task '" + title + "'", e);
+    } finally {
+      client.reportProgress(new ReportProgressParams(taskId.toString(), new ProgressEndNotification()));
+    }
   }
 }

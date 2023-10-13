@@ -20,9 +20,10 @@
 package org.sonarsource.sonarlint.core.usertoken;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
-import org.sonarsource.sonarlint.core.clientapi.backend.usertoken.RevokeTokenParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.usertoken.UserTokenService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.usertoken.RevokeTokenParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.usertoken.UserTokenService;
 
 public class UserTokenServiceImpl implements UserTokenService {
   private final ServerApiProvider serverApiProvider;
@@ -33,8 +34,11 @@ public class UserTokenServiceImpl implements UserTokenService {
 
   @Override
   public CompletableFuture<Void> revokeToken(RevokeTokenParams params) {
-    return serverApiProvider.getServerApi(params.getBaseUrl(), null, params.getTokenValue())
-      .userTokens()
-      .revoke(params.getTokenName());
+    return CompletableFutures.computeAsync(cancelChecker -> {
+      serverApiProvider.getServerApi(params.getBaseUrl(), null, params.getTokenValue())
+        .userTokens()
+        .revoke(params.getTokenName());
+      return null;
+    });
   }
 }

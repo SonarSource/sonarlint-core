@@ -28,21 +28,20 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import mediumtest.fixtures.ServerFixture;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
-import org.sonarsource.sonarlint.core.clientapi.backend.hotspot.HotspotStatus;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedFindingDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LocalOnlySecurityHotspotDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.MatchWithServerSecurityHotspotsParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.MatchWithServerSecurityHotspotsResponse;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ServerMatchedSecurityHotspotDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TextRangeWithHashDto;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LineWithHashDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlySecurityHotspotDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.MatchWithServerSecurityHotspotsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.MatchWithServerSecurityHotspotsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ServerMatchedSecurityHotspotDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.storage.ServerSecurityHotspotFixture.aServerHotspot;
@@ -50,7 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class MatchWithServerHotspotsMediumTests {
 
-  private SonarLintBackendImpl backend;
+  private SonarLintBackend backend;
   private ServerFixture.Server server;
 
   @AfterEach
@@ -93,8 +92,8 @@ class MatchWithServerHotspotsMediumTests {
       .satisfies(result -> assertThat(result.getSecurityHotspotsByServerRelativePath())
         .hasEntrySatisfying("file/path", hotspots -> {
           assertThat(hotspots).hasSize(1).allSatisfy(hotspot -> assertThat(hotspot.isRight()).isTrue());
-          assertThat(hotspots).usingRecursiveComparison().ignoringFields("right.id")
-            .isEqualTo(List.of(Either.<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>forRight(new LocalOnlySecurityHotspotDto(null))));
+          assertThat(hotspots).usingRecursiveComparison().ignoringFields("wrapped.right.id")
+            .isEqualTo(List.of(MatchWithServerSecurityHotspotsResponse.ServerOrLocalSecurityHotspotDto.forRight(new LocalOnlySecurityHotspotDto(null))));
         }));
   }
 
@@ -114,8 +113,8 @@ class MatchWithServerHotspotsMediumTests {
       .satisfies(result -> assertThat(result.getSecurityHotspotsByServerRelativePath())
         .hasEntrySatisfying("file/path", hotspots -> {
           assertThat(hotspots).hasSize(1).allSatisfy(hotspot -> assertThat(hotspot.isRight()).isTrue());
-          assertThat(hotspots).usingRecursiveComparison().ignoringFields("right.id")
-            .isEqualTo(List.of(Either.<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>forRight(new LocalOnlySecurityHotspotDto(null))));
+          assertThat(hotspots).usingRecursiveComparison().ignoringFields("wrapped.right.id")
+            .isEqualTo(List.of(MatchWithServerSecurityHotspotsResponse.ServerOrLocalSecurityHotspotDto.forRight(new LocalOnlySecurityHotspotDto(null))));
         }));
   }
 
@@ -136,18 +135,18 @@ class MatchWithServerHotspotsMediumTests {
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getSecurityHotspotsByServerRelativePath())
-        .hasEntrySatisfying("file/path", hotspots -> assertThat(hotspots).usingRecursiveComparison().ignoringFields("left.id")
-          .isEqualTo(List.of(Either.<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>forLeft(
+        .hasEntrySatisfying("file/path", hotspots -> assertThat(hotspots).usingRecursiveComparison().ignoringFields("wrapped.left.id")
+          .isEqualTo(List.of(MatchWithServerSecurityHotspotsResponse.ServerOrLocalSecurityHotspotDto.forLeft(
             new ServerMatchedSecurityHotspotDto(null, "hotspotKey", 1000L, HotspotStatus.SAFE, true))))));
   }
 
   @Test
   void it_should_track_with_a_server_only_hotspot_when_fetching_from_legacy_server_requested() {
     server = ServerFixture.newSonarQubeServer("10.0").withProject("projectKey",
-      project -> project.withBranch("main", branch -> branch.withHotspot("hotspotKey",
-        hotspot -> hotspot.withRuleKey("rule:key").withMessage("message").withFilePath("file/path").withAuthor("author").withStatus(HotspotReviewStatus.TO_REVIEW)
-          .withCreationDate(Instant.ofEpochMilli(123456789))
-          .withTextRange(new TextRange(1, 2, 3, 4)))))
+        project -> project.withBranch("main", branch -> branch.withHotspot("hotspotKey",
+          hotspot -> hotspot.withRuleKey("rule:key").withMessage("message").withFilePath("file/path").withAuthor("author").withStatus(HotspotReviewStatus.TO_REVIEW)
+            .withCreationDate(Instant.ofEpochMilli(123456789))
+            .withTextRange(new TextRange(1, 2, 3, 4)))))
       .start();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server)
@@ -162,8 +161,8 @@ class MatchWithServerHotspotsMediumTests {
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getSecurityHotspotsByServerRelativePath())
-        .hasEntrySatisfying("file/path", hotspots -> assertThat(hotspots).usingRecursiveComparison().ignoringFields("left.id")
-          .isEqualTo(List.of(Either.<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>forLeft(
+        .hasEntrySatisfying("file/path", hotspots -> assertThat(hotspots).usingRecursiveComparison().ignoringFields("wrapped.left.id")
+          .isEqualTo(List.of(MatchWithServerSecurityHotspotsResponse.ServerOrLocalSecurityHotspotDto.forLeft(
             new ServerMatchedSecurityHotspotDto(null, "hotspotKey", 123456000L, HotspotStatus.TO_REVIEW, true))))));
   }
 

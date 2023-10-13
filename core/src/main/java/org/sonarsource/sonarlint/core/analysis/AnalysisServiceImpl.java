@@ -27,11 +27,12 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.MultivalueProperty;
-import org.sonarsource.sonarlint.core.clientapi.backend.analysis.AnalysisService;
-import org.sonarsource.sonarlint.core.clientapi.backend.analysis.GetSupportedFilePatternsParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.analysis.GetSupportedFilePatternsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetSupportedFilePatternsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetSupportedFilePatternsResponse;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -55,7 +56,7 @@ public class AnalysisServiceImpl implements AnalysisService {
 
   @Override
   public CompletableFuture<GetSupportedFilePatternsResponse> getSupportedFilePatterns(GetSupportedFilePatternsParams params) {
-    return CompletableFuture.supplyAsync(() -> {
+    return CompletableFutures.computeAsync(cancelChecker -> {
       var configScopeId = params.getConfigScopeId();
       var effectiveBinding = configurationRepository.getEffectiveBinding(configScopeId);
       Set<Language> enabledLanguages;

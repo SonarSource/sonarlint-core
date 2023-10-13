@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -36,10 +38,11 @@ public class ConnectionValidator {
   }
 
   public CompletableFuture<ValidationResult> validateConnection() {
-    var serverChecker = new ServerVersionAndStatusChecker(new ServerApi(helper));
-    var authChecker = new AuthenticationChecker(helper);
-    return serverChecker.checkVersionAndStatusAsync()
-      .thenApply(check -> {
+    return CompletableFutures.computeAsync(cancelChecker -> {
+      var serverChecker = new ServerVersionAndStatusChecker(new ServerApi(helper));
+      var authChecker = new AuthenticationChecker(helper);
+      try {
+        serverChecker.checkVersionAndStatusAsync().get(1, TimeUnit.MINUTES);
         var validateCredentials = authChecker.validateCredentials();
         var organizationKey = helper.getOrganizationKey();
         if (validateCredentials.success() && organizationKey.isPresent()) {
@@ -50,8 +53,13 @@ public class ConnectionValidator {
           }
         }
         return validateCredentials;
-      })
-      .exceptionally(e -> new DefaultValidationResult(false, e.getCause().getMessage()));
+      } catch (InterruptedException ie) {
+        Thread.currentThread().interrupt();
+        return new DefaultValidationResult(false, ie.getCause().getMessage());
+      } catch (Exception e) {
+        return new DefaultValidationResult(false, e.getCause().getMessage());
+      }
+    });
   }
 
 }

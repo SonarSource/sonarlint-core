@@ -23,15 +23,16 @@ import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.net.SocketTimeoutException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.GetOrganizationParams;
-import org.sonarsource.sonarlint.core.clientapi.common.TokenDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -92,7 +93,7 @@ class TimeoutMediumTests {
     assertThat(future)
       .failsWithin(2, TimeUnit.SECONDS)
       .withThrowableOfType(ExecutionException.class)
-      .withCauseExactlyInstanceOf(SocketTimeoutException.class);
+      .withCauseExactlyInstanceOf(ResponseErrorException.class);
   }
 
 }

@@ -47,7 +47,7 @@ import org.sonarqube.ws.client.qualityprofiles.SearchRequest;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.clientapi.backend.initialize.ClientInfoDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientInfoDto;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;

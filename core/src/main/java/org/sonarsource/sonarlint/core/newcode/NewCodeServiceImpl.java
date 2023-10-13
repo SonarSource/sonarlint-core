@@ -23,9 +23,10 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.sonarsource.sonarlint.core.clientapi.backend.newcode.GetNewCodeDefinitionParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.newcode.GetNewCodeDefinitionResponse;
-import org.sonarsource.sonarlint.core.clientapi.backend.newcode.NewCodeService;
+import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.GetNewCodeDefinitionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.GetNewCodeDefinitionResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.storage.StorageService;
@@ -46,10 +47,12 @@ public class NewCodeServiceImpl implements NewCodeService {
 
   @Override
   public CompletableFuture<GetNewCodeDefinitionResponse> getNewCodeDefinition(GetNewCodeDefinitionParams params) {
-    var configScopeId = params.getConfigScopeId();
-    return getFullNewCodeDefinition(configScopeId)
-      .map(newCodeDefinition ->  CompletableFuture.completedFuture(new GetNewCodeDefinitionResponse(newCodeDefinition.toString(), newCodeDefinition.isSupported())))
-      .orElse(CompletableFuture.completedFuture(new GetNewCodeDefinitionResponse("No new code definition found", false)));
+    return CompletableFutures.computeAsync(cancelChecker -> {
+      var configScopeId = params.getConfigScopeId();
+      return getFullNewCodeDefinition(configScopeId)
+        .map(newCodeDefinition -> new GetNewCodeDefinitionResponse(newCodeDefinition.toString(), newCodeDefinition.isSupported()))
+        .orElse(new GetNewCodeDefinitionResponse("No new code definition found", false));
+    });
   }
 
   public Optional<NewCodeDefinition> getFullNewCodeDefinition(String configScopeId) {

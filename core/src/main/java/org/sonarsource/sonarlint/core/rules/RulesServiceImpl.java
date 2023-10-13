@@ -23,31 +23,36 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
-import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetEffectiveRuleDetailsParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetEffectiveRuleDetailsResponse;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetStandaloneRuleDescriptionParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetStandaloneRuleDescriptionResponse;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.ListAllStandaloneRulesDefinitionsResponse;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleDefinitionDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleParamDefinitionDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleParamType;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.RulesService;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.StandaloneRuleConfigDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.UpdateStandaloneRulesConfigurationParams;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.BackendErrorCode;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetStandaloneRuleDescriptionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetStandaloneRuleDescriptionResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ListAllStandaloneRulesDefinitionsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDefinitionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleParamDefinitionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleParamType;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.UpdateStandaloneRulesConfigurationParams;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamDefinition;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamType;
@@ -93,25 +98,28 @@ public class RulesServiceImpl implements RulesService {
 
   @Override
   public CompletableFuture<GetEffectiveRuleDetailsResponse> getEffectiveRuleDetails(GetEffectiveRuleDetailsParams params) {
-    var ruleKey = params.getRuleKey();
-    var effectiveBinding = configurationRepository.getEffectiveBinding(params.getConfigurationScopeId());
-    if (effectiveBinding.isEmpty()) {
-      var embeddedRule = rulesRepository.getEmbeddedRule(ruleKey);
-      if (embeddedRule.isEmpty()) {
-        return CompletableFuture.failedFuture(new IllegalArgumentException(COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules"));
+    return CompletableFutures.computeAsync(cancelChecker -> {
+      var ruleKey = params.getRuleKey();
+      var effectiveBinding = configurationRepository.getEffectiveBinding(params.getConfigurationScopeId());
+      if (effectiveBinding.isEmpty()) {
+        var embeddedRule = rulesRepository.getEmbeddedRule(ruleKey);
+        if (embeddedRule.isEmpty()) {
+          ResponseError error = new ResponseError(BackendErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules", ruleKey);
+          throw new ResponseErrorException(error);
+        }
+        var ruleDetails = RuleDetails.from(embeddedRule.get(), standaloneRuleConfig.get(ruleKey));
+        return buildResponse(ruleDetails, params.getContextKey());
       }
-      var ruleDetails = RuleDetails.from(embeddedRule.get(), standaloneRuleConfig.get(ruleKey));
-      return CompletableFuture.completedFuture(buildResponse(ruleDetails, params.getContextKey()));
-    }
-    return getActiveRuleForBinding(ruleKey, effectiveBinding.get())
-      .thenApply(ruleDetails -> buildResponse(ruleDetails, params.getContextKey()));
+      var ruleDetails = getActiveRuleForBinding(ruleKey, effectiveBinding.get());
+      return buildResponse(ruleDetails, params.getContextKey());
+    });
   }
 
-  private CompletableFuture<RuleDetails> getActiveRuleForBinding(String ruleKey, Binding binding) {
+  private RuleDetails getActiveRuleForBinding(String ruleKey, Binding binding) {
     var connectionId = binding.getConnectionId();
     var serverApi = serverApiProvider.getServerApi(connectionId);
     if (serverApi.isEmpty()) {
-      return failedFutureUnknownConnection(connectionId);
+      throw unknownConnection(connectionId);
     }
     boolean skipCleanCodeTaxonomy = synchronizationService.getServerConnection(connectionId, serverApi.get()).shouldSkipCleanCodeTaxonomy();
 
@@ -120,8 +128,10 @@ public class RulesServiceImpl implements RulesService {
       // try from loaded rules, for e.g. extra analyzers
       .orElseGet(() -> rulesRepository.getRule(connectionId, ruleKey)
         .map(r -> RuleDetails.from(r, standaloneRuleConfig.get(ruleKey)))
-        .map(CompletableFuture::completedFuture)
-        .orElseGet(() -> CompletableFuture.failedFuture(new IllegalArgumentException(COULD_NOT_FIND_RULE + ruleKey + "' in plugins loaded from '" + connectionId + "'"))));
+        .orElseThrow(() -> {
+          ResponseError error = new ResponseError(BackendErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in plugins loaded from '" + connectionId + "'", new Object[]{connectionId, ruleKey});
+          return new ResponseErrorException(error);
+        }));
   }
 
   private Optional<ServerActiveRule> findServerActiveRuleInStorage(Binding binding, String ruleKey) {
@@ -138,38 +148,51 @@ public class RulesServiceImpl implements RulesService {
       .filter(r -> tryConvertDeprecatedKeys(r, binding.getConnectionId()).getRuleKey().equals(ruleKey)).findFirst();
   }
 
-  private CompletableFuture<RuleDetails> hydrateDetailsWithServer(String connectionId, ServerActiveRule activeRuleFromStorage, boolean skipCleanCodeTaxonomy) {
+  private RuleDetails hydrateDetailsWithServer(String connectionId, ServerActiveRule activeRuleFromStorage, boolean skipCleanCodeTaxonomy) {
     var ruleKey = activeRuleFromStorage.getRuleKey();
     var templateKey = activeRuleFromStorage.getTemplateKey();
     if (StringUtils.isNotBlank(templateKey)) {
       return rulesRepository.getRule(connectionId, templateKey)
         .map(templateRule -> serverApiProvider.getServerApi(connectionId)
-          .map(serverApi -> fetchRuleFromServer(connectionId, ruleKey, serverApi)
-            .thenApply(serverRule -> RuleDetails.merging(activeRuleFromStorage, serverRule, templateRule, skipCleanCodeTaxonomy)))
-          .orElseGet(() -> failedFutureUnknownConnection(connectionId)))
-        .orElseGet(() -> CompletableFuture.failedFuture(new IllegalStateException("Unable to find rule definition for rule template " + templateKey)));
+          .map(serverApi -> fetchRuleFromServer(connectionId, ruleKey, serverApi))
+          .map(serverRule -> RuleDetails.merging(activeRuleFromStorage, serverRule, templateRule, skipCleanCodeTaxonomy)))
+        .orElseThrow(() -> unknownConnection(connectionId))
+        .orElseThrow(() -> ruleDefinitionNotFound(templateKey));
     } else {
-      return serverApiProvider.getServerApi(connectionId).map(serverApi -> fetchRuleFromServer(connectionId, ruleKey, serverApi)
-        .thenApply(serverRule -> rulesRepository.getRule(connectionId, ruleKey)
+      return serverApiProvider.getServerApi(connectionId).map(serverApi -> fetchRuleFromServer(connectionId, ruleKey, serverApi))
+        .map(serverRule -> rulesRepository.getRule(connectionId, ruleKey)
           .map(ruleDefFromPlugin -> RuleDetails.merging(serverRule, ruleDefFromPlugin, skipCleanCodeTaxonomy))
-          .orElseGet(() -> RuleDetails.merging(activeRuleFromStorage, serverRule))))
-        .orElseGet(() -> failedFutureUnknownConnection(connectionId));
+          .orElseGet(() -> RuleDetails.merging(activeRuleFromStorage, serverRule)))
+        .orElseThrow(() -> unknownConnection(connectionId));
     }
   }
 
   @NotNull
-  private static CompletableFuture<RuleDetails> failedFutureUnknownConnection(String connectionId) {
-    return CompletableFuture.failedFuture(new IllegalStateException("Unknown connection '" + connectionId + "'"));
+  private static ResponseErrorException unknownConnection(String connectionId) {
+    ResponseError error = new ResponseError(BackendErrorCode.CONNECTION_NOT_FOUND, "Connection with ID '" + connectionId + "' does not exist", connectionId);
+    return new ResponseErrorException(error);
   }
 
-  private static CompletableFuture<ServerRule> fetchRuleFromServer(String connectionId, String ruleKey, ServerApi serverApi) {
-    return serverApi.rules().getRule(ruleKey)
-      .handle((r, e) -> {
-        if (e != null) {
-          throw new IllegalStateException(COULD_NOT_FIND_RULE + ruleKey + "' on '" + connectionId + "'", e);
-        }
-        return r;
-      });
+  private static ServerRule fetchRuleFromServer(String connectionId, String ruleKey, ServerApi serverApi) {
+    try {
+      return serverApi.rules().getRule(ruleKey).get(1, TimeUnit.MINUTES);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw ruleNotFound(connectionId, ruleKey, e);
+    } catch (Exception e) {
+      throw ruleNotFound(connectionId, ruleKey, e);
+    }
+  }
+
+  private static ResponseErrorException ruleNotFound(String connectionId, String ruleKey, Exception e) {
+    LOG.error("Failed to fetch rule details from server", e);
+    ResponseError error = new ResponseError(BackendErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' on '" + connectionId + "'", new Object[]{ruleKey, connectionId});
+    return new ResponseErrorException(error);
+  }
+
+  private static ResponseErrorException ruleDefinitionNotFound(String templateKey) {
+    ResponseError error = new ResponseError(BackendErrorCode.RULE_NOT_FOUND, "Unable to find rule definition for rule template " + templateKey, templateKey);
+    return new ResponseErrorException(error);
   }
 
   private ServerActiveRule tryConvertDeprecatedKeys(ServerActiveRule possiblyDeprecatedActiveRuleFromStorage, String connectionId) {
@@ -203,7 +226,7 @@ public class RulesServiceImpl implements RulesService {
 
   @Override
   public CompletableFuture<ListAllStandaloneRulesDefinitionsResponse> listAllStandaloneRulesDefinitions() {
-    return CompletableFuture.supplyAsync(() -> new ListAllStandaloneRulesDefinitionsResponse(
+    return CompletableFutures.computeAsync(cancelChecker -> new ListAllStandaloneRulesDefinitionsResponse(
       rulesRepository.getEmbeddedRules()
         .stream()
         .map(RulesServiceImpl::convert)

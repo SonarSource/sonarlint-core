@@ -19,15 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.usertokens;
 
-import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 import static org.sonarsource.sonarlint.core.http.HttpClient.FORM_URL_ENCODED_CONTENT_TYPE;
 import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 
 /**
- *  For the /api/user_tokens endpoint of SonarQube / SonarCloud. When adding more methods, please ensure the protobuf
- *  files for "ws-user_tokens.proto" are present and configured correctly regarding the "java_package" preference!
+ * For the /api/user_tokens endpoint of SonarQube / SonarCloud. When adding more methods, please ensure the protobuf
+ * files for "ws-user_tokens.proto" are present and configured correctly regarding the "java_package" preference!
  */
 public class UserTokensApi {
   private final ServerApiHelper helper;
@@ -36,11 +35,10 @@ public class UserTokensApi {
     this.helper = helper;
   }
 
-  public CompletableFuture<Void> revoke(String tokenName) {
+  public void revoke(String tokenName) {
     var body = "name=" + urlEncode(tokenName);
-    return helper.postAsync("/api/user_tokens/revoke", FORM_URL_ENCODED_CONTENT_TYPE, body)
-      .thenAccept(response -> {
-        // no data, return void
-      });
+    try (var r = helper.postAsync("/api/user_tokens/revoke", FORM_URL_ENCODED_CONTENT_TYPE, body).join()) {
+      // No content expected
+    }
   }
 }

@@ -30,22 +30,22 @@ import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.jetbrains.annotations.NotNull;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.CleanCodeAttributeDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.EffectiveRuleDetailsDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.EffectiveRuleParamDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.ImpactDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleContextualSectionDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleContextualSectionWithDefaultContextKeyDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleDescriptionTabDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleMonolithicDescriptionDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleNonContextualSectionDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleSplitDescriptionDto;
-import org.sonarsource.sonarlint.core.clientapi.common.CleanCodeAttribute;
-import org.sonarsource.sonarlint.core.clientapi.common.CleanCodeAttributeCategory;
-import org.sonarsource.sonarlint.core.clientapi.common.ImpactSeverity;
-import org.sonarsource.sonarlint.core.clientapi.common.IssueSeverity;
-import org.sonarsource.sonarlint.core.clientapi.common.Language;
-import org.sonarsource.sonarlint.core.clientapi.common.SoftwareQuality;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.CleanCodeAttributeDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleParamDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleContextualSectionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleContextualSectionWithDefaultContextKeyDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDescriptionTabDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleMonolithicDescriptionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleNonContextualSectionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleSplitDescriptionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttributeCategory;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 
 public class RuleDetailsAdapter {
@@ -227,8 +227,8 @@ public class RuleDetailsAdapter {
     return IssueSeverity.valueOf(s.name());
   }
 
-  public static org.sonarsource.sonarlint.core.clientapi.common.RuleType adapt(org.sonarsource.sonarlint.core.commons.RuleType t) {
-    return org.sonarsource.sonarlint.core.clientapi.common.RuleType.valueOf(t.name());
+  public static org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType adapt(org.sonarsource.sonarlint.core.commons.RuleType t) {
+    return org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.valueOf(t.name());
   }
 
   public static Language adapt(org.sonarsource.sonarlint.core.commons.Language l) {
