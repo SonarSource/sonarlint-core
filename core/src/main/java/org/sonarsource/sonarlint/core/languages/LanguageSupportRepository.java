@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.jetbrains.annotations.NotNull;
-import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.Language;
 
 @Named
@@ -45,7 +45,7 @@ public class LanguageSupportRepository {
   }
 
   @NotNull
-  private static List<Language> adaptLanguage(Set<org.sonarsource.sonarlint.core.clientapi.common.Language> languagesDto) {
+  private static List<Language> adaptLanguage(Set<org.sonarsource.sonarlint.core.rpc.protocol.common.Language> languagesDto) {
     return languagesDto.stream().map(e -> Language.valueOf(e.name())).collect(Collectors.toList());
   }
 
