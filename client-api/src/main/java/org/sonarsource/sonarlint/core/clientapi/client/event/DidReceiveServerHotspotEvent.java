@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Server API
+ * SonarLint Core - Client API
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,8 +17,32 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverapi.push;
+package org.sonarsource.sonarlint.core.clientapi.client.event;
 
-public interface ServerHotspotEvent extends SonarProjectEvent {
-  String getFilePath();
+import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
+
+public class DidReceiveServerHotspotEvent {
+
+  @NonNull
+  private final String connectionId;
+  private final String sonarProjectKey;
+  private final String serverFilePath;
+
+  public DidReceiveServerHotspotEvent(String connectionId, String sonarProjectKey, String serverFilePath) {
+    this.connectionId = connectionId;
+    this.sonarProjectKey = sonarProjectKey;
+    this.serverFilePath = serverFilePath;
+  }
+
+  public String getConnectionId() {
+    return connectionId;
+  }
+
+  public String getSonarProjectKey() {
+    return sonarProjectKey;
+  }
+
+  public String getServerFilePath() {
+    return serverFilePath;
+  }
 }

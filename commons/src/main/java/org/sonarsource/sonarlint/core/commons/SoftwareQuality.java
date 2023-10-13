@@ -24,13 +24,13 @@ public enum SoftwareQuality {
   RELIABILITY("Reliability"),
   SECURITY("Security");
 
-  private final String displayLabel;
+  private final String label;
 
-  SoftwareQuality(String displayLabel) {
-    this.displayLabel = displayLabel;
+  SoftwareQuality(String label) {
+    this.label = label;
   }
 
-  public String getDisplayLabel() {
-    return displayLabel;
+  public String getLabel() {
+    return label;
   }
 }
