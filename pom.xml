@@ -24,7 +24,6 @@
 
   <modules>
     <module>analysis-engine</module>
-    <module>client-api</module>
     <module>commons</module>
     <module>core</module>
     <module>http</module>
@@ -33,7 +32,11 @@
     <module>osgi</module>
     <module>plugin-api</module>
     <module>plugin-commons</module>
+    <module>process-cli</module>
     <module>report-aggregate</module>
+    <module>rpc-impl</module>
+    <module>rpc-java-client</module>
+    <module>rpc-protocol</module>
     <module>rule-extractor</module>
     <module>rule-extractor-cli</module>
     <module>server-api</module>
@@ -57,7 +60,7 @@
     <gson.version>2.10</gson.version>
     <mockito.version>4.9.0</mockito.version>
     <kotlin.version>1.6.21</kotlin.version>
-    <lsp4j.version>0.19.0</lsp4j.version>
+    <lsp4j.version>0.21.1</lsp4j.version>
 
     <version.surefire.plugin>3.1.2</version.surefire.plugin>
   </properties>

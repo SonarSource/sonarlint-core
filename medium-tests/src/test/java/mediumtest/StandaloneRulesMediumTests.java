@@ -25,19 +25,19 @@ import java.util.concurrent.TimeUnit;
 import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetStandaloneRuleDescriptionParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.ImpactDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.ListAllStandaloneRulesDefinitionsResponse;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleDefinitionDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleParamDefinitionDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleParamType;
-import org.sonarsource.sonarlint.core.clientapi.common.CleanCodeAttribute;
-import org.sonarsource.sonarlint.core.clientapi.common.ImpactSeverity;
-import org.sonarsource.sonarlint.core.clientapi.common.IssueSeverity;
-import org.sonarsource.sonarlint.core.clientapi.common.Language;
-import org.sonarsource.sonarlint.core.clientapi.common.RuleType;
-import org.sonarsource.sonarlint.core.clientapi.common.SoftwareQuality;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetStandaloneRuleDescriptionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ListAllStandaloneRulesDefinitionsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDefinitionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleParamDefinitionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleParamType;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -135,6 +135,6 @@ class StandaloneRulesMediumTests {
     }
   }
 
-  private SonarLintBackendImpl backend;
+  private SonarLintBackend backend;
 
 }

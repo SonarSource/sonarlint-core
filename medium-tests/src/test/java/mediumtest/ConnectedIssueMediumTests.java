@@ -60,8 +60,6 @@ import testutils.MockWebServerExtensionWithProtobuf;
 import testutils.OnDiskTestClientInputFile;
 import testutils.TestUtils;
 
-import static mediumtest.fixtures.ClientFileSystemFixtures.aClientFileSystemWith;
-import static mediumtest.fixtures.ClientFileSystemFixtures.anEmptyClientFileSystem;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static mediumtest.fixtures.storage.StorageFixture.newStorage;
@@ -69,6 +67,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static mediumtest.fixtures.ClientFileSystemFixtures.aClientFileSystemWith;
+import static mediumtest.fixtures.ClientFileSystemFixtures.anEmptyClientFileSystem;
 import static testutils.TestUtils.createNoOpLogOutput;
 
 class ConnectedIssueMediumTests {
@@ -157,11 +157,11 @@ class ConnectedIssueMediumTests {
       .isEqualTo(IssueSeverity.BLOCKER);
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
-      .setProjectKey(JAVA_MODULE_KEY)
-      .setBaseDir(baseDir)
-      .addInputFile(inputFile)
-      .setModuleKey("key")
-      .build(),
+        .setProjectKey(JAVA_MODULE_KEY)
+        .setBaseDir(baseDir)
+        .addInputFile(inputFile)
+        .setModuleKey("key")
+        .build(),
       new StoreIssueListener(issues), null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
@@ -206,11 +206,11 @@ class ConnectedIssueMediumTests {
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
-      .setProjectKey("test-project")
-      .setBaseDir(baseDir)
-      .addInputFile(inputFile)
-      .setModuleKey("key")
-      .build(),
+        .setProjectKey("test-project")
+        .setBaseDir(baseDir)
+        .addInputFile(inputFile)
+        .setModuleKey("key")
+        .build(),
       new StoreIssueListener(issues), null, null);
 
     assertThat(issues).isEmpty();

@@ -28,19 +28,20 @@ import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
 import mockwebserver3.MockResponse;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangePermittedParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangePermittedResponse;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.ResolutionStatus;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.ClientTrackedFindingDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LineWithHashDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.LocalOnlyIssueDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TextRangeWithHashDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.tracking.TrackWithServerIssuesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LineWithHashDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlyIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesParams;
 import org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
@@ -53,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 class CheckResolutionStatusChangePermittedMediumTests {
 
-  private SonarLintBackendImpl backend;
+  private SonarLintBackend backend;
   @RegisterExtension
   public final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
   private String oldSonarCloudUrl;
@@ -85,8 +86,8 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .failsWithin(Duration.ofSeconds(2))
       .withThrowableOfType(ExecutionException.class)
       .havingCause()
-      .isInstanceOf(IllegalArgumentException.class)
-      .withMessage("Connection with ID 'connectionId' does not exist");
+      .isInstanceOf(ResponseErrorException.class)
+      .withMessage("Connection 'connectionId' is gone");
   }
 
   @Test
@@ -157,8 +158,8 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .failsWithin(Duration.ofSeconds(2))
       .withThrowableOfType(ExecutionException.class)
       .havingCause()
-      .isInstanceOf(UnexpectedBodyException.class)
-      .withMessage("No issue found with key 'issueKey'");
+      .isInstanceOf(ResponseErrorException.class)
+      .withMessage("Task 'check status change permitted' failed: org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException: No issue found with key 'issueKey'");
   }
 
   @Test
@@ -173,7 +174,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .failsWithin(Duration.ofSeconds(2))
       .withThrowableOfType(ExecutionException.class)
       .havingCause()
-      .isInstanceOf(NotFoundException.class);
+      .isInstanceOf(ResponseErrorException.class);
   }
 
   @Test
@@ -189,8 +190,8 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .failsWithin(Duration.ofSeconds(2))
       .withThrowableOfType(ExecutionException.class)
       .havingCause()
-      .isInstanceOf(UnexpectedBodyException.class)
-      .withMessage("Unexpected body received");
+      .isInstanceOf(ResponseErrorException.class)
+      .withMessage("Task 'check status change permitted' failed: org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException: Unexpected body received");
   }
 
   @Test
