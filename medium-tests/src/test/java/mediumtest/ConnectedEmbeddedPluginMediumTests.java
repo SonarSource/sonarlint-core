@@ -169,11 +169,11 @@ class ConnectedEmbeddedPluginMediumTests {
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
-      .setProjectKey(JAVA_MODULE_KEY)
-      .setBaseDir(baseDir)
-      .addInputFile(inputFile)
-      .setModuleKey("key")
-      .build(),
+        .setProjectKey(JAVA_MODULE_KEY)
+        .setBaseDir(baseDir)
+        .addInputFile(inputFile)
+        .setModuleKey("key")
+        .build(),
       new StoreIssueListener(issues), null, null);
 
     // Reported issues will refer to new rule keys
@@ -228,11 +228,11 @@ class ConnectedEmbeddedPluginMediumTests {
       + "}", false);
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
-      .setProjectKey(JAVA_MODULE_KEY)
-      .setBaseDir(baseDir)
-      .addInputFile(inputFile)
-      .setModuleKey("key")
-      .build(),
+        .setProjectKey(JAVA_MODULE_KEY)
+        .setBaseDir(baseDir)
+        .addInputFile(inputFile)
+        .setModuleKey("key")
+        .build(),
       new StoreIssueListener(issues), null, null);
 
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
@@ -242,7 +242,7 @@ class ConnectedEmbeddedPluginMediumTests {
   @Test
   void secrets_rules_should_always_be_active_with_legacy_sonarqube(@TempDir Path baseDir) throws IOException {
     var inputFile = prepareInputFile(baseDir, "t.txt",
-      "  public static final String KEY = \"AKIAIGKECZXA7EXAMPLF\"\n" , false);
+      "  public static final String KEY = \"AKIAIGKECZXA7EXAMPLF\"\n", false);
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
         .setProjectKey(JAVA_MODULE_KEY)

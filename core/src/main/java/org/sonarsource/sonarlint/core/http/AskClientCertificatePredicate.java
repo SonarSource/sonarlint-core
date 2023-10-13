@@ -27,9 +27,9 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import nl.altindag.ssl.model.TrustManagerParameters;
 import nl.altindag.ssl.util.CertificateUtils;
-import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
-import org.sonarsource.sonarlint.core.clientapi.client.http.CheckServerTrustedParams;
-import org.sonarsource.sonarlint.core.clientapi.client.http.X509CertificateDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.http.CheckServerTrustedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.http.X509CertificateDto;
 
 @Named
 @Singleton
