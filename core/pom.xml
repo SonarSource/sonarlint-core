@@ -31,6 +31,11 @@
       <artifactId>javax.annotation-api</artifactId>
     </dependency>
     <dependency>
+      <groupId>info.picocli</groupId>
+      <artifactId>picocli</artifactId>
+      <version>4.7.1</version>
+    </dependency>
+    <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>sonarlint-server-api</artifactId>
       <version>${project.version}</version>
@@ -242,6 +247,11 @@
             </goals>
             <configuration>
               <skip>${maven.shade.skip}</skip>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>org.sonarsource.sonarlint.core.SonarLintCoreProcess</mainClass>
+                </transformer>
+              </transformers>
               <createDependencyReducedPom>true</createDependencyReducedPom>
               <minimizeJar>true</minimizeJar>
               <createSourcesJar>true</createSourcesJar>

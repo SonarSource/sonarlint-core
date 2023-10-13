@@ -248,7 +248,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       textRange, (String) storedIssue.getProperty(RULE_DESCRIPTION_CONTEXT_KEY_PROPERTY_NAME),
       Optional.ofNullable(cleanCodeAttribute).map(CleanCodeAttribute::valueOf).orElse(null),
       readImpacts(storedIssue.getBlob(IMPACTS_BLOB_NAME)))
-        .setFlows(readFlows(storedIssue.getBlob(FLOWS_BLOB_NAME)));
+      .setFlows(readFlows(storedIssue.getBlob(FLOWS_BLOB_NAME)));
   }
 
   private static ServerHotspot adaptHotspot(Entity storedHotspot) {
@@ -776,13 +776,18 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater) {
-    entityStore.executeInTransaction(txn -> findUnique(txn, TAINT_ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issueKey)
-      .ifPresent(issueEntity -> {
-        var currentIssue = adaptTaint(issueEntity);
+  public boolean updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater) {
+    return entityStore.computeInTransaction(txn -> {
+      var optionalEntity = findUnique(txn, TAINT_ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issueKey);
+      if (optionalEntity.isPresent()) {
+        var taintEntity = optionalEntity.get();
+        var currentIssue = adaptTaint(taintEntity);
         taintIssueUpdater.accept(currentIssue);
-        updateTaintIssueEntity(currentIssue, issueEntity);
-      }));
+        updateTaintIssueEntity(currentIssue, taintEntity);
+        return true;
+      }
+      return false;
+    });
   }
 
   @Override
