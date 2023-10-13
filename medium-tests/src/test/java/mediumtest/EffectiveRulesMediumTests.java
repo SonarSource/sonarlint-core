@@ -25,19 +25,20 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import mediumtest.fixtures.TestPlugin;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.clientapi.SonarLintBackend;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.EffectiveRuleDetailsDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.EffectiveRuleParamDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetEffectiveRuleDetailsParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleDescriptionTabDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleNonContextualSectionDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.StandaloneRuleConfigDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.rules.UpdateStandaloneRulesConfigurationParams;
-import org.sonarsource.sonarlint.core.clientapi.common.Language;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleParamDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDescriptionTabDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleNonContextualSectionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.UpdateStandaloneRulesConfigurationParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import testutils.MockWebServerExtensionWithProtobuf;
@@ -46,16 +47,15 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.apache.commons.lang3.StringUtils.abbreviate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.sonarsource.sonarlint.core.clientapi.common.IssueSeverity.BLOCKER;
-import static org.sonarsource.sonarlint.core.clientapi.common.IssueSeverity.INFO;
-import static org.sonarsource.sonarlint.core.clientapi.common.IssueSeverity.MAJOR;
-import static org.sonarsource.sonarlint.core.clientapi.common.IssueSeverity.MINOR;
-import static org.sonarsource.sonarlint.core.clientapi.common.Language.JAVA;
-import static org.sonarsource.sonarlint.core.clientapi.common.Language.JS;
-import static org.sonarsource.sonarlint.core.clientapi.common.Language.PYTHON;
-import static org.sonarsource.sonarlint.core.clientapi.common.RuleType.BUG;
-import static org.sonarsource.sonarlint.core.clientapi.common.RuleType.CODE_SMELL;
-import static org.sonarsource.sonarlint.core.clientapi.common.RuleType.VULNERABILITY;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.BLOCKER;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.INFO;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.MAJOR;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.MINOR;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.PYTHON;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.BUG;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.CODE_SMELL;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.VULNERABILITY;
 
 class EffectiveRulesMediumTests {
   private SonarLintBackend backend;
@@ -132,7 +132,7 @@ class EffectiveRulesMediumTests {
 
     assertThat(futureResponse).failsWithin(1, TimeUnit.SECONDS)
       .withThrowableOfType(ExecutionException.class)
-      .withCauseInstanceOf(IllegalArgumentException.class)
+      .withCauseInstanceOf(ResponseErrorException.class)
       .withMessageContaining("Could not find rule 'python:SXXXX' in embedded rules");
   }
 
@@ -228,7 +228,7 @@ class EffectiveRulesMediumTests {
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
         EffectiveRuleDetailsDto::getSeverity, r -> r.getDescription().getLeft().getHtmlContent())
-      .containsExactly("jssecurity:S5696", name, VULNERABILITY, org.sonarsource.sonarlint.core.clientapi.common.Language.JS, BLOCKER, desc);
+      .containsExactly("jssecurity:S5696", name, VULNERABILITY, Language.JS, BLOCKER, desc);
     assertThat(details.getParams()).isEmpty();
   }
 
@@ -248,8 +248,8 @@ class EffectiveRulesMediumTests {
 
     assertThat(futureResponse).failsWithin(1, TimeUnit.SECONDS)
       .withThrowableOfType(ExecutionException.class)
-      .withCauseInstanceOf(IllegalStateException.class)
-      .withMessageContaining("Unknown connection 'connectionId'");
+      .withCauseInstanceOf(ResponseErrorException.class)
+      .withMessageContaining("Connection with ID 'connectionId' does not exist");
   }
 
   @Test
@@ -265,7 +265,7 @@ class EffectiveRulesMediumTests {
 
     assertThat(futureResponse).failsWithin(3, TimeUnit.SECONDS)
       .withThrowableOfType(ExecutionException.class)
-      .withCauseInstanceOf(IllegalStateException.class)
+      .withCauseInstanceOf(ResponseErrorException.class)
       .withMessageContaining("Could not find rule 'python:S139' on 'connectionId'");
   }
 

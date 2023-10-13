@@ -30,11 +30,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.GetOrganizationParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.ListUserOrganizationsParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.OrganizationDto;
-import org.sonarsource.sonarlint.core.clientapi.common.TokenDto;
-import org.sonarsource.sonarlint.core.clientapi.common.UsernamePasswordDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.OrganizationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;

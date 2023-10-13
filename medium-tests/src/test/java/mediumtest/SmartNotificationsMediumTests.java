@@ -25,18 +25,18 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import mediumtest.fixtures.SonarLintTestBackend;
 import mockwebserver3.MockResponse;
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
-import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingConfigurationDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.ConfigurationScopeDto;
-import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.DidAddConfigurationScopesParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.DidRemoveConfigurationScopeParams;
-import org.sonarsource.sonarlint.core.clientapi.client.smartnotification.ShowSmartNotificationParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import testutils.MockWebServerExtensionWithProtobuf;
 
@@ -89,7 +89,7 @@ class SmartNotificationsMediumTests {
     "\"category\": \"category\"}]}";
   @RegisterExtension
   private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
-  private SonarLintBackendImpl backend;
+  private SonarLintTestBackend backend;
 
   @BeforeEach
   void prepare() {
@@ -142,7 +142,7 @@ class SmartNotificationsMediumTests {
     backend = newBackend()
       .withSonarQubeConnectionAndNotifications(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage ->
         storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE))
-            .withProject(PROJECT_KEY_3, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
+          .withProject(PROJECT_KEY_3, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
       .withSonarQubeConnectionAndNotifications(CONNECTION_ID_2, mockWebServerExtension.endpointParams().getBaseUrl(), storage ->
         storage.withProject(PROJECT_KEY_2, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
       .withBoundConfigScope("scopeId", CONNECTION_ID, PROJECT_KEY)
