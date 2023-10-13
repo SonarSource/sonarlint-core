@@ -20,18 +20,9 @@
 package org.sonarsource.sonarlint.core.clientapi.common;
 
 public enum CleanCodeAttributeCategory {
-  ADAPTABLE(1),
-  CONSISTENT(2),
-  INTENTIONAL(3),
-  RESPONSIBLE(4);
+  ADAPTABLE,
+  CONSISTENT,
+  INTENTIONAL,
+  RESPONSIBLE;
 
-  private final int value;
-
-  CleanCodeAttributeCategory(int value) {
-    this.value = value;
-  }
-
-  public int getValue() {
-    return value;
-  }
 }

@@ -21,54 +21,38 @@ package org.sonarsource.sonarlint.core.clientapi.common;
 
 public enum Language {
 
-  ABAP(1, "abap"),
-  APEX(2, "apex"),
-  C(3, "c"),
-  CPP(4, "cpp"),
-  CS(5, "cs"),
-  CSS(6, "css"),
-  OBJC(7, "objc"),
-  COBOL(8, "cobol"),
-  HTML(9, "web"),
-  IPYTHON(10, "ipynb"),
-  JAVA(11, "java"),
-  JS(12, "js"),
-  KOTLIN(13, "kotlin"),
-  PHP(14, "php"),
-  PLI(15, "pli"),
-  PLSQL(16, "plsql"),
-  PYTHON(17, "py"),
-  RPG(18, "rpg"),
-  RUBY(19, "ruby"),
-  SCALA(20, "scala"),
-  SECRETS(21, "secrets"),
-  SWIFT(22, "swift"),
-  TSQL(23, "tsql"),
-  TS(24, "ts"),
-  JSP(25, "jsp"),
-  VBNET(26, "vbnet"),
-  XML(27, "xml"),
-  YAML(28, "yaml"),
-  GO(29, "go"),
-  CLOUDFORMATION(30, "cloudformation"),
-  DOCKER(31, "docker"),
-  KUBERNETES(32, "kubernetes"),
-  TERRAFORM(33, "terraform");
-
-  private int value;
-  private String languageKey;
-
-  Language(int value, String languageKey) {
-    this.value = value;
-    this.languageKey = languageKey;
-  }
-
-  public int getValue() {
-    return value;
-  }
-
-  public String getLanguageKey() {
-    return languageKey;
-  }
+  ABAP,
+  APEX,
+  C,
+  CLOUDFORMATION,
+  COBOL,
+  CPP,
+  CS,
+  CSS,
+  DOCKER,
+  GO,
+  HTML,
+  IPYTHON,
+  JAVA,
+  JS,
+  JSP,
+  KOTLIN,
+  KUBERNETES,
+  OBJC,
+  PHP,
+  PLI,
+  PLSQL,
+  PYTHON,
+  RPG,
+  RUBY,
+  SCALA,
+  SECRETS,
+  SWIFT,
+  TERRAFORM,
+  TS,
+  TSQL,
+  VBNET,
+  XML,
+  YAML;
 
 }

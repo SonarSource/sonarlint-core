@@ -20,17 +20,8 @@
 package org.sonarsource.sonarlint.core.clientapi.common;
 
 public enum SoftwareQuality {
-  MAINTAINABILITY(1),
-  RELIABILITY(2),
-  SECURITY(3);
+  MAINTAINABILITY,
+  RELIABILITY,
+  SECURITY;
 
-  private final int value;
-
-  SoftwareQuality(int value) {
-    this.value = value;
-  }
-
-  public int getValue() {
-    return value;
-  }
 }

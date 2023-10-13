@@ -21,31 +21,22 @@ package org.sonarsource.sonarlint.core.clientapi.common;
 
 public enum CleanCodeAttribute {
 
-  CONVENTIONAL(1),
-  FORMATTED(2),
-  IDENTIFIABLE(3),
+  CONVENTIONAL,
+  FORMATTED,
+  IDENTIFIABLE,
 
-  CLEAR(4),
-  COMPLETE(5),
-  EFFICIENT(6),
-  LOGICAL(7),
+  CLEAR,
+  COMPLETE,
+  EFFICIENT,
+  LOGICAL,
 
-  DISTINCT(8),
-  FOCUSED(9),
-  MODULAR(10),
-  TESTED(11),
+  DISTINCT,
+  FOCUSED,
+  MODULAR,
+  TESTED,
 
-  LAWFUL(12),
-  RESPECTFUL(13),
-  TRUSTWORTHY(14);
+  LAWFUL,
+  RESPECTFUL,
+  TRUSTWORTHY;
 
-  private final int value;
-
-  CleanCodeAttribute(int value) {
-    this.value = value;
-  }
-
-  public int getValue() {
-    return value;
-  }
 }

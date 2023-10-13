@@ -21,18 +21,8 @@ package org.sonarsource.sonarlint.core.clientapi.common;
 
 public enum RuleType {
 
-  CODE_SMELL(1),
-  BUG(2),
-  VULNERABILITY(3),
-  SECURITY_HOTSPOT(4);
-
-  private final int value;
-
-  RuleType(int value) {
-    this.value = value;
-  }
-
-  public int getValue() {
-    return value;
-  }
+  CODE_SMELL,
+  BUG,
+  VULNERABILITY,
+  SECURITY_HOTSPOT;
 }

@@ -46,7 +46,7 @@ public class LanguageSupportRepository {
 
   @NotNull
   private static List<Language> adaptLanguage(Set<org.sonarsource.sonarlint.core.clientapi.common.Language> languagesDto) {
-    return languagesDto.stream().map(e -> Language.forKey(e.getLanguageKey()).orElseThrow()).collect(Collectors.toList());
+    return languagesDto.stream().map(e -> Language.valueOf(e.name())).collect(Collectors.toList());
   }
 
   private static <T extends Enum<T>> EnumSet<T> toEnumSet(Collection<T> collection, Class<T> clazz) {

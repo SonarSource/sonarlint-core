@@ -20,17 +20,8 @@
 package org.sonarsource.sonarlint.core.clientapi.common;
 
 public enum ImpactSeverity {
-  LOW(1),
-  MEDIUM(2),
-  HIGH(3);
+  LOW,
+  MEDIUM,
+  HIGH;
 
-  private final int value;
-
-  ImpactSeverity(int value) {
-    this.value = value;
-  }
-
-  public int getValue() {
-    return value;
-  }
 }
