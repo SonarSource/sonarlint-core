@@ -19,23 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
-import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
-import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.RuleType;
-import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
+import org.sonarsource.sonarlint.core.clientapi.common.IssueSeverity;
+import org.sonarsource.sonarlint.core.clientapi.common.Language;
+import org.sonarsource.sonarlint.core.clientapi.common.RuleType;
 
 public class RuleDefinitionDto extends AbstractRuleDto {
   private final Map<String, RuleParamDefinitionDto> paramsByKey;
   private final boolean isActiveByDefault;
 
   public RuleDefinitionDto(String key, String name, IssueSeverity defaultSeverity, RuleType type,
-    @Nullable CleanCodeAttribute cleanCodeAttribute, Map<SoftwareQuality, ImpactSeverity> defaultImpacts,
+    @Nullable CleanCodeAttributeDto cleanCodeAttributeDetails, List<ImpactDto> defaultImpacts,
     Map<String, RuleParamDefinitionDto> paramsByKey, boolean isActiveByDefault, Language language) {
-    super(key, name, defaultSeverity, type, cleanCodeAttribute, defaultImpacts, language);
+    super(key, name, defaultSeverity, type, cleanCodeAttributeDetails, defaultImpacts, language);
     this.paramsByKey = paramsByKey;
     this.isActiveByDefault = isActiveByDefault;
   }

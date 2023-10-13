@@ -79,33 +79,40 @@ class UpdateStorageOnIssueChangedTests {
   void should_store_issue_with_updated_type() {
     serverIssueStore.replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setKey("key1").setType(RuleType.VULNERABILITY)));
 
-    handler.handle(new IssueChangedEvent(PROJECT_KEY, List.of("key1"), null, RuleType.BUG, null));
+    var event = new IssueChangedEvent(PROJECT_KEY, List.of("key1"), null, RuleType.BUG, null);
+    handler.handle(event);
 
     assertThat(serverIssueStore.load("branch", "file/path"))
       .extracting(ServerIssue::getType)
       .containsOnly(RuleType.BUG);
+    assertThat(event.getImpactedTaintIssueKeys()).isEmpty();
   }
 
   @Test
   void should_store_resolved_taint_issue() {
     serverIssueStore.replaceAllTaintOfFile("branch", "file/path", List.of(aServerTaintIssue().setKey("key1").setResolved(false)));
 
-    handler.handle(new IssueChangedEvent(PROJECT_KEY, List.of("key1"), null, null, true));
+    var event = new IssueChangedEvent(PROJECT_KEY, List.of("key1"), null, null, true);
+    handler.handle(event);
 
     assertThat(serverIssueStore.loadTaint("branch", "file/path"))
       .extracting(ServerTaintIssue::isResolved)
       .containsOnly(true);
+    assertThat(event.getImpactedTaintIssueKeys()).containsExactlyInAnyOrder("key1");
   }
 
   @Test
   void should_store_taint_issue_with_updated_severity() {
     serverIssueStore.replaceAllTaintOfFile("branch", "file/path", List.of(aServerTaintIssue().setKey("key1").setSeverity(IssueSeverity.MAJOR)));
 
-    handler.handle(new IssueChangedEvent(PROJECT_KEY, List.of("key1"), IssueSeverity.MINOR, null, null));
+    var event = new IssueChangedEvent(PROJECT_KEY, List.of("key1"), IssueSeverity.MINOR, null, null);
+    handler.handle(event);
 
     assertThat(serverIssueStore.loadTaint("branch", "file/path"))
       .extracting(ServerTaintIssue::getSeverity)
       .containsOnly(IssueSeverity.MINOR);
+
+    assertThat(event.getImpactedTaintIssueKeys()).containsExactlyInAnyOrder("key1");
   }
 
   @Test

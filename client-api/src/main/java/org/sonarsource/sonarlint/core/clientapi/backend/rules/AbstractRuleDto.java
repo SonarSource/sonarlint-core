@@ -19,34 +19,30 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.backend.rules;
 
-import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.RuleType;
-import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
-import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
-import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
-import org.sonarsource.sonarlint.core.commons.Language;
-
+import java.util.List;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import java.util.Map;
-import java.util.Optional;
+import org.sonarsource.sonarlint.core.clientapi.common.IssueSeverity;
+import org.sonarsource.sonarlint.core.clientapi.common.Language;
+import org.sonarsource.sonarlint.core.clientapi.common.RuleType;
 
 public abstract class AbstractRuleDto {
   private final String key;
   private final String name;
   private final IssueSeverity severity;
   private final RuleType type;
-  private final CleanCodeAttribute cleanCodeAttribute;
-  private final Map<SoftwareQuality, ImpactSeverity> defaultImpacts;
+  private final CleanCodeAttributeDto cleanCodeAttributeDetails;
+  private final List<ImpactDto> defaultImpacts;
   private final Language language;
 
   AbstractRuleDto(String key, String name, IssueSeverity severity, RuleType type,
-    @Nullable CleanCodeAttribute cleanCodeAttribute, Map<SoftwareQuality, ImpactSeverity> defaultImpacts,
+    @Nullable CleanCodeAttributeDto cleanCodeAttributeDetails, List<ImpactDto> defaultImpacts,
     Language language) {
     this.key = key;
     this.name = name;
     this.severity = severity;
     this.type = type;
-    this.cleanCodeAttribute = cleanCodeAttribute;
+    this.cleanCodeAttributeDetails = cleanCodeAttributeDetails;
     this.defaultImpacts = defaultImpacts;
     this.language = language;
   }
@@ -67,11 +63,12 @@ public abstract class AbstractRuleDto {
     return type;
   }
 
-  public Optional<CleanCodeAttribute> getCleanCodeAttribute() {
-    return Optional.ofNullable(cleanCodeAttribute);
+  @CheckForNull
+  public CleanCodeAttributeDto getCleanCodeAttributeDetails() {
+    return cleanCodeAttributeDetails;
   }
 
-  public Map<SoftwareQuality, ImpactSeverity> getDefaultImpacts() {
+  public List<ImpactDto> getDefaultImpacts() {
     return defaultImpacts;
   }
 
