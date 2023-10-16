@@ -32,7 +32,7 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesRpcService;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
@@ -56,7 +56,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
   /**
    * Return rule details in the context of a given project (severity may have been overridden in the quality profile).
    * @param projectKey if null, the default QP will be considered
-   * @deprecated use {@link RulesService#getEffectiveRuleDetails(GetEffectiveRuleDetailsParams)} instead
+   * @deprecated use {@link RulesRpcService#getEffectiveRuleDetails(GetEffectiveRuleDetailsParams)} instead
    */
   @Deprecated(since = "8.12")
   CompletableFuture<ConnectedRuleDetails> getActiveRuleDetails(EndpointParams endpoint, HttpClient client, String ruleKey, @Nullable String projectKey);
