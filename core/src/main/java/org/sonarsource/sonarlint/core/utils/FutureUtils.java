@@ -53,7 +53,6 @@ public class FutureUtils {
     }
   }
 
-  @Nullable
   public static <T> T waitForTaskWithResult(CancelChecker cancelChecker, Future<T> task, String taskName, Duration timeoutDuration) {
     try {
       return waitForFutureWithTimeout(cancelChecker, task, timeoutDuration);
@@ -114,27 +113,6 @@ public class FutureUtils {
       }
       try {
         return future.get(WAITING_FREQUENCY, TimeUnit.MILLISECONDS);
-      } catch (TimeoutException ignored) {
-        continue;
-      } catch (InterruptedException | CancellationException e) {
-        throw new InterruptedException("Interrupted");
-      }
-    }
-    throw new TimeoutException();
-  }
-
-  private static void waitForCompletableFutureWithTimeout(CancelChecker cancelChecker, CompletableFuture<?> future, Duration durationTimeout)
-    throws InterruptedException, ExecutionException, TimeoutException {
-    long counter = 0;
-    while (counter < durationTimeout.toMillis()) {
-      counter += WAITING_FREQUENCY;
-      if (cancelChecker.isCanceled()) {
-        future.cancel(true);
-        return;
-      }
-      try {
-        future.get(WAITING_FREQUENCY, TimeUnit.MILLISECONDS);
-        return;
       } catch (TimeoutException ignored) {
         continue;
       } catch (InterruptedException | CancellationException e) {

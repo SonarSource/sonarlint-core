@@ -85,8 +85,8 @@ import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
@@ -169,7 +169,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
   }
 
-  private static SonarLintBackend backend;
+  private static SonarLintRpcServer backend;
 
   private static BackendJsonRpcLauncher serverLauncher;
 
@@ -192,10 +192,10 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     backend = clientLauncher.getServerProxy();
     try {
       backend.initialize(
-        new InitializeParams(IT_CLIENT_INFO, new FeatureFlagsDto(false, true, false, false, false, true), sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
-          Collections.emptySet(), Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(),
-          List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(),
-          Map.of(), false))
+          new InitializeParams(IT_CLIENT_INFO, new FeatureFlagsDto(false, true, false, false, false, true), sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
+            Collections.emptySet(), Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(),
+            List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(),
+            Map.of(), false))
         .get();
     } catch (Exception e) {
       throw new IllegalStateException("Cannot initialize the backend", e);
@@ -444,8 +444,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-global-extension",
-        "src/foo.glob",
-        "sonar.cobol.file.suffixes", "glob"),
+          "src/foo.glob",
+          "sonar.cobol.file.suffixes", "glob"),
         issueListener, null, null);
 
       assertThat(issueListener.getIssues()).extracting("ruleKey", "message").containsOnly(
@@ -453,8 +453,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-global-extension",
-        "src/foo.glob",
-        "sonar.cobol.file.suffixes", "glob"),
+          "src/foo.glob",
+          "sonar.cobol.file.suffixes", "glob"),
         issueListener, null, null);
 
       assertThat(issueListener.getIssues()).extracting("ruleKey", "message").containsOnly(
@@ -1053,8 +1053,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_HOTSPOT, PROJECT_KEY_JAVA_HOTSPOT,
-        "src/main/java/foo/Foo.java",
-        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+          "src/main/java/foo/Foo.java",
+          "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
         issueListener, null, null);
 
       assertThat(issueListener.getIssues()).isEmpty();
@@ -1096,8 +1096,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_HOTSPOT, PROJECT_KEY_JAVA_HOTSPOT,
-        "src/main/java/foo/Foo.java",
-        "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath()),
+          "src/main/java/foo/Foo.java",
+          "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath()),
         issueListener, null, null);
 
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
@@ -1443,8 +1443,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     analyzeMavenProject(ORCHESTRATOR, projectDirName, Map.of("sonar.projectKey", projectKey));
   }
 
-  private static SonarLintClient newDummySonarLintClient() {
-    return new SonarLintClient() {
+  private static SonarLintRpcClient newDummySonarLintClient() {
+    return new SonarLintRpcClient() {
       @Override
       public void suggestBinding(SuggestBindingParams params) {
 

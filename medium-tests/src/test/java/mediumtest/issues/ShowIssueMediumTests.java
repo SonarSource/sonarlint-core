@@ -26,9 +26,12 @@ import java.net.http.HttpResponse;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import mediumtest.fixtures.ServerFixture;
-import mediumtest.fixtures.SonarLintTestBackend;
+import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 
@@ -39,6 +42,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 class ShowIssueMediumTests {
+
+  @RegisterExtension
+  SonarLintLogTester logTester = new SonarLintLogTester(true);
 
   private static final String ISSUE_KEY = "myIssueKey";
   private static final String PROJECT_KEY = "projectKey";
@@ -52,7 +58,7 @@ class ShowIssueMediumTests {
           new TextRange(1, 0, 3, 4))))
     .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))
     .start();
-  private SonarLintTestBackend backend;
+  private SonarLintTestRpcServer backend;
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {

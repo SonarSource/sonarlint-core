@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.http;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
@@ -30,10 +30,10 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 @Singleton
 public class ConnectionAwareHttpClientProvider {
   private final SonarLintLogger logger = SonarLintLogger.get();
-  private final SonarLintClient client;
+  private final SonarLintRpcClient client;
   private final HttpClientProvider httpClientProvider;
 
-  public ConnectionAwareHttpClientProvider(SonarLintClient client, HttpClientProvider httpClientProvider) {
+  public ConnectionAwareHttpClientProvider(SonarLintRpcClient client, HttpClientProvider httpClientProvider) {
     this.client = client;
     this.httpClientProvider = httpClientProvider;
   }

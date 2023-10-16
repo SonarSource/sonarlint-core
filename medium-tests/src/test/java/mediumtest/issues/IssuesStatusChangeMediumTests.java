@@ -29,7 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import mediumtest.fixtures.ServerFixture;
-import mediumtest.fixtures.SonarLintTestBackend;
+import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -64,7 +64,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 class IssuesStatusChangeMediumTests {
 
-  private SonarLintTestBackend backend;
+  private SonarLintTestRpcServer backend;
   private ServerFixture.Server server;
 
   @AfterEach
