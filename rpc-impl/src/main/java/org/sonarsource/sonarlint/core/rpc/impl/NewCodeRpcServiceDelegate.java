@@ -20,25 +20,27 @@
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
+import org.sonarsource.sonarlint.core.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.GetNewCodeDefinitionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.GetNewCodeDefinitionResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.NewCodeService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.NewCodeRpcService;
+import org.springframework.beans.factory.BeanFactory;
 
-public class NewCodeServiceDelegate extends AbstractSpringServiceDelegate<NewCodeService> implements NewCodeService {
+public class NewCodeRpcServiceDelegate extends AbstractRpcServiceDelegate implements NewCodeRpcService {
 
-  public NewCodeServiceDelegate(Supplier<NewCodeService> beanSupplier) {
-    super(beanSupplier);
+  public NewCodeRpcServiceDelegate(Supplier<BeanFactory> beanFactory, ExecutorService requestsExecutor, ExecutorService notificationsExecutor) {
+    super(beanFactory, requestsExecutor, notificationsExecutor);
   }
-
 
   @Override
   public CompletableFuture<GetNewCodeDefinitionResponse> getNewCodeDefinition(GetNewCodeDefinitionParams params) {
-    return beanSupplier.get().getNewCodeDefinition(params);
+    return requestAsync(cancelChecker -> getBean(NewCodeService.class).getNewCodeDefinition(params, cancelChecker));
   }
 
   @Override
   public void didToggleFocus() {
-    beanSupplier.get().didToggleFocus();
+    notify(() -> getBean(NewCodeService.class).didToggleFocus());
   }
 }

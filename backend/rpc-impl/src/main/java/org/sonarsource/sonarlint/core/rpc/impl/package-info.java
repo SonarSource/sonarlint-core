@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Implementation
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,8 +17,21 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+<<<<<<<< HEAD:backend/rpc-impl/src/main/java/org/sonarsource/sonarlint/core/rpc/impl/package-info.java
 @ParametersAreNonnullByDefault
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
+========
+package testutils;
+
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
+
+public class NoopCancelChecker implements CancelChecker {
+  @Override
+  public void checkCanceled() {
+    // do nothing
+  }
+}
+>>>>>>>> 3f040ee2a (Rework the use of completable futures):core/src/test/java/testutils/NoopCancelChecker.java

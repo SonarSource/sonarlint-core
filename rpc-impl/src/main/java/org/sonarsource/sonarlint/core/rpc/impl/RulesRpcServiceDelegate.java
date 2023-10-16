@@ -20,38 +20,53 @@
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.BackendErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetStandaloneRuleDescriptionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetStandaloneRuleDescriptionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ListAllStandaloneRulesDefinitionsResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.UpdateStandaloneRulesConfigurationParams;
+import org.sonarsource.sonarlint.core.rules.RuleNotFoundException;
+import org.sonarsource.sonarlint.core.rules.RulesService;
+import org.springframework.beans.factory.BeanFactory;
 
-class RulesServiceDelegate extends AbstractSpringServiceDelegate<RulesService> implements RulesService {
+class RulesRpcServiceDelegate extends AbstractRpcServiceDelegate implements RulesRpcService {
 
-  public RulesServiceDelegate(Supplier<RulesService> beanSupplier) {
-    super(beanSupplier);
+
+  public RulesRpcServiceDelegate(Supplier<BeanFactory> beanFactory, ExecutorService requestsExecutor, ExecutorService notificationsExecutor) {
+    super(beanFactory, requestsExecutor, notificationsExecutor);
   }
 
   @Override
   public CompletableFuture<GetEffectiveRuleDetailsResponse> getEffectiveRuleDetails(GetEffectiveRuleDetailsParams params) {
-    return beanSupplier.get().getEffectiveRuleDetails(params);
+    return requestAsync(cancelChecker -> {
+      try {
+        return getBean(RulesService.class).getEffectiveRuleDetails(params, cancelChecker);
+      } catch (RuleNotFoundException e) {
+        ResponseError error = new ResponseError(BackendErrorCode.RULE_NOT_FOUND, e.getMessage(), e.getRuleKey());
+        throw new ResponseErrorException(error);
+      }
+    });
   }
 
   @Override
   public CompletableFuture<ListAllStandaloneRulesDefinitionsResponse> listAllStandaloneRulesDefinitions() {
-    return beanSupplier.get().listAllStandaloneRulesDefinitions();
+    return requestAsync(cancelChecker -> getBean(RulesService.class).listAllStandaloneRulesDefinitions(cancelChecker));
   }
 
   @Override
   public CompletableFuture<GetStandaloneRuleDescriptionResponse> getStandaloneRuleDetails(GetStandaloneRuleDescriptionParams params) {
-    return beanSupplier.get().getStandaloneRuleDetails(params);
+    return requestAsync(cancelChecker -> getBean(RulesService.class).getStandaloneRuleDetails(params, cancelChecker));
   }
 
   @Override
   public void updateStandaloneRulesConfiguration(UpdateStandaloneRulesConfigurationParams params) {
-    beanSupplier.get().updateStandaloneRulesConfiguration(params);
+    notify(() -> getBean(RulesService.class).updateStandaloneRulesConfiguration(params));
   }
 }

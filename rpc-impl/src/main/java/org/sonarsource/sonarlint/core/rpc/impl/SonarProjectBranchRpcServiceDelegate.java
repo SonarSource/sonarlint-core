@@ -19,20 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.rpc.impl;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.BindingService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetBindingSuggestionParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.GetBindingSuggestionsResponse;
+import org.sonarsource.sonarlint.core.branch.SonarProjectBranchService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.DidChangeActiveSonarProjectBranchParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.SonarProjectBranchRpcService;
+import org.springframework.beans.factory.BeanFactory;
 
-class BindingServiceDelegate extends AbstractSpringServiceDelegate<BindingService> implements BindingService {
+class SonarProjectBranchRpcServiceDelegate extends AbstractRpcServiceDelegate implements SonarProjectBranchRpcService {
 
-  public BindingServiceDelegate(Supplier<BindingService> beanSupplier) {
-    super(beanSupplier);
+  public SonarProjectBranchRpcServiceDelegate(Supplier<BeanFactory> beanFactory, ExecutorService requestsExecutor, ExecutorService notificationsExecutor) {
+    super(beanFactory, requestsExecutor, notificationsExecutor);
   }
 
   @Override
-  public CompletableFuture<GetBindingSuggestionsResponse> getBindingSuggestions(GetBindingSuggestionParams params) {
-    return beanSupplier.get().getBindingSuggestions(params);
+  public void didChangeActiveSonarProjectBranch(DidChangeActiveSonarProjectBranchParams params) {
+    notify(() -> getBean(SonarProjectBranchService.class).didChangeActiveSonarProjectBranch(params));
   }
 }

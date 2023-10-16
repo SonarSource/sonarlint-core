@@ -22,9 +22,14 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.branch;
 public class DidVcsRepositoryChangeParams {
   private final String configurationScopeId;
 
+<<<<<<<< HEAD:rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/branch/DidVcsRepositoryChangeParams.java
   public DidVcsRepositoryChangeParams(String configurationScopeId) {
     this.configurationScopeId = configurationScopeId;
   }
+========
+@JsonSegment("branch")
+public interface SonarProjectBranchRpcService {
+>>>>>>>> 3f040ee2a (Rework the use of completable futures):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/branch/SonarProjectBranchRpcService.java
 
   public String getConfigurationScopeId() {
     return configurationScopeId;

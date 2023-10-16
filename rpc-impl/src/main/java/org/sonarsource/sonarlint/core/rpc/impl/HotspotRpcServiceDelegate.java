@@ -20,39 +20,42 @@
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
+import org.sonarsource.sonarlint.core.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.ChangeHotspotStatusParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckLocalDetectionSupportedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckLocalDetectionSupportedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckStatusChangePermittedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckStatusChangePermittedResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.OpenHotspotInBrowserParams;
+import org.springframework.beans.factory.BeanFactory;
 
-class HotspotServiceDelegate extends AbstractSpringServiceDelegate<HotspotService> implements HotspotService {
+class HotspotRpcServiceDelegate extends AbstractRpcServiceDelegate implements HotspotRpcService {
 
-  public HotspotServiceDelegate(Supplier<HotspotService> beanSupplier) {
-    super(beanSupplier);
+  public HotspotRpcServiceDelegate(Supplier<BeanFactory> beanFactory, ExecutorService requestsExecutor, ExecutorService notificationsExecutor) {
+    super(beanFactory, requestsExecutor, notificationsExecutor);
   }
 
 
   @Override
   public void openHotspotInBrowser(OpenHotspotInBrowserParams params) {
-    beanSupplier.get().openHotspotInBrowser(params);
+    notify(() -> getBean(HotspotService.class).openHotspotInBrowser(params));
   }
 
   @Override
   public CompletableFuture<CheckLocalDetectionSupportedResponse> checkLocalDetectionSupported(CheckLocalDetectionSupportedParams params) {
-    return beanSupplier.get().checkLocalDetectionSupported(params);
+    return requestAsync(cancelChecker -> getBean(HotspotService.class).checkLocalDetectionSupported(params, cancelChecker));
   }
 
   @Override
   public CompletableFuture<CheckStatusChangePermittedResponse> checkStatusChangePermitted(CheckStatusChangePermittedParams params) {
-    return beanSupplier.get().checkStatusChangePermitted(params);
+    return requestAsync(cancelChecker -> getBean(HotspotService.class).checkStatusChangePermitted(params, cancelChecker));
   }
 
   @Override
   public CompletableFuture<Void> changeStatus(ChangeHotspotStatusParams params) {
-    return beanSupplier.get().changeStatus(params);
+    return runAsync(cancelChecker -> getBean(HotspotService.class).changeStatus(params, cancelChecker));
   }
 }

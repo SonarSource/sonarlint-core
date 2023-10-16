@@ -19,18 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.rpc.impl;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.DidChangeActiveSonarProjectBranchParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.SonarProjectBranchService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
+import org.springframework.beans.factory.BeanFactory;
 
-class SonarProjectBranchServiceDelegate extends AbstractSpringServiceDelegate<SonarProjectBranchService> implements SonarProjectBranchService {
+class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements TelemetryRpcService {
 
-  public SonarProjectBranchServiceDelegate(Supplier<SonarProjectBranchService> beanSupplier) {
-    super(beanSupplier);
+  public TelemetryRpcServiceDelegate(Supplier<BeanFactory> beanFactory, ExecutorService requestsExecutor, ExecutorService notificationsExecutor) {
+    super(beanFactory, requestsExecutor, notificationsExecutor);
   }
 
   @Override
-  public void didChangeActiveSonarProjectBranch(DidChangeActiveSonarProjectBranchParams params) {
-    beanSupplier.get().didChangeActiveSonarProjectBranch(params);
+  public CompletableFuture<GetStatusResponse> getStatus() {
+    return requestAsync(cancelChecker -> getBean(TelemetryService.class).getStatus(cancelChecker));
   }
 }

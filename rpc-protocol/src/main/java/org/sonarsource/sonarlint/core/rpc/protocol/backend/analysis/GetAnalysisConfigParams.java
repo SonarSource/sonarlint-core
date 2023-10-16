@@ -21,7 +21,12 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis;
 
 public class GetAnalysisConfigParams {
 
+<<<<<<<< HEAD:rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/analysis/GetAnalysisConfigParams.java
   private final String configScopeId;
+========
+@JsonSegment("telemetry")
+public interface TelemetryRpcService {
+>>>>>>>> 3f040ee2a (Rework the use of completable futures):rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/backend/telemetry/TelemetryRpcService.java
 
   public GetAnalysisConfigParams(String configScopeId) {
     this.configScopeId = configScopeId;

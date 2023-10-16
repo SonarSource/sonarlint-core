@@ -19,11 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.rpc.impl;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
@@ -36,37 +38,41 @@ import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SingleThreadedMessageConsumer;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.PathTypeAdapter;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.BackendErrorCode;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.BindingService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.SonarProjectBranchService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.ConfigurationService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.BindingRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.SonarProjectBranchRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.ConfigurationRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.IssueService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.NewCodeService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.IssueTrackingService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.SecurityHotspotMatchingService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.IssueRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.NewCodeRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.IssueTrackingRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.SecurityHotspotMatchingRpcService;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ConfigurableApplicationContext;
 
-public class SonarLintBackendImpl implements SonarLintBackend {
-  private final SonarLintClient client;
+public class SonarLintRpcServerImpl implements SonarLintRpcServer {
+  private final SonarLintRpcClient client;
   private final AtomicBoolean initializeCalled = new AtomicBoolean(false);
   private final AtomicBoolean initialized = new AtomicBoolean(false);
   private final Future<Void> launcherFuture;
+  private final ExecutorService requestsExecutor;
+  private final ExecutorService requestAndNotificationsSequentialExecutor;
   private SpringApplicationContextInitializer springApplicationContextInitializer;
 
-  public SonarLintBackendImpl(InputStream in, OutputStream out, ExecutorService messageReaderExecutor, ExecutorService messageWriterExecutor) {
-    var launcher = new Launcher.Builder<SonarLintClient>()
+  public SonarLintRpcServerImpl(InputStream in, OutputStream out, ExecutorService messageReaderExecutor, ExecutorService messageWriterExecutor) {
+    this.requestAndNotificationsSequentialExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint RPC sequential executor"));
+    this.requestsExecutor = Executors.newCachedThreadPool(r -> new Thread(r, "SonarLint RPC request executor"));
+    var launcher = new Launcher.Builder<SonarLintRpcClient>()
       .setLocalService(this)
-      .setRemoteInterface(SonarLintClient.class)
+      .setRemoteInterface(SonarLintRpcClient.class)
       .setInput(in)
       .setOutput(out)
       .setExecutorService(messageReaderExecutor)
@@ -108,68 +114,70 @@ public class SonarLintBackendImpl implements SonarLintBackend {
   }
 
   @Override
-  public ConnectionService getConnectionService() {
-    return new ConnectionServiceDelegate(() -> getInitializedApplicationContext().getBean(ConnectionService.class));
+  public ConnectionRpcService getConnectionService() {
+    return new ConnectionRpcServiceDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
   }
 
   @Override
-  public ConfigurationService getConfigurationService() {
-    return new ConfigurationServiceDelegate(() -> getInitializedApplicationContext().getBean(ConfigurationService.class));
+  public ConfigurationRpcService getConfigurationService() {
+    return new ConfigurationRpcServiceDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
   }
 
   @Override
-  public HotspotService getHotspotService() {
-    return new HotspotServiceDelegate(() -> getInitializedApplicationContext().getBean(HotspotService.class));
+  public HotspotRpcService getHotspotService() {
+    return new HotspotRpcServiceDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
   }
 
   @Override
-  public TelemetryService getTelemetryService() {
-    return new TelemetryServiceDelegate(() -> getInitializedApplicationContext().getBean(TelemetryService.class));
+  public TelemetryRpcService getTelemetryService() {
+    return new TelemetryRpcServiceDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
   }
 
   @Override
-  public AnalysisService getAnalysisService() {
-    return new AnalysisServiceDelegate(() -> getInitializedApplicationContext().getBean(AnalysisService.class));
+  public AnalysisRpcService getAnalysisService() {
+    return new AnalysisServiceRpcDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
   }
 
   @Override
-  public RulesService getRulesService() {
-    return new RulesServiceDelegate(() -> getInitializedApplicationContext().getBean(RulesService.class));
+  public RulesRpcService getRulesService() {
+    return new RulesRpcServiceDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
   }
 
   @Override
-  public BindingService getBindingService() {
-    return new BindingServiceDelegate(() -> getInitializedApplicationContext().getBean(BindingService.class));
+  public BindingRpcService getBindingService() {
+    return new BindingRpcServiceDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
   }
 
-  public SonarProjectBranchService getSonarProjectBranchService() {
-    return new SonarProjectBranchServiceDelegate(() -> getInitializedApplicationContext().getBean(SonarProjectBranchService.class));
-  }
-
-  @Override
-  public IssueService getIssueService() {
-    return new IssueServiceDelegate(() -> getInitializedApplicationContext().getBean(IssueService.class));
+  public SonarProjectBranchRpcService getSonarProjectBranchService() {
+    return new SonarProjectBranchRpcServiceDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
   }
 
   @Override
-  public IssueTrackingService getIssueTrackingService() {
-    return new IssueTrackingServiceDelegate(() -> getInitializedApplicationContext().getBean(IssueTrackingService.class));
+  public IssueRpcService getIssueService() {
+    return new IssueRpcServiceDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
   }
 
   @Override
-  public SecurityHotspotMatchingService getSecurityHotspotMatchingService() {
-    return new SecurityHotspotMatchingServiceDelegate(() -> getInitializedApplicationContext().getBean(SecurityHotspotMatchingService.class));
+  public IssueTrackingRpcService getIssueTrackingService() {
+    return new IssueTrackingRpcServiceDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
   }
 
   @Override
-  public NewCodeService getNewCodeService() {
-    return new NewCodeServiceDelegate(() -> getInitializedApplicationContext().getBean(NewCodeService.class));
+  public SecurityHotspotMatchingRpcService getSecurityHotspotMatchingService() {
+    return new SecurityHotspotMatchingRpcServiceDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
+  }
+
+  @Override
+  public NewCodeRpcService getNewCodeService() {
+    return new NewCodeRpcServiceDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
   }
 
   @Override
   public CompletableFuture<Void> shutdown() {
     return CompletableFutures.computeAsync(cancelChecker -> {
       var wasInitialized = initialized.getAndSet(false);
+      MoreExecutors.shutdownAndAwaitTermination(requestsExecutor, 1, java.util.concurrent.TimeUnit.SECONDS);
+      MoreExecutors.shutdownAndAwaitTermination(requestAndNotificationsSequentialExecutor, 1, java.util.concurrent.TimeUnit.SECONDS);
       if (wasInitialized) {
         try {
           springApplicationContextInitializer.close();

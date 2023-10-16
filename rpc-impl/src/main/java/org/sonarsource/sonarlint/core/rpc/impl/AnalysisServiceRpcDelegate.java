@@ -20,19 +20,22 @@
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisService;
+import org.sonarsource.sonarlint.core.analysis.AnalysisService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetSupportedFilePatternsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetSupportedFilePatternsResponse;
+import org.springframework.beans.factory.BeanFactory;
 
-class AnalysisServiceDelegate extends AbstractSpringServiceDelegate<AnalysisService> implements AnalysisService {
+class AnalysisServiceRpcDelegate extends AbstractRpcServiceDelegate implements AnalysisRpcService {
 
-  public AnalysisServiceDelegate(Supplier<AnalysisService> beanSupplier) {
-    super(beanSupplier);
+  public AnalysisServiceRpcDelegate(Supplier<BeanFactory> beanFactory, ExecutorService requestsExecutor, ExecutorService notificationsExecutor) {
+    super(beanFactory, requestsExecutor, notificationsExecutor);
   }
 
   @Override
   public CompletableFuture<GetSupportedFilePatternsResponse> getSupportedFilePatterns(GetSupportedFilePatternsParams params) {
-    return beanSupplier.get().getSupportedFilePatterns(params);
+    return requestAsync(cancelChecker -> getBean(AnalysisService.class).getSupportedFilePatterns(params, cancelChecker));
   }
 }

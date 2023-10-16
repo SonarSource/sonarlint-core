@@ -22,35 +22,33 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.time.Duration;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.SpringApplicationContextInitializer;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
 
-class SonarLintBackendImplTests {
+class SonarLintRpcServerImplTests {
 
   @Test
   void it_should_fail_to_use_services_if_the_backend_is_not_initialized() {
     var in = new ByteArrayInputStream(new byte[0]);
     var out = new ByteArrayOutputStream();
-    var backend = new SonarLintBackendImpl(in, out, Executors.newSingleThreadExecutor(), Executors.newSingleThreadExecutor());
+    var backend = new SonarLintRpcServerImpl(in, out, Executors.newSingleThreadExecutor(), Executors.newSingleThreadExecutor());
 
-    var error = catchThrowable(() -> backend.getTelemetryService().getStatus().get());
-
-    assertThat(error)
-      .isInstanceOf(IllegalStateException.class)
-      .hasMessage("Backend is not initialized");
+    assertThat(backend.getTelemetryService().getStatus())
+      .failsWithin(1, TimeUnit.MINUTES)
+      .withThrowableOfType(ExecutionException.class)
+      .withCauseInstanceOf(IllegalStateException.class)
+      .withStackTraceContaining("Backend is not initialized");
   }
 
   @Test
   void it_should_silently_shutdown_the_backend_if_it_was_not_initialized() {
     var in = new ByteArrayInputStream(new byte[0]);
     var out = new ByteArrayOutputStream();
-    var backend = new SonarLintBackendImpl(in, out, Executors.newSingleThreadExecutor(), Executors.newSingleThreadExecutor());
+    var backend = new SonarLintRpcServerImpl(in, out, Executors.newSingleThreadExecutor(), Executors.newSingleThreadExecutor());
 
     var future = backend.shutdown();
 

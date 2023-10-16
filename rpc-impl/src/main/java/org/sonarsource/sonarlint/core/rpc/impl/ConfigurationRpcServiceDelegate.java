@@ -19,30 +19,33 @@
  */
 package org.sonarsource.sonarlint.core.rpc.impl;
 
+import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.ConfigurationService;
+import org.sonarsource.sonarlint.core.ConfigurationService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.ConfigurationRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
+import org.springframework.beans.factory.BeanFactory;
 
-class ConfigurationServiceDelegate extends AbstractSpringServiceDelegate<ConfigurationService> implements ConfigurationService {
+class ConfigurationRpcServiceDelegate extends AbstractRpcServiceDelegate implements ConfigurationRpcService {
 
-  public ConfigurationServiceDelegate(Supplier<ConfigurationService> beanSupplier) {
-    super(beanSupplier);
+  public ConfigurationRpcServiceDelegate(Supplier<BeanFactory> beanFactory, ExecutorService requestsExecutor, ExecutorService notificationsExecutor) {
+    super(beanFactory, requestsExecutor, notificationsExecutor);
   }
 
   @Override
   public void didAddConfigurationScopes(DidAddConfigurationScopesParams params) {
-    beanSupplier.get().didAddConfigurationScopes(params);
+    notify(() -> getBean(ConfigurationService.class).didAddConfigurationScopes(params));
   }
 
   @Override
   public void didRemoveConfigurationScope(DidRemoveConfigurationScopeParams params) {
-    beanSupplier.get().didRemoveConfigurationScope(params);
+    notify(() -> getBean(ConfigurationService.class).didRemoveConfigurationScope(params));
   }
 
   @Override
   public void didUpdateBinding(DidUpdateBindingParams params) {
-    beanSupplier.get().didUpdateBinding(params);
+    notify(() -> getBean(ConfigurationService.class).didUpdateBinding(params));
   }
 }

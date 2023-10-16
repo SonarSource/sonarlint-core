@@ -20,19 +20,22 @@
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.MatchWithServerSecurityHotspotsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.MatchWithServerSecurityHotspotsResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.SecurityHotspotMatchingService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.SecurityHotspotMatchingRpcService;
+import org.sonarsource.sonarlint.core.tracking.SecurityHotspotMatchingService;
+import org.springframework.beans.factory.BeanFactory;
 
-public class SecurityHotspotMatchingServiceDelegate extends AbstractSpringServiceDelegate<SecurityHotspotMatchingService> implements SecurityHotspotMatchingService {
+public class SecurityHotspotMatchingRpcServiceDelegate extends AbstractRpcServiceDelegate implements SecurityHotspotMatchingRpcService {
 
-  public SecurityHotspotMatchingServiceDelegate(Supplier<SecurityHotspotMatchingService> beanSupplier) {
-    super(beanSupplier);
+  public SecurityHotspotMatchingRpcServiceDelegate(Supplier<BeanFactory> beanFactory, ExecutorService requestsExecutor, ExecutorService notificationsExecutor) {
+    super(beanFactory, requestsExecutor, notificationsExecutor);
   }
 
   @Override
   public CompletableFuture<MatchWithServerSecurityHotspotsResponse> matchWithServerSecurityHotspots(MatchWithServerSecurityHotspotsParams params) {
-    return beanSupplier.get().matchWithServerSecurityHotspots(params);
+    return requestAsync(cancelChecker -> getBean(SecurityHotspotMatchingService.class).matchWithServerSecurityHotspots(params, cancelChecker));
   }
 }

@@ -20,18 +20,21 @@
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.IssueTrackingService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.IssueTrackingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesResponse;
+import org.sonarsource.sonarlint.core.tracking.IssueTrackingService;
+import org.springframework.beans.factory.BeanFactory;
 
-public class IssueTrackingServiceDelegate extends AbstractSpringServiceDelegate<IssueTrackingService> implements IssueTrackingService {
-  public IssueTrackingServiceDelegate(Supplier<IssueTrackingService> beanSupplier) {
-    super(beanSupplier);
+public class IssueTrackingRpcServiceDelegate extends AbstractRpcServiceDelegate implements IssueTrackingRpcService {
+  public IssueTrackingRpcServiceDelegate(Supplier<BeanFactory> beanFactory, ExecutorService requestsExecutor, ExecutorService notificationsExecutor) {
+    super(beanFactory, requestsExecutor, notificationsExecutor);
   }
 
   @Override
   public CompletableFuture<TrackWithServerIssuesResponse> trackWithServerIssues(TrackWithServerIssuesParams params) {
-    return beanSupplier.get().trackWithServerIssues(params);
+    return requestAsync(cancelChecker -> getBean(IssueTrackingService.class).trackWithServerIssues(params, cancelChecker));
   }
 }

@@ -20,8 +20,10 @@
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionService;
+import org.sonarsource.sonarlint.core.ConnectionService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.check.CheckSmartNotificationsSupportedParams;
@@ -34,46 +36,47 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUs
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionResponse;
+import org.springframework.beans.factory.BeanFactory;
 
-class ConnectionServiceDelegate extends AbstractSpringServiceDelegate<ConnectionService> implements ConnectionService {
+class ConnectionRpcServiceDelegate extends AbstractRpcServiceDelegate implements ConnectionRpcService {
 
-  public ConnectionServiceDelegate(Supplier<ConnectionService> beanSupplier) {
-    super(beanSupplier);
+  public ConnectionRpcServiceDelegate(Supplier<BeanFactory> beanFactory, ExecutorService requestsExecutor, ExecutorService requestAndNotificationsSequentialExecutor) {
+    super(beanFactory, requestsExecutor, requestAndNotificationsSequentialExecutor);
   }
 
 
   @Override
   public void didUpdateConnections(DidUpdateConnectionsParams params) {
-    beanSupplier.get().didUpdateConnections(params);
+    notify(() -> getBean(ConnectionService.class).didUpdateConnections(params));
   }
 
   @Override
   public void didChangeCredentials(DidChangeCredentialsParams params) {
-    beanSupplier.get().didChangeCredentials(params);
+    notify(() -> getBean(ConnectionService.class).didChangeCredentials(params));
   }
 
   @Override
   public CompletableFuture<HelpGenerateUserTokenResponse> helpGenerateUserToken(HelpGenerateUserTokenParams params) {
-    return beanSupplier.get().helpGenerateUserToken(params);
+    return requestAsync(cancelChecker -> getBean(ConnectionService.class).helpGenerateUserToken(params, cancelChecker));
   }
 
   @Override
   public CompletableFuture<ValidateConnectionResponse> validateConnection(ValidateConnectionParams params) {
-    return beanSupplier.get().validateConnection(params);
+    return requestAsync(cancelChecker -> getBean(ConnectionService.class).validateConnection(params, cancelChecker));
   }
 
   @Override
   public CompletableFuture<CheckSmartNotificationsSupportedResponse> checkSmartNotificationsSupported(CheckSmartNotificationsSupportedParams params) {
-    return beanSupplier.get().checkSmartNotificationsSupported(params);
+    return requestAsync(cancelChecker -> getBean(ConnectionService.class).checkSmartNotificationsSupported(params, cancelChecker));
   }
 
   @Override
   public CompletableFuture<ListUserOrganizationsResponse> listUserOrganizations(ListUserOrganizationsParams params) {
-    return beanSupplier.get().listUserOrganizations(params);
+    return requestAsync(cancelChecker -> getBean(ConnectionService.class).listUserOrganizations(params, cancelChecker));
   }
 
   @Override
   public CompletableFuture<GetOrganizationResponse> getOrganization(GetOrganizationParams params) {
-    return beanSupplier.get().getOrganization(params);
+    return requestAsync(cancelChecker -> getBean(ConnectionService.class).getOrganization(params, cancelChecker));
   }
 }

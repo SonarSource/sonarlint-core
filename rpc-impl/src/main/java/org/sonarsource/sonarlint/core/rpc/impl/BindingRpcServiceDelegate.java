@@ -20,18 +20,22 @@
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryService;
+import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.BindingRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetBindingSuggestionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.GetBindingSuggestionsResponse;
+import org.springframework.beans.factory.BeanFactory;
 
-class TelemetryServiceDelegate extends AbstractSpringServiceDelegate<TelemetryService> implements TelemetryService {
+class BindingRpcServiceDelegate extends AbstractRpcServiceDelegate implements BindingRpcService {
 
-  public TelemetryServiceDelegate(Supplier<TelemetryService> beanSupplier) {
-    super(beanSupplier);
+  public BindingRpcServiceDelegate(Supplier<BeanFactory> beanFactory, ExecutorService requestsExecutor, ExecutorService notificationsExecutor) {
+    super(beanFactory, requestsExecutor, notificationsExecutor);
   }
 
   @Override
-  public CompletableFuture<GetStatusResponse> getStatus() {
-    return beanSupplier.get().getStatus();
+  public CompletableFuture<GetBindingSuggestionsResponse> getBindingSuggestions(GetBindingSuggestionParams params) {
+    return requestAsync(cancelChecker -> getBean(BindingSuggestionProvider.class).getBindingSuggestions(params, cancelChecker));
   }
 }
