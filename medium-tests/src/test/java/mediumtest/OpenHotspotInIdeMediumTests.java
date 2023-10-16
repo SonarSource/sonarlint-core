@@ -22,7 +22,7 @@ package mediumtest;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import mediumtest.fixtures.ServerFixture;
-import mediumtest.fixtures.SonarLintTestBackend;
+import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +46,7 @@ class OpenHotspotInIdeMediumTests {
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester();
 
-  private SonarLintTestBackend backend;
+  private SonarLintTestRpcServer backend;
   static ServerFixture.Server serverWithHotspot = newSonarQubeServer("1.2.3")
     .withProject("projectKey",
       project -> project.withDefaultBranch(branch -> branch.withHotspot("key",

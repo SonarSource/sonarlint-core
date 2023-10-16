@@ -19,14 +19,16 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -34,6 +36,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.utils.FutureUtils;
 
 import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 
@@ -42,14 +45,14 @@ import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 public class TokenGeneratorHelper {
   private static final Version MIN_SQ_VERSION_SUPPORTING_AUTOMATIC_TOKEN_GENERATION = Version.create("9.7");
 
-  private final SonarLintClient client;
+  private final SonarLintRpcClient client;
   private final EmbeddedServer embeddedServer;
   private final AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository;
 
   private final HttpClientProvider httpClientProvider;
   private final String clientName;
 
-  public TokenGeneratorHelper(SonarLintClient client, EmbeddedServer embeddedServer, AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository,
+  public TokenGeneratorHelper(SonarLintRpcClient client, EmbeddedServer embeddedServer, AwaitingUserTokenFutureRepository awaitingUserTokenFutureRepository,
     InitializeParams params, HttpClientProvider httpClientProvider) {
     this.client = client;
     this.embeddedServer = embeddedServer;
@@ -58,31 +61,19 @@ public class TokenGeneratorHelper {
     this.httpClientProvider = httpClientProvider;
   }
 
-  public CompletableFuture<HelpGenerateUserTokenResponse> helpGenerateUserToken(HelpGenerateUserTokenParams params) {
-    var futureTokenResponse = new CompletableFuture<HelpGenerateUserTokenResponse>();
+  public HelpGenerateUserTokenResponse helpGenerateUserToken(HelpGenerateUserTokenParams params, CancelChecker cancelChecker) {
+    var serverBaseUrl = params.getServerUrl();
 
-    // go async to release the current thread
-    CompletableFuture.runAsync(() -> {
-      var serverBaseUrl = params.getServerUrl();
-
-      doesServerSupportAutomaticUserTokenGeneration(serverBaseUrl, params.isSonarCloud())
-        .handle(
-          (automaticTokenGenerationSupported, error) -> {
-            if (error != null) {
-              futureTokenResponse.completeExceptionally(error);
-              return null;
-            }
-            client.openUrlInBrowser(new OpenUrlInBrowserParams(ServerApiHelper.concat(serverBaseUrl, getUserTokenGenerationRelativeUrlToOpen(automaticTokenGenerationSupported))));
-            var shouldWaitIncomingToken = Boolean.TRUE.equals(automaticTokenGenerationSupported) && embeddedServer.isStarted();
-            if (shouldWaitIncomingToken) {
-              awaitingUserTokenFutureRepository.addExpectedResponse(serverBaseUrl, futureTokenResponse);
-            } else {
-              futureTokenResponse.complete(new HelpGenerateUserTokenResponse(null));
-            }
-            return null;
-          });
-    });
-    return futureTokenResponse;
+    var automaticTokenGenerationSupported = doesServerSupportAutomaticUserTokenGeneration(serverBaseUrl, params.isSonarCloud(), cancelChecker);
+    client.openUrlInBrowser(new OpenUrlInBrowserParams(ServerApiHelper.concat(serverBaseUrl, getUserTokenGenerationRelativeUrlToOpen(automaticTokenGenerationSupported))));
+    var shouldWaitIncomingToken = automaticTokenGenerationSupported && embeddedServer.isStarted();
+    if (shouldWaitIncomingToken) {
+      var future = new CompletableFuture<HelpGenerateUserTokenResponse>();
+      awaitingUserTokenFutureRepository.addExpectedResponse(serverBaseUrl, future);
+      return FutureUtils.waitForTaskWithResult(cancelChecker, future, "wait for user token", Duration.ofMinutes(1));
+    } else {
+      return new HelpGenerateUserTokenResponse(null);
+    }
   }
 
   private String getUserTokenGenerationRelativeUrlToOpen(boolean automaticTokenGenerationSupported) {
@@ -92,13 +83,13 @@ public class TokenGeneratorHelper {
     return "/account/security";
   }
 
-  private CompletableFuture<Boolean> doesServerSupportAutomaticUserTokenGeneration(String serverUrl, boolean isSonarCloud) {
+  private boolean doesServerSupportAutomaticUserTokenGeneration(String serverUrl, boolean isSonarCloud, CancelChecker cancelChecker) {
     if (!isSonarCloud) {
       var endpoint = new EndpointParams(serverUrl, false, null);
-      return new ServerApi(endpoint, httpClientProvider.getHttpClient()).system().getStatus()
-        .thenApply(status -> Version.create(status.getVersion()).satisfiesMinRequirement(MIN_SQ_VERSION_SUPPORTING_AUTOMATIC_TOKEN_GENERATION));
+      var status = FutureUtils.waitForTaskWithResult(cancelChecker, new ServerApi(endpoint, httpClientProvider.getHttpClient()).system().getStatus(), "check support for token generation", Duration.ofMinutes(1));
+      return Version.create(status.getVersion()).satisfiesMinRequirement(MIN_SQ_VERSION_SUPPORTING_AUTOMATIC_TOKEN_GENERATION);
     }
-    return CompletableFuture.completedFuture(false);
+    return false;
 
   }
 }

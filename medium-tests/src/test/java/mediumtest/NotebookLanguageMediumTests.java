@@ -22,7 +22,7 @@ package mediumtest;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import mediumtest.fixtures.SonarLintTestBackend;
+import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -58,7 +58,7 @@ class NotebookLanguageMediumTests {
   private static final String CONNECTION_ID = StringUtils.repeat("very-long-id", 30);
   private static final String JAVA_MODULE_KEY = "test-project-2";
   private static ConnectedSonarLintEngineImpl sonarlint;
-  private static SonarLintTestBackend backend;
+  private static SonarLintTestRpcServer backend;
 
   @BeforeAll
   static void prepare() {

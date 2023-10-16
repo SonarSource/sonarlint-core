@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import mediumtest.ConnectedIssueMediumTests.StoreIssueListener;
-import mediumtest.fixtures.SonarLintTestBackend;
+import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterAll;
@@ -68,7 +68,7 @@ class ConnectedEmbeddedPluginMediumTests {
   private static final String CONNECTION_ID = StringUtils.repeat("very-long-id", 30);
   private static final String JAVA_MODULE_KEY = "test-project-2";
   private static ConnectedSonarLintEngineImpl sonarlint;
-  private SonarLintTestBackend backend;
+  private SonarLintTestRpcServer backend;
 
   @BeforeAll
   static void prepare(@TempDir Path slHome) {
