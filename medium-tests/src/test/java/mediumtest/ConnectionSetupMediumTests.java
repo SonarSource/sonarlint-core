@@ -26,12 +26,10 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.ServerFixture;
-import mediumtest.fixtures.SonarLintTestBackend;
+import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.SpringApplicationContextInitializer;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.check.CheckSmartNotificationsSupportedParams;
@@ -247,6 +245,6 @@ class ConnectionSetupMediumTests {
     assertThat(connectionResponse.isSuccess()).isFalse();
   }
 
-  private SonarLintTestBackend backend;
+  private SonarLintTestRpcServer backend;
   private ServerFixture.Server server;
 }

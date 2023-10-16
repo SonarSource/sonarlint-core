@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -46,8 +47,8 @@ import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.DidChangeActiveSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
@@ -106,7 +107,7 @@ public class SonarLintBackendFixture {
     return new SonarLintClientBuilder();
   }
 
-  public static SonarLintClientBuilder newFakeClient(SonarLintClient delegate) {
+  public static SonarLintClientBuilder newFakeClient(SonarLintRpcClient delegate) {
     return new SonarLintClientBuilder().withDelegate(delegate);
   }
 
@@ -330,7 +331,7 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintTestBackend build(FakeSonarLintClient client) {
+    public SonarLintTestRpcServer build(FakeSonarLintRpcClient client) {
       var sonarlintUserHome = tempDirectory("slUserHome");
       var workDir = tempDirectory("work");
       var storageParentPath = tempDirectory("storage");
@@ -362,7 +363,7 @@ public class SonarLintBackendFixture {
       }
     }
 
-    private static SonarLintTestBackend createTestBackend(FakeSonarLintClient client) throws IOException {
+    private static SonarLintTestRpcServer createTestBackend(FakeSonarLintRpcClient client) throws IOException {
       var clientToServerOutputStream = new PipedOutputStream();
       var clientToServerInputStream = new PipedInputStream(clientToServerOutputStream);
 
@@ -373,7 +374,7 @@ public class SonarLintBackendFixture {
 
       var clientLauncher = new ClientJsonRpcLauncher(serverToClientInputStream, clientToServerOutputStream, client);
 
-      return new SonarLintTestBackend(clientToServerOutputStream, serverToClientOutputStream, serverLauncher, clientLauncher);
+      return new SonarLintTestRpcServer(clientToServerOutputStream, serverToClientOutputStream, serverLauncher, clientLauncher);
     }
 
     private static Path tempDirectory(String prefix) {
@@ -384,7 +385,7 @@ public class SonarLintBackendFixture {
       }
     }
 
-    public SonarLintTestBackend build() {
+    public SonarLintTestRpcServer build() {
       return build(newFakeClient().build());
     }
   }
@@ -400,7 +401,7 @@ public class SonarLintBackendFixture {
     private GetProxyPasswordAuthenticationResponse proxyAuth;
     private Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId = new HashMap<>();
     @javax.annotation.Nullable
-    private SonarLintClient delegate;
+    private SonarLintRpcClient delegate;
 
     public SonarLintClientBuilder withFoundFile(String name, String path, String content) {
       foundFiles.add(new FoundFileDto(name, path, content));
@@ -448,19 +449,19 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public FakeSonarLintClient build() {
-      return new FakeSonarLintClient(foundFiles, clientDescription, cannedAssistCreatingSonarQubeConnectionByBaseUrl,
+    public FakeSonarLintRpcClient build() {
+      return new FakeSonarLintRpcClient(foundFiles, clientDescription, cannedAssistCreatingSonarQubeConnectionByBaseUrl,
         cannedBindingAssistByProjectKey,
         rejectingProgress, proxy, proxyAuth, credentialsByConnectionId, delegate);
     }
 
-    public SonarLintClientBuilder withDelegate(SonarLintClient delegate) {
+    public SonarLintClientBuilder withDelegate(SonarLintRpcClient delegate) {
       this.delegate = delegate;
       return this;
     }
   }
 
-  public static class FakeSonarLintClient implements SonarLintClient {
+  public static class FakeSonarLintRpcClient implements SonarLintRpcClient {
     private final Map<String, List<BindingSuggestionDto>> bindingSuggestions = new HashMap<>();
 
     private final List<String> urlsToOpen = new ArrayList<>();
@@ -480,14 +481,14 @@ public class SonarLintBackendFixture {
     private final GetProxyPasswordAuthenticationResponse proxyAuth;
     private final Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId;
     @Nullable
-    private final SonarLintClient delegate;
-    private SonarLintBackend backend;
+    private final SonarLintRpcClient delegate;
+    private SonarLintRpcServer backend;
 
-    public FakeSonarLintClient(List<FoundFileDto> foundFiles, String clientDescription,
+    public FakeSonarLintRpcClient(List<FoundFileDto> foundFiles, String clientDescription,
       LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
       LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, boolean rejectingProgress, @Nullable ProxyDto proxy,
       @Nullable GetProxyPasswordAuthenticationResponse proxyAuth, Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId,
-      @Nullable SonarLintClient delegate) {
+      @Nullable SonarLintRpcClient delegate) {
       this.foundFiles = foundFiles;
       this.clientDescription = clientDescription;
       this.cannedAssistCreatingSonarQubeConnectionByBaseUrl = cannedAssistCreatingSonarQubeConnectionByBaseUrl;
@@ -499,7 +500,7 @@ public class SonarLintBackendFixture {
       this.delegate = delegate;
     }
 
-    public void setBackend(SonarLintTestBackend backend) {
+    public void setBackend(SonarLintTestRpcServer backend) {
       this.backend = backend;
     }
 
@@ -550,23 +551,27 @@ public class SonarLintBackendFixture {
 
     @Override
     public CompletableFuture<AssistCreatingConnectionResponse> assistCreatingConnection(AssistCreatingConnectionParams params) {
-      var cannedSonarQubeConnection = cannedAssistCreatingSonarQubeConnectionByBaseUrl.remove(params.getServerUrl());
-      if (cannedSonarQubeConnection == null) {
-        return canceledFuture();
-      }
-      backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(cannedSonarQubeConnection), Collections.emptyList()));
-      return CompletableFuture.completedFuture(new AssistCreatingConnectionResponse(cannedSonarQubeConnection.getConnectionId()));
+      return CompletableFutures.computeAsync(cancelChecker -> {
+        var cannedSonarQubeConnection = cannedAssistCreatingSonarQubeConnectionByBaseUrl.remove(params.getServerUrl());
+        if (cannedSonarQubeConnection == null) {
+          throw new CancellationException();
+        }
+        backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(cannedSonarQubeConnection), Collections.emptyList()));
+        return new AssistCreatingConnectionResponse(cannedSonarQubeConnection.getConnectionId());
+      });
     }
 
     @Override
     public CompletableFuture<AssistBindingResponse> assistBinding(AssistBindingParams params) {
-      var cannedResponse = bindingAssistResponseByProjectKey.remove(params.getProjectKey());
-      if (cannedResponse == null) {
-        return canceledFuture();
-      }
-      var scopeId = cannedResponse.getId();
-      backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(scopeId, cannedResponse.getBinding()));
-      return CompletableFuture.completedFuture(new AssistBindingResponse(scopeId));
+      return CompletableFutures.computeAsync(cancelChecker -> {
+        var cannedResponse = bindingAssistResponseByProjectKey.remove(params.getProjectKey());
+        if (cannedResponse == null) {
+          throw new CancellationException();
+        }
+        var scopeId = cannedResponse.getId();
+        backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(scopeId, cannedResponse.getBinding()));
+        return new AssistBindingResponse(scopeId);
+      });
     }
 
     @Override
@@ -637,7 +642,7 @@ public class SonarLintBackendFixture {
       if (delegate != null) {
         return delegate.checkServerTrusted(params);
       }
-      return SonarLintClient.super.checkServerTrusted(params);
+      return SonarLintRpcClient.super.checkServerTrusted(params);
     }
 
     @Override
@@ -645,7 +650,7 @@ public class SonarLintBackendFixture {
       if (delegate != null) {
         delegate.didReceiveServerTaintVulnerabilityChangedOrClosedEvent(params);
       } else {
-        SonarLintClient.super.didReceiveServerTaintVulnerabilityChangedOrClosedEvent(params);
+        SonarLintRpcClient.super.didReceiveServerTaintVulnerabilityChangedOrClosedEvent(params);
       }
     }
 

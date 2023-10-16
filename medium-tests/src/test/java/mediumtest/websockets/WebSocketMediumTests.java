@@ -23,7 +23,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import mediumtest.fixtures.SonarLintTestBackend;
+import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -49,7 +49,7 @@ import static org.awaitility.Awaitility.await;
 class WebSocketMediumTests {
   private WebSocketServer webSocketServer;
   private String oldSonarCloudWebSocketUrl;
-  private SonarLintTestBackend backend;
+  private SonarLintTestRpcServer backend;
 
   @BeforeEach
   void prepare() {

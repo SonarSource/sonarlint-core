@@ -20,10 +20,10 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
 
 import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 
 /**
- * Static information to describe the client. Dynamic information will be provided when needed by calling {@link SonarLintClient#getClientInfo()}
+ * Static information to describe the client. Dynamic information will be provided when needed by calling {@link SonarLintRpcClient#getClientInfo()}
  */
 public class ClientInfoDto {
   /**

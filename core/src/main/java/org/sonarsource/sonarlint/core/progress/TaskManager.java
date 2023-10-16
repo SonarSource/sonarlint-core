@@ -20,11 +20,10 @@
 package org.sonarsource.sonarlint.core.progress;
 
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ProgressEndNotification;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
@@ -32,9 +31,9 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class TaskManager {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private final SonarLintClient client;
+  private final SonarLintRpcClient client;
 
-  public TaskManager(SonarLintClient client) {
+  public TaskManager(SonarLintRpcClient client) {
     this.client = client;
   }
 

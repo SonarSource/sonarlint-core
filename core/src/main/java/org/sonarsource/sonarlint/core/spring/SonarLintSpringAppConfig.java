@@ -35,49 +35,50 @@ import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
 import org.sonarsource.sonarlint.core.BindingClueProvider;
-import org.sonarsource.sonarlint.core.BindingSuggestionProviderImpl;
-import org.sonarsource.sonarlint.core.ConfigurationServiceImpl;
-import org.sonarsource.sonarlint.core.ConnectionServiceImpl;
+import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
+import org.sonarsource.sonarlint.core.ConfigurationService;
+import org.sonarsource.sonarlint.core.ConnectionService;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.TokenGeneratorHelper;
 import org.sonarsource.sonarlint.core.VersionSoonUnsupportedHelper;
-import org.sonarsource.sonarlint.core.analysis.AnalysisServiceImpl;
-import org.sonarsource.sonarlint.core.branch.SonarProjectBranchServiceImpl;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.analysis.AnalysisService;
+import org.sonarsource.sonarlint.core.branch.SonarProjectBranchService;
 import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.embedded.server.GeneratedUserTokenHandler;
+import org.sonarsource.sonarlint.core.embedded.server.RequestHandlerBindingAssistant;
 import org.sonarsource.sonarlint.core.embedded.server.ShowHotspotRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.ShowIssueRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.StatusRequestHandler;
-import org.sonarsource.sonarlint.core.hotspot.HotspotServiceImpl;
+import org.sonarsource.sonarlint.core.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.http.AskClientCertificatePredicate;
 import org.sonarsource.sonarlint.core.http.ClientProxyCredentialsProvider;
 import org.sonarsource.sonarlint.core.http.ClientProxySelector;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
-import org.sonarsource.sonarlint.core.issue.IssueServiceImpl;
+import org.sonarsource.sonarlint.core.issue.IssueService;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
-import org.sonarsource.sonarlint.core.newcode.NewCodeServiceImpl;
+import org.sonarsource.sonarlint.core.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsServiceImpl;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.repository.vcs.ActiveSonarProjectBranchRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
-import org.sonarsource.sonarlint.core.rules.RulesServiceImpl;
+import org.sonarsource.sonarlint.core.rules.RulesService;
 import org.sonarsource.sonarlint.core.server.event.ServerEventsService;
 import org.sonarsource.sonarlint.core.smartnotifications.SmartNotifications;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
-import org.sonarsource.sonarlint.core.tracking.IssueTrackingServiceImpl;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
+import org.sonarsource.sonarlint.core.tracking.IssueTrackingService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
-import org.sonarsource.sonarlint.core.tracking.SecurityHotspotMatchingServiceImpl;
+import org.sonarsource.sonarlint.core.tracking.SecurityHotspotMatchingService;
 import org.sonarsource.sonarlint.core.websocket.WebSocketService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -92,9 +93,9 @@ import org.springframework.context.annotation.Import;
   ClientProxySelector.class,
   ClientProxyCredentialsProvider.class,
   ConnectionAwareHttpClientProvider.class,
-  ConfigurationServiceImpl.class,
+  ConfigurationService.class,
   ConfigurationRepository.class,
-  RulesServiceImpl.class,
+  RulesService.class,
   ServerApiProvider.class,
   ConnectionConfigurationRepository.class,
   RulesRepository.class,
@@ -102,7 +103,7 @@ import org.springframework.context.annotation.Import;
   PluginsServiceImpl.class,
   PluginsRepository.class,
   LanguageSupportRepository.class,
-  ConnectionServiceImpl.class,
+  ConnectionService.class,
   TokenGeneratorHelper.class,
   EmbeddedServer.class,
   StatusRequestHandler.class,
@@ -110,25 +111,26 @@ import org.springframework.context.annotation.Import;
   AwaitingUserTokenFutureRepository.class,
   ShowHotspotRequestHandler.class,
   ShowIssueRequestHandler.class,
-  BindingSuggestionProviderImpl.class,
+  BindingSuggestionProvider.class,
   BindingClueProvider.class,
   SonarProjectsCache.class,
-  SonarProjectBranchServiceImpl.class,
+  SonarProjectBranchService.class,
   ActiveSonarProjectBranchRepository.class,
   SynchronizationServiceImpl.class,
-  HotspotServiceImpl.class,
-  IssueServiceImpl.class,
-  AnalysisServiceImpl.class,
+  HotspotService.class,
+  IssueService.class,
+  AnalysisService.class,
   SmartNotifications.class,
-  IssueTrackingServiceImpl.class,
+  IssueTrackingService.class,
   LocalOnlyIssueRepository.class,
   WebSocketService.class,
   ServerEventsService.class,
   VersionSoonUnsupportedHelper.class,
   LocalOnlyIssueStorageService.class,
   StorageService.class,
-  NewCodeServiceImpl.class,
-  SecurityHotspotMatchingServiceImpl.class
+  NewCodeService.class,
+  SecurityHotspotMatchingService.class,
+  RequestHandlerBindingAssistant.class
 })
 public class SonarLintSpringAppConfig {
 
@@ -145,8 +147,8 @@ public class SonarLintSpringAppConfig {
   }
 
   @Bean
-  TelemetryServiceImpl provideTelemetryService(InitializeParams params, @Named("userHome") Path sonarlintUserHome) {
-    return new TelemetryServiceImpl(params.getClientInfo().getTelemetryProductKey(), sonarlintUserHome, params.isFocusOnNewCode());
+  TelemetryService provideTelemetryService(InitializeParams params, @Named("userHome") Path sonarlintUserHome) {
+    return new TelemetryService(params.getClientInfo().getTelemetryProductKey(), sonarlintUserHome, params.isFocusOnNewCode());
   }
 
   @Bean(name = "userHome")

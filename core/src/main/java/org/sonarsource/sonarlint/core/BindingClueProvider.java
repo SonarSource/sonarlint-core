@@ -20,27 +20,27 @@
 package org.sonarsource.sonarlint.core;
 
 import java.io.StringReader;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FoundFileDto;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FoundFileDto;
+import org.sonarsource.sonarlint.core.utils.FutureUtils;
 
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.StringUtils.removeEnd;
@@ -57,15 +57,15 @@ public class BindingClueProvider {
   private static final String AUTOSCAN_CONFIG_FILENAME = ".sonarcloud.properties";
 
   private final ConnectionConfigurationRepository connectionRepository;
-  private final SonarLintClient client;
+  private final SonarLintRpcClient client;
 
-  public BindingClueProvider(ConnectionConfigurationRepository connectionRepository, SonarLintClient client) {
+  public BindingClueProvider(ConnectionConfigurationRepository connectionRepository, SonarLintRpcClient client) {
     this.connectionRepository = connectionRepository;
     this.client = client;
   }
 
-  public List<BindingClueWithConnections> collectBindingCluesWithConnections(String configScopeId, Set<String> connectionIds) throws InterruptedException {
-    var bindingClues = collectBindingClues(configScopeId);
+  public List<BindingClueWithConnections> collectBindingCluesWithConnections(String configScopeId, Set<String> connectionIds, CancelChecker cancelToken) {
+    var bindingClues = collectBindingClues(configScopeId, cancelToken);
     return matchConnections(bindingClues, connectionIds);
   }
 
@@ -100,20 +100,15 @@ public class BindingClueProvider {
     }
   }
 
-  private List<BindingClue> collectBindingClues(String checkedConfigScopeId) throws InterruptedException {
+  private List<BindingClue> collectBindingClues(String checkedConfigScopeId, CancelChecker cancelToken) {
     LOG.debug("Query client for binding clues...");
     FindFileByNamesInScopeResponse response;
     try {
-      response = client.findFileByNamesInScope(new FindFileByNamesInScopeParams(checkedConfigScopeId, List.of(SONAR_SCANNER_CONFIG_FILENAME, AUTOSCAN_CONFIG_FILENAME))).get(1,
-        TimeUnit.MINUTES);
-    } catch (ExecutionException e) {
-      LOG.error("Unable to search scanner clues: " + e.getCause().getMessage(), e.getCause());
-      return List.of();
-    } catch (TimeoutException e) {
-      LOG.error("Unable to search scanner clues in time", e);
+      response = FutureUtils.waitForTaskWithResult(cancelToken, client.findFileByNamesInScope(new FindFileByNamesInScopeParams(checkedConfigScopeId,
+        List.of(SONAR_SCANNER_CONFIG_FILENAME, AUTOSCAN_CONFIG_FILENAME))), "search scanner clues", Duration.ofMinutes(1));
+    } catch (Exception e) {
       return List.of();
     }
-
     List<BindingClue> bindingClues = new ArrayList<>();
     for (var foundFile : response.getFoundFiles()) {
       var scannerProps = extractScannerProperties(foundFile);
@@ -209,6 +204,7 @@ public class BindingClueProvider {
     String getSonarProjectKey();
 
   }
+
   public static class UnknownBindingClue implements BindingClue {
     private final String sonarProjectKey;
 
