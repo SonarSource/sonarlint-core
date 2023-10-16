@@ -23,6 +23,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.PathTypeAdapter;
 import picocli.CommandLine;
 
 public class SonarLintCoreProcess implements Callable<Integer> {
@@ -36,6 +37,9 @@ public class SonarLintCoreProcess implements Callable<Integer> {
       .setRemoteInterface(SonarLintClient.class)
       .setInput(System.in)
       .setOutput(System.out)
+      .configureGson(gsonBuilder -> gsonBuilder
+        .registerTypeAdapterFactory(new PathTypeAdapter.Factory())
+      )
       .create();
 
     server.setClient(launcher.getRemoteProxy());
