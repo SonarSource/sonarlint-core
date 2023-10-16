@@ -25,17 +25,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.client.api.util.TextSearchIndex;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetBindingSuggestionParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
@@ -47,11 +42,18 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetBindingSuggestionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
+import testutils.NoopCancelChecker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -74,11 +76,11 @@ class BindingSuggestionProviderTests {
 
   private final ConfigurationRepository configRepository = mock(ConfigurationRepository.class);
   private final ConnectionConfigurationRepository connectionRepository = mock(ConnectionConfigurationRepository.class);
-  private final SonarLintClient client = mock(SonarLintClient.class);
+  private final SonarLintRpcClient client = mock(SonarLintRpcClient.class);
   private final BindingClueProvider bindingClueProvider = mock(BindingClueProvider.class);
   private final SonarProjectsCache sonarProjectsCache = mock(SonarProjectsCache.class);
 
-  private final BindingSuggestionProviderImpl underTest = new BindingSuggestionProviderImpl(configRepository, connectionRepository, client, bindingClueProvider, sonarProjectsCache,
+  private final BindingSuggestionProvider underTest = new BindingSuggestionProvider(configRepository, connectionRepository, client, bindingClueProvider, sonarProjectsCache,
     MoreExecutors.newDirectExecutorService());
 
   @BeforeEach
@@ -210,14 +212,14 @@ class BindingSuggestionProviderTests {
   }
 
   @Test
-  void compute_suggestions_favor_search_by_project_key() throws InterruptedException {
+  void compute_suggestions_favor_search_by_project_key() {
     when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1));
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
 
     when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "Config scope"));
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
 
-    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID)))
+    when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(CancelChecker.class)))
       .thenReturn(List.of(new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1), Set.of(SQ_1_ID))));
 
     when(sonarProjectsCache.getSonarProject(SQ_1_ID, PROJECT_KEY_1)).thenReturn(Optional.of(SERVER_PROJECT_1));
@@ -242,7 +244,7 @@ class BindingSuggestionProviderTests {
   }
 
   @Test
-  void compute_suggestions_fallback_to_text_search_all_connections_if_no_matches_by_projectKey() throws InterruptedException {
+  void compute_suggestions_fallback_to_text_search_all_connections_if_no_matches_by_projectKey() {
     when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1, SC_1_ID, SC_1));
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
     when(connectionRepository.getConnectionById(SC_1_ID)).thenReturn(SC_1);
@@ -250,7 +252,7 @@ class BindingSuggestionProviderTests {
     when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "KEYWORD"));
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
 
-    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID)))
+    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID), new NoopCancelChecker()))
       .thenReturn(List.of(new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1), Set.of(SQ_1_ID))));
 
     when(sonarProjectsCache.getSonarProject(SQ_1_ID, PROJECT_KEY_1)).thenReturn(Optional.empty());
@@ -280,7 +282,7 @@ class BindingSuggestionProviderTests {
   }
 
   @Test
-  void compute_suggestions_fallback_to_text_search_all_connections_if_no_matches_by_projectKey_and_no_other_clue() throws InterruptedException {
+  void compute_suggestions_fallback_to_text_search_all_connections_if_no_matches_by_projectKey_and_no_other_clue() {
     when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1, SC_1_ID, SC_1));
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
     when(connectionRepository.getConnectionById(SC_1_ID)).thenReturn(SC_1);
@@ -288,7 +290,7 @@ class BindingSuggestionProviderTests {
     when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "KEYWORD"));
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
 
-    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID)))
+    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID), new NoopCancelChecker()))
       .thenReturn(List.of(new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1), Set.of(SQ_1_ID))));
 
     when(sonarProjectsCache.getSonarProject(SQ_1_ID, PROJECT_KEY_1)).thenReturn(Optional.empty());
@@ -318,11 +320,11 @@ class BindingSuggestionProviderTests {
   }
 
   @Test
-  void get_suggested_binding() throws InterruptedException, ExecutionException {
+  void get_suggested_binding() {
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
     when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "foo-bar"));
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
-    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID)))
+    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID), new NoopCancelChecker()))
       .thenReturn(List.of(
         new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.SonarQubeBindingClue(null, null), Set.of(SQ_1_ID))));
     var searchIndex = new TextSearchIndex<ServerProject>();
@@ -330,17 +332,16 @@ class BindingSuggestionProviderTests {
     when(sonarProjectsCache.getTextSearchIndex(SQ_1_ID)).thenReturn(searchIndex);
     when(sonarProjectsCache.getSonarProject(SQ_1_ID, PROJECT_KEY_1)).thenReturn(Optional.empty());
 
-    var suggestBindingParamsCompletableFuture = underTest.getBindingSuggestions(new GetBindingSuggestionParams(CONFIG_SCOPE_ID_1, SQ_1_ID));
-    assertThat(suggestBindingParamsCompletableFuture).succeedsWithin(1, TimeUnit.MINUTES);
-    assertThat(suggestBindingParamsCompletableFuture.get().getSuggestions()).hasSize(1);
-    assertThat(suggestBindingParamsCompletableFuture.get().getSuggestions().get(CONFIG_SCOPE_ID_1))
+    var bindingSuggestions = underTest.getBindingSuggestions(new GetBindingSuggestionParams(CONFIG_SCOPE_ID_1, SQ_1_ID), new NoopCancelChecker());
+    assertThat(bindingSuggestions.getSuggestions()).hasSize(1);
+    assertThat(bindingSuggestions.getSuggestions().get(CONFIG_SCOPE_ID_1))
       .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
       .containsOnly(
         tuple(SQ_1_ID, PROJECT_KEY_1, "Project 1"));
   }
 
   @Test
-  void search_only_among_connection_candidates() throws InterruptedException {
+  void search_only_among_connection_candidates() {
     when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1, SC_1_ID, SC_1));
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
     when(connectionRepository.getConnectionById(SC_1_ID)).thenReturn(SC_1);
@@ -349,7 +350,7 @@ class BindingSuggestionProviderTests {
     when(configRepository.getConfigScopeIds()).thenReturn(Set.of(CONFIG_SCOPE_ID_1));
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
 
-    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID)))
+    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID), new NoopCancelChecker()))
       .thenReturn(List.of(
         new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1), Set.of(SQ_1_ID, SC_1_ID))));
 
@@ -378,14 +379,14 @@ class BindingSuggestionProviderTests {
   }
 
   @Test
-  void text_search_should_retain_only_top_scores() throws InterruptedException {
+  void text_search_should_retain_only_top_scores() {
     when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1));
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
 
     when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "foo-bar"));
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
 
-    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID)))
+    when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(CancelChecker.class)))
       .thenReturn(List.of(
         new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1), Set.of(SQ_1_ID, SC_1_ID)),
         new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.SonarCloudBindingClue(null, null), Set.of(SC_1_ID))));

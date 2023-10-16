@@ -27,8 +27,7 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.SpringApplicationContextInitializer;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckLocalDetectionSupportedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckLocalDetectionSupportedResponse;
 
@@ -39,7 +38,7 @@ class HotspotLocalDetectionSupportMediumTests {
   @TempDir
   Path storageDir;
 
-  private SonarLintBackend backend;
+  private SonarLintRpcServer backend;
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
