@@ -23,7 +23,6 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import java.io.IOException;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -39,23 +38,20 @@ import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.http.io.HttpRequestHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
-import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.info.GetClientInfoResponse;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
-import org.sonarsource.sonarlint.core.utils.FutureUtils;
 
 @Named
 @Singleton
 public class StatusRequestHandler implements HttpRequestHandler {
 
-  private final SonarLintClient client;
+  private final SonarLintRpcClient client;
   private final ConnectionConfigurationRepository repository;
   private final ClientInfoDto clientInfo;
 
-  public StatusRequestHandler(SonarLintClient client, ConnectionConfigurationRepository repository, InitializeParams params) {
+  public StatusRequestHandler(SonarLintRpcClient client, ConnectionConfigurationRepository repository, InitializeParams params) {
     this.client = client;
     this.repository = repository;
     this.clientInfo = params.getClientInfo();
