@@ -25,8 +25,6 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.inject.Named;
@@ -40,12 +38,8 @@ import org.apache.hc.core5.http.io.HttpRequestHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.net.URIBuilder;
-import org.sonarsource.sonarlint.core.BindingSuggestionProviderImpl;
-import org.sonarsource.sonarlint.core.ConfigurationServiceImpl;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
@@ -56,32 +50,26 @@ import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 @Named
 @Singleton
-public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler implements HttpRequestHandler {
+public class ShowIssueRequestHandler implements HttpRequestHandler {
 
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
-
-  private final SonarLintClient client;
-  private final ConnectionConfigurationRepository repository;
-  private final ConfigurationServiceImpl configurationService;
+  private final SonarLintRpcClient client;
   private final ServerApiProvider serverApiProvider;
-  private final TelemetryServiceImpl telemetryService;
+  private final TelemetryService telemetryService;
+  private final RequestHandlerBindingAssistant requestHandlerBindingAssistant;
 
-  public ShowIssueRequestHandler(SonarLintClient client, ConnectionConfigurationRepository repository,
-    ConfigurationServiceImpl configurationService, BindingSuggestionProviderImpl bindingSuggestionProvider,
-    ServerApiProvider serverApiProvider, TelemetryServiceImpl telemetryService) {
-    super(bindingSuggestionProvider, client);
+  public ShowIssueRequestHandler(SonarLintRpcClient client, ServerApiProvider serverApiProvider, TelemetryService telemetryService,
+    RequestHandlerBindingAssistant requestHandlerBindingAssistant) {
     this.client = client;
-    this.repository = repository;
-    this.configurationService = configurationService;
     this.serverApiProvider = serverApiProvider;
     this.telemetryService = telemetryService;
+    this.requestHandlerBindingAssistant = requestHandlerBindingAssistant;
   }
 
   @Override
@@ -91,57 +79,14 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
       response.setCode(HttpStatus.SC_BAD_REQUEST);
       return;
     }
+    telemetryService.showIssueRequestReceived();
 
-    CompletableFuture.runAsync(() -> showIssue(showIssueQuery)).exceptionally(e -> {
-      LOG.error("Unable to show issue", e);
-      return null;
-    });
+    requestHandlerBindingAssistant.assistConnectionAndBindingIfNeededAsync(showIssueQuery.serverUrl, showIssueQuery.projectKey,
+      (connectionId, configScopeId) -> showIssueForScope(connectionId, configScopeId, showIssueQuery.issueKey, showIssueQuery.projectKey, showIssueQuery.branch,
+        showIssueQuery.pullRequest));
 
     response.setCode(HttpStatus.SC_OK);
     response.setEntity(new StringEntity("OK"));
-  }
-
-  private void showIssue(ShowIssueQuery query) {
-    telemetryService.showIssueRequestReceived();
-
-    var connectionsMatchingOrigin = repository.findByUrl(query.serverUrl);
-    if (connectionsMatchingOrigin.isEmpty()) {
-      startFullBindingProcess();
-      try {
-        var assistNewConnectionResult = assistCreatingConnection(query.serverUrl).get(10, TimeUnit.MINUTES);
-        var assistNewBindingResult = assistBinding(assistNewConnectionResult.getNewConnectionId(), query.projectKey).get(10, TimeUnit.MINUTES);
-        showIssueForScope(assistNewConnectionResult.getNewConnectionId(), assistNewBindingResult.getConfigurationScopeId(), query.issueKey, query.projectKey, query.branch,
-          query.pullRequest);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      } catch (Exception e) {
-        throw new IllegalStateException(e);
-      } finally {
-        endFullBindingProcess();
-      }
-    } else {
-      // we pick the first connection but this could lead to issues later if there were several matches (make the user select the right
-      // one?)
-      showIssueForConnection(connectionsMatchingOrigin.get(0).getConnectionId(), query.projectKey, query.issueKey, query.branch, query.pullRequest);
-    }
-  }
-
-  private void showIssueForConnection(String connectionId, String projectKey, String issueKey, String branch,
-    @Nullable String pullRequest) {
-    var scopes = configurationService.getConfigScopesWithBindingConfiguredTo(connectionId, projectKey);
-    if (scopes.isEmpty()) {
-      try {
-        var assistNewBindingResult = assistBinding(connectionId, projectKey).get(10, TimeUnit.MINUTES);
-        showIssueForScope(connectionId, assistNewBindingResult.getConfigurationScopeId(), issueKey, projectKey, branch, pullRequest);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      } catch (Exception e) {
-        throw new IllegalStateException(e);
-      }
-    } else {
-      // we pick the first bound scope but this could lead to issues later if there were several matches (make the user select the right one?)
-      showIssueForScope(connectionId, scopes.get(0).getId(), issueKey, projectKey, branch, pullRequest);
-    }
   }
 
   private void showIssueForScope(String connectionId, String configScopeId, String issueKey, String projectKey,
@@ -184,12 +129,8 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
   }
 
   private Optional<IssueApi.ServerIssueDetails> tryFetchIssue(String connectionId, String issueKey, String projectKey, String branch, String pullRequest) {
-    var serverApi = serverApiProvider.getServerApi(connectionId);
-    if (serverApi.isEmpty()) {
-      // should not happen since we found the connection just before, improve the design ?
-      return Optional.empty();
-    }
-    return serverApi.get().issue().fetchServerIssue(issueKey, projectKey, branch, pullRequest);
+    var serverApi = serverApiProvider.getServerApiOrThrow(connectionId);
+    return serverApi.issue().fetchServerIssue(issueKey, projectKey, branch, pullRequest);
   }
 
   private Optional<String> tryFetchCodeSnippet(String connectionId, String fileKey, Common.TextRange textRange, String branch, String pullRequest) {
@@ -263,4 +204,5 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
       return pullRequest;
     }
   }
+
 }
