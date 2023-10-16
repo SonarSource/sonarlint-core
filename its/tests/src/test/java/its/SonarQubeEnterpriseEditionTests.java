@@ -58,8 +58,8 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEng
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -112,7 +112,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   @TempDir
   private static Path sonarUserHome;
 
-  private static SonarLintBackend backend;
+  private static SonarLintRpcServer backend;
 
   private static BackendJsonRpcLauncher serverLauncher;
 
@@ -130,11 +130,11 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     backend = clientLauncher.getServerProxy();
     try {
       backend.initialize(
-        new InitializeParams(IT_CLIENT_INFO, new FeatureFlagsDto(false, true, false, false, false, false), sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
-          Collections.emptySet(),
-          Collections.emptyMap(), Set.of(JAVA), Collections.emptySet(),
-          List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(),
-          Map.of(), false))
+          new InitializeParams(IT_CLIENT_INFO, new FeatureFlagsDto(false, true, false, false, false, false), sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
+            Collections.emptySet(),
+            Collections.emptyMap(), Set.of(JAVA), Collections.emptySet(),
+            List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(),
+            Map.of(), false))
         .get();
     } catch (Exception e) {
       throw new IllegalStateException("Cannot initialize the backend", e);
@@ -352,8 +352,8 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
       .setPermission(permission));
   }
 
-  private static SonarLintClient newDummySonarLintClient() {
-    return new SonarLintClient() {
+  private static SonarLintRpcClient newDummySonarLintClient() {
+    return new SonarLintRpcClient() {
       @Override
       public void suggestBinding(SuggestBindingParams params) {
 

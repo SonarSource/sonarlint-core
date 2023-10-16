@@ -28,14 +28,14 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import mediumtest.fixtures.SonarLintTestBackend;
+import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
@@ -73,7 +73,7 @@ class ServerSentEventsMediumTests {
 
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester(true);
-  private SonarLintTestBackend backend;
+  private SonarLintTestRpcServer backend;
   private String oldSonarCloudUrl;
 
   @RegisterExtension
@@ -530,7 +530,7 @@ class ServerSentEventsMediumTests {
 
     @Test
     void should_forward_taint_events_to_client() {
-      var sonarLintClientMock = mock(SonarLintClient.class);
+      var sonarLintClientMock = mock(SonarLintRpcClient.class);
       var fakeClient = newFakeClient(sonarLintClientMock).build();
 
       var projectKey = "projectKey";

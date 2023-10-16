@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.Version;
@@ -45,14 +45,14 @@ public class VersionSoonUnsupportedHelper {
   private static final String NOTIFICATION_MESSAGE = "The version '%s' used by the current connection '%s' will be soon unsupported. " +
     "Please consider upgrading to the latest %s LTS version to ensure continued support and access to the latest features.";
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private final SonarLintClient client;
+  private final SonarLintRpcClient client;
   private final ConfigurationRepository configRepository;
   private final ConnectionConfigurationRepository connectionRepository;
   private final ServerApiProvider serverApiProvider;
   private final SynchronizationServiceImpl synchronizationService;
   private final Map<String, Version> cacheConnectionIdPerVersion;
 
-  public VersionSoonUnsupportedHelper(SonarLintClient client, ConfigurationRepository configRepository, ServerApiProvider serverApiProvider,
+  public VersionSoonUnsupportedHelper(SonarLintRpcClient client, ConfigurationRepository configRepository, ServerApiProvider serverApiProvider,
     ConnectionConfigurationRepository connectionRepository, SynchronizationServiceImpl synchronizationService) {
     this.client = client;
     this.configRepository = configRepository;

@@ -20,21 +20,21 @@
 package org.sonarsource.sonarlint.core.websocket;
 
 import java.util.stream.Collectors;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverconnection.events.ServerEventHandler;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.websocket.events.QualityGateChangedEvent;
 
 public class ShowSmartNotificationOnQualityGateChangedEvent implements ServerEventHandler<QualityGateChangedEvent> {
   public static final String NOTIFICATION_CATEGORY = "QUALITY_GATE";
-  private final SonarLintClient client;
+  private final SonarLintRpcClient client;
   private final ConfigurationRepository configurationRepository;
-  private final TelemetryServiceImpl telemetryService;
+  private final TelemetryService telemetryService;
 
-  public ShowSmartNotificationOnQualityGateChangedEvent(SonarLintClient client, ConfigurationRepository configurationRepository, TelemetryServiceImpl telemetryService) {
+  public ShowSmartNotificationOnQualityGateChangedEvent(SonarLintRpcClient client, ConfigurationRepository configurationRepository, TelemetryService telemetryService) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.telemetryService = telemetryService;

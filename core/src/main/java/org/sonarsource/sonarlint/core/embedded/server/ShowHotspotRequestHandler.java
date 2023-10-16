@@ -24,8 +24,6 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.hc.core5.http.ClassicHttpRequest;
@@ -37,42 +35,32 @@ import org.apache.hc.core5.http.io.HttpRequestHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.net.URIBuilder;
-import org.sonarsource.sonarlint.core.BindingSuggestionProviderImpl;
-import org.sonarsource.sonarlint.core.ConfigurationServiceImpl;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.TextRange;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspotDetails;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @Named
 @Singleton
-public class ShowHotspotRequestHandler extends ShowHotspotOrIssueRequestHandler implements HttpRequestHandler {
-
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private final SonarLintClient client;
-  private final ConnectionConfigurationRepository repository;
-  private final ConfigurationServiceImpl configurationService;
+public class ShowHotspotRequestHandler implements HttpRequestHandler {
+  private final SonarLintRpcClient client;
   private final ServerApiProvider serverApiProvider;
-  private final TelemetryServiceImpl telemetryService;
+  private final TelemetryService telemetryService;
+  private final RequestHandlerBindingAssistant requestHandlerBindingAssistant;
 
-  public ShowHotspotRequestHandler(SonarLintClient client, ConnectionConfigurationRepository repository, ConfigurationServiceImpl configurationService,
-    BindingSuggestionProviderImpl bindingSuggestionProvider, ServerApiProvider serverApiProvider, TelemetryServiceImpl telemetryService) {
-    super(bindingSuggestionProvider, client);
+  public ShowHotspotRequestHandler(SonarLintRpcClient client, ServerApiProvider serverApiProvider, TelemetryService telemetryService, RequestHandlerBindingAssistant requestHandlerBindingAssistant) {
     this.client = client;
-    this.repository = repository;
-    this.configurationService = configurationService;
     this.serverApiProvider = serverApiProvider;
     this.telemetryService = telemetryService;
+    this.requestHandlerBindingAssistant = requestHandlerBindingAssistant;
   }
 
   @Override
@@ -82,55 +70,13 @@ public class ShowHotspotRequestHandler extends ShowHotspotOrIssueRequestHandler 
       response.setCode(HttpStatus.SC_BAD_REQUEST);
       return;
     }
+    telemetryService.showHotspotRequestReceived();
 
-    CompletableFuture.runAsync(() -> showHotspot(showHotspotQuery)).exceptionally(e -> {
-      LOG.error("Unable to show hotspot", e);
-      return null;
-    });
+    requestHandlerBindingAssistant.assistConnectionAndBindingIfNeededAsync(showHotspotQuery.serverUrl, showHotspotQuery.projectKey,
+      (connectionId, configScopeId) -> showHotspotForScope(connectionId, configScopeId, showHotspotQuery.hotspotKey));
 
     response.setCode(HttpStatus.SC_OK);
     response.setEntity(new StringEntity("OK"));
-  }
-
-  private void showHotspot(ShowHotspotQuery query) {
-    telemetryService.showHotspotRequestReceived();
-
-    var connectionsMatchingOrigin = repository.findByUrl(query.serverUrl);
-    if (connectionsMatchingOrigin.isEmpty()) {
-      startFullBindingProcess();
-      try {
-        var assistNewConnectionResult = assistCreatingConnection(query.serverUrl).get(10, TimeUnit.MINUTES);
-        var assistNewBindingResult = assistBinding(assistNewConnectionResult.getNewConnectionId(), query.projectKey).get(10, TimeUnit.MINUTES);
-        showHotspotForScope(assistNewConnectionResult.getNewConnectionId(), assistNewBindingResult.getConfigurationScopeId(), query.hotspotKey);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      } catch (Exception e) {
-        throw new IllegalStateException(e);
-      } finally {
-        endFullBindingProcess();
-      }
-    } else {
-      // we pick the first connection but this could lead to issues later if there were several matches (make the user select the right one?)
-      showHotspotForConnection(connectionsMatchingOrigin.get(0).getConnectionId(), query.projectKey, query.hotspotKey);
-    }
-  }
-
-  private void showHotspotForConnection(String connectionId, String projectKey, String hotspotKey) {
-    var scopes = configurationService.getConfigScopesWithBindingConfiguredTo(connectionId, projectKey);
-    if (scopes.isEmpty()) {
-      try {
-        var assistNewBindingResult = assistBinding(connectionId, projectKey).get(10, TimeUnit.MINUTES);
-        showHotspotForScope(connectionId, assistNewBindingResult.getConfigurationScopeId(), hotspotKey);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      } catch (Exception e) {
-        throw new IllegalStateException(e);
-      }
-    } else {
-      // we pick the first bound scope but this could lead to issues later if there were several matches (make the user select the right one?)
-      var firstBoundScope = scopes.get(0);
-      showHotspotForScope(connectionId, firstBoundScope.getId(), hotspotKey);
-    }
   }
 
   private void showHotspotForScope(String connectionId, String configurationScopeId, String hotspotKey) {
@@ -205,4 +151,6 @@ public class ShowHotspotRequestHandler extends ShowHotspotOrIssueRequestHandler 
       return isNotBlank(serverUrl) && isNotBlank(projectKey) && isNotBlank(hotspotKey);
     }
   }
+
+
 }

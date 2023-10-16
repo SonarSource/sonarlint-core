@@ -22,9 +22,9 @@ package mediumtest;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import mediumtest.fixtures.SonarLintBackendFixture.FakeSonarLintClient.ProgressReport;
-import mediumtest.fixtures.SonarLintBackendFixture.FakeSonarLintClient.ProgressStep;
-import mediumtest.fixtures.SonarLintTestBackend;
+import mediumtest.fixtures.SonarLintBackendFixture.FakeSonarLintRpcClient.ProgressReport;
+import mediumtest.fixtures.SonarLintBackendFixture.FakeSonarLintRpcClient.ProgressStep;
+import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -148,5 +148,5 @@ class SynchronizationMediumTests {
     backend.shutdown().get();
   }
 
-  private SonarLintTestBackend backend;
+  private SonarLintTestRpcServer backend;
 }
