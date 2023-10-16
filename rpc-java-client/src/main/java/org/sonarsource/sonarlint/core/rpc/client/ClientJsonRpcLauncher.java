@@ -30,18 +30,18 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.sonarsource.sonarlint.core.rpc.protocol.SingleThreadedMessageConsumer;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.PathTypeAdapter;
 
 public class ClientJsonRpcLauncher implements Closeable {
 
-  private final SonarLintBackend serverProxy;
+  private final SonarLintRpcServer serverProxy;
   private final Future<Void> future;
   private final ExecutorService messageReaderExecutor;
   private final ExecutorService messageWriterExecutor;
 
-  public ClientJsonRpcLauncher(InputStream in, OutputStream out, SonarLintClient client) {
+  public ClientJsonRpcLauncher(InputStream in, OutputStream out, SonarLintRpcClient client) {
     messageReaderExecutor = Executors.newCachedThreadPool(r -> {
       var t = new Thread(r);
       t.setName("Client message reader");
@@ -52,9 +52,9 @@ public class ClientJsonRpcLauncher implements Closeable {
       t.setName("Client message writer");
       return t;
     });
-    var clientLauncher = new Launcher.Builder<SonarLintBackend>()
+    var clientLauncher = new Launcher.Builder<SonarLintRpcServer>()
       .setLocalService(client)
-      .setRemoteInterface(SonarLintBackend.class)
+      .setRemoteInterface(SonarLintRpcServer.class)
       .setInput(in)
       .setOutput(out)
       .setExecutorService(messageReaderExecutor)
@@ -69,7 +69,7 @@ public class ClientJsonRpcLauncher implements Closeable {
     this.future = clientLauncher.startListening();
   }
 
-  public SonarLintBackend getServerProxy() {
+  public SonarLintRpcServer getServerProxy() {
     return serverProxy;
   }
 

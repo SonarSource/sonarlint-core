@@ -33,7 +33,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
@@ -42,8 +42,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LineWithHash
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlyIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesParams;
-import org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException;
-import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import testutils.MockWebServerExtensionWithProtobuf;
 
@@ -54,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 class CheckResolutionStatusChangePermittedMediumTests {
 
-  private SonarLintBackend backend;
+  private SonarLintRpcServer backend;
   @RegisterExtension
   public final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
   private String oldSonarCloudUrl;

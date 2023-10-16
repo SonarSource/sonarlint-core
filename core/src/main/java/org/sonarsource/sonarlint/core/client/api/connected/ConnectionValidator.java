@@ -19,9 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -37,29 +36,27 @@ public class ConnectionValidator {
     this.helper = helper;
   }
 
-  public CompletableFuture<ValidationResult> validateConnection() {
-    return CompletableFutures.computeAsync(cancelChecker -> {
-      var serverChecker = new ServerVersionAndStatusChecker(new ServerApi(helper));
-      var authChecker = new AuthenticationChecker(helper);
-      try {
-        serverChecker.checkVersionAndStatusAsync().get(1, TimeUnit.MINUTES);
-        var validateCredentials = authChecker.validateCredentials();
-        var organizationKey = helper.getOrganizationKey();
-        if (validateCredentials.success() && organizationKey.isPresent()) {
-          var organization = new ServerApi(helper).organization().getOrganization(organizationKey.get(),
-            new ProgressMonitor(null));
-          if (organization.isEmpty()) {
-            return new DefaultValidationResult(false, "No organizations found for key: " + organizationKey.get());
-          }
+  public ValidationResult validateConnection(CancelChecker cancelChecker) {
+    var serverChecker = new ServerVersionAndStatusChecker(new ServerApi(helper));
+    var authChecker = new AuthenticationChecker(helper);
+    try {
+      serverChecker.checkVersionAndStatusAsync().get(1, TimeUnit.MINUTES);
+      var validateCredentials = authChecker.validateCredentials();
+      var organizationKey = helper.getOrganizationKey();
+      if (validateCredentials.success() && organizationKey.isPresent()) {
+        var organization = new ServerApi(helper).organization().getOrganization(organizationKey.get(),
+          new ProgressMonitor(null));
+        if (organization.isEmpty()) {
+          return new DefaultValidationResult(false, "No organizations found for key: " + organizationKey.get());
         }
-        return validateCredentials;
-      } catch (InterruptedException ie) {
-        Thread.currentThread().interrupt();
-        return new DefaultValidationResult(false, ie.getCause().getMessage());
-      } catch (Exception e) {
-        return new DefaultValidationResult(false, e.getCause().getMessage());
       }
-    });
+      return validateCredentials;
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt();
+      return new DefaultValidationResult(false, ie.getCause().getMessage());
+    } catch (Exception e) {
+      return new DefaultValidationResult(false, e.getCause().getMessage());
+    }
   }
 
 }

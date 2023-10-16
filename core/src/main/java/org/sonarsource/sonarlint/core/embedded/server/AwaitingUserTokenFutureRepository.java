@@ -38,6 +38,7 @@ public class AwaitingUserTokenFutureRepository {
     if (previousFuture != null) {
       previousFuture.cancel(false);
     }
+    futureResponse.whenComplete((r, e) -> awaitingFuturesByServerUrl.remove(serverBaseUrl, futureResponse));
   }
 
   public Optional<CompletableFuture<HelpGenerateUserTokenResponse>> consumeFutureResponse(String serverOrigin) {
