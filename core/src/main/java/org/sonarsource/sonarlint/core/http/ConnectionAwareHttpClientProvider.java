@@ -25,7 +25,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
@@ -34,10 +34,10 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 @Singleton
 public class ConnectionAwareHttpClientProvider {
   private final SonarLintLogger logger = SonarLintLogger.get();
-  private final SonarLintClient client;
+  private final SonarLintRpcClient client;
   private final HttpClientProvider httpClientProvider;
 
-  public ConnectionAwareHttpClientProvider(SonarLintClient client, HttpClientProvider httpClientProvider) {
+  public ConnectionAwareHttpClientProvider(SonarLintRpcClient client, HttpClientProvider httpClientProvider) {
     this.client = client;
     this.httpClientProvider = httpClientProvider;
   }
