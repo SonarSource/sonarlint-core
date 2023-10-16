@@ -76,8 +76,8 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -131,7 +131,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
   @TempDir
   private static Path sonarUserHome;
 
-  private static SonarLintBackend backend;
+  private static SonarLintRpcServer backend;
 
   private static BackendJsonRpcLauncher serverLauncher;
 
@@ -149,7 +149,8 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     backend = clientLauncher.getServerProxy();
     try {
       backend.initialize(
-          new InitializeParams(IT_CLIENT_INFO, new FeatureFlagsDto(false, true, false, false, false, false, false), sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
+          new InitializeParams(IT_CLIENT_INFO, new FeatureFlagsDto(false, true, false, false, false, false, false), sonarUserHome.resolve("storage"),
+            sonarUserHome.resolve("workDir"),
             Collections.emptySet(), Collections.emptyMap(), Set.of(JAVA), Collections.emptySet(),
             List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(),
             Map.of(), false))
@@ -525,8 +526,8 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
       .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
   }
 
-  private static SonarLintClient newDummySonarLintClient() {
-    return new SonarLintClient() {
+  private static SonarLintRpcClient newDummySonarLintClient() {
+    return new SonarLintRpcClient() {
       @Override
       public void suggestBinding(SuggestBindingParams params) {
 

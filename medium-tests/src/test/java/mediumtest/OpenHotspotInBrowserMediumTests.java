@@ -20,8 +20,7 @@
 package mediumtest;
 
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import mediumtest.fixtures.SonarLintTestBackend;
+import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.OpenHotspotInBrowserParams;
@@ -33,7 +32,7 @@ import static org.awaitility.Awaitility.await;
 
 class OpenHotspotInBrowserMediumTests {
 
-  private SonarLintTestBackend backend;
+  private SonarLintTestRpcServer backend;
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {

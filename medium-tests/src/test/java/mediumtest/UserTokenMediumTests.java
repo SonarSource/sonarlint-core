@@ -22,7 +22,7 @@ package mediumtest;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
-import mediumtest.fixtures.SonarLintTestBackend;
+import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -41,7 +41,7 @@ class UserTokenMediumTests {
     .options(wireMockConfig().dynamicPort())
     .build();
 
-  private SonarLintTestBackend backend;
+  private SonarLintTestRpcServer backend;
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {

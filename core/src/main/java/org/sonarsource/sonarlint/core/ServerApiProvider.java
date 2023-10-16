@@ -66,10 +66,12 @@ public class ServerApiProvider {
   }
 
   public ServerApi getServerApiOrThrow(String connectionId) {
-    return getServerApi(connectionId).orElseThrow(() -> {
+    var params = connectionRepository.getEndpointParams(connectionId);
+    if (params.isEmpty()) {
       var error = new ResponseError(BackendErrorCode.CONNECTION_NOT_FOUND, "Connection '" + connectionId + "' is gone", connectionId);
-      return new ResponseErrorException(error);
-    });
+      throw new ResponseErrorException(error);
+    }
+    return new ServerApi(params.get(), awareHttpClientProvider.getHttpClient(connectionId));
   }
 
 }

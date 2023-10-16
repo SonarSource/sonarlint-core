@@ -28,8 +28,7 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.SpringApplicationContextInitializer;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckStatusChangePermittedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
@@ -40,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class HotspotCheckStatusChangePermittedMediumTests {
 
-  private SonarLintBackend backend;
+  private SonarLintRpcServer backend;
   private ServerFixture.Server server;
   private String oldSonarCloudUrl;
 

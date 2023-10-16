@@ -35,7 +35,7 @@ import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
@@ -46,7 +46,7 @@ import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurat
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.developers.DevelopersApi;
 import org.sonarsource.sonarlint.core.storage.StorageService;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.websocket.WebSocketService;
 
 @Named
@@ -58,8 +58,8 @@ public class SmartNotifications {
   private final ConfigurationRepository configurationRepository;
   private final ConnectionConfigurationRepository connectionRepository;
   private final ServerApiProvider serverApiProvider;
-  private final SonarLintClient client;
-  private final TelemetryServiceImpl telemetryService;
+  private final SonarLintRpcClient client;
+  private final TelemetryService telemetryService;
   private final WebSocketService webSocketService;
   private final InitializeParams params;
   private final Map<String, Boolean> isConnectionIdSupported;
@@ -67,7 +67,7 @@ public class SmartNotifications {
   private ScheduledExecutorService smartNotificationsPolling;
 
   public SmartNotifications(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository, ServerApiProvider serverApiProvider,
-    SonarLintClient client, StorageService storageService, TelemetryServiceImpl telemetryService, WebSocketService webSocketService, InitializeParams params) {
+    SonarLintRpcClient client, StorageService storageService, TelemetryService telemetryService, WebSocketService webSocketService, InitializeParams params) {
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
     this.serverApiProvider = serverApiProvider;

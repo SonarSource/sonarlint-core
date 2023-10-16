@@ -23,7 +23,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.concurrent.ExecutionException;
-import mediumtest.fixtures.SonarLintTestBackend;
+import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -51,7 +51,7 @@ import static testutils.TestUtils.protobufBody;
 
 class OrganizationMediumTests {
 
-  private SonarLintTestBackend backend;
+  private SonarLintTestRpcServer backend;
 
   @RegisterExtension
   static WireMockExtension sonarcloudMock = WireMockExtension.newInstance()

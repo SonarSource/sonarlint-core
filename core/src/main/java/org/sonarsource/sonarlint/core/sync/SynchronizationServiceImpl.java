@@ -34,8 +34,8 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
-import org.sonarsource.sonarlint.core.branch.SonarProjectBranchServiceImpl;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.branch.SonarProjectBranchService;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.commons.Binding;
@@ -60,10 +60,10 @@ import static java.util.stream.Collectors.toList;
 public class SynchronizationServiceImpl {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final SonarLintClient client;
+  private final SonarLintRpcClient client;
   private final ConfigurationRepository configurationRepository;
   private final LanguageSupportRepository languageSupportRepository;
-  private final SonarProjectBranchServiceImpl branchService;
+  private final SonarProjectBranchService branchService;
   private final ServerApiProvider serverApiProvider;
   private final TaskManager taskManager;
   private final StorageService storageService;
@@ -71,8 +71,8 @@ public class SynchronizationServiceImpl {
   private final boolean synchronizationEnabled;
   private ScheduledExecutorService scheduledSynchronizer;
 
-  public SynchronizationServiceImpl(SonarLintClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
-    SonarProjectBranchServiceImpl branchService, ServerApiProvider serverApiProvider, StorageService storageService, InitializeParams params) {
+  public SynchronizationServiceImpl(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
+    SonarProjectBranchService branchService, ServerApiProvider serverApiProvider, StorageService storageService, InitializeParams params) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;

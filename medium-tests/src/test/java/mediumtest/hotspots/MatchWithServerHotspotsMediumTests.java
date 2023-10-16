@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LineWithHashDto;
@@ -49,7 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class MatchWithServerHotspotsMediumTests {
 
-  private SonarLintBackend backend;
+  private SonarLintRpcServer backend;
   private ServerFixture.Server server;
 
   @AfterEach

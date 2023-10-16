@@ -73,8 +73,8 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationParams;
@@ -148,7 +148,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
   private static int randomPositiveInt;
 
-  private static SonarLintBackend backend;
+  private static SonarLintRpcServer backend;
   private static String sonarcloudUserToken;
   private static BackendJsonRpcLauncher serverLauncher;
 
@@ -680,8 +680,8 @@ class SonarCloudTests extends AbstractConnectedTests {
       .isBetween(200, 399);
   }
 
-  private static SonarLintClient newDummySonarLintClient() {
-    return new SonarLintClient() {
+  private static SonarLintRpcClient newDummySonarLintClient() {
+    return new SonarLintRpcClient() {
       @Override
       public void suggestBinding(SuggestBindingParams params) {
 

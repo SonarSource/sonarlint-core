@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityChangedOrClosedEvent;
@@ -63,7 +63,7 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toSet;
 
 public class ServerEventsService {
-  private final SonarLintClient client;
+  private final SonarLintRpcClient client;
   private final ConfigurationRepository configurationRepository;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final StorageService storageService;
@@ -72,7 +72,7 @@ public class ServerEventsService {
   private final boolean shouldManageServerSentEvents;
   private final Map<String, SonarQubeEventStream> streamsPerConnectionId = new ConcurrentHashMap<>();
 
-  public ServerEventsService(SonarLintClient client, ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionConfigurationRepository,
+  public ServerEventsService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionConfigurationRepository,
     StorageService storageService,
     ServerApiProvider serverApiProvider, LanguageSupportRepository languageSupportRepository, InitializeParams initializeParams) {
     this.client = client;

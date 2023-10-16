@@ -24,7 +24,7 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -56,7 +56,7 @@ class VersionSoonUnsupportedHelperTests {
   private static final SonarQubeConnectionConfiguration SQ_CONNECTION_2 = new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_2, "https://mysonarqube2.com", true);
   private static final SonarCloudConnectionConfiguration SC_CONNECTION = new SonarCloudConnectionConfiguration(SC_CONNECTION_ID, "https://sonarcloud.com", true);
 
-  private final SonarLintClient client = mock(SonarLintClient.class);
+  private final SonarLintRpcClient client = mock(SonarLintRpcClient.class);
   private final ServerApiProvider serverApiProvider = mock(ServerApiProvider.class);
   private final SynchronizationServiceImpl synchronizationService = mock(SynchronizationServiceImpl.class);
 

@@ -20,7 +20,7 @@
 package mediumtest;
 
 import java.util.concurrent.ExecutionException;
-import mediumtest.fixtures.SonarLintTestBackend;
+import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class TelemetryMediumTests {
 
-  private SonarLintTestBackend backend;
+  private SonarLintTestRpcServer backend;
   private String oldValue;
 
 

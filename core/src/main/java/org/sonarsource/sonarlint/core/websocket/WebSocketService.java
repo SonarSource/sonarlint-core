@@ -26,8 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
@@ -41,6 +39,8 @@ import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotChangedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotClosedEvent;
@@ -56,7 +56,7 @@ import org.sonarsource.sonarlint.core.serverconnection.events.issue.UpdateStorag
 import org.sonarsource.sonarlint.core.serverconnection.events.taint.UpdateStorageOnTaintVulnerabilityClosed;
 import org.sonarsource.sonarlint.core.serverconnection.events.taint.UpdateStorageOnTaintVulnerabilityRaised;
 import org.sonarsource.sonarlint.core.storage.StorageService;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.websocket.events.SmartNotificationEvent;
 
 import static java.util.Objects.requireNonNull;
@@ -70,13 +70,13 @@ public class WebSocketService {
   private final ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider;
   private final Map<String, EventDispatcher> eventRouterByConnectionId;
   private final StorageFacade storageFacade;
-  private final SonarLintClient client;
-  private final TelemetryServiceImpl telemetryService;
+  private final SonarLintRpcClient client;
+  private final TelemetryService telemetryService;
   protected SonarCloudWebSocket sonarCloudWebSocket;
   private String connectionIdUsedToCreateConnection;
 
-  public WebSocketService(SonarLintClient client, ConnectionConfigurationRepository connectionConfigurationRepository, ConfigurationRepository configurationRepository,
-    ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider, TelemetryServiceImpl telemetryService, StorageService storageService, InitializeParams params) {
+  public WebSocketService(SonarLintRpcClient client, ConnectionConfigurationRepository connectionConfigurationRepository, ConfigurationRepository configurationRepository,
+    ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider, TelemetryService telemetryService, StorageService storageService, InitializeParams params) {
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.configurationRepository = configurationRepository;
     this.connectionAwareHttpClientProvider = connectionAwareHttpClientProvider;
@@ -273,8 +273,7 @@ public class WebSocketService {
         .dispatch(SecurityHotspotRaisedEvent.class, new UpdateStorageOnSecurityHotspotRaised(storage))
         .dispatch(SecurityHotspotChangedEvent.class, new UpdateStorageOnSecurityHotspotChanged(storage))
         .dispatch(TaintVulnerabilityClosedEvent.class, new UpdateStorageOnTaintVulnerabilityClosed(storage))
-        .dispatch(TaintVulnerabilityRaisedEvent.class, new UpdateStorageOnTaintVulnerabilityRaised(storage))
-    );
+        .dispatch(TaintVulnerabilityRaisedEvent.class, new UpdateStorageOnTaintVulnerabilityRaised(storage)));
   }
 
   private void subscribe(String configScopeId, Binding binding) {

@@ -23,7 +23,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.ServerFixture;
-import mediumtest.fixtures.SonarLintTestBackend;
+import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -37,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class LocalOnlyResolvedIssuesStorageMediumTests {
 
-  private SonarLintTestBackend backend;
+  private SonarLintTestRpcServer backend;
   private ServerFixture.Server server;
 
   @AfterEach

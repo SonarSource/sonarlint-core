@@ -32,7 +32,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import mediumtest.fixtures.SonarLintTestBackend;
+import mediumtest.fixtures.SonarLintTestRpcServer;
 import nl.altindag.ssl.util.CertificateUtils;
 import nl.altindag.ssl.util.KeyStoreUtils;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
@@ -47,7 +47,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.CheckServerTrustedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.CheckServerTrustedResponse;
@@ -76,7 +76,7 @@ class SslMediumTests {
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester(true);
 
-  private SonarLintTestBackend backend;
+  private SonarLintTestRpcServer backend;
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
@@ -140,7 +140,7 @@ class SslMediumTests {
 
     @Test
     void it_should_ask_user_only_once_if_server_certificate_is_trusted() throws ExecutionException, InterruptedException, KeyStoreException {
-      var sonarLintClientMock = mock(SonarLintClient.class);
+      var sonarLintClientMock = mock(SonarLintRpcClient.class);
       var fakeClient = newFakeClient(sonarLintClientMock).build();
 
       backend = newBackend().build(fakeClient);
@@ -221,7 +221,7 @@ class SslMediumTests {
 
     @Test
     void it_should_fail_if_client_certificate_not_provided() {
-      var sonarLintClientMock = mock(SonarLintClient.class);
+      var sonarLintClientMock = mock(SonarLintRpcClient.class);
       var fakeClient = newFakeClient(sonarLintClientMock).build();
       backend = newBackend().build(fakeClient);
 
@@ -241,7 +241,7 @@ class SslMediumTests {
 
       System.setProperty("sonarlint.ssl.keyStorePath", toPath(Objects.requireNonNull(SslMediumTests.class.getResource("/ssl/client.p12"))).toString());
       System.setProperty("sonarlint.ssl.keyStorePassword", "pwdClientCertP12");
-      var sonarLintClientMock = mock(SonarLintClient.class);
+      var sonarLintClientMock = mock(SonarLintRpcClient.class);
       var fakeClient = newFakeClient(sonarLintClientMock).build();
       backend = newBackend().build(fakeClient);
 

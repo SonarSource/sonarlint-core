@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 
 public class BackendJsonRpcLauncher implements Closeable {
 
-  private final SonarLintBackendImpl server;
+  private final SonarLintRpcServerImpl server;
   private final ExecutorService messageReaderExecutor;
   private final ExecutorService messageWriterExecutor;
 
@@ -45,10 +45,10 @@ public class BackendJsonRpcLauncher implements Closeable {
       return t;
     });
 
-    server = new SonarLintBackendImpl(in, out, messageReaderExecutor, messageWriterExecutor);
+    server = new SonarLintRpcServerImpl(in, out, messageReaderExecutor, messageWriterExecutor);
   }
 
-  public SonarLintBackendImpl getJavaImpl() {
+  public SonarLintRpcServerImpl getJavaImpl() {
     return server;
   }
 

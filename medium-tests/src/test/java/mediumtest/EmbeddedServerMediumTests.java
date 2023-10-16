@@ -25,12 +25,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import mediumtest.fixtures.SonarLintTestBackend;
+import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.SpringApplicationContextInitializer;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
@@ -128,5 +126,5 @@ class EmbeddedServerMediumTests {
     assertThat(responseStatus.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST_400);
   }
 
-  private SonarLintTestBackend backend;
+  private SonarLintTestRpcServer backend;
 }

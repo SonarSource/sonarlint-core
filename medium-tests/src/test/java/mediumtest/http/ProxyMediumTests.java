@@ -24,7 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import mediumtest.fixtures.SonarLintTestBackend;
+import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,7 +55,7 @@ import static testutils.TestUtils.protobufBody;
 class ProxyMediumTests {
 
   public static final String PROXY_AUTH_ENABLED = "proxy-auth";
-  private SonarLintTestBackend backend;
+  private SonarLintTestRpcServer backend;
 
   @RegisterExtension
   static WireMockExtension sonarqubeMock = WireMockExtension.newInstance()

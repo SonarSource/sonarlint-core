@@ -27,7 +27,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import nl.altindag.ssl.model.TrustManagerParameters;
 import nl.altindag.ssl.util.CertificateUtils;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.CheckServerTrustedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.X509CertificateDto;
 
@@ -35,9 +35,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.http.X509CertificateDt
 @Singleton
 public class AskClientCertificatePredicate implements Predicate<TrustManagerParameters> {
 
-  private final SonarLintClient client;
+  private final SonarLintRpcClient client;
 
-  public AskClientCertificatePredicate(SonarLintClient client) {
+  public AskClientCertificatePredicate(SonarLintRpcClient client) {
     this.client = client;
   }
 

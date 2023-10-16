@@ -22,24 +22,22 @@ package org.sonarsource.sonarlint.core;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FoundFileDto;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FoundFileDto;
+import testutils.NoopCancelChecker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -59,14 +57,14 @@ class BindingClueProviderTests {
 
   public static final String CONFIG_SCOPE_ID = "configScopeId";
   private final ConnectionConfigurationRepository connectionRepository = mock(ConnectionConfigurationRepository.class);
-  private final SonarLintClient client = mock(SonarLintClient.class);
+  private final SonarLintRpcClient client = mock(SonarLintRpcClient.class);
   BindingClueProvider underTest = new BindingClueProvider(connectionRepository, client);
 
   @Test
-  void should_ask_client_for_scanner_files() throws InterruptedException {
+  void should_ask_client_for_scanner_files() {
     mockFindFileByNamesInScope(List.of());
 
-    underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of());
+    underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(), new NoopCancelChecker());
 
     ArgumentCaptor<FindFileByNamesInScopeParams> argumentCaptor = ArgumentCaptor.forClass(FindFileByNamesInScopeParams.class);
     verify(client).findFileByNamesInScope(argumentCaptor.capture());
@@ -76,38 +74,24 @@ class BindingClueProviderTests {
   }
 
   @Test
-  void should_log_and_ignore_error_when_asking_client_for_scanner_files() throws InterruptedException {
+  void should_log_and_ignore_error_when_asking_client_for_scanner_files() {
     when(client.findFileByNamesInScope(any())).thenReturn(CompletableFuture.failedFuture(new Exception("Error cause")));
 
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
 
-    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SQ_CONNECTION_ID_1));
+    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SQ_CONNECTION_ID_1), new NoopCancelChecker());
 
     assertThat(bindingClueWithConnections).isEmpty();
-    assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).contains("Unable to search scanner clues: Error cause");
+    assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).contains("search scanner clues task failed");
   }
 
   @Test
-  void should_log_and_ignore_timeout_when_asking_client_for_scanner_files() throws InterruptedException, ExecutionException, TimeoutException {
-    var completableFutureWillTimeout = mock(CompletableFuture.class);
-    when(completableFutureWillTimeout.get(anyLong(), any())).thenThrow(new TimeoutException());
-    when(client.findFileByNamesInScope(any())).thenReturn(completableFutureWillTimeout);
-
-    when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
-
-    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SQ_CONNECTION_ID_1));
-
-    assertThat(bindingClueWithConnections).isEmpty();
-    assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).contains("Unable to search scanner clues in time");
-  }
-
-  @Test
-  void should_detect_sonar_scanner_for_sonarqube() throws InterruptedException {
+  void should_detect_sonar_scanner_for_sonarqube() {
     mockFindFileByNamesInScope(List.of(new FoundFileDto("sonar-project.properties", "path/to/sonar-project.properties", "sonar.host.url=http://mysonarqube.org\n")));
 
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
 
-    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SQ_CONNECTION_ID_1));
+    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SQ_CONNECTION_ID_1), new NoopCancelChecker());
 
     assertThat(bindingClueWithConnections).hasSize(1);
     var bindingClueWithConnections1 = bindingClueWithConnections.get(0);
@@ -117,13 +101,13 @@ class BindingClueProviderTests {
   }
 
   @Test
-  void should_detect_sonar_scanner_for_sonarqube_with_project_key() throws InterruptedException {
+  void should_detect_sonar_scanner_for_sonarqube_with_project_key() {
     mockFindFileByNamesInScope(
       List.of(new FoundFileDto("sonar-project.properties", "path/to/sonar-project.properties", "sonar.host.url=http://mysonarqube.org\nsonar.projectKey=" + PROJECT_KEY_1)));
 
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
 
-    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SQ_CONNECTION_ID_1));
+    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SQ_CONNECTION_ID_1), new NoopCancelChecker());
 
     assertThat(bindingClueWithConnections).hasSize(1);
     var bindingClueWithConnections1 = bindingClueWithConnections.get(0);
@@ -131,13 +115,13 @@ class BindingClueProviderTests {
   }
 
   @Test
-  void should_match_multiple_connections() throws InterruptedException {
+  void should_match_multiple_connections() {
     mockFindFileByNamesInScope(List.of(new FoundFileDto("sonar-project.properties", "path/to/sonar-project.properties", "sonar.host.url=http://mysonarqube.org\n")));
 
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_2)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_2, "http://Mysonarqube.org/", true));
 
-    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SQ_CONNECTION_ID_1, SQ_CONNECTION_ID_2));
+    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SQ_CONNECTION_ID_1, SQ_CONNECTION_ID_2), new NoopCancelChecker());
 
     assertThat(bindingClueWithConnections).hasSize(1);
     var bindingClueWithConnections1 = bindingClueWithConnections.get(0);
@@ -145,14 +129,14 @@ class BindingClueProviderTests {
   }
 
   @Test
-  void should_detect_sonar_scanner_for_sonarcloud_based_on_url() throws InterruptedException {
+  void should_detect_sonar_scanner_for_sonarcloud_based_on_url() {
     mockFindFileByNamesInScope(
       List.of(new FoundFileDto("sonar-project.properties", "path/to/sonar-project.properties", "sonar.host.url=https://sonarcloud.io\nsonar.projectKey=" + PROJECT_KEY_1)));
 
     when(connectionRepository.getConnectionById(SC_CONNECTION_ID_1)).thenReturn(new SonarCloudConnectionConfiguration(SC_CONNECTION_ID_1, MY_ORG_1, true));
     when(connectionRepository.getConnectionById(SC_CONNECTION_ID_2)).thenReturn(new SonarCloudConnectionConfiguration(SC_CONNECTION_ID_2, MY_ORG_2, true));
 
-    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SC_CONNECTION_ID_1, SC_CONNECTION_ID_2));
+    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SC_CONNECTION_ID_1, SC_CONNECTION_ID_2), new NoopCancelChecker());
 
     assertThat(bindingClueWithConnections).hasSize(1);
     var bindingClueWithConnections1 = bindingClueWithConnections.get(0);
@@ -162,13 +146,13 @@ class BindingClueProviderTests {
   }
 
   @Test
-  void should_detect_sonar_scanner_for_sonarcloud_based_on_organization() throws InterruptedException {
+  void should_detect_sonar_scanner_for_sonarcloud_based_on_organization() {
     mockFindFileByNamesInScope(List.of(new FoundFileDto("sonar-project.properties", "path/to/sonar-project.properties", "sonar.organization=" + MY_ORG_2)));
 
     when(connectionRepository.getConnectionById(SC_CONNECTION_ID_1)).thenReturn(new SonarCloudConnectionConfiguration(SC_CONNECTION_ID_1, MY_ORG_1, true));
     when(connectionRepository.getConnectionById(SC_CONNECTION_ID_2)).thenReturn(new SonarCloudConnectionConfiguration(SC_CONNECTION_ID_2, MY_ORG_2, true));
 
-    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SC_CONNECTION_ID_1, SC_CONNECTION_ID_2));
+    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SC_CONNECTION_ID_1, SC_CONNECTION_ID_2), new NoopCancelChecker());
 
     assertThat(bindingClueWithConnections).hasSize(1);
     var bindingClueWithConnections1 = bindingClueWithConnections.get(0);
@@ -178,13 +162,13 @@ class BindingClueProviderTests {
   }
 
   @Test
-  void should_detect_autoscan_for_sonarcloud() throws InterruptedException {
+  void should_detect_autoscan_for_sonarcloud() {
     mockFindFileByNamesInScope(List.of(new FoundFileDto(".sonarcloud.properties", "path/to/.sonarcloud.properties", "sonar.projectKey=" + PROJECT_KEY_1)));
 
     when(connectionRepository.getConnectionById(SC_CONNECTION_ID_1)).thenReturn(new SonarCloudConnectionConfiguration(SC_CONNECTION_ID_1, MY_ORG_1, true));
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
 
-    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SC_CONNECTION_ID_1, SQ_CONNECTION_ID_1));
+    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SC_CONNECTION_ID_1, SQ_CONNECTION_ID_1), new NoopCancelChecker());
 
     assertThat(bindingClueWithConnections).hasSize(1);
     var bindingClueWithConnections1 = bindingClueWithConnections.get(0);
@@ -194,13 +178,13 @@ class BindingClueProviderTests {
   }
 
   @Test
-  void should_detect_unknown_with_project_key() throws InterruptedException {
+  void should_detect_unknown_with_project_key() {
     mockFindFileByNamesInScope(List.of(new FoundFileDto("sonar-project.properties", "path/to/sonar-project.properties", "sonar.projectKey=" + PROJECT_KEY_1)));
 
     when(connectionRepository.getConnectionById(SC_CONNECTION_ID_1)).thenReturn(new SonarCloudConnectionConfiguration(SC_CONNECTION_ID_1, MY_ORG_1, true));
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
 
-    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SC_CONNECTION_ID_1, SQ_CONNECTION_ID_1));
+    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SC_CONNECTION_ID_1, SQ_CONNECTION_ID_1), new NoopCancelChecker());
 
     assertThat(bindingClueWithConnections).hasSize(1);
     var bindingClueWithConnections1 = bindingClueWithConnections.get(0);
@@ -210,25 +194,25 @@ class BindingClueProviderTests {
   }
 
   @Test
-  void ignore_scanner_file_without_clue() throws InterruptedException {
+  void ignore_scanner_file_without_clue() {
     mockFindFileByNamesInScope(List.of(new FoundFileDto("sonar-project.properties", "path/to/sonar-project.properties", "sonar.sources=src")));
 
     when(connectionRepository.getConnectionById(SC_CONNECTION_ID_1)).thenReturn(new SonarCloudConnectionConfiguration(SC_CONNECTION_ID_1, MY_ORG_1, true));
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
 
-    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SC_CONNECTION_ID_1, SQ_CONNECTION_ID_1));
+    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SC_CONNECTION_ID_1, SQ_CONNECTION_ID_1), new NoopCancelChecker());
 
     assertThat(bindingClueWithConnections).isEmpty();
   }
 
   @Test
-  void ignore_scanner_file_invalid_content() throws InterruptedException {
+  void ignore_scanner_file_invalid_content() {
     mockFindFileByNamesInScope(List.of(new FoundFileDto("sonar-project.properties", "path/to/sonar-project.properties", "\\usonar.projectKey=" + PROJECT_KEY_1)));
 
     when(connectionRepository.getConnectionById(SC_CONNECTION_ID_1)).thenReturn(new SonarCloudConnectionConfiguration(SC_CONNECTION_ID_1, MY_ORG_1, true));
     when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
 
-    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SC_CONNECTION_ID_1, SQ_CONNECTION_ID_1));
+    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SC_CONNECTION_ID_1, SQ_CONNECTION_ID_1), new NoopCancelChecker());
 
     assertThat(bindingClueWithConnections).isEmpty();
     assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).contains("Unable to parse content of file 'path/to/sonar-project.properties'");

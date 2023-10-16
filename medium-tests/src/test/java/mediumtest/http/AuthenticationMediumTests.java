@@ -28,7 +28,7 @@ import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintBackend;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.commons.Language;
@@ -53,7 +53,7 @@ class AuthenticationMediumTests {
     .options(wireMockConfig().dynamicPort())
     .build();
 
-  private SonarLintBackend backend;
+  private SonarLintRpcServer backend;
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {

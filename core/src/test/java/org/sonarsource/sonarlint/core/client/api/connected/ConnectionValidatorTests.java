@@ -29,6 +29,7 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.serverconnection.ServerVersionAndStatusChecker;
 import testutils.MockWebServerExtensionWithProtobuf;
+import testutils.NoopCancelChecker;
 import testutils.TakeThreadDumpAfter;
 import testutils.ThreadDumpExtension;
 
@@ -45,23 +46,22 @@ class ConnectionValidatorTests {
   private final ServerVersionAndStatusChecker serverChecker = mock(ServerVersionAndStatusChecker.class);
 
   @Test
-  @TakeThreadDumpAfter(seconds=20)
+  @TakeThreadDumpAfter(seconds = 20)
   void testConnection_ok() throws ExecutionException, InterruptedException {
     var underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()));
 
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"UP\"}");
     mockServer.addStringResponse("/api/authentication/validate?format=json", "{\"valid\": true}");
 
-    var futureValidation = underTest.validateConnection();
+    var validation = underTest.validateConnection(new NoopCancelChecker());
 
-    var validation = futureValidation.get();
     assertThat(validation.success()).isTrue();
     assertThat(mockServer.takeRequest().getPath()).isEqualTo("/api/system/status");
     assertThat(mockServer.takeRequest().getPath()).isEqualTo("/api/authentication/validate?format=json");
   }
 
   @Test
-  @TakeThreadDumpAfter(seconds=20)
+  @TakeThreadDumpAfter(seconds = 20)
   void testConnectionOrganizationNotFound() throws Exception {
     var underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams("myOrg"), HttpClientProvider.forTesting().getHttpClient()));
 
@@ -69,15 +69,14 @@ class ConnectionValidatorTests {
     mockServer.addStringResponse("/api/authentication/validate?format=json", "{\"valid\": true}");
     mockServer.addResponseFromResource("/api/organizations/search.protobuf?organizations=myOrg&ps=500&p=1", "/orgs/empty.pb");
 
-    var futureValidation = underTest.validateConnection();
+    var validation = underTest.validateConnection(new NoopCancelChecker());
 
-    var validation = futureValidation.get();
     assertThat(validation.success()).isFalse();
     assertThat(validation.message()).isEqualTo("No organizations found for key: myOrg");
   }
 
   @Test
-  @TakeThreadDumpAfter(seconds=20)
+  @TakeThreadDumpAfter(seconds = 20)
   void testConnection_ok_with_org() throws Exception {
     var underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams("henryju-github"), HttpClientProvider.forTesting().getHttpClient()));
 
@@ -86,14 +85,13 @@ class ConnectionValidatorTests {
     mockServer.addResponseFromResource("/api/organizations/search.protobuf?organizations=henryju-github&ps=500&p=1", "/orgs/single.pb");
     mockServer.addResponseFromResource("/api/organizations/search.protobuf?organizations=henryju-github&ps=500&p=2", "/orgs/empty.pb");
 
-    var futureValidation = underTest.validateConnection();
+    var validation = underTest.validateConnection(new NoopCancelChecker());
 
-    var validation = futureValidation.get();
     assertThat(validation.success()).isTrue();
   }
 
   @Test
-  @TakeThreadDumpAfter(seconds=20)
+  @TakeThreadDumpAfter(seconds = 20)
   void testUnsupportedServer() throws ExecutionException, InterruptedException {
     var underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()));
 
@@ -101,15 +99,14 @@ class ConnectionValidatorTests {
 
     when(serverChecker.checkVersionAndStatus()).thenThrow(UnsupportedServerException.class);
 
-    var futureValidation = underTest.validateConnection();
+    var validation = underTest.validateConnection(new NoopCancelChecker());
 
-    var validation = futureValidation.get();
     assertThat(validation.success()).isFalse();
     assertThat(validation.message()).isEqualTo("SonarQube server has version 6.7. Version should be greater or equal to 7.9");
   }
 
   @Test
-  @TakeThreadDumpAfter(seconds=20)
+  @TakeThreadDumpAfter(seconds = 20)
   void testClientError() throws ExecutionException, InterruptedException {
     var underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()));
 
@@ -117,23 +114,21 @@ class ConnectionValidatorTests {
     mockResponse.setResponseCode(400);
     mockServer.addResponse("/api/system/status", mockResponse);
 
-    var futureValidation = underTest.validateConnection();
+    var validation = underTest.validateConnection(new NoopCancelChecker());
 
-    var validation = futureValidation.get();
     assertThat(validation.success()).isFalse();
     assertThat(validation.message()).isEqualTo("Error 400 on " + mockServer.endpointParams().getBaseUrl() + "api/system/status");
   }
 
   @Test
-  @TakeThreadDumpAfter(seconds=20)
+  @TakeThreadDumpAfter(seconds = 20)
   void testResponseError() throws ExecutionException, InterruptedException {
     var underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()));
 
     mockServer.addStringResponse("/api/system/status", "{\"id\": }");
 
-    var futureValidation = underTest.validateConnection();
+    var validation = underTest.validateConnection(new NoopCancelChecker());
 
-    var validation = futureValidation.get();
     assertThat(validation.success()).isFalse();
     assertThat(validation.message()).isEqualTo("Unable to parse server infos from: {\"id\": }");
   }
