@@ -219,7 +219,7 @@ public class IssueServiceImpl implements IssueService {
         var binding = optionalBinding.get();
         var projectServerIssueStore = storageService.binding(binding).findings();
         var issueId = params.getIssueId();
-        boolean isServerIssue = projectServerIssueStore.containsIssue(issueId, false);
+        boolean isServerIssue = projectServerIssueStore.containsIssue(issueId, params.isTaintIssue());
         if (isServerIssue) {
           return reopenServerIssue(connection, issueId, projectServerIssueStore);
         } else {

@@ -23,10 +23,12 @@ public class ReopenIssueParams {
 
   private final String configurationScopeId;
   private final String issueId;
+  private final boolean isTaintIssue;
 
-  public ReopenIssueParams(String configurationScopeId, String issueId) {
+  public ReopenIssueParams(String configurationScopeId, String issueId, boolean isTaintIssue) {
     this.configurationScopeId = configurationScopeId;
     this.issueId = issueId;
+    this.isTaintIssue = isTaintIssue;
   }
 
   public String getConfigurationScopeId() {
@@ -35,6 +37,10 @@ public class ReopenIssueParams {
 
   public String getIssueId() {
     return issueId;
+  }
+
+  public boolean isTaintIssue() {
+    return isTaintIssue;
   }
 
 }
