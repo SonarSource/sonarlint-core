@@ -32,8 +32,6 @@ import javax.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectionValidator;
-import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidChangeCredentialsParams;
-import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.ConnectionService;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.auth.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.auth.HelpGenerateUserTokenResponse;
@@ -41,6 +39,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.connection.check.CheckSm
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.check.CheckSmartNotificationsSupportedResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.common.TransientSonarQubeConnectionDto;
+import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidChangeCredentialsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
@@ -51,6 +50,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.ListUserO
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.org.OrganizationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.validate.ValidateConnectionResponse;
+import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.clientapi.common.TokenDto;
 import org.sonarsource.sonarlint.core.clientapi.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;

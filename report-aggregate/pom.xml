@@ -80,6 +80,11 @@
       <artifactId>sonarlint-http</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>sonarlint-medium-tests</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
   
   <build>
