@@ -29,8 +29,8 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueFixtures.aLocalOnlyIssueResolved;
-import static org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueFixtures.aLocalOnlyIssueResolvedWithoutTextAndLineRange;
+import static testutils.LocalOnlyIssueFixtures.aLocalOnlyIssueResolved;
+import static testutils.LocalOnlyIssueFixtures.aLocalOnlyIssueResolvedWithoutTextAndLineRange;
 
 class XodusLocalOnlyIssueStoreTests {
 

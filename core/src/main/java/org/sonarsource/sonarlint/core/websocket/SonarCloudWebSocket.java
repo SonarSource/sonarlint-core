@@ -33,8 +33,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
+import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.EventParser;
 import org.sonarsource.sonarlint.core.websocket.parsing.QualityGateChangedEventParser;
 

@@ -162,19 +162,6 @@
       <artifactId>awaitility</artifactId>
       <scope>test</scope>
     </dependency>
-    <!-- For WebSockets testing -->
-    <dependency>
-      <groupId>javax.websocket</groupId>
-      <artifactId>javax.websocket-api</artifactId>
-      <version>1.1</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.tomcat.embed</groupId>
-      <artifactId>tomcat-embed-websocket</artifactId>
-      <version>10.1.12</version>
-      <scope>test</scope>
-    </dependency>
 
     <!-- For Xodus -->
     <dependency>
@@ -212,81 +199,6 @@
         <configuration>
           <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}</protocArtifact>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy-sonar-plugins</id>
-            <phase>generate-test-resources</phase>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.sonarsource.java</groupId>
-                  <artifactId>sonar-java-plugin</artifactId>
-                  <version>7.15.0.30507</version>
-                  <type>jar</type>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.sonarsource.javascript</groupId>
-                  <artifactId>sonar-javascript-plugin</artifactId>
-                  <version>9.6.0.18814</version>
-                  <type>jar</type>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.sonarsource.php</groupId>
-                  <artifactId>sonar-php-plugin</artifactId>
-                  <version>3.23.1.8766</version>
-                  <type>jar</type>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.sonarsource.python</groupId>
-                  <artifactId>sonar-python-plugin</artifactId>
-                  <version>4.1.0.11333</version>
-                  <type>jar</type>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.sonarsource.xml</groupId>
-                  <artifactId>sonar-xml-plugin</artifactId>
-                  <version>2.6.1.3686</version>
-                  <type>jar</type>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.sonarsource.text</groupId>
-                  <artifactId>sonar-text-plugin</artifactId>
-                  <version>2.0.1.611</version>
-                  <type>jar</type>
-                </artifactItem>
-              </artifactItems>
-              <outputDirectory>${project.build.directory}/plugins</outputDirectory>
-              <overWriteReleases>false</overWriteReleases>
-              <overWriteSnapshots>true</overWriteSnapshots>
-              <stripVersion>false</stripVersion>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-with-comma</id>
-            <phase>generate-test-resources</phase>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>com.google.guava</groupId>
-                  <artifactId>guava</artifactId>
-                  <version>10.0.1</version>
-                  <outputDirectory>${project.build.directory}/lib</outputDirectory>
-                  <destFileName>guava,with,comma.jar</destFileName>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -328,7 +240,7 @@
               <createSourcesJar>true</createSourcesJar>
               <relocations>
                 <relocation>
-                  <pattern />
+                  <pattern/>
                   <shadedPattern>org.sonarsource.sonarlint.shaded.</shadedPattern>
                   <includes>
                     <include>org.apache.**</include>
@@ -400,55 +312,10 @@
           </execution>
         </executions>
       </plugin>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <redirectTestOutputToFile>true</redirectTestOutputToFile>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
 
   <profiles>
-    <profile>
-      <id>commercial</id>
-      <activation>
-        <property>
-          <name>commercial</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-dependency-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>copy-commercial-plugins</id>
-                <phase>validate</phase>
-                <goals>
-                  <goal>copy</goal>
-                </goals>
-                <configuration>
-                  <artifactItems>
-                    <artifactItem>
-                      <groupId>com.sonarsource.cpp</groupId>
-                      <artifactId>sonar-cfamily-plugin</artifactId>
-                      <version>6.18.0.29274</version>
-                      <type>jar</type>
-                    </artifactItem>
-                  </artifactItems>
-                  <outputDirectory>${project.build.directory}/plugins</outputDirectory>
-                  <overWriteReleases>false</overWriteReleases>
-                  <overWriteSnapshots>true</overWriteSnapshots>
-                  <stripVersion>false</stripVersion>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
     <!-- Workaround for https://issues.apache.org/jira/projects/MJAR/issues/MJAR-138 -->
     <profile>
       <id>conditionally-add-commons-tests-if-tests-not-skipped</id>

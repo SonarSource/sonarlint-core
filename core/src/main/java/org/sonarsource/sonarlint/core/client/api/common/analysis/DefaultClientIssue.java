@@ -33,8 +33,8 @@ import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
-import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
+import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 
 public final class DefaultClientIssue implements Issue {
   private final IssueSeverity severity;

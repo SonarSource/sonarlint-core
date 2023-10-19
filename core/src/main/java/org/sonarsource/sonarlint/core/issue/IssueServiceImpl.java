@@ -39,20 +39,20 @@ import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckAnticipatedSt
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangePermittedParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.IssueService;
-import org.sonarsource.sonarlint.core.clientapi.backend.issue.ResolutionStatus;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenAllIssuesForFileParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenIssueParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ReopenIssueResponse;
-import org.sonarsource.sonarlint.core.commons.Transition;
+import org.sonarsource.sonarlint.core.clientapi.backend.issue.ResolutionStatus;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
+import org.sonarsource.sonarlint.core.commons.Transition;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.local.only.XodusLocalOnlyIssueStore;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
-import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
+import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 

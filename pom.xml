@@ -29,6 +29,7 @@
     <module>core</module>
     <module>http</module>
     <module>issue-tracking</module>
+    <module>medium-tests</module>
     <module>plugin-api</module>
     <module>server-api</module>
     <module>slf4j-sonar-log</module>
