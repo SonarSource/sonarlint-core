@@ -323,7 +323,7 @@ class IssuesStatusChangeMediumTests {
     var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll("configScopeId");
     assertThat(storedIssues).extracting(LocalOnlyIssue::getId).containsOnly(issueId);
 
-    var response = backend.getIssueService().reopenIssue(new ReopenIssueParams("configScopeId", issueId.toString()));
+    var response = backend.getIssueService().reopenIssue(new ReopenIssueParams("configScopeId", issueId.toString(), false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     assertThat(response.get().isIssueReopened()).isTrue();
@@ -404,7 +404,7 @@ class IssuesStatusChangeMediumTests {
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId)))
       .build();
 
-    var response = backend.getIssueService().reopenIssue(new ReopenIssueParams("configScopeId", invalidIssueId));
+    var response = backend.getIssueService().reopenIssue(new ReopenIssueParams("configScopeId", invalidIssueId, false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     assertThat(response.get().isIssueReopened()).isFalse();
@@ -422,7 +422,7 @@ class IssuesStatusChangeMediumTests {
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId)))
       .build();
 
-    var response = backend.getIssueService().reopenIssue(new ReopenIssueParams("configScopeId", nonExistingIssueId.toString()));
+    var response = backend.getIssueService().reopenIssue(new ReopenIssueParams("configScopeId", nonExistingIssueId.toString(), false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     assertThat(response.get().isIssueReopened()).isFalse();
@@ -444,7 +444,7 @@ class IssuesStatusChangeMediumTests {
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
       .build();
 
-    var reopen_response = backend.getIssueService().reopenIssue(new ReopenIssueParams("configScopeId", "myIssueKey"));
+    var reopen_response = backend.getIssueService().reopenIssue(new ReopenIssueParams("configScopeId", "myIssueKey", false));
 
     assertThat(reopen_response).succeedsWithin(Duration.ofSeconds(2));
     assertThat(reopen_response.get().isIssueReopened()).isTrue();
