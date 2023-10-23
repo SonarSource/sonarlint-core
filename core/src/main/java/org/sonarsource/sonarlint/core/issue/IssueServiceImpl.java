@@ -221,7 +221,7 @@ public class IssueServiceImpl implements IssueService {
         var issueId = params.getIssueId();
         boolean isServerIssue = projectServerIssueStore.containsIssue(issueId, params.isTaintIssue());
         if (isServerIssue) {
-          return reopenServerIssue(connection, issueId, projectServerIssueStore);
+          return reopenServerIssue(connection, issueId, projectServerIssueStore, params.isTaintIssue());
         } else {
           return reopenLocalIssue(issueId, configurationScopeId);
         }
@@ -293,9 +293,9 @@ public class IssueServiceImpl implements IssueService {
       .orElseGet(() -> CompletableFuture.completedFuture(null));
   }
 
-  private CompletableFuture<ReopenIssueResponse> reopenServerIssue(ServerApi connection, String issueId, ProjectServerIssueStore projectServerIssueStore) {
+  private CompletableFuture<ReopenIssueResponse> reopenServerIssue(ServerApi connection, String issueId, ProjectServerIssueStore projectServerIssueStore, boolean isTaintIssue) {
     return connection.issue().changeStatusAsync(issueId, Transition.REOPEN)
-      .thenAccept(nothing -> projectServerIssueStore.updateIssueResolutionStatus(issueId, false, false)
+      .thenAccept(nothing -> projectServerIssueStore.updateIssueResolutionStatus(issueId, isTaintIssue, false)
         .ifPresent(issue -> telemetryService.issueStatusChanged(issue.getRuleKey())))
       .thenApply(nothing -> new ReopenIssueResponse(true))
       .exceptionally(throwable -> {
