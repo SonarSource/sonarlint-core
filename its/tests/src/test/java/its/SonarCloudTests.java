@@ -322,7 +322,7 @@ class SonarCloudTests extends AbstractConnectedTests {
   void testRuleDescription() throws Exception {
     assertThat(
       engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), backend.getHttpClient(CONNECTION_ID), "java:S106", projectKey(PROJECT_KEY_JAVA)).get().getHtmlDescription())
-      .contains("When logging a message there are");
+      .contains("logs serve as a record of events within an application");
   }
 
   @Test
