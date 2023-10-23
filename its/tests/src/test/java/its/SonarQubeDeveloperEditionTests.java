@@ -45,6 +45,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterAll;
@@ -660,7 +661,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     @Test
     @OnlyOnSonarQube(from = "9.6")
     void shouldUpdateIssueInLocalStorageWhenIssueResolvedOnServer() {
-
       var projectKey = "projectKey-sse2";
       provisionProject(ORCHESTRATOR, projectKey, "Sample Java");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint.xml"));
@@ -924,6 +924,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       engine.subscribeForEvents(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), Set.of(PROJECT_KEY_JAVA_TAINT), events::add, null);
       var projectBinding = new ProjectBinding(PROJECT_KEY_JAVA_TAINT, "", "");
       assertThat(engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", false)).isEmpty();
+      assertThat(engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", true)).isEmpty();
 
       // check TaintVulnerabilityRaised is received
       analyzeMavenProject("sample-java-taint", PROJECT_KEY_JAVA_TAINT);
@@ -942,6 +943,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var issueKey = issues.get(0);
 
       var taintIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", false);
+      var taintIssuesResolved = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", true);
+      assertThat(taintIssues).extracting("key").containsExactlyInAnyOrderElementsOf(taintIssuesResolved.stream().map(ServerTaintIssue::getKey).collect(Collectors.toList()));
       assertThat(taintIssues)
         .extracting("key", "resolved", "ruleKey", "message", "filePath", "severity", "type")
         .containsOnly(
@@ -978,7 +981,9 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       });
 
       taintIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", false);
+      taintIssuesResolved = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", true);
       assertThat(taintIssues).isEmpty();
+      assertThat(taintIssuesResolved.get(0).getKey()).isEqualTo(issues.get(0));
 
       // check IssueChangedEvent is received
       reopenIssue(adminWsClient, issueKey);
@@ -992,7 +997,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           });
       });
       taintIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", false);
-      assertThat(taintIssues).isNotEmpty();
+      taintIssuesResolved = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", true);
+      assertThat(taintIssues).isNotEmpty().extracting("key").containsExactlyInAnyOrderElementsOf(taintIssuesResolved.stream().map(ServerTaintIssue::getKey).collect(Collectors.toList()));
 
       // analyze another project under the same project key to close the taint issue
       analyzeMavenProject("sample-java", PROJECT_KEY_JAVA_TAINT);
@@ -1007,7 +1013,9 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           });
       });
       taintIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", false);
+      taintIssuesResolved = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", true);
       assertThat(taintIssues).isEmpty();
+      assertThat(taintIssuesResolved).isEmpty();
     }
   }
 
