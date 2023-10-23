@@ -1,0 +1,84 @@
+[json_rpc]
+= JSON-RPC
+
+SonarLint Core can be used as standalone process. When started, it will use standard input/output streams to communication with the client (= the IDE) using https://www.jsonrpc.org/specification[JSON-RPC].
+
+We are in fact starting 2 JSON-RPC channels, in order to have bidirectional communication.
+
+Virtually, we have bidirectional communication:
+[ditaa]
+....
++---------+         +----------------+
+|   IDE   | <-----> | SonarLint Core |
++---------+         +----------------+
+....
+
+Technically, we have two channels:
+
+* IDE to Backend
+* Backend to IDE
+
+[ditaa]
+....
++---------+         +----------------+
+|         |  -----> |                |
+|   IDE   |         | SonarLint Core |
+|         | <-----  |                |
++---------+         +----------------+
+....
+
+In JSON-RPC, there is a concept of client and server. This is a bit confusing for our case, because we are creating 2 channels in both directions. In most of the cases, what we call the *client* is the IDE side, and the *server* is the SonarLint Core side.
+However, when dealing with some low-level JSON-RPC implementation details, be careful that the client and server can be reversed, when dealing with request and notifications sent from the backend to the IDE.
+
+== Threading model
+
+JSON-RPC specification does not tell if message should be processed sequentially or concurrently. Based on the experience of the LSP, we decided to process messages sequentially. This message processing is handled in the `org.eclipse.lsp4j.jsonrpc.json.ConcurrentMessageProcessor`, by a thread created from an ExecutorService that we provide when creating the `Launcher` in the `SonarLintRpcServerImpl`.
+So this single thread will sequentially parse messages, and then we want to:
+
+* immediately handle cancellation notifications
+* schedule other messages (requests and regular notifications) processing in a separate executor service, to not block future cancellation notifications
+
+This _request and notification processing_ executor service is based also on a single thread, in order to guarantee the order of the processing. We want to preserve the order between notifications, and also we want a request to start only after all previous notifications have been processed.
+
+Then requests are scheduled in a thread pool, with asynchronous results.
+
+[ditaa]
+....
+----> blocking/sync
+=---> non-blocking/async
+
+
++----------+         +-------------------+
+| {io}     |         |                   |  If cancellation notification    /----------------\
+| JSON-RPC |  -----> | Message processor |  ------------------------------> | Cancel request |
+|  message |         | (single thread)   |                                  \----------------/
++----------+         +-------------------+
+                              :
+                              |  If request or other notification
+                              |
+                              v
+                     +----------------------------+
+                     | Requests And Notifications |  If notification   /----------------------\
+                     |     Executor Service       |  ----------------> | Execute notification |
+                     |     (single thread)        |                    \----------------------/
+                     +----------------------------+
+                              :
+                              |  If request
+                              |
+                              v
+                     +----------------------------+
+                     | Requests Executor Service  |                    /----------------------\
+                     |       (thread pool)        |  ----------------> | Execute request      |
+                     |                            |                    \----------------------/
+                     +----------------------------+
+
+....
+
+
+== Cancellation
+
+Cancellation is not part of JSON-RPC specification. However, it is a very important feature for SonarLint, because we want to be able to cancel a request that is taking too much time to execute, or because it is not relevant anymore to the caller.
+We are reusing the https://microsoft.github.io/language-server-protocol/specification#cancelRequest[Cancel Request] feature of the LSP: a special notification is used to indicate that a request should be cancelled, using the request id. We are relying on cooperative cancellation. We are not trying to interrupt threads, as it might leave resources in a bad state. Requests implementation logic will need to periodically check the cancellation status, and react in the best way.
+
+Most of the time, when talking about cancellation, this is _client cancellation_: the IDE is cancelling a request that it has sent to the backend, or the backend is cancelling a request that it has sent to the IDE. However, we also have _server cancellation_: the backend is cancelling a request that it has *received* from the IDE. This is the case for example when the backend is shutting down, and it wants to cancel all pending requests.
+The IDE can also cancel a request that it has received from the backend, like the request to assist the user to configure a binding, if the user finally decides to cancel the process.
