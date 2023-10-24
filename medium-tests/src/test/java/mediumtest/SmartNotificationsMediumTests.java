@@ -244,7 +244,9 @@ class SmartNotificationsMediumTests {
 
   @Test
   void it_should_send_notification_not_yet_handled_by_sonarcloud_websocket() {
-    var fakeClient = newFakeClient().build();
+    var fakeClient = newFakeClient()
+      .printLogsToStdOut()
+      .build();
     System.setProperty("sonarlint.internal.sonarcloud.url", mockWebServerExtension.endpointParams().getBaseUrl());
     mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +

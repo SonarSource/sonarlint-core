@@ -98,7 +98,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeCon
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
-import testutils.websockets.WebSocketConnectionRepository;
 
 import static mediumtest.fixtures.storage.StorageFixture.newStorage;
 
@@ -407,6 +406,7 @@ public class SonarLintBackendFixture {
     private Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId = new HashMap<>();
     @javax.annotation.Nullable
     private SonarLintRpcClient delegate;
+    private boolean printLogsToStdOut;
 
     public SonarLintClientBuilder withFoundFile(String name, String path, String content) {
       foundFiles.add(new FoundFileDto(name, path, content));
@@ -457,11 +457,16 @@ public class SonarLintBackendFixture {
     public FakeSonarLintRpcClient build() {
       return new FakeSonarLintRpcClient(foundFiles, clientDescription, cannedAssistCreatingSonarQubeConnectionByBaseUrl,
         cannedBindingAssistByProjectKey,
-        rejectingProgress, proxy, proxyAuth, credentialsByConnectionId, delegate);
+        rejectingProgress, proxy, proxyAuth, credentialsByConnectionId, delegate, printLogsToStdOut);
     }
 
     public SonarLintClientBuilder withDelegate(SonarLintRpcClient delegate) {
       this.delegate = delegate;
+      return this;
+    }
+
+    public SonarLintClientBuilder printLogsToStdOut() {
+      this.printLogsToStdOut = true;
       return this;
     }
   }
@@ -487,6 +492,7 @@ public class SonarLintBackendFixture {
     private final Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId;
     @Nullable
     private final SonarLintRpcClient delegate;
+    private final boolean printLogsToStdOut;
     private SonarLintRpcServer backend;
     private Queue<LogParams> logs = new ConcurrentLinkedQueue<>();
 
@@ -494,7 +500,7 @@ public class SonarLintBackendFixture {
       LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
       LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, boolean rejectingProgress, @Nullable ProxyDto proxy,
       @Nullable GetProxyPasswordAuthenticationResponse proxyAuth, Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId,
-      @Nullable SonarLintRpcClient delegate) {
+      @Nullable SonarLintRpcClient delegate, boolean printLogsToStdOut) {
       this.foundFiles = foundFiles;
       this.clientDescription = clientDescription;
       this.cannedAssistCreatingSonarQubeConnectionByBaseUrl = cannedAssistCreatingSonarQubeConnectionByBaseUrl;
@@ -504,6 +510,7 @@ public class SonarLintBackendFixture {
       this.proxyAuth = proxyAuth;
       this.credentialsByConnectionId = credentialsByConnectionId;
       this.delegate = delegate;
+      this.printLogsToStdOut = printLogsToStdOut;
     }
 
     public void setBackend(SonarLintTestRpcServer backend) {
@@ -663,6 +670,9 @@ public class SonarLintBackendFixture {
     @Override
     public void log(LogParams params) {
       this.logs.add(params);
+      if (printLogsToStdOut) {
+        System.out.println(params.getLevel() + " " + (params.getConfigScopeId() != null ? ("[" + params.getConfigScopeId() + "] ") : "") + params.getMessage());
+      }
     }
 
     public boolean hasReceivedSuggestions() {
