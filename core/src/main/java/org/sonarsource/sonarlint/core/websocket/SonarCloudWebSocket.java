@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 import org.sonarsource.sonarlint.core.http.WebSocketClient;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.EventParser;
+import org.sonarsource.sonarlint.core.serverapi.push.parsing.IssueChangedEventParser;
 import org.sonarsource.sonarlint.core.websocket.parsing.QualityGateChangedEventParser;
 
 public class SonarCloudWebSocket {
@@ -45,7 +46,8 @@ public class SonarCloudWebSocket {
   }
 
   private static final Map<String, EventParser<?>> parsersByType = Map.of(
-    "QualityGateChanged", new QualityGateChangedEventParser());
+    "QualityGateChanged", new QualityGateChangedEventParser(),
+    "IssueChanged", new IssueChangedEventParser());
 
   private static final String PROJECT_FILTER_TYPE = "PROJECT";
   private static final Gson gson = new Gson();

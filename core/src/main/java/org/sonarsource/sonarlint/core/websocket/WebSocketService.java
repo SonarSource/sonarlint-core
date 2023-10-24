@@ -41,7 +41,12 @@ import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
+import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
+import org.sonarsource.sonarlint.core.serverconnection.StorageFacade;
 import org.sonarsource.sonarlint.core.serverconnection.events.EventDispatcher;
+import org.sonarsource.sonarlint.core.serverconnection.events.issue.UpdateStorageOnIssueChanged;
+import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 import org.sonarsource.sonarlint.core.websocket.events.QualityGateChangedEvent;
 
@@ -51,21 +56,26 @@ public class WebSocketService {
   private final Map<String, String> subscribedProjectKeysByConfigScopes = new HashMap<>();
   private final Set<String> connectionIdsInterestedInNotifications = new HashSet<>();
   private final boolean shouldEnableWebSockets;
-  private String connectionIdUsedToCreateConnection;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final ConfigurationRepository configurationRepository;
   private final ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider;
+  private final Map<String, EventDispatcher> eventRouterByConnectionId;
+  private final StorageFacade storageFacade;
+  private final SonarLintClient client;
+  private final TelemetryServiceImpl telemetryService;
   protected SonarCloudWebSocket sonarCloudWebSocket;
-  private final EventDispatcher eventRouter;
+  private String connectionIdUsedToCreateConnection;
 
   public WebSocketService(SonarLintClient client, ConnectionConfigurationRepository connectionConfigurationRepository, ConfigurationRepository configurationRepository,
-    ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider, TelemetryServiceImpl telemetryService, InitializeParams params) {
+    ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider, TelemetryServiceImpl telemetryService, StorageService storageService, InitializeParams params) {
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.configurationRepository = configurationRepository;
     this.connectionAwareHttpClientProvider = connectionAwareHttpClientProvider;
     this.shouldEnableWebSockets = params.getFeatureFlags().shouldManageSmartNotifications();
-    this.eventRouter = new EventDispatcher()
-      .dispatch(QualityGateChangedEvent.class, new ShowSmartNotificationOnQualityGateChangedEvent(client, configurationRepository, telemetryService));
+    this.storageFacade = storageService.getStorageFacade();
+    this.eventRouterByConnectionId = new HashMap<>();
+    this.client = client;
+    this.telemetryService = telemetryService;
   }
 
   protected void reopenConnectionOnClose() {
@@ -191,6 +201,7 @@ public class WebSocketService {
   }
 
   private void forgetConnection(String connectionId) {
+    this.eventRouterByConnectionId.remove(connectionId);
     var previouslyInterestedInNotifications = connectionIdsInterestedInNotifications.remove(connectionId);
     if (!previouslyInterestedInNotifications) {
       return;
@@ -212,6 +223,7 @@ public class WebSocketService {
   private void reopenConnection(String connectionId) {
     closeSocket();
     createConnectionIfNeeded(connectionId);
+    handleEventDispatcher(connectionId);
     resubscribeAll();
   }
 
@@ -243,6 +255,14 @@ public class WebSocketService {
     }
   }
 
+  private void handleEventDispatcher(String connectionId) {
+    this.eventRouterByConnectionId.put(connectionId,
+      new EventDispatcher()
+        .dispatch(QualityGateChangedEvent.class, new ShowSmartNotificationOnQualityGateChangedEvent(client, configurationRepository, telemetryService))
+        .dispatch(IssueChangedEvent.class, new UpdateStorageOnIssueChanged(storageFacade.connection(connectionId)))
+    );
+  }
+
   private void subscribe(String configScopeId, Binding binding) {
     createConnectionIfNeeded(binding.getConnectionId());
     var projectKey = binding.getSonarProjectKey();
@@ -269,7 +289,9 @@ public class WebSocketService {
   private void createConnectionIfNeeded(String connectionId) {
     connectionIdsInterestedInNotifications.add(connectionId);
     if (this.sonarCloudWebSocket == null) {
-      this.sonarCloudWebSocket = SonarCloudWebSocket.create(connectionAwareHttpClientProvider.getWebSocketClient(connectionId), eventRouter::handle, this::reopenConnectionOnClose);
+      this.sonarCloudWebSocket = SonarCloudWebSocket.create(connectionAwareHttpClientProvider.getWebSocketClient(connectionId),
+        event -> this.eventRouterByConnectionId.get(connectionId).handle(event),
+        this::reopenConnectionOnClose);
       this.connectionIdUsedToCreateConnection = connectionId;
     }
   }

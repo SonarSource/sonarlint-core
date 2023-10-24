@@ -63,7 +63,6 @@ public class ServerConnection {
   private final boolean isSonarCloud;
   private final ServerInfoSynchronizer serverInfoSynchronizer;
   private final ConnectionStorage storage;
-  private final StorageFacade storageFacade;
 
   public ServerConnection(Path globalStorageRoot, String connectionId, boolean isSonarCloud, Set<Language> enabledLanguages, Set<String> embeddedPluginKeys, Path workDir) {
     this(StorageFacadeCache.get().getOrCreate(globalStorageRoot, workDir), connectionId, isSonarCloud, enabledLanguages, embeddedPluginKeys);
@@ -73,7 +72,6 @@ public class ServerConnection {
     this.isSonarCloud = isSonarCloud;
     this.enabledLanguagesToSync = enabledLanguages.stream().filter(Language::shouldSyncInConnectedMode).collect(Collectors.toCollection(LinkedHashSet::new));
 
-    this.storageFacade = storageFacade;
     this.storage = storageFacade.connection(connectionId);
     this.issueStoreReader = new IssueStoreReader(storage);
     this.issuesUpdater = new ServerIssueUpdater(storage, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
