@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.repository.rules;
 
-import com.google.common.eventbus.Subscribe;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,6 +30,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
+import org.springframework.context.event.EventListener;
 
 @Named
 @Singleton
@@ -95,7 +95,7 @@ public class RulesRepository {
       .collect(Collectors.toMap(SonarLintRuleDefinition::getKey, r -> r));
   }
 
-  @Subscribe
+  @EventListener
   public void connectionRemoved(ConnectionConfigurationRemovedEvent e) {
     evictAll(e.getRemovedConnectionId());
   }
