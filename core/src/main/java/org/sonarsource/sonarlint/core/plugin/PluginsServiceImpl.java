@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
-import com.google.common.eventbus.Subscribe;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -37,6 +36,7 @@ import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoadResult;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
 import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.springframework.context.event.EventListener;
 
 @Named
 @Singleton
@@ -98,7 +98,7 @@ public class PluginsServiceImpl implements PluginsService {
     return new PluginsLoader().load(config);
   }
 
-  @Subscribe
+  @EventListener
   public void connectionRemoved(ConnectionConfigurationRemovedEvent e) {
     evictAll(e.getRemovedConnectionId());
   }

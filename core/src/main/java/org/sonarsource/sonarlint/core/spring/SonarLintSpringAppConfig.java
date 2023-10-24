@@ -19,19 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.spring;
 
-import com.google.common.eventbus.AsyncEventBus;
-import com.google.common.eventbus.EventBus;
-import com.google.common.util.concurrent.MoreExecutors;
 import java.io.IOException;
 import java.net.ProxySelector;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
 import org.sonarsource.sonarlint.core.BindingClueProvider;
@@ -83,12 +76,14 @@ import org.sonarsource.sonarlint.core.websocket.WebSocketService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.event.ApplicationEventMulticaster;
+import org.springframework.context.event.SimpleApplicationEventMulticaster;
+import org.springframework.scheduling.support.TaskUtils;
 
 @Configuration
-// FIXME can't use classpath scanning in OSGi, so waiting to move out of process, we have to declare our bean manually
+// Can't use classpath scanning in OSGi, so waiting to move out of process, we have to declare our beans manually
 // @ComponentScan(basePackages = "org.sonarsource.sonarlint.core")
 @Import({
-  EventBusListenersRegistererBeanPostProcessor.class,
   AskClientCertificatePredicate.class,
   ClientProxySelector.class,
   ClientProxyCredentialsProvider.class,
@@ -134,16 +129,11 @@ import org.springframework.context.annotation.Import;
 })
 public class SonarLintSpringAppConfig {
 
-  private final ExecutorService eventExecutorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Client Events Processor"));
-
-  @Bean
-  EventBus provideClientEventBus() {
-    return new AsyncEventBus("clientEvents", eventExecutorService);
-  }
-
-  @PreDestroy
-  void stopClientEventBus() {
-    MoreExecutors.shutdownAndAwaitTermination(eventExecutorService, 1, TimeUnit.SECONDS);
+  @Bean(name = "applicationEventMulticaster")
+  public ApplicationEventMulticaster simpleApplicationEventMulticaster() {
+    var eventMulticaster = new SimpleApplicationEventMulticaster();
+    eventMulticaster.setErrorHandler(TaskUtils.LOG_AND_SUPPRESS_ERROR_HANDLER);
+    return eventMulticaster;
   }
 
   @Bean

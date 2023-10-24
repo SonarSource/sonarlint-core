@@ -19,23 +19,23 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import com.google.common.eventbus.EventBus;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
+import org.springframework.context.ApplicationEventPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -53,13 +53,13 @@ class ConfigurationServiceTests {
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester();
 
-  private EventBus eventBus;
+  private ApplicationEventPublisher eventPublisher;
   private ConfigurationService underTest;
 
   @BeforeEach
   public void setUp() {
-    eventBus = mock(EventBus.class);
-    underTest = new ConfigurationService(eventBus, repository);
+    eventPublisher = mock(ApplicationEventPublisher.class);
+    underTest = new ConfigurationService(eventPublisher, repository);
   }
 
   @Test
@@ -80,7 +80,7 @@ class ConfigurationServiceTests {
     assertThat(repository.getBindingConfiguration("id2")).usingRecursiveComparison().isEqualTo(BINDING_DTO_2);
 
     ArgumentCaptor<ConfigurationScopesAddedEvent> captor = ArgumentCaptor.forClass(ConfigurationScopesAddedEvent.class);
-    verify(eventBus).post(captor.capture());
+    verify(eventPublisher).publishEvent(captor.capture());
     var event = captor.getValue();
 
     assertThat(event.getAddedConfigurationScopeIds()).containsOnly("id2");
@@ -95,7 +95,7 @@ class ConfigurationServiceTests {
     assertThat(repository.getBindingConfiguration("id2")).usingRecursiveComparison().isEqualTo(BINDING_DTO_2);
 
     ArgumentCaptor<ConfigurationScopesAddedEvent> captor = ArgumentCaptor.forClass(ConfigurationScopesAddedEvent.class);
-    verify(eventBus).post(captor.capture());
+    verify(eventPublisher).publishEvent(captor.capture());
     var event = captor.getValue();
 
     assertThat(event.getAddedConfigurationScopeIds()).containsOnly("id1", "id2");
@@ -141,7 +141,7 @@ class ConfigurationServiceTests {
     assertThat(repository.getBindingConfiguration("id1")).usingRecursiveComparison().isEqualTo(BINDING_DTO_1);
 
     // Ignore add event
-    Mockito.reset(eventBus);
+    Mockito.reset(eventPublisher);
 
     underTest.didUpdateBinding(new DidUpdateBindingParams("id1", BINDING_DTO_2));
 
@@ -149,7 +149,7 @@ class ConfigurationServiceTests {
     assertThat(repository.getBindingConfiguration("id1")).usingRecursiveComparison().isEqualTo(BINDING_DTO_2);
 
     ArgumentCaptor<BindingConfigChangedEvent> captor = ArgumentCaptor.forClass(BindingConfigChangedEvent.class);
-    verify(eventBus).post(captor.capture());
+    verify(eventPublisher).publishEvent(captor.capture());
     var event = captor.getValue();
 
     assertThat(event.getConfigScopeId()).isEqualTo("id1");
