@@ -46,6 +46,7 @@ public class SonarCloudWebSocket {
   }
   private static final Map<String, EventParser<?>> parsersByType = Map.of(
     "QualityGateChanged", new QualityGateChangedEventParser(),
+    "MyNewIssues", new QualityGateChangedEventParser(),
     "IssueChanged", new IssueChangedEventParser());
 
   private static final String PROJECT_FILTER_TYPE = "PROJECT";
