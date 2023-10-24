@@ -19,28 +19,29 @@
  */
 package org.sonarsource.sonarlint.core.branch;
 
-import com.google.common.eventbus.EventBus;
-import com.google.common.eventbus.Subscribe;
 import java.util.Optional;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.sonarsource.sonarlint.core.event.ActiveSonarProjectBranchChanged;
+import org.sonarsource.sonarlint.core.event.ActiveSonarProjectBranchChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.vcs.ActiveSonarProjectBranchRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.DidChangeActiveSonarProjectBranchParams;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
 
 @Named
 @Singleton
 public class SonarProjectBranchService {
   private final ActiveSonarProjectBranchRepository activeSonarProjectBranchRepository;
   private final ConfigurationRepository configurationRepository;
-  private final EventBus eventBus;
+  private final ApplicationEventPublisher applicationEventPublisher;
 
-  public SonarProjectBranchService(ActiveSonarProjectBranchRepository activeSonarProjectBranchRepository, ConfigurationRepository configurationRepository, EventBus eventBus) {
+  public SonarProjectBranchService(ActiveSonarProjectBranchRepository activeSonarProjectBranchRepository, ConfigurationRepository configurationRepository,
+    ApplicationEventPublisher applicationEventPublisher) {
     this.activeSonarProjectBranchRepository = activeSonarProjectBranchRepository;
     this.configurationRepository = configurationRepository;
-    this.eventBus = eventBus;
+    this.applicationEventPublisher = applicationEventPublisher;
   }
 
   public void didChangeActiveSonarProjectBranch(DidChangeActiveSonarProjectBranchParams params) {
@@ -48,7 +49,7 @@ public class SonarProjectBranchService {
     var configScopeId = params.getConfigScopeId();
     var oldBranchName = activeSonarProjectBranchRepository.setActiveBranchName(configScopeId, params.getNewActiveBranchName());
     if (!newActiveBranchName.equals(oldBranchName)) {
-      eventBus.post(new ActiveSonarProjectBranchChanged(configScopeId, newActiveBranchName));
+      applicationEventPublisher.publishEvent(new ActiveSonarProjectBranchChangedEvent(configScopeId, newActiveBranchName));
     }
   }
 
@@ -69,7 +70,7 @@ public class SonarProjectBranchService {
     return Optional.empty();
   }
 
-  @Subscribe
+  @EventListener
   public void onConfigurationScopeRemoved(ConfigurationScopeRemovedEvent removedEvent) {
     var currentConfigScopeId = removedEvent.getRemovedConfigurationScopeId();
     activeSonarProjectBranchRepository.clearActiveProjectBranch(currentConfigScopeId);

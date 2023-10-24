@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.storage;
 
-import com.google.common.eventbus.Subscribe;
 import java.nio.file.Path;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
@@ -29,6 +28,7 @@ import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
 import org.sonarsource.sonarlint.core.serverconnection.SonarProjectStorage;
 import org.sonarsource.sonarlint.core.serverconnection.StorageFacade;
 import org.sonarsource.sonarlint.core.serverconnection.StorageFacadeCache;
+import org.springframework.context.event.EventListener;
 
 public class StorageService {
   private final Path globalStorageRoot;
@@ -56,7 +56,7 @@ public class StorageService {
     StorageFacadeCache.get().close(globalStorageRoot);
   }
 
-  @Subscribe
+  @EventListener
   public void handleEvent(ConnectionConfigurationRemovedEvent connectionConfigurationRemovedEvent) {
     var removedConnectionId = connectionConfigurationRemovedEvent.getRemovedConnectionId();
     var connectionStorage = connection(removedConnectionId);
