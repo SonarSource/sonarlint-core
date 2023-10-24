@@ -42,6 +42,7 @@ import org.sonarsource.sonarlint.core.serverconnection.VersionUtils;
 import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -88,8 +89,8 @@ class VersionSoonUnsupportedHelperTests {
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID, CONFIG_SCOPE_ID_2)));
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
-      .containsOnly("Connection ID '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getMinimalSupportedVersion().getName() + "' is detected to be soon unsupported");
+    await().untilAsserted(() -> assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
+      .containsOnly("Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getMinimalSupportedVersion().getName() + "' is detected to be soon unsupported"));
   }
 
   @Test
@@ -113,11 +114,11 @@ class VersionSoonUnsupportedHelperTests {
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID, CONFIG_SCOPE_ID_2)));
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
+    await().untilAsserted(() -> assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
       .containsOnly(
-        "Connection ID '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getMinimalSupportedVersion().getName() + "' is detected to be soon unsupported",
-        "Connection ID '" + SQ_CONNECTION_ID_2 + "' with version '" + VersionUtils.getMinimalSupportedVersion() + ".9' is detected to be soon unsupported"
-      );
+        "Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getMinimalSupportedVersion().getName() + "' is detected to be soon unsupported",
+        "Connection '" + SQ_CONNECTION_ID_2 + "' with version '" + VersionUtils.getMinimalSupportedVersion() + ".9' is detected to be soon unsupported"
+      ));
   }
 
   @Test
@@ -139,8 +140,8 @@ class VersionSoonUnsupportedHelperTests {
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID, null,
       new BindingConfiguration(SQ_CONNECTION_ID, "", false)));
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
-      .containsOnly("Connection ID '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getMinimalSupportedVersion().getName() + "' is detected to be soon unsupported");
+    await().untilAsserted(() -> assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
+      .containsOnly("Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getMinimalSupportedVersion().getName() + "' is detected to be soon unsupported"));
   }
 
   @Test
@@ -157,8 +158,8 @@ class VersionSoonUnsupportedHelperTests {
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID, null,
       new BindingConfiguration(SQ_CONNECTION_ID, "", false)));
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
-      .containsOnly("Connection ID '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getMinimalSupportedVersion().getName() + "' is detected to be soon unsupported");
+    await().untilAsserted(() -> assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
+      .containsOnly("Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getMinimalSupportedVersion().getName() + "' is detected to be soon unsupported"));
   }
 
   @Test
@@ -173,8 +174,8 @@ class VersionSoonUnsupportedHelperTests {
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID, null,
       new BindingConfiguration(SQ_CONNECTION_ID, "", false)));
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
-      .containsOnly("Connection ID '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getMinimalSupportedVersion().getName() + ".9' is detected to be soon unsupported");
+    await().untilAsserted(() -> assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
+      .containsOnly("Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getMinimalSupportedVersion().getName() + ".9' is detected to be soon unsupported"));
   }
 
   @Test

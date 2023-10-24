@@ -17,29 +17,23 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.spring;
+package org.sonarsource.sonarlint.core.event;
 
-import com.google.common.eventbus.EventBus;
-import javax.inject.Inject;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.config.BeanPostProcessor;
-import org.springframework.stereotype.Component;
+public class ActiveSonarProjectBranchChangedEvent {
 
-@Component
-public class EventBusListenersRegistererBeanPostProcessor implements BeanPostProcessor {
+  private final String configurationScopeId;
+  private final String newBranchName;
 
-  @Inject
-  private EventBus bus;
-
-  @Override
-  public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
-    return bean;
+  public ActiveSonarProjectBranchChangedEvent(String configurationScopeId, String newBranchName) {
+    this.configurationScopeId = configurationScopeId;
+    this.newBranchName = newBranchName;
   }
 
-  @Override
-  public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
-    bus.register(bean);
+  public String getConfigurationScopeId() {
+    return configurationScopeId;
+  }
 
-    return bean;
+  public String getNewBranchName() {
+    return newBranchName;
   }
 }
