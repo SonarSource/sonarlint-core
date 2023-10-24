@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.websocket;
 
-import com.google.common.eventbus.Subscribe;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -44,6 +43,7 @@ import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurat
 import org.sonarsource.sonarlint.core.serverconnection.events.EventDispatcher;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.websocket.events.QualityGateChangedEvent;
+import org.springframework.context.event.EventListener;
 
 import static java.util.Objects.requireNonNull;
 
@@ -76,7 +76,7 @@ public class WebSocketService {
     }
   }
 
-  @Subscribe
+  @EventListener
   public void handleEvent(BindingConfigChangedEvent bindingConfigChangedEvent) {
     if (!shouldEnableWebSockets) {
       return;
@@ -84,7 +84,7 @@ public class WebSocketService {
     considerScope(bindingConfigChangedEvent.getConfigScopeId());
   }
 
-  @Subscribe
+  @EventListener
   public void handleEvent(ConfigurationScopesAddedEvent configurationScopesAddedEvent) {
     if (!shouldEnableWebSockets) {
       return;
@@ -92,7 +92,7 @@ public class WebSocketService {
     considerAllBoundConfigurationScopes(configurationScopesAddedEvent.getAddedConfigurationScopeIds());
   }
 
-  @Subscribe
+  @EventListener
   public void handleEvent(ConfigurationScopeRemovedEvent configurationScopeRemovedEvent) {
     if (!shouldEnableWebSockets) {
       return;
@@ -102,7 +102,7 @@ public class WebSocketService {
     closeSocketIfNoMoreNeeded();
   }
 
-  @Subscribe
+  @EventListener
   public void handleEvent(ConnectionConfigurationAddedEvent connectionConfigurationAddedEvent) {
     if (!shouldEnableWebSockets) {
       return;
@@ -111,7 +111,7 @@ public class WebSocketService {
     considerConnection(connectionConfigurationAddedEvent.getAddedConnectionId());
   }
 
-  @Subscribe
+  @EventListener
   public void handleEvent(ConnectionConfigurationUpdatedEvent connectionConfigurationUpdatedEvent) {
     if (!shouldEnableWebSockets) {
       return;
@@ -124,7 +124,7 @@ public class WebSocketService {
     }
   }
 
-  @Subscribe
+  @EventListener
   public void handleEvent(ConnectionConfigurationRemovedEvent connectionConfigurationRemovedEvent) {
     if (!shouldEnableWebSockets) {
       return;
@@ -133,7 +133,7 @@ public class WebSocketService {
     forgetConnection(removedConnectionId);
   }
 
-  @Subscribe
+  @EventListener
   public void handleEvent(ConnectionCredentialsChangedEvent connectionCredentialsChangedEvent) {
     if (!shouldEnableWebSockets) {
       return;
