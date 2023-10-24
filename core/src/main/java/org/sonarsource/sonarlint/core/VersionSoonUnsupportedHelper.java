@@ -19,10 +19,16 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import com.google.common.eventbus.Subscribe;
+import com.google.common.util.concurrent.MoreExecutors;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -36,6 +42,7 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverconnection.VersionUtils;
 import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
+import org.springframework.context.event.EventListener;
 
 @Named
 @Singleton
@@ -50,7 +57,8 @@ public class VersionSoonUnsupportedHelper {
   private final ConnectionConfigurationRepository connectionRepository;
   private final ServerApiProvider serverApiProvider;
   private final SynchronizationServiceImpl synchronizationService;
-  private final Map<String, Version> cacheConnectionIdPerVersion;
+  private final Map<String, Version> cacheConnectionIdPerVersion = new ConcurrentHashMap<>();
+  private final ExecutorService executorService;
 
   public VersionSoonUnsupportedHelper(SonarLintRpcClient client, ConfigurationRepository configRepository, ServerApiProvider serverApiProvider,
     ConnectionConfigurationRepository connectionRepository, SynchronizationServiceImpl synchronizationService) {
@@ -59,56 +67,72 @@ public class VersionSoonUnsupportedHelper {
     this.connectionRepository = connectionRepository;
     this.serverApiProvider = serverApiProvider;
     this.synchronizationService = synchronizationService;
-    cacheConnectionIdPerVersion = new HashMap<>();
+    this.executorService = new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
+      new LinkedBlockingQueue<>(), r -> new Thread(r, "Version Soon Unsupported Helper"));
   }
 
-  @Subscribe
+  @EventListener
   public void configurationScopesAdded(ConfigurationScopesAddedEvent event) {
     var configScopeIds = event.getAddedConfigurationScopeIds();
-    checkIfSoonUnsupported(configScopeIds);
+    checkIfSoonUnsupportedOncePerConnection(configScopeIds);
   }
 
-  @Subscribe
+  @EventListener
   public void bindingConfigChanged(BindingConfigChangedEvent event) {
     var configScopeId = event.getConfigScopeId();
     var connectionId = event.getNewConfig().getConnectionId();
     if (connectionId != null) {
-      checkIfSoonUnsupported(configScopeId, connectionId);
+      queueCheckIfSoonUnsupported(connectionId, configScopeId);
     }
   }
 
-  private void checkIfSoonUnsupported(Set<String> configScopeIds) {
-    var connectionsPerConfigScopeId = new HashMap<String, String>();
+  private void checkIfSoonUnsupportedOncePerConnection(Set<String> configScopeIds) {
+    // We will check once per connection, and send the notification for the first config scope associated to this connection
+    var oneConfigScopeIdPerConnection = new HashMap<String, String>();
     configScopeIds.forEach(configScopeId -> {
       var effectiveBinding = configRepository.getEffectiveBinding(configScopeId);
       if (effectiveBinding.isPresent()) {
         var connectionId = effectiveBinding.get().getConnectionId();
-        connectionsPerConfigScopeId.putIfAbsent(connectionId, configScopeId);
+        oneConfigScopeIdPerConnection.putIfAbsent(connectionId, configScopeId);
       }
     });
-    connectionsPerConfigScopeId.forEach((key, value) -> checkIfSoonUnsupported(value, key));
+    oneConfigScopeIdPerConnection.forEach(this::queueCheckIfSoonUnsupported);
+
   }
 
-  private void checkIfSoonUnsupported(String configScopeId, String connectionId) {
-    var connection = connectionRepository.getConnectionById(connectionId);
-    if (connection != null && connection.getKind() == ConnectionKind.SONARQUBE) {
-      var serverInfo = serverApiProvider.getServerApi(connectionId);
-      if (serverInfo.isPresent()) {
-        var version = synchronizationService.getServerConnection(connectionId, serverInfo.get()).readOrSynchronizeServerVersion(serverInfo.get());
-        var isCached = cacheConnectionIdPerVersion.containsKey(connectionId) && cacheConnectionIdPerVersion.get(connectionId).compareTo(version) == 0;
-        if (!isCached && VersionUtils.isVersionSupportedDuringGracePeriod(version)) {
-          client.showSoonUnsupportedMessage(
-            new ShowSoonUnsupportedMessageParams(
-              String.format(UNSUPPORTED_NOTIFICATION_ID, connectionId, version.getName()),
-              configScopeId,
-              String.format(NOTIFICATION_MESSAGE, version.getName(), connectionId, VersionUtils.getCurrentLts())
-            )
-          );
-          LOG.debug(String.format("Connection ID '%s' with version '%s' is detected to be soon unsupported",
-            connection.getConnectionId(), version.getName()));
+  private void queueCheckIfSoonUnsupported(String connectionId, String configScopeId) {
+    executorService.submit(() -> {
+      try {
+        var connection = connectionRepository.getConnectionById(connectionId);
+        if (connection != null && connection.getKind() == ConnectionKind.SONARQUBE) {
+          var serverInfo = serverApiProvider.getServerApi(connectionId);
+          if (serverInfo.isPresent()) {
+            var version = synchronizationService.getServerConnection(connectionId, serverInfo.get()).readOrSynchronizeServerVersion(serverInfo.get());
+            var isCached = cacheConnectionIdPerVersion.containsKey(connectionId) && cacheConnectionIdPerVersion.get(connectionId).compareTo(version) == 0;
+            if (!isCached && VersionUtils.isVersionSupportedDuringGracePeriod(version)) {
+              client.showSoonUnsupportedMessage(
+                new ShowSoonUnsupportedMessageParams(
+                  String.format(UNSUPPORTED_NOTIFICATION_ID, connectionId, version.getName()),
+                  configScopeId,
+                  String.format(NOTIFICATION_MESSAGE, version.getName(), connectionId, VersionUtils.getCurrentLts())
+                )
+              );
+              LOG.debug(String.format("Connection '%s' with version '%s' is detected to be soon unsupported",
+                connection.getConnectionId(), version.getName()));
+            }
+            cacheConnectionIdPerVersion.put(connectionId, version);
+          }
         }
-        cacheConnectionIdPerVersion.put(connectionId, version);
+      } catch (Exception e) {
+        LOG.error("Error while checking if soon unsupported", e);
       }
+    });
+  }
+
+  @PreDestroy
+  public void shutdown() {
+    if (!MoreExecutors.shutdownAndAwaitTermination(executorService, 1, TimeUnit.SECONDS)) {
+      LOG.warn("Unable to stop version soon unsupported executor service in a timely manner");
     }
   }
 
