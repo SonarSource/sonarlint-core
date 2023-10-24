@@ -25,6 +25,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.OpenHotspotInBrowserParams;
+import org.sonarsource.sonarlint.core.telemetry.InternalDebug;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorageManager;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
@@ -34,10 +35,13 @@ class TelemetryMediumTests {
 
   private SonarLintTestRpcServer backend;
   private String oldValue;
+  private boolean oldDebugValue;
 
 
   @BeforeEach
   void saveTelemetryFlag() {
+    this.oldDebugValue = InternalDebug.isEnabled();
+    InternalDebug.setEnabled(true);
     oldValue = System.getProperty("sonarlint.telemetry.disabled");
   }
 
@@ -50,6 +54,7 @@ class TelemetryMediumTests {
     } else {
       System.setProperty("sonarlint.telemetry.disabled", oldValue);
     }
+    InternalDebug.setEnabled(oldDebugValue);
   }
 
   @Test
