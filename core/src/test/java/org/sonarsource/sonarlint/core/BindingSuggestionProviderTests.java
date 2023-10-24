@@ -92,8 +92,7 @@ class BindingSuggestionProviderTests {
   void trigger_suggest_binding_if_config_flag_turned_on() {
     when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1));
 
-    underTest.bindingConfigChanged(new BindingConfigChangedEvent(
-      CONFIG_SCOPE_ID_1, new BindingConfiguration(null, null, true),
+    underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID_1, new BindingConfiguration(null, null, true),
       new BindingConfiguration(null, null, false)));
 
     assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).contains("Binding suggestion computation queued for config scopes '" + CONFIG_SCOPE_ID_1 + "'...");
@@ -103,8 +102,7 @@ class BindingSuggestionProviderTests {
   void dont_trigger_suggest_binding_if_config_flag_turned_off() {
     when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1));
 
-    underTest.bindingConfigChanged(new BindingConfigChangedEvent(
-      CONFIG_SCOPE_ID_1, new BindingConfiguration(null, null, false),
+    underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID_1, new BindingConfiguration(null, null, false),
       new BindingConfiguration(null, null, true)));
 
     assertThat(logTester.logs()).isEmpty();
@@ -176,8 +174,7 @@ class BindingSuggestionProviderTests {
     when(configRepository.getConfigurationScope("suggestionsDisabled")).thenReturn(new ConfigurationScope("suggestionsDisabled", null, true, "Suggestion disabled"));
     when(configRepository.getBindingConfiguration("suggestionsDisabled")).thenReturn(new BindingConfiguration(null, null, true));
 
-    underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(
-      ImmutableSortedSet.of("configScopeWithNoBinding", "configScopeWithNoConfig", "configScopeNotBindable", "alreadyBound", "suggestionsDisabled")));
+    underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(ImmutableSortedSet.of("configScopeWithNoBinding", "configScopeWithNoConfig", "configScopeNotBindable", "alreadyBound", "suggestionsDisabled")));
 
     assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
       .contains(
