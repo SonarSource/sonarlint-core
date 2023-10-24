@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.eventbus.Subscribe;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -35,6 +34,7 @@ import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
+import org.springframework.context.event.EventListener;
 
 import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singlePlural;
 
@@ -84,12 +84,12 @@ public class SonarProjectsCache {
     this.serverApiProvider = serverApiProvider;
   }
 
-  @Subscribe
+  @EventListener
   public void connectionRemoved(ConnectionConfigurationRemovedEvent e) {
     evictAll(e.getRemovedConnectionId());
   }
 
-  @Subscribe
+  @EventListener
   public void connectionUpdated(ConnectionConfigurationUpdatedEvent e) {
     // If connection config was modified (url, credentials, ...) then the projects the user might be able to "see" could be different
     evictAll(e.getUpdatedConnectionId());

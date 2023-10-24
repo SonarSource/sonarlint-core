@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.sync;
 
-import com.google.common.eventbus.Subscribe;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.util.HashSet;
 import java.util.List;
@@ -41,7 +40,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeCon
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.event.ActiveSonarProjectBranchChanged;
+import org.sonarsource.sonarlint.core.event.ActiveSonarProjectBranchChangedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.progress.ProgressNotifier;
 import org.sonarsource.sonarlint.core.progress.TaskManager;
@@ -49,6 +48,7 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverconnection.ServerConnection;
 import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.springframework.context.event.EventListener;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.groupingBy;
@@ -166,8 +166,8 @@ public class SynchronizationServiceImpl {
     });
   }
 
-  @Subscribe
-  public void onSonarProjectBranchChanged(ActiveSonarProjectBranchChanged changedEvent) {
+  @EventListener
+  public void onSonarProjectBranchChanged(ActiveSonarProjectBranchChangedEvent changedEvent) {
     if (!synchronizationEnabled) {
       return;
     }
@@ -175,6 +175,7 @@ public class SynchronizationServiceImpl {
     configurationRepository.getEffectiveBinding(configurationScopeId).ifPresent(binding -> autoSync(Map.of(requireNonNull(binding.getConnectionId()),
       List.of(new BoundConfigurationScope(configurationScopeId, binding.getSonarProjectKey())))));
   }
+
 
   public void fetchProjectIssues(Binding binding, String activeBranch) {
     serverApiProvider.getServerApi(binding.getConnectionId()).ifPresent(serverApi -> {

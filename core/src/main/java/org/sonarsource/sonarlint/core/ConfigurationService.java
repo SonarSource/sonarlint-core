@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import com.google.common.eventbus.EventBus;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -39,6 +38,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpd
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
+import org.springframework.context.ApplicationEventPublisher;
 
 @Named
 @Singleton
@@ -46,11 +46,11 @@ public class ConfigurationService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final EventBus clientEventBus;
+  private final ApplicationEventPublisher applicationEventPublisher;
   private final ConfigurationRepository repository;
 
-  public ConfigurationService(EventBus clientEventBus, ConfigurationRepository repository) {
-    this.clientEventBus = clientEventBus;
+  public ConfigurationService(ApplicationEventPublisher applicationEventPublisher, ConfigurationRepository repository) {
+    this.applicationEventPublisher = applicationEventPublisher;
     this.repository = repository;
   }
 
@@ -65,7 +65,7 @@ public class ConfigurationService {
         addedIds.add(addedDto.getId());
       }
     }
-    clientEventBus.post(new ConfigurationScopesAddedEvent(addedIds));
+    applicationEventPublisher.publishEvent(new ConfigurationScopesAddedEvent(addedIds));
   }
 
   private ConfigurationScope addOrUpdateRepository(ConfigurationScopeDto dto) {
@@ -91,14 +91,14 @@ public class ConfigurationService {
     if (removed == null) {
       LOG.error("Attempt to remove configuration scope '{}' that was not registered", idToRemove);
     } else {
-      clientEventBus.post(new ConfigurationScopeRemovedEvent(removed.getScope(), removed.getBindingConfiguration()));
+      applicationEventPublisher.publishEvent(new ConfigurationScopeRemovedEvent(removed.getScope(), removed.getBindingConfiguration()));
     }
   }
 
   public void didUpdateBinding(DidUpdateBindingParams params) {
     var boundEvent = bind(params.getConfigScopeId(), params.getUpdatedBinding());
     if (boundEvent != null) {
-      clientEventBus.post(boundEvent);
+      applicationEventPublisher.publishEvent(boundEvent);
     }
   }
 

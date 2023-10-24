@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import com.google.common.eventbus.Subscribe;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -54,6 +53,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.Bindin
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.GetBindingSuggestionsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.utils.ExecutorServiceShutdownCancelChecker;
+import org.springframework.context.event.EventListener;
 
 import static java.lang.String.join;
 import static java.util.Collections.emptyMap;
@@ -97,7 +97,7 @@ public class BindingSuggestionProvider {
     this.executorService = executorService;
   }
 
-  @Subscribe
+  @EventListener
   public void bindingConfigChanged(BindingConfigChangedEvent event) {
     // Check if binding suggestion was switched on
     if (!event.getNewConfig().isBindingSuggestionDisabled() && event.getPreviousConfig().isBindingSuggestionDisabled()) {
@@ -105,7 +105,7 @@ public class BindingSuggestionProvider {
     }
   }
 
-  @Subscribe
+  @EventListener
   public void configurationScopesAdded(ConfigurationScopesAddedEvent event) {
     var configScopeIds = event.getAddedConfigurationScopeIds();
     suggestBindingForGivenScopesAndAllConnections(configScopeIds);
@@ -123,7 +123,7 @@ public class BindingSuggestionProvider {
     }
   }
 
-  @Subscribe
+  @EventListener
   public void connectionAdded(ConnectionConfigurationAddedEvent event) {
     // Double check if added connection has not been removed in the meantime
     var addedConnectionId = event.getAddedConnectionId();

@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import com.google.common.eventbus.EventBus;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -68,6 +67,7 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.organization.OrganizationApi;
+import org.springframework.context.ApplicationEventPublisher;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -77,21 +77,21 @@ public class ConnectionService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final EventBus clientEventBus;
+  private final ApplicationEventPublisher applicationEventPublisher;
   private final ConnectionConfigurationRepository repository;
   private final HttpClientProvider httpClientProvider;
   private final TokenGeneratorHelper tokenGeneratorHelper;
 
   @Inject
-  public ConnectionService(EventBus clientEventBus, ConnectionConfigurationRepository repository, InitializeParams params,
+  public ConnectionService(ApplicationEventPublisher applicationEventPublisher, ConnectionConfigurationRepository repository, InitializeParams params,
     HttpClientProvider httpClientProvider, TokenGeneratorHelper tokenGeneratorHelper) {
-    this(clientEventBus, repository, params.getSonarQubeConnections(), params.getSonarCloudConnections(), httpClientProvider, tokenGeneratorHelper);
+    this(applicationEventPublisher, repository, params.getSonarQubeConnections(), params.getSonarCloudConnections(), httpClientProvider, tokenGeneratorHelper);
   }
 
-  ConnectionService(EventBus clientEventBus, ConnectionConfigurationRepository repository,
+  ConnectionService(ApplicationEventPublisher applicationEventPublisher, ConnectionConfigurationRepository repository,
     List<SonarQubeConnectionConfigurationDto> initSonarQubeConnections, List<SonarCloudConnectionConfigurationDto> initSonarCloudConnections,
     HttpClientProvider httpClientProvider, TokenGeneratorHelper tokenGeneratorHelper) {
-    this.clientEventBus = clientEventBus;
+    this.applicationEventPublisher = applicationEventPublisher;
     this.repository = repository;
     this.httpClientProvider = httpClientProvider;
     this.tokenGeneratorHelper = tokenGeneratorHelper;
@@ -136,12 +136,12 @@ public class ConnectionService {
   }
 
   public void didChangeCredentials(DidChangeCredentialsParams params) {
-    clientEventBus.post(new ConnectionCredentialsChangedEvent(params.getConnectionId()));
+    applicationEventPublisher.publishEvent(new ConnectionCredentialsChangedEvent(params.getConnectionId()));
   }
 
   private void addConnection(AbstractConnectionConfiguration connectionConfiguration) {
     repository.addOrReplace(connectionConfiguration);
-    clientEventBus.post(new ConnectionConfigurationAddedEvent(connectionConfiguration.getConnectionId()));
+    applicationEventPublisher.publishEvent(new ConnectionConfigurationAddedEvent(connectionConfiguration.getConnectionId()));
   }
 
   private void removeConnection(String removedConnectionId) {
@@ -149,7 +149,7 @@ public class ConnectionService {
     if (removed == null) {
       LOG.debug("Attempt to remove connection '{}' that was not registered. Possibly a race condition?", removedConnectionId);
     } else {
-      clientEventBus.post(new ConnectionConfigurationRemovedEvent(removedConnectionId));
+      applicationEventPublisher.publishEvent(new ConnectionConfigurationRemovedEvent(removedConnectionId));
     }
   }
 
@@ -158,9 +158,9 @@ public class ConnectionService {
     var previous = repository.addOrReplace(connectionConfiguration);
     if (previous == null) {
       LOG.debug("Attempt to update connection '{}' that was not registered. Possibly a race condition?", connectionId);
-      clientEventBus.post(new ConnectionConfigurationAddedEvent(connectionConfiguration.getConnectionId()));
+      applicationEventPublisher.publishEvent(new ConnectionConfigurationAddedEvent(connectionConfiguration.getConnectionId()));
     } else {
-      clientEventBus.post(new ConnectionConfigurationUpdatedEvent(connectionConfiguration.getConnectionId()));
+      applicationEventPublisher.publishEvent(new ConnectionConfigurationUpdatedEvent(connectionConfiguration.getConnectionId()));
     }
   }
 
