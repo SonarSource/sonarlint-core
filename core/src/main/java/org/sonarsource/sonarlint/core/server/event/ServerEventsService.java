@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.server.event;
 
-import com.google.common.eventbus.Subscribe;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -57,6 +56,7 @@ import org.sonarsource.sonarlint.core.serverapi.push.SonarProjectEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.TaintVulnerabilityClosedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.TaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.springframework.context.event.EventListener;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.mapping;
@@ -84,7 +84,7 @@ public class ServerEventsService {
     this.shouldManageServerSentEvents = initializeParams.getFeatureFlags().shouldManageServerSentEvents();
   }
 
-  @Subscribe
+  @EventListener
   public void handle(ConfigurationScopesAddedEvent event) {
     if (!shouldManageServerSentEvents) {
       return;
@@ -92,7 +92,7 @@ public class ServerEventsService {
     subscribeAll(event.getAddedConfigurationScopeIds());
   }
 
-  @Subscribe
+  @EventListener
   public void handle(ConfigurationScopeRemovedEvent event) {
     if (!shouldManageServerSentEvents) {
       return;
@@ -107,7 +107,7 @@ public class ServerEventsService {
     }
   }
 
-  @Subscribe
+  @EventListener
   public void handle(BindingConfigChangedEvent event) {
     if (!shouldManageServerSentEvents) {
       return;
@@ -119,7 +119,7 @@ public class ServerEventsService {
     }
   }
 
-  @Subscribe
+  @EventListener
   public void handle(ConnectionConfigurationAddedEvent event) {
     if (!shouldManageServerSentEvents) {
       return;
@@ -130,7 +130,7 @@ public class ServerEventsService {
     subscribe(connectionId, boundScopes.stream().map(BoundScope::getSonarProjectKey).collect(toSet()));
   }
 
-  @Subscribe
+  @EventListener
   public void handle(ConnectionConfigurationRemovedEvent event) {
     if (!shouldManageServerSentEvents) {
       return;
@@ -141,7 +141,7 @@ public class ServerEventsService {
     }
   }
 
-  @Subscribe
+  @EventListener
   public void handle(ConnectionConfigurationUpdatedEvent event) {
     if (!shouldManageServerSentEvents) {
       return;
@@ -150,7 +150,7 @@ public class ServerEventsService {
     resubscribe(event.getUpdatedConnectionId());
   }
 
-  @Subscribe
+  @EventListener
   public void handle(ConnectionCredentialsChangedEvent event) {
     if (!shouldManageServerSentEvents) {
       return;
