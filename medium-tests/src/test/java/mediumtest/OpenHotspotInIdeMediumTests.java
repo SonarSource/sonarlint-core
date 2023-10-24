@@ -26,12 +26,10 @@ import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.TextRange;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
@@ -43,8 +41,6 @@ import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 
 class OpenHotspotInIdeMediumTests {
   public static final String CONNECTION_ID = "connectionId";
-  @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester();
 
   private SonarLintTestRpcServer backend;
   static ServerFixture.Server serverWithHotspot = newSonarQubeServer("1.2.3")

@@ -41,12 +41,12 @@ class HotspotRpcServiceDelegate extends AbstractRpcServiceDelegate implements Ho
 
   @Override
   public void openHotspotInBrowser(OpenHotspotInBrowserParams params) {
-    notify(() -> getBean(HotspotService.class).openHotspotInBrowser(params));
+    notify(() -> getBean(HotspotService.class).openHotspotInBrowser(params), params.getConfigScopeId());
   }
 
   @Override
   public CompletableFuture<CheckLocalDetectionSupportedResponse> checkLocalDetectionSupported(CheckLocalDetectionSupportedParams params) {
-    return requestAsync(cancelChecker -> getBean(HotspotService.class).checkLocalDetectionSupported(params, cancelChecker));
+    return requestAsync(cancelChecker -> getBean(HotspotService.class).checkLocalDetectionSupported(params, cancelChecker), params.getConfigScopeId());
   }
 
   @Override
@@ -56,6 +56,6 @@ class HotspotRpcServiceDelegate extends AbstractRpcServiceDelegate implements Ho
 
   @Override
   public CompletableFuture<Void> changeStatus(ChangeHotspotStatusParams params) {
-    return runAsync(cancelChecker -> getBean(HotspotService.class).changeStatus(params, cancelChecker));
+    return runAsync(cancelChecker -> getBean(HotspotService.class).changeStatus(params, cancelChecker), params.getConfigurationScopeId());
   }
 }

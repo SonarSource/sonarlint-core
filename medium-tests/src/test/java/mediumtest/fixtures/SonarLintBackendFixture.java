@@ -34,11 +34,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import mediumtest.fixtures.storage.ConfigurationScopeStorageFixture;
@@ -85,6 +88,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesPara
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.info.GetClientInfoResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
@@ -94,6 +98,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeCon
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
+import testutils.websockets.WebSocketConnectionRepository;
 
 import static mediumtest.fixtures.storage.StorageFixture.newStorage;
 
@@ -483,6 +488,7 @@ public class SonarLintBackendFixture {
     @Nullable
     private final SonarLintRpcClient delegate;
     private SonarLintRpcServer backend;
+    private Queue<LogParams> logs = new ConcurrentLinkedQueue<>();
 
     public FakeSonarLintRpcClient(List<FoundFileDto> foundFiles, String clientDescription,
       LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
@@ -654,6 +660,11 @@ public class SonarLintBackendFixture {
       }
     }
 
+    @Override
+    public void log(LogParams params) {
+      this.logs.add(params);
+    }
+
     public boolean hasReceivedSuggestions() {
       return !bindingSuggestions.isEmpty();
     }
@@ -690,10 +701,16 @@ public class SonarLintBackendFixture {
       return issueParamsToShowByIssueKey;
     }
 
-    private static <T> CompletableFuture<T> canceledFuture() {
-      var completableFuture = new CompletableFuture<T>();
-      completableFuture.cancel(false);
-      return completableFuture;
+    public Queue<LogParams> getLogs() {
+      return logs;
+    }
+
+    public List<String> getLogMessages() {
+      return logs.stream().map(LogParams::getMessage).collect(Collectors.toList());
+    }
+
+    public void clearLogs() {
+      logs.clear();
     }
 
     public static class ProgressReport {

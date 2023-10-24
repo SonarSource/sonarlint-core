@@ -25,10 +25,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.springframework.beans.factory.BeanFactory;
-
 abstract class AbstractRpcServiceDelegate {
 
   private final Supplier<BeanFactory> beanFactorySupplier;
@@ -41,29 +46,56 @@ abstract class AbstractRpcServiceDelegate {
     this.requestAndNotificationsSequentialExecutor = requestAndNotificationsSequentialExecutor;
   }
 
+  class RpcClientLogOutput implements ClientLogOutput {
+
+    @Nullable
+    private final String configScopeId;
+    private final SonarLintRpcClient client;
+
+    RpcClientLogOutput(@Nullable String configScopeId) {
+      this.client = getBean(SonarLintRpcClient.class);
+      this.configScopeId = configScopeId;
+    }
+
+    @Override
+    public void log(String msg, Level level) {
+      client.log(new LogParams(LogLevel.valueOf(level.name()), msg, configScopeId));
+    }
+  }
+
   protected <T> T getBean(Class<T> clazz) {
     return beanFactorySupplier.get().getBean(clazz);
   }
 
   protected <R> CompletableFuture<R> requestAsync(Function<CancelChecker, R> code) {
+    return requestAsync(code, null);
+  }
+
+  protected <R> CompletableFuture<R> requestAsync(Function<CancelChecker, R> code, @Nullable String configScopeId) {
     return CompletableFutures.computeAsync(requestAndNotificationsSequentialExecutor, cancelChecker -> {
       var wrapper = new CancelCheckerWrapper(cancelChecker);
       wrapper.checkCanceled();
       return wrapper;
-    }).thenApplyAsync(cancelChecker -> {
+    }).thenApplyAsync(cancelChecker -> withLogger(() -> {
       cancelChecker.checkCanceled();
       return code.apply(cancelChecker);
-    }, requestsExecutor);
+    }, configScopeId), requestsExecutor);
   }
 
   protected CompletableFuture<Void> runAsync(Consumer<CancelChecker> code) {
+    return runAsync(code, null);
+  }
+
+  protected CompletableFuture<Void> runAsync(Consumer<CancelChecker> code, @Nullable String configScopeId) {
     return CompletableFutures.computeAsync(requestAndNotificationsSequentialExecutor, cancelChecker -> {
       var wrapper = new CancelCheckerWrapper(cancelChecker);
       wrapper.checkCanceled();
       return wrapper;
     }).thenApplyAsync(cancelChecker -> {
-      cancelChecker.checkCanceled();
-      code.accept(cancelChecker);
+      withLogger(() -> {
+        cancelChecker.checkCanceled();
+        code.accept(cancelChecker);
+      }, configScopeId);
       return null;
     }, requestsExecutor);
   }
@@ -73,7 +105,29 @@ abstract class AbstractRpcServiceDelegate {
    * so we are also moving notifications to a separate thread pool. Still we want to preserve ordering of requests and notifications.
    */
   protected void notify(Runnable code) {
-    requestAndNotificationsSequentialExecutor.submit(code);
+    notify(code, null);
+  }
+
+  protected void notify(Runnable code, String configScopeId) {
+    requestAndNotificationsSequentialExecutor.submit(() -> withLogger(code, configScopeId));
+  }
+
+  private void withLogger(Runnable code, @Nullable String configScopeId) {
+    SonarLintLogger.setTarget(new RpcClientLogOutput(configScopeId));
+    try {
+      code.run();
+    } finally {
+      SonarLintLogger.setTarget(null);
+    }
+  }
+
+  private <G> G withLogger(Supplier<G> code, @Nullable String configScopeId) {
+    SonarLintLogger.setTarget(new RpcClientLogOutput(configScopeId));
+    try {
+      return code.get();
+    } finally {
+      SonarLintLogger.setTarget(null);
+    }
   }
 
   private class CancelCheckerWrapper implements CancelChecker {

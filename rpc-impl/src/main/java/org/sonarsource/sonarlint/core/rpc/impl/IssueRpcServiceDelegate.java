@@ -42,17 +42,17 @@ public class IssueRpcServiceDelegate extends AbstractRpcServiceDelegate implemen
 
   @Override
   public CompletableFuture<Void> changeStatus(ChangeIssueStatusParams params) {
-    return runAsync(cancelChecker -> getBean(IssueService.class).changeStatus(params, cancelChecker));
+    return runAsync(cancelChecker -> getBean(IssueService.class).changeStatus(params, cancelChecker), params.getConfigurationScopeId());
   }
 
   @Override
   public CompletableFuture<Void> addComment(AddIssueCommentParams params) {
-    return runAsync(cancelChecker -> getBean(IssueService.class).addComment(params, cancelChecker));
+    return runAsync(cancelChecker -> getBean(IssueService.class).addComment(params, cancelChecker), params.getConfigurationScopeId());
   }
 
   @Override
   public CompletableFuture<CheckAnticipatedStatusChangeSupportedResponse> checkAnticipatedStatusChangeSupported(CheckAnticipatedStatusChangeSupportedParams params) {
-    return requestAsync(cancelChecker -> getBean(IssueService.class).checkAnticipatedStatusChangeSupported(params, cancelChecker));
+    return requestAsync(cancelChecker -> getBean(IssueService.class).checkAnticipatedStatusChangeSupported(params, cancelChecker), params.getConfigScopeId());
   }
 
   @Override
@@ -62,11 +62,11 @@ public class IssueRpcServiceDelegate extends AbstractRpcServiceDelegate implemen
 
   @Override
   public CompletableFuture<ReopenIssueResponse> reopenIssue(ReopenIssueParams params) {
-    return requestAsync(cancelChecker -> getBean(IssueService.class).reopenIssue(params, cancelChecker));
+    return requestAsync(cancelChecker -> getBean(IssueService.class).reopenIssue(params, cancelChecker), params.getConfigurationScopeId());
   }
 
   @Override
   public CompletableFuture<ReopenIssueResponse> reopenAllIssuesForFile(ReopenAllIssuesForFileParams params) {
-    return requestAsync(cancelChecker -> getBean(IssueService.class).reopenAllIssuesForFile(params, cancelChecker));
+    return requestAsync(cancelChecker -> getBean(IssueService.class).reopenAllIssuesForFile(params, cancelChecker), params.getConfigurationScopeId());
   }
 }

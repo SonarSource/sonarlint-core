@@ -34,6 +34,6 @@ class SonarProjectBranchRpcServiceDelegate extends AbstractRpcServiceDelegate im
 
   @Override
   public void didChangeActiveSonarProjectBranch(DidChangeActiveSonarProjectBranchParams params) {
-    notify(() -> getBean(SonarProjectBranchService.class).didChangeActiveSonarProjectBranch(params));
+    notify(() -> getBean(SonarProjectBranchService.class).didChangeActiveSonarProjectBranch(params), params.getConfigScopeId());
   }
 }

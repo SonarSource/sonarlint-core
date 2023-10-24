@@ -36,7 +36,7 @@ public class NewCodeRpcServiceDelegate extends AbstractRpcServiceDelegate implem
 
   @Override
   public CompletableFuture<GetNewCodeDefinitionResponse> getNewCodeDefinition(GetNewCodeDefinitionParams params) {
-    return requestAsync(cancelChecker -> getBean(NewCodeService.class).getNewCodeDefinition(params, cancelChecker));
+    return requestAsync(cancelChecker -> getBean(NewCodeService.class).getNewCodeDefinition(params, cancelChecker), params.getConfigScopeId());
   }
 
   @Override

@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.BackendErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsResponse;
@@ -52,7 +53,7 @@ class RulesRpcServiceDelegate extends AbstractRpcServiceDelegate implements Rule
         ResponseError error = new ResponseError(BackendErrorCode.RULE_NOT_FOUND, e.getMessage(), e.getRuleKey());
         throw new ResponseErrorException(error);
       }
-    });
+    }, params.getConfigurationScopeId());
   }
 
   @Override

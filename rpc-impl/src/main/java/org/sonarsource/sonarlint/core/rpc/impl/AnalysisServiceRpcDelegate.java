@@ -36,6 +36,6 @@ class AnalysisServiceRpcDelegate extends AbstractRpcServiceDelegate implements A
 
   @Override
   public CompletableFuture<GetSupportedFilePatternsResponse> getSupportedFilePatterns(GetSupportedFilePatternsParams params) {
-    return requestAsync(cancelChecker -> getBean(AnalysisService.class).getSupportedFilePatterns(params, cancelChecker));
+    return requestAsync(cancelChecker -> getBean(AnalysisService.class).getSupportedFilePatterns(params, cancelChecker), params.getConfigScopeId());
   }
 }
