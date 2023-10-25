@@ -419,8 +419,8 @@ public class ServerFixture {
             .addIssues(
               Issues.Issue.newBuilder()
                 .setKey(issue.getKey()).setRule(issue.getRule()).setCreationDate(issue.getCreationDate()).setMessage(issue.getMessage())
-                .setTextRange(issue.getTextRange()).build())
-            .addComponents(Issues.Component.newBuilder().setPath(issue.getComponent()).build())
+                .setTextRange(issue.getTextRange()).setComponent(issue.getComponent()).build())
+            .addComponents(Issues.Component.newBuilder().setPath(issue.getComponent()).setKey(issue.getComponent()).build())
             .setRules(Issues.SearchWsResponse.newBuilder().getRulesBuilder().addRules(Common.Rule.newBuilder().setKey(issue.getRule()).build()))
             .build())))));
       }));
