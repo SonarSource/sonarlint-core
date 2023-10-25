@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.serverapi.push.parsing.EventParser;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.IssueChangedEventParser;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.SecurityHotspotClosedEventParser;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.SecurityHotspotRaisedEventParser;
+import org.sonarsource.sonarlint.core.serverapi.push.parsing.TaintVulnerabilityClosedEventParser;
 import org.sonarsource.sonarlint.core.websocket.parsing.SmartNotificationEventParser;
 
 public class SonarCloudWebSocket {
@@ -51,7 +52,8 @@ public class SonarCloudWebSocket {
     "QualityGateChanged", new SmartNotificationEventParser("QUALITY_GATE"),
     "IssueChanged", new IssueChangedEventParser(),
     "SecurityHotspotClosed", new SecurityHotspotClosedEventParser(),
-    "SecurityHotspotRaised", new SecurityHotspotRaisedEventParser());
+    "SecurityHotspotRaised", new SecurityHotspotRaisedEventParser(),
+    "TaintVulnerabilityClosed", new TaintVulnerabilityClosedEventParser());
 
   private static final Map<String, EventParser<?>> parsersByTypeForProjectUserFilter = Map.of(
     "MyNewIssues", new SmartNotificationEventParser("NEW_ISSUES"));
