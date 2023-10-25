@@ -39,9 +39,12 @@ public class ServerApiUtils {
   }
 
   private static String extractCodeSnippet(String[] sourceCodeLines, TextRange textRange) {
-    if (textRange.getStartLine() == textRange.getEndLine()) {
-      var fullline = sourceCodeLines[textRange.getStartLine() - 1];
-      return fullline.substring(textRange.getStartOffset(), textRange.getEndOffset());
+    if (textRange.getStartLine() == 0 && textRange.getEndLine() == 0) {
+      // SLCORE-593 this is a file-level issue
+      return String.join("\n", sourceCodeLines);
+    } else if (textRange.getStartLine() == textRange.getEndLine()) {
+      var fullLine = sourceCodeLines[textRange.getStartLine() - 1];
+      return fullLine.substring(textRange.getStartOffset(), textRange.getEndOffset());
     } else {
       var linesOfTextRange = Arrays.copyOfRange(sourceCodeLines, textRange.getStartLine() - 1, textRange.getEndLine());
       linesOfTextRange[0] = linesOfTextRange[0].substring(textRange.getStartOffset());

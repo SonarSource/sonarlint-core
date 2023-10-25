@@ -41,25 +41,30 @@ import static org.awaitility.Awaitility.await;
 class ShowIssueMediumTests {
 
   private static final String ISSUE_KEY = "myIssueKey";
+  private static final String FILE_LEVEL_ISSUE_KEY = "fileLevelIssueKey";
   private static final String PROJECT_KEY = "projectKey";
   private static final String CONNECTION_ID = "connectionId";
   private static final String CONFIG_SCOPE_ID = "configScopeId";
   public static final String RULE_KEY = "ruleKey";
-  private ServerFixture.Server serverWithIssue = newSonarQubeServer("10.2")
+  private ServerFixture.Server serverWithIssues = newSonarQubeServer("10.2")
     .withProject(PROJECT_KEY,
       project -> project.withBranch("branchName",
-        branch -> branch.withIssue(ISSUE_KEY, RULE_KEY, "msg", "author", "file/path", "OPEN", "", "2023-05-13T17:55:39+0202",
-          new TextRange(1, 0, 3, 4))))
-    .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))
+        branch -> {
+        branch.withIssue(ISSUE_KEY, RULE_KEY, "msg", "author", "file/path", "OPEN", "", "2023-05-13T17:55:39+0202",
+            new TextRange(1, 0, 3, 4));
+        return branch.withIssue(FILE_LEVEL_ISSUE_KEY, RULE_KEY, "msg", "author", "file/path", "OPEN", "", "2023-05-13T17:55:39+0202",
+          new TextRange(0, 0, 0, 0));
+        }))
+    .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile\nfive\nlines"))
     .start();
   private SonarLintTestBackend backend;
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
     backend.shutdown().get();
-    if (serverWithIssue != null) {
-      serverWithIssue.shutdown();
-      serverWithIssue = null;
+    if (serverWithIssues != null) {
+      serverWithIssues.shutdown();
+      serverWithIssues = null;
     }
   }
 
@@ -67,7 +72,7 @@ class ShowIssueMediumTests {
   void it_should_update_the_telemetry_on_show_issue() throws Exception {
     var fakeClient = newFakeClient().build();
     backend = newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, serverWithIssue)
+      .withSonarQubeConnection(CONNECTION_ID, serverWithIssues)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withEmbeddedServer()
       .build(fakeClient);
@@ -94,7 +99,7 @@ class ShowIssueMediumTests {
 
     var fakeClient = newFakeClient().build();
     backend = newBackend()
-      .withSonarQubeConnection(connectionId, serverWithIssue)
+      .withSonarQubeConnection(connectionId, serverWithIssues)
       .withBoundConfigScope(configScopeId, connectionId, projectKey)
       .withEmbeddedServer()
       .build(fakeClient);
@@ -113,14 +118,46 @@ class ShowIssueMediumTests {
     assertThat(showIssueParams.getTextRange()).extracting(TextRangeDto::getStartLine, TextRangeDto::getStartLineOffset,
         TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
       .contains(1, 0, 3, 4);
+    assertThat(showIssueParams.getCodeSnippet()).isEqualTo("source\ncode\nfile");
+  }
+
+  @Test
+  void it_should_open_a_file_level_issue_in_ide() throws Exception {
+    var issueKey = FILE_LEVEL_ISSUE_KEY;
+    var projectKey = "projectKey";
+    var connectionId = "connectionId";
+    var configScopeId = "configScopeId";
+
+    var fakeClient = newFakeClient().build();
+    backend = newBackend()
+      .withSonarQubeConnection(connectionId, serverWithIssues)
+      .withBoundConfigScope(configScopeId, connectionId, projectKey)
+      .withEmbeddedServer()
+      .build(fakeClient);
+
+    var statusCode = executeOpenIssueRequest(FILE_LEVEL_ISSUE_KEY, PROJECT_KEY);
+
+    assertThat(statusCode).isEqualTo(200);
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getIssueParamsToShowByIssueKey()).containsOnlyKeys(issueKey));
+    var showIssueParams = fakeClient.getIssueParamsToShowByIssueKey().get(issueKey);
+    assertThat(showIssueParams.getIssueKey()).isEqualTo(issueKey);
+    assertThat(showIssueParams.isTaint()).isFalse();
+    assertThat(showIssueParams.getMessage()).isEqualTo("msg");
+    assertThat(showIssueParams.getConfigScopeId()).isEqualTo(configScopeId);
+    assertThat(showIssueParams.getRuleKey()).isEqualTo("ruleKey");
+    assertThat(showIssueParams.getCreationDate()).isEqualTo("2023-05-13T17:55:39+0202");
+    assertThat(showIssueParams.getTextRange()).extracting(TextRangeDto::getStartLine, TextRangeDto::getStartLineOffset,
+        TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
+      .contains(0, 0, 0, 0);
+    assertThat(showIssueParams.getCodeSnippet()).isEqualTo("source\ncode\nfile\nfive\nlines");
   }
 
   @Test
   void it_should_assist_creating_the_binding_if_scope_not_bound() throws Exception {
-    var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", CONNECTION_ID, serverWithIssue.baseUrl(),
+    var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", CONNECTION_ID, serverWithIssues.baseUrl(),
       "projectKey").build();
     backend = newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, serverWithIssue)
+      .withSonarQubeConnection(CONNECTION_ID, serverWithIssues)
       .withUnboundConfigScope("scopeId")
       .withEmbeddedServer()
       .build(fakeClient);
@@ -135,7 +172,7 @@ class ShowIssueMediumTests {
 
   @Test
   void it_should_assist_creating_the_connection_when_server_url_unknown() throws Exception {
-    var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", CONNECTION_ID, serverWithIssue.baseUrl(),
+    var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", CONNECTION_ID, serverWithIssues.baseUrl(),
       "projectKey").build();
     backend = newBackend()
       .withUnboundConfigScope("scopeId")
@@ -180,7 +217,7 @@ class ShowIssueMediumTests {
 
   private HttpRequest openIssueWithProjectAndKeyRequest(String issueParam, String projectParam) {
     return HttpRequest.newBuilder()
-      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/issues/show?server=" + serverWithIssue.baseUrl() + projectParam + issueParam))
+      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/issues/show?server=" + serverWithIssues.baseUrl() + projectParam + issueParam))
       .header("Origin", "https://sonar.my")
       .GET().build();
   }
