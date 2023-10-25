@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 import org.sonarsource.sonarlint.core.http.WebSocketClient;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.EventParser;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.IssueChangedEventParser;
+import org.sonarsource.sonarlint.core.serverapi.push.parsing.SecurityHotspotChangedEventParser;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.SecurityHotspotClosedEventParser;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.SecurityHotspotRaisedEventParser;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.TaintVulnerabilityClosedEventParser;
@@ -54,6 +55,7 @@ public class SonarCloudWebSocket {
     "IssueChanged", new IssueChangedEventParser(),
     "SecurityHotspotClosed", new SecurityHotspotClosedEventParser(),
     "SecurityHotspotRaised", new SecurityHotspotRaisedEventParser(),
+    "SecurityHotspotChanged", new SecurityHotspotChangedEventParser(),
     "TaintVulnerabilityClosed", new TaintVulnerabilityClosedEventParser(),
     "TaintVulnerabilityRaised", new TaintVulnerabilityRaisedEventParser());
 
