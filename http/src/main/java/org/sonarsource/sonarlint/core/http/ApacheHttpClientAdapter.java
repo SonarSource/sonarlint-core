@@ -30,6 +30,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -46,6 +47,8 @@ import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.nio.support.BasicRequestProducer;
 import org.apache.hc.core5.util.Timeout;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+
+import static org.sonarsource.sonarlint.core.commons.concurrent.ThreadFactories.threadWithNamePrefix;
 
 class ApacheHttpClientAdapter implements HttpClient {
 
@@ -265,11 +268,14 @@ class ApacheHttpClientAdapter implements HttpClient {
   public WebSocket createWebSocketConnection(String url, Consumer<String> messageConsumer, Runnable onClosedRunnable) {
     // TODO handle handshake or other errors
     return java.net.http.HttpClient
-        .newHttpClient()
-        .newWebSocketBuilder()
-        .header("Authorization", "Bearer " + usernameOrToken)
-        .buildAsync(URI.create(url), new WebSocketClient(messageConsumer, onClosedRunnable))
-        .join();
+      .newBuilder()
+      // Don't use the default thread pool as it won't allow inheriting thread local variables
+      .executor(Executors.newCachedThreadPool(threadWithNamePrefix("sonarcloud-websocket-")))
+      .build()
+      .newWebSocketBuilder()
+      .header("Authorization", "Bearer " + usernameOrToken)
+      .buildAsync(URI.create(url), new WebSocketClient(messageConsumer, onClosedRunnable))
+      .join();
   }
 
   private static class WebSocketClient implements WebSocket.Listener {
