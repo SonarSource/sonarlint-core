@@ -113,7 +113,7 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <executions>
                   <execution>
-                    <id>assemble-linux</id>
+                    <id>assemble-linux_x64</id>
                     <phase>package</phase>
                     <goals>
                       <goal>single</goal>
@@ -162,7 +162,7 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <executions>
                   <execution>
-                    <id>assemble-linux</id>
+                    <id>assemble-linux_aarch64</id>
                     <phase>package</phase>
                     <goals>
                       <goal>single</goal>
