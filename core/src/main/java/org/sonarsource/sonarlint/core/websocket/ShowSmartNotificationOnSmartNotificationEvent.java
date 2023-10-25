@@ -26,27 +26,26 @@ import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverconnection.events.ServerEventHandler;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
-import org.sonarsource.sonarlint.core.websocket.events.QualityGateChangedEvent;
+import org.sonarsource.sonarlint.core.websocket.events.SmartNotificationEvent;
 
-public class ShowSmartNotificationOnQualityGateChangedEvent implements ServerEventHandler<QualityGateChangedEvent> {
-  public static final String NOTIFICATION_CATEGORY = "QUALITY_GATE";
+public class ShowSmartNotificationOnSmartNotificationEvent implements ServerEventHandler<SmartNotificationEvent> {
   private final SonarLintClient client;
   private final ConfigurationRepository configurationRepository;
   private final TelemetryServiceImpl telemetryService;
 
-  public ShowSmartNotificationOnQualityGateChangedEvent(SonarLintClient client, ConfigurationRepository configurationRepository, TelemetryServiceImpl telemetryService) {
+  public ShowSmartNotificationOnSmartNotificationEvent(SonarLintClient client, ConfigurationRepository configurationRepository, TelemetryServiceImpl telemetryService) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.telemetryService = telemetryService;
   }
 
   @Override
-  public void handle(QualityGateChangedEvent event) {
+  public void handle(SmartNotificationEvent event) {
     var projectKey = event.getProject();
     configurationRepository.getBoundScopesByProject(projectKey).stream()
       .collect(Collectors.groupingBy(BoundScope::getConnectionId))
       .forEach((connectionId, scope) -> client.showSmartNotification(new ShowSmartNotificationParams(event.getMessage(), event.getLink(),
-        scope.stream().map(BoundScope::getId).collect(Collectors.toSet()), NOTIFICATION_CATEGORY, connectionId)));
-    telemetryService.smartNotificationsReceived(NOTIFICATION_CATEGORY);
+        scope.stream().map(BoundScope::getId).collect(Collectors.toSet()), event.getCategory(), connectionId)));
+    telemetryService.smartNotificationsReceived(event.getCategory());
   }
 }

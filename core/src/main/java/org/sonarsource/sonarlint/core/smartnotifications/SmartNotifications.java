@@ -96,7 +96,7 @@ public class SmartNotifications {
       var connection = connectionRepository.getConnectionById(connectionId);
       var httpClient = serverApiProvider.getServerApi(connectionId);
 
-      if (connection != null && !connection.isDisableNotifications() && httpClient.isPresent()) {
+      if (connection != null && !connection.isDisableNotifications() && httpClient.isPresent() && !shouldSkipPolling(connection)) {
         manageNotificationsForConnection(httpClient.get(), keysAndScopeIds.getValue(), connection);
       }
     }
@@ -115,12 +115,10 @@ public class SmartNotifications {
       var notifications = retrieveServerNotifications(developersApi, projectKeysByLastEventPolling);
 
       for (var n : notifications) {
-        if (!shouldIgnoreNotification(connection, n)) {
-          var smartNotification = new ShowSmartNotificationParams(n.message(), n.link(), scopeIdsPerProjectKey.get(n.projectKey()),
-            n.category(), connectionId);
-          client.showSmartNotification(smartNotification);
-          telemetryService.smartNotificationsReceived(n.category());
-        }
+        var smartNotification = new ShowSmartNotificationParams(n.message(), n.link(), scopeIdsPerProjectKey.get(n.projectKey()),
+          n.category(), connectionId);
+        client.showSmartNotification(smartNotification);
+        telemetryService.smartNotificationsReceived(n.category());
       }
 
       projectKeysByLastEventPolling.keySet()
@@ -128,8 +126,8 @@ public class SmartNotifications {
     }
   }
 
-  private boolean shouldIgnoreNotification(AbstractConnectionConfiguration connection, ServerNotification n) {
-    return connection.getKind() == ConnectionKind.SONARCLOUD && webSocketService.hasOpenConnection() && "QUALITY_GATE".equals(n.category());
+  private boolean shouldSkipPolling(AbstractConnectionConfiguration connection) {
+    return connection.getKind() == ConnectionKind.SONARCLOUD && webSocketService.hasOpenConnection();
   }
 
   @PreDestroy

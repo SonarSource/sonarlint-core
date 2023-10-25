@@ -42,13 +42,12 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
-import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
 import org.sonarsource.sonarlint.core.serverconnection.StorageFacade;
 import org.sonarsource.sonarlint.core.serverconnection.events.EventDispatcher;
 import org.sonarsource.sonarlint.core.serverconnection.events.issue.UpdateStorageOnIssueChanged;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
-import org.sonarsource.sonarlint.core.websocket.events.QualityGateChangedEvent;
+import org.sonarsource.sonarlint.core.websocket.events.SmartNotificationEvent;
 
 import static java.util.Objects.requireNonNull;
 
@@ -223,7 +222,6 @@ public class WebSocketService {
   private void reopenConnection(String connectionId) {
     closeSocket();
     createConnectionIfNeeded(connectionId);
-    handleEventDispatcher(connectionId);
     resubscribeAll();
   }
 
@@ -256,10 +254,11 @@ public class WebSocketService {
   }
 
   private void handleEventDispatcher(String connectionId) {
-    this.eventRouterByConnectionId.put(connectionId,
+    var storage = storageFacade.connection(connectionId);
+    this.eventRouterByConnectionId.putIfAbsent(connectionId,
       new EventDispatcher()
-        .dispatch(QualityGateChangedEvent.class, new ShowSmartNotificationOnQualityGateChangedEvent(client, configurationRepository, telemetryService))
-        .dispatch(IssueChangedEvent.class, new UpdateStorageOnIssueChanged(storageFacade.connection(connectionId)))
+        .dispatch(SmartNotificationEvent.class, new ShowSmartNotificationOnSmartNotificationEvent(client, configurationRepository, telemetryService))
+        .dispatch(IssueChangedEvent.class, new UpdateStorageOnIssueChanged(storage))
     );
   }
 
@@ -288,9 +287,15 @@ public class WebSocketService {
 
   private void createConnectionIfNeeded(String connectionId) {
     connectionIdsInterestedInNotifications.add(connectionId);
+    handleEventDispatcher(connectionId);
     if (this.sonarCloudWebSocket == null) {
       this.sonarCloudWebSocket = SonarCloudWebSocket.create(connectionAwareHttpClientProvider.getWebSocketClient(connectionId),
-        event -> this.eventRouterByConnectionId.get(connectionId).handle(event),
+        event -> {
+          var eventRouter = this.eventRouterByConnectionId.get(connectionId);
+          if (eventRouter != null) {
+            eventRouter.handle(event);
+          }
+        },
         this::reopenConnectionOnClose);
       this.connectionIdUsedToCreateConnection = connectionId;
     }
