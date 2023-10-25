@@ -24,6 +24,7 @@ import java.io.StringWriter;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
 
@@ -65,6 +66,15 @@ class LogOutputDelegator {
 
   void setTarget(@Nullable ClientLogOutput target) {
     fallback.compareAndSet(null, target);
+    this.target.set(target);
+  }
+
+  @CheckForNull
+  public ClientLogOutput getTarget() {
+    return this.target.get();
+  }
+
+  public void copyTarget(@Nullable ClientLogOutput target) {
     this.target.set(target);
   }
 }

@@ -27,6 +27,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -49,9 +50,12 @@ import org.sonarsource.sonarlint.core.websocket.parsing.SmartNotificationEventPa
 
 public class SonarCloudWebSocket {
 
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
+
   public static String getUrl() {
     return System.getProperty("sonarlint.internal.sonarcloud.websocket.url", "wss://events-api.sonarcloud.io/");
   }
+
   private static final Map<String, EventParser<?>> parsersByTypeForProjectFilter = Map.of(
     "QualityGateChanged", new SmartNotificationEventParser("QUALITY_GATE"),
     "IssueChanged", new IssueChangedEventParser(),
@@ -68,21 +72,31 @@ public class SonarCloudWebSocket {
   private static final String PROJECT_FILTER_TYPE = "PROJECT";
   private static final String PROJECT_USER_FILTER_TYPE = "PROJECT_USER";
   private static final Gson gson = new Gson();
+  private CompletableFuture<WebSocket> wsFuture;
   private final History history = new History();
   private final ScheduledExecutorService sonarCloudWebSocketScheduler = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "sonarcloud-websocket-scheduled-jobs"));
   private WebSocket ws;
 
   public static SonarCloudWebSocket create(WebSocketClient webSocketClient, Consumer<ServerEvent> serverEventConsumer, Runnable connectionEndedRunnable) {
     var webSocket = new SonarCloudWebSocket();
-    webSocket.ws = webSocketClient.createWebSocketConnection(getUrl(), rawEvent -> webSocket.handleRawMessage(rawEvent, serverEventConsumer), connectionEndedRunnable);
-    webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(webSocket::cleanUpMessageHistory, 0, 5, TimeUnit.MINUTES);
-    webSocket.sonarCloudWebSocketScheduler.schedule(connectionEndedRunnable, 119, TimeUnit.MINUTES);
-    webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(webSocket::keepAlive, 9, 9, TimeUnit.MINUTES);
+    var logOutput = SonarLintLogger.getTargetForCopy();
+    LOG.info("Creating websocket connection to " + getUrl());
+    webSocket.wsFuture = webSocketClient.createWebSocketConnection(getUrl(), rawEvent -> webSocket.handleRawMessage(rawEvent, serverEventConsumer), connectionEndedRunnable);
+    webSocket.wsFuture.thenAccept(ws -> {
+      webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(webSocket::cleanUpMessageHistory, 0, 5, TimeUnit.MINUTES);
+      webSocket.sonarCloudWebSocketScheduler.schedule(connectionEndedRunnable, 119, TimeUnit.MINUTES);
+      webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(() -> keepAlive(ws), 9, 9, TimeUnit.MINUTES);
+    });
+    webSocket.wsFuture.exceptionally(t -> {
+      SonarLintLogger.copyTarget(logOutput);
+      LOG.error("Error while trying to create websocket connection for " + getUrl(), t);
+      return null;
+    });
     return webSocket;
   }
 
-  private void keepAlive() {
-    this.ws.sendText("{\"action\": \"keep_alive\",\"statusCode\":200}", true);
+  private static void keepAlive(WebSocket ws) {
+    ws.sendText("{\"action\": \"keep_alive\",\"statusCode\":200}", true);
   }
 
   private void cleanUpMessageHistory() {
@@ -108,8 +122,10 @@ public class SonarCloudWebSocket {
     var payload = new WebSocketEventSubscribePayload(messageType, eventsKey, filter, projectKey);
 
     var jsonString = gson.toJson(payload);
-    SonarLintLogger.get().debug(String.format("sent '%s' for project '%s' and filter '%s'", messageType, projectKey, filter));
-    this.ws.sendText(jsonString, true);
+    this.wsFuture.thenAccept(ws -> {
+      SonarLintLogger.get().debug("sent '" + messageType + "' for project '" + projectKey + "'");
+      ws.sendText(jsonString, true);
+    });
   }
 
   private void handleRawMessage(String message, Consumer<ServerEvent> serverEventConsumer) {
@@ -151,31 +167,40 @@ public class SonarCloudWebSocket {
   }
 
   public void close() {
-    if (this.ws != null) {
+    if (this.wsFuture != null) {
       // output could already be closed if an error occurred
-      if (!this.ws.isOutputClosed()) {
-        try {
-          // close output
-          this.ws.sendClose(WebSocket.NORMAL_CLOSURE, "").get();
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        } catch (ExecutionException e) {
-          SonarLintLogger.get().error("Cannot close the WebSocket output", e);
-        }
-      }
-      if (!this.ws.isInputClosed()) {
-        // close input
-        this.ws.abort();
-      }
-      this.ws = null;
+      this.wsFuture.thenAccept(SonarCloudWebSocket::close);
+      this.wsFuture = null;
     }
     if (!MoreExecutors.shutdownAndAwaitTermination(sonarCloudWebSocketScheduler, 1, TimeUnit.SECONDS)) {
       SonarLintLogger.get().warn("Unable to stop SonarCloud WebSocket job scheduler in a timely manner");
     }
   }
 
+  private static void close(WebSocket ws) {
+    if (!ws.isOutputClosed()) {
+      try {
+        // close output
+        ws.sendClose(WebSocket.NORMAL_CLOSURE, "").get();
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      } catch (ExecutionException e) {
+        SonarLintLogger.get().error("Cannot close the WebSocket output", e);
+      }
+    }
+    if (!ws.isInputClosed()) {
+      // close input
+      ws.abort();
+    }
+  }
+
   public boolean isOpen() {
-    return ws != null && !ws.isInputClosed() && !ws.isOutputClosed();
+    return wsFuture != null
+      && wsFuture.isDone()
+      && !wsFuture.isCompletedExceptionally()
+      && !wsFuture.isCancelled()
+      && !wsFuture.getNow(null).isInputClosed()
+      && !wsFuture.getNow(null).isOutputClosed();
   }
 
   private static class WebSocketEvent {

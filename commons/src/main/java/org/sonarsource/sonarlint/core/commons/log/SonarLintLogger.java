@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.commons.log;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
 
@@ -36,6 +37,15 @@ public class SonarLintLogger {
 
   public static void setTarget(@Nullable ClientLogOutput output) {
     logger.logOutput.setTarget(output);
+  }
+
+  @CheckForNull
+  public static ClientLogOutput getTargetForCopy() {
+    return logger.logOutput.getTarget();
+  }
+
+  public static void copyTarget(@Nullable ClientLogOutput output) {
+    logger.logOutput.copyTarget(output);
   }
 
   SonarLintLogger(LogOutputDelegator logOutput) {
