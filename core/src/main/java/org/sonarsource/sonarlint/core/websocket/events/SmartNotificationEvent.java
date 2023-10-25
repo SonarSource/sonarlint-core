@@ -21,17 +21,20 @@ package org.sonarsource.sonarlint.core.websocket.events;
 
 import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 
-public class QualityGateChangedEvent implements ServerEvent {
+public class SmartNotificationEvent implements ServerEvent {
+
   private final String message;
   private final String link;
   private final String project;
   private final String date;
+  private final String category;
 
-  public QualityGateChangedEvent(String message, String link, String project, String date) {
+  public SmartNotificationEvent(String message, String link, String project, String date, String category) {
     this.message = message;
     this.link = link;
     this.project = project;
     this.date = date;
+    this.category = category;
   }
 
   public String getMessage() {
@@ -49,4 +52,9 @@ public class QualityGateChangedEvent implements ServerEvent {
   public String getDate() {
     return date;
   }
+
+  public String getCategory() {
+    return category;
+  }
+
 }

@@ -630,7 +630,7 @@ class WebSocketMediumTests {
   }
 
   @Nested
-  class WhenReceivingQualityGateChangedEvent {
+  class WhenReceivingSmartNotificationEvent {
     @Test
     void should_forward_to_client_as_smart_notifications() {
       startWebSocketServer();

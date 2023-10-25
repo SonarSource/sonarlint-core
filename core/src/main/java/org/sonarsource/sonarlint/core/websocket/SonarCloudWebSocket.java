@@ -31,25 +31,29 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 import org.sonarsource.sonarlint.core.http.WebSocketClient;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.EventParser;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.IssueChangedEventParser;
-import org.sonarsource.sonarlint.core.websocket.parsing.QualityGateChangedEventParser;
+import org.sonarsource.sonarlint.core.websocket.parsing.SmartNotificationEventParser;
 
 public class SonarCloudWebSocket {
 
   public static String getUrl() {
     return System.getProperty("sonarlint.internal.sonarcloud.websocket.url", "wss://events-api.sonarcloud.io/");
   }
-
-  private static final Map<String, EventParser<?>> parsersByType = Map.of(
-    "QualityGateChanged", new QualityGateChangedEventParser(),
+  private static final Map<String, EventParser<?>> parsersByTypeForProjectFilter = Map.of(
+    "QualityGateChanged", new SmartNotificationEventParser("QUALITY_GATE"),
     "IssueChanged", new IssueChangedEventParser());
 
+  private static final Map<String, EventParser<?>> parsersByTypeForProjectUserFilter = Map.of(
+    "MyNewIssues", new SmartNotificationEventParser("NEW_ISSUES"));
+
   private static final String PROJECT_FILTER_TYPE = "PROJECT";
+  private static final String PROJECT_USER_FILTER_TYPE = "PROJECT_USER";
   private static final Gson gson = new Gson();
   private WebSocket ws;
   private final History history = new History();
@@ -76,19 +80,20 @@ public class SonarCloudWebSocket {
   }
 
   public void subscribe(String projectKey) {
-    send("subscribe", projectKey);
+    send("subscribe", projectKey, parsersByTypeForProjectFilter, PROJECT_FILTER_TYPE);
+    send("subscribe", projectKey, parsersByTypeForProjectUserFilter, PROJECT_USER_FILTER_TYPE);
   }
 
   public void unsubscribe(String projectKey) {
-    send("unsubscribe", projectKey);
+    send("unsubscribe", projectKey, parsersByTypeForProjectFilter, PROJECT_FILTER_TYPE);
+    send("unsubscribe", projectKey, parsersByTypeForProjectUserFilter, PROJECT_USER_FILTER_TYPE);
   }
 
-  private void send(String messageType, String projectKey) {
-    var unsubscribePayload = new WebSocketEventSubscribePayload(messageType, parsersByType.keySet().toArray(new String[0]), PROJECT_FILTER_TYPE, projectKey);
+  private void send(String messageType, String projectKey, Map<String, EventParser<?>> parsersByType, String filter) {
+    var payload = new WebSocketEventSubscribePayload(messageType, parsersByType.keySet().toArray(new String[0]), filter, projectKey);
 
-    var jsonString = gson.toJson(unsubscribePayload);
-
-    SonarLintLogger.get().debug("sent '" + messageType + "' for project '" + projectKey + "'");
+    var jsonString = gson.toJson(payload);
+    SonarLintLogger.get().debug(String.format("sent '%s' for project '%s' and filter '%s'", messageType, projectKey, filter));
     this.ws.sendText(jsonString, true);
   }
 
@@ -111,16 +116,27 @@ public class SonarCloudWebSocket {
     var eventType = event.event;
     if (eventType == null) {
       return Optional.empty();
-    } else if (!parsersByType.containsKey(eventType)) {
-      SonarLintLogger.get().error("Unknown '{}' event type ", eventType);
+    }
+
+    return Stream.of(parsersByTypeForProjectFilter, parsersByTypeForProjectUserFilter)
+      .flatMap(map -> map.entrySet().stream())
+      .filter(entry -> eventType.equals(entry.getKey()))
+      .map(Map.Entry::getValue)
+      .findFirst()
+      .map(parser -> tryParsing(parser, event))
+      .orElseGet(() -> {
+        SonarLintLogger.get().error("Unknown '{}' event type ", eventType);
+        return Optional.empty();
+      });
+  }
+
+  private static Optional<? extends ServerEvent> tryParsing(EventParser<? extends ServerEvent> eventParser, WebSocketEvent event) {
+    try {
+      return eventParser.parse(event.data.toString());
+    } catch (Exception e) {
+      SonarLintLogger.get().error("Cannot parse '{}' received event", event.event, e);
       return Optional.empty();
     }
-    try {
-      return parsersByType.get(eventType).parse(event.data.toString());
-    } catch (Exception e) {
-      SonarLintLogger.get().error("Cannot parse '{}' received event", eventType, e);
-    }
-    return Optional.empty();
   }
 
   public void close() {

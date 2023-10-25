@@ -23,29 +23,35 @@ import com.google.gson.Gson;
 import java.util.Optional;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.EventParser;
-import org.sonarsource.sonarlint.core.websocket.events.QualityGateChangedEvent;
+import org.sonarsource.sonarlint.core.websocket.events.SmartNotificationEvent;
 
 import static org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils.isBlank;
 
-public class QualityGateChangedEventParser implements EventParser<QualityGateChangedEvent> {
+public class SmartNotificationEventParser implements EventParser<SmartNotificationEvent> {
 
   private final Gson gson = new Gson();
+  private final String category;
+
+  public SmartNotificationEventParser(String category) {
+    this.category = category;
+  }
 
   @Override
-  public Optional<QualityGateChangedEvent> parse(String jsonData) {
-    var payload = gson.fromJson(jsonData, QualityGateChangedEventPayload.class);
+  public Optional<SmartNotificationEvent> parse(String jsonData) {
+    var payload = gson.fromJson(jsonData, SmartNotificationEventPayload.class);
     if (payload.isInvalid()) {
-      SonarLintLogger.get().error("Invalid payload for 'RuleSetChanged' event: {}", jsonData);
+      SonarLintLogger.get().error("Invalid payload for 'SmartNotification' event of category '" + category + "': {}", jsonData);
       return Optional.empty();
     }
-    return Optional.of(new QualityGateChangedEvent(
+    return Optional.of(new SmartNotificationEvent(
       payload.message,
       payload.link,
       payload.project,
-      payload.date));
+      payload.date,
+      category));
   }
 
-  private static class QualityGateChangedEventPayload {
+  private static class SmartNotificationEventPayload {
     private String message;
     private String link;
     private String project;
