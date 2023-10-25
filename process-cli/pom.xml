@@ -42,7 +42,7 @@
               <plugin>
                 <groupId>com.googlecode.maven-download-plugin</groupId>
                 <artifactId>download-maven-plugin</artifactId>
-                <version>1.7.1</version>
+                <version>1.6.8</version>  <!--Issue in 1.7.1 https://github.com/maven-download-plugin/maven-download-plugin/issues/260 -->
                 <executions>
                   <execution>
                     <id>unpack-windows</id>
@@ -91,7 +91,7 @@
               <plugin>
                 <groupId>com.googlecode.maven-download-plugin</groupId>
                 <artifactId>download-maven-plugin</artifactId>
-                <version>1.7.1</version>
+                <version>1.6.8</version> <!--Issue in 1.7.1 https://github.com/maven-download-plugin/maven-download-plugin/issues/260 -->
                 <executions>
                   <execution>
                     <id>unpack-linux-x64</id>
@@ -140,7 +140,7 @@
               <plugin>
                 <groupId>com.googlecode.maven-download-plugin</groupId>
                 <artifactId>download-maven-plugin</artifactId>
-                <version>1.7.1</version>
+                <version>1.6.8</version> <!--Issue in 1.7.1 https://github.com/maven-download-plugin/maven-download-plugin/issues/260 -->
                 <executions>
                   <execution>
                     <id>unpack-linux-aarch64</id>
@@ -199,6 +199,7 @@
       <groupId>${project.groupId}</groupId>
       <artifactId>sonarlint-rpc-impl</artifactId>
       <version>${project.version}</version>
+      <scope>compile</scope>
     </dependency>
 
     <!-- unit tests -->
