@@ -38,6 +38,7 @@ public class SonarLintCoreProcess implements Callable<Integer> {
   }
 
   public static void main(String... args) {
+    System.out.println("Starting SonarLint Core backend..."); //todo Remove this line
     var exitCode = new CommandLine(new SonarLintCoreProcess()).execute(args);
     System.exit(exitCode);
   }
