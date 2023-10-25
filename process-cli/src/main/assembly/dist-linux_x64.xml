@@ -6,7 +6,7 @@
         - the launcher script
           -->
 <assembly>
-  <id>archive-linux</id>
+  <id>archive-linux_x64</id>
   <includeBaseDirectory>false</includeBaseDirectory>
   <formats>
     <format>zip</format>
@@ -48,7 +48,7 @@
 
     <!-- jre basic, except bin/ -->
     <fileSet>
-      <directory>${unpack.dir}/linux/${jre.dirname.linux}</directory>
+      <directory>${unpack.dir}/linux_x64/${jre.dirname.linux}</directory>
       <outputDirectory>jre</outputDirectory>
       <excludes>
         <exclude>bin/**</exclude>
@@ -59,7 +59,7 @@
 
     <!-- jre bin -->
     <fileSet>
-      <directory>${unpack.dir}/linux/${jre.dirname.linux}/bin</directory>
+      <directory>${unpack.dir}/linux_x64/${jre.dirname.linux}/bin</directory>
       <outputDirectory>jre/bin</outputDirectory>
       <fileMode>0755</fileMode>
     </fileSet>
