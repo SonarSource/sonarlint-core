@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.CheckForNull;
 import javax.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -157,6 +158,7 @@ public class WebSocketService {
     return null;
   }
 
+  @CheckForNull
   private Binding getCurrentBinding(String configScopeId) {
     var bindingConfiguration = configurationRepository.getBindingConfiguration(configScopeId);
     if (bindingConfiguration != null && bindingConfiguration.isBound()) {
