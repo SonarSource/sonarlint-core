@@ -54,13 +54,12 @@ public class WebSocketClient {
       .build();
   }
 
-  public WebSocket createWebSocketConnection(String url, Consumer<String> messageConsumer, Runnable onClosedRunnable) {
+  public CompletableFuture<WebSocket> createWebSocketConnection(String url, Consumer<String> messageConsumer, Runnable onClosedRunnable) {
     // TODO handle handshake or other errors
     return httpClient
       .newWebSocketBuilder()
       .header("Authorization", "Bearer " + token)
-      .buildAsync(URI.create(url), new MessageConsummerWrapper(messageConsumer, onClosedRunnable))
-      .join();
+      .buildAsync(URI.create(url), new MessageConsummerWrapper(messageConsumer, onClosedRunnable));
   }
 
   private class MessageConsummerWrapper implements WebSocket.Listener {

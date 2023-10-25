@@ -28,6 +28,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
@@ -454,6 +456,10 @@ class WebSocketMediumTests {
 
   @Nested
   class WhenConnectionAdded {
+
+    @RegisterExtension
+    SonarLintLogTester logTester = new SonarLintLogTester();
+
     @Test
     void should_subscribe_all_projects_bound_to_added_connection() {
       startWebSocketServer();
@@ -467,6 +473,31 @@ class WebSocketMediumTests {
 
       backend.getConnectionService()
         .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", false))));
+
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
+        .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
+        .containsExactly(tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey\"}"))));
+    }
+
+    @Test
+    void should_log_failure_and_reconnect_later_if_server_unavailable() {
+      System.setProperty("sonarlint.internal.sonarcloud.websocket.url", "wss://not-found:1234");
+      var client = newFakeClient()
+        .withToken("connectionId", "token")
+        .build();
+      backend = newBackend()
+        .withSmartNotifications()
+        .withBoundConfigScope("configScope", "connectionId", "projectKey")
+        .build(client);
+
+      backend.getConnectionService()
+        .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", false))));
+
+      await().untilAsserted(() -> assertThat(logTester.logs()).contains("Error while trying to create websocket connection for wss://not-found:1234"));
+
+      startWebSocketServer();
+      // Emulate a change on the connection to force websocket service to reconnect
+      backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams("connectionId"));
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
@@ -603,8 +634,8 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
         .containsExactly(tuple(false, List.of(
-          "{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey2\"}",
-          "{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey1\"}")),
+            "{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey2\"}",
+            "{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey1\"}")),
           tuple(true, List.of("{\"action\":\"subscribe\",\"events\":[\"QualityGateChanged\"],\"filterType\":\"PROJECT\",\"project\":\"projectKey1\"}"))));
     }
 
