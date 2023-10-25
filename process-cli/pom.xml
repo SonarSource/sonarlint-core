@@ -26,7 +26,6 @@
             <manifest>
               <mainClass>org.sonarsource.sonarlint.core.rpc.impl.SonarLintCoreProcess</mainClass>
               <addClasspath>true</addClasspath>
-              <classpathPrefix>lib/</classpathPrefix>
             </manifest>
           </archive>
         </configuration>
