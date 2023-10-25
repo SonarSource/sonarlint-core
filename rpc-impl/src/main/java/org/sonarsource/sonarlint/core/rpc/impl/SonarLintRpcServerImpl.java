@@ -99,7 +99,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
         springApplicationContextInitializer = new SpringApplicationContextInitializer(client, params);
         initialized.set(true);
       } else {
-        ResponseError error = new ResponseError(BackendErrorCode.BACKEND_ALREADY_INITIALIZED, "Backend already initialized", null);
+        var error = new ResponseError(BackendErrorCode.BACKEND_ALREADY_INITIALIZED, "Backend already initialized", null);
         throw new ResponseErrorException(error);
       }
       return null;
