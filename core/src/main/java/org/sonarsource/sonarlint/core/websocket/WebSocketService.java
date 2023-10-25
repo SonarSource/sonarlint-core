@@ -42,8 +42,10 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
+import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotClosedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.StorageFacade;
 import org.sonarsource.sonarlint.core.serverconnection.events.EventDispatcher;
+import org.sonarsource.sonarlint.core.serverconnection.events.hotspot.UpdateStorageOnSecurityHotspotClosed;
 import org.sonarsource.sonarlint.core.serverconnection.events.issue.UpdateStorageOnIssueChanged;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
@@ -259,6 +261,7 @@ public class WebSocketService {
       new EventDispatcher()
         .dispatch(SmartNotificationEvent.class, new ShowSmartNotificationOnSmartNotificationEvent(client, configurationRepository, telemetryService))
         .dispatch(IssueChangedEvent.class, new UpdateStorageOnIssueChanged(storage))
+        .dispatch(SecurityHotspotClosedEvent.class, new UpdateStorageOnSecurityHotspotClosed(storage))
     );
   }
 
