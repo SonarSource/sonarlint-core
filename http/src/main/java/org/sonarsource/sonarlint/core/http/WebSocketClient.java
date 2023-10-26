@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.http;
 
 import com.google.common.util.concurrent.MoreExecutors;
-import java.io.Closeable;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
@@ -88,8 +87,13 @@ public class WebSocketClient {
     @Override
     public void onError(WebSocket webSocket, Throwable error) {
       LOG.error("Error occurred on the WebSocket", error);
-      onClosedRunnable.run();
-      WebSocket.Listener.super.onError(webSocket, error);
+      try {
+        onClosedRunnable.run();
+      } finally {
+        if (!MoreExecutors.shutdownAndAwaitTermination(executor, 1, TimeUnit.SECONDS)) {
+          LOG.warn("Unable to stop web socket executor service in a timely manner");
+        }
+      }
     }
 
     @Override
