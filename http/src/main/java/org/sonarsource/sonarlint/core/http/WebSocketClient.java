@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.http;
 
 import com.google.common.util.concurrent.MoreExecutors;
-import java.io.Closeable;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
@@ -36,7 +35,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 import static org.sonarsource.sonarlint.core.commons.concurrent.ThreadFactories.threadWithNamePrefix;
 
-public class WebSocketClient implements Closeable {
+public class WebSocketClient {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
@@ -64,14 +63,7 @@ public class WebSocketClient implements Closeable {
       .join();
   }
 
-  @Override
-  public void close() {
-    if (!MoreExecutors.shutdownAndAwaitTermination(executor, 1, TimeUnit.SECONDS)) {
-      LOG.warn("Unable to stop web socket executor service in a timely manner");
-    }
-  }
-
-  private static class MessageConsummerWrapper implements WebSocket.Listener {
+  private class MessageConsummerWrapper implements WebSocket.Listener {
     private final Consumer<String> messageConsumer;
     private final Runnable onClosedRunnable;
 
@@ -95,8 +87,7 @@ public class WebSocketClient implements Closeable {
     @Override
     public void onError(WebSocket webSocket, Throwable error) {
       LOG.error("Error occurred on the WebSocket", error);
-      onClosedRunnable.run();
-      WebSocket.Listener.super.onError(webSocket, error);
+      finalizeWebSocket();
     }
 
     @Override
@@ -112,9 +103,19 @@ public class WebSocketClient implements Closeable {
       } catch (ExecutionException e) {
         LOG.debug("Cannot ack WebSocket close");
       }
-      onClosedRunnable.run();
+      finalizeWebSocket();
       // uncompleted future means the closing has been handled already (default is null)
       return new CompletableFuture<>();
+    }
+
+    private void finalizeWebSocket() {
+      try {
+        onClosedRunnable.run();
+      } finally {
+        if (!MoreExecutors.shutdownAndAwaitTermination(executor, 1, TimeUnit.SECONDS)) {
+          LOG.warn("Unable to stop web socket executor service in a timely manner");
+        }
+      }
     }
   }
 
