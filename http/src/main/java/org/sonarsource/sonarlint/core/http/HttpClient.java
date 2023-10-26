@@ -21,12 +21,12 @@ package org.sonarsource.sonarlint.core.http;
 
 import java.io.Closeable;
 import java.io.InputStream;
-import java.net.http.WebSocket;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 /**
  * The client(IDE) is responsible to provide an HttpClient, configured with authentication, timeouts, proxy support, ...
+ *
  * @deprecated
  */
 @Deprecated
@@ -74,7 +74,5 @@ public interface HttpClient {
   interface AsyncRequest {
     void cancel();
   }
-
-  WebSocket createWebSocketConnection(String url, Consumer<String> messageConsumer, Runnable onClosedRunnable);
 
 }

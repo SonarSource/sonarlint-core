@@ -269,7 +269,7 @@ public class WebSocketService {
   private void createConnectionIfNeeded(String connectionId) {
     connectionIdsInterestedInNotifications.add(connectionId);
     if (this.sonarCloudWebSocket == null) {
-      this.sonarCloudWebSocket = SonarCloudWebSocket.create(connectionAwareHttpClientProvider.getHttpClient(connectionId), eventRouter::handle, this::reopenConnectionOnClose);
+      this.sonarCloudWebSocket = SonarCloudWebSocket.create(connectionAwareHttpClientProvider.getWebSocketClient(connectionId), eventRouter::handle, this::reopenConnectionOnClose);
       this.connectionIdUsedToCreateConnection = connectionId;
     }
   }

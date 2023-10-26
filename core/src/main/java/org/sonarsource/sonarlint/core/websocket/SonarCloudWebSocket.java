@@ -34,7 +34,7 @@ import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
-import org.sonarsource.sonarlint.core.http.HttpClient;
+import org.sonarsource.sonarlint.core.http.WebSocketClient;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.EventParser;
 import org.sonarsource.sonarlint.core.websocket.parsing.QualityGateChangedEventParser;
 
@@ -43,18 +43,21 @@ public class SonarCloudWebSocket {
   public static String getUrl() {
     return System.getProperty("sonarlint.internal.sonarcloud.websocket.url", "wss://events-api.sonarcloud.io/");
   }
+
   private static final Map<String, EventParser<?>> parsersByType = Map.of(
     "QualityGateChanged", new QualityGateChangedEventParser());
 
   private static final String PROJECT_FILTER_TYPE = "PROJECT";
   private static final Gson gson = new Gson();
+  private WebSocketClient client;
   private WebSocket ws;
   private final History history = new History();
   private final ScheduledExecutorService sonarCloudWebSocketScheduler = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "sonarcloud-websocket-scheduled-jobs"));
 
-  public static SonarCloudWebSocket create(HttpClient httpClient, Consumer<ServerEvent> serverEventConsumer, Runnable connectionEndedRunnable) {
+  public static SonarCloudWebSocket create(WebSocketClient webSocketClient, Consumer<ServerEvent> serverEventConsumer, Runnable connectionEndedRunnable) {
     var webSocket = new SonarCloudWebSocket();
-    webSocket.ws = httpClient.createWebSocketConnection(getUrl(), rawEvent -> webSocket.handleRawMessage(rawEvent, serverEventConsumer), connectionEndedRunnable);
+    webSocket.client = webSocketClient;
+    webSocket.ws = webSocketClient.createWebSocketConnection(getUrl(), rawEvent -> webSocket.handleRawMessage(rawEvent, serverEventConsumer), connectionEndedRunnable);
     webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(webSocket::cleanUpMessageHistory, 0, 5, TimeUnit.MINUTES);
     webSocket.sonarCloudWebSocketScheduler.schedule(connectionEndedRunnable, 119, TimeUnit.MINUTES);
     webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(webSocket::keepAlive, 9, 9, TimeUnit.MINUTES);
@@ -142,6 +145,7 @@ public class SonarCloudWebSocket {
     if (!MoreExecutors.shutdownAndAwaitTermination(sonarCloudWebSocketScheduler, 1, TimeUnit.SECONDS)) {
       SonarLintLogger.get().warn("Unable to stop SonarCloud WebSocket job scheduler in a timely manner");
     }
+    client.close();
   }
 
   public boolean isOpen() {
