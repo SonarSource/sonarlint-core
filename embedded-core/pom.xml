@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+      <groupId>org.sonarsource.sonarlint.core</groupId>
+      <artifactId>sonarlint-core-parent</artifactId>
+      <version>9.4-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>sonarlint-embedded-core</artifactId>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>shade</id>
+                        <phase>package</phase>
+                        <goals>
+                          <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>true</createDependencyReducedPom>
+                            <minimizeJar>true</minimizeJar>
+                            <createSourcesJar>true</createSourcesJar>
+                            <relocations>
+                                <relocation>
+                                    <pattern/>
+                                    <shadedPattern>org.sonarsource.sonarlint.shaded.</shadedPattern>
+                                    <includes>
+                                        <include>org.apache.**</include>
+                                        <include>org.checkerframework.**</include>
+                                        <include>com.google.gson.**</include>
+                                        <include>org.springframework.**</include>
+                                        <include>org.sonarqube.ws.**</include>
+                                    </includes>
+                                    <excludes>
+                                        <exclude>org.apache.hc.**</exclude>
+                                    </excludes>
+                                </relocation>
+                            </relocations>
+                            <artifactSet>
+                                <excludes>
+                                    <exclude>org.jetbrains.kotlin:*</exclude>
+                                </excludes>
+                            </artifactSet>
+                            <filters>
+                              <filter>
+                                <artifact>*:*</artifact>
+                                <excludes>
+                                  <exclude>module-info.class</exclude>
+                                  <exclude>META-INF/*.SF</exclude>
+                                  <exclude>META-INF/*.DSA</exclude>
+                                  <exclude>META-INF/*.RSA</exclude>
+                                  <exclude>META-INF/LICENSE*</exclude>
+                                  <exclude>META-INF/NOTICE*</exclude>
+                                  <exclude>LICENSE*</exclude>
+                                  <exclude>NOTICE*</exclude>
+                                  <exclude>*.proto</exclude>
+                                </excludes>
+                              </filter>
+                              <filter>
+                                <artifact>org.sonarsource.api.plugin:sonar-plugin-api</artifact>
+                                <includes>
+                                  <include>**</include>
+                                </includes>
+                                <excludes>
+                                  <exclude>**/JsonWriter.class</exclude>
+                                  <exclude>**/internal/google/gson/**</exclude>
+                                  <!-- Overridden by SonarLint -->
+                                  <exclude>org/sonar/api/utils/log/Loggers.class</exclude>
+                                </excludes>
+                              </filter>
+                              <filter>
+                                <!-- Shade the SonarLint Plugin API (avoids minimization) as it is used by plugins -->
+                                <artifact>org.sonarsource.sonarlint.core:sonarlint-plugin-api</artifact>
+                                <includes>
+                                  <include>**</include>
+                                </includes>
+                              </filter>
+                              <filter>
+                                <!-- Shade protobuf (avoids minimization) as it is used by IDEs -->
+                                <artifact>com.google.protobuf:protobuf-java</artifact>
+                                <includes>
+                                  <include>**</include>
+                                </includes>
+                              </filter>
+                              <filter>
+                                <!-- Shade the SonarLint Core modules (avoids minimization) as it contains classes used at Runtime (like telemetry or ProfileDefinition) -->
+                                <artifact>org.sonarsource.sonarlint.core:*</artifact>
+                                <includes>
+                                  <include>**</include>
+                                </includes>
+                              </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+      <dependency>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>sonarlint-rpc-impl</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+</project>

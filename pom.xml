@@ -26,6 +26,7 @@
     <module>analysis-engine</module>
     <module>commons</module>
     <module>core</module>
+    <module>embedded-core</module>
     <module>http</module>
     <module>issue-tracking</module>
     <module>medium-tests</module>
