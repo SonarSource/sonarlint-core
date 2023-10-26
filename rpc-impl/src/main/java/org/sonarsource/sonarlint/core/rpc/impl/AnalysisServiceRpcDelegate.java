@@ -20,18 +20,15 @@
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.function.Supplier;
 import org.sonarsource.sonarlint.core.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetSupportedFilePatternsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetSupportedFilePatternsResponse;
-import org.springframework.beans.factory.BeanFactory;
 
 class AnalysisServiceRpcDelegate extends AbstractRpcServiceDelegate implements AnalysisRpcService {
 
-  public AnalysisServiceRpcDelegate(Supplier<BeanFactory> beanFactory, ExecutorService requestsExecutor, ExecutorService notificationsExecutor) {
-    super(beanFactory, requestsExecutor, notificationsExecutor);
+  public AnalysisServiceRpcDelegate(SonarLintRpcServerImpl server) {
+    super(server);
   }
 
   @Override

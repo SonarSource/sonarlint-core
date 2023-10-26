@@ -28,39 +28,21 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.springframework.beans.factory.BeanFactory;
+
 abstract class AbstractRpcServiceDelegate {
 
   private final Supplier<BeanFactory> beanFactorySupplier;
   private final ExecutorService requestsExecutor;
   private final ExecutorService requestAndNotificationsSequentialExecutor;
+  private final Supplier<RpcClientLogOutput> logOutputSupplier;
 
-  protected AbstractRpcServiceDelegate(Supplier<BeanFactory> beanFactorySupplier, ExecutorService requestsExecutor, ExecutorService requestAndNotificationsSequentialExecutor) {
-    this.beanFactorySupplier = beanFactorySupplier;
-    this.requestsExecutor = requestsExecutor;
-    this.requestAndNotificationsSequentialExecutor = requestAndNotificationsSequentialExecutor;
-  }
-
-  class RpcClientLogOutput implements ClientLogOutput {
-
-    @Nullable
-    private final String configScopeId;
-    private final SonarLintRpcClient client;
-
-    RpcClientLogOutput(@Nullable String configScopeId) {
-      this.client = getBean(SonarLintRpcClient.class);
-      this.configScopeId = configScopeId;
-    }
-
-    @Override
-    public void log(String msg, Level level) {
-      client.log(new LogParams(LogLevel.valueOf(level.name()), msg, configScopeId));
-    }
+  protected AbstractRpcServiceDelegate(SonarLintRpcServerImpl server) {
+    this.beanFactorySupplier = server::getInitializedApplicationContext;
+    this.requestsExecutor = server.getRequestsExecutor();
+    this.requestAndNotificationsSequentialExecutor = server.getRequestAndNotificationsSequentialExecutor();
+    this.logOutputSupplier = server::getLogOutput;
   }
 
   protected <T> T getBean(Class<T> clazz) {
@@ -113,20 +95,24 @@ abstract class AbstractRpcServiceDelegate {
   }
 
   private void withLogger(Runnable code, @Nullable String configScopeId) {
-    SonarLintLogger.setTarget(new RpcClientLogOutput(configScopeId));
+    SonarLintLogger.setTarget(logOutputSupplier.get());
+    logOutputSupplier.get().setConfigScopeId(configScopeId);
     try {
       code.run();
     } finally {
       SonarLintLogger.setTarget(null);
+      logOutputSupplier.get().setConfigScopeId(null);
     }
   }
 
   private <G> G withLogger(Supplier<G> code, @Nullable String configScopeId) {
-    SonarLintLogger.setTarget(new RpcClientLogOutput(configScopeId));
+    SonarLintLogger.setTarget(logOutputSupplier.get());
+    logOutputSupplier.get().setConfigScopeId(configScopeId);
     try {
       return code.get();
     } finally {
       SonarLintLogger.setTarget(null);
+      logOutputSupplier.get().setConfigScopeId(null);
     }
   }
 

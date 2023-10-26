@@ -52,6 +52,10 @@ public class SonarLintLogger {
     this.logOutput = logOutput;
   }
 
+  public static ClientLogOutput getCurrentThreadOutput() {
+    return logger.logOutput.getTarget();
+  }
+
   public void trace(String msg) {
     logOutput.log(msg, Level.TRACE);
   }

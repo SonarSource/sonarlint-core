@@ -33,6 +33,7 @@ import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.SpringApplicationContextInitializer;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClient;
@@ -64,6 +65,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   private final Future<Void> launcherFuture;
   private final ExecutorService requestsExecutor;
   private final ExecutorService requestAndNotificationsSequentialExecutor;
+  private final RpcClientLogOutput logOutput;
   private SpringApplicationContextInitializer springApplicationContextInitializer;
 
   public SonarLintRpcServerImpl(InputStream in, OutputStream out, ExecutorService messageReaderExecutor, ExecutorService messageWriterExecutor) {
@@ -82,6 +84,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
       .create();
 
     this.client = launcher.getRemoteProxy();
+    this.logOutput = new RpcClientLogOutput(client);
 
     this.launcherFuture = launcher.startListening();
 
@@ -94,7 +97,8 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
 
   @Override
   public CompletableFuture<Void> initialize(InitializeParams params) {
-    return CompletableFutures.computeAsync(cancelChecker -> {
+    return CompletableFutures.computeAsync(requestAndNotificationsSequentialExecutor, cancelChecker -> {
+      SonarLintLogger.setTarget(logOutput);
       if (initializeCalled.compareAndSet(false, true) && !initialized.get()) {
         springApplicationContextInitializer = new SpringApplicationContextInitializer(client, params);
         initialized.set(true);
@@ -115,61 +119,61 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
 
   @Override
   public ConnectionRpcService getConnectionService() {
-    return new ConnectionRpcServiceDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
+    return new ConnectionRpcServiceDelegate(this);
   }
 
   @Override
   public ConfigurationRpcService getConfigurationService() {
-    return new ConfigurationRpcServiceDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
+    return new ConfigurationRpcServiceDelegate(this);
   }
 
   @Override
   public HotspotRpcService getHotspotService() {
-    return new HotspotRpcServiceDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
+    return new HotspotRpcServiceDelegate(this);
   }
 
   @Override
   public TelemetryRpcService getTelemetryService() {
-    return new TelemetryRpcServiceDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
+    return new TelemetryRpcServiceDelegate(this);
   }
 
   @Override
   public AnalysisRpcService getAnalysisService() {
-    return new AnalysisServiceRpcDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
+    return new AnalysisServiceRpcDelegate(this);
   }
 
   @Override
   public RulesRpcService getRulesService() {
-    return new RulesRpcServiceDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
+    return new RulesRpcServiceDelegate(this);
   }
 
   @Override
   public BindingRpcService getBindingService() {
-    return new BindingRpcServiceDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
+    return new BindingRpcServiceDelegate(this);
   }
 
   public SonarProjectBranchRpcService getSonarProjectBranchService() {
-    return new SonarProjectBranchRpcServiceDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
+    return new SonarProjectBranchRpcServiceDelegate(this);
   }
 
   @Override
   public IssueRpcService getIssueService() {
-    return new IssueRpcServiceDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
+    return new IssueRpcServiceDelegate(this);
   }
 
   @Override
   public IssueTrackingRpcService getIssueTrackingService() {
-    return new IssueTrackingRpcServiceDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
+    return new IssueTrackingRpcServiceDelegate(this);
   }
 
   @Override
   public SecurityHotspotMatchingRpcService getSecurityHotspotMatchingService() {
-    return new SecurityHotspotMatchingRpcServiceDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
+    return new SecurityHotspotMatchingRpcServiceDelegate(this);
   }
 
   @Override
   public NewCodeRpcService getNewCodeService() {
-    return new NewCodeRpcServiceDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
+    return new NewCodeRpcServiceDelegate(this);
   }
 
   @Override
@@ -205,4 +209,15 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     return getInitializedApplicationContext().getBean(LocalOnlyIssueStorageService.class);
   }
 
+  ExecutorService getRequestsExecutor() {
+    return requestsExecutor;
+  }
+
+  ExecutorService getRequestAndNotificationsSequentialExecutor() {
+    return requestAndNotificationsSequentialExecutor;
+  }
+
+  RpcClientLogOutput getLogOutput() {
+    return logOutput;
+  }
 }

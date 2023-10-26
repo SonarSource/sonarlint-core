@@ -65,7 +65,6 @@ class LogOutputDelegator {
   }
 
   void setTarget(@Nullable ClientLogOutput target) {
-    fallback.compareAndSet(null, target);
     this.target.set(target);
   }
 
