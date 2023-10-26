@@ -19,7 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.rpc.impl;
 
+import java.io.ByteArrayInputStream;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "slcore", mixinStandardHelpOptions = true, description = "The SonarLint Core backend")
@@ -27,8 +29,16 @@ public class SonarLintCoreProcess implements Callable<Integer> {
 
   @Override
   public Integer call() {
-    try {
-      new BackendJsonRpcLauncher(System.in, System.out);
+    var originalStdIn = System.in;
+    var originalStdOut = System.out;
+    System.setIn(new ByteArrayInputStream(new byte[0]));
+    // Redirect all logs to stderr for now, would be better to go to a file later
+    System.setOut(System.err);
+
+    try (var rpcLauncher = new BackendJsonRpcLauncher(originalStdIn, originalStdOut)) {
+      rpcLauncher.getLauncherFuture().get();
+    } catch (CancellationException shutdown) {
+      System.err.println("Server is shutting down...");
     } catch (Throwable e) {
       e.printStackTrace(System.err);
       return -1;
@@ -38,7 +48,7 @@ public class SonarLintCoreProcess implements Callable<Integer> {
   }
 
   public static void main(String... args) {
-    System.out.println("Starting SonarLint Core backend..."); //todo Remove this line
+    System.err.println("Starting SonarLint Core backend...");
     var exitCode = new CommandLine(new SonarLintCoreProcess()).execute(args);
     System.exit(exitCode);
   }
