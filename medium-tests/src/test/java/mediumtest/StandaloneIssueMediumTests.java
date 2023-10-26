@@ -86,9 +86,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class StandaloneIssueMediumTests {
-
   @RegisterExtension
-  static SonarLintLogTester logTester = new SonarLintLogTester();
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private static final CanceledProgressMonitor CANCELED_PROGRESS_MONITOR = new CanceledProgressMonitor();
   private static Path sonarlintUserHome;
@@ -130,6 +129,7 @@ class StandaloneIssueMediumTests {
     nodeJsHelper.detect(null);
 
     var configBuilder = StandaloneGlobalConfiguration.builder()
+      .setLogOutput(TestUtils.createNoOpLogOutput())
       .addPlugin(PluginLocator.getJavaScriptPluginPath())
       .addPlugin(PluginLocator.getJavaPluginPath())
       .addPlugin(PluginLocator.getPhpPluginPath())

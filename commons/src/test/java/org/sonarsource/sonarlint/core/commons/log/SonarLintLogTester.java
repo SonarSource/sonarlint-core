@@ -25,7 +25,9 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
@@ -59,9 +61,8 @@ import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
  *   }
  * }
  * </pre>
- *
  */
-public class SonarLintLogTester implements BeforeTestExecutionCallback, AfterTestExecutionCallback {
+public class SonarLintLogTester implements BeforeTestExecutionCallback, AfterTestExecutionCallback, BeforeAllCallback, AfterAllCallback {
 
   private final Queue<String> logs = new ConcurrentLinkedQueue<>();
   private final Map<Level, Queue<String>> logsByLevel = new ConcurrentHashMap<>();
@@ -75,7 +76,6 @@ public class SonarLintLogTester implements BeforeTestExecutionCallback, AfterTes
         System.out.println(level + " " + formattedMessage);
       }
     };
-    SonarLintLogger.setTarget(logOutput);
   }
 
   public SonarLintLogTester() {
@@ -84,7 +84,6 @@ public class SonarLintLogTester implements BeforeTestExecutionCallback, AfterTes
 
   @Override
   public void beforeTestExecution(ExtensionContext context) throws Exception {
-    SonarLintLogger.setTarget(logOutput);
   }
 
   @Override
@@ -114,5 +113,15 @@ public class SonarLintLogTester implements BeforeTestExecutionCallback, AfterTes
    */
   public List<String> logs(Level level) {
     return Optional.ofNullable(logsByLevel.get(level)).map(List::copyOf).orElse(List.of());
+  }
+
+  @Override
+  public void afterAll(ExtensionContext context) throws Exception {
+    SonarLintLogger.setTarget(null);
+  }
+
+  @Override
+  public void beforeAll(ExtensionContext context) throws Exception {
+    SonarLintLogger.setTarget(logOutput);
   }
 }

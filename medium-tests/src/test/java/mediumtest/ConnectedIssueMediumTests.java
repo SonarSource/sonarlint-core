@@ -74,14 +74,13 @@ import static testutils.TestUtils.createNoOpLogOutput;
 
 class ConnectedIssueMediumTests {
   @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
+  @RegisterExtension
   private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
 
   private static final String SERVER_ID = StringUtils.repeat("very-long-id", 30);
   private static final String JAVA_MODULE_KEY = "test-project-2";
   private static ConnectedSonarLintEngineImpl sonarlint;
-
-  @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester();
 
   @BeforeAll
   static void prepare(@TempDir Path slHome) throws Exception {

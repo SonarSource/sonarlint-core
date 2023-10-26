@@ -53,11 +53,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class NodeJsHelperTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private static final Path FAKE_NODE_PATH = Paths.get("foo/node");
-
-  @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester();
 
   private final System2 system2 = mock(System2.class);
 

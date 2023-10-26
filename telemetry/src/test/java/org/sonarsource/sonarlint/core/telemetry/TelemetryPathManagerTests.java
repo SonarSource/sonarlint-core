@@ -41,13 +41,12 @@ import static org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager.migr
 
 @ExtendWith(SystemStubsExtension.class)
 class TelemetryPathManagerTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
   private static final String PRODUCT_KEY = "the-product";
 
   @SystemStub
   private EnvironmentVariables environment;
-
-  @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester();
 
   private Path oldPath;
   private Path newPath;
