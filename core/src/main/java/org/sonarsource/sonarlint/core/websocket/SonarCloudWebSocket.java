@@ -145,7 +145,6 @@ public class SonarCloudWebSocket {
     if (!MoreExecutors.shutdownAndAwaitTermination(sonarCloudWebSocketScheduler, 1, TimeUnit.SECONDS)) {
       SonarLintLogger.get().warn("Unable to stop SonarCloud WebSocket job scheduler in a timely manner");
     }
-    client.close();
   }
 
   public boolean isOpen() {

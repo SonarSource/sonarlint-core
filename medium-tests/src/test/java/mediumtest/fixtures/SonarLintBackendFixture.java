@@ -40,6 +40,7 @@ import java.util.function.Consumer;
 import javax.annotation.CheckForNull;
 import mediumtest.fixtures.storage.ConfigurationScopeStorageFixture;
 import mediumtest.fixtures.storage.StorageFixture;
+import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.jetbrains.annotations.Nullable;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
@@ -569,9 +570,9 @@ public class SonarLintBackendFixture {
       return synchronizedConfigScopeIds;
     }
 
+    @Override
     public CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params) {
-      var response = new GetCredentialsResponse(credentialsByConnectionId.get(params.getConnectionId()));
-      return CompletableFuture.completedFuture(response);
+      return CompletableFutures.computeAsync(cancelChecker -> new GetCredentialsResponse(credentialsByConnectionId.get(params.getConnectionId())));
     }
 
     public void setToken(String connectionId, String secondToken) {
