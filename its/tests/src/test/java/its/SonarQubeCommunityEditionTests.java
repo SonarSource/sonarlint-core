@@ -417,7 +417,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     }
 
     private ConnectedSonarLintEngine createEngine(Consumer<ConnectedGlobalConfiguration.Builder> configurator) {
-      var nodeJsHelper = new NodeJsHelper();
+      var nodeJsHelper = new NodeJsHelper((m, l) -> System.out.println(l + " " + m));
       nodeJsHelper.detect(null);
 
       var builder = ConnectedGlobalConfiguration.sonarQubeBuilder()

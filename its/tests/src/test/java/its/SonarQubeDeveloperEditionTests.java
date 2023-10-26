@@ -227,7 +227,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       globalProps.put("sonar.global.label", "It works");
       logs = new CopyOnWriteArrayList<>();
 
-      var nodeJsHelper = new NodeJsHelper();
+      var nodeJsHelper = new NodeJsHelper((m, l) -> System.out.println(l + " " + m));
       nodeJsHelper.detect(null);
 
       var globalConfig = ConnectedGlobalConfiguration.sonarQubeBuilder()

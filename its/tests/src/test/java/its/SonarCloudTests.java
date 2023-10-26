@@ -214,7 +214,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     Map<String, String> globalProps = new HashMap<>();
     globalProps.put("sonar.global.label", "It works");
 
-    var nodeJsHelper = new NodeJsHelper();
+    var nodeJsHelper = new NodeJsHelper((m, l) -> System.out.println(l + " " + m));
     nodeJsHelper.detect(null);
 
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarCloudBuilder()

@@ -75,7 +75,7 @@ class NotebookLanguageMediumTests {
         .withProject(JAVA_MODULE_KEY))
       .build(fakeClient);
 
-    var nodeJsHelper = new NodeJsHelper();
+    var nodeJsHelper = new NodeJsHelper(logTester.getLogOutput());
     nodeJsHelper.detect(null);
 
     var config = ConnectedGlobalConfiguration.sonarQubeBuilder()

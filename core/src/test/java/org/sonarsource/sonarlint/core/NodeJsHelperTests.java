@@ -85,11 +85,11 @@ class NodeJsHelperTests {
   }
 
   @Test
-  void usePropertyWhenProvidedToResolveNodePath() throws IOException {
+  void usePropertyWhenProvidedToResolveNodePath() {
 
     registerNodeVersionAnswer("v10.5.4");
 
-    var underTest = new NodeJsHelper(system2, null, commandExecutor);
+    var underTest = new NodeJsHelper(system2, null, commandExecutor, logTester.getLogOutput());
     underTest.detect(FAKE_NODE_PATH);
 
     assertThat(logTester.logs()).containsExactly(
@@ -103,11 +103,11 @@ class NodeJsHelperTests {
   }
 
   @Test
-  void supportNightlyBuilds() throws IOException {
+  void supportNightlyBuilds() {
 
     registerNodeVersionAnswer("v15.0.0-nightly20200921039c274dde");
 
-    var underTest = new NodeJsHelper(system2, null, commandExecutor);
+    var underTest = new NodeJsHelper(system2, null, commandExecutor, logTester.getLogOutput());
     underTest.detect(FAKE_NODE_PATH);
 
     assertThat(logTester.logs()).containsExactly(
@@ -121,13 +121,13 @@ class NodeJsHelperTests {
   }
 
   @Test
-  void ignoreCommandExecutionError() throws IOException {
+  void ignoreCommandExecutionError() {
     registeredCommandAnswers.put(c -> true, (stdOut, stdErr) -> {
       stdErr.consumeLine("error");
       return -1;
     });
 
-    var underTest = new NodeJsHelper(system2, null, commandExecutor);
+    var underTest = new NodeJsHelper(system2, null, commandExecutor, logTester.getLogOutput());
     underTest.detect(FAKE_NODE_PATH);
 
     assertThat(logTester.logs()).containsExactly(
@@ -141,10 +141,10 @@ class NodeJsHelperTests {
   }
 
   @Test
-  void handleErrorDuringVersionCheck() throws IOException {
+  void handleErrorDuringVersionCheck() {
     registerNodeVersionAnswer("wrong_version");
 
-    var underTest = new NodeJsHelper(system2, null, commandExecutor);
+    var underTest = new NodeJsHelper(system2, null, commandExecutor, logTester.getLogOutput());
     underTest.detect(FAKE_NODE_PATH);
 
     assertThat(logTester.logs()).containsExactly(
@@ -163,7 +163,7 @@ class NodeJsHelperTests {
     registerWhichAnswer(FAKE_NODE_PATH.toString());
     registerNodeVersionAnswer("v10.5.4");
 
-    var underTest = new NodeJsHelper(system2, null, commandExecutor);
+    var underTest = new NodeJsHelper(system2, null, commandExecutor, logTester.getLogOutput());
     underTest.detect(null);
 
     assertThat(logTester.logs()).containsExactly(
@@ -186,7 +186,7 @@ class NodeJsHelperTests {
       return -1;
     });
 
-    var underTest = new NodeJsHelper(system2, null, commandExecutor);
+    var underTest = new NodeJsHelper(system2, null, commandExecutor, logTester.getLogOutput());
     underTest.detect(null);
 
     assertThat(logTester.logs()).containsExactly(
@@ -204,7 +204,7 @@ class NodeJsHelperTests {
 
     registerWhereAnswer();
 
-    var underTest = new NodeJsHelper(system2, null, commandExecutor);
+    var underTest = new NodeJsHelper(system2, null, commandExecutor, logTester.getLogOutput());
     underTest.detect(null);
 
     assertThat(logTester.logs()).containsExactly(
@@ -223,13 +223,13 @@ class NodeJsHelperTests {
     registerWhereAnswer(FAKE_NODE_PATH.toString());
     registerNodeVersionAnswer("v10.5.4");
 
-    var underTest = new NodeJsHelper(system2, null, commandExecutor);
+    var underTest = new NodeJsHelper(system2, null, commandExecutor, logTester.getLogOutput());
     underTest.detect(null);
 
     assertThat(logTester.logs()).containsExactly(
       "Looking for node in the PATH",
       "Execute command 'C:\\Windows\\System32\\where.exe $PATH:node.exe'...",
-      "Command 'C:\\Windows\\System32\\where.exe $PATH:node.exe' exited with 0\nstdout: " + FAKE_NODE_PATH.toString(),
+      "Command 'C:\\Windows\\System32\\where.exe $PATH:node.exe' exited with 0\nstdout: " + FAKE_NODE_PATH,
       "Found node at " + FAKE_NODE_PATH.toString(),
       "Checking node version...",
       "Execute command '" + FAKE_NODE_PATH.toString() + " -v'...",
@@ -249,7 +249,7 @@ class NodeJsHelperTests {
     registerWhereAnswer(FAKE_NODE_PATH.toString(), fake_node_path2.toString());
     registerNodeVersionAnswer("v10.5.4");
 
-    var underTest = new NodeJsHelper(system2, null, commandExecutor);
+    var underTest = new NodeJsHelper(system2, null, commandExecutor, logTester.getLogOutput());
     underTest.detect(null);
 
     assertThat(logTester.logs()).containsExactly(
@@ -278,7 +278,7 @@ class NodeJsHelperTests {
     // Need a true file since we are checking if file exists
     var fakePathHelper = tempDir.resolve("path_helper.sh");
     Files.createFile(fakePathHelper);
-    var underTest = new NodeJsHelper(system2, fakePathHelper, commandExecutor);
+    var underTest = new NodeJsHelper(system2, fakePathHelper, commandExecutor, logTester.getLogOutput());
     underTest.detect(null);
 
     assertThat(logTester.logs()).containsExactly(
@@ -306,7 +306,7 @@ class NodeJsHelperTests {
     // Need a true file since we are checking if file exists
     var fakePathHelper = tempDir.resolve("path_helper.sh");
     Files.createFile(fakePathHelper);
-    var underTest = new NodeJsHelper(system2, fakePathHelper, commandExecutor);
+    var underTest = new NodeJsHelper(system2, fakePathHelper, commandExecutor, logTester.getLogOutput());
     underTest.detect(null);
 
     assertThat(logTester.logs()).containsExactly(
@@ -332,7 +332,7 @@ class NodeJsHelperTests {
     registerWhichAnswerIfPathIsSet(FAKE_NODE_PATH.toString(), System.getenv("PATH"));
     registerNodeVersionAnswer("v10.5.4");
 
-    var underTest = new NodeJsHelper(system2, Paths.get("not_exists"), commandExecutor);
+    var underTest = new NodeJsHelper(system2, Paths.get("not_exists"), commandExecutor, logTester.getLogOutput());
     underTest.detect(null);
 
     assertThat(logTester.logs()).containsExactly(
@@ -350,7 +350,7 @@ class NodeJsHelperTests {
 
   @Test
   void logWhenUnableToGetNodeVersion() {
-    var underTest = new NodeJsHelper();
+    var underTest = new NodeJsHelper(logTester.getLogOutput());
     underTest.detect(Paths.get("not_node"));
 
     assertThat(logTester.logs(Level.DEBUG)).anyMatch(s -> s.startsWith("Unable to execute the command"));

@@ -95,7 +95,7 @@ class ConnectedIssueMediumTests {
           .withActiveRule("java:S1481", "BLOCKER")))
       .create(slHome);
 
-    var nodeJsHelper = new NodeJsHelper();
+    var nodeJsHelper = new NodeJsHelper(logTester.getLogOutput());
     nodeJsHelper.detect(null);
 
     var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
