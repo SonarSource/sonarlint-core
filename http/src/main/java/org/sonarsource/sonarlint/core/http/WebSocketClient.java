@@ -77,6 +77,9 @@ public class WebSocketClient {
 
     @Override
     public void onOpen(WebSocket webSocket) {
+      // HttpClient is calling downstream completablefutures on the CF common pool so the thread local variables are
+      // not necessarily inherited
+      // See https://github.com/openjdk/jdk/blob/744e0893100d402b2b51762d57bcc2e99ab7fdcc/src/java.net.http/share/classes/jdk/internal/net/http/HttpClientImpl.java#L1069
       SonarLintLogger.setTarget(currentThreadOutput);
       LOG.debug("WebSocket opened");
       WebSocket.Listener.super.onOpen(webSocket);

@@ -35,6 +35,10 @@ public class SonarLintLogger {
     return logger;
   }
 
+  /**
+   *  In some cases, the log output is not properly inherited by the "child" threads (especially when using shared thread pools).
+   *  We have to copy the log output manually, in a similar way to https://logback.qos.ch/manual/mdc.html#managedThreads
+   */
   public static void setTarget(@Nullable ClientLogOutput output) {
     logger.logOutput.setTarget(output);
   }
