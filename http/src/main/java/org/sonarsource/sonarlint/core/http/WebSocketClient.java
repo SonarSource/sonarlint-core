@@ -31,6 +31,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 import static org.sonarsource.sonarlint.core.commons.concurrent.ThreadFactories.threadWithNamePrefix;
@@ -56,41 +57,48 @@ public class WebSocketClient {
 
   public CompletableFuture<WebSocket> createWebSocketConnection(String url, Consumer<String> messageConsumer, Runnable onClosedRunnable) {
     // TODO handle handshake or other errors
+    var currentThreadOutput = SonarLintLogger.getCurrentThreadOutput();
     return httpClient
       .newWebSocketBuilder()
       .header("Authorization", "Bearer " + token)
-      .buildAsync(URI.create(url), new MessageConsummerWrapper(messageConsumer, onClosedRunnable));
+      .buildAsync(URI.create(url), new MessageConsummerWrapper(messageConsumer, onClosedRunnable, currentThreadOutput));
   }
 
   private class MessageConsummerWrapper implements WebSocket.Listener {
     private final Consumer<String> messageConsumer;
     private final Runnable onClosedRunnable;
+    private final ClientLogOutput currentThreadOutput;
 
-    public MessageConsummerWrapper(Consumer<String> messageConsumer, Runnable onClosedRunnable) {
+    public MessageConsummerWrapper(Consumer<String> messageConsumer, Runnable onClosedRunnable, ClientLogOutput currentThreadOutput) {
       this.messageConsumer = messageConsumer;
       this.onClosedRunnable = onClosedRunnable;
+      this.currentThreadOutput = currentThreadOutput;
     }
 
     @Override
     public void onOpen(WebSocket webSocket) {
+      SonarLintLogger.setTarget(currentThreadOutput);
       LOG.debug("WebSocket opened");
       WebSocket.Listener.super.onOpen(webSocket);
     }
 
     @Override
     public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
+      SonarLintLogger.setTarget(currentThreadOutput);
       messageConsumer.accept(data.toString());
       return WebSocket.Listener.super.onText(webSocket, data, last);
     }
 
     @Override
     public void onError(WebSocket webSocket, Throwable error) {
+      SonarLintLogger.setTarget(currentThreadOutput);
       LOG.error("Error occurred on the WebSocket", error);
       finalizeWebSocket();
     }
 
     @Override
     public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
+      SonarLintLogger.setTarget(currentThreadOutput);
       LOG.debug("WebSocket closed, status=" + statusCode + ", reason=" + reason);
       // ack the close
       try {
