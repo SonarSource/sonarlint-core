@@ -33,6 +33,7 @@ import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.SpringApplicationContextInitializer;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
@@ -88,7 +89,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
 
     this.launcherFuture = launcher.startListening();
 
-    // TODO log that startup is completed
+    logOutput.log("SonarLint backend started", ClientLogOutput.Level.INFO);
   }
 
   public Future<Void> getLauncherFuture() {
