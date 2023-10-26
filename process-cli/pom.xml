@@ -215,7 +215,6 @@
                   <goal>single</goal>
                 </goals>
                 <configuration>
-                  <finalName>sonar-scanner-${project.version}</finalName>
                   <escapeString>\</escapeString>
                   <descriptors>
                     <descriptor>src/main/assembly/dist-macosx-x86_64.xml</descriptor>
@@ -264,7 +263,6 @@
                   <goal>single</goal>
                 </goals>
                 <configuration>
-                  <finalName>sonar-scanner-${project.version}</finalName>
                   <escapeString>\</escapeString>
                   <descriptors>
                     <descriptor>src/main/assembly/dist-macosx-aarch64.xml</descriptor>
