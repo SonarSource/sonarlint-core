@@ -38,7 +38,11 @@ class LogOutputDelegator {
   private final InheritableThreadLocal<ClientLogOutput> target = new InheritableThreadLocal<>();
 
   void log(String formattedMessage, Level level) {
-    var output = Optional.ofNullable(target.get()).orElseThrow(() -> new IllegalStateException("No log output configured"));
+    var output = Optional.ofNullable(target.get()).orElseThrow(() -> {
+      var noLogOutputConfigured = new IllegalStateException("No log output configured");
+      noLogOutputConfigured.printStackTrace(System.err);
+      return noLogOutputConfigured;
+    });
     if (output != null) {
       if (level == Level.DEBUG && SKIPPED_MESSAGE_PATTERN.matcher(formattedMessage).matches()) {
         return;

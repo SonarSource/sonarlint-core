@@ -75,6 +75,7 @@ public class SonarLintLogTester implements BeforeTestExecutionCallback, AfterTes
         System.out.println(level + " " + formattedMessage);
       }
     };
+    SonarLintLogger.setTarget(logOutput);
   }
 
   public SonarLintLogTester() {
