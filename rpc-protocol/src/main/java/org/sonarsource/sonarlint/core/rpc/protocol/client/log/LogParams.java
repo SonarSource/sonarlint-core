@@ -44,7 +44,8 @@ public class LogParams {
   }
 
   /**
-   * Some logs are specific to a certain config scope. This can be used to display the log in the appropriate window, for IDEs that support multiple windows in the same instance (like IntelliJ)
+   * Some logs are specific to a certain config scope.
+   * This can be used to display the log in the appropriate window, for IDEs that support multiple windows in the same instance (like IntelliJ)
    */
   @CheckForNull
   public String getConfigScopeId() {
