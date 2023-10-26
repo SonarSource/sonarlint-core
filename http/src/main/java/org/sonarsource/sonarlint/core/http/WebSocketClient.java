@@ -87,13 +87,7 @@ public class WebSocketClient {
     @Override
     public void onError(WebSocket webSocket, Throwable error) {
       LOG.error("Error occurred on the WebSocket", error);
-      try {
-        onClosedRunnable.run();
-      } finally {
-        if (!MoreExecutors.shutdownAndAwaitTermination(executor, 1, TimeUnit.SECONDS)) {
-          LOG.warn("Unable to stop web socket executor service in a timely manner");
-        }
-      }
+      finalizeWebSocket();
     }
 
     @Override
@@ -109,6 +103,12 @@ public class WebSocketClient {
       } catch (ExecutionException e) {
         LOG.debug("Cannot ack WebSocket close");
       }
+      finalizeWebSocket();
+      // uncompleted future means the closing has been handled already (default is null)
+      return new CompletableFuture<>();
+    }
+
+    private void finalizeWebSocket() {
       try {
         onClosedRunnable.run();
       } finally {
@@ -116,8 +116,6 @@ public class WebSocketClient {
           LOG.warn("Unable to stop web socket executor service in a timely manner");
         }
       }
-      // uncompleted future means the closing has been handled already (default is null)
-      return new CompletableFuture<>();
     }
   }
 
