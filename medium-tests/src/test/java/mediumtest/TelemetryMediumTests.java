@@ -94,9 +94,6 @@ class TelemetryMediumTests {
       .build();
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isTrue();
-
-    // Trigger any telemetry event to initialize the file
-    this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "master", "ab12ef45"));
     assertThat(backend.telemetryFilePath()).isNotEmptyFile();
 
     // Emulate another process has disabled telemetry
