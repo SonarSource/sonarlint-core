@@ -42,7 +42,7 @@
       <lineEnding>unix</lineEnding>
       <filtered>true</filtered>
       <includes>
-        <include>slcore-process-cli</include>
+        <include>sonarlint-backend</include>
       </includes>
     </fileSet>
 

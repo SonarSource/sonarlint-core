@@ -42,7 +42,7 @@
       <lineEnding>dos</lineEnding>
       <filtered>true</filtered>
       <includes>
-        <include>slcore-process-cli.bat</include>
+        <include>sonarlint-backend.bat</include>
       </includes>
     </fileSet>
 
