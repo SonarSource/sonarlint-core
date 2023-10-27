@@ -6,7 +6,7 @@
         - the launcher script
           -->
 <assembly>
-  <id>archive-windows</id>
+  <id>windows</id>
   <includeBaseDirectory>false</includeBaseDirectory>
   <formats>
     <format>zip</format>

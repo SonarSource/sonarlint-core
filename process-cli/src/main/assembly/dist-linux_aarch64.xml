@@ -6,7 +6,7 @@
         - the launcher script
           -->
 <assembly>
-  <id>archive-linux_aarch64</id>
+  <id>linux_aarch64</id>
   <includeBaseDirectory>false</includeBaseDirectory>
   <formats>
     <format>zip</format>

@@ -6,7 +6,7 @@
         - the launcher script
           -->
 <assembly>
-  <id>archive-macosx_aarch64</id>
+  <id>macosx_aarch64</id>
   <includeBaseDirectory>false</includeBaseDirectory>
   <formats>
     <format>zip</format>
