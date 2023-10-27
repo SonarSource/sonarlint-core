@@ -21,8 +21,10 @@ package org.sonarsource.sonarlint.core.serverapi.newcode;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Measures;
@@ -36,6 +38,8 @@ import static org.sonarsource.sonarlint.core.serverapi.newcode.NewCodeApi.getPer
 import static org.sonarsource.sonarlint.core.serverapi.newcode.NewCodeApi.getPeriodFromWs;
 
 class NewCodeApiTest {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private static final String PROJECT = "project";
   private static final String BRANCH = "branch";

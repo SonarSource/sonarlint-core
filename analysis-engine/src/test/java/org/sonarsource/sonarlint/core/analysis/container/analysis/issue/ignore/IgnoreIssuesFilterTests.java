@@ -21,11 +21,13 @@ package org.sonarsource.sonarlint.core.analysis.container.analysis.issue.ignore;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.scan.issue.filter.IssueFilterChain;
 import org.sonar.api.utils.WildcardPattern;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputFile;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultFilterableIssue;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,6 +36,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
  class IgnoreIssuesFilterTests {
+   @RegisterExtension
+   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private final DefaultFilterableIssue issue = mock(DefaultFilterableIssue.class);
   private final IssueFilterChain chain = mock(IssueFilterChain.class);

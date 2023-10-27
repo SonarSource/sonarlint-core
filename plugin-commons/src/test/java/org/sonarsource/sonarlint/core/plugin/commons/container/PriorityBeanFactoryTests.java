@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.plugin.commons.container;
 import javax.annotation.Priority;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.springframework.beans.factory.NoUniqueBeanDefinitionException;
 import org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
@@ -32,6 +34,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class PriorityBeanFactoryTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
   private final DefaultListableBeanFactory parentBeanFactory = new PriorityBeanFactory();
   private final DefaultListableBeanFactory beanFactory = new PriorityBeanFactory();
 

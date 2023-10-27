@@ -35,6 +35,7 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
@@ -57,6 +58,8 @@ import static org.sonarsource.sonarlint.core.serverconnection.TaintIssueDownload
 import static org.sonarsource.sonarlint.core.serverconnection.TaintIssueDownloader.parseProtoSoftwareQuality;
 
 class TaintIssueDownloaderTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private static final String PROJECT_KEY = "project";
   private static final String FILE_1_KEY = PROJECT_KEY + ":foo/bar/Hello.java";

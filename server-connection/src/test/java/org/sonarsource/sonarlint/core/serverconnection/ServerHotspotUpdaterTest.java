@@ -47,7 +47,7 @@ import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerHots
 
 class ServerHotspotUpdaterTest {
   @RegisterExtension
-  public SonarLintLogTester logTester = new SonarLintLogTester();
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private static final String PROJECT_KEY = "module";
   private final ProjectServerIssueStore issueStore = mock(ProjectServerIssueStore.class);

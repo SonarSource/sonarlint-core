@@ -35,9 +35,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FileMetadataTests {
-
   @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester();
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private final FileMetadata underTest = new FileMetadata();
 

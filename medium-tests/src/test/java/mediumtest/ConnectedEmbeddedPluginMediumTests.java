@@ -47,6 +47,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.RuleType;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules.Rule;
@@ -64,6 +65,9 @@ class ConnectedEmbeddedPluginMediumTests {
 
   @RegisterExtension
   private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
+
+  @RegisterExtension
+  static SonarLintLogTester logTester = new SonarLintLogTester();
 
   private static final String CONNECTION_ID = StringUtils.repeat("very-long-id", 30);
   private static final String JAVA_MODULE_KEY = "test-project-2";
@@ -88,7 +92,7 @@ class ConnectedEmbeddedPluginMediumTests {
           .withActiveRule("java:S1481", "BLOCKER")))
       .create(slHome);
 
-    var nodeJsHelper = new NodeJsHelper();
+    var nodeJsHelper = new NodeJsHelper(logTester.getLogOutput());
     nodeJsHelper.detect(null);
 
     var config = ConnectedGlobalConfiguration.sonarQubeBuilder()

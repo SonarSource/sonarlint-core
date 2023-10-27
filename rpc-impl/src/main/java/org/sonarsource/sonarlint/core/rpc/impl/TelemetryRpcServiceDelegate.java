@@ -29,8 +29,8 @@ import org.springframework.beans.factory.BeanFactory;
 
 class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements TelemetryRpcService {
 
-  public TelemetryRpcServiceDelegate(Supplier<BeanFactory> beanFactory, ExecutorService requestsExecutor, ExecutorService notificationsExecutor) {
-    super(beanFactory, requestsExecutor, notificationsExecutor);
+  public TelemetryRpcServiceDelegate(SonarLintRpcServerImpl server) {
+    super(server);
   }
 
   @Override

@@ -37,7 +37,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.Configur
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Components;
 
@@ -52,9 +51,6 @@ import static org.awaitility.Awaitility.await;
 import static testutils.TestUtils.protobufBody;
 
 class BindingSuggestionsMediumTests {
-
-  @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester(true);
 
   public static final String MYSONAR = "mysonar";
   public static final String CONFIG_SCOPE_ID = "myProject1";
@@ -79,7 +75,7 @@ class BindingSuggestionsMediumTests {
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID, "My Project 1")
       .build(fakeClient);
-    await().until(() -> logTester.logs(), logs -> logs.contains("No connections configured, skipping binding suggestions."));
+    await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("No connections configured, skipping binding suggestions."));
 
     backend.getConnectionService()
       .didUpdateConnections(new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto(MYSONAR, sonarqubeMock.baseUrl(), true)), List.of()));
@@ -96,7 +92,7 @@ class BindingSuggestionsMediumTests {
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID, "sonarlint-core")
       .build(fakeClient);
-    await().until(() -> logTester.logs(), logs -> logs.contains("No connections configured, skipping binding suggestions."));
+    await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("No connections configured, skipping binding suggestions."));
 
     sonarqubeMock.stubFor(get("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1")
       .willReturn(aResponse().withResponseBody(protobufBody(Components.SearchWsResponse.newBuilder()

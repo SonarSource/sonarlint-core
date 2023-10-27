@@ -20,22 +20,19 @@
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.function.Supplier;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.BindingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetBindingSuggestionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.GetBindingSuggestionsResponse;
-import org.springframework.beans.factory.BeanFactory;
 
 class BindingRpcServiceDelegate extends AbstractRpcServiceDelegate implements BindingRpcService {
 
-  public BindingRpcServiceDelegate(Supplier<BeanFactory> beanFactory, ExecutorService requestsExecutor, ExecutorService notificationsExecutor) {
-    super(beanFactory, requestsExecutor, notificationsExecutor);
+  public BindingRpcServiceDelegate(SonarLintRpcServerImpl server) {
+    super(server);
   }
 
   @Override
   public CompletableFuture<GetBindingSuggestionsResponse> getBindingSuggestions(GetBindingSuggestionParams params) {
-    return requestAsync(cancelChecker -> getBean(BindingSuggestionProvider.class).getBindingSuggestions(params, cancelChecker));
+    return requestAsync(cancelChecker -> getBean(BindingSuggestionProvider.class).getBindingSuggestions(params, cancelChecker), params.getConfigScopeId());
   }
 }

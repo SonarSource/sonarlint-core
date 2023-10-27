@@ -25,6 +25,7 @@ import com.sonar.orchestrator.junit5.OnlyOnSonarQube;
 import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
+import its.utils.ConsoleLogOutput;
 import its.utils.ItUtils;
 import its.utils.OrchestratorUtils;
 import java.io.File;
@@ -98,6 +99,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesPara
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.info.GetClientInfoResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
@@ -377,6 +379,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
         .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
 
       engineWithJavaOnly = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
+        .setLogOutput(new ConsoleLogOutput(false))
         .setConnectionId("orchestrator")
         .setSonarLintUserHome(sonarUserHome)
         .setExtraProperties(new HashMap<>())
@@ -438,7 +441,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     }
 
     private ConnectedSonarLintEngine createEngine(Consumer<ConnectedGlobalConfiguration.Builder> configurator) {
-      var nodeJsHelper = new NodeJsHelper();
+      var nodeJsHelper = new NodeJsHelper((m, l) -> System.out.println(l + " " + m));
       nodeJsHelper.detect(null);
 
       var builder = ConnectedGlobalConfiguration.sonarQubeBuilder()
@@ -611,6 +614,10 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
         return CompletableFuture.completedFuture(new SelectProxiesResponse(List.of(ProxyDto.NO_PROXY)));
       }
 
+      @Override
+      public void log(LogParams params) {
+
+      }
     };
   }
 }

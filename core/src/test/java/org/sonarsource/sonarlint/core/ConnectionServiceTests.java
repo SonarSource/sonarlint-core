@@ -55,10 +55,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ConnectionServiceTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private final ConnectionConfigurationRepository repository = new ConnectionConfigurationRepository();
-  @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester();
 
   public static final SonarQubeConnectionConfigurationDto SQ_DTO_1 = new SonarQubeConnectionConfigurationDto("sq1", "url1", true);
   public static final SonarQubeConnectionConfigurationDto SQ_DTO_1_DUP = new SonarQubeConnectionConfigurationDto("sq1", "url1_dup", true);

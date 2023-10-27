@@ -52,6 +52,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConf
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.RuleType;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
@@ -60,6 +61,8 @@ import testutils.MockWebServerExtensionWithProtobuf;
 import testutils.OnDiskTestClientInputFile;
 import testutils.TestUtils;
 
+import static mediumtest.fixtures.ClientFileSystemFixtures.aClientFileSystemWith;
+import static mediumtest.fixtures.ClientFileSystemFixtures.anEmptyClientFileSystem;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static mediumtest.fixtures.storage.StorageFixture.newStorage;
@@ -67,11 +70,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
-import static mediumtest.fixtures.ClientFileSystemFixtures.aClientFileSystemWith;
-import static mediumtest.fixtures.ClientFileSystemFixtures.anEmptyClientFileSystem;
 import static testutils.TestUtils.createNoOpLogOutput;
 
 class ConnectedIssueMediumTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
   @RegisterExtension
   private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
 
@@ -92,7 +95,7 @@ class ConnectedIssueMediumTests {
           .withActiveRule("java:S1481", "BLOCKER")))
       .create(slHome);
 
-    var nodeJsHelper = new NodeJsHelper();
+    var nodeJsHelper = new NodeJsHelper(logTester.getLogOutput());
     nodeJsHelper.detect(null);
 
     var config = ConnectedGlobalConfiguration.sonarQubeBuilder()

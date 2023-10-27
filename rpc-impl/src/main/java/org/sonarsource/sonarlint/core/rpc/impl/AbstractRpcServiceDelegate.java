@@ -25,8 +25,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.springframework.beans.factory.BeanFactory;
 
 abstract class AbstractRpcServiceDelegate {
@@ -34,11 +36,13 @@ abstract class AbstractRpcServiceDelegate {
   private final Supplier<BeanFactory> beanFactorySupplier;
   private final ExecutorService requestsExecutor;
   private final ExecutorService requestAndNotificationsSequentialExecutor;
+  private final Supplier<RpcClientLogOutput> logOutputSupplier;
 
-  protected AbstractRpcServiceDelegate(Supplier<BeanFactory> beanFactorySupplier, ExecutorService requestsExecutor, ExecutorService requestAndNotificationsSequentialExecutor) {
-    this.beanFactorySupplier = beanFactorySupplier;
-    this.requestsExecutor = requestsExecutor;
-    this.requestAndNotificationsSequentialExecutor = requestAndNotificationsSequentialExecutor;
+  protected AbstractRpcServiceDelegate(SonarLintRpcServerImpl server) {
+    this.beanFactorySupplier = server::getInitializedApplicationContext;
+    this.requestsExecutor = server.getRequestsExecutor();
+    this.requestAndNotificationsSequentialExecutor = server.getRequestAndNotificationsSequentialExecutor();
+    this.logOutputSupplier = server::getLogOutput;
   }
 
   protected <T> T getBean(Class<T> clazz) {
@@ -46,24 +50,34 @@ abstract class AbstractRpcServiceDelegate {
   }
 
   protected <R> CompletableFuture<R> requestAsync(Function<CancelChecker, R> code) {
+    return requestAsync(code, null);
+  }
+
+  protected <R> CompletableFuture<R> requestAsync(Function<CancelChecker, R> code, @Nullable String configScopeId) {
     return CompletableFutures.computeAsync(requestAndNotificationsSequentialExecutor, cancelChecker -> {
       var wrapper = new CancelCheckerWrapper(cancelChecker);
       wrapper.checkCanceled();
       return wrapper;
-    }).thenApplyAsync(cancelChecker -> {
+    }).thenApplyAsync(cancelChecker -> withLogger(() -> {
       cancelChecker.checkCanceled();
       return code.apply(cancelChecker);
-    }, requestsExecutor);
+    }, configScopeId), requestsExecutor);
   }
 
   protected CompletableFuture<Void> runAsync(Consumer<CancelChecker> code) {
+    return runAsync(code, null);
+  }
+
+  protected CompletableFuture<Void> runAsync(Consumer<CancelChecker> code, @Nullable String configScopeId) {
     return CompletableFutures.computeAsync(requestAndNotificationsSequentialExecutor, cancelChecker -> {
       var wrapper = new CancelCheckerWrapper(cancelChecker);
       wrapper.checkCanceled();
       return wrapper;
     }).thenApplyAsync(cancelChecker -> {
-      cancelChecker.checkCanceled();
-      code.accept(cancelChecker);
+      withLogger(() -> {
+        cancelChecker.checkCanceled();
+        code.accept(cancelChecker);
+      }, configScopeId);
       return null;
     }, requestsExecutor);
   }
@@ -73,7 +87,33 @@ abstract class AbstractRpcServiceDelegate {
    * so we are also moving notifications to a separate thread pool. Still we want to preserve ordering of requests and notifications.
    */
   protected void notify(Runnable code) {
-    requestAndNotificationsSequentialExecutor.submit(code);
+    notify(code, null);
+  }
+
+  protected void notify(Runnable code, String configScopeId) {
+    requestAndNotificationsSequentialExecutor.submit(() -> withLogger(code, configScopeId));
+  }
+
+  private void withLogger(Runnable code, @Nullable String configScopeId) {
+    SonarLintLogger.setTarget(logOutputSupplier.get());
+    logOutputSupplier.get().setConfigScopeId(configScopeId);
+    try {
+      code.run();
+    } finally {
+      SonarLintLogger.setTarget(null);
+      logOutputSupplier.get().setConfigScopeId(null);
+    }
+  }
+
+  private <G> G withLogger(Supplier<G> code, @Nullable String configScopeId) {
+    SonarLintLogger.setTarget(logOutputSupplier.get());
+    logOutputSupplier.get().setConfigScopeId(configScopeId);
+    try {
+      return code.get();
+    } finally {
+      SonarLintLogger.setTarget(null);
+      logOutputSupplier.get().setConfigScopeId(null);
+    }
   }
 
   private class CancelCheckerWrapper implements CancelChecker {

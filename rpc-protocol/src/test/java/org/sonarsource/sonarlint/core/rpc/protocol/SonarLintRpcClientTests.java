@@ -50,6 +50,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordA
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.ProxyDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
@@ -216,6 +217,11 @@ class SonarLintRpcClientTests {
     @Override
     public CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params) {
       return null;
+    }
+
+    @Override
+    public void log(LogParams params) {
+
     }
   }
 

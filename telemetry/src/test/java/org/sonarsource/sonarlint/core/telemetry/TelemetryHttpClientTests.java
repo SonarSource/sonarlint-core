@@ -41,6 +41,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class TelemetryHttpClientTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private TelemetryHttpClient underTest;
 
@@ -48,9 +50,6 @@ class TelemetryHttpClientTests {
   static WireMockExtension sonarqubeMock = WireMockExtension.newInstance()
     .options(wireMockConfig().dynamicPort())
     .build();
-
-  @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester();
 
   private final TelemetryClientAttributesProvider attributes = mock(TelemetryClientAttributesProvider.class);
 

@@ -63,7 +63,7 @@ import static org.awaitility.Awaitility.await;
 
 class AnalysisEngineMediumTests {
   @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester();
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private AnalysisEngine analysisEngine;
   private volatile boolean engineStopped = true;

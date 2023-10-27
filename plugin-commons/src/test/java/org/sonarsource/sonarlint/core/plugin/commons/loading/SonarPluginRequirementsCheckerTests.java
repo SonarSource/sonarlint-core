@@ -58,6 +58,8 @@ import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.plugin.commons.loading.SonarPluginRequirementsChecker.isCompatibleWith;
 
 class SonarPluginRequirementsCheckerTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private static final Set<Language> NONE = Set.of();
 
@@ -65,9 +67,6 @@ class SonarPluginRequirementsCheckerTests {
 
   private static final String FAKE_PLUGIN_KEY = "pluginkey";
   private static final org.sonar.api.utils.Version FAKE_PLUGIN_API_VERSION = org.sonar.api.utils.Version.parse("8.1.2");
-
-  @RegisterExtension
-  public SonarLintLogTester logTester = new SonarLintLogTester();
 
   private SonarPluginRequirementsChecker underTest;
   private PluginsMinVersions pluginMinVersions;

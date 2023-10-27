@@ -20,8 +20,10 @@
 package org.sonarsource.sonarlint.core.serverapi.push.parsing;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.commons.HotspotReviewStatus.ACKNOWLEDGED;
@@ -29,6 +31,8 @@ import static org.sonarsource.sonarlint.core.commons.HotspotReviewStatus.SAFE;
 import static org.sonarsource.sonarlint.core.commons.HotspotReviewStatus.TO_REVIEW;
 
 class SecurityHotspotChangedEventParserTest {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
   SecurityHotspotChangedEventParser parser = new SecurityHotspotChangedEventParser();
   final String TEST_PAYLOAD_WITHOUT_KEY = "{\n" +
     "  \"projectKey\": \"test\",\n" +

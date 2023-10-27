@@ -46,6 +46,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
@@ -67,6 +68,7 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.CanceledException;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import testutils.ConsoleConsumer;
@@ -75,15 +77,17 @@ import testutils.PluginLocator;
 import testutils.TestUtils;
 
 import static java.util.Collections.singleton;
+import static mediumtest.fixtures.ClientFileSystemFixtures.aClientFileSystemWith;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static mediumtest.fixtures.ClientFileSystemFixtures.aClientFileSystemWith;
 
 class StandaloneIssueMediumTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private static final CanceledProgressMonitor CANCELED_PROGRESS_MONITOR = new CanceledProgressMonitor();
   private static Path sonarlintUserHome;
@@ -121,10 +125,11 @@ class StandaloneIssueMediumTests {
     // See test sonarjs_should_honor_global_and_analysis_level_properties
     extraProperties.put("sonar.javascript.globals", "GLOBAL1");
 
-    var nodeJsHelper = new NodeJsHelper();
+    var nodeJsHelper = new NodeJsHelper(logTester.getLogOutput());
     nodeJsHelper.detect(null);
 
     var configBuilder = StandaloneGlobalConfiguration.builder()
+      .setLogOutput(TestUtils.createNoOpLogOutput())
       .addPlugin(PluginLocator.getJavaScriptPluginPath())
       .addPlugin(PluginLocator.getJavaPluginPath())
       .addPlugin(PluginLocator.getPhpPluginPath())

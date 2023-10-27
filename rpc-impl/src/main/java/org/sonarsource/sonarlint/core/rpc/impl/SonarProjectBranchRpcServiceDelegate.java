@@ -19,21 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.rpc.impl;
 
-import java.util.concurrent.ExecutorService;
-import java.util.function.Supplier;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.DidChangeActiveSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.SonarProjectBranchRpcService;
-import org.springframework.beans.factory.BeanFactory;
 
 class SonarProjectBranchRpcServiceDelegate extends AbstractRpcServiceDelegate implements SonarProjectBranchRpcService {
 
-  public SonarProjectBranchRpcServiceDelegate(Supplier<BeanFactory> beanFactory, ExecutorService requestsExecutor, ExecutorService notificationsExecutor) {
-    super(beanFactory, requestsExecutor, notificationsExecutor);
+  public SonarProjectBranchRpcServiceDelegate(SonarLintRpcServerImpl server) {
+    super(server);
   }
 
   @Override
   public void didChangeActiveSonarProjectBranch(DidChangeActiveSonarProjectBranchParams params) {
-    notify(() -> getBean(SonarProjectBranchService.class).didChangeActiveSonarProjectBranch(params));
+    notify(() -> getBean(SonarProjectBranchService.class).didChangeActiveSonarProjectBranch(params), params.getConfigScopeId());
   }
 }

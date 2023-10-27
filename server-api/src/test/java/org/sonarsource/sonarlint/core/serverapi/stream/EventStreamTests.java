@@ -46,7 +46,7 @@ import static org.mockito.Mockito.when;
 
 class EventStreamTests {
   @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester();
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private final ServerApiHelper apiHelper = mock(ServerApiHelper.class);
   private final ScheduledExecutorService executor = mock(ScheduledExecutorService.class);

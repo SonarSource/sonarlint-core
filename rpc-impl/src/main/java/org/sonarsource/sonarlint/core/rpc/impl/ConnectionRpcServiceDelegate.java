@@ -20,8 +20,6 @@
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.function.Supplier;
 import org.sonarsource.sonarlint.core.ConnectionService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams;
@@ -36,12 +34,11 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUs
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionResponse;
-import org.springframework.beans.factory.BeanFactory;
 
 class ConnectionRpcServiceDelegate extends AbstractRpcServiceDelegate implements ConnectionRpcService {
 
-  public ConnectionRpcServiceDelegate(Supplier<BeanFactory> beanFactory, ExecutorService requestsExecutor, ExecutorService requestAndNotificationsSequentialExecutor) {
-    super(beanFactory, requestsExecutor, requestAndNotificationsSequentialExecutor);
+  public ConnectionRpcServiceDelegate(SonarLintRpcServerImpl server) {
+    super(server);
   }
 
 

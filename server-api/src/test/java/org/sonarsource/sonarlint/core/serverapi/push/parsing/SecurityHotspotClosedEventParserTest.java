@@ -20,12 +20,16 @@
 package org.sonarsource.sonarlint.core.serverapi.push.parsing;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class SecurityHotspotClosedEventParserTest {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
   SecurityHotspotClosedEventParser parser = new SecurityHotspotClosedEventParser();
   final String TEST_PAYLOAD_WITHOUT_KEY = "{\n" +
     "  \"projectKey\": \"test\",\n" +

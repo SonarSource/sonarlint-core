@@ -25,8 +25,10 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
@@ -40,6 +42,8 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration.CURRENT_SCHEMA_VERSION;
 
 class UpdateStorageOnRuleSetChangedTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private UpdateStorageOnRuleSetChanged handler;
   private ConnectionStorage storage;

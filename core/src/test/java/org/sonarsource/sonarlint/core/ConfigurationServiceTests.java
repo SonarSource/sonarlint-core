@@ -42,6 +42,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class ConfigurationServiceTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   public static final BindingConfigurationDto BINDING_DTO_1 = new BindingConfigurationDto("connection1", "projectKey1", false);
   public static final BindingConfigurationDto BINDING_DTO_2 = new BindingConfigurationDto("connection1", "projectKey2", true);
@@ -49,9 +51,6 @@ class ConfigurationServiceTests {
   public static final ConfigurationScopeDto CONFIG_DTO_1_DUP = new ConfigurationScopeDto("id1", null, false, "Scope 1 dup", BINDING_DTO_2);
   public static final ConfigurationScopeDto CONFIG_DTO_2 = new ConfigurationScopeDto("id2", null, true, "Scope 2", BINDING_DTO_2);
   private final ConfigurationRepository repository = new ConfigurationRepository();
-
-  @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester();
 
   private ApplicationEventPublisher eventPublisher;
   private ConfigurationService underTest;

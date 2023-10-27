@@ -60,6 +60,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class BindingSuggestionProviderTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   public static final String SQ_1_ID = "sq1";
   public static final String SC_1_ID = "sc1";
@@ -70,9 +72,6 @@ class BindingSuggestionProviderTests {
   public static final String CONFIG_SCOPE_ID_2 = "configScope2";
   public static final String PROJECT_KEY_1 = "projectKey1";
   public static final ServerProject SERVER_PROJECT_1 = serverProject(PROJECT_KEY_1, "Project 1");
-
-  @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester();
 
   private final ConfigurationRepository configRepository = mock(ConfigurationRepository.class);
   private final ConnectionConfigurationRepository connectionRepository = mock(ConnectionConfigurationRepository.class);

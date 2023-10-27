@@ -22,14 +22,11 @@ package mediumtest;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
@@ -39,8 +36,6 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 
 class ConnectionSyncMediumTests {
   private SonarLintRpcServer backend;
-  @RegisterExtension
-  public SonarLintLogTester logTester = new SonarLintLogTester(true);
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
@@ -50,7 +45,6 @@ class ConnectionSyncMediumTests {
   }
 
   @Test
-  @Disabled("The thread local logtester is not working well with lsp4j")
   void it_should_cache_extracted_rule_metadata_per_connection() {
     var client = newFakeClient()
       .withClientDescription(this.getClass().getName())
@@ -61,19 +55,19 @@ class ConnectionSyncMediumTests {
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withEnabledLanguageInStandaloneMode(JAVA)
       .build(client);
-    await().untilAsserted(() -> assertThat(logTester.logs()).contains("Binding suggestion computation queued for config scopes 'scopeId'..."));
+    await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Binding suggestion computation queued for config scopes 'scopeId'..."));
 
-    assertThat(logTester.logs()).doesNotContain("Extracting rules metadata for connection 'connectionId'");
+    assertThat(client.getLogMessages()).doesNotContain("Extracting rules metadata for connection 'connectionId'");
 
     // Trigger lazy initialization of the rules metadata
     getEffectiveRuleDetails("scopeId", "java:S106");
-    await().untilAsserted(() -> assertThat(logTester.logs()).contains("Extracting rules metadata for connection 'connectionId'"));
+    await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Extracting rules metadata for connection 'connectionId'"));
 
     // Second call should not trigger init as results are already cached
-    logTester.clear();
+    client.clearLogs();
 
     getEffectiveRuleDetails("scopeId", "java:S106");
-    assertThat(logTester.logs()).isEmpty();
+    assertThat(client.getLogs()).isEmpty();
   }
 
   @Test
@@ -87,12 +81,12 @@ class ConnectionSyncMediumTests {
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withEnabledLanguageInStandaloneMode(JAVA)
       .build(client);
-    await().untilAsserted(() -> assertThat(logTester.logs()).contains("Binding suggestion computation queued for config scopes 'scopeId'..."));
+    await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Binding suggestion computation queued for config scopes 'scopeId'..."));
     getEffectiveRuleDetails("scopeId", "java:S106");
 
     backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(), List.of()));
 
-    await().untilAsserted(() -> assertThat(logTester.logs()).contains("Evict cached rules definitions for connection 'connectionId'"));
+    await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Evict cached rules definitions for connection 'connectionId'"));
   }
 
   private EffectiveRuleDetailsDto getEffectiveRuleDetails(String configScopeId, String ruleKey) {

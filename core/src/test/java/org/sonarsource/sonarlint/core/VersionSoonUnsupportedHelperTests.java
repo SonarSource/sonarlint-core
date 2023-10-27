@@ -47,6 +47,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class VersionSoonUnsupportedHelperTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private static final String CONFIG_SCOPE_ID = "configScopeId";
   private static final String CONFIG_SCOPE_ID_2 = "configScopeId2";
@@ -64,9 +66,6 @@ class VersionSoonUnsupportedHelperTests {
   private ConfigurationRepository configRepository;
   private ConnectionConfigurationRepository connectionRepository;
   private VersionSoonUnsupportedHelper underTest;
-
-  @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester();
 
   @BeforeEach
   void init() {

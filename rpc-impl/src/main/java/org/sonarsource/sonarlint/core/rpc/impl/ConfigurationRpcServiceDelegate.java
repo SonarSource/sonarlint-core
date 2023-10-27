@@ -19,19 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.rpc.impl;
 
-import java.util.concurrent.ExecutorService;
-import java.util.function.Supplier;
 import org.sonarsource.sonarlint.core.ConfigurationService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.ConfigurationRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
-import org.springframework.beans.factory.BeanFactory;
 
 class ConfigurationRpcServiceDelegate extends AbstractRpcServiceDelegate implements ConfigurationRpcService {
 
-  public ConfigurationRpcServiceDelegate(Supplier<BeanFactory> beanFactory, ExecutorService requestsExecutor, ExecutorService notificationsExecutor) {
-    super(beanFactory, requestsExecutor, notificationsExecutor);
+  public ConfigurationRpcServiceDelegate(SonarLintRpcServerImpl server) {
+    super(server);
   }
 
   @Override

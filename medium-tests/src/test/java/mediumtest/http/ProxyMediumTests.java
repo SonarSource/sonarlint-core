@@ -67,9 +67,6 @@ class ProxyMediumTests {
     .options(wireMockConfig().dynamicPort())
     .build();
 
-  @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester();
-
   @BeforeEach
   void configureProxy(TestInfo info) {
     if (info.getTags().contains(PROXY_AUTH_ENABLED)) {
@@ -231,8 +228,9 @@ class ProxyMediumTests {
 
     assertThat(details.getDescription().getLeft().getHtmlContent()).contains("extendedDesc from server");
 
-    assertThat(logTester.logs()).contains("Unable to get proxy");
-    assertThat(logTester.logs()).anyMatch(s -> s.contains("Port is outside the valid range for hostname: localhost"));
+    assertThat(fakeClient.getLogMessages())
+      .contains("Unable to get proxy")
+      .anyMatch(s -> s.contains("Port is outside the valid range for hostname: localhost"));
   }
 
   @Test
@@ -260,8 +258,9 @@ class ProxyMediumTests {
 
     assertThat(details.getDescription().getLeft().getHtmlContent()).contains("extendedDesc from server");
 
-    assertThat(logTester.logs()).contains("Unable to get proxy");
-    assertThat(logTester.logs()).anyMatch(s -> s.contains("Port is outside the valid range for hostname: localhost"));
+    assertThat(fakeClient.getLogMessages())
+      .contains("Unable to get proxy")
+      .anyMatch(s -> s.contains("Port is outside the valid range for hostname: localhost"));
   }
 
   private EffectiveRuleDetailsDto getEffectiveRuleDetails(String configScopeId, String ruleKey) {

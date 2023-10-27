@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileMetadata;
@@ -39,6 +40,7 @@ import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.Fil
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputFile;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.ignore.pattern.IssueExclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.ignore.scanner.IssueExclusionsLoader.DoubleRegexpMatcher;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import testutils.OnDiskTestClientInputFile;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -46,6 +48,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 
 class IssueExclusionsRegexpScannerTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
   private SonarLintInputFile javaFile;
 
   @Mock

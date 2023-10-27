@@ -38,9 +38,8 @@ import static org.mockito.Mockito.when;
 
 // note: most methods of the subject are already tested by higher level uses
 class IndexedObjectStoreTest {
-
   @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester();
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   @Test
   void should_log_failures_to_delete_invalid_files(@TempDir Path nonEmptyDir) throws IOException {

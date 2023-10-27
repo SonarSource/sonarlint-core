@@ -23,7 +23,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -34,8 +35,9 @@ class LogOutputDelegatorTests {
   private final ClientLogOutput output = mock(ClientLogOutput.class);
 
   @Test
-  void should_not_throw_exception_when_not_set() {
-    assertDoesNotThrow(() -> delegator.log("asd", Level.DEBUG));
+  void should_throw_exception_when_not_set() {
+    var e = assertThrows(IllegalStateException.class, () -> delegator.log("asd", Level.DEBUG));
+    assertThat(e).hasMessage("No log output configured");
   }
 
   @Test
@@ -49,8 +51,8 @@ class LogOutputDelegatorTests {
   void should_remove_delegate() {
     delegator.setTarget(output);
     delegator.setTarget(null);
-    delegator.log("asd", Level.DEBUG);
-    verifyNoInteractions(output);
+    var e = assertThrows(IllegalStateException.class, () -> delegator.log("asd", Level.DEBUG));
+    assertThat(e).hasMessage("No log output configured");
   }
 
   @Test
