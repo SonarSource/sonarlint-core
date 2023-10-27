@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.commons.log;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -35,14 +34,15 @@ class LogOutputDelegator {
    * See SLCORE-520
    */
   private static final Pattern SKIPPED_MESSAGE_PATTERN = Pattern.compile("^Skipping section '.*?' for rule '.*?', content is empty$");
-  /**
-   * In case we can't find a logger in the current Thread hierarchy, fallback on the first ClientLogOutput that has been passed
-   */
-  private static final AtomicReference<ClientLogOutput> fallback = new AtomicReference<>();
+
   private final InheritableThreadLocal<ClientLogOutput> target = new InheritableThreadLocal<>();
 
   void log(String formattedMessage, Level level) {
-    var output = Optional.ofNullable(target.get()).orElse(fallback.get());
+    var output = Optional.ofNullable(target.get()).orElseThrow(() -> {
+      var noLogOutputConfigured = new IllegalStateException("No log output configured");
+      noLogOutputConfigured.printStackTrace(System.err);
+      return noLogOutputConfigured;
+    });
     if (output != null) {
       if (level == Level.DEBUG && SKIPPED_MESSAGE_PATTERN.matcher(formattedMessage).matches()) {
         return;
@@ -65,7 +65,6 @@ class LogOutputDelegator {
   }
 
   void setTarget(@Nullable ClientLogOutput target) {
-    fallback.compareAndSet(null, target);
     this.target.set(target);
   }
 
