@@ -99,7 +99,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   public ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration globalConfig) {
     super(globalConfig.getLogOutput());
     this.globalConfig = globalConfig;
-
+    setLogging(null);
     serverConnection = new ServerConnection(globalConfig.getStorageRoot(), globalConfig.getConnectionId(), globalConfig.isSonarCloud(), globalConfig.getEnabledLanguages(),
       globalConfig.getEmbeddedPluginPathsByKey().keySet(), globalConfig.getWorkDir());
     start();
@@ -110,7 +110,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     return analysisContext.get().analysisEngine;
   }
 
-  public AnalysisContext start() {
+  private AnalysisContext start() {
     setLogging(null);
     return analysisContext.getAndSet(loadAnalysisContext());
   }

@@ -34,6 +34,8 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
 import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
@@ -57,9 +59,19 @@ public class RuleExtractorCli implements Callable<Integer> {
   @CommandLine.Option(names = {"-o", "--output"}, description = "output JSON file name")
   Path outputFile;
 
+  @CommandLine.Option(names = "--verbose", description = "enable verbose logs")
+  boolean verbose;
+
   @Override
   public Integer call() throws Exception {
     try {
+      SonarLintLogger.setTarget((formattedMessage, level) -> {
+        if (level == ClientLogOutput.Level.ERROR) {
+          System.err.println(level + " " + formattedMessage);
+        } else if (level == ClientLogOutput.Level.WARN || level == ClientLogOutput.Level.INFO || verbose) {
+          System.out.println(level + " " + formattedMessage);
+        }
+      });
       // We can pretend we have a very high Node.js version since Node is not required to load rules
       var nodeVersion = Optional.of(Version.create("99.9"));
       var config = new PluginsLoader.Configuration(pluginsJarPaths, enabledLanguages, false, nodeVersion);

@@ -55,6 +55,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesPara
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.info.GetClientInfoResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
@@ -79,6 +80,9 @@ public interface SonarLintRpcClient {
    */
   @JsonNotification
   void showMessage(ShowMessageParams params);
+
+  @JsonNotification
+  void log(LogParams params);
 
   /**
    * Display a one-time message to the user as a small notification.

@@ -28,10 +28,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 class ProgressReportTests {
-  private static final String THREAD_NAME = "progress";
-
   @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester();
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
+  private static final String THREAD_NAME = "progress";
 
   @Test
   void die_on_stop() {

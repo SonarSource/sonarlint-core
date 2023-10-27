@@ -33,9 +33,8 @@ import static testutils.LocalOnlyIssueFixtures.aLocalOnlyIssueResolved;
 import static testutils.LocalOnlyIssueFixtures.aLocalOnlyIssueResolvedWithoutTextAndLineRange;
 
 class XodusLocalOnlyIssueStoreTests {
-
   @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester(true);
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   @TempDir
   Path workDir;

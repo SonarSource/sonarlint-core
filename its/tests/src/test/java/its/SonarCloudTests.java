@@ -19,6 +19,7 @@
  */
 package its;
 
+import its.utils.ConsoleLogOutput;
 import java.io.File;
 import java.io.IOException;
 import java.io.PipedInputStream;
@@ -95,6 +96,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesPara
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.info.GetClientInfoResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
@@ -213,10 +215,13 @@ class SonarCloudTests extends AbstractConnectedTests {
     Map<String, String> globalProps = new HashMap<>();
     globalProps.put("sonar.global.label", "It works");
 
-    var nodeJsHelper = new NodeJsHelper();
+    var logOutput = new ConsoleLogOutput(false);
+
+    var nodeJsHelper = new NodeJsHelper(logOutput);
     nodeJsHelper.detect(null);
 
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarCloudBuilder()
+      .setLogOutput(logOutput)
       .setConnectionId(CONNECTION_ID)
       .enableHotspots()
       .setSonarLintUserHome(sonarUserHome)
@@ -666,6 +671,11 @@ class SonarCloudTests extends AbstractConnectedTests {
 
       @Override
       public void showMessage(ShowMessageParams params) {
+
+      }
+
+      @Override
+      public void log(LogParams params) {
 
       }
 

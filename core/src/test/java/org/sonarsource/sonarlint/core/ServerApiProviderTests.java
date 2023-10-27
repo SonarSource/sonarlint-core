@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core;
 
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
@@ -32,6 +34,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class ServerApiProviderTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private final ConnectionConfigurationRepository connectionRepository = mock(ConnectionConfigurationRepository.class);
   private final ConnectionAwareHttpClientProvider httpClientProvider = mock(ConnectionAwareHttpClientProvider.class);

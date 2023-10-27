@@ -24,16 +24,20 @@ import java.util.List;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonar.api.Property;
 import org.sonar.api.Startable;
 import org.sonar.api.config.PropertyDefinition;
 import org.sonar.api.config.PropertyDefinitions;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class SpringComponentContainerTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
   @Test
   void should_stop_after_failing() {
     ApiStartable startStop = new ApiStartable();
