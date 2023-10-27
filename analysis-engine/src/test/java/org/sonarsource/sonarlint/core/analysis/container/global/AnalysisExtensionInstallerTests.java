@@ -47,11 +47,10 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class AnalysisExtensionInstallerTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
   private static final String FAKE_PLUGIN_KEY = "foo";
   private static final String JAVA_PLUGIN_KEY = "java";
-
-  @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester();
 
   private static final Configuration EMPTY_CONFIG = new MapSettings(Map.of()).asConfig();
   private static final Version PLUGIN_API_VERSION = Version.create(5, 4, 0);

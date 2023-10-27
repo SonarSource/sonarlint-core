@@ -20,10 +20,15 @@
 package org.sonarsource.sonarlint.core.websocket.parsing;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class SmartNotificationEventParserTests {
+
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private SmartNotificationEventParser smartNotificationEventParser;
 
