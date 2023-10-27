@@ -47,7 +47,7 @@ eks_container: &CONTAINER_DEFINITION
   builder_subnet_id: ${CIRRUS_AWS_SUBNET}
   namespace: default
   cpu: 4
-  memory: 2G
+  memory: 4G
 
 ec2_instance: &WINVM_DEFINITION
   experimental: true
