@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-parent</artifactId>
-    <version>9.4-SNAPSHOT</version>
+    <version>10.0-SNAPSHOT</version>
   </parent>
   <artifactId>sonarlint-rpc-impl</artifactId>
   <name>SonarLint Core - RPC Implementation</name>
