@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 public class BackendJsonRpcLauncher implements Closeable {
@@ -54,8 +55,6 @@ public class BackendJsonRpcLauncher implements Closeable {
 
   @Override
   public void close() throws IOException {
-    // Stop the MessageProducer thread
-    server.getLauncherFuture().cancel(true);
     messageReaderExecutor.shutdownNow();
     messageWriterExecutor.shutdownNow();
     try {
@@ -69,5 +68,9 @@ public class BackendJsonRpcLauncher implements Closeable {
       Thread.currentThread().interrupt();
       throw new IllegalStateException("Interrupted!", e);
     }
+  }
+
+  public Future<Void> getLauncherFuture() {
+    return server.getLauncherFuture();
   }
 }
