@@ -57,7 +57,7 @@ public class WebSocketClient {
 
   public CompletableFuture<WebSocket> createWebSocketConnection(String url, Consumer<String> messageConsumer, Runnable onClosedRunnable) {
     // TODO handle handshake or other errors
-    var currentThreadOutput = SonarLintLogger.getCurrentThreadOutput();
+    var currentThreadOutput = SonarLintLogger.getTargetForCopy();
     return httpClient
       .newWebSocketBuilder()
       .header("Authorization", "Bearer " + token)

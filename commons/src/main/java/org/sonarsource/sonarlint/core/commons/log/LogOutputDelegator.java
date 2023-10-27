@@ -73,7 +73,4 @@ class LogOutputDelegator {
     return this.target.get();
   }
 
-  public void copyTarget(@Nullable ClientLogOutput target) {
-    this.target.set(target);
-  }
 }

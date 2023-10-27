@@ -191,7 +191,7 @@ class ApacheHttpClientAdapter implements HttpClient {
     private final Future<SimpleHttpResponse> wrapped;
 
     private CompletableFutureWrappingFuture(SimpleHttpRequest httpRequest) {
-      var callingThreadLogOutput = SonarLintLogger.getCurrentThreadOutput();
+      var callingThreadLogOutput = SonarLintLogger.getTargetForCopy();
       this.wrapped = apacheClient.execute(httpRequest, new FutureCallback<>() {
         @Override
         public void completed(SimpleHttpResponse result) {

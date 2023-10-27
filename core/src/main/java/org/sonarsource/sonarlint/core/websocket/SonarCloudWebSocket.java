@@ -58,16 +58,17 @@ public class SonarCloudWebSocket {
 
   public static SonarCloudWebSocket create(WebSocketClient webSocketClient, Consumer<ServerEvent> serverEventConsumer, Runnable connectionEndedRunnable) {
     var webSocket = new SonarCloudWebSocket();
-    var logOutput = SonarLintLogger.getTargetForCopy();
+    var currentThreadOutput = SonarLintLogger.getTargetForCopy();
     LOG.info("Creating websocket connection to " + getUrl());
     webSocket.wsFuture = webSocketClient.createWebSocketConnection(getUrl(), rawEvent -> webSocket.handleRawMessage(rawEvent, serverEventConsumer), connectionEndedRunnable);
     webSocket.wsFuture.thenAccept(ws -> {
+      SonarLintLogger.setTarget(currentThreadOutput);
       webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(webSocket::cleanUpMessageHistory, 0, 5, TimeUnit.MINUTES);
       webSocket.sonarCloudWebSocketScheduler.schedule(connectionEndedRunnable, 119, TimeUnit.MINUTES);
       webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(() -> keepAlive(ws), 9, 9, TimeUnit.MINUTES);
     });
     webSocket.wsFuture.exceptionally(t -> {
-      SonarLintLogger.copyTarget(logOutput);
+      SonarLintLogger.setTarget(currentThreadOutput);
       LOG.error("Error while trying to create websocket connection for " + getUrl(), t);
       return null;
     });
