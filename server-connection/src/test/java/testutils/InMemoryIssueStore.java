@@ -246,6 +246,16 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
+  public ServerIssue getIssue(String issueKey) {
+    return issuesByKey.get(issueKey);
+  }
+
+  @Override
+  public ServerHotspot getHotspot(String hotspotKey) {
+    return hotspotsByKey.get(hotspotKey);
+  }
+
+  @Override
   public Optional<ServerFinding> updateIssueResolutionStatus(String issueKey, boolean isTaintIssue, boolean isResolved) {
     if (isTaintIssue) {
       return Optional.ofNullable(taintIssuesByKey.computeIfPresent(issueKey, (s, serverIssue) ->  serverIssue.setResolved(isResolved)));

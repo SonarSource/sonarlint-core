@@ -80,7 +80,7 @@ public class WebSocketService {
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.configurationRepository = configurationRepository;
     this.connectionAwareHttpClientProvider = connectionAwareHttpClientProvider;
-    this.shouldEnableWebSockets = params.getFeatureFlags().shouldManageSmartNotifications();
+    this.shouldEnableWebSockets = params.getFeatureFlags().shouldManageServerSentEvents();
     this.storageFacade = storageService.getStorageFacade();
     this.eventRouterByConnectionId = new HashMap<>();
     this.client = client;

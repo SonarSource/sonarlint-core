@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import jetbrains.exodus.entitystore.PersistentEntityStores;
 import jetbrains.exodus.env.Environments;
@@ -50,6 +51,8 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePat
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 
 import static org.apache.commons.lang3.StringUtils.trimToEmpty;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.XodusServerIssueStore.toProtoFlow;
+import static org.sonarsource.sonarlint.core.serverconnection.storage.XodusServerIssueStore.toProtoImpact;
 
 public class ProjectStorageFixture {
 
@@ -179,10 +182,15 @@ public class ProjectStorageFixture {
           var issuesByFilePath = branch.serverIssues.stream()
             .map(ServerIssueFixtures.ServerIssueBuilder::build)
             .collect(Collectors.groupingBy(ServerIssueFixtures.ServerIssue::getFilePath));
+          var taintIssuesByFilePath = branch.serverTaintIssues.stream()
+            .map(ServerTaintIssueFixtures.ServerTaintIssueBuilder::build)
+            .collect(Collectors.groupingBy(ServerTaintIssueFixtures.ServerTaintIssue::getFilePath));
           var hotspotsByFilePath = branch.serverHotspots.stream()
             .map(ServerSecurityHotspotFixture.ServerSecurityHotspotBuilder::build)
             .collect(Collectors.groupingBy(ServerSecurityHotspotFixture.ServerHotspot::getFilePath));
-          concat(issuesByFilePath.keySet(), hotspotsByFilePath.keySet())
+          Stream.of(issuesByFilePath, taintIssuesByFilePath, hotspotsByFilePath)
+            .flatMap(map -> map.keySet().stream())
+            .collect(Collectors.toList())
             .forEach(filePath -> {
               var fileEntity = txn.newEntity("File");
               fileEntity.setProperty("path", filePath);
@@ -214,6 +222,39 @@ public class ProjectStorageFixture {
 
                   issueEntity.setLink("file", fileEntity);
                   fileEntity.addLink("issues", issueEntity);
+                });
+
+              taintIssuesByFilePath.getOrDefault(filePath, Collections.emptyList())
+                .forEach(taint -> {
+                  var taintIssueEntity = txn.newEntity("TaintIssue");
+                  taintIssueEntity.setProperty("key", taint.key);
+                  taintIssueEntity.setProperty("type", taint.type);
+                  taintIssueEntity.setProperty("resolved", taint.resolved);
+                  taintIssueEntity.setProperty("ruleKey", taint.ruleKey);
+                  taintIssueEntity.setBlobString("message", taint.message);
+                  taintIssueEntity.setProperty("creationDate", taint.creationDate);
+                  if (taint.severity != null) {
+                    taintIssueEntity.setProperty("userSeverity", taint.severity);
+                  }
+                  if (taint.textRange != null) {
+                    var textRange = taint.textRange;
+                    taintIssueEntity.setProperty("startLine", textRange.getStartLine());
+                    taintIssueEntity.setProperty("startLineOffset", textRange.getStartLineOffset());
+                    taintIssueEntity.setProperty("endLine", textRange.getEndLine());
+                    taintIssueEntity.setProperty("endLineOffset", textRange.getEndLineOffset());
+                    taintIssueEntity.setBlobString("rangeHash", textRange.getHash());
+                  }
+                  taintIssueEntity.setBlob("flows", toProtoFlow(taint.flows));
+                  if (taint.ruleDescriptionContextKey != null) {
+                    taintIssueEntity.setProperty("ruleDescriptionContextKey", taint.ruleDescriptionContextKey);
+                  }
+                  if (taint.cleanCodeAttribute != null) {
+                    taintIssueEntity.setProperty("cleanCodeAttribute", taint.cleanCodeAttribute.name());
+                  }
+                  taintIssueEntity.setBlob("impacts", toProtoImpact(taint.impacts));
+
+                  taintIssueEntity.setLink("file", fileEntity);
+                  fileEntity.addLink("taintIssues", taintIssueEntity);
                 });
 
               hotspotsByFilePath.getOrDefault(filePath, Collections.emptyList())
@@ -280,6 +321,7 @@ public class ProjectStorageFixture {
 
     public static class BranchBuilder {
       private final List<ServerIssueFixtures.ServerIssueBuilder> serverIssues = new ArrayList<>();
+      private final List<ServerTaintIssueFixtures.ServerTaintIssueBuilder> serverTaintIssues = new ArrayList<>();
       private final List<ServerSecurityHotspotFixture.ServerSecurityHotspotBuilder> serverHotspots = new ArrayList<>();
       private final String name;
 
@@ -289,6 +331,11 @@ public class ProjectStorageFixture {
 
       public BranchBuilder withIssue(ServerIssueFixtures.ServerIssueBuilder serverIssueBuilder) {
         serverIssues.add(serverIssueBuilder);
+        return this;
+      }
+
+      public BranchBuilder withTaintIssue(ServerTaintIssueFixtures.ServerTaintIssueBuilder serverTaintIssueBuilder) {
+        serverTaintIssues.add(serverTaintIssueBuilder);
         return this;
       }
 

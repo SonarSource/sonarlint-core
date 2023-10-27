@@ -276,6 +276,9 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    /**
+     * Also used to enable Web Sockets
+     */
     public SonarLintBackendBuilder withServerSentEventsEnabled() {
       this.manageServerSentEvents = true;
       return this;
