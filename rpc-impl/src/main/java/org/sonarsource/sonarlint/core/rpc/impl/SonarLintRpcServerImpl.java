@@ -180,6 +180,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   @Override
   public CompletableFuture<Void> shutdown() {
     return CompletableFutures.computeAsync(cancelChecker -> {
+      SonarLintLogger.setTarget(logOutput);
       var wasInitialized = initialized.getAndSet(false);
       MoreExecutors.shutdownAndAwaitTermination(requestsExecutor, 1, java.util.concurrent.TimeUnit.SECONDS);
       MoreExecutors.shutdownAndAwaitTermination(requestAndNotificationsSequentialExecutor, 1, java.util.concurrent.TimeUnit.SECONDS);
