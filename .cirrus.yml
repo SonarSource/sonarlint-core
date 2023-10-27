@@ -217,7 +217,7 @@ promote_task:
       ARTIFACTORY_PROMOTE_ACCESS_TOKEN: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-promoter access_token]
       GITHUB_TOKEN: VAULT[development/github/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-promotion token]
       # artifacts which will have downloadable links in burgr
-      ARTIFACTS: org.sonarsource.sonarlint.core:sonarlint-core:jar
+      ARTIFACTS: org.sonarsource.sonarlint.core:sonarlint-embedded-core:jar
   <<: *MAVEN_CACHE_DEFINITION
   script: cirrus_promote_maven
   cleanup_before_cache_script: cleanup_maven_repository
