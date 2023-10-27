@@ -26,6 +26,7 @@ import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
+import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
 
 import static java.util.Objects.requireNonNull;
@@ -67,6 +68,10 @@ public class SonarLintTestBackend extends SonarLintBackendImpl {
 
   public LocalOnlyIssueStorageService getLocalOnlyIssueStorageService() {
     return getInitializedApplicationContext().getBean(LocalOnlyIssueStorageService.class);
+  }
+
+  public StorageService getIssueStorageService() {
+    return getInitializedApplicationContext().getBean(StorageService.class);
   }
 
   @Override

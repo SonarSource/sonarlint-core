@@ -24,6 +24,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import java.net.http.WebSocket;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -31,6 +32,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -58,16 +60,17 @@ public class SonarCloudWebSocket {
     "SecurityHotspotChanged", new SecurityHotspotChangedEventParser(),
     "TaintVulnerabilityClosed", new TaintVulnerabilityClosedEventParser(),
     "TaintVulnerabilityRaised", new TaintVulnerabilityRaisedEventParser());
-
   private static final Map<String, EventParser<?>> parsersByTypeForProjectUserFilter = Map.of(
     "MyNewIssues", new SmartNotificationEventParser("NEW_ISSUES"));
-
+  private static final Map<String, EventParser<?>> parsersByType = Stream.of(parsersByTypeForProjectFilter, parsersByTypeForProjectUserFilter)
+    .flatMap(map -> map.entrySet().stream())
+    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   private static final String PROJECT_FILTER_TYPE = "PROJECT";
   private static final String PROJECT_USER_FILTER_TYPE = "PROJECT_USER";
   private static final Gson gson = new Gson();
-  private WebSocket ws;
   private final History history = new History();
   private final ScheduledExecutorService sonarCloudWebSocketScheduler = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "sonarcloud-websocket-scheduled-jobs"));
+  private WebSocket ws;
 
   public static SonarCloudWebSocket create(WebSocketClient webSocketClient, Consumer<ServerEvent> serverEventConsumer, Runnable connectionEndedRunnable) {
     var webSocket = new SonarCloudWebSocket();
@@ -100,7 +103,9 @@ public class SonarCloudWebSocket {
   }
 
   private void send(String messageType, String projectKey, Map<String, EventParser<?>> parsersByType, String filter) {
-    var payload = new WebSocketEventSubscribePayload(messageType, parsersByType.keySet().toArray(new String[0]), filter, projectKey);
+    var eventsKey = parsersByType.keySet().toArray(new String[0]);
+    Arrays.sort(eventsKey);
+    var payload = new WebSocketEventSubscribePayload(messageType, eventsKey, filter, projectKey);
 
     var jsonString = gson.toJson(payload);
     SonarLintLogger.get().debug(String.format("sent '%s' for project '%s' and filter '%s'", messageType, projectKey, filter));
@@ -128,16 +133,12 @@ public class SonarCloudWebSocket {
       return Optional.empty();
     }
 
-    return Stream.of(parsersByTypeForProjectFilter, parsersByTypeForProjectUserFilter)
-      .flatMap(map -> map.entrySet().stream())
-      .filter(entry -> eventType.equals(entry.getKey()))
-      .map(Map.Entry::getValue)
-      .findFirst()
-      .map(parser -> tryParsing(parser, event))
-      .orElseGet(() -> {
-        SonarLintLogger.get().error("Unknown '{}' event type ", eventType);
-        return Optional.empty();
-      });
+    if (parsersByType.containsKey(eventType)) {
+      return tryParsing(parsersByType.get(eventType), event);
+    } else {
+      SonarLintLogger.get().error("Unknown '{}' event type ", eventType);
+      return Optional.empty();
+    }
   }
 
   private static Optional<? extends ServerEvent> tryParsing(EventParser<? extends ServerEvent> eventParser, WebSocketEvent event) {

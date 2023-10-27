@@ -167,6 +167,20 @@ public interface ProjectServerIssueStore {
   boolean updateIssue(String issueKey, Consumer<ServerIssue> issueUpdater);
 
   /**
+   * Retrieve an issue from the store
+   * @param issueKey
+   * @return the server issue if found, null otherwise
+   */
+  ServerIssue getIssue(String issueKey);
+
+  /**
+   * Retrieve a hotspot from the store
+   * @param hotspotKey
+   * @return the hotspot if found, null otherwise
+   */
+  ServerHotspot getHotspot(String hotspotKey);
+
+  /**
    * Set the resolution status of an Issue (by its key).
    */
   Optional<ServerFinding> updateIssueResolutionStatus(String issueKey, boolean isTaintIssue, boolean isResolved);

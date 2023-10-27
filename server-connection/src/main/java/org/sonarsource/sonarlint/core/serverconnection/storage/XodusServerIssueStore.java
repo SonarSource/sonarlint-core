@@ -658,13 +658,13 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     issueEntity.setBlob(IMPACTS_BLOB_NAME, toProtoImpact(issue.getImpacts()));
   }
 
-  private static InputStream toProtoFlow(List<Flow> flows) {
+  public static InputStream toProtoFlow(List<Flow> flows) {
     var buffer = new ByteArrayOutputStream();
     ProtobufUtil.writeMessages(buffer, flows.stream().map(XodusServerIssueStore::toProtoFlow).collect(Collectors.toList()));
     return new ByteArrayInputStream(buffer.toByteArray());
   }
 
-  private static InputStream toProtoImpact(Map<SoftwareQuality, ImpactSeverity> impacts) {
+  public static InputStream toProtoImpact(Map<SoftwareQuality, ImpactSeverity> impacts) {
     var buffer = new ByteArrayOutputStream();
     ProtobufUtil.writeMessages(buffer, impacts.entrySet().stream().map(XodusServerIssueStore::toProtoImpact).collect(Collectors.toList()));
     return new ByteArrayInputStream(buffer.toByteArray());
@@ -749,6 +749,30 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
         return true;
       }
       return false;
+    });
+  }
+
+  @Override
+  public ServerIssue getIssue(String issueKey) {
+    return entityStore.computeInTransaction(txn -> {
+      var optionalEntity = findUnique(txn, ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issueKey);
+      if (optionalEntity.isPresent()) {
+        var issueEntity = optionalEntity.get();
+        return adapt(issueEntity);
+      }
+      return null;
+    });
+  }
+
+  @Override
+  public ServerHotspot getHotspot(String hotspotKey) {
+    return entityStore.computeInTransaction(txn -> {
+      var optionalEntity = findUnique(txn, HOTSPOT_ENTITY_TYPE, KEY_PROPERTY_NAME, hotspotKey);
+      if (optionalEntity.isPresent()) {
+        var hotspotEntity = optionalEntity.get();
+        return adaptHotspot(hotspotEntity);
+      }
+      return null;
     });
   }
 
