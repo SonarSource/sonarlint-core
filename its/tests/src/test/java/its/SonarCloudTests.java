@@ -19,6 +19,7 @@
  */
 package its;
 
+import its.utils.ConsoleLogOutput;
 import java.io.File;
 import java.io.IOException;
 import java.io.PipedInputStream;
@@ -214,10 +215,13 @@ class SonarCloudTests extends AbstractConnectedTests {
     Map<String, String> globalProps = new HashMap<>();
     globalProps.put("sonar.global.label", "It works");
 
-    var nodeJsHelper = new NodeJsHelper((m, l) -> System.out.println(l + " " + m));
+    var logOutput = new ConsoleLogOutput(false);
+
+    var nodeJsHelper = new NodeJsHelper(logOutput);
     nodeJsHelper.detect(null);
 
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarCloudBuilder()
+      .setLogOutput(logOutput)
       .setConnectionId(CONNECTION_ID)
       .enableHotspots()
       .setSonarLintUserHome(sonarUserHome)
