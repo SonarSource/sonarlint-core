@@ -1,0 +1,28 @@
+#!/usr/bin/env sh
+
+real_path () {
+  target=$1
+
+  (
+  while true; do
+    cd "`dirname "$target"`"
+    target=`basename "$target"`
+    test -L "$target" || break
+    target=`readlink "$target"`
+  done
+
+  echo "`pwd -P`/$target"
+  )
+}
+
+SCRIPT_PATH=`real_path "$0"`
+APP_HOME=`dirname "$SCRIPT_PATH"`/..
+
+# make it fully qualified
+APP_HOME=`cd "$APP_HOME" && pwd -P`
+
+CLASSPATH=$APP_HOME/lib/*:
+
+JAVACMD=$APP_HOME/jre/bin/java
+
+exec "$JAVACMD" -classpath "$CLASSPATH" org.sonarsource.sonarlint.core.rpc.impl.SonarLintCoreProcess "$@"
