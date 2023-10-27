@@ -191,10 +191,12 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
     return serverUsingJava.getEmbeddedServerPort();
   }
 
+  @Deprecated(forRemoval = true)
   public HttpClient getHttpClientNoAuth() {
     return serverUsingJava.getHttpClientNoAuth();
   }
 
+  @Deprecated(forRemoval = true)
   public HttpClient getHttpClient(String connectionId) {
     return serverUsingJava.getHttpClient(connectionId);
   }

@@ -32,34 +32,35 @@ import org.sonar.api.utils.command.Command;
 import org.sonar.api.utils.command.CommandException;
 import org.sonar.api.utils.command.CommandExecutor;
 import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 
 public class NodeJsHelper {
 
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final Pattern NODEJS_VERSION_PATTERN = Pattern.compile("v?(\\d+\\.\\d+\\.\\d+(-.*)?)");
   private final System2 system2;
   private final Path pathHelperLocationOnMac;
   private final CommandExecutor commandExecutor;
+  private final ClientLogOutput logOutput;
 
   private Path detectedNodePath;
   private Version nodeJsVersion;
 
-  public NodeJsHelper() {
-    this(System2.INSTANCE, Paths.get("/usr/libexec/path_helper"), CommandExecutor.create());
+  public NodeJsHelper(ClientLogOutput logOutput) {
+    this(System2.INSTANCE, Paths.get("/usr/libexec/path_helper"), CommandExecutor.create(), logOutput);
   }
 
   // For testing
-  NodeJsHelper(System2 system2, Path pathHelperLocationOnMac, CommandExecutor commandExecutor) {
+  NodeJsHelper(System2 system2, Path pathHelperLocationOnMac, CommandExecutor commandExecutor, ClientLogOutput logOutput) {
     this.system2 = system2;
     this.pathHelperLocationOnMac = pathHelperLocationOnMac;
     this.commandExecutor = commandExecutor;
+    this.logOutput = logOutput;
   }
 
   public void detect(@Nullable Path configuredNodejsPath) {
     detectedNodePath = locateNode(configuredNodejsPath);
     if (detectedNodePath != null) {
-      LOG.debug("Checking node version...");
+      logOutput.log("Checking node version...", ClientLogOutput.Level.DEBUG);
       var command = Command.create(detectedNodePath.toString()).addArgument("-v");
       var nodeVersionStr = runSimpleCommand(command);
       if (nodeVersionStr != null) {
@@ -67,13 +68,13 @@ public class NodeJsHelper {
         if (matcher.matches()) {
           var version = matcher.group(1);
           nodeJsVersion = Version.create(version);
-          LOG.debug("Detected node version: {}", nodeJsVersion);
+          logOutput.log("Detected node version: " + nodeJsVersion, ClientLogOutput.Level.DEBUG);
         } else {
-          LOG.debug("Unable to parse node version: {}", nodeVersionStr);
+          logOutput.log("Unable to parse node version: " + nodeVersionStr, ClientLogOutput.Level.DEBUG);
         }
       }
       if (nodeJsVersion == null) {
-        LOG.warn("Unable to query node version");
+        logOutput.log("Unable to query node version", ClientLogOutput.Level.WARN);
       }
     }
   }
@@ -91,10 +92,10 @@ public class NodeJsHelper {
   @CheckForNull
   private Path locateNode(@Nullable Path configuredNodejsPath) {
     if (configuredNodejsPath != null) {
-      LOG.debug("Node.js path provided by configuration: {}", configuredNodejsPath);
+      logOutput.log("Node.js path provided by configuration: " + configuredNodejsPath, ClientLogOutput.Level.DEBUG);
       return configuredNodejsPath;
     }
-    LOG.debug("Looking for node in the PATH");
+    logOutput.log("Looking for node in the PATH", ClientLogOutput.Level.DEBUG);
 
     String result;
     if (system2.isOsWindows()) {
@@ -106,10 +107,10 @@ public class NodeJsHelper {
       result = runSimpleCommand(which);
     }
     if (result != null) {
-      LOG.debug("Found node at {}", result);
+      logOutput.log("Found node at " + result, ClientLogOutput.Level.DEBUG);
       return Paths.get(result);
     } else {
-      LOG.debug("Unable to locate node");
+      logOutput.log("Unable to locate node", ClientLogOutput.Level.DEBUG);
       return null;
     }
   }
@@ -130,6 +131,7 @@ public class NodeJsHelper {
 
   /**
    * Run a simple command that should return a single line on stdout
+   *
    * @param command
    * @return
    */
@@ -137,22 +139,22 @@ public class NodeJsHelper {
   private String runSimpleCommand(Command command) {
     List<String> stdOut = new ArrayList<>();
     List<String> stdErr = new ArrayList<>();
-    LOG.debug("Execute command '{}'...", command);
+    logOutput.log("Execute command '" + command + "'...", ClientLogOutput.Level.DEBUG);
     int exitCode;
     try {
       exitCode = commandExecutor.execute(command, stdOut::add, stdErr::add, 10_000);
     } catch (CommandException e) {
-      LOG.debug("Unable to execute the command", e);
+      logOutput.log("Unable to execute the command: " + e.getMessage(), ClientLogOutput.Level.DEBUG);
       return null;
     }
-    var msg = new StringBuilder(String.format("Command '%s' exited with %s", command.toString(), exitCode));
+    var msg = new StringBuilder(String.format("Command '%s' exited with %s", command, exitCode));
     if (!stdOut.isEmpty()) {
       msg.append("\nstdout: ").append(String.join("\n", stdOut));
     }
     if (!stdErr.isEmpty()) {
       msg.append("\nstderr: ").append(String.join("\n", stdErr));
     }
-    LOG.debug(msg.toString());
+    logOutput.log(msg.toString(), ClientLogOutput.Level.DEBUG);
     if (exitCode != 0 || stdOut.isEmpty()) {
       return null;
     }

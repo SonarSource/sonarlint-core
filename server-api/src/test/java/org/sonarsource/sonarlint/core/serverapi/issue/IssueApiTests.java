@@ -39,10 +39,9 @@ import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 
 class IssueApiTests {
   @RegisterExtension
-  static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
-
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
   @RegisterExtension
-  public SonarLintLogTester logTester = new SonarLintLogTester();
+  static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
   private IssueApi underTest;
 
