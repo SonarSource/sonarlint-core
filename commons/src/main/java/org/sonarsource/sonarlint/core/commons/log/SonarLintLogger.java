@@ -25,7 +25,6 @@ import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
 
 /**
  * This is the logging facade to be used in SonarLint core.
- *
  */
 public class SonarLintLogger {
   private static final SonarLintLogger logger = new SonarLintLogger(new LogOutputDelegator());
@@ -35,29 +34,21 @@ public class SonarLintLogger {
     return logger;
   }
 
-  /**
-   *  In some cases, the log output is not properly inherited by the "child" threads (especially when using shared thread pools).
-   *  We have to copy the log output manually, in a similar way to https://logback.qos.ch/manual/mdc.html#managedThreads
-   */
   public static void setTarget(@Nullable ClientLogOutput output) {
     logger.logOutput.setTarget(output);
   }
 
+  /**
+   * In some cases, the log output is not properly inherited by the "child" threads (especially when using shared thread pools).
+   * We have to copy the log output manually, in a similar way to https://logback.qos.ch/manual/mdc.html#managedThreads
+   */
   @CheckForNull
   public static ClientLogOutput getTargetForCopy() {
     return logger.logOutput.getTarget();
   }
 
-  public static void copyTarget(@Nullable ClientLogOutput output) {
-    logger.logOutput.copyTarget(output);
-  }
-
   SonarLintLogger(LogOutputDelegator logOutput) {
     this.logOutput = logOutput;
-  }
-
-  public static ClientLogOutput getCurrentThreadOutput() {
-    return logger.logOutput.getTarget();
   }
 
   public void trace(String msg) {
