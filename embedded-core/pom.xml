@@ -110,5 +110,10 @@
         <artifactId>sonarlint-rpc-impl</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>sonarlint-rpc-java-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
     </dependencies>
 </project>
