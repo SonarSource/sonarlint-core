@@ -25,6 +25,7 @@ import com.sonar.orchestrator.junit5.OnlyOnSonarQube;
 import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
+import its.utils.ConsoleLogOutput;
 import its.utils.ItUtils;
 import its.utils.OrchestratorUtils;
 import java.io.File;
@@ -356,6 +357,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
         .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
 
       engineWithJavaOnly = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
+        .setLogOutput(new ConsoleLogOutput(false))
         .setConnectionId("orchestrator")
         .setSonarLintUserHome(sonarUserHome)
         .setExtraProperties(new HashMap<>())

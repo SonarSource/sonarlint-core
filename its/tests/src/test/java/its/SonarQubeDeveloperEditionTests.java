@@ -26,6 +26,7 @@ import com.sonar.orchestrator.junit5.OnlyOnSonarQube;
 import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
+import its.utils.ConsoleLogOutput;
 import its.utils.OrchestratorUtils;
 import its.utils.PluginLocator;
 import java.io.File;
@@ -83,6 +84,7 @@ import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
@@ -711,6 +713,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     @BeforeAll
     void prepare() {
       engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
+        .setLogOutput(new ConsoleLogOutput(false))
         .setConnectionId(CONNECTION_ID)
         .setSonarLintUserHome(sonarUserHome)
         .setExtraProperties(new HashMap<>())
@@ -1410,6 +1413,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var projectKey = "sample-project";
       provisionProject(ORCHESTRATOR, projectKey, "Sample Project");
 
+      SonarLintLogger.setTarget(new ConsoleLogOutput(false));
       var api = new ServerApi(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID)).component();
       assertThat(api.getProject("non-existing")).isNotPresent();
       assertThat(api.getProject(projectKey)).isPresent();
@@ -1421,6 +1425,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       provisionProject(ORCHESTRATOR, "foo-bar2", "Foo2");
       provisionProject(ORCHESTRATOR, "foo-bar3", "Foo3");
       var globalConfig = ConnectedGlobalConfiguration.sonarQubeBuilder()
+        .setLogOutput(new ConsoleLogOutput(false))
         .setConnectionId(CONNECTION_ID)
         .setSonarLintUserHome(sonarUserHome)
         .build();
