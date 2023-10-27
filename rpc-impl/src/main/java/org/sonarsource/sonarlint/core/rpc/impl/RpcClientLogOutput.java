@@ -19,18 +19,28 @@
  */
 package org.sonarsource.sonarlint.core.rpc.impl;
 
-import org.sonarsource.sonarlint.core.branch.SonarProjectBranchService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.DidChangeActiveSonarProjectBranchParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.SonarProjectBranchRpcService;
+import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 
-class SonarProjectBranchRpcServiceDelegate extends AbstractRpcServiceDelegate implements SonarProjectBranchRpcService {
+class RpcClientLogOutput implements ClientLogOutput {
 
-  public SonarProjectBranchRpcServiceDelegate(SonarLintRpcServerImpl server) {
-    super(server);
+  private final SonarLintRpcClient client;
+
+  private final InheritableThreadLocal<String> configScopeId = new InheritableThreadLocal<>();
+
+  RpcClientLogOutput(SonarLintRpcClient client) {
+    this.client = client;
   }
 
   @Override
-  public void didChangeActiveSonarProjectBranch(DidChangeActiveSonarProjectBranchParams params) {
-    notify(() -> getBean(SonarProjectBranchService.class).didChangeActiveSonarProjectBranch(params), params.getConfigScopeId());
+  public void log(String msg, Level level) {
+    client.log(new LogParams(LogLevel.valueOf(level.name()), msg, configScopeId.get()));
+  }
+
+  public void setConfigScopeId(@Nullable String configScopeId) {
+    this.configScopeId.set(configScopeId);
   }
 }
