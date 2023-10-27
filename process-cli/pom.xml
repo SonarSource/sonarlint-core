@@ -14,6 +14,7 @@
     <jre.dirname.linux>jdk-17.0.7+7-jre</jre.dirname.linux>
     <jre.dirname.windows>jdk-17.0.7+7-jre</jre.dirname.windows>
     <jre.dirname.macosx>jdk-17.0.7+7-jre/Contents/Home</jre.dirname.macosx>
+    <plugin.download.version>1.6.8</plugin.download.version> <!--Issue in 1.7.1 https://github.com/maven-download-plugin/maven-download-plugin/issues/260 -->
   </properties>
 
   <build>
@@ -41,7 +42,7 @@
               <plugin>
                 <groupId>com.googlecode.maven-download-plugin</groupId>
                 <artifactId>download-maven-plugin</artifactId>
-                <version>1.6.8</version>  <!--Issue in 1.7.1 https://github.com/maven-download-plugin/maven-download-plugin/issues/260 -->
+                <version>${plugin.download.version}</version>
                 <executions>
                   <execution>
                     <id>unpack-windows</id>
@@ -73,9 +74,6 @@
                       <descriptors>
                         <descriptor>src/main/assembly/dist-windows.xml</descriptor>
                       </descriptors>
-                      <filters>
-                        <filter>src/main/assembly/filter-dist.properties</filter>
-                      </filters>
                     </configuration>
                   </execution>
                 </executions>
@@ -90,7 +88,7 @@
               <plugin>
                 <groupId>com.googlecode.maven-download-plugin</groupId>
                 <artifactId>download-maven-plugin</artifactId>
-                <version>1.6.8</version> <!--Issue in 1.7.1 https://github.com/maven-download-plugin/maven-download-plugin/issues/260 -->
+                <version>${plugin.download.version}</version>
                 <executions>
                   <execution>
                     <id>unpack-linux-x64</id>
@@ -122,9 +120,6 @@
                       <descriptors>
                         <descriptor>src/main/assembly/dist-linux_x64.xml</descriptor>
                       </descriptors>
-                      <filters>
-                        <filter>src/main/assembly/filter-dist.properties</filter>
-                      </filters>
                     </configuration>
                   </execution>
                 </executions>
@@ -139,7 +134,7 @@
               <plugin>
                 <groupId>com.googlecode.maven-download-plugin</groupId>
                 <artifactId>download-maven-plugin</artifactId>
-                <version>1.6.8</version> <!--Issue in 1.7.1 https://github.com/maven-download-plugin/maven-download-plugin/issues/260 -->
+                <version>${plugin.download.version}</version>
                 <executions>
                   <execution>
                     <id>unpack-linux-aarch64</id>
@@ -171,9 +166,6 @@
                       <descriptors>
                         <descriptor>src/main/assembly/dist-linux_aarch64.xml</descriptor>
                       </descriptors>
-                      <filters>
-                        <filter>src/main/assembly/filter-dist.properties</filter>
-                      </filters>
                     </configuration>
                   </execution>
                 </executions>
@@ -188,7 +180,7 @@
           <plugin>
             <groupId>com.googlecode.maven-download-plugin</groupId>
             <artifactId>download-maven-plugin</artifactId>
-            <version>1.6.8</version> <!--Issue in 1.7.1 https://github.com/maven-download-plugin/maven-download-plugin/issues/260 -->
+            <version>${plugin.download.version}</version>
             <executions>
               <execution>
                 <id>unpack-macosx_x64</id>
@@ -219,9 +211,6 @@
                   <descriptors>
                     <descriptor>src/main/assembly/dist-macosx-x86_64.xml</descriptor>
                   </descriptors>
-                  <filters>
-                    <filter>src/main/assembly/filter-dist.properties</filter>
-                  </filters>
                 </configuration>
               </execution>
             </executions>
@@ -236,7 +225,7 @@
           <plugin>
             <groupId>com.googlecode.maven-download-plugin</groupId>
             <artifactId>download-maven-plugin</artifactId>
-            <version>1.6.8</version>
+            <version>${plugin.download.version}</version>
             <executions>
               <execution>
                 <id>unpack-macosx_aarch64</id>
@@ -267,9 +256,6 @@
                   <descriptors>
                     <descriptor>src/main/assembly/dist-macosx-aarch64.xml</descriptor>
                   </descriptors>
-                  <filters>
-                    <filter>src/main/assembly/filter-dist.properties</filter>
-                  </filters>
                 </configuration>
               </execution>
             </executions>
@@ -294,7 +280,6 @@
       <groupId>${project.groupId}</groupId>
       <artifactId>sonarlint-rpc-impl</artifactId>
       <version>${project.version}</version>
-      <scope>compile</scope>
     </dependency>
 
     <!-- unit tests -->
