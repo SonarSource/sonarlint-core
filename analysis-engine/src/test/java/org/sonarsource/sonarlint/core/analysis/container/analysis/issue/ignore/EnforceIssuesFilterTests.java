@@ -25,6 +25,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.scan.issue.filter.IssueFilterChain;
@@ -34,6 +35,7 @@ import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.Son
 import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.ignore.pattern.IssueInclusionPatternInitializer;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.ignore.pattern.IssuePattern;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultFilterableIssue;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import testutils.OnDiskTestClientInputFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,6 +45,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class EnforceIssuesFilterTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private IssueInclusionPatternInitializer exclusionPatternInitializer;
   private EnforceIssuesFilter ignoreFilter;

@@ -44,6 +44,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 class RuleExtractorMediumTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private static final int COMMERCIAL_RULE_TEMPLATES_COUNT = 11;
   private static final int NON_COMMERCIAL_RULE_TEMPLATES_COUNT = 16;
@@ -55,9 +57,6 @@ class RuleExtractorMediumTests {
   // (if you pass -Dcommercial to maven, a profile will be activated that downloads the commercial plugins)
   private static final boolean COMMERCIAL_ENABLED = System.getProperty("commercial") != null;
   private static Set<Path> allJars;
-
-  @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester();
 
   @BeforeAll
   static void prepare() throws IOException {

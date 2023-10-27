@@ -191,26 +191,36 @@ class ApacheHttpClientAdapter implements HttpClient {
     private final Future<SimpleHttpResponse> wrapped;
 
     private CompletableFutureWrappingFuture(SimpleHttpRequest httpRequest) {
+      var callingThreadLogOutput = SonarLintLogger.getTargetForCopy();
       this.wrapped = apacheClient.execute(httpRequest, new FutureCallback<>() {
         @Override
         public void completed(SimpleHttpResponse result) {
+          SonarLintLogger.setTarget(callingThreadLogOutput);
           // getRequestUri may be relative, so we prefer getUri
           try {
             var uri = httpRequest.getUri().toString();
-            CompletableFutureWrappingFuture.this.completeAsync(() -> new ApacheHttpResponse(uri, result));
+            CompletableFutureWrappingFuture.this.completeAsync(() -> {
+              SonarLintLogger.setTarget(callingThreadLogOutput);
+              return new ApacheHttpResponse(uri, result);
+            });
           } catch (URISyntaxException e) {
-            CompletableFutureWrappingFuture.this.completeAsync(() -> new ApacheHttpResponse(httpRequest.getRequestUri(), result));
+            CompletableFutureWrappingFuture.this.completeAsync(() -> {
+              SonarLintLogger.setTarget(callingThreadLogOutput);
+              return new ApacheHttpResponse(httpRequest.getRequestUri(), result);
+            });
           }
         }
 
         @Override
         public void failed(Exception ex) {
+          SonarLintLogger.setTarget(callingThreadLogOutput);
           LOG.debug("Request failed", ex);
           CompletableFutureWrappingFuture.this.completeExceptionally(ex);
         }
 
         @Override
         public void cancelled() {
+          SonarLintLogger.setTarget(callingThreadLogOutput);
           LOG.debug("Request cancelled");
           CompletableFutureWrappingFuture.this.cancel();
         }
