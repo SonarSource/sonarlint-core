@@ -49,14 +49,12 @@ public class SonarCloudWebSocket {
 
   private static final String PROJECT_FILTER_TYPE = "PROJECT";
   private static final Gson gson = new Gson();
-  private WebSocketClient client;
   private WebSocket ws;
   private final History history = new History();
   private final ScheduledExecutorService sonarCloudWebSocketScheduler = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "sonarcloud-websocket-scheduled-jobs"));
 
   public static SonarCloudWebSocket create(WebSocketClient webSocketClient, Consumer<ServerEvent> serverEventConsumer, Runnable connectionEndedRunnable) {
     var webSocket = new SonarCloudWebSocket();
-    webSocket.client = webSocketClient;
     webSocket.ws = webSocketClient.createWebSocketConnection(getUrl(), rawEvent -> webSocket.handleRawMessage(rawEvent, serverEventConsumer), connectionEndedRunnable);
     webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(webSocket::cleanUpMessageHistory, 0, 5, TimeUnit.MINUTES);
     webSocket.sonarCloudWebSocketScheduler.schedule(connectionEndedRunnable, 119, TimeUnit.MINUTES);
