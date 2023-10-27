@@ -191,6 +191,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
           throw new IllegalStateException("Error while closing spring context", e);
         }
       }
+      launcherFuture.cancel(true);
       return null;
     });
   }

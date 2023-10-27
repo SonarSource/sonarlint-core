@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--    Generate a distribution archive which contains executable application with dependencies and supporting files
+        - The actual jar
+        - the dependencies
+        - the JRE
+        - the launcher script
+          -->
+<assembly>
+  <id>linux_x64</id>
+  <includeBaseDirectory>false</includeBaseDirectory>
+  <formats>
+    <format>zip</format>
+  </formats>
+
+  <!-- The dependencies -->
+  <dependencySets>
+    <dependencySet>
+      <outputDirectory>/lib</outputDirectory>
+      <unpack>false</unpack>
+      <excludes>
+        <exclude>${artifact}</exclude>
+      </excludes>
+    </dependencySet>
+  </dependencySets>
+
+  <fileSets>
+    <fileSet>
+      <!-- The sloop jar-->
+      <directory>${project.build.directory}</directory>
+      <outputDirectory>lib</outputDirectory>
+      <fileMode>0644</fileMode>
+      <includes>
+        <include>**/sonarlint-process-cli-${project.version}.jar</include>
+      </includes>
+    </fileSet>
+
+    <!-- The launcher script-->
+    <fileSet>
+      <directory>src/main/assembly/bin</directory>
+      <outputDirectory>bin</outputDirectory>
+      <fileMode>0755</fileMode>
+      <lineEnding>unix</lineEnding>
+      <filtered>true</filtered>
+      <includes>
+        <include>sonarlint-backend</include>
+      </includes>
+    </fileSet>
+
+    <!-- jre basic, except bin/ -->
+    <fileSet>
+      <directory>${unpack.dir}/linux_x64/${jre.dirname.linux}</directory>
+      <outputDirectory>jre</outputDirectory>
+      <excludes>
+        <exclude>bin/**</exclude>
+        <exclude>man/**</exclude>
+        <exclude>lib/jspawnhelper</exclude>
+        <exclude>lib/jexec</exclude>
+        <exclude>plugin/**</exclude>
+      </excludes>
+    </fileSet>
+
+    <!-- jre/bin/java -->
+    <fileSet>
+      <directory>${unpack.dir}/linux_x64/${jre.dirname.linux}/bin</directory>
+      <outputDirectory>jre/bin</outputDirectory>
+      <includes>
+        <include>java</include>
+      </includes>
+      <fileMode>0755</fileMode>
+    </fileSet>
+
+    <!-- jre lib executable files -->
+    <fileSet>
+      <directory>${unpack.dir}/linux_x64/${jre.dirname.linux}/lib</directory>
+      <outputDirectory>jre/lib</outputDirectory>
+      <includes>
+        <include>jspawnhelper</include>
+        <include>jexec</include>
+      </includes>
+      <fileMode>0755</fileMode>
+    </fileSet>
+  </fileSets>
+</assembly>
