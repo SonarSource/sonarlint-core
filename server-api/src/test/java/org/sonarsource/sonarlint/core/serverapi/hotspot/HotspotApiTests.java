@@ -47,12 +47,11 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class HotspotApiTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
-
-  @RegisterExtension
-  public SonarLintLogTester logTester = new SonarLintLogTester();
 
   private HotspotApi underTest;
 

@@ -23,7 +23,9 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -37,6 +39,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class SonarProjectsCacheTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   public static final String SQ_1 = "sq1";
   public static final String PROJECT_KEY_1 = "projectKey1";

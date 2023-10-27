@@ -29,6 +29,7 @@ import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
 import testutils.MockWebServerExtensionWithProtobuf;
@@ -36,6 +37,8 @@ import testutils.MockWebServerExtensionWithProtobuf;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class HotspotDownloaderTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private static final String DUMMY_KEY = "dummyKey";
 

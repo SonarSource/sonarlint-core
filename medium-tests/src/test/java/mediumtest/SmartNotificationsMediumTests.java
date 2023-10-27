@@ -255,7 +255,9 @@ class SmartNotificationsMediumTests {
     webSocketServer = new WebSocketServer();
     webSocketServer.start();
     System.setProperty("sonarlint.internal.sonarcloud.websocket.url", webSocketServer.getUrl());
-    var fakeClient = newFakeClient().withToken(CONNECTION_ID, "token").build();
+    var fakeClient = newFakeClient().withToken(CONNECTION_ID, "token")
+      .printLogsToStdOut()
+      .build();
     System.setProperty("sonarlint.internal.sonarcloud.url", mockWebServerExtension.endpointParams().getBaseUrl());
     mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
@@ -275,7 +277,7 @@ class SmartNotificationsMediumTests {
 
     webSocketServer.getConnections().get(0).sendMessage(NEW_ISSUES_EVENT);
 
-    await().atMost(2, TimeUnit.SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getSmartNotificationsToShow()).isNotEmpty());
 
     notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(1);

@@ -43,6 +43,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class BindingClueProviderTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   public static final String SQ_CONNECTION_ID_1 = "sq1";
   public static final String SQ_CONNECTION_ID_2 = "sq2";
@@ -51,9 +53,6 @@ class BindingClueProviderTests {
   private static final String PROJECT_KEY_1 = "myproject1";
   public static final String MY_ORG_1 = "myOrg1";
   public static final String MY_ORG_2 = "myOrg2";
-
-  @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester();
 
   public static final String CONFIG_SCOPE_ID = "configScopeId";
   private final ConnectionConfigurationRepository connectionRepository = mock(ConnectionConfigurationRepository.class);

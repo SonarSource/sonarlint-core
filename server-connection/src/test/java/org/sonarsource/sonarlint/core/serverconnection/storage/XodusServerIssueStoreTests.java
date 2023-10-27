@@ -59,9 +59,8 @@ import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssu
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueFixtures.aServerTaintIssue;
 
 class XodusServerIssueStoreTests {
-
   @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester(false);
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   @TempDir
   Path workDir;
