@@ -10,6 +10,12 @@
   <name>SonarLint Core - Implementation</name>
   <description>Common library used by some SonarLint flavors</description>
 
+  <properties>
+    <!-- For coverage computation, it is better to skip shading, else JaCoCo will fail with
+     Classes in bundle 'sonarlint-core' do not match with execution data. For report generation the same class files must be used as at runtime.-->
+    <maven.shade.skip>false</maven.shade.skip>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
@@ -235,6 +241,7 @@
               <goal>shade</goal>
             </goals>
             <configuration>
+              <skip>${maven.shade.skip}</skip>
               <createDependencyReducedPom>true</createDependencyReducedPom>
               <minimizeJar>true</minimizeJar>
               <createSourcesJar>true</createSourcesJar>
