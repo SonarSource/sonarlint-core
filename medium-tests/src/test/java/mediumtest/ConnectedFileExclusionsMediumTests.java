@@ -32,10 +32,12 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 import testutils.TestUtils;
 
@@ -44,6 +46,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static testutils.TestUtils.createNoOpLogOutput;
 
 class ConnectedFileExclusionsMediumTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private static final String SERVER_ID = "local";
   private static final String PROJECT_KEY = "test-project-2";

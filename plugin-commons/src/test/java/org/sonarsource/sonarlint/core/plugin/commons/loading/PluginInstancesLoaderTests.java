@@ -44,9 +44,8 @@ import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.Mockito.mock;
 
 class PluginInstancesLoaderTests {
-
   @RegisterExtension
-  SonarLintLogTester logTester = new SonarLintLogTester();
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   PluginInstancesLoader loader = new PluginInstancesLoader(new PluginClassloaderFactory());
 

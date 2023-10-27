@@ -35,6 +35,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
@@ -58,6 +59,10 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 
 class WebSocketMediumTests {
+
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
+
   private WebSocketServer webSocketServer;
   private String oldSonarCloudWebSocketUrl;
   private SonarLintTestRpcServer backend;
@@ -467,9 +472,6 @@ class WebSocketMediumTests {
   @Nested
   class WhenConnectionAdded {
 
-    @RegisterExtension
-    SonarLintLogTester logTester = new SonarLintLogTester();
-
     @Test
     void should_subscribe_all_projects_bound_to_added_connection() {
       startWebSocketServer();
@@ -503,7 +505,7 @@ class WebSocketMediumTests {
       backend.getConnectionService()
         .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", false))));
 
-      await().untilAsserted(() -> assertThat(logTester.logs()).contains("Error while trying to create websocket connection for wss://not-found:1234"));
+      await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Error while trying to create websocket connection for wss://not-found:1234"));
 
       startWebSocketServer();
       // Emulate a change on the connection to force websocket service to reconnect

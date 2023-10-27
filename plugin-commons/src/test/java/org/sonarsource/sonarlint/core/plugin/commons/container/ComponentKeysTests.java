@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.plugin.commons.container;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,6 +31,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 class ComponentKeysTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   ComponentKeys keys = new ComponentKeys();
 
