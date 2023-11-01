@@ -34,7 +34,7 @@ set DEFAULT_JVM_OPTS=
 @rem Resolve any "." and ".." in APP_HOME to make it shorter.
 for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
 
-set JAVA_EXE=%APP_HOME%/jre/bin/java.exe
+set JAVA_EXE=%APP_HOME%\jre\bin\java.exe
 set CLASSPATH=%APP_HOME%\lib\*;
 
 @rem Execute SLCORE
@@ -44,11 +44,11 @@ set CLASSPATH=%APP_HOME%\lib\*;
 if %ERRORLEVEL% equ 0 goto mainEnd
 
 :fail
-rem Set variable JSONRPC_HELLO_WORLD_EXIT_CONSOLE if you need the _script_ return code instead of
+rem Set variable SLCORE_EXIT_CONSOLE if you need the _script_ return code instead of
 rem the _cmd.exe /c_ return code!
 set EXIT_CODE=%ERRORLEVEL%
 if %EXIT_CODE% equ 0 set EXIT_CODE=1
-if not ""=="%JSONRPC_HELLO_WORLD_EXIT_CONSOLE%" exit %EXIT_CODE%
+if not ""=="%SLCORE_EXIT_CONSOLE%" exit %EXIT_CODE%
 exit /b %EXIT_CODE%
 
 :mainEnd

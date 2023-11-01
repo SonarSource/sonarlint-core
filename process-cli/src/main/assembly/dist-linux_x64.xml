@@ -9,7 +9,7 @@
   <id>linux_x64</id>
   <includeBaseDirectory>false</includeBaseDirectory>
   <formats>
-    <format>zip</format>
+    <format>tar.gz</format>
   </formats>
 
   <!-- The dependencies -->
