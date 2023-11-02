@@ -23,6 +23,20 @@ APP_HOME=`cd "$APP_HOME" && pwd -P`
 
 CLASSPATH=$APP_HOME/lib/*:
 
-JAVACMD=$APP_HOME/jre/bin/java
+javaHomeArg=""
 
-exec "$JAVACMD" -classpath "$CLASSPATH" org.sonarsource.sonarlint.core.rpc.impl.SonarLintCoreProcess "$@"
+while getopts "j:" opt; do
+  case $opt in
+    j)
+      javaHomeArg="$OPTARG"
+      JAVACMD=$javaHomeArg/bin/java
+      ;;
+  esac
+done
+
+if [ -z "$javaHomeArg" ]; then
+  echo "Using bundled jre"
+  JAVACMD=$APP_HOME/jre/bin/java
+fi
+
+exec "$JAVACMD" -classpath "$CLASSPATH" org.sonarsource.sonarlint.core.rpc.impl.SonarLintCoreProcess
