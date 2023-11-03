@@ -56,7 +56,9 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
+import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 @Named
 @Singleton
@@ -208,7 +210,14 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
     }
 
     public boolean isValid() {
-      return isNotBlank(serverUrl) && isNotBlank(projectKey) && isNotBlank(issueKey) && isNotBlank(branch);
+      return isNotBlank(serverUrl) && isNotBlank(projectKey) && isNotBlank(issueKey) && isNotBlank(branch) && isPullRequestParamValid();
+    }
+
+    public boolean isPullRequestParamValid() {
+      if (pullRequest != null) {
+        return isNotEmpty(pullRequest);
+      }
+      return true;
     }
 
     public String getServerUrl() {
