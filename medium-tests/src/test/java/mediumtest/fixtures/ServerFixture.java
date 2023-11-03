@@ -573,6 +573,12 @@ public class ServerFixture {
 
     private void registerSourceApiResponses() {
       sourceFileByComponentKey
+        .forEach((componentKey, sourceFile) -> mockServer.stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey) + "&branch=branchName").willReturn(aResponse().withBody(sourceFile.code))));
+
+      sourceFileByComponentKey
+        .forEach((componentKey, sourceFile) -> mockServer.stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey) + "&pullRequest=pullRequest").willReturn(aResponse().withBody(sourceFile.code))));
+
+      sourceFileByComponentKey
         .forEach((componentKey, sourceFile) -> mockServer.stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey)).willReturn(aResponse().withBody(sourceFile.code))));
     }
 

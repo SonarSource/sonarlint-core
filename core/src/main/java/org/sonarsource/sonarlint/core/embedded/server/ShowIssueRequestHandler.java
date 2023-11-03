@@ -56,7 +56,6 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 
-import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
@@ -127,19 +126,19 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
   private void showIssueForScope(String connectionId, String configScopeId, String issueKey, String projectKey, String branch, String pullRequest) {
     tryFetchIssue(connectionId, issueKey, projectKey, branch, pullRequest)
       .ifPresentOrElse(
-        issueDetails -> client.showIssue(getShowIssueParams(issueDetails, connectionId, configScopeId)),
+        issueDetails -> client.showIssue(getShowIssueParams(issueDetails, connectionId, configScopeId, branch, pullRequest)),
         () -> client.showMessage(new ShowMessageParams(MessageType.ERROR, "Could not show the issue. See logs for more details")));
   }
 
   @VisibleForTesting
-  ShowIssueParams getShowIssueParams(IssueApi.ServerIssueDetails issueDetails, String connectionId, String configScopeId) {
+  ShowIssueParams getShowIssueParams(IssueApi.ServerIssueDetails issueDetails, String connectionId, String configScopeId, String branch, String pullRequest) {
     var flowLocations = issueDetails.flowList.stream().map(flow -> {
       var locations = flow.getLocationsList().stream().map(location -> {
         var locationComponent =
           issueDetails.componentsList.stream().filter(component -> component.getKey().equals(location.getComponent())).findFirst();
         var filePath = locationComponent.map(Issues.Component::getPath).orElse("");
         var locationTextRange = location.getTextRange();
-        var codeSnippet = tryFetchCodeSnippet(connectionId, locationComponent.map(Issues.Component::getKey).orElse(""), locationTextRange);
+        var codeSnippet = tryFetchCodeSnippet(connectionId, locationComponent.map(Issues.Component::getKey).orElse(""), locationTextRange, branch, pullRequest);
         var locationTextRangeDto = new TextRangeDto(locationTextRange.getStartLine(), locationTextRange.getStartOffset(),
           locationTextRange.getEndLine(), locationTextRange.getEndOffset());
         return new LocationDto(locationTextRangeDto, location.getMsg(), filePath, codeSnippet.orElse(""));
@@ -170,13 +169,13 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
     return serverApi.get().issue().fetchServerIssue(issueKey, projectKey, branch, pullRequest);
   }
 
-  private Optional<String> tryFetchCodeSnippet(String connectionId, String fileKey, Common.TextRange textRange) {
+  private Optional<String> tryFetchCodeSnippet(String connectionId, String fileKey, Common.TextRange textRange, String branch, String pullRequest) {
     var serverApi = serverApiProvider.getServerApi(connectionId);
     if (serverApi.isEmpty() || fileKey.isEmpty()) {
       // should not happen since we found the connection just before, improve the design ?
       return Optional.empty();
     }
-    return serverApi.get().issue().getCodeSnippet(fileKey, textRange);
+    return serverApi.get().issue().getCodeSnippet(fileKey, textRange, branch, pullRequest);
   }
 
   @VisibleForTesting

@@ -20,9 +20,12 @@
 package org.sonarsource.sonarlint.core.serverapi.source;
 
 import java.util.Optional;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
+
+import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 
 public class SourceApi {
 
@@ -41,7 +44,22 @@ public class SourceApi {
    * @param key project key, or file key.
    */
   public Optional<String> getRawSourceCode(String fileKey) {
-    try (var r = serverApiHelper.get("/api/sources/raw?key=" + UrlUtils.urlEncode(fileKey))) {
+    try (var r = serverApiHelper.get("/api/sources/raw?key=" + urlEncode(fileKey))) {
+      return Optional.of(r.bodyAsString());
+    } catch (Exception e) {
+      LOG.debug("Unable to fetch source code of '" + fileKey + "'", e);
+      return Optional.empty();
+    }
+  }
+
+  public Optional<String> getRawSourceCodeForBranchAndPullRequest(String fileKey, String branch, @Nullable String pullRequest) {
+    var url = "/api/sources/raw?key=" + urlEncode(fileKey);
+    if (pullRequest != null && !pullRequest.isEmpty()) {
+      url = url.concat("&pullRequest=").concat(urlEncode(pullRequest));
+    } else if (!branch.isEmpty()) {
+      url = url.concat("&branch=").concat(urlEncode(branch));
+    }
+    try (var r = serverApiHelper.get(url)) {
       return Optional.of(r.bodyAsString());
     } catch (Exception e) {
       LOG.debug("Unable to fetch source code of '" + fileKey + "'", e);
