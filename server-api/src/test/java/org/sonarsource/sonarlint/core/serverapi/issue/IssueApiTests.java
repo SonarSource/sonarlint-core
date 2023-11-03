@@ -129,13 +129,14 @@ class IssueApiTests {
   void should_fetch_server_issue_by_key() {
     var issueKey = "issueKey";
     var path = "/home/file.java";
-    mockServer.addProtobufResponse("/api/issues/search.protobuf?issues=".concat(urlEncode(issueKey)).concat("&ps=1&p=1"),
+    var projectKey = "projectKey";
+    mockServer.addProtobufResponse("/api/issues/search.protobuf?issues=".concat(urlEncode(issueKey)).concat("&componentKeys=").concat(projectKey).concat("&ps=1&p=1"),
       Issues.SearchWsResponse.newBuilder()
         .addIssues(Issues.Issue.newBuilder().setKey(issueKey).build())
         .addComponents(Issues.Component.newBuilder().setPath(path).build())
         .setRules(Issues.SearchWsResponse.newBuilder().getRulesBuilder().addRules(Common.Rule.newBuilder().setKey("ruleKey").build()))
         .build());
-    var serverIssueDetails = underTest.fetchServerIssue(issueKey);
+    var serverIssueDetails = underTest.fetchServerIssue(issueKey, projectKey, "", "");
     assertThat(serverIssueDetails).isPresent();
     assertThat(serverIssueDetails.get().key).isEqualTo(issueKey);
     assertThat(serverIssueDetails.get().path).isEqualTo(path);
@@ -143,9 +144,9 @@ class IssueApiTests {
 
   @Test
   void should_not_fail_when_no_issue_found_by_key(){
-    mockServer.addProtobufResponse("/api/issues/search.protobuf?issues=".concat(urlEncode("qwert")).concat("&ps=1&p=1"),
+    mockServer.addProtobufResponse("/api/issues/search.protobuf?issues=".concat(urlEncode("qwert")).concat("&componentKeys=myProject").concat("&ps=1&p=1"),
       Issues.SearchWsResponse.newBuilder().addIssues(Issues.Issue.newBuilder().build()).build());
-    var serverIssueDetails = underTest.fetchServerIssue("non-existent");
+    var serverIssueDetails = underTest.fetchServerIssue("non-existent", "myProject", "", "");
     assertThat(serverIssueDetails).isEmpty();
     assertThat(logTester.logs()).contains("Error while fetching issue");
   }
@@ -154,15 +155,57 @@ class IssueApiTests {
   void should_not_fetch_server_issue_by_key_with_no_matching_component() {
     var issueKey = "issueKey";
     var path = "/home/file.java";
-    mockServer.addProtobufResponse("/api/issues/search.protobuf?issues=".concat(urlEncode(issueKey)).concat("&ps=1&p=1"),
+    mockServer.addProtobufResponse("/api/issues/search.protobuf?issues=".concat(urlEncode(issueKey)).concat("&componentKeys=differentIssueComponent").concat("&ps=1&p=1"),
       Issues.SearchWsResponse.newBuilder()
         .addIssues(Issues.Issue.newBuilder().setKey(issueKey).setComponent("issueComponent").build())
         .addComponents(Issues.Component.newBuilder().setPath(path).setKey("differentIssueComponent").build())
         .setRules(Issues.SearchWsResponse.newBuilder().getRulesBuilder().addRules(Common.Rule.newBuilder().setKey("ruleKey").build()))
         .build());
-    var serverIssueDetails = underTest.fetchServerIssue(issueKey);
+    var serverIssueDetails = underTest.fetchServerIssue(issueKey, "differentIssueComponent", "", "");
     assertThat(serverIssueDetails).isEmpty();
     assertThat(logTester.logs()).contains("No path found in components for the issue with key 'issueKey'");
+  }
+
+  @Test
+  void should_fetch_branch_issue() {
+    var issueKey = "issueKey";
+    var path = "/home/file.java";
+    var projectKey = "projectKey";
+    var branch = "branch";
+    mockServer.addProtobufResponse("/api/issues/search.protobuf?issues=".concat(urlEncode(issueKey))
+        .concat("&componentKeys=").concat(projectKey)
+        .concat("&ps=1&p=1")
+        .concat("&branch=").concat(branch),
+      Issues.SearchWsResponse.newBuilder()
+        .addIssues(Issues.Issue.newBuilder().setKey(issueKey).build())
+        .addComponents(Issues.Component.newBuilder().setPath(path).build())
+        .setRules(Issues.SearchWsResponse.newBuilder().getRulesBuilder().addRules(Common.Rule.newBuilder().setKey("ruleKey").build()))
+        .build());
+    var serverIssueDetails = underTest.fetchServerIssue(issueKey, projectKey, branch, "");
+    assertThat(serverIssueDetails).isPresent();
+    assertThat(serverIssueDetails.get().key).isEqualTo(issueKey);
+    assertThat(serverIssueDetails.get().path).isEqualTo(path);
+  }
+
+  @Test
+  void should_fetch_pull_request_issue() {
+    var issueKey = "issueKey";
+    var path = "/home/file.java";
+    var projectKey = "projectKey";
+    var pullRequest = "1234";
+    mockServer.addProtobufResponse("/api/issues/search.protobuf?issues=".concat(urlEncode(issueKey))
+        .concat("&componentKeys=").concat(projectKey)
+        .concat("&ps=1&p=1")
+        .concat("&pullRequest=").concat(pullRequest),
+      Issues.SearchWsResponse.newBuilder()
+        .addIssues(Issues.Issue.newBuilder().setKey(issueKey).build())
+        .addComponents(Issues.Component.newBuilder().setPath(path).build())
+        .setRules(Issues.SearchWsResponse.newBuilder().getRulesBuilder().addRules(Common.Rule.newBuilder().setKey("ruleKey").build()))
+        .build());
+    var serverIssueDetails = underTest.fetchServerIssue(issueKey, projectKey, "prbranch", pullRequest);
+    assertThat(serverIssueDetails).isPresent();
+    assertThat(serverIssueDetails.get().key).isEqualTo(issueKey);
+    assertThat(serverIssueDetails.get().path).isEqualTo(path);
   }
 
 }
