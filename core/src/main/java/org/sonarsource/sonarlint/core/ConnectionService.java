@@ -32,6 +32,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectionValidator;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
@@ -58,6 +59,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrg
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.OrganizationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProject;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -215,5 +219,41 @@ public class ConnectionService {
 
   public HelpGenerateUserTokenResponse helpGenerateUserToken(HelpGenerateUserTokenParams params, CancelChecker cancelToken) {
     return tokenGeneratorHelper.helpGenerateUserToken(params, cancelToken);
+  }
+
+  public GetAllProjectsResponse getAllProjects(GetAllProjectsParams params, CancelChecker cancelChecker) {
+    var helper = buildServerApiHelper(params.getTransientConnection());
+    var allProjects = new ServerApi(helper).component().getAllProjects(new ProgressMonitor(new CancelCheckerAwareProgressMonitor(cancelChecker)))
+      .stream().map(serverProject -> new SonarProject(serverProject.getKey(), serverProject.getName()))
+      .collect(Collectors.toList());
+    return new GetAllProjectsResponse(allProjects);
+  }
+
+  private static class CancelCheckerAwareProgressMonitor implements ClientProgressMonitor {
+    private final CancelChecker cancelChecker;
+
+    private CancelCheckerAwareProgressMonitor(CancelChecker cancelChecker) {
+      this.cancelChecker = cancelChecker;
+    }
+
+    @Override
+    public boolean isCanceled() {
+      return cancelChecker.isCanceled();
+    }
+
+    @Override
+    public void setMessage(String msg) {
+      // not implemented
+    }
+
+    @Override
+    public void setFraction(float fraction) {
+      // not implemented
+    }
+
+    @Override
+    public void setIndeterminate(boolean indeterminate) {
+      // not implemented
+    }
   }
 }

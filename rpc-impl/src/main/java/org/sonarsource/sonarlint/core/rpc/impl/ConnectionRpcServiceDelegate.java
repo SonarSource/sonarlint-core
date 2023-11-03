@@ -32,6 +32,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrg
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionResponse;
 
@@ -75,5 +77,10 @@ class ConnectionRpcServiceDelegate extends AbstractRpcServiceDelegate implements
   @Override
   public CompletableFuture<GetOrganizationResponse> getOrganization(GetOrganizationParams params) {
     return requestAsync(cancelChecker -> getBean(ConnectionService.class).getOrganization(params, cancelChecker));
+  }
+
+  @Override
+  public CompletableFuture<GetAllProjectsResponse> getAllProjects(GetAllProjectsParams params) {
+    return requestAsync(cancelChecker -> getBean(ConnectionService.class).getAllProjects(params, cancelChecker));
   }
 }
