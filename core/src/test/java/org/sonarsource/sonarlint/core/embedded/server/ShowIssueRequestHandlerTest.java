@@ -146,7 +146,7 @@ class ShowIssueRequestHandlerTest {
     assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "", "issue", "branch", "pullRequest").isValid()).isFalse();
     assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "", "branch", "pullRequest").isValid()).isFalse();
     assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "", "").isValid()).isFalse();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "").isValid()).isTrue();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", null).isValid()).isTrue();
   }
 
   @Test
