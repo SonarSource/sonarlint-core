@@ -31,6 +31,7 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesRpcService;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
@@ -122,7 +123,9 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    *
    * @throws DownloadException if it fails to download
    * @since 2.5
+   * @deprecated use {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService#getAllProjects(GetAllProjectsParams)}
    */
+  @Deprecated(since = "10.0")
   Map<String, ServerProject> downloadAllProjects(EndpointParams endpoint, HttpClient client, @Nullable ClientProgressMonitor monitor);
 
   void sync(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, @Nullable ClientProgressMonitor monitor);

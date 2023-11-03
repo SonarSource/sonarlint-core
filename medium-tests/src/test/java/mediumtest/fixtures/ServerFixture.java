@@ -41,6 +41,7 @@ import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Components;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Measures;
@@ -49,7 +50,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
@@ -64,11 +64,15 @@ public class ServerFixture {
   }
 
   public static ServerBuilder newSonarQubeServer(String version) {
-    return new ServerBuilder(ServerKind.SONARQUBE, version);
+    return new ServerBuilder(ServerKind.SONARQUBE, null, version);
   }
 
   public static ServerBuilder newSonarCloudServer() {
-    return new ServerBuilder(ServerKind.SONARQUBE, null);
+    return newSonarCloudServer("myOrganization");
+  }
+
+  public static ServerBuilder newSonarCloudServer(String organization) {
+    return new ServerBuilder(ServerKind.SONARCLOUD, organization, null);
   }
 
   private enum ServerKind {
@@ -81,14 +85,17 @@ public class ServerFixture {
 
   public static class ServerBuilder {
     private final ServerKind serverKind;
+    @Nullable
+    private final String organizationKey;
     private final String version;
     private final Map<String, ServerProjectBuilder> projectByProjectKey = new HashMap<>();
     private final Map<String, ServerSourceFileBuilder> sourceFileByComponentKey = new HashMap<>();
     private ServerStatus serverStatus = ServerStatus.UP;
     private boolean smartNotificationsSupported;
 
-    public ServerBuilder(ServerKind serverKind, @Nullable String version) {
+    public ServerBuilder(ServerKind serverKind, @Nullable String organizationKey, @Nullable String version) {
       this.serverKind = serverKind;
+      this.organizationKey = organizationKey;
       this.version = version;
     }
 
@@ -115,13 +122,14 @@ public class ServerFixture {
     }
 
     public Server start() {
-      var server = new Server(serverKind, serverStatus, version, projectByProjectKey, sourceFileByComponentKey, smartNotificationsSupported);
+      var server = new Server(serverKind, serverStatus, organizationKey, version, projectByProjectKey, sourceFileByComponentKey, smartNotificationsSupported);
       server.start();
       return server;
     }
 
     public static class ServerProjectBuilder {
       private final Map<String, ServerProjectBranchBuilder> branchesByName = new HashMap<>();
+      private String name = "MyProject";
 
       public ServerProjectBuilder withEmptyBranch(String branchName) {
         var builder = new ServerProjectBranchBuilder();
@@ -137,6 +145,11 @@ public class ServerFixture {
 
       public ServerProjectBuilder withDefaultBranch(UnaryOperator<ServerProjectBranchBuilder> branchBuilder) {
         return withBranch(null, branchBuilder);
+      }
+
+      public ServerProjectBuilder withName(String name) {
+        this.name = name;
+        return this;
       }
     }
 
@@ -308,16 +321,19 @@ public class ServerFixture {
     private final ServerKind serverKind;
     private final ServerStatus serverStatus;
     @Nullable
+    private final String organizationKey;
+    @Nullable
     private final Version version;
     private final Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey;
     private final Map<String, ServerBuilder.ServerSourceFileBuilder> sourceFileByComponentKey;
     private final boolean smartNotificationsSupported;
 
-    public Server(ServerKind serverKind, ServerStatus serverStatus, @Nullable String version,
+    public Server(ServerKind serverKind, ServerStatus serverStatus, @Nullable String organizationKey, @Nullable String version,
       Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey,
       Map<String, ServerBuilder.ServerSourceFileBuilder> sourceFileByComponentKey, boolean smartNotificationsSupported) {
       this.serverKind = serverKind;
       this.serverStatus = serverStatus;
+      this.organizationKey = organizationKey;
       this.version = version != null ? Version.create(version) : null;
       this.projectsByProjectKey = projectsByProjectKey;
       this.sourceFileByComponentKey = sourceFileByComponentKey;
@@ -337,6 +353,7 @@ public class ServerFixture {
         registerSourceApiResponses();
         registerDevelopersApiResponses();
         registerMeasuresApiResponses();
+        registerComponentsApiResponses();
       }
     }
 
@@ -616,6 +633,19 @@ public class ServerFixture {
                 .build())
               .build()))));
       }));
+    }
+
+    private void registerComponentsApiResponses() {
+      var url = "/api/components/search.protobuf?qualifiers=TRK";
+      if (serverKind == ServerKind.SONARCLOUD) {
+        url += "&organization=" + organizationKey;
+      }
+      url += "&ps=500&p=1";
+      mockServer.stubFor(get(url)
+          .willReturn(aResponse().withResponseBody(protobufBody(Components.SearchWsResponse.newBuilder()
+            .addAllComponents(projectsByProjectKey.entrySet().stream().map(entry-> Components.Component.newBuilder().setKey(entry.getKey()).setName(entry.getValue().name).build()).collect(toList()))
+            .setPaging(Common.Paging.newBuilder().setTotal(projectsByProjectKey.size()).build())
+            .build()))));
     }
 
     public void shutdown() {
