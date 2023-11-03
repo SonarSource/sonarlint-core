@@ -108,7 +108,7 @@ class ShowIssueMediumTests {
       .withEmbeddedServer()
       .build(fakeClient);
 
-    var statusCode = executeOpenIssueRequest(ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, "");
+    var statusCode = executeOpenIssueRequest(ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
 
     assertThat(statusCode).isEqualTo(200);
     await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getIssueParamsToShowByIssueKey()).containsOnlyKeys(issueKey));

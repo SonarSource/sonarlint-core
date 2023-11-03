@@ -75,7 +75,7 @@ class ShowIssueRequestHandlerTest {
 
     when(serverApiProvider.getServerApi(any())).thenReturn(Optional.of(serverApi));
     when(serverApi.issue()).thenReturn(issueApi);
-    when(issueApi.getCodeSnippet(eq(locationComponentKey_1), any())).thenReturn(Optional.of(locationCodeSnippet_1));
+    when(issueApi.getCodeSnippet(eq(locationComponentKey_1), any(), any(), any())).thenReturn(Optional.of(locationCodeSnippet_1));
 
     var showIssueRequestHandler = new ShowIssueRequestHandler(sonarLintClient, repository, configurationService,
       bindingSuggestionProvider, serverApiProvider, telemetryService);
@@ -100,7 +100,7 @@ class ShowIssueRequestHandlerTest {
     );
     var serverIssueDetails = new IssueApi.ServerIssueDetails(issue, issuePath, components, codeSnippet);
 
-    var showIssueParams = showIssueRequestHandler.getShowIssueParams(serverIssueDetails, connectionId, configScopeId);
+    var showIssueParams = showIssueRequestHandler.getShowIssueParams(serverIssueDetails, connectionId, configScopeId, "branch", "");
     assertThat(showIssueParams.getConfigScopeId()).isEqualTo(configScopeId);
     assertThat(showIssueParams.getIssueKey()).isEqualTo(issueKey);
     assertThat(showIssueParams.getCreationDate()).isEqualTo(issueCreationDate);

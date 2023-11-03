@@ -287,7 +287,7 @@ public class IssueApi {
       }
 
       var fileKey = issue.getComponent();
-      var codeSnippet = getCodeSnippet(fileKey, issue.getTextRange());
+      var codeSnippet = getCodeSnippet(fileKey, issue.getTextRange(), branch, pullRequest);
 
       return Optional.of(new ServerIssueDetails(issue, optionalComponentWithPath.get().getPath(), response.getComponentsList(), codeSnippet.orElse("")));
     } catch (Exception e) {
@@ -296,8 +296,8 @@ public class IssueApi {
     }
   }
 
-  public Optional<String> getCodeSnippet(String fileKey, Common.TextRange textRange) {
-    var source = new SourceApi(serverApiHelper).getRawSourceCode(fileKey);
+  public Optional<String> getCodeSnippet(String fileKey, Common.TextRange textRange, String branch, @Nullable String pullRequest) {
+    var source = new SourceApi(serverApiHelper).getRawSourceCodeForBranchAndPullRequest(fileKey, branch, pullRequest);
     if (source.isPresent()) {
       try {
         var codeSnippet = ServerApiUtils.extractCodeSnippet(source.get(), textRange);
