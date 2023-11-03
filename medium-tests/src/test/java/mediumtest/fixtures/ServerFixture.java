@@ -43,6 +43,7 @@ import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Components;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Measures;
@@ -65,11 +66,15 @@ public class ServerFixture {
   }
 
   public static ServerBuilder newSonarQubeServer(String version) {
-    return new ServerBuilder(ServerKind.SONARQUBE, version);
+    return new ServerBuilder(ServerKind.SONARQUBE, null, version);
   }
 
   public static ServerBuilder newSonarCloudServer() {
-    return new ServerBuilder(ServerKind.SONARQUBE, null);
+    return newSonarCloudServer("myOrganization");
+  }
+
+  public static ServerBuilder newSonarCloudServer(String organization) {
+    return new ServerBuilder(ServerKind.SONARCLOUD, organization, null);
   }
 
   private enum ServerKind {
@@ -82,13 +87,16 @@ public class ServerFixture {
 
   public static class ServerBuilder {
     private final ServerKind serverKind;
+    @Nullable
+    private final String organizationKey;
     private final String version;
     private final Map<String, ServerProjectBuilder> projectByProjectKey = new HashMap<>();
     private ServerStatus serverStatus = ServerStatus.UP;
     private boolean smartNotificationsSupported;
 
-    public ServerBuilder(ServerKind serverKind, @Nullable String version) {
+    public ServerBuilder(ServerKind serverKind, @Nullable String organizationKey, @Nullable String version) {
       this.serverKind = serverKind;
+      this.organizationKey = organizationKey;
       this.version = version;
     }
 
@@ -109,7 +117,7 @@ public class ServerFixture {
     }
 
     public Server start() {
-      var server = new Server(serverKind, serverStatus, version, projectByProjectKey, smartNotificationsSupported);
+      var server = new Server(serverKind, serverStatus, organizationKey, version, projectByProjectKey, smartNotificationsSupported);
       server.start();
       return server;
     }
@@ -117,6 +125,7 @@ public class ServerFixture {
     public static class ServerProjectBuilder {
       private final Map<String, ServerProjectBranchBuilder> branchesByName = new HashMap<>();
       private final Map<String, ServerProjectPullRequestBuilder> pullRequestsByName = new HashMap<>();
+      private String name = "MyProject";
 
       public ServerProjectBuilder withEmptyBranch(String branchName) {
         var builder = new ServerProjectBranchBuilder();
@@ -138,6 +147,11 @@ public class ServerFixture {
 
       public ServerProjectBuilder withDefaultBranch(UnaryOperator<ServerProjectBranchBuilder> branchBuilder) {
         return withBranch(null, branchBuilder);
+      }
+
+      public ServerProjectBuilder withName(String name) {
+        this.name = name;
+        return this;
       }
     }
 
@@ -319,15 +333,18 @@ public class ServerFixture {
     private final ServerKind serverKind;
     private final ServerStatus serverStatus;
     @Nullable
+    private final String organizationKey;
+    @Nullable
     private final Version version;
     private final Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey;
     private final boolean smartNotificationsSupported;
 
-    public Server(ServerKind serverKind, ServerStatus serverStatus, @Nullable String version,
+    public Server(ServerKind serverKind, ServerStatus serverStatus, @Nullable String organizationKey, @Nullable String version,
       Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey,
       boolean smartNotificationsSupported) {
       this.serverKind = serverKind;
       this.serverStatus = serverStatus;
+      this.organizationKey = organizationKey;
       this.version = version != null ? Version.create(version) : null;
       this.projectsByProjectKey = projectsByProjectKey;
       this.smartNotificationsSupported = smartNotificationsSupported;
@@ -346,6 +363,7 @@ public class ServerFixture {
         registerSourceApiResponses();
         registerDevelopersApiResponses();
         registerMeasuresApiResponses();
+        registerComponentsApiResponses();
       }
     }
 
@@ -442,15 +460,15 @@ public class ServerFixture {
               .concat("&componentKeys=").concat(projectKey)
               .concat("&ps=1&p=1")
               .concat("&branch=").concat(branchName);
-           mockServer.stubFor(get(searchUrl)
-            .willReturn(aResponse().withResponseBody(protobufBody(Issues.SearchWsResponse.newBuilder()
-              .addIssues(
-                Issues.Issue.newBuilder()
-                  .setKey(issue.getKey()).setRule(issue.getRule()).setCreationDate(issue.getCreationDate()).setMessage(issue.getMessage())
-                  .setTextRange(issue.getTextRange()).setComponent(issue.getComponent()).build())
-              .addComponents(Issues.Component.newBuilder().setPath(issue.getComponent()).setKey(issue.getComponent()).build())
-              .setRules(Issues.SearchWsResponse.newBuilder().getRulesBuilder().addRules(Common.Rule.newBuilder().setKey(issue.getRule()).build()))
-              .build()))));
+            mockServer.stubFor(get(searchUrl)
+              .willReturn(aResponse().withResponseBody(protobufBody(Issues.SearchWsResponse.newBuilder()
+                .addIssues(
+                  Issues.Issue.newBuilder()
+                    .setKey(issue.getKey()).setRule(issue.getRule()).setCreationDate(issue.getCreationDate()).setMessage(issue.getMessage())
+                    .setTextRange(issue.getTextRange()).setComponent(issue.getComponent()).build())
+                .addComponents(Issues.Component.newBuilder().setPath(issue.getComponent()).setKey(issue.getComponent()).build())
+                .setRules(Issues.SearchWsResponse.newBuilder().getRulesBuilder().addRules(Common.Rule.newBuilder().setKey(issue.getRule()).build()))
+                .build()))));
           });
         });
       });
@@ -595,7 +613,9 @@ public class ServerFixture {
         messages[0] = timestamp;
         System.arraycopy(issuesArray, 0, messages, 1, issuesArray.length);
         var response = aResponse().withResponseBody(protobufBodyDelimited(messages));
-        mockServer.stubFor(get(urlMatching("\\Q/api/issues/pull?projectKey=" + projectKey + branchParameter + "\\E(&languages=.*)?(\\Q&changedSince="+ timestamp.getQueryTimestamp()+"\\E)?")).willReturn(response));
+        mockServer.stubFor(
+          get(urlMatching("\\Q/api/issues/pull?projectKey=" + projectKey + branchParameter + "\\E(&languages=.*)?(\\Q&changedSince=" + timestamp.getQueryTimestamp() + "\\E)?"))
+            .willReturn(response));
       }));
     }
 
@@ -621,7 +641,9 @@ public class ServerFixture {
         messages[0] = timestamp;
         System.arraycopy(issuesArray, 0, messages, 1, issuesArray.length);
         var response = aResponse().withResponseBody(protobufBodyDelimited(messages));
-        mockServer.stubFor(get(urlMatching("\\Q/api/issues/pull_taint?projectKey=" + projectKey + branchParameter + "\\E(&languages=.*)?(\\Q&changedSince="+ timestamp.getQueryTimestamp()+"\\E)?")).willReturn(response));
+        mockServer.stubFor(get(
+          urlMatching("\\Q/api/issues/pull_taint?projectKey=" + projectKey + branchParameter + "\\E(&languages=.*)?(\\Q&changedSince=" + timestamp.getQueryTimestamp() + "\\E)?"))
+          .willReturn(response));
       }));
     }
 
@@ -630,20 +652,20 @@ public class ServerFixture {
     }
 
     private void registerSourceApiResponses() {
-      projectsByProjectKey.forEach((projectKey, project) -> project.pullRequestsByName.forEach((pullRequestName, pullRequest) ->
-        pullRequest.sourceFileByComponentKey
-          .forEach((componentKey, sourceFile) -> mockServer.stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey) + "&pullRequest=" + urlEncode(pullRequestName)).willReturn(aResponse().withBody(sourceFile.code))))));
+      projectsByProjectKey.forEach((projectKey, project) -> project.pullRequestsByName.forEach((pullRequestName, pullRequest) -> pullRequest.sourceFileByComponentKey
+        .forEach((componentKey, sourceFile) -> mockServer
+          .stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey) + "&pullRequest=" + urlEncode(pullRequestName)).willReturn(aResponse().withBody(sourceFile.code))))));
 
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
-          if (branchName != null) {
-            branch.sourceFileByComponentKey
-              .forEach((componentKey, sourceFile) -> mockServer.stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey) + "&branch=" + urlEncode(branchName)).willReturn(aResponse().withBody(sourceFile.code))));
-          }
+        if (branchName != null) {
+          branch.sourceFileByComponentKey
+            .forEach((componentKey, sourceFile) -> mockServer
+              .stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey) + "&branch=" + urlEncode(branchName)).willReturn(aResponse().withBody(sourceFile.code))));
+        }
       }));
 
-      projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) ->
-        branch.sourceFileByComponentKey
-          .forEach((componentKey, sourceFile) -> mockServer.stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey)).willReturn(aResponse().withBody(sourceFile.code))))));
+      projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> branch.sourceFileByComponentKey
+        .forEach((componentKey, sourceFile) -> mockServer.stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey)).willReturn(aResponse().withBody(sourceFile.code))))));
     }
 
     private void registerDevelopersApiResponses() {
@@ -671,6 +693,20 @@ public class ServerFixture {
                 .build())
               .build()))));
       }));
+    }
+
+    private void registerComponentsApiResponses() {
+      var url = "/api/components/search.protobuf?qualifiers=TRK";
+      if (serverKind == ServerKind.SONARCLOUD) {
+        url += "&organization=" + organizationKey;
+      }
+      url += "&ps=500&p=1";
+      mockServer.stubFor(get(url)
+        .willReturn(aResponse().withResponseBody(protobufBody(Components.SearchWsResponse.newBuilder()
+          .addAllComponents(projectsByProjectKey.entrySet().stream().map(entry -> Components.Component.newBuilder().setKey(entry.getKey()).setName(entry.getValue().name).build())
+            .collect(toList()))
+          .setPaging(Common.Paging.newBuilder().setTotal(projectsByProjectKey.size()).build())
+          .build()))));
     }
 
     public void shutdown() {
