@@ -140,11 +140,13 @@ class ShowIssueRequestHandlerTest {
 
   @Test
   void should_validate_issue_query() {
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue").isValid()).isTrue();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest").isValid()).isTrue();
 
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("", "project", "issue").isValid()).isFalse();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "", "issue").isValid()).isFalse();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "").isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("", "project", "issue", "branch", "pullRequest").isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "", "issue", "branch", "pullRequest").isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "", "branch", "pullRequest").isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "", "").isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "").isValid()).isTrue();
   }
 
   @Test

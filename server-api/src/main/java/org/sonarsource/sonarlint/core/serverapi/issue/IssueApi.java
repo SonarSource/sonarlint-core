@@ -264,8 +264,14 @@ public class IssueApi {
       });
   }
 
-  public Optional<ServerIssueDetails> fetchServerIssue(String issueKey) {
-    String searchUrl = "/api/issues/search.protobuf?issues=" + urlEncode(issueKey) + "&ps=1&p=1";
+  public Optional<ServerIssueDetails> fetchServerIssue(String issueKey, String projectKey, String branch, @Nullable String pullRequest) {
+    String searchUrl = "/api/issues/search.protobuf?issues=" + urlEncode(issueKey) + "&componentKeys=" + projectKey + "&ps=1&p=1";
+    if (pullRequest != null && !pullRequest.isEmpty()) {
+      searchUrl = searchUrl.concat("&pullRequest=").concat(pullRequest);
+    } else if (!branch.isEmpty()) {
+      // If we do have a pullRequest, no need to pass branch too
+      searchUrl = searchUrl.concat("&branch=").concat(branch);
+    }
 
     try (var wsResponse = serverApiHelper.get(searchUrl); var is = wsResponse.bodyAsStream()) {
       var response = Issues.SearchWsResponse.parseFrom(is);

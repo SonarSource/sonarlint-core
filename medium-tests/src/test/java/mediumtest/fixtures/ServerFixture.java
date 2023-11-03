@@ -414,7 +414,16 @@ public class ServerFixture {
 
         var allIssues = issuesPerFilePath.values().stream().flatMap(Collection::stream).collect(toList());
 
-        allIssues.forEach(issue -> mockServer.stubFor(get("/api/issues/search.protobuf?issues=".concat(urlEncode(issue.getKey())).concat("&ps=1&p=1"))
+        allIssues.forEach(issue -> {
+          var searchUrl = "/api/issues/search.protobuf?issues=".concat(urlEncode(issue.getKey()))
+            .concat("&componentKeys=").concat(projectKey)
+            .concat("&ps=1&p=1");
+          if (issue.getKey().contains("PR")) {
+            searchUrl = searchUrl.concat("&pullRequest=").concat("pullRequest");
+          } else {
+            searchUrl = searchUrl.concat("&branch=").concat(branchName);
+          }
+         mockServer.stubFor(get(searchUrl)
           .willReturn(aResponse().withResponseBody(protobufBody(Issues.SearchWsResponse.newBuilder()
             .addIssues(
               Issues.Issue.newBuilder()
@@ -422,7 +431,8 @@ public class ServerFixture {
                 .setTextRange(issue.getTextRange()).setComponent(issue.getComponent()).build())
             .addComponents(Issues.Component.newBuilder().setPath(issue.getComponent()).setKey(issue.getComponent()).build())
             .setRules(Issues.SearchWsResponse.newBuilder().getRulesBuilder().addRules(Common.Rule.newBuilder().setKey(issue.getRule()).build()))
-            .build())))));
+            .build()))));
+        });
       }));
     }
 

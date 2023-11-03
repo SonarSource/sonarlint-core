@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.hc.core5.http.ClassicHttpRequest;
@@ -100,28 +101,29 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
       startFullBindingProcess();
       assistCreatingConnection(query.serverUrl)
         .thenCompose(response -> assistBinding(response.getNewConnectionId(), query.projectKey))
-        .thenAccept(response -> showIssueForScope(response.getConnectionId(), response.getConfigurationScopeId(), query.issueKey))
+        .thenAccept(response -> showIssueForScope(response.getConnectionId(), response.getConfigurationScopeId(),
+          query.issueKey, query.projectKey, query.branch, query.pullRequest))
         .whenComplete((v, e) -> endFullBindingProcess());
     } else {
       // we pick the first connection but this could lead to issues later if there were several matches (make the user select the right
       // one?)
-      showIssueForConnection(connectionsMatchingOrigin.get(0).getConnectionId(), query.projectKey, query.issueKey);
+      showIssueForConnection(connectionsMatchingOrigin.get(0).getConnectionId(), query.projectKey, query.issueKey, query.branch, query.pullRequest);
     }
   }
 
-  private void showIssueForConnection(String connectionId, String projectKey, String issueKey) {
+  private void showIssueForConnection(String connectionId, String projectKey, String issueKey, String branch, String pullRequest) {
     var scopes = configurationService.getConfigScopesWithBindingConfiguredTo(connectionId, projectKey);
     if (scopes.isEmpty()) {
       assistBinding(connectionId, projectKey)
-        .thenAccept(newBinding -> showIssueForScope(connectionId, newBinding.getConfigurationScopeId(), issueKey));
+        .thenAccept(newBinding -> showIssueForScope(connectionId, newBinding.getConfigurationScopeId(), issueKey, projectKey, branch, pullRequest));
     } else {
       // we pick the first bound scope but this could lead to issues later if there were several matches (make the user select the right one?)
-      showIssueForScope(connectionId, scopes.get(0).getId(), issueKey);
+      showIssueForScope(connectionId, scopes.get(0).getId(), issueKey, projectKey, branch, pullRequest);
     }
   }
 
-  private void showIssueForScope(String connectionId, String configScopeId, String issueKey) {
-    tryFetchIssue(connectionId, issueKey)
+  private void showIssueForScope(String connectionId, String configScopeId, String issueKey, String projectKey, String branch, String pullRequest) {
+    tryFetchIssue(connectionId, issueKey, projectKey, branch, pullRequest)
       .ifPresentOrElse(
         issueDetails -> client.showIssue(getShowIssueParams(issueDetails, connectionId, configScopeId)),
         () -> client.showMessage(new ShowMessageParams(MessageType.ERROR, "Could not show the issue. See logs for more details")));
@@ -157,13 +159,13 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
     return RulesApi.TAINT_REPOS.stream().anyMatch(ruleKey::startsWith);
   }
 
-  private Optional<IssueApi.ServerIssueDetails> tryFetchIssue(String connectionId, String issueKey) {
+  private Optional<IssueApi.ServerIssueDetails> tryFetchIssue(String connectionId, String issueKey, String projectKey, String branch, String pullRequest) {
     var serverApi = serverApiProvider.getServerApi(connectionId);
     if (serverApi.isEmpty()) {
       // should not happen since we found the connection just before, improve the design ?
       return Optional.empty();
     }
-    return serverApi.get().issue().fetchServerIssue(issueKey);
+    return serverApi.get().issue().fetchServerIssue(issueKey, projectKey, branch, pullRequest);
   }
 
   private Optional<String> tryFetchCodeSnippet(String connectionId, String fileKey, Common.TextRange textRange) {
@@ -185,7 +187,7 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
     } catch (URISyntaxException e) {
       // Ignored
     }
-    return new ShowIssueQuery(params.get("server"), params.get("project"), params.get("issue"));
+    return new ShowIssueQuery(params.get("server"), params.get("project"), params.get("issue"), params.get("branch"), params.get("pullRequest"));
   }
 
   @VisibleForTesting
@@ -193,15 +195,20 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
     private final String serverUrl;
     private final String projectKey;
     private final String issueKey;
+    private final String branch;
+    @Nullable
+    private final String pullRequest;
 
-    public ShowIssueQuery(String serverUrl, String projectKey, String issueKey) {
+    public ShowIssueQuery(String serverUrl, String projectKey, String issueKey, String branch, @Nullable String pullRequest) {
       this.serverUrl = serverUrl;
       this.projectKey = projectKey;
       this.issueKey = issueKey;
+      this.branch = branch;
+      this.pullRequest = pullRequest;
     }
 
     public boolean isValid() {
-      return isNotBlank(serverUrl) && isNotBlank(projectKey) && isNotBlank(issueKey);
+      return isNotBlank(serverUrl) && isNotBlank(projectKey) && isNotBlank(issueKey) && isNotBlank(branch);
     }
 
     public String getServerUrl() {
@@ -214,6 +221,15 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
 
     public String getIssueKey() {
       return issueKey;
+    }
+
+    public String getBranch() {
+      return branch;
+    }
+
+    @Nullable
+    public String getPullRequest() {
+      return pullRequest;
     }
   }
 }
