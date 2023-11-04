@@ -99,13 +99,24 @@ public class ProjectStorageFixture {
       return this;
     }
 
-    public ProjectStorageBuilder withDefaultBranch(Consumer<BranchBuilder> consumer) {
-      return withBranch("main", consumer);
+    public ProjectStorageBuilder withMainBranch(Consumer<BranchBuilder> consumer) {
+      return withMainBranch("main", consumer);
     }
 
-    public ProjectStorageBuilder withBranch(String name, Consumer<BranchBuilder> consumer) {
-      var branchBuilder = new BranchBuilder(name);
+    public ProjectStorageBuilder withMainBranch(String name) {
+      return withMainBranch(name, branch -> {
+      });
+    }
+
+    public ProjectStorageBuilder withMainBranch(String name, Consumer<BranchBuilder> consumer) {
+      var branchBuilder = new BranchBuilder(name, true);
       consumer.accept(branchBuilder);
+      branches.add(branchBuilder);
+      return this;
+    }
+
+    public ProjectStorageBuilder withNonMainBranch(String name) {
+      var branchBuilder = new BranchBuilder(name, false);
       branches.add(branchBuilder);
       return this;
     }
@@ -124,6 +135,7 @@ public class ProjectStorageFixture {
 
       createAnalyzerConfig(projectFolder);
       createSmartNotificationPoll(projectFolder);
+      createServerBranches(projectFolder);
       createFindings(projectFolder);
 
       return new ProjectStorage(projectFolder);
@@ -156,6 +168,17 @@ public class ProjectStorageFixture {
         .putAllSettings(projectSettings)
         .putAllRuleSetsByLanguageKey(protoRuleSets).build();
       ProtobufFileUtil.writeToFile(analyzerConfiguration, projectFolder.resolve("analyzer_config.pb"));
+    }
+
+    private void createServerBranches(Path projectFolder) {
+      if (branches.isEmpty()) {
+        return;
+      }
+      var projectBranches = Sonarlint.ProjectBranches.newBuilder()
+        .setMainBranchName(branches.stream().filter(branch -> branch.isMain).map(branch -> branch.name).findFirst().orElseThrow(() -> new IllegalArgumentException("No main branch defined")))
+        .addAllBranchName(branches.stream().map(branch -> branch.name).collect(Collectors.toList()))
+        .build();
+      ProtobufFileUtil.writeToFile(projectBranches, projectFolder.resolve("project_branches.pb"));
     }
 
     private void createFindings(Path projectFolder) {
@@ -324,9 +347,11 @@ public class ProjectStorageFixture {
       private final List<ServerTaintIssueFixtures.ServerTaintIssueBuilder> serverTaintIssues = new ArrayList<>();
       private final List<ServerSecurityHotspotFixture.ServerSecurityHotspotBuilder> serverHotspots = new ArrayList<>();
       private final String name;
+      private final boolean isMain;
 
-      public BranchBuilder(String name) {
+      public BranchBuilder(String name, boolean isMain) {
         this.name = name;
+        this.isMain = isMain;
       }
 
       public BranchBuilder withIssue(ServerIssueFixtures.ServerIssueBuilder serverIssueBuilder) {

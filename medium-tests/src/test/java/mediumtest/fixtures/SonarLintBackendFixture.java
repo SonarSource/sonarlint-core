@@ -69,6 +69,10 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.DidChangeMatchedSonarProjectBranchParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.SonarProjectBranches;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsParams;
@@ -120,7 +124,7 @@ public class SonarLintBackendFixture {
     private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections = new ArrayList<>();
     private final List<ConfigurationScopeDto> configurationScopes = new ArrayList<>();
     private final List<ConfigurationScopeStorageFixture.ConfigurationScopeStorageBuilder> configurationScopeStorages = new ArrayList<>();
-    private final Map<String, String> activeBranchPerScopeId = new HashMap<>();
+    private final Map<String, String> matchedBranchPerScopeId = new HashMap<>();
     private final Set<Path> embeddedPluginPaths = new HashSet<>();
     private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey = new HashMap<>();
     private final Set<Language> enabledLanguages = new HashSet<>();
@@ -160,6 +164,10 @@ public class SonarLintBackendFixture {
 
     public SonarLintBackendBuilder withSonarQubeConnection(String connectionId, ServerFixture.Server server) {
       return withSonarQubeConnection(connectionId, server.baseUrl(), true, null);
+    }
+
+    public SonarLintBackendBuilder withSonarQubeConnection(String connectionId, ServerFixture.Server server, Consumer<StorageFixture.StorageBuilder> storageBuilder) {
+      return withSonarQubeConnection(connectionId, server.baseUrl(), true, storageBuilder);
     }
 
     public SonarLintBackendBuilder withSonarQubeConnectionAndNotifications(String connectionId, String serverUrl) {
@@ -230,13 +238,13 @@ public class SonarLintBackendFixture {
       return withConfigScope(configurationScopeId, configurationScopeId, null, new BindingConfigurationDto(connectionId, projectKey, false), storageBuilder);
     }
 
-    public SonarLintBackendBuilder withBoundConfigScope(String configurationScopeId, String connectionId, String projectKey, String activeBranchName) {
+    public SonarLintBackendBuilder withBoundConfigScope(String configurationScopeId, String connectionId, String projectKey, String matchedBranchName) {
       withConfigScope(configurationScopeId, configurationScopeId, null, new BindingConfigurationDto(connectionId, projectKey, false));
-      return withActiveBranch(configurationScopeId, activeBranchName);
+      return withMatchedBranch(configurationScopeId, matchedBranchName);
     }
 
-    public SonarLintBackendBuilder withActiveBranch(String configurationScopeId, String activeBranchName) {
-      activeBranchPerScopeId.put(configurationScopeId, activeBranchName);
+    public SonarLintBackendBuilder withMatchedBranch(String configurationScopeId, String matchedBranchName) {
+      matchedBranchPerScopeId.put(configurationScopeId, matchedBranchName);
       return this;
     }
 
@@ -362,7 +370,7 @@ public class SonarLintBackendFixture {
             standaloneConfigByKey, isFocusOnNewCode))
           .get();
         sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
-        activeBranchPerScopeId.forEach(
+        matchedBranchPerScopeId.forEach(
           (scopeId, branch) -> sonarLintBackend.getSonarProjectBranchService().didChangeActiveSonarProjectBranch(new DidChangeActiveSonarProjectBranchParams(scopeId, branch)));
         return sonarLintBackend;
       } catch (Exception e) {
@@ -381,7 +389,7 @@ public class SonarLintBackendFixture {
 
       var clientLauncher = new ClientJsonRpcLauncher(serverToClientInputStream, clientToServerOutputStream, client);
 
-      return new SonarLintTestRpcServer(clientToServerOutputStream, serverToClientOutputStream, serverLauncher, clientLauncher);
+      return new SonarLintTestRpcServer(serverLauncher, clientLauncher);
     }
 
     private static Path tempDirectory(String prefix) {
@@ -410,6 +418,9 @@ public class SonarLintBackendFixture {
     @javax.annotation.Nullable
     private SonarLintRpcClient delegate;
     private boolean printLogsToStdOut;
+    private String resolvedSonarProjectBranch;
+    private boolean isResolvedSonarProjectBranchSet;
+    private boolean shouldErrorProjectBranchResolution;
 
     public SonarLintClientBuilder withFoundFile(String name, String path, String content) {
       foundFiles.add(new FoundFileDto(name, path, content));
@@ -460,7 +471,8 @@ public class SonarLintBackendFixture {
     public FakeSonarLintRpcClient build() {
       return new FakeSonarLintRpcClient(foundFiles, clientDescription, cannedAssistCreatingSonarQubeConnectionByBaseUrl,
         cannedBindingAssistByProjectKey,
-        rejectingProgress, proxy, proxyAuth, credentialsByConnectionId, delegate, printLogsToStdOut);
+        rejectingProgress, proxy, proxyAuth, credentialsByConnectionId, delegate, printLogsToStdOut, resolvedSonarProjectBranch, isResolvedSonarProjectBranchSet,
+        shouldErrorProjectBranchResolution);
     }
 
     public SonarLintClientBuilder withDelegate(SonarLintRpcClient delegate) {
@@ -470,6 +482,17 @@ public class SonarLintBackendFixture {
 
     public SonarLintClientBuilder printLogsToStdOut() {
       this.printLogsToStdOut = true;
+      return this;
+    }
+
+    public SonarLintClientBuilder withMatchedSonarProjectBranch(String branchName) {
+      this.resolvedSonarProjectBranch = branchName;
+      this.isResolvedSonarProjectBranchSet = true;
+      return this;
+    }
+
+    public SonarLintClientBuilder withSonarProjectBranchMatchingError() {
+      this.shouldErrorProjectBranchResolution = true;
       return this;
     }
   }
@@ -490,6 +513,11 @@ public class SonarLintBackendFixture {
     private final Map<String, ShowIssueParams> issueParamsToShowByIssueKey = new HashMap<>();
     private final Map<String, ProgressReport> progressReportsByTaskId = new ConcurrentHashMap<>();
     private final Set<String> synchronizedConfigScopeIds = new HashSet<>();
+    private final Map<String, String> matchedSonarProjectBranchPerConfigScopeId = new HashMap<>();
+    private final Map<String, SonarProjectBranches> toResolveSonarProjectBranchesPerConfigScopeId = new HashMap<>();
+    private final String resolvedSonarProjectBranch;
+    private final boolean isResolvedSonarProjectBranchSet;
+    private final boolean shouldErrorProjectBranchResolution;
     private final ProxyDto proxy;
     private final GetProxyPasswordAuthenticationResponse proxyAuth;
     private final Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId;
@@ -497,13 +525,14 @@ public class SonarLintBackendFixture {
     private final SonarLintRpcClient delegate;
     private final boolean printLogsToStdOut;
     private SonarLintRpcServer backend;
-    private Queue<LogParams> logs = new ConcurrentLinkedQueue<>();
+    private final Queue<LogParams> logs = new ConcurrentLinkedQueue<>();
 
     public FakeSonarLintRpcClient(List<FoundFileDto> foundFiles, String clientDescription,
       LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
       LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, boolean rejectingProgress, @Nullable ProxyDto proxy,
       @Nullable GetProxyPasswordAuthenticationResponse proxyAuth, Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId,
-      @Nullable SonarLintRpcClient delegate, boolean printLogsToStdOut) {
+      @Nullable SonarLintRpcClient delegate, boolean printLogsToStdOut, String resolvedSonarProjectBranch, boolean isResolvedSonarProjectBranchSet,
+      boolean shouldErrorProjectBranchResolution) {
       this.foundFiles = foundFiles;
       this.clientDescription = clientDescription;
       this.cannedAssistCreatingSonarQubeConnectionByBaseUrl = cannedAssistCreatingSonarQubeConnectionByBaseUrl;
@@ -514,6 +543,9 @@ public class SonarLintBackendFixture {
       this.credentialsByConnectionId = credentialsByConnectionId;
       this.delegate = delegate;
       this.printLogsToStdOut = printLogsToStdOut;
+      this.resolvedSonarProjectBranch = resolvedSonarProjectBranch;
+      this.isResolvedSonarProjectBranchSet = isResolvedSonarProjectBranchSet;
+      this.shouldErrorProjectBranchResolution = shouldErrorProjectBranchResolution;
     }
 
     public void setBackend(SonarLintTestRpcServer backend) {
@@ -668,6 +700,31 @@ public class SonarLintBackendFixture {
       } else {
         SonarLintRpcClient.super.didReceiveServerTaintVulnerabilityChangedOrClosedEvent(params);
       }
+    }
+
+    @Override
+    public CompletableFuture<MatchSonarProjectBranchResponse> matchSonarProjectBranch(MatchSonarProjectBranchParams params) {
+
+      var sonarProjectBranches = params.getSonarProjectBranches();
+      toResolveSonarProjectBranchesPerConfigScopeId.put(params.getConfigurationScopeId(), sonarProjectBranches);
+      if (shouldErrorProjectBranchResolution) {
+        throw new RuntimeException("Error resolving Sonar project branch");
+      }
+      return CompletableFuture.completedFuture(
+        new MatchSonarProjectBranchResponse(isResolvedSonarProjectBranchSet ? resolvedSonarProjectBranch : sonarProjectBranches.getMainBranchName()));
+    }
+
+    @Override
+    public void didChangeMatchedSonarProjectBranch(DidChangeMatchedSonarProjectBranchParams params) {
+      matchedSonarProjectBranchPerConfigScopeId.put(params.getConfigScopeId(), params.getNewMatchedBranchName());
+    }
+
+    public Map<String, SonarProjectBranches> getToMatchSonarProjectBranchesPerConfigScopeId() {
+      return toResolveSonarProjectBranchesPerConfigScopeId;
+    }
+
+    public Map<String, String> getMatchedSonarProjectBranchPerConfigScopeId() {
+      return matchedSonarProjectBranchPerConfigScopeId;
     }
 
     @Override
