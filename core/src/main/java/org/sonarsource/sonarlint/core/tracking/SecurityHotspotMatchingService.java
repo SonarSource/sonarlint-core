@@ -42,7 +42,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 import org.sonarsource.sonarlint.core.issuetracking.Tracker;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.repository.vcs.ActiveSonarProjectBranchRepository;
+import org.sonarsource.sonarlint.core.repository.branch.MatchedSonarProjectBranchRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlySecurityHotspotDto;
@@ -63,15 +63,15 @@ public class SecurityHotspotMatchingService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final ConfigurationRepository configurationRepository;
   private final StorageService storageService;
-  private final ActiveSonarProjectBranchRepository activeSonarProjectBranchRepository;
+  private final MatchedSonarProjectBranchRepository matchedSonarProjectBranchRepository;
   private final SynchronizationServiceImpl synchronizationService;
   private final ExecutorService executorService;
 
   public SecurityHotspotMatchingService(ConfigurationRepository configurationRepository, StorageService storageService,
-    ActiveSonarProjectBranchRepository activeSonarProjectBranchRepository, SynchronizationServiceImpl synchronizationService) {
+                                        MatchedSonarProjectBranchRepository matchedSonarProjectBranchRepository, SynchronizationServiceImpl synchronizationService) {
     this.configurationRepository = configurationRepository;
     this.storageService = storageService;
-    this.activeSonarProjectBranchRepository = activeSonarProjectBranchRepository;
+    this.matchedSonarProjectBranchRepository = matchedSonarProjectBranchRepository;
     this.synchronizationService = synchronizationService;
     this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-server-tracking-hotspot-updater"));
   }
@@ -79,7 +79,7 @@ public class SecurityHotspotMatchingService {
   public MatchWithServerSecurityHotspotsResponse matchWithServerSecurityHotspots(MatchWithServerSecurityHotspotsParams params, CancelChecker cancelChecker) {
     var configurationScopeId = params.getConfigurationScopeId();
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
-    var activeBranchOpt = activeSonarProjectBranchRepository.getActiveSonarProjectBranch(configurationScopeId);
+    var activeBranchOpt = matchedSonarProjectBranchRepository.getMatchedBranch(configurationScopeId);
     if (effectiveBindingOpt.isEmpty() || activeBranchOpt.isEmpty()) {
       return new MatchWithServerSecurityHotspotsResponse(params.getClientTrackedHotspotsByServerRelativePath().entrySet().stream()
         .map(e -> Map.entry(e.getKey(), e.getValue().stream()
