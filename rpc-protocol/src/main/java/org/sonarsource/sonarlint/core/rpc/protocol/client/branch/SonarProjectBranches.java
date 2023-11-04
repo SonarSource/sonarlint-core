@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,23 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.event;
+package org.sonarsource.sonarlint.core.rpc.protocol.client.branch;
 
-public class ActiveSonarProjectBranchChangedEvent {
+import java.util.Set;
 
-  private final String configurationScopeId;
-  private final String newBranchName;
+public class SonarProjectBranches {
+  private final String mainBranchName;
+  private final Set<String> allBranchesNames;
 
-  public ActiveSonarProjectBranchChangedEvent(String configurationScopeId, String newBranchName) {
-    this.configurationScopeId = configurationScopeId;
-    this.newBranchName = newBranchName;
+  public SonarProjectBranches(String mainBranchName, Set<String> allBranchesNames) {
+    this.mainBranchName = mainBranchName;
+    this.allBranchesNames = allBranchesNames;
   }
 
-  public String getConfigurationScopeId() {
-    return configurationScopeId;
+  public String getMainBranchName() {
+    return mainBranchName;
   }
 
-  public String getNewBranchName() {
-    return newBranchName;
+  public Set<String> getAllBranchesNames() {
+    return allBranchesNames;
   }
 }

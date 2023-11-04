@@ -124,7 +124,7 @@ class MatchWithServerHotspotsMediumTests {
       .withStatus(HotspotReviewStatus.SAFE);
     backend = newBackend()
       .withSonarQubeConnection("connectionId", storage -> storage
-        .withProject("projectKey", project -> project.withBranch("main", branch -> branch.withHotspot(serverHotspot))))
+        .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withHotspot(serverHotspot))))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
       .build();
 

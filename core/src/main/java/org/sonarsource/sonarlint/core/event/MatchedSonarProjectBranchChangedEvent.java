@@ -17,7 +17,23 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-@ParametersAreNonnullByDefault
-package org.sonarsource.sonarlint.core.repository.vcs;
+package org.sonarsource.sonarlint.core.event;
 
-import javax.annotation.ParametersAreNonnullByDefault;
+public class MatchedSonarProjectBranchChangedEvent {
+
+  private final String configurationScopeId;
+  private final String newBranchName;
+
+  public MatchedSonarProjectBranchChangedEvent(String configurationScopeId, String newBranchName) {
+    this.configurationScopeId = configurationScopeId;
+    this.newBranchName = newBranchName;
+  }
+
+  public String getConfigurationScopeId() {
+    return configurationScopeId;
+  }
+
+  public String getNewBranchName() {
+    return newBranchName;
+  }
+}

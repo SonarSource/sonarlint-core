@@ -19,7 +19,6 @@
  */
 package mediumtest.fixtures;
 
-import java.io.PipedOutputStream;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -51,8 +50,6 @@ import static java.util.Objects.requireNonNull;
 
 public class SonarLintTestRpcServer implements SonarLintRpcServer {
   private final SonarLintRpcServer serverUsingRpc;
-  private final PipedOutputStream clientToServerOutputStream;
-  private final PipedOutputStream serverToClientOutputStream;
   private final SonarLintRpcServerImpl serverUsingJava;
   @org.jetbrains.annotations.NotNull
   private final BackendJsonRpcLauncher serverLauncher;
@@ -62,11 +59,8 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
   private Path telemetryFilePath;
   private Path storageRoot;
 
-  public SonarLintTestRpcServer(PipedOutputStream clientToServerOutputStream, PipedOutputStream serverToClientOutputStream, BackendJsonRpcLauncher serverLauncher,
-    ClientJsonRpcLauncher clientLauncher) {
+  public SonarLintTestRpcServer(BackendJsonRpcLauncher serverLauncher, ClientJsonRpcLauncher clientLauncher) {
     this.serverUsingRpc = clientLauncher.getServerProxy();
-    this.clientToServerOutputStream = clientToServerOutputStream;
-    this.serverToClientOutputStream = serverToClientOutputStream;
     this.serverUsingJava = serverLauncher.getJavaImpl();
     this.serverLauncher = serverLauncher;
     this.clientLauncher = clientLauncher;

@@ -221,7 +221,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   void it_should_not_permit_status_change_on_local_only_issues_for_sonarcloud() {
     backend = newBackend()
       .withSonarCloudConnection("connectionId", "orgKey")
-      .withActiveBranch("configScopeId", "branch")
+      .withMatchedBranch("configScopeId", "branch")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
@@ -249,7 +249,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   void it_should_not_permit_status_change_on_local_only_issues_for_sonarqube_prior_to_10_2() {
     backend = newBackend()
       .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("10.1"))
-      .withActiveBranch("configScopeId", "branch")
+      .withMatchedBranch("configScopeId", "branch")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
@@ -277,7 +277,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_2_plus() {
     backend = newBackend()
       .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("10.2"))
-      .withActiveBranch("configScopeId", "branch")
+      .withMatchedBranch("configScopeId", "branch")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 

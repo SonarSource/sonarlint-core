@@ -51,7 +51,7 @@ import org.sonarsource.sonarlint.core.issuetracking.Tracker;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.repository.vcs.ActiveSonarProjectBranchRepository;
+import org.sonarsource.sonarlint.core.repository.branch.MatchedSonarProjectBranchRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LineWithHashDto;
@@ -75,7 +75,7 @@ public class IssueTrackingService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final ConfigurationRepository configurationRepository;
   private final StorageService storageService;
-  private final ActiveSonarProjectBranchRepository activeSonarProjectBranchRepository;
+  private final MatchedSonarProjectBranchRepository matchedSonarProjectBranchRepository;
   private final SynchronizationServiceImpl synchronizationService;
   private final LocalOnlyIssueRepository localOnlyIssueRepository;
   private final LocalOnlyIssueStorageService localOnlyIssueStorageService;
@@ -83,12 +83,12 @@ public class IssueTrackingService {
   private final ExecutorService executorService;
 
   public IssueTrackingService(ConfigurationRepository configurationRepository, StorageService storageService,
-    ActiveSonarProjectBranchRepository activeSonarProjectBranchRepository, SynchronizationServiceImpl synchronizationService,
-    LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
-    NewCodeService newCodeService) {
+                              MatchedSonarProjectBranchRepository matchedSonarProjectBranchRepository, SynchronizationServiceImpl synchronizationService,
+                              LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
+                              NewCodeService newCodeService) {
     this.configurationRepository = configurationRepository;
     this.storageService = storageService;
-    this.activeSonarProjectBranchRepository = activeSonarProjectBranchRepository;
+    this.matchedSonarProjectBranchRepository = matchedSonarProjectBranchRepository;
     this.synchronizationService = synchronizationService;
     this.localOnlyIssueRepository = localOnlyIssueRepository;
     this.localOnlyIssueStorageService = localOnlyIssueStorageService;
@@ -99,7 +99,7 @@ public class IssueTrackingService {
   public TrackWithServerIssuesResponse trackWithServerIssues(TrackWithServerIssuesParams params, CancelChecker cancelChecker) {
     var configurationScopeId = params.getConfigurationScopeId();
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
-    var activeBranchOpt = activeSonarProjectBranchRepository.getActiveSonarProjectBranch(configurationScopeId);
+    var activeBranchOpt = matchedSonarProjectBranchRepository.getMatchedBranch(configurationScopeId);
     if (effectiveBindingOpt.isEmpty() || activeBranchOpt.isEmpty()) {
       return new TrackWithServerIssuesResponse(params.getClientTrackedIssuesByServerRelativePath().entrySet().stream()
         .map(e -> Map.entry(e.getKey(), e.getValue().stream()

@@ -36,7 +36,7 @@ import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.TokenGeneratorHelper;
 import org.sonarsource.sonarlint.core.VersionSoonUnsupportedHelper;
 import org.sonarsource.sonarlint.core.analysis.AnalysisService;
-import org.sonarsource.sonarlint.core.branch.SonarProjectBranchService;
+import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
@@ -61,7 +61,7 @@ import org.sonarsource.sonarlint.core.plugin.PluginsServiceImpl;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
-import org.sonarsource.sonarlint.core.repository.vcs.ActiveSonarProjectBranchRepository;
+import org.sonarsource.sonarlint.core.repository.branch.MatchedSonarProjectBranchRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
 import org.sonarsource.sonarlint.core.rules.RulesService;
@@ -112,8 +112,8 @@ import org.springframework.scheduling.support.TaskUtils;
   BindingSuggestionProvider.class,
   BindingClueProvider.class,
   SonarProjectsCache.class,
-  SonarProjectBranchService.class,
-  ActiveSonarProjectBranchRepository.class,
+  SonarProjectBranchTrackingService.class,
+  MatchedSonarProjectBranchRepository.class,
   SynchronizationServiceImpl.class,
   HotspotService.class,
   IssueService.class,
