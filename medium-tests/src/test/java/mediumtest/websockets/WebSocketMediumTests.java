@@ -35,7 +35,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
@@ -60,6 +59,7 @@ import static org.awaitility.Awaitility.await;
 
 class WebSocketMediumTests {
 
+  // not used but useful to register a log output
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
@@ -798,7 +798,7 @@ class WebSocketMediumTests {
       backend = newBackend()
         .withServerSentEventsEnabled()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
-          .withProject("projectKey", project -> project.withBranch("master", branch -> branch.withIssue(serverIssue))))
+          .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
       await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
@@ -835,7 +835,7 @@ class WebSocketMediumTests {
       backend = newBackend()
         .withServerSentEventsEnabled()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
-          .withProject("projectKey", project -> project.withBranch("master", branch -> branch.withIssue(serverIssue))))
+          .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
       await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
@@ -872,7 +872,7 @@ class WebSocketMediumTests {
       backend = newBackend()
         .withServerSentEventsEnabled()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
-          .withProject("projectKey", project -> project.withBranch("master", branch -> branch.withIssue(serverIssue))))
+          .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
       await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
@@ -908,7 +908,7 @@ class WebSocketMediumTests {
       backend = newBackend()
         .withServerSentEventsEnabled()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
-          .withProject("projectKey", project -> project.withBranch("master", branch -> branch.withIssue(serverIssue))))
+          .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
       await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
@@ -944,7 +944,7 @@ class WebSocketMediumTests {
       backend = newBackend()
         .withServerSentEventsEnabled()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
-          .withProject("projectKey", project -> project.withBranch("master", branch -> branch.withIssue(serverIssue))))
+          .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
       await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
@@ -1130,7 +1130,7 @@ class WebSocketMediumTests {
       backend = newBackend()
         .withServerSentEventsEnabled()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
-          .withProject("projectKey", project -> project.withBranch("master", branch -> branch.withTaintIssue(serverTaintIssue))))
+          .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withTaintIssue(serverTaintIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
       await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
@@ -1161,7 +1161,7 @@ class WebSocketMediumTests {
       backend = newBackend()
         .withServerSentEventsEnabled()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
-          .withProject("projectKey", project -> project.withBranch("master", branch -> branch.withTaintIssue(serverTaintIssue))))
+          .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withTaintIssue(serverTaintIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
       await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
@@ -1195,7 +1195,7 @@ class WebSocketMediumTests {
       backend = newBackend()
         .withServerSentEventsEnabled()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
-          .withProject("projectKey", project -> project.withBranch("master", branch -> branch.withHotspot(serverHotspot))))
+          .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withHotspot(serverHotspot))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
       await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
@@ -1231,7 +1231,7 @@ class WebSocketMediumTests {
       backend = newBackend()
         .withServerSentEventsEnabled()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
-          .withProject("projectKey", project -> project.withBranch("master", branch -> branch.withHotspot(serverHotspot))))
+          .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withHotspot(serverHotspot))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
       await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
@@ -1361,7 +1361,7 @@ class WebSocketMediumTests {
       backend = newBackend()
         .withServerSentEventsEnabled()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
-          .withProject("projectKey", project -> project.withBranch("master", branch -> branch.withHotspot(serverHotspot))))
+          .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withHotspot(serverHotspot))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
       await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
@@ -1393,7 +1393,7 @@ class WebSocketMediumTests {
       backend = newBackend()
         .withServerSentEventsEnabled()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
-          .withProject("projectKey", project -> project.withBranch("master", branch -> branch.withHotspot(serverHotspot))))
+          .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withHotspot(serverHotspot))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
       await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
