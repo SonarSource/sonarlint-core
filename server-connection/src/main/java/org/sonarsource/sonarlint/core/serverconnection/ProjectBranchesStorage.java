@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -35,6 +36,10 @@ public class ProjectBranchesStorage {
 
   public ProjectBranchesStorage(Path projectStorageRoot) {
     this.storageFilePath = projectStorageRoot.resolve("project_branches.pb");
+  }
+
+  public boolean exists() {
+    return Files.exists(storageFilePath);
   }
 
   public void store(ProjectBranches projectBranches) {

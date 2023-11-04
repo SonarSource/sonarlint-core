@@ -128,7 +128,7 @@ class TrackWithServerIssuesMediumTests {
     var serverIssue = aServerIssue("issueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
     backend = newBackend()
       .withSonarQubeConnection("connectionId", storage -> storage
-        .withProject("projectKey", project -> project.withBranch("main", branch -> branch.withIssue(serverIssue))))
+        .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue))))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
       .build();
     var response = trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",

@@ -82,7 +82,7 @@ class IssuesStatusChangeMediumTests {
     server = newSonarQubeServer().start();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage
-        .withProject("projectKey", project -> project.withBranch("main", branch -> branch.withIssue(serverIssue)))
+        .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue)))
         .withServerVersion("9.8"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
       .build();
@@ -105,7 +105,7 @@ class IssuesStatusChangeMediumTests {
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage
         .withProject("projectKey",
-          project -> project.withBranch("main",
+          project -> project.withMainBranch("main",
             branch -> branch.withIssue(
               aServerIssue("myIssueKey")
                 .withRuleKey("rule:key")
@@ -131,7 +131,7 @@ class IssuesStatusChangeMediumTests {
     server = newSonarQubeServer().withStatus(DOWN).start();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage
-        .withProject("projectKey", project -> project.withBranch("main", branch -> branch.withIssue(serverIssue)))
+        .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue)))
         .withServerVersion("9.8"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
@@ -152,7 +152,7 @@ class IssuesStatusChangeMediumTests {
     server = newSonarQubeServer().start();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl())
-      .withActiveBranch("configScopeId", "branch")
+      .withMatchedBranch("configScopeId", "branch")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
@@ -182,7 +182,7 @@ class IssuesStatusChangeMediumTests {
     server = newSonarQubeServer().start();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl())
-      .withActiveBranch("configScopeId", "branch")
+      .withMatchedBranch("configScopeId", "branch")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
@@ -214,7 +214,7 @@ class IssuesStatusChangeMediumTests {
     server = newSonarQubeServer().start();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server)
-      .withActiveBranch("configScopeId", "branch")
+      .withMatchedBranch("configScopeId", "branch")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
@@ -441,7 +441,7 @@ class IssuesStatusChangeMediumTests {
     server = newSonarQubeServer().start();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage
-        .withProject("projectKey", project -> project.withBranch("main", branch -> branch.withIssue(serverIssue)))
+        .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue)))
         .withServerVersion("9.8"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
       .build();
