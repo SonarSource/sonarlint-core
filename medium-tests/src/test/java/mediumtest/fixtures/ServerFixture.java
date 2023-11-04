@@ -172,6 +172,11 @@ public class ServerFixture {
         return this;
       }
 
+      public ServerProjectBranchBuilder withIssue(String issueKey) {
+        return withIssue(issueKey, "ruleKey", "message", "author", "filePath", "OPEN", null, "2023-05-13T17:55:39+0202",
+          new TextRange(1, 2, 3, 4));
+      }
+
       public ServerProjectBranchBuilder withIssue(String issueKey, String ruleKey, String message, String author, String filePath,
         String status, String resolution, String creationDate, TextRange textRange) {
         this.issues.add(new ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, creationDate, textRange));
@@ -498,7 +503,31 @@ public class ServerFixture {
     }
 
     private void registerApiHotspotsPullResponses() {
-
+      projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
+        var branchParameter = branchName == null ? "" : "&branchName=" + branchName;
+        var timestamp = Hotspots.HotspotPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
+        var hotspotsArray = branch.hotspots.stream().map(hotspot -> Hotspots.HotspotLite.newBuilder()
+          .setKey(hotspot.hotspotKey)
+          .setRuleKey(hotspot.ruleKey)
+          .setVulnerabilityProbability(hotspot.vulnerabilityProbability.name())
+          .setMessage(hotspot.message)
+          .setFilePath(hotspot.filePath)
+          .setTextRange(Hotspots.TextRange.newBuilder()
+            .setStartLine(hotspot.textRange.getStartLine())
+            .setStartLineOffset(hotspot.textRange.getStartLineOffset())
+            .setEndLine(hotspot.textRange.getEndLine())
+            .setEndLineOffset(hotspot.textRange.getEndLineOffset())
+            .setHash("hash"))
+          .setCreationDate(123456789L)
+          .build()).toArray(Hotspots.HotspotLite[]::new);
+        var messages = new Message[hotspotsArray.length + 1];
+        messages[0] = timestamp;
+        System.arraycopy(hotspotsArray, 0, messages, 1, hotspotsArray.length);
+        var response = aResponse().withResponseBody(protobufBodyDelimited(messages));
+        mockServer.stubFor(
+          get(urlMatching("\\Q/api/hotspots/pull?projectKey=" + projectKey + branchParameter + "\\E(&languages=.*)?(\\Q&changedSince=" + timestamp.getQueryTimestamp() + "\\E)?"))
+            .willReturn(response));
+      }));
     }
 
     private void registerHotspotsShowApiResponses() {
@@ -643,7 +672,7 @@ public class ServerFixture {
         var response = aResponse().withResponseBody(protobufBodyDelimited(messages));
         mockServer.stubFor(get(
           urlMatching("\\Q/api/issues/pull_taint?projectKey=" + projectKey + branchParameter + "\\E(&languages=.*)?(\\Q&changedSince=" + timestamp.getQueryTimestamp() + "\\E)?"))
-          .willReturn(response));
+            .willReturn(response));
       }));
     }
 

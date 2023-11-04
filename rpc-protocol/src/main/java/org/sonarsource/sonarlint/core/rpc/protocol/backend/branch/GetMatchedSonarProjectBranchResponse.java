@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,29 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.repository.vcs;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.branch;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import javax.inject.Named;
-import javax.inject.Singleton;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
-@Named
-@Singleton
-public class ActiveSonarProjectBranchRepository {
-  private final Map<String, String> branchNameByConfigScopeId = new ConcurrentHashMap<>();
+public class GetMatchedSonarProjectBranchResponse {
+  private final String matchedSonarProjectBranch;
 
-
-  public String setActiveBranchName(String configScopeId, String newBranchName) {
-    return branchNameByConfigScopeId.put(configScopeId, newBranchName);
+  public GetMatchedSonarProjectBranchResponse(@Nullable String matchedSonarProjectBranch) {
+    this.matchedSonarProjectBranch = matchedSonarProjectBranch;
   }
 
-  public Optional<String> getActiveSonarProjectBranch(String configScopeId) {
-    return Optional.ofNullable(branchNameByConfigScopeId.get(configScopeId));
-  }
-
-  public void clearActiveProjectBranch(String configScopeId) {
-    branchNameByConfigScopeId.remove(configScopeId);
+  @CheckForNull
+  public String getMatchedSonarProjectBranch() {
+    return matchedSonarProjectBranch;
   }
 }

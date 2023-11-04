@@ -38,6 +38,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.DidChangeMatchedSonarProjectBranchParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsParams;
@@ -85,7 +88,7 @@ class SonarLintRpcClientTests {
     ProxySelector.setDefault(new ProxySelector() {
       @Override
       public List<Proxy> select(URI uri) {
-        if (uri.equals(URI.create("http://foo"))) {
+        if (uri.equals(URI.create("https://foo"))) {
           return List.of(
             new Proxy(Proxy.Type.HTTP, new InetSocketAddress("http://myproxy", 8085)),
             new Proxy(Proxy.Type.HTTP, new InetSocketAddress("http://myproxy2", 8086)));
@@ -99,7 +102,7 @@ class SonarLintRpcClientTests {
       }
     });
 
-    var selectProxiesResponse = underTest.selectProxies(new SelectProxiesParams("http://foo")).get();
+    var selectProxiesResponse = underTest.selectProxies(new SelectProxiesParams("https://foo")).get();
 
     assertThat(selectProxiesResponse.getProxies()).extracting(ProxyDto::getType, ProxyDto::getHostname, ProxyDto::getPort)
       .containsExactly(tuple(Proxy.Type.HTTP, "http://myproxy", 8085),
@@ -117,8 +120,8 @@ class SonarLintRpcClientTests {
     Authenticator.setDefault(new Authenticator() {
       @Override
       protected PasswordAuthentication getPasswordAuthentication() {
-        assertThat(getRequestingHost()).isEqualTo("http://foo");
-        assertThat(getRequestingURL().toString()).isEqualTo("http://targethost");
+        assertThat(getRequestingHost()).isEqualTo("https://foo");
+        assertThat(getRequestingURL()).hasToString("http://targethost");
         assertThat(getRequestingPort()).isEqualTo(8085);
         assertThat(getRequestingProtocol()).isEqualTo("protocol");
         assertThat(getRequestingScheme()).isEqualTo("scheme");
@@ -128,7 +131,7 @@ class SonarLintRpcClientTests {
       }
     });
 
-    var response = underTest.getProxyPasswordAuthentication(new GetProxyPasswordAuthenticationParams("http://foo", 8085, "protocol", "prompt", "scheme", "http://targethost"))
+    var response = underTest.getProxyPasswordAuthentication(new GetProxyPasswordAuthenticationParams("https://foo", 8085, "protocol", "prompt", "scheme", "http://targethost"))
       .get();
     assertThat(response.getProxyUser()).isEqualTo("username");
     assertThat(response.getProxyPassword()).isEqualTo("password");
@@ -136,8 +139,8 @@ class SonarLintRpcClientTests {
   }
 
   @Test
-  void failIfInvalidURL() throws ExecutionException, InterruptedException {
-    var future = underTest.getProxyPasswordAuthentication(new GetProxyPasswordAuthenticationParams("http://foo", 8085, "protocol", "prompt", "scheme", "invalid:url"));
+  void failIfInvalidURL() {
+    var future = underTest.getProxyPasswordAuthentication(new GetProxyPasswordAuthenticationParams("https://foo", 8085, "protocol", "prompt", "scheme", "invalid:url"));
     assertThat(future).failsWithin(Duration.ofMillis(50))
       .withThrowableOfType(ExecutionException.class)
       .withMessage("java.net.MalformedURLException: unknown protocol: invalid");
@@ -217,6 +220,16 @@ class SonarLintRpcClientTests {
     @Override
     public CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params) {
       return null;
+    }
+
+    @Override
+    public CompletableFuture<MatchSonarProjectBranchResponse> matchSonarProjectBranch(MatchSonarProjectBranchParams params) {
+      return null;
+    }
+
+    @Override
+    public void didChangeMatchedSonarProjectBranch(DidChangeMatchedSonarProjectBranchParams params) {
+
     }
 
     @Override
