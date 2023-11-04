@@ -19,8 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.rpc.impl;
 
-import org.sonarsource.sonarlint.core.branch.SonarProjectBranchService;
+import java.util.concurrent.CompletableFuture;
+import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.DidChangeActiveSonarProjectBranchParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.DidVcsRepositoryChangeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.GetMatchedSonarProjectBranchParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.GetMatchedSonarProjectBranchResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.SonarProjectBranchRpcService;
 
 class SonarProjectBranchRpcServiceDelegate extends AbstractRpcServiceDelegate implements SonarProjectBranchRpcService {
@@ -31,6 +35,16 @@ class SonarProjectBranchRpcServiceDelegate extends AbstractRpcServiceDelegate im
 
   @Override
   public void didChangeActiveSonarProjectBranch(DidChangeActiveSonarProjectBranchParams params) {
-    notify(() -> getBean(SonarProjectBranchService.class).didChangeActiveSonarProjectBranch(params), params.getConfigScopeId());
+    notify(() -> getBean(SonarProjectBranchTrackingService.class).didChangeMatchedSonarProjectBranch(params), params.getConfigScopeId());
+  }
+
+  @Override
+  public void didVcsRepositoryChange(DidVcsRepositoryChangeParams params) {
+    notify(() -> getBean(SonarProjectBranchTrackingService.class).didVcsRepositoryChange(params));
+  }
+
+  @Override
+  public CompletableFuture<GetMatchedSonarProjectBranchResponse> getMatchedSonarProjectBranch(GetMatchedSonarProjectBranchParams params) {
+    return requestAsync(cancelChecker -> getBean(SonarProjectBranchTrackingService.class).getMatchedSonarProjectBranch(params));
   }
 }
