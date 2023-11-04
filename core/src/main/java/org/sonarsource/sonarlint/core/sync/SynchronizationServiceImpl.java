@@ -33,14 +33,14 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
-import org.sonarsource.sonarlint.core.branch.SonarProjectBranchService;
+import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.event.ActiveSonarProjectBranchChangedEvent;
+import org.sonarsource.sonarlint.core.event.MatchedSonarProjectBranchChangedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.progress.ProgressNotifier;
 import org.sonarsource.sonarlint.core.progress.TaskManager;
@@ -63,7 +63,7 @@ public class SynchronizationServiceImpl {
   private final SonarLintRpcClient client;
   private final ConfigurationRepository configurationRepository;
   private final LanguageSupportRepository languageSupportRepository;
-  private final SonarProjectBranchService branchService;
+  private final SonarProjectBranchTrackingService branchService;
   private final ServerApiProvider serverApiProvider;
   private final TaskManager taskManager;
   private final StorageService storageService;
@@ -72,7 +72,7 @@ public class SynchronizationServiceImpl {
   private ScheduledExecutorService scheduledSynchronizer;
 
   public SynchronizationServiceImpl(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
-    SonarProjectBranchService branchService, ServerApiProvider serverApiProvider, StorageService storageService, InitializeParams params) {
+                                    SonarProjectBranchTrackingService branchService, ServerApiProvider serverApiProvider, StorageService storageService, InitializeParams params) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
@@ -156,7 +156,7 @@ public class SynchronizationServiceImpl {
 
   private void autoSyncBoundConfigurationScope(BoundConfigurationScope boundScope, ServerApi serverApi,
     ServerConnection serverConnection, Set<String> synchronizedConfScopeIds) {
-    branchService.getEffectiveActiveSonarProjectBranch(boundScope.configurationScopeId).ifPresent(branch -> {
+    branchService.getEffectiveMatchedSonarProjectBranch(boundScope.configurationScopeId).ifPresent(branch -> {
       serverConnection.syncServerIssuesForProject(serverApi, boundScope.sonarProjectKey, branch);
       if (languageSupportRepository.areTaintVulnerabilitiesSupported()) {
         serverConnection.syncServerTaintIssuesForProject(serverApi, boundScope.sonarProjectKey, branch);
@@ -167,7 +167,7 @@ public class SynchronizationServiceImpl {
   }
 
   @EventListener
-  public void onSonarProjectBranchChanged(ActiveSonarProjectBranchChangedEvent changedEvent) {
+  public void onSonarProjectBranchChanged(MatchedSonarProjectBranchChangedEvent changedEvent) {
     if (!synchronizationEnabled) {
       return;
     }
