@@ -9,6 +9,12 @@
   <artifactId>sonarlint-report-aggregate</artifactId>
   <name>SonarLint Coverage Reports Aggregator</name>
   <description>Aggregate Coverage Reports</description>
+
+  <properties>
+    <!-- This is a technical module, no need to deploy an empty JAR -->
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>${project.groupId}</groupId>
