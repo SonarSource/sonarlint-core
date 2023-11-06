@@ -70,7 +70,7 @@ build_task:
     PGP_PASSPHRASE: VAULT[development/kv/data/sign data.passphrase]
   eks_container:
     <<: *CONTAINER_DEFINITION
-    memory: 1G
+    memory: 2G
   <<: *MAVEN_CACHE_DEFINITION
   build_script:
     - source cirrus-env BUILD
