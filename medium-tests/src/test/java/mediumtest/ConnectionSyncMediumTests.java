@@ -27,6 +27,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
@@ -67,7 +68,7 @@ class ConnectionSyncMediumTests {
     client.clearLogs();
 
     getEffectiveRuleDetails("scopeId", "java:S106");
-    assertThat(client.getLogs()).isEmpty();
+    assertThat(client.getLogs()).extracting(LogParams::getLevel, LogParams::getMessage).isEmpty();
   }
 
   @Test
