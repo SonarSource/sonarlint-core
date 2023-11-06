@@ -27,9 +27,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
 import org.sonar.scanner.protocol.Constants;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
@@ -80,7 +82,6 @@ public class ServerFixture {
     private final ServerKind serverKind;
     private final String version;
     private final Map<String, ServerProjectBuilder> projectByProjectKey = new HashMap<>();
-    private final Map<String, ServerSourceFileBuilder> sourceFileByComponentKey = new HashMap<>();
     private ServerStatus serverStatus = ServerStatus.UP;
     private boolean smartNotificationsSupported;
 
@@ -100,25 +101,20 @@ public class ServerFixture {
       return this;
     }
 
-    public ServerBuilder withSourceFile(String componentKey, UnaryOperator<ServerSourceFileBuilder> sourceFileBuilder) {
-      var builder = new ServerSourceFileBuilder();
-      this.sourceFileByComponentKey.put(componentKey, sourceFileBuilder.apply(builder));
-      return this;
-    }
-
     public ServerBuilder withSmartNotificationsSupported(boolean smartNotificationsSupported) {
       this.smartNotificationsSupported = smartNotificationsSupported;
       return this;
     }
 
     public Server start() {
-      var server = new Server(serverKind, serverStatus, version, projectByProjectKey, sourceFileByComponentKey, smartNotificationsSupported);
+      var server = new Server(serverKind, serverStatus, version, projectByProjectKey, smartNotificationsSupported);
       server.start();
       return server;
     }
 
     public static class ServerProjectBuilder {
       private final Map<String, ServerProjectBranchBuilder> branchesByName = new HashMap<>();
+      private final Map<String, ServerProjectPullRequestBuilder> pullRequestsByName = new HashMap<>();
 
       public ServerProjectBuilder withEmptyBranch(String branchName) {
         var builder = new ServerProjectBranchBuilder();
@@ -132,14 +128,21 @@ public class ServerFixture {
         return this;
       }
 
+      public ServerProjectBuilder withPullRequest(String pullRequestNumber, UnaryOperator<ServerProjectPullRequestBuilder> pullRequestBuilder) {
+        var builder = new ServerProjectPullRequestBuilder();
+        this.pullRequestsByName.put(pullRequestNumber, pullRequestBuilder.apply(builder));
+        return this;
+      }
+
       public ServerProjectBuilder withDefaultBranch(UnaryOperator<ServerProjectBranchBuilder> branchBuilder) {
         return withBranch(null, branchBuilder);
       }
     }
 
     public static class ServerProjectBranchBuilder {
-      private final Collection<ServerHotspot> hotspots = new ArrayList<>();
-      private final Collection<ServerIssue> issues = new ArrayList<>();
+      protected final Collection<ServerHotspot> hotspots = new ArrayList<>();
+      protected final Collection<ServerIssue> issues = new ArrayList<>();
+      protected final Map<String, ServerSourceFileBuilder> sourceFileByComponentKey = new HashMap<>();
 
       public ServerProjectBranchBuilder withHotspot(String hotspotKey) {
         return withHotspot(hotspotKey, UnaryOperator.identity());
@@ -158,7 +161,13 @@ public class ServerFixture {
         return this;
       }
 
-      private static class ServerHotspot {
+      public ServerProjectBranchBuilder withSourceFile(String componentKey, UnaryOperator<ServerSourceFileBuilder> sourceFileBuilder) {
+        var builder = new ServerSourceFileBuilder();
+        this.sourceFileByComponentKey.put(componentKey, sourceFileBuilder.apply(builder));
+        return this;
+      }
+
+      protected static class ServerHotspot {
         private final String hotspotKey;
         private final String ruleKey;
         private final String message;
@@ -189,7 +198,7 @@ public class ServerFixture {
         }
       }
 
-      private static class ServerIssue {
+      protected static class ServerIssue {
         private final String issueKey;
         private final String ruleKey;
         private final String message;
@@ -217,6 +226,9 @@ public class ServerFixture {
           return filePath;
         }
       }
+    }
+
+    public static class ServerProjectPullRequestBuilder extends ServerProjectBranchBuilder {
     }
 
     public static class ServerSourceFileBuilder {
@@ -300,17 +312,15 @@ public class ServerFixture {
     @Nullable
     private final Version version;
     private final Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey;
-    private final Map<String, ServerBuilder.ServerSourceFileBuilder> sourceFileByComponentKey;
     private final boolean smartNotificationsSupported;
 
     public Server(ServerKind serverKind, ServerStatus serverStatus, @Nullable String version,
       Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey,
-      Map<String, ServerBuilder.ServerSourceFileBuilder> sourceFileByComponentKey, boolean smartNotificationsSupported) {
+      boolean smartNotificationsSupported) {
       this.serverKind = serverKind;
       this.serverStatus = serverStatus;
       this.version = version != null ? Version.create(version) : null;
       this.projectsByProjectKey = projectsByProjectKey;
-      this.sourceFileByComponentKey = sourceFileByComponentKey;
       this.smartNotificationsSupported = smartNotificationsSupported;
     }
 
@@ -391,49 +401,73 @@ public class ServerFixture {
     }
 
     private void registerSearchIssueApiResponses() {
-      projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
-        var issuesPerFilePath = branch.issues.stream()
-          .collect(groupingBy(ServerBuilder.ServerProjectBranchBuilder.ServerIssue::getFilePath,
-            mapping(issue -> {
-              var builder = Issues.Issue.newBuilder()
-                .setKey(issue.issueKey)
-                .setComponent(projectKey + ":" + issue.filePath)
-                .setRule(issue.ruleKey)
-                .setMessage(issue.message)
-                .setTextRange(Common.TextRange.newBuilder()
-                  .setStartLine(issue.textRange.getStartLine())
-                  .setStartOffset(issue.textRange.getStartLineOffset())
-                  .setEndLine(issue.textRange.getEndLine())
-                  .setEndOffset(issue.textRange.getEndLineOffset())
-                  .build())
-                .setCreationDate(issue.creationDate)
-                .setStatus(issue.status)
-                .setAssignee(issue.author);
-              return builder.build();
-            }, toList())));
+      projectsByProjectKey.forEach((projectKey, project) -> {
+        project.pullRequestsByName.forEach((pullRequestName, pullRequest) -> {
+          var issuesPerFilePath = getIssuesPerFilePath(projectKey, pullRequest);
 
-        var allIssues = issuesPerFilePath.values().stream().flatMap(Collection::stream).collect(toList());
+          var allIssues = issuesPerFilePath.values().stream().flatMap(Collection::stream).collect(toList());
 
-        allIssues.forEach(issue -> {
-          var searchUrl = "/api/issues/search.protobuf?issues=".concat(urlEncode(issue.getKey()))
-            .concat("&componentKeys=").concat(projectKey)
-            .concat("&ps=1&p=1");
-          if (issue.getKey().contains("PR")) {
-            searchUrl = searchUrl.concat("&pullRequest=").concat("pullRequest");
-          } else {
-            searchUrl = searchUrl.concat("&branch=").concat(branchName);
-          }
-         mockServer.stubFor(get(searchUrl)
-          .willReturn(aResponse().withResponseBody(protobufBody(Issues.SearchWsResponse.newBuilder()
-            .addIssues(
-              Issues.Issue.newBuilder()
-                .setKey(issue.getKey()).setRule(issue.getRule()).setCreationDate(issue.getCreationDate()).setMessage(issue.getMessage())
-                .setTextRange(issue.getTextRange()).setComponent(issue.getComponent()).build())
-            .addComponents(Issues.Component.newBuilder().setPath(issue.getComponent()).setKey(issue.getComponent()).build())
-            .setRules(Issues.SearchWsResponse.newBuilder().getRulesBuilder().addRules(Common.Rule.newBuilder().setKey(issue.getRule()).build()))
-            .build()))));
+          allIssues.forEach(issue -> {
+            var searchUrl = "/api/issues/search.protobuf?issues=".concat(urlEncode(issue.getKey()))
+              .concat("&componentKeys=").concat(projectKey)
+              .concat("&ps=1&p=1")
+              .concat("&pullRequest=").concat(pullRequestName);
+            mockServer.stubFor(get(searchUrl)
+              .willReturn(aResponse().withResponseBody(protobufBody(Issues.SearchWsResponse.newBuilder()
+                .addIssues(
+                  Issues.Issue.newBuilder()
+                    .setKey(issue.getKey()).setRule(issue.getRule()).setCreationDate(issue.getCreationDate()).setMessage(issue.getMessage())
+                    .setTextRange(issue.getTextRange()).setComponent(issue.getComponent()).build())
+                .addComponents(Issues.Component.newBuilder().setPath(issue.getComponent()).setKey(issue.getComponent()).build())
+                .setRules(Issues.SearchWsResponse.newBuilder().getRulesBuilder().addRules(Common.Rule.newBuilder().setKey(issue.getRule()).build()))
+                .build()))));
+          });
         });
-      }));
+        project.branchesByName.forEach((branchName, branch) -> {
+          var issuesPerFilePath = getIssuesPerFilePath(projectKey, branch);
+
+          var allIssues = issuesPerFilePath.values().stream().flatMap(Collection::stream).collect(toList());
+
+          allIssues.forEach(issue -> {
+            var searchUrl = "/api/issues/search.protobuf?issues=".concat(urlEncode(issue.getKey()))
+              .concat("&componentKeys=").concat(projectKey)
+              .concat("&ps=1&p=1")
+              .concat("&branch=").concat(branchName);
+           mockServer.stubFor(get(searchUrl)
+            .willReturn(aResponse().withResponseBody(protobufBody(Issues.SearchWsResponse.newBuilder()
+              .addIssues(
+                Issues.Issue.newBuilder()
+                  .setKey(issue.getKey()).setRule(issue.getRule()).setCreationDate(issue.getCreationDate()).setMessage(issue.getMessage())
+                  .setTextRange(issue.getTextRange()).setComponent(issue.getComponent()).build())
+              .addComponents(Issues.Component.newBuilder().setPath(issue.getComponent()).setKey(issue.getComponent()).build())
+              .setRules(Issues.SearchWsResponse.newBuilder().getRulesBuilder().addRules(Common.Rule.newBuilder().setKey(issue.getRule()).build()))
+              .build()))));
+          });
+        });
+      });
+    }
+
+    @NotNull
+    private static Map<String, List<Issues.Issue>> getIssuesPerFilePath(String projectKey, ServerBuilder.ServerProjectBranchBuilder pullRequestOrBranch) {
+      return pullRequestOrBranch.issues.stream()
+        .collect(groupingBy(ServerBuilder.ServerProjectBranchBuilder.ServerIssue::getFilePath,
+          mapping(issue -> {
+            var builder = Issues.Issue.newBuilder()
+              .setKey(issue.issueKey)
+              .setComponent(projectKey + ":" + issue.filePath)
+              .setRule(issue.ruleKey)
+              .setMessage(issue.message)
+              .setTextRange(Common.TextRange.newBuilder()
+                .setStartLine(issue.textRange.getStartLine())
+                .setStartOffset(issue.textRange.getStartLineOffset())
+                .setEndLine(issue.textRange.getEndLine())
+                .setEndOffset(issue.textRange.getEndLineOffset())
+                .build())
+              .setCreationDate(issue.creationDate)
+              .setStatus(issue.status)
+              .setAssignee(issue.author);
+            return builder.build();
+          }, toList())));
     }
 
     private void registerApiHotspotsPullResponses() {
@@ -572,14 +606,20 @@ public class ServerFixture {
     }
 
     private void registerSourceApiResponses() {
-      sourceFileByComponentKey
-        .forEach((componentKey, sourceFile) -> mockServer.stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey) + "&branch=branchName").willReturn(aResponse().withBody(sourceFile.code))));
+      projectsByProjectKey.forEach((projectKey, project) -> project.pullRequestsByName.forEach((pullRequestName, pullRequest) ->
+        pullRequest.sourceFileByComponentKey
+          .forEach((componentKey, sourceFile) -> mockServer.stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey) + "&pullRequest=" + urlEncode(pullRequestName)).willReturn(aResponse().withBody(sourceFile.code))))));
 
-      sourceFileByComponentKey
-        .forEach((componentKey, sourceFile) -> mockServer.stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey) + "&pullRequest=pullRequest").willReturn(aResponse().withBody(sourceFile.code))));
+      projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
+          if (branchName != null) {
+            branch.sourceFileByComponentKey
+              .forEach((componentKey, sourceFile) -> mockServer.stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey) + "&branch=" + urlEncode(branchName)).willReturn(aResponse().withBody(sourceFile.code))));
+          }
+      }));
 
-      sourceFileByComponentKey
-        .forEach((componentKey, sourceFile) -> mockServer.stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey)).willReturn(aResponse().withBody(sourceFile.code))));
+      projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) ->
+        branch.sourceFileByComponentKey
+          .forEach((componentKey, sourceFile) -> mockServer.stubFor(get("/api/sources/raw?key=" + urlEncode(componentKey)).willReturn(aResponse().withBody(sourceFile.code))))));
     }
 
     private void registerDevelopersApiResponses() {
