@@ -55,8 +55,8 @@ class OpenHotspotInIdeMediumTests {
           .withAuthor("author")
           .withFilePath("file/path")
           .withStatus(HotspotReviewStatus.SAFE)
-          .withTextRange(new TextRange(1, 0, 3, 4)))))
-    .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))
+          .withTextRange(new TextRange(1, 0, 3, 4)))
+        .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))))
     .start();
   static ServerFixture.Server serverWithoutHotspot = newSonarQubeServer("1.2.3")
     .start();

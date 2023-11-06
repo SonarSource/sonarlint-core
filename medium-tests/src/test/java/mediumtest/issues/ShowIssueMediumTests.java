@@ -50,16 +50,19 @@ class ShowIssueMediumTests {
   private static final String BRANCH_NAME = "branchName";
   private ServerFixture.Server serverWithIssues = newSonarQubeServer("10.2")
     .withProject(PROJECT_KEY,
-      project -> project.withBranch("branchName",
-        branch -> {
-        branch.withIssue(ISSUE_KEY, RULE_KEY, "msg", "author", "file/path", "OPEN", "", "2023-05-13T17:55:39+0202",
-            new TextRange(1, 0, 3, 4));
-        branch.withIssue(PR_ISSUE_KEY, RULE_KEY, "msg", "author", "file/path", "OPEN", "", "2023-05-13T17:55:39+0202",
-            new TextRange(1, 0, 3, 4));
-        return branch.withIssue(FILE_LEVEL_ISSUE_KEY, RULE_KEY, "msg", "author", "file/path", "OPEN", "", "2023-05-13T17:55:39+0202",
-          new TextRange(0, 0, 0, 0));
-        }))
-    .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile\nfive\nlines"))
+      project -> {
+        project.withPullRequest("1234", pullRequest -> (ServerFixture.ServerBuilder.ServerProjectPullRequestBuilder) pullRequest.withIssue(PR_ISSUE_KEY, RULE_KEY, "msg", "author", "file/path", "OPEN", "", "2023-05-13T17:55:39+0202",
+          new TextRange(1, 0, 3, 4))
+          .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile\nfive\nlines")));
+        return project.withBranch("branchName",
+          branch -> {
+            branch.withIssue(ISSUE_KEY, RULE_KEY, "msg", "author", "file/path", "OPEN", "", "2023-05-13T17:55:39+0202",
+              new TextRange(1, 0, 3, 4));
+            branch.withIssue(FILE_LEVEL_ISSUE_KEY, RULE_KEY, "msg", "author", "file/path", "OPEN", "", "2023-05-13T17:55:39+0202",
+              new TextRange(0, 0, 0, 0));
+            return branch.withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile\nfive\nlines"));
+          });
+      })
     .start();
   private SonarLintTestBackend backend;
 
@@ -138,7 +141,7 @@ class ShowIssueMediumTests {
       .withEmbeddedServer()
       .build(fakeClient);
 
-    var statusCode = executeOpenIssueRequest(PR_ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, "pullRequest");
+    var statusCode = executeOpenIssueRequest(PR_ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, "1234");
 
     assertThat(statusCode).isEqualTo(200);
     await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getIssueParamsToShowByIssueKey()).containsOnlyKeys(PR_ISSUE_KEY));
