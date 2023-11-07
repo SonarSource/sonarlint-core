@@ -39,6 +39,7 @@ import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
@@ -53,7 +54,6 @@ import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.DidChangeActiveSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
@@ -85,6 +85,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServer
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FoundFileDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListAllFilePathsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListAllFilePathsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordAuthenticationParams;
@@ -97,6 +99,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidUpdatePluginsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
@@ -105,6 +108,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
+import static java.util.Collections.emptyList;
 import static mediumtest.fixtures.storage.StorageFixture.newStorage;
 
 public class SonarLintBackendFixture {
@@ -131,6 +135,7 @@ public class SonarLintBackendFixture {
     private boolean manageSmartNotifications;
     private boolean areSecurityHotspotsEnabled;
     private boolean synchronizeProjects;
+    private boolean shouldManageFullSynchronization;
     private boolean taintVulnerabilitiesEnabled = true;
     private boolean manageServerSentEvents;
     private String userAgent = "SonarLintBackendFixture";
@@ -278,7 +283,7 @@ public class SonarLintBackendFixture {
 
     public SonarLintBackendBuilder withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin plugin) {
       this.embeddedPluginPaths.add(plugin.getPath());
-      this.connectedModeEmbeddedPluginPathsByKey.put(org.sonarsource.sonarlint.core.commons.Language.valueOf(plugin.getLanguage().name()).getPluginKey(), plugin.getPath());
+      this.connectedModeEmbeddedPluginPathsByKey.put(plugin.getPluginKey(), plugin.getPath());
       return withEnabledLanguageInStandaloneMode(plugin.getLanguage());
     }
 
@@ -325,6 +330,11 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintBackendBuilder withFullSynchronization() {
+      shouldManageFullSynchronization = true;
+      return this;
+    }
+
     public SonarLintBackendBuilder withTaintVulnerabilitiesDisabled() {
       taintVulnerabilitiesEnabled = false;
       return this;
@@ -365,7 +375,7 @@ public class SonarLintBackendFixture {
         client.setBackend(sonarLintBackend);
         var clientInfo = new ClientInfoDto(clientName, "mediumTests", userAgent);
         var featureFlags = new FeatureFlagsDto(manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, startEmbeddedServer, areSecurityHotspotsEnabled,
-          manageServerSentEvents, enableDataflowBugDetection);
+          manageServerSentEvents, enableDataflowBugDetection, shouldManageFullSynchronization);
 
         sonarLintBackend
           .initialize(new InitializeParams(clientInfo, featureFlags,
@@ -373,9 +383,9 @@ public class SonarLintBackendFixture {
             enabledLanguages, extraEnabledLanguagesInConnectedMode, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
             standaloneConfigByKey, isFocusOnNewCode))
           .get();
-        sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
         matchedBranchPerScopeId.forEach(
-          (scopeId, branch) -> sonarLintBackend.getSonarProjectBranchService().didChangeActiveSonarProjectBranch(new DidChangeActiveSonarProjectBranchParams(scopeId, branch)));
+          (scopeId, branch) -> sonarLintBackend.getMatchedSonarProjectBranchRepository().setMatchedBranchName(scopeId, branch));
+        sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
         return sonarLintBackend;
       } catch (Exception e) {
         throw new IllegalStateException("Cannot initialize the backend", e);
@@ -423,6 +433,7 @@ public class SonarLintBackendFixture {
     private String resolvedSonarProjectBranch;
     private boolean isResolvedSonarProjectBranchSet;
     private boolean shouldErrorProjectBranchResolution;
+    private final Map<String, List<String>> relativeFilePathsByConfigScopeId = new HashMap<>();
 
     public SonarLintClientBuilder withFoundFile(String name, String path, String content) {
       foundFiles.add(new FoundFileDto(name, path, content));
@@ -474,7 +485,7 @@ public class SonarLintBackendFixture {
       return new FakeSonarLintRpcClient(foundFiles, clientDescription, cannedAssistCreatingSonarQubeConnectionByBaseUrl,
         cannedBindingAssistByProjectKey,
         rejectingProgress, proxy, proxyAuth, credentialsByConnectionId, printLogsToStdOut, resolvedSonarProjectBranch, isResolvedSonarProjectBranchSet,
-        shouldErrorProjectBranchResolution);
+        shouldErrorProjectBranchResolution, relativeFilePathsByConfigScopeId);
     }
 
     public SonarLintClientBuilder printLogsToStdOut() {
@@ -490,6 +501,11 @@ public class SonarLintBackendFixture {
 
     public SonarLintClientBuilder withSonarProjectBranchMatchingError() {
       this.shouldErrorProjectBranchResolution = true;
+      return this;
+    }
+
+    public SonarLintClientBuilder withFile(String configScopeId, String fileRelativePath) {
+      this.relativeFilePathsByConfigScopeId.computeIfAbsent(configScopeId, k -> new ArrayList<>()).add(fileRelativePath);
       return this;
     }
   }
@@ -515,19 +531,21 @@ public class SonarLintBackendFixture {
     private final String resolvedSonarProjectBranch;
     private final boolean isResolvedSonarProjectBranchSet;
     private final boolean shouldErrorProjectBranchResolution;
+    private final Map<String, List<String>> relativeFilePathsByConfigScopeId;
     private final ProxyDto proxy;
     private final GetProxyPasswordAuthenticationResponse proxyAuth;
     private final Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId;
     private final boolean printLogsToStdOut;
     private SonarLintRpcServer backend;
     private final Queue<LogParams> logs = new ConcurrentLinkedQueue<>();
+    private final List<String> connectionsWhichUpdatedPlugins = new CopyOnWriteArrayList<>();
 
     public FakeSonarLintRpcClient(List<FoundFileDto> foundFiles, String clientDescription,
-      LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
-      LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, boolean rejectingProgress, @Nullable ProxyDto proxy,
-      @Nullable GetProxyPasswordAuthenticationResponse proxyAuth, Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId,
-      boolean printLogsToStdOut, String resolvedSonarProjectBranch, boolean isResolvedSonarProjectBranchSet,
-      boolean shouldErrorProjectBranchResolution) {
+                                  LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
+                                  LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, boolean rejectingProgress, @Nullable ProxyDto proxy,
+                                  @Nullable GetProxyPasswordAuthenticationResponse proxyAuth, Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId,
+                                  boolean printLogsToStdOut, String resolvedSonarProjectBranch, boolean isResolvedSonarProjectBranchSet,
+                                  boolean shouldErrorProjectBranchResolution, Map<String, List<String>> relativeFilePathsByConfigScopeId) {
       this.foundFiles = foundFiles;
       this.clientDescription = clientDescription;
       this.cannedAssistCreatingSonarQubeConnectionByBaseUrl = cannedAssistCreatingSonarQubeConnectionByBaseUrl;
@@ -540,6 +558,7 @@ public class SonarLintBackendFixture {
       this.resolvedSonarProjectBranch = resolvedSonarProjectBranch;
       this.isResolvedSonarProjectBranchSet = isResolvedSonarProjectBranchSet;
       this.shouldErrorProjectBranchResolution = shouldErrorProjectBranchResolution;
+      this.relativeFilePathsByConfigScopeId = relativeFilePathsByConfigScopeId;
     }
 
     public void setBackend(SonarLintTestRpcServer backend) {
@@ -687,7 +706,6 @@ public class SonarLintBackendFixture {
 
     @Override
     public MatchSonarProjectBranchResponse matchSonarProjectBranch(MatchSonarProjectBranchParams params, CancelChecker cancelChecker) {
-
       var sonarProjectBranches = params.getSonarProjectBranches();
       toResolveSonarProjectBranchesPerConfigScopeId.put(params.getConfigurationScopeId(), sonarProjectBranches);
       if (shouldErrorProjectBranchResolution) {
@@ -715,6 +733,16 @@ public class SonarLintBackendFixture {
       if (printLogsToStdOut) {
         System.out.println(params.getLevel() + " " + (params.getConfigScopeId() != null ? ("[" + params.getConfigScopeId() + "] ") : "") + params.getMessage());
       }
+    }
+
+    @Override
+    public void didUpdatePlugins(DidUpdatePluginsParams params) {
+      this.connectionsWhichUpdatedPlugins.add(params.getConnectionId());
+    }
+
+    @Override
+    public ListAllFilePathsResponse listAllFilePaths(ListAllFilePathsParams params) {
+      return new ListAllFilePathsResponse(relativeFilePathsByConfigScopeId.getOrDefault(params.getConfigurationScopeId(), emptyList()));
     }
 
     public boolean hasReceivedSuggestions() {
@@ -759,6 +787,10 @@ public class SonarLintBackendFixture {
 
     public List<String> getLogMessages() {
       return logs.stream().map(LogParams::getMessage).collect(Collectors.toList());
+    }
+
+    public List<String> getConnectionsWhichUpdatedPlugins() {
+      return connectionsWhichUpdatedPlugins;
     }
 
     public void clearLogs() {

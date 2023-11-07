@@ -551,6 +551,22 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     replaceAllIssuesOfFile(List.of(), txn, fileEntity);
   }
 
+  private static void deleteAllTaintsOfBranch(Entity branchEntity, Set<String> filePaths) {
+    branchEntity.getLinks(BRANCH_TO_FILES_LINK_NAME).forEach(fileEntity -> {
+      var entityFilePath = fileEntity.getProperty(PATH_PROPERTY_NAME);
+      if (!filePaths.contains(entityFilePath)) {
+        deleteAllTaintsOfFile(fileEntity);
+      }
+    });
+    branchEntity.getLinks(BRANCH_TO_TAINT_ISSUES_LINK_NAME).forEach(Entity::delete);
+    branchEntity.deleteLinks(BRANCH_TO_TAINT_ISSUES_LINK_NAME);
+  }
+
+  private static void deleteAllTaintsOfFile(Entity fileEntity) {
+    fileEntity.getLinks(FILE_TO_TAINT_ISSUES_LINK_NAME).forEach(Entity::delete);
+    fileEntity.deleteLinks(FILE_TO_TAINT_ISSUES_LINK_NAME);
+  }
+
   private static void timed(String msg, Runnable transaction) {
     var startTime = Instant.now();
     transaction.run();
@@ -575,6 +591,21 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       fileEntity.deleteLinks(FILE_TO_TAINT_ISSUES_LINK_NAME);
 
       issues.forEach(issue -> updateOrCreateTaintIssue(branch, fileEntity, issue, txn));
+    }));
+  }
+
+  @Override
+  public void replaceAllTaintsOfBranch(String branchName, List<ServerTaintIssue> taintIssues) {
+    var taintsByFile = taintIssues.stream().collect(Collectors.groupingBy(ServerTaintIssue::getFilePath));
+    timed(wroteMessage(taintIssues.size(), "taints"), () -> entityStore.executeInTransaction(txn -> {
+      var branch = getOrCreateBranch(branchName, txn);
+      deleteAllTaintsOfBranch(branch, taintsByFile.keySet());
+      txn.flush();
+      taintsByFile.forEach((filePath, fileIssues) -> {
+        var fileEntity = getOrCreateFile(branch, filePath, txn);
+        fileIssues.forEach(issue -> updateOrCreateTaintIssue(branch, fileEntity, issue, txn));
+        txn.flush();
+      });
     }));
   }
 

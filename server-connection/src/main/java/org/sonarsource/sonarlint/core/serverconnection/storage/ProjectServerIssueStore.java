@@ -133,6 +133,11 @@ public interface ProjectServerIssueStore {
   void replaceAllTaintOfFile(String branchName, String serverFilePath, List<ServerTaintIssue> taintIssues);
 
   /**
+   * Store taint issues for a branch.
+   */
+  void replaceAllTaintsOfBranch(String branchName, List<ServerTaintIssue> taintIssues);
+
+  /**
    * Load taint issues stored for specified file.
    *
    *
