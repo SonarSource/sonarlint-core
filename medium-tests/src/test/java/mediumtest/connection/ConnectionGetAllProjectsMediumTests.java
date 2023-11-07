@@ -64,7 +64,7 @@ class ConnectionGetAllProjectsMediumTests {
     var server = newSonarQubeServer().start();
     backend = newBackend().build();
 
-    var response = getAllProjects(new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto("token"))));
+    var response = getAllProjects(new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto(null))));
 
     assertThat(response.getSonarProjects()).isEmpty();
   }

@@ -30,6 +30,8 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
+import static java.util.function.Predicate.not;
+
 public class EitherCredentialsAdapterFactory implements TypeAdapterFactory {
 
   private static final TypeToken<Either<TokenDto, UsernamePasswordDto>> ELEMENT_TYPE = new TypeToken<>() {
@@ -38,8 +40,8 @@ public class EitherCredentialsAdapterFactory implements TypeAdapterFactory {
   @SuppressWarnings("unchecked")
   @Override
   public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-    Predicate<JsonElement> leftChecker = new EitherTypeAdapter.PropertyChecker("token");
-    Predicate<JsonElement> rightChecker = new EitherTypeAdapter.PropertyChecker("username");
-    return (TypeAdapter<T>) new EitherTypeAdapter<>(gson, ELEMENT_TYPE, leftChecker, rightChecker);
+    Predicate<JsonElement> tokenChecker = new EitherTypeAdapter.PropertyChecker("token");
+    Predicate<JsonElement> usernameChecker = not(tokenChecker);
+    return (TypeAdapter<T>) new EitherTypeAdapter<>(gson, ELEMENT_TYPE, tokenChecker, usernameChecker);
   }
 }
