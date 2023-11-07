@@ -59,12 +59,14 @@ public enum Language {
   JSP("jsp", "web", "JSP", new String[] {".jsp", ".jspf", ".jspx"}, "sonar.jsp.file.suffixes"),
   VBNET("vbnet", "vbnet", "VB.NET", new String[] {".vb"}, "sonar.vbnet.file.suffixes"),
   XML("xml", "xml", "XML", new String[] {".xml", ".xsd", ".xsl"}, "sonar.xml.file.suffixes"),
-  YAML("yaml", Constants.JAVASCRIPT_PLUGIN_KEY, "YAML", new String[] {".yml", "yaml"}, "sonar.yaml.file.suffixes"),
+  YAML("yaml", Constants.JAVASCRIPT_PLUGIN_KEY, "YAML", new String[] {".yml", "yaml"}, Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
+  JSON("json", Constants.JAVASCRIPT_PLUGIN_KEY, "JSON", new String[] {".json"}, Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
   GO("go", "go", "Go", new String[] {".go"}, "sonar.go.file.suffixes"),
   CLOUDFORMATION("cloudformation", "iac", "CloudFormation", new String[0], "sonar.cloudformation.file.suffixes"),
   DOCKER("docker", "iac", "Docker", new String[0], "sonar.docker.file.suffixes"),
   KUBERNETES("kubernetes", "iac", "Kubernetes", new String[0], "sonar.kubernetes.file.suffixes"),
-  TERRAFORM("terraform", "iac", "Terraform", new String[] {".tf"}, "sonar.terraform.file.suffixes");
+  TERRAFORM("terraform", "iac", "Terraform", new String[] {".tf"}, "sonar.terraform.file.suffixes"),
+  AZURERESOURCEMANAGER("azureresourcemanager", "iac", "AzureResourceManager", new String[] {".bicep"}, Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE);
   private String languageKey;
   private String pluginKey;
   private String[] defaultFileSuffixes;
@@ -137,6 +139,7 @@ public enum Language {
 
   private static class Constants {
     public static final String JAVASCRIPT_PLUGIN_KEY = "javascript";
+    private static final String NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE = "<no public property provided for this language>";
   }
 
 }
