@@ -334,6 +334,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
 
   @Override
   public CompletableFuture<ConnectedRuleDetails> getActiveRuleDetails(EndpointParams endpoint, HttpClient client, String ruleKey, @Nullable String projectKey) {
+    setLogging(null);
     // TODO migrate?
     var ruleDefFromPluginOpt = analysisContext.get().findRule(ruleKey);
     if (ruleDefFromPluginOpt.isPresent()) {
@@ -394,6 +395,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
 
   @Override
   public ProjectBranches getServerBranches(String projectKey) {
+    setLogging(null);
     var projectBranchesFromStorage = serverConnection.getProjectBranches(projectKey);
     return toApi(projectBranchesFromStorage);
   }
@@ -404,21 +406,25 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
 
   @Override
   public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String branchName, String ideFilePath) {
+    setLogging(null);
     return serverConnection.getServerIssues(projectBinding, branchName, ideFilePath);
   }
 
   @Override
   public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName, String ideFilePath, boolean includeResolved) {
+    setLogging(null);
     return serverConnection.getServerTaintIssues(projectBinding, branchName, ideFilePath, includeResolved);
   }
 
   @Override
   public List<ServerTaintIssue> getAllServerTaintIssues(ProjectBinding projectBinding, String branchName) {
+    setLogging(null);
     return serverConnection.getServerTaintIssues(projectBinding, branchName);
   }
 
   @Override
   public <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> fileIdePathExtractor, Predicate<G> testFilePredicate) {
+    setLogging(null);
     AnalyzerConfiguration analyzerConfig;
     try {
       analyzerConfig = serverConnection.getAnalyzerConfiguration(projectBinding.projectKey());
@@ -453,59 +459,70 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   @Override
   public void subscribeForEvents(EndpointParams endpoint, HttpClient client, Set<String> projectKeys,
     Consumer<ServerEvent> eventConsumer, @Nullable ClientLogOutput clientLogOutput) {
+    setLogging(null);
     serverConnection.subscribeForEvents(endpoint, client, projectKeys, eventConsumer);
   }
 
   @Override
   public void downloadAllServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
     @Nullable ClientProgressMonitor monitor) {
+    setLogging(null);
     serverConnection.downloadServerIssuesForFile(endpoint, client, projectBinding, ideFilePath, branchName);
   }
 
   @Override
   public void downloadAllServerTaintIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
     @Nullable ClientProgressMonitor monitor) {
+    setLogging(null);
     serverConnection.downloadServerTaintIssuesForFile(endpoint, client, projectBinding, ideFilePath, branchName, new ProgressMonitor(monitor));
   }
 
   @Override
   public void downloadAllServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor) {
+    setLogging(null);
     serverConnection.downloadServerIssuesForProject(endpoint, client, projectKey, branchName);
   }
 
   @Override
   public void syncServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor) {
+    setLogging(null);
     serverConnection.syncServerIssuesForProject(endpoint, client, projectKey, branchName);
   }
 
   @Override
   public void syncServerTaintIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor) {
+    setLogging(null);
     serverConnection.syncServerTaintIssuesForProject(endpoint, client, projectKey, branchName);
   }
 
   @Override
   public void syncServerHotspots(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor) {
+    setLogging(null);
     serverConnection.syncServerHotspotsForProject(endpoint, client, projectKey, branchName);
   }
 
   @Override
   public void downloadAllServerHotspots(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor) {
+    setLogging(null);
     serverConnection.downloadAllServerHotspots(endpoint, client, projectKey, branchName, new ProgressMonitor(monitor));
   }
 
   @Override
   public void downloadAllServerHotspotsForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
     @Nullable ClientProgressMonitor monitor) {
+    setLogging(null);
     serverConnection.downloadAllServerHotspotsForFile(endpoint, client, projectBinding, ideFilePath, branchName);
   }
 
   @Override
   public Collection<ServerHotspot> getServerHotspots(ProjectBinding projectBinding, String branchName, String ideFilePath) {
+    setLogging(null);
     return serverConnection.getServerHotspots(projectBinding, branchName, ideFilePath);
   }
 
   @Override
   public ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> ideFilePaths) {
+    setLogging(null);
     return serverConnection.calculatePathPrefixes(projectKey, ideFilePaths);
   }
 
