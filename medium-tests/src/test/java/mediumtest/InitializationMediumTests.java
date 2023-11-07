@@ -34,7 +34,6 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
-import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class InitializationMediumTests {
@@ -52,7 +51,7 @@ class InitializationMediumTests {
       .build();
 
     var future = backend
-      .initialize(new InitializeParams(new ClientInfoDto("name", "productKey", "userAgent"), new FeatureFlagsDto(false, false, false, false, false, false, false),
+      .initialize(new InitializeParams(new ClientInfoDto("name", "productKey", "userAgent"), new FeatureFlagsDto(false, false, false, false, false, false, false, false),
         Path.of("unused"), Path.of("unused"),
         emptySet(), emptyMap(), emptySet(), emptySet(),
         emptyList(), emptyList(), "home", emptyMap(), false));

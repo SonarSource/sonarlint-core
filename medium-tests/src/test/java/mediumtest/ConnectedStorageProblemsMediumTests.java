@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import mediumtest.fixtures.TestPlugin;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -88,8 +89,7 @@ class ConnectedStorageProblemsMediumTests {
   void corrupted_plugin_should_not_prevent_startup(@TempDir Path slHome, @TempDir Path baseDir) throws Exception {
     var storageId = "localhost";
     var storage = newStorage(storageId)
-      .withJSPlugin()
-      .withJavaPlugin()
+      .withPlugins(TestPlugin.JAVASCRIPT, TestPlugin.JAVA)
       .withProject("myProject",
         project -> project.withRuleSet(Language.JS.getLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("java:S106", "BLOCKER")))

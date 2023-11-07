@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
+import org.sonarsource.sonarlint.core.repository.branch.MatchedSonarProjectBranchRepository;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.impl.SonarLintRpcServerImpl;
@@ -34,6 +35,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.BindingRpcSer
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.SonarProjectBranchRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.ConfigurationRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.IssueRpcService;
@@ -83,6 +85,11 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
   @Override
   public ConfigurationRpcService getConfigurationService() {
     return serverUsingRpc.getConfigurationService();
+  }
+
+  @Override
+  public FileRpcService getFileService() {
+    return serverUsingRpc.getFileService();
   }
 
   @Override
@@ -162,6 +169,10 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
 
   public StorageService getIssueStorageService() {
     return serverUsingJava.getIssueStorageService();
+  }
+
+  public MatchedSonarProjectBranchRepository getMatchedSonarProjectBranchRepository() {
+    return serverUsingJava.getInitializedApplicationContext().getBean(MatchedSonarProjectBranchRepository.class);
   }
 
   @Override

@@ -24,23 +24,40 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import testutils.PluginLocator;
 
 public enum TestPlugin {
-  JAVA(Language.JAVA, PluginLocator.getJavaPluginPath()),
-  PHP(Language.PHP, PluginLocator.getPhpPluginPath()),
-  PYTHON(Language.PYTHON, PluginLocator.getPythonPluginPath());
+  JAVA(Language.JAVA, PluginLocator.getJavaPluginPath(), PluginLocator.SONAR_JAVA_PLUGIN_VERSION, PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH),
+  PHP(Language.PHP, PluginLocator.getPhpPluginPath(), PluginLocator.SONAR_PHP_PLUGIN_VERSION, PluginLocator.SONAR_PHP_PLUGIN_JAR_HASH),
+  PYTHON(Language.PYTHON, PluginLocator.getPythonPluginPath(), PluginLocator.SONAR_PYTHON_PLUGIN_VERSION, PluginLocator.SONAR_PYTHON_PLUGIN_JAR_HASH),
+  JAVASCRIPT(Language.JS, PluginLocator.getJavaScriptPluginPath(), PluginLocator.SONAR_JAVASCRIPT_PLUGIN_VERSION, PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR_HASH);
 
   private final Language language;
   private final Path path;
+  private final String version;
+  private final String hash;
 
-  TestPlugin(Language language, Path path) {
+  TestPlugin(Language language, Path path, String version, String hash) {
     this.language = language;
     this.path = path;
+    this.version = version;
+    this.hash = hash;
   }
 
   public Language getLanguage() {
     return language;
   }
 
+  public String getPluginKey() {
+    return org.sonarsource.sonarlint.core.commons.Language.valueOf(getLanguage().name()).getPluginKey();
+  }
+
   public Path getPath() {
     return path;
+  }
+
+  public String getVersion() {
+    return version;
+  }
+
+  public String getHash() {
+    return hash;
   }
 }

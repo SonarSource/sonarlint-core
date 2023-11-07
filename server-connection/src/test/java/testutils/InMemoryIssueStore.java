@@ -223,6 +223,11 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
+  public void replaceAllTaintsOfBranch(String branchName, List<ServerTaintIssue> taintIssues) {
+    taintIssuesByFileByBranch.put(branchName, taintIssues.stream().collect(Collectors.groupingBy(ServerTaintIssue::getFilePath)));
+  }
+
+  @Override
   public List<ServerTaintIssue> loadTaint(String branchName, String sqFilePath) {
     return taintIssuesByFileByBranch
       .getOrDefault(branchName, Map.of())

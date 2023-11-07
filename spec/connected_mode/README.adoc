@@ -3,4 +3,6 @@
 
 == Overview
 
+link:synchronization/README.adoc[Synchronization]
+
 link:binding_suggestion.adoc[Binding suggestions]

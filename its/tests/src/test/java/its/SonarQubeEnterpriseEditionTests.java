@@ -78,6 +78,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServer
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListAllFilePathsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListAllFilePathsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.ProxyDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesParams;
@@ -87,6 +89,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidUpdatePluginsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
@@ -136,7 +139,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     backend = clientLauncher.getServerProxy();
     try {
       backend.initialize(
-        new InitializeParams(IT_CLIENT_INFO, new FeatureFlagsDto(false, true, false, false, false, false, false), sonarUserHome.resolve("storage"),
+        new InitializeParams(IT_CLIENT_INFO, new FeatureFlagsDto(false, true, false, false, false, false, false, false), sonarUserHome.resolve("storage"),
           sonarUserHome.resolve("workDir"),
           Collections.emptySet(),
           Collections.emptyMap(), Set.of(JAVA), Collections.emptySet(),
@@ -466,6 +469,15 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
       }
 
+      @Override
+      public void didUpdatePlugins(DidUpdatePluginsParams params) {
+
+      }
+
+      @Override
+      public ListAllFilePathsResponse listAllFilePaths(ListAllFilePathsParams params) {
+        return null;
+      }
     };
   }
 }
