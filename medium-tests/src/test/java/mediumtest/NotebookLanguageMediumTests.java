@@ -23,6 +23,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.SonarLintTestRpcServer;
+import mediumtest.fixtures.TestPlugin;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -69,8 +70,7 @@ class NotebookLanguageMediumTests {
       .build();
     backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, sonarqubeMock.baseUrl())
-      .withStorage(CONNECTION_ID, s -> s.withJSPlugin()
-        .withJavaPlugin()
+      .withStorage(CONNECTION_ID, s -> s.withPlugins(TestPlugin.JAVASCRIPT, TestPlugin.JAVA)
         .withProject("test-project")
         .withProject(JAVA_MODULE_KEY))
       .build(fakeClient);

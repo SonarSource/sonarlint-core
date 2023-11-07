@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.SonarLintTestRpcServer;
+import mediumtest.fixtures.TestPlugin;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -198,7 +199,7 @@ class ConnectedHotspotMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, mockWebServer.url("/"))
       .withStorage(CONNECTION_ID, b -> b
         .withServerVersion(serverVersion)
-        .withJavaPlugin()
+        .withPlugin(TestPlugin.JAVA)
         .withProject(JAVA_MODULE_KEY, project -> project
           .withRuleSet("java", ruleSet -> ruleSet
             .withActiveRule("java:S5852", "BLOCKER"))))

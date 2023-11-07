@@ -73,7 +73,7 @@ class SloopLauncherWithJreTests {
   @Test
   void test_all_rules_returns() throws Exception {
     var clientInfo = new ClientInfoDto("clientName", "integrationTests", "SonarLint ITs");
-    var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false);
+    var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false);
 
     server.initialize(new InitializeParams(clientInfo, featureFlags, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
       Set.of(PluginLocator.getGoPluginPath().toAbsolutePath()), Collections.emptyMap(), Set.of(GO), Collections.emptySet(), Collections.emptyList(),

@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import mediumtest.ConnectedIssueMediumTests.StoreIssueListener;
 import mediumtest.fixtures.SonarLintTestRpcServer;
+import mediumtest.fixtures.TestPlugin;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterAll;
@@ -78,8 +79,7 @@ class ConnectedEmbeddedPluginMediumTests {
   static void prepare(@TempDir Path slHome) {
     var storage = newStorage(CONNECTION_ID)
       .withServerVersion("9.8")
-      .withJSPlugin()
-      .withJavaPlugin()
+      .withPlugins(TestPlugin.JAVASCRIPT, TestPlugin.JAVA)
       .withProject("test-project")
       .withProject(JAVA_MODULE_KEY, project -> project
         .withRuleSet("java", ruleSet -> ruleSet

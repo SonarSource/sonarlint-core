@@ -41,6 +41,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServer
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListAllFilePathsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListAllFilePathsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.CheckServerTrustedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.CheckServerTrustedResponse;
@@ -53,6 +55,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidUpdatePluginsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
@@ -172,4 +175,18 @@ public interface SonarLintRpcClient {
 
   @JsonNotification
   void didChangeMatchedSonarProjectBranch(DidChangeMatchedSonarProjectBranchParams params);
+
+  /**
+   * Called when at least one plugin has been downloaded during the full synchronization
+   */
+  @JsonNotification
+  default void didUpdatePlugins(DidUpdatePluginsParams params) {
+    // not implemented
+  }
+
+  /**
+   * Must return all file paths for the given configuration scope.
+   */
+  @JsonRequest
+  CompletableFuture<ListAllFilePathsResponse> listAllFilePaths(ListAllFilePathsParams params);
 }
