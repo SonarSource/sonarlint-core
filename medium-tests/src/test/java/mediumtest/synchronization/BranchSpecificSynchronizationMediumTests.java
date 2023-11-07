@@ -17,8 +17,9 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package mediumtest;
+package mediumtest.synchronization;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -29,9 +30,8 @@ import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.DidChangeActiveSonarProjectBranchParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.GetNewCodeDefinitionParams;
 import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.GetNewCodeDefinitionParams;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -41,7 +41,7 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
 
-class SynchronizationMediumTests {
+class BranchSpecificSynchronizationMediumTests {
 
   private ServerFixture.Server serverWithIssues;
 
@@ -50,7 +50,7 @@ class SynchronizationMediumTests {
     serverWithIssues = newSonarQubeServer("9.6")
       .withProject("projectKey",
         project -> project.withBranch("branchName",
-          branch -> branch.withIssue("key", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", "", new TextRange(1, 0, 3, 4))
+          branch -> branch.withIssue("key", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", Instant.now(), new TextRange(1, 0, 3, 4))
           .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))))
       .start();
     backend = newBackend()
@@ -62,28 +62,6 @@ class SynchronizationMediumTests {
     waitAtMost(3, SECONDS).untilAsserted(() -> {
       assertThat(backend.getWorkDir()).isDirectoryContaining(path -> path.getFileName().toString().contains("xodus-issue-store"));
       assertThat(backend.getNewCodeService().getNewCodeDefinition(new GetNewCodeDefinitionParams("configScopeId"))).succeedsWithin(1, MINUTES);
-    });
-  }
-
-  @Test
-  void it_should_automatically_synchronize_bound_projects_when_the_active_branch_changes() {
-    var fakeClient = newFakeClient().build();
-    serverWithIssues = newSonarQubeServer("9.6")
-      .withProject("projectKey",
-        project -> project.withBranch("branchName",
-          branch -> branch.withIssue("key", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", "", new TextRange(1, 0, 3, 4))
-            .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))))
-      .start();
-    backend = newBackend()
-      .withSonarQubeConnection("connectionId", serverWithIssues)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withProjectSynchronization()
-      .build(fakeClient);
-
-    backend.getSonarProjectBranchService().didChangeActiveSonarProjectBranch(new DidChangeActiveSonarProjectBranchParams("configScopeId", "branchName"));
-
-    waitAtMost(3, SECONDS).untilAsserted(() -> {
-      assertThat(fakeClient.getSynchronizedConfigScopeIds()).contains("configScopeId");
     });
   }
 

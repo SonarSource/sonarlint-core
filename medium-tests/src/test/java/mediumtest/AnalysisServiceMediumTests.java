@@ -20,6 +20,7 @@
 package mediumtest;
 
 import java.util.concurrent.ExecutionException;
+import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
@@ -51,7 +52,7 @@ class AnalysisServiceMediumTests {
   @Test
   void it_should_return_default_supported_file_patterns_in_connected_mode_when_not_override_on_server() throws ExecutionException, InterruptedException {
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", storage -> storage.withJavaPlugin()
+      .withSonarQubeConnection("connectionId", storage -> storage.withPlugin(TestPlugin.JAVA)
         .withProject("projectKey"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "branchName")
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -64,7 +65,7 @@ class AnalysisServiceMediumTests {
   @Test
   void it_should_return_supported_file_patterns_with_server_defined_file_suffixes() throws ExecutionException, InterruptedException {
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", storage -> storage.withJavaPlugin()
+      .withSonarQubeConnection("connectionId", storage -> storage.withPlugin(TestPlugin.JAVA)
         .withProject("projectKey", (projectStorageBuilder -> {
           projectStorageBuilder.withSetting("sonar.java.file.suffixes", ".foo, .bar");
         })))

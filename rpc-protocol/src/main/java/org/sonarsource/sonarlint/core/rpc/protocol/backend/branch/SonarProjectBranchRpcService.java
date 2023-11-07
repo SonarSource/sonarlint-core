@@ -28,14 +28,6 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
 public interface SonarProjectBranchRpcService {
 
   /**
-   * Must be called by the client when the active server branch changes
-   * @deprecated matching is managed by the core, instead call {@link #didVcsRepositoryChange} when needed.
-   */
-  @JsonNotification
-  @Deprecated(since = "10.0")
-  void didChangeActiveSonarProjectBranch(DidChangeActiveSonarProjectBranchParams params);
-
-  /**
    * Must be called when any change on the VCS might lead to a different sonar project branch being resolved (could be a different HEAD, a branch checkout).
    */
   @JsonNotification

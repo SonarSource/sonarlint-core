@@ -23,6 +23,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import mediumtest.fixtures.ServerFixture;
@@ -30,10 +33,9 @@ import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
@@ -54,17 +56,18 @@ class ShowIssueMediumTests {
   private static final String CONFIG_SCOPE_ID = "configScopeId";
   public static final String RULE_KEY = "ruleKey";
   private static final String BRANCH_NAME = "branchName";
+  private static final Instant ISSUE_INTRODUCTION_DATE = LocalDateTime.of(2023, 12, 25, 12, 30, 35).toInstant(ZoneOffset.UTC);
   private ServerFixture.Server serverWithIssues = newSonarQubeServer("10.2")
     .withProject(PROJECT_KEY,
       project -> {
-        project.withPullRequest("1234", pullRequest -> (ServerFixture.ServerBuilder.ServerProjectPullRequestBuilder) pullRequest.withIssue(PR_ISSUE_KEY, RULE_KEY, "msg", "author", "file/path", "OPEN", "", "2023-05-13T17:55:39+0202",
+        project.withPullRequest("1234", pullRequest -> (ServerFixture.ServerBuilder.ServerProjectBuilder.ServerProjectPullRequestBuilder) pullRequest.withIssue(PR_ISSUE_KEY, RULE_KEY, "msg", "author", "file/path", "OPEN", "", ISSUE_INTRODUCTION_DATE,
           new TextRange(1, 0, 3, 4))
           .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile\nfive\nlines")));
         return project.withBranch("branchName",
           branch -> {
-            branch.withIssue(ISSUE_KEY, RULE_KEY, "msg", "author", "file/path", "OPEN", "", "2023-05-13T17:55:39+0202",
+            branch.withIssue(ISSUE_KEY, RULE_KEY, "msg", "author", "file/path", "OPEN", "", ISSUE_INTRODUCTION_DATE,
               new TextRange(1, 0, 3, 4));
-            branch.withIssue(FILE_LEVEL_ISSUE_KEY, RULE_KEY, "msg", "author", "file/path", "OPEN", "", "2023-05-13T17:55:39+0202",
+            branch.withIssue(FILE_LEVEL_ISSUE_KEY, RULE_KEY, "msg", "author", "file/path", "OPEN", "", ISSUE_INTRODUCTION_DATE,
               new TextRange(0, 0, 0, 0));
             return branch.withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile\nfive\nlines"));
           });
@@ -127,7 +130,7 @@ class ShowIssueMediumTests {
     assertThat(showIssueParams.getMessage()).isEqualTo("msg");
     assertThat(showIssueParams.getConfigScopeId()).isEqualTo(configScopeId);
     assertThat(showIssueParams.getRuleKey()).isEqualTo("ruleKey");
-    assertThat(showIssueParams.getCreationDate()).isEqualTo("2023-05-13T17:55:39+0202");
+    assertThat(showIssueParams.getCreationDate()).isEqualTo("2023-12-25T12:30:35+0000");
     assertThat(showIssueParams.getTextRange()).extracting(TextRangeDto::getStartLine, TextRangeDto::getStartLineOffset,
         TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
       .contains(1, 0, 3, 4);
@@ -159,7 +162,7 @@ class ShowIssueMediumTests {
     assertThat(showIssueParams.getMessage()).isEqualTo("msg");
     assertThat(showIssueParams.getConfigScopeId()).isEqualTo(configScopeId);
     assertThat(showIssueParams.getRuleKey()).isEqualTo("ruleKey");
-    assertThat(showIssueParams.getCreationDate()).isEqualTo("2023-05-13T17:55:39+0202");
+    assertThat(showIssueParams.getCreationDate()).isEqualTo("2023-12-25T12:30:35+0000");
     assertThat(showIssueParams.getTextRange()).extracting(TextRangeDto::getStartLine, TextRangeDto::getStartLineOffset,
         TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
       .contains(1, 0, 3, 4);
@@ -192,7 +195,7 @@ class ShowIssueMediumTests {
     assertThat(showIssueParams.getMessage()).isEqualTo("msg");
     assertThat(showIssueParams.getConfigScopeId()).isEqualTo(configScopeId);
     assertThat(showIssueParams.getRuleKey()).isEqualTo("ruleKey");
-    assertThat(showIssueParams.getCreationDate()).isEqualTo("2023-05-13T17:55:39+0202");
+    assertThat(showIssueParams.getCreationDate()).isEqualTo("2023-12-25T12:30:35+0000");
     assertThat(showIssueParams.getTextRange()).extracting(TextRangeDto::getStartLine, TextRangeDto::getStartLineOffset,
         TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
       .contains(0, 0, 0, 0);

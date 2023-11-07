@@ -25,17 +25,13 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import mediumtest.fixtures.TestPlugin;
 import org.apache.commons.io.FileUtils;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
-import testutils.PluginLocator;
 
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
-import static testutils.PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR;
-import static testutils.PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR_HASH;
-import static testutils.PluginLocator.SONAR_JAVA_PLUGIN_JAR;
-import static testutils.PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH;
 
 public class StorageFixture {
   public static StorageBuilder newStorage(String connectionId) {
@@ -81,16 +77,20 @@ public class StorageFixture {
       return this;
     }
 
-    public StorageBuilder withJSPlugin() {
-      return withPlugin(PluginLocator.getJavaScriptPluginPath(), SONAR_JAVASCRIPT_PLUGIN_JAR, SONAR_JAVASCRIPT_PLUGIN_JAR_HASH, "javascript");
+    public StorageBuilder withPlugins(TestPlugin... plugins) {
+      var builder = this;
+      for (TestPlugin plugin : plugins) {
+        builder = builder.withPlugin(plugin);
+      }
+      return builder;
     }
 
-    public StorageBuilder withJavaPlugin() {
-      return withPlugin(PluginLocator.getJavaPluginPath(), SONAR_JAVA_PLUGIN_JAR, SONAR_JAVA_PLUGIN_JAR_HASH, "java");
+    public StorageBuilder withPlugin(TestPlugin plugin) {
+      return withPlugin(plugin.getPluginKey(), plugin.getPath(), plugin.getHash());
     }
 
-    private StorageBuilder withPlugin(Path path, String jarName, String hash, String key) {
-      plugins.add(new Plugin(path, jarName, hash, key));
+    public StorageBuilder withPlugin(String key, Path jarPath, String hash) {
+      plugins.add(new Plugin(jarPath, jarPath.getFileName().toString(), hash, key));
       return this;
     }
 

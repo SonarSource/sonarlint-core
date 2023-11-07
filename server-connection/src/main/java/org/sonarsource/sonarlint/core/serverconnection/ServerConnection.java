@@ -100,8 +100,18 @@ public class ServerConnection {
   }
 
   public SynchronizationResult sync(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, ProgressMonitor monitor) {
-    var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
+    return sync(new ServerApi(new ServerApiHelper(endpoint, client)), projectKeys, monitor);
+  }
 
+  public boolean sync(ServerApi serverApi) {
+    return storageSynchronizer.synchronize(serverApi);
+  }
+
+  public void sync(ServerApi serverApi, String projectKey) {
+    storageSynchronizer.synchronize(serverApi, projectKey);
+  }
+
+  public SynchronizationResult sync(ServerApi serverApi, Set<String> projectKeys, ProgressMonitor monitor) {
     return storageSynchronizer.synchronize(serverApi, projectKeys, monitor);
   }
 
@@ -235,6 +245,16 @@ public class ServerConnection {
       issuesUpdater.syncTaints(serverApi, projectKey, branchName, enabledLanguagesToSync);
     } else {
       LOG.debug("Incremental taint issue sync is not supported. Skipping.");
+    }
+  }
+
+  public void updateServerTaintIssuesForProject(ServerApi serverApi, String projectKey, String branchName) {
+    var serverVersion = readOrSynchronizeServerVersion(serverApi);
+    if (IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
+      LOG.info("[SYNC] Synchronizing taint issues for project '{}' on branch '{}'", projectKey, branchName);
+      issuesUpdater.syncTaints(serverApi, projectKey, branchName, enabledLanguagesToSync);
+    } else {
+      issuesUpdater.downloadProjectTaints(serverApi, projectKey, branchName);
     }
   }
 
