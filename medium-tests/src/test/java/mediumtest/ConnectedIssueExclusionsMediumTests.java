@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import mediumtest.fixtures.TestPlugin;
 import mediumtest.fixtures.storage.ProjectStorageFixture;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterAll;
@@ -67,7 +68,7 @@ class ConnectedIssueExclusionsMediumTests {
   @BeforeAll
   static void prepare(@TempDir Path slHome) throws Exception {
     var storage = newStorage(SERVER_ID)
-      .withJavaPlugin()
+      .withPlugin(TestPlugin.JAVA)
       .withProject("test-project")
       .withProject(JAVA_MODULE_KEY, project -> project
         .withRuleSet("java", ruleSet -> ruleSet

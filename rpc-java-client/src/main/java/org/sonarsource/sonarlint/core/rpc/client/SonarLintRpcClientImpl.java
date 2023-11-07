@@ -43,6 +43,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServer
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListAllFilePathsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListAllFilePathsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.CheckServerTrustedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.CheckServerTrustedResponse;
@@ -55,6 +57,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidUpdatePluginsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
@@ -217,6 +220,16 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   @Override
   public void didChangeMatchedSonarProjectBranch(DidChangeMatchedSonarProjectBranchParams params) {
     notify(() -> delegate.didChangeMatchedSonarProjectBranch(params));
+  }
+
+  @Override
+  public void didUpdatePlugins(DidUpdatePluginsParams params) {
+    notify(() -> delegate.didUpdatePlugins(params));
+  }
+
+  @Override
+  public CompletableFuture<ListAllFilePathsResponse> listAllFilePaths(ListAllFilePathsParams params) {
+    return requestAsync(cancelChecker -> delegate.listAllFilePaths(params));
   }
 
   private class CancelCheckerWrapper implements CancelChecker {

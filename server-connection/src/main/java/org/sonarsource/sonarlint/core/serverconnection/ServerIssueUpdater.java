@@ -66,7 +66,6 @@ public class ServerIssueUpdater {
       result.getQueryTimestamp(), enabledLanguages);
   }
 
-
   public void syncTaints(ServerApi serverApi, String projectKey, String branchName, Set<Language> enabledLanguages) {
     var serverIssueStore = storage.project(projectKey).findings();
 
@@ -75,8 +74,7 @@ public class ServerIssueUpdater {
     lastSync = computeLastSync(enabledLanguages, lastSync, storage.project(projectKey).findings().getLastTaintEnabledLanguages(branchName));
 
     var result = taintIssueDownloader.downloadTaintFromPull(serverApi, projectKey, branchName, lastSync);
-    serverIssueStore.mergeTaintIssues(branchName, result.getChangedTaintIssues(), result.getClosedIssueKeys(), result.getQueryTimestamp()
-      , enabledLanguages);
+    serverIssueStore.mergeTaintIssues(branchName, result.getChangedTaintIssues(), result.getClosedIssueKeys(), result.getQueryTimestamp(), enabledLanguages);
   }
 
   public void updateFileIssues(ServerApi serverApi, ProjectBinding projectBinding, String ideFilePath, String branchName, boolean isSonarCloud,
@@ -124,5 +122,16 @@ public class ServerIssueUpdater {
       LOG.debug("Skip downloading file taint issues on SonarQube " + IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL + "+");
     }
 
+  }
+
+  public void downloadProjectTaints(ServerApi serverApi, String projectKey, String branchName) {
+    List<ServerTaintIssue> taintIssues;
+    try {
+      taintIssues = new ArrayList<>(taintIssueDownloader.downloadTaintFromIssueSearch(serverApi, projectKey, branchName, new ProgressMonitor(null)));
+    } catch (Exception e) {
+      // null as cause so that it doesn't get wrapped
+      throw new DownloadException("Failed to update file taint vulnerabilities: " + e.getMessage(), null);
+    }
+    storage.project(projectKey).findings().replaceAllTaintsOfBranch(branchName, taintIssues);
   }
 }
