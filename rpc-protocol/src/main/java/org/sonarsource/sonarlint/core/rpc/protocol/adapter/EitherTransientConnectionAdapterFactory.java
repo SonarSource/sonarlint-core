@@ -30,6 +30,8 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
 
+import static java.util.function.Predicate.not;
+
 public class EitherTransientConnectionAdapterFactory implements TypeAdapterFactory {
 
   private static final TypeToken<Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto>> ELEMENT_TYPE = new TypeToken<>() {
@@ -38,8 +40,8 @@ public class EitherTransientConnectionAdapterFactory implements TypeAdapterFacto
   @SuppressWarnings("unchecked")
   @Override
   public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-    Predicate<JsonElement> leftChecker = new EitherTypeAdapter.PropertyChecker("serverUrl");
-    Predicate<JsonElement> rightChecker = new EitherTypeAdapter.PropertyChecker("organization");
-    return (TypeAdapter<T>) new EitherTypeAdapter<>(gson, ELEMENT_TYPE, leftChecker, rightChecker);
+    Predicate<JsonElement> sqChecker = new EitherTypeAdapter.PropertyChecker("serverUrl");
+    Predicate<JsonElement> scChecker = not(sqChecker);
+    return (TypeAdapter<T>) new EitherTypeAdapter<>(gson, ELEMENT_TYPE, sqChecker, scChecker);
   }
 }
