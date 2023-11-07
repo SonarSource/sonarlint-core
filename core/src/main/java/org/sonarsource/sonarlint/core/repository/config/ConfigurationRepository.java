@@ -92,7 +92,7 @@ public class ConfigurationRepository {
 
   public Binding getEffectiveBindingOrThrow(String configScopeId) {
     return getEffectiveBinding(configScopeId).orElseThrow(() -> {
-      ResponseError error = new ResponseError(BackendErrorCode.CONFIG_SCOPE_NOT_BOUND, "No binding for config scope '" + configScopeId + "'", configScopeId);
+      var error = new ResponseError(BackendErrorCode.CONFIG_SCOPE_NOT_BOUND, "No binding for config scope '" + configScopeId + "'", configScopeId);
       throw new ResponseErrorException(error);
     });
   }
@@ -117,6 +117,16 @@ public class ConfigurationRepository {
   @CheckForNull
   public ConfigurationScope getConfigurationScope(String configScopeId) {
     return configScopePerId.get(configScopeId);
+  }
+
+  @CheckForNull
+  public BoundScope getBoundScope(String configScopeId) {
+    var bindingConfiguration = bindingPerConfigScopeId.get(configScopeId);
+    if (bindingConfiguration != null && bindingConfiguration.isBound()) {
+      return new BoundScope(configScopeId, requireNonNull(bindingConfiguration.getConnectionId()),
+        requireNonNull(bindingConfiguration.getSonarProjectKey()));
+    }
+    return null;
   }
 
   public List<ConfigurationScope> getBoundScopesByConnection(String connectionId, String projectKey) {

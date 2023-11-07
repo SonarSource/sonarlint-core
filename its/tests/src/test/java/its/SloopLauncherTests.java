@@ -52,6 +52,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServer
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListAllFilePathsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListAllFilePathsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.ProxyDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesParams;
@@ -61,6 +63,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidUpdatePluginsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
@@ -98,7 +101,7 @@ class SloopLauncherTests {
   @Test
   void test_all_rules_returns() throws Exception {
     var clientInfo = new ClientInfoDto("clientName", "integrationTests", "SonarLint ITs");
-    var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false);
+    var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false);
 
     server.initialize(new InitializeParams(clientInfo, featureFlags, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
       Set.of(PluginLocator.getGoPluginPath().toAbsolutePath()), Collections.emptyMap(), Set.of(GO), Collections.emptySet(), Collections.emptyList(),
@@ -214,6 +217,16 @@ class SloopLauncherTests {
     @Override
     public void didChangeMatchedSonarProjectBranch(DidChangeMatchedSonarProjectBranchParams params) {
 
+    }
+
+    @Override
+    public void didUpdatePlugins(DidUpdatePluginsParams params) {
+
+    }
+
+    @Override
+    public ListAllFilePathsResponse listAllFilePaths(ListAllFilePathsParams params) {
+      return null;
     }
   }
 }

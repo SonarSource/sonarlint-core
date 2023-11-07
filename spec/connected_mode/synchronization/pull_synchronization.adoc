@@ -1,0 +1,63 @@
+[#synchronization]
+= Synchronization
+
+== Overview
+
+Pull synchronization is the mechanism with which SonarLint fetches data from SonarCloud/SonarQube and store it locally for later use.
+
+== Triggers
+
+Pull synchronization is triggered:
+
+* when a bound xref:../glossary.adoc#configuration_scope[configuration scope] is added
+* when binding or re-binding a xref:../glossary.adoc#configuration_scope[configuration scope]
+* when a xref:../glossary.adoc#connection_config[connection configuration] is added and has scopes bound to it (could be the case after fixing inconsistencies in some clients)
+* periodically (every hour)
+
+In all cases, synchronization is necessary because either:
+
+* the local storage does not exist
+* it contains data for a previously configured binding
+* it is stale.
+
+A lighter version of the synchronization, involving only the last "Branch-specific synchronization" step can also be triggered separately:
+
+* when the VCS branch changes on the client side, and leads to a different branch match
+
+== Algorithm
+
+There are several sub-steps during pull synchronization. For each xref:../glossary.adoc#configuration_scope[configuration scope] needing synchronization:
+
+=== Connection synchronization
+
+. Fetch and store information from the bound connection (no specific project at this step)
+.. Fetch server status and version. Stop if the server is not UP. Store the version in local storage
+.. Fetch plugins. Store only plugins that are useful
+
+=== Project synchronization
+
+. Fetch project specific information (from project key configured in the binding)
+.. Calculate paths difference between local and remote project
+... Fetch all component keys from the server project
+... Request client the list of file paths in the configuration scope
+... Match local and remote paths to calculate the project paths difference. Store them in memory
+.. Fetch and store the ruleset active on the server project
+.. Fetch and store the settings applied on the server project
+.. Fetch and store the new code definition set on the server project
+.. Fetch and store server project branches
+
+=== Branch matching
+
+After this previous step occurred, the list of server project branches is known. On the other hand, the client knows which branch is active on the VCS.
+
+Branch matching is the process of selecting the closest server branch that matches locally checked out branch.
+
+The matching is made by the client on request from the backend.
+
+=== Branch-specific synchronization
+
+When the matching branch is known, the last step of the synchronization can occur:
+
+. Fetch and store issues
+. Fetch and store taint vulnerabilities (if supported)
+. Fetch and store Security Hotspots
