@@ -23,11 +23,16 @@ import java.util.List;
 import org.sonarsource.sonarlint.core.clientapi.common.FlowDto;
 import org.sonarsource.sonarlint.core.clientapi.common.TextRangeDto;
 
+import javax.annotation.Nullable;
+
 public class ShowIssueParams {
   private final String configScopeId;
   private final String issueKey;
   private final String ruleKey;
   private final String serverRelativeFilePath;
+  private final String branch;
+  @Nullable
+  private final String pullRequest;
   private final String message;
   private final String creationDate;
   private final String codeSnippet;
@@ -35,13 +40,16 @@ public class ShowIssueParams {
   private final List<FlowDto> flows;
   private final TextRangeDto textRange;
 
-  public ShowIssueParams(TextRangeDto textRange, String configScopeId, String ruleKey, String issueKey, String serverRelativeFilePath, String message,
-    String creationDate, String codeSnippet, boolean isTaint, List<FlowDto> flows) {
+  public ShowIssueParams(TextRangeDto textRange, String configScopeId, String ruleKey, String issueKey,
+    String serverRelativeFilePath, String branch, @Nullable String pullRequest, String message, String creationDate,
+    String codeSnippet, boolean isTaint, List<FlowDto> flows) {
     this.configScopeId = configScopeId;
     this.issueKey = issueKey;
     this.ruleKey = ruleKey;
     this.textRange = textRange;
     this.serverRelativeFilePath = serverRelativeFilePath;
+    this.branch = branch;
+    this.pullRequest = pullRequest;
     this.message = message;
     this.creationDate = creationDate;
     this.codeSnippet = codeSnippet;
@@ -71,6 +79,15 @@ public class ShowIssueParams {
 
   public String getServerRelativeFilePath() {
     return serverRelativeFilePath;
+  }
+
+  public String getBranch() {
+    return branch;
+  }
+
+  @Nullable
+  public String getPullRequest() {
+    return pullRequest;
   }
 
   public String getCodeSnippet() {
