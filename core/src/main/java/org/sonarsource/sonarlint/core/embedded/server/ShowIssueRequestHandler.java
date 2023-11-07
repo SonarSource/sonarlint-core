@@ -112,7 +112,8 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
     }
   }
 
-  private void showIssueForConnection(String connectionId, String projectKey, String issueKey, String branch, String pullRequest) {
+  private void showIssueForConnection(String connectionId, String projectKey, String issueKey, String branch,
+    @Nullable String pullRequest) {
     var scopes = configurationService.getConfigScopesWithBindingConfiguredTo(connectionId, projectKey);
     if (scopes.isEmpty()) {
       assistBinding(connectionId, projectKey)
@@ -123,7 +124,8 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
     }
   }
 
-  private void showIssueForScope(String connectionId, String configScopeId, String issueKey, String projectKey, String branch, String pullRequest) {
+  private void showIssueForScope(String connectionId, String configScopeId, String issueKey, String projectKey,
+    String branch, @Nullable String pullRequest) {
     tryFetchIssue(connectionId, issueKey, projectKey, branch, pullRequest)
       .ifPresentOrElse(
         issueDetails -> client.showIssue(getShowIssueParams(issueDetails, connectionId, configScopeId, branch, pullRequest)),
@@ -131,7 +133,8 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
   }
 
   @VisibleForTesting
-  ShowIssueParams getShowIssueParams(IssueApi.ServerIssueDetails issueDetails, String connectionId, String configScopeId, String branch, String pullRequest) {
+  ShowIssueParams getShowIssueParams(IssueApi.ServerIssueDetails issueDetails, String connectionId,
+    String configScopeId, String branch, @Nullable String pullRequest) {
     var flowLocations = issueDetails.flowList.stream().map(flow -> {
       var locations = flow.getLocationsList().stream().map(location -> {
         var locationComponent =
@@ -152,8 +155,9 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
 
     var isTaint = isIssueTaint(issueDetails.ruleKey);
 
-    return new ShowIssueParams(textRangeDto, configScopeId, issueDetails.ruleKey, issueDetails.key, issueDetails.path, issueDetails.message,
-      issueDetails.creationDate, issueDetails.codeSnippet, isTaint, flowLocations);
+    return new ShowIssueParams(textRangeDto, configScopeId, issueDetails.ruleKey, issueDetails.key, issueDetails.path,
+      branch, pullRequest, issueDetails.message, issueDetails.creationDate, issueDetails.codeSnippet, isTaint,
+      flowLocations);
   }
 
   static boolean isIssueTaint(String ruleKey) {

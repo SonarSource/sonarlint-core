@@ -126,6 +126,8 @@ class ShowIssueMediumTests {
         TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
       .contains(1, 0, 3, 4);
     assertThat(showIssueParams.getCodeSnippet()).isEqualTo("source\ncode\nfile");
+    assertThat(showIssueParams.getBranch()).isEqualTo(BRANCH_NAME);
+    assertThat(showIssueParams.getPullRequest()).isNull();
   }
 
   @Test
@@ -156,6 +158,8 @@ class ShowIssueMediumTests {
         TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
       .contains(1, 0, 3, 4);
     assertThat(showIssueParams.getCodeSnippet()).isEqualTo("source\ncode\nfile");
+    assertThat(showIssueParams.getBranch()).isEqualTo(BRANCH_NAME);
+    assertThat(showIssueParams.getPullRequest()).isEqualTo("1234");
   }
 
   @Test
