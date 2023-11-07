@@ -639,8 +639,8 @@ public class SonarLintBackendFixture {
       return CompletableFutures.computeAsync(cancelChecker -> new GetCredentialsResponse(credentialsByConnectionId.get(params.getConnectionId())));
     }
 
-    public void setToken(String connectionId, String secondToken) {
-      credentialsByConnectionId.put(connectionId, Either.forLeft(new TokenDto(secondToken)));
+    public void setToken(String connectionId, String token) {
+      credentialsByConnectionId.put(connectionId, Either.forLeft(new TokenDto(token)));
     }
 
     @Override
