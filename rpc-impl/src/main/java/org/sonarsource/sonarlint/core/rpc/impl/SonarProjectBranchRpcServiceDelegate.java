@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.DidChangeActiveSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.DidVcsRepositoryChangeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.GetMatchedSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.GetMatchedSonarProjectBranchResponse;
@@ -31,11 +30,6 @@ class SonarProjectBranchRpcServiceDelegate extends AbstractRpcServiceDelegate im
 
   public SonarProjectBranchRpcServiceDelegate(SonarLintRpcServerImpl server) {
     super(server);
-  }
-
-  @Override
-  public void didChangeActiveSonarProjectBranch(DidChangeActiveSonarProjectBranchParams params) {
-    notify(() -> getBean(SonarProjectBranchTrackingService.class).didChangeMatchedSonarProjectBranch(params), params.getConfigScopeId());
   }
 
   @Override

@@ -145,7 +145,7 @@ class TrackWithServerIssuesMediumTests {
   @Test
   void it_should_track_with_a_server_only_issue_when_fetching_from_legacy_server_requested() {
     server = ServerFixture.newSonarQubeServer("9.5").withProject("projectKey",
-        project -> project.withBranch("main", branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, "", new TextRange(1, 2, 3, 4))))
+        project -> project.withBranch("main", branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, Instant.now(), new TextRange(1, 2, 3, 4))))
       .start();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server)
@@ -167,7 +167,7 @@ class TrackWithServerIssuesMediumTests {
   @Test
   void it_should_download_all_issues_at_once_when_tracking_issues_from_more_than_10_files() {
     server = ServerFixture.newSonarQubeServer("9.5").withProject("projectKey",
-        project -> project.withBranch("main", branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, "", new TextRange(1, 2, 3, 4))))
+        project -> project.withBranch("main", branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, Instant.now(), new TextRange(1, 2, 3, 4))))
       .start();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage.withServerVersion("9.5"))

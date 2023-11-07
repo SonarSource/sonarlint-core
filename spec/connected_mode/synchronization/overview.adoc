@@ -1,0 +1,16 @@
+[#synchronization]
+= Synchronization
+
+== Overview
+
+SonarLint lets users bind their project to SonarCloud/SonarQube. This permits using the same parameters as configured on those products:
+
+* settings
+* ruleset
+* plugins
+* ...
+
+For connected mode to work in SonarLint, the base mechanism is the synchronization of those parameters, which consists in locally storing required data from the server. There are several ways to achieve that:
+
+* xref:../pull_synchronization.adoc[pull synchronization]. SonarLint explicitly and periodically pulls data from the server
+* live synchronization. Data is updated locally via events pushed from the server (using WebSockets for SonarCloud and Server Sent Events for SonarQube)

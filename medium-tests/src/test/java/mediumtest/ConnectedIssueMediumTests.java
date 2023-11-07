@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.SonarLintTestRpcServer;
+import mediumtest.fixtures.TestPlugin;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterAll;
@@ -85,8 +86,7 @@ class ConnectedIssueMediumTests {
   @BeforeAll
   static void prepare(@TempDir Path slHome) throws Exception {
     var storage = newStorage(SERVER_ID)
-      .withJSPlugin()
-      .withJavaPlugin()
+      .withPlugins(TestPlugin.JAVASCRIPT, TestPlugin.JAVA)
       .withProject("test-project")
       .withProject(JAVA_MODULE_KEY, project -> project
         .withRuleSet("java", ruleSet -> ruleSet

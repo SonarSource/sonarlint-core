@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.GetPathTranslationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesRpcService;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
@@ -102,7 +103,9 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    *
    * @param ideFilePaths List of relative paths of all file belonging to the project in the IDE
    * @since 3.10
+   * @deprecated use {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileRpcService#getPathTranslation(GetPathTranslationParams)}
    */
+  @Deprecated(since = "10.0")
   ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> ideFilePaths);
 
   /**
@@ -110,7 +113,9 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    *
    * @param projectKey
    * @return branches analyzed on the server for this project.
+   * @deprecated use {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.SonarProjectBranchRpcService}
    */
+  @Deprecated(since = "10.0")
   ProjectBranches getServerBranches(String projectKey);
 
   // REQUIRES SERVER TO BE REACHABLE
@@ -125,13 +130,19 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
   @Deprecated(since = "10.0")
   Map<String, ServerProject> downloadAllProjects(EndpointParams endpoint, HttpClient client, @Nullable ClientProgressMonitor monitor);
 
+  /**
+   * @deprecated synchronization is managed by the new backend
+   */
+  @Deprecated(since = "10.0")
   void sync(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, @Nullable ClientProgressMonitor monitor);
 
   /**
    * Update given project.
    *
    * @since 2.0
+   * @deprecated synchronization is managed by the new backend
    */
+  @Deprecated(since = "10.0")
   void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable ClientProgressMonitor monitor);
 
   /**
@@ -170,6 +181,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @param endpoint from which to download issues
    * @param projectKey   key of the project
    */
+  @Deprecated(since = "10.0")
   void syncServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor);
 
   /**
@@ -186,6 +198,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @param endpoint from which to download issues
    * @param projectKey   key of the project
    */
+  @Deprecated(since = "10.0")
   void syncServerHotspots(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor);
 
   /**

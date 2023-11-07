@@ -36,7 +36,6 @@ import org.sonarsource.sonarlint.core.event.MatchedSonarProjectBranchChangedEven
 import org.sonarsource.sonarlint.core.repository.branch.MatchedSonarProjectBranchRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.DidChangeActiveSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.DidVcsRepositoryChangeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.GetMatchedSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.GetMatchedSonarProjectBranchResponse;
@@ -61,23 +60,13 @@ public class SonarProjectBranchTrackingService {
   private final ExecutorService executorService;
 
   public SonarProjectBranchTrackingService(SonarLintRpcClient client, StorageService storageService, MatchedSonarProjectBranchRepository matchedSonarProjectBranchRepository,
-                                           ConfigurationRepository configurationRepository,
-                                           ApplicationEventPublisher applicationEventPublisher) {
+    ConfigurationRepository configurationRepository, ApplicationEventPublisher applicationEventPublisher) {
     this.client = client;
     this.storageService = storageService;
     this.matchedSonarProjectBranchRepository = matchedSonarProjectBranchRepository;
     this.configurationRepository = configurationRepository;
     this.applicationEventPublisher = applicationEventPublisher;
     this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-branch-matcher"));
-  }
-
-  public void didChangeMatchedSonarProjectBranch(DidChangeActiveSonarProjectBranchParams params) {
-    var newMatchedBranchName = params.getNewActiveBranchName();
-    var configScopeId = params.getConfigScopeId();
-    var previousBranchName = matchedSonarProjectBranchRepository.setMatchedBranchName(configScopeId, params.getNewActiveBranchName());
-    if (!newMatchedBranchName.equals(previousBranchName)) {
-      applicationEventPublisher.publishEvent(new MatchedSonarProjectBranchChangedEvent(configScopeId, newMatchedBranchName));
-    }
   }
 
   public Optional<String> getEffectiveMatchedSonarProjectBranch(String configurationScopeId) {
@@ -118,28 +107,29 @@ public class SonarProjectBranchTrackingService {
     executorService.submit(() -> matchSonarProjectBranch(configurationScopeId));
   }
 
-  // call this method when server branches changed during sync
-  private void matchSonarProjectBranch(String configurationScopeId) {
-    configurationRepository.getEffectiveBinding(configurationScopeId).ifPresent(binding -> {
-      var previousSonarProjectBranch = matchedSonarProjectBranchRepository.getMatchedBranch(configurationScopeId).orElse(null);
-      var branchesStorage = storageService.binding(binding).branches();
-      if (!branchesStorage.exists()) {
-        client.log(new LogParams(LogLevel.INFO, "Cannot match Sonar branch, storage is empty", configurationScopeId));
-        return;
-      }
-      var storedBranches = branchesStorage.read();
-      var sonarProjectBranches = new SonarProjectBranches(storedBranches.getMainBranchName(), storedBranches.getBranchNames());
-      var matchedSonarBranch = requestClientToMatchSonarProjectBranch(configurationScopeId, sonarProjectBranches);
-      if (matchedSonarBranch == null) {
-        matchedSonarBranch = sonarProjectBranches.getMainBranchName();
-      }
-      if (!matchedSonarBranch.equals(previousSonarProjectBranch)) {
-        matchedSonarProjectBranchRepository.setMatchedBranchName(configurationScopeId, matchedSonarBranch);
-        client.didChangeMatchedSonarProjectBranch(
-          new DidChangeMatchedSonarProjectBranchParams(configurationScopeId, matchedSonarBranch));
-        applicationEventPublisher.publishEvent(new MatchedSonarProjectBranchChangedEvent(configurationScopeId, matchedSonarBranch));
-      }
-    });
+  public void matchSonarProjectBranch(String configurationScopeId) {
+    configurationRepository.getEffectiveBinding(configurationScopeId)
+      .ifPresent(binding -> {
+        var previousSonarProjectBranch = matchedSonarProjectBranchRepository.getMatchedBranch(configurationScopeId).orElse(null);
+        var branchesStorage = storageService.binding(binding).branches();
+        if (!branchesStorage.exists()) {
+          matchedSonarProjectBranchRepository.clearMatchedBranch(configurationScopeId);
+          client.log(new LogParams(LogLevel.INFO, "Cannot match Sonar branch, storage is empty", configurationScopeId));
+          return;
+        }
+        var storedBranches = branchesStorage.read();
+        var sonarProjectBranches = new SonarProjectBranches(storedBranches.getMainBranchName(), storedBranches.getBranchNames());
+        var matchedSonarBranch = requestClientToMatchSonarProjectBranch(configurationScopeId, sonarProjectBranches);
+        if (matchedSonarBranch == null) {
+          matchedSonarBranch = sonarProjectBranches.getMainBranchName();
+        }
+        if (!matchedSonarBranch.equals(previousSonarProjectBranch)) {
+          matchedSonarProjectBranchRepository.setMatchedBranchName(configurationScopeId, matchedSonarBranch);
+          client.didChangeMatchedSonarProjectBranch(
+            new DidChangeMatchedSonarProjectBranchParams(configurationScopeId, matchedSonarBranch));
+          applicationEventPublisher.publishEvent(new MatchedSonarProjectBranchChangedEvent(configurationScopeId, matchedSonarBranch));
+        }
+      });
   }
 
   @CheckForNull

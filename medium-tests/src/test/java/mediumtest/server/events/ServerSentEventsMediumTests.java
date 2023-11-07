@@ -23,6 +23,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -36,6 +37,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
@@ -542,7 +544,7 @@ class ServerSentEventsMediumTests {
       serverWithTaintIssues = newSonarQubeServer("10.0")
         .withProject(projectKey,
           project -> project.withBranch(branchName,
-            branch -> branch.withTaintIssue("key1", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", "", new TextRange(1, 0, 3, 4))
+            branch -> branch.withTaintIssue("key1", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", Instant.now(), new TextRange(1, 0, 3, 4), RuleType.BUG)
               .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))))
         .start();
 
@@ -558,8 +560,8 @@ class ServerSentEventsMediumTests {
           "}]," +
           "\"userType\": \"BUG\"" +
           "}\n\n")
-          // Add a delay to ensure the auto-sync of the issue storage had been completed
-          .withFixedDelay(2000))
+            // Add a delay to ensure the auto-sync of the issue storage had been completed
+            .withFixedDelay(2000))
         .willSetStateTo("Event delivered"));
       // avoid later reconnection
       serverWithTaintIssues.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java,js")
