@@ -595,6 +595,21 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     }));
   }
 
+  @Override
+  public void replaceAllTaintsOfBranch(String branchName, List<ServerTaintIssue> taintIssues) {
+    var taintsByFile = taintIssues.stream().collect(Collectors.groupingBy(ServerTaintIssue::getFilePath));
+    timed(wroteMessage(taintIssues.size(), "taints"), () -> entityStore.executeInTransaction(txn -> {
+      var branch = getOrCreateBranch(branchName, txn);
+      deleteAllTaintsOfBranch(branch, taintsByFile.keySet());
+      txn.flush();
+      taintsByFile.forEach((filePath, fileIssues) -> {
+        var fileEntity = getOrCreateFile(branch, filePath, txn);
+        fileIssues.forEach(issue -> updateOrCreateTaintIssue(branch, fileEntity, issue, txn));
+        txn.flush();
+      });
+    }));
+  }
+
   private static Entity getOrCreateBranch(String branchName, StoreTransaction txn) {
     return findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
       .orElseGet(() -> {
