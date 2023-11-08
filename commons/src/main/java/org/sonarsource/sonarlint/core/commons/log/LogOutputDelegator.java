@@ -57,11 +57,16 @@ class LogOutputDelegator {
     }
 
     if (t != null) {
-      var stringWriter = new StringWriter();
-      var printWriter = new PrintWriter(stringWriter);
-      t.printStackTrace(printWriter);
-      log(stringWriter.toString(), level);
+      var stacktrace = stackTraceToString(t);
+      log(stacktrace, level);
     }
+  }
+
+  private static String stackTraceToString(Throwable t) {
+    var stringWriter = new StringWriter();
+    var printWriter = new PrintWriter(stringWriter);
+    t.printStackTrace(printWriter);
+    return stringWriter.toString();
   }
 
   void setTarget(@Nullable ClientLogOutput target) {
