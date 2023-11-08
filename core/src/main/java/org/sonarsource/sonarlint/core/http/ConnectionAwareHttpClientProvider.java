@@ -19,8 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.http;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -30,16 +34,20 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredenti
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
+import static org.sonarsource.sonarlint.core.commons.concurrent.ThreadFactories.threadWithNamePrefix;
+
 @Named
 @Singleton
 public class ConnectionAwareHttpClientProvider {
-  private final SonarLintLogger logger = SonarLintLogger.get();
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final SonarLintRpcClient client;
   private final HttpClientProvider httpClientProvider;
+  private final ExecutorService webSocketThreadPool;
 
   public ConnectionAwareHttpClientProvider(SonarLintRpcClient client, HttpClientProvider httpClientProvider) {
     this.client = client;
     this.httpClientProvider = httpClientProvider;
+    this.webSocketThreadPool = Executors.newCachedThreadPool(threadWithNamePrefix("sonarcloud-websocket-"));
   }
 
   public HttpClient getHttpClient() {
@@ -66,7 +74,7 @@ public class ConnectionAwareHttpClientProvider {
       // We are normally only supporting tokens for SonarCloud connections
       throw new IllegalStateException("Expected token for connection " + connectionId);
     }
-    return new WebSocketClient(credentials.get().getLeft().getToken());
+    return new WebSocketClient(credentials.get().getLeft().getToken(), webSocketThreadPool);
   }
 
   private Optional<Either<TokenDto, UsernamePasswordDto>> queryClientForConnectionCredentials(String connectionId) {
@@ -74,17 +82,24 @@ public class ConnectionAwareHttpClientProvider {
       var response = client.getCredentials(new GetCredentialsParams(connectionId)).get(1, TimeUnit.MINUTES);
       var credentials = response.getCredentials();
       if (credentials == null) {
-        logger.debug("No credentials for connection {}", connectionId);
+        LOG.debug("No credentials for connection {}", connectionId);
         return Optional.empty();
       } else {
         return Optional.of(credentials);
       }
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      logger.debug("Interrupted!", e);
+      LOG.debug("Interrupted!", e);
     } catch (Exception e) {
-      logger.error("Error getting credentials for connection {}", connectionId, e);
+      LOG.error("Error getting credentials for connection {}", connectionId, e);
     }
     return Optional.empty();
+  }
+
+  @PreDestroy
+  public void close() {
+    if (!MoreExecutors.shutdownAndAwaitTermination(webSocketThreadPool, 1, TimeUnit.SECONDS)) {
+      LOG.warn("Unable to stop web socket executor service in a timely manner");
+    }
   }
 }
