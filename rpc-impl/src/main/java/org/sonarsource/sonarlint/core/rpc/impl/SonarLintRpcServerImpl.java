@@ -81,7 +81,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
       .setExecutorService(messageReaderExecutor)
       .configureGson(gsonBuilder -> gsonBuilder
         .registerTypeHierarchyAdapter(Path.class, new PathTypeAdapter()))
-      .wrapMessages(m -> new SingleThreadedMessageConsumer(m, messageWriterExecutor))
+      .wrapMessages(m -> new SingleThreadedMessageConsumer(m, messageWriterExecutor, System.err::println))
       .create();
 
     this.client = launcher.getRemoteProxy();

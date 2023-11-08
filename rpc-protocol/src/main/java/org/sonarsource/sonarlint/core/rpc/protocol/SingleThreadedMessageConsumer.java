@@ -19,8 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Consumer;
 import org.eclipse.lsp4j.jsonrpc.JsonRpcException;
 import org.eclipse.lsp4j.jsonrpc.MessageConsumer;
 import org.eclipse.lsp4j.jsonrpc.MessageIssueException;
@@ -34,7 +37,7 @@ public class SingleThreadedMessageConsumer implements MessageConsumer {
 
   private final LinkedBlockingQueue<Message> queue = new LinkedBlockingQueue<>();
 
-  public SingleThreadedMessageConsumer(MessageConsumer syncMessageConsumer, ExecutorService threadPool) {
+  public SingleThreadedMessageConsumer(MessageConsumer syncMessageConsumer, ExecutorService threadPool, Consumer<String> errorLogger) {
     threadPool.submit(() -> {
       while (true) {
         Message message;
@@ -47,11 +50,17 @@ public class SingleThreadedMessageConsumer implements MessageConsumer {
         try {
           syncMessageConsumer.consume(message);
         } catch (Exception e) {
-          System.err.println("Error while consuming message");
-          e.printStackTrace(System.err);
+          errorLogger.accept("Error while consuming message\n" + stackTraceToString(e));
         }
       }
     });
+  }
+
+  private static String stackTraceToString(Throwable t) {
+    var stringWriter = new StringWriter();
+    var printWriter = new PrintWriter(stringWriter);
+    t.printStackTrace(printWriter);
+    return stringWriter.toString();
   }
 
   @Override
