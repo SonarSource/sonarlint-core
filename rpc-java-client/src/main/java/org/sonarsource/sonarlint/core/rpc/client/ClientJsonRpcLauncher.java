@@ -33,6 +33,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SingleThreadedMessageConsumer
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.PathTypeAdapter;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 
 public class ClientJsonRpcLauncher implements Closeable {
 
@@ -61,8 +63,7 @@ public class ClientJsonRpcLauncher implements Closeable {
       .configureGson(gsonBuilder -> gsonBuilder
         .registerTypeHierarchyAdapter(Path.class, new PathTypeAdapter())
       )
-      .wrapMessages(m -> new SingleThreadedMessageConsumer(m, messageWriterExecutor))
-      //.traceMessages(new PrintWriter(System.out, true))
+      .wrapMessages(m -> new SingleThreadedMessageConsumer(m, messageWriterExecutor, msg -> client.log(new LogParams(LogLevel.ERROR, msg, null))))
       .create();
 
     this.serverProxy = clientLauncher.getRemoteProxy();
