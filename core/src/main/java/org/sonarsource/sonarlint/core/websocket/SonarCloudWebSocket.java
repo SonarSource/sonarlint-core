@@ -32,6 +32,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -75,13 +77,21 @@ public class SonarCloudWebSocket {
   private CompletableFuture<WebSocket> wsFuture;
   private final History history = new History();
   private final ScheduledExecutorService sonarCloudWebSocketScheduler = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "sonarcloud-websocket-scheduled-jobs"));
-  private WebSocket ws;
+
+  private final AtomicBoolean closingInitiated = new AtomicBoolean(false);
+  private final CompletableFuture<?> webSocketInputClosed = new CompletableFuture<>();
 
   public static SonarCloudWebSocket create(WebSocketClient webSocketClient, Consumer<ServerEvent> serverEventConsumer, Runnable connectionEndedRunnable) {
     var webSocket = new SonarCloudWebSocket();
     var currentThreadOutput = SonarLintLogger.getTargetForCopy();
     LOG.info("Creating websocket connection to " + getUrl());
-    webSocket.wsFuture = webSocketClient.createWebSocketConnection(getUrl(), rawEvent -> webSocket.handleRawMessage(rawEvent, serverEventConsumer), connectionEndedRunnable);
+    webSocket.wsFuture = webSocketClient.createWebSocketConnection(getUrl(), rawEvent -> webSocket.handleRawMessage(rawEvent, serverEventConsumer), () -> {
+      webSocket.webSocketInputClosed.complete(null);
+      // Don't call the callback if the closing has been triggered by the client
+      if (!webSocket.closingInitiated.get()) {
+        connectionEndedRunnable.run();
+      }
+    });
     webSocket.wsFuture.thenAccept(ws -> {
       SonarLintLogger.setTarget(currentThreadOutput);
       webSocket.sonarCloudWebSocketScheduler.scheduleAtFixedRate(webSocket::cleanUpMessageHistory, 0, 5, TimeUnit.MINUTES);
@@ -124,7 +134,7 @@ public class SonarCloudWebSocket {
 
     var jsonString = gson.toJson(payload);
     this.wsFuture.thenAccept(ws -> {
-      SonarLintLogger.get().debug("sent '" + messageType + "' for project '" + projectKey + "'");
+      LOG.debug("sent '" + messageType + "' for project '" + projectKey + "'");
       ws.sendText(jsonString, true);
     });
   }
@@ -138,9 +148,9 @@ public class SonarCloudWebSocket {
     try {
       var wsEvent = gson.fromJson(message, WebSocketEvent.class);
       parse(wsEvent).ifPresent(serverEventConsumer);
-      SonarLintLogger.get().debug("Server event received: " + message, ClientLogOutput.Level.DEBUG);
+      LOG.debug("Server event received: " + message, ClientLogOutput.Level.DEBUG);
     } catch (Exception e) {
-      SonarLintLogger.get().error("Malformed event received: " + message, e);
+      LOG.error("Malformed event received: " + message, e);
     }
   }
 
@@ -153,7 +163,7 @@ public class SonarCloudWebSocket {
     if (parsersByType.containsKey(eventType)) {
       return tryParsing(parsersByType.get(eventType), event);
     } else {
-      SonarLintLogger.get().error("Unknown '{}' event type ", eventType);
+      LOG.error("Unknown '{}' event type ", eventType);
       return Optional.empty();
     }
   }
@@ -162,37 +172,51 @@ public class SonarCloudWebSocket {
     try {
       return eventParser.parse(event.data.toString());
     } catch (Exception e) {
-      SonarLintLogger.get().error("Cannot parse '{}' received event", event.event, e);
+      LOG.error("Cannot parse '{}' received event", event.event, e);
       return Optional.empty();
     }
   }
 
   public void close() {
+    LOG.debug("Closing SonarCloud WebSocket connection...");
+    this.closingInitiated.set(true);
     if (this.wsFuture != null) {
       // output could already be closed if an error occurred
-      this.wsFuture.thenAccept(SonarCloudWebSocket::close);
+      try {
+        this.wsFuture.thenAccept(ws -> close(ws, this.webSocketInputClosed)).get();
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      } catch (ExecutionException e) {
+        LOG.error("Cannot close the WebSocket output", e);
+      }
       this.wsFuture = null;
     }
     if (!MoreExecutors.shutdownAndAwaitTermination(sonarCloudWebSocketScheduler, 1, TimeUnit.SECONDS)) {
-      SonarLintLogger.get().warn("Unable to stop SonarCloud WebSocket job scheduler in a timely manner");
+      LOG.warn("Unable to stop SonarCloud WebSocket job scheduler in a timely manner");
     }
   }
 
-  private static void close(WebSocket ws) {
+  private static void close(WebSocket ws, CompletableFuture<?> webSocketInputClosed) {
     if (!ws.isOutputClosed()) {
       try {
         // close output
         ws.sendClose(WebSocket.NORMAL_CLOSURE, "").get();
+        LOG.debug("Waiting for SonarCloud WebSocket input to be closed...");
+        webSocketInputClosed.get(10, TimeUnit.SECONDS);
+        LOG.debug("SonarCloud WebSocket closed");
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       } catch (ExecutionException e) {
-        SonarLintLogger.get().error("Cannot close the WebSocket output", e);
+        LOG.error("Cannot close the WebSocket output", e);
+      } catch (TimeoutException e) {
+        LOG.error("The WebSocket input did not close in a timely manner", e);
+        if (!ws.isInputClosed()) {
+          // close input
+          ws.abort();
+        }
       }
     }
-    if (!ws.isInputClosed()) {
-      // close input
-      ws.abort();
-    }
+
   }
 
   public boolean isOpen() {

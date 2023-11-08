@@ -19,22 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.http;
 
-import com.google.common.util.concurrent.MoreExecutors;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-
-import static org.sonarsource.sonarlint.core.commons.concurrent.ThreadFactories.threadWithNamePrefix;
 
 public class WebSocketClient {
 
@@ -42,12 +36,10 @@ public class WebSocketClient {
 
   @Nullable
   private final String token;
-  private final ExecutorService executor;
   private final HttpClient httpClient;
 
-  WebSocketClient(@Nullable String token) {
+  WebSocketClient(@Nullable String token, ExecutorService executor) {
     this.token = token;
-    this.executor = Executors.newCachedThreadPool(threadWithNamePrefix("sonarcloud-websocket-"));
     this.httpClient = HttpClient
       .newBuilder()
       // Don't use the default thread pool as it won't allow inheriting thread local variables
@@ -61,17 +53,17 @@ public class WebSocketClient {
     return httpClient
       .newWebSocketBuilder()
       .header("Authorization", "Bearer " + token)
-      .buildAsync(URI.create(url), new MessageConsummerWrapper(messageConsumer, onClosedRunnable, currentThreadOutput));
+      .buildAsync(URI.create(url), new MessageConsumerWrapper(messageConsumer, onClosedRunnable, currentThreadOutput));
   }
 
-  private class MessageConsummerWrapper implements WebSocket.Listener {
+  private static class MessageConsumerWrapper implements WebSocket.Listener {
     private final Consumer<String> messageConsumer;
-    private final Runnable onClosedRunnable;
+    private final Runnable onWebSocketInputClosedRunnable;
     private final ClientLogOutput currentThreadOutput;
 
-    public MessageConsummerWrapper(Consumer<String> messageConsumer, Runnable onClosedRunnable, ClientLogOutput currentThreadOutput) {
+    public MessageConsumerWrapper(Consumer<String> messageConsumer, Runnable onWebSocketInputClosedRunnable, @Nullable ClientLogOutput currentThreadOutput) {
       this.messageConsumer = messageConsumer;
-      this.onClosedRunnable = onClosedRunnable;
+      this.onWebSocketInputClosedRunnable = onWebSocketInputClosedRunnable;
       this.currentThreadOutput = currentThreadOutput;
     }
 
@@ -79,7 +71,8 @@ public class WebSocketClient {
     public void onOpen(WebSocket webSocket) {
       // HttpClient is calling downstream completablefutures on the CF common pool so the thread local variables are
       // not necessarily inherited
-      // See https://github.com/openjdk/jdk/blob/744e0893100d402b2b51762d57bcc2e99ab7fdcc/src/java.net.http/share/classes/jdk/internal/net/http/HttpClientImpl.java#L1069
+      // See
+      // https://github.com/openjdk/jdk/blob/744e0893100d402b2b51762d57bcc2e99ab7fdcc/src/java.net.http/share/classes/jdk/internal/net/http/HttpClientImpl.java#L1069
       SonarLintLogger.setTarget(currentThreadOutput);
       LOG.debug("WebSocket opened");
       WebSocket.Listener.super.onOpen(webSocket);
@@ -96,38 +89,16 @@ public class WebSocketClient {
     public void onError(WebSocket webSocket, Throwable error) {
       SonarLintLogger.setTarget(currentThreadOutput);
       LOG.error("Error occurred on the WebSocket", error);
-      finalizeWebSocket();
+      onWebSocketInputClosedRunnable.run();
     }
 
     @Override
     public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
       SonarLintLogger.setTarget(currentThreadOutput);
       LOG.debug("WebSocket closed, status=" + statusCode + ", reason=" + reason);
-      // ack the close
-      try {
-        webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "").get();
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        // uncompleted future means the closing has been handled already (default is null)
-        return new CompletableFuture<>();
-      } catch (ExecutionException e) {
-        LOG.debug("Cannot ack WebSocket close");
-      }
-      finalizeWebSocket();
-      // uncompleted future means the closing has been handled already (default is null)
-      return new CompletableFuture<>();
-    }
-
-    private void finalizeWebSocket() {
-      try {
-        onClosedRunnable.run();
-      } finally {
-        if (!MoreExecutors.shutdownAndAwaitTermination(executor, 1, TimeUnit.SECONDS)) {
-          LOG.warn("Unable to stop web socket executor service in a timely manner");
-        }
-      }
+      onWebSocketInputClosedRunnable.run();
+      return null;
     }
   }
-
 
 }

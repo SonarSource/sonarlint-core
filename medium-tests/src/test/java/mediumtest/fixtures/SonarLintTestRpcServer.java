@@ -173,7 +173,7 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
   @Override
   public CompletableFuture<Void> shutdown() {
     try {
-      serverUsingRpc.shutdown().get(10, TimeUnit.SECONDS);
+      serverUsingRpc.shutdown().get();
     } catch (Exception e) {
       throw new IllegalStateException(e);
     } finally {
