@@ -179,7 +179,8 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
 
   @Override
   public CompletableFuture<Void> shutdown() {
-    return CompletableFutures.computeAsync(cancelChecker -> {
+    var executor = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Server shutdown"));
+    CompletableFuture<Void> future = CompletableFutures.computeAsync(executor, cancelChecker -> {
       SonarLintLogger.setTarget(logOutput);
       var wasInitialized = initialized.getAndSet(false);
       MoreExecutors.shutdownAndAwaitTermination(requestsExecutor, 1, java.util.concurrent.TimeUnit.SECONDS);
@@ -194,6 +195,8 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
       launcherFuture.cancel(true);
       return null;
     });
+    executor.shutdown();
+    return future;
   }
 
   public int getEmbeddedServerPort() {
