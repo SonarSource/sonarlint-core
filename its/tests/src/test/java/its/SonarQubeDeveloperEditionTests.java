@@ -43,7 +43,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
@@ -51,6 +50,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -87,8 +89,8 @@ import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
+import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
@@ -99,17 +101,16 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFla
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDescriptionTabDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.ClientErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.DidChangeMatchedSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityChangedOrClosedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeResponse;
@@ -199,10 +200,10 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     backend = clientLauncher.getServerProxy();
     try {
       backend.initialize(
-          new InitializeParams(IT_CLIENT_INFO, new FeatureFlagsDto(false, true, false, false, false, true), sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
-            Collections.emptySet(), Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(),
-            List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(),
-            Map.of(), false))
+        new InitializeParams(IT_CLIENT_INFO, new FeatureFlagsDto(false, true, false, false, false, true), sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
+          Collections.emptySet(), Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(),
+          List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(),
+          Map.of(), false))
         .get();
     } catch (Exception e) {
       throw new IllegalStateException("Cannot initialize the backend", e);
@@ -451,8 +452,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-global-extension",
-          "src/foo.glob",
-          "sonar.cobol.file.suffixes", "glob"),
+        "src/foo.glob",
+        "sonar.cobol.file.suffixes", "glob"),
         issueListener, null, null);
 
       assertThat(issueListener.getIssues()).extracting("ruleKey", "message").containsOnly(
@@ -460,8 +461,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-global-extension",
-          "src/foo.glob",
-          "sonar.cobol.file.suffixes", "glob"),
+        "src/foo.glob",
+        "sonar.cobol.file.suffixes", "glob"),
         issueListener, null, null);
 
       assertThat(issueListener.getIssues()).extracting("ruleKey", "message").containsOnly(
@@ -515,7 +516,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
         assertThat(issueListener.getIssues()).hasSize(3);
 
-        assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), javaRuleKey("myrule"), projectKey).get().getHtmlDescription())
+        assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), javaRuleKey("myrule"), projectKey).get()
+          .getHtmlDescription())
           .contains("my_rule_description");
 
       } finally {
@@ -865,7 +867,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       // For SQ 9.6+
       engine.syncServerTaintIssues(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), PROJECT_KEY_JAVA_TAINT, MAIN_BRANCH_NAME, null);
       // For SQ < 9.6
-      engine.downloadAllServerTaintIssuesForFile(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), projectBinding, "src/main/java/foo/DbHelper.java",
+      engine.downloadAllServerTaintIssuesForFile(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), projectBinding,
+        "src/main/java/foo/DbHelper.java",
         MAIN_BRANCH_NAME, null);
 
       var sinkIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", false);
@@ -985,7 +988,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       });
       taintIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", false);
       taintIssuesResolved = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", true);
-      assertThat(taintIssues).isNotEmpty().extracting("key").containsExactlyInAnyOrderElementsOf(taintIssuesResolved.stream().map(ServerTaintIssue::getKey).collect(Collectors.toList()));
+      assertThat(taintIssues).isNotEmpty().extracting("key")
+        .containsExactlyInAnyOrderElementsOf(taintIssuesResolved.stream().map(ServerTaintIssue::getKey).collect(Collectors.toList()));
 
       // analyze another project under the same project key to close the taint issue
       analyzeMavenProject("sample-java", PROJECT_KEY_JAVA_TAINT);
@@ -1068,8 +1072,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_HOTSPOT, PROJECT_KEY_JAVA_HOTSPOT,
-          "src/main/java/foo/Foo.java",
-          "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
+        "src/main/java/foo/Foo.java",
+        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
         issueListener, null, null);
 
       assertThat(issueListener.getIssues()).isEmpty();
@@ -1111,8 +1115,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_HOTSPOT, PROJECT_KEY_JAVA_HOTSPOT,
-          "src/main/java/foo/Foo.java",
-          "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath()),
+        "src/main/java/foo/Foo.java",
+        "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath()),
         issueListener, null, null);
 
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
@@ -1131,7 +1135,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       updateProject(engine, PROJECT_KEY_JAVA_HOTSPOT);
 
       var ruleDetails = engine
-        .getActiveRuleDetails(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), javaRuleKey(ORCHESTRATOR, "S4792"), PROJECT_KEY_JAVA_HOTSPOT).get();
+        .getActiveRuleDetails(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), javaRuleKey(ORCHESTRATOR, "S4792"), PROJECT_KEY_JAVA_HOTSPOT)
+        .get();
 
       assertThat(ruleDetails.getName()).isEqualTo("Configuring loggers is security-sensitive");
       // HTML description is null for security hotspots when accessed through the deprecated engine API
@@ -1170,7 +1175,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       updateProject(engine, PROJECT_KEY_JAVA_HOTSPOT);
       var projectBinding = new ProjectBinding(PROJECT_KEY_JAVA_HOTSPOT, "", "ide");
 
-      engine.downloadAllServerHotspotsForFile(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), projectBinding, "ide/src/main/java/foo/Foo.java", "master", null);
+      engine.downloadAllServerHotspotsForFile(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), projectBinding,
+        "ide/src/main/java/foo/Foo.java", "master", null);
 
       var serverHotspots = engine.getServerHotspots(projectBinding, "master", "ide/src/main/java/foo/Foo.java");
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)
@@ -1218,7 +1224,9 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("true"));
       try {
         var ex = assertThrows(ExecutionException.class,
-          () -> engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID_WRONG_CREDENTIALS), javaRuleKey("S106"), projectKey).get());
+          () -> engine
+            .getActiveRuleDetails(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID_WRONG_CREDENTIALS), javaRuleKey("S106"), projectKey)
+            .get());
         assertThat(ex.getCause()).hasMessage("Not authorized. Please check server credentials.");
       } finally {
         adminWsClient.settings().reset(new ResetRequest().setKeys(List.of("sonar.forceAuthentication")));
@@ -1234,7 +1242,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Java");
       updateProject(engine, projectKey);
 
-      assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), javaRuleKey("S106"), projectKey).get().getExtendedDescription())
+      assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), javaRuleKey("S106"), projectKey).get()
+        .getExtendedDescription())
         .isEmpty();
 
       var extendedDescription = " = Title\n*my dummy extended description*";
@@ -1253,7 +1262,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         // For some reason, there is an extra line break in the generated HTML
         expected = "<h1>Title\n</h1><strong>my dummy extended description</strong>";
       }
-      assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), javaRuleKey("S106"), projectKey).get().getExtendedDescription())
+      assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), javaRuleKey("S106"), projectKey).get()
+        .getExtendedDescription())
         .isEqualTo(expected);
     }
 
@@ -1266,7 +1276,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Java Markdown");
       updateProject(engine, projectKey);
 
-      assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), "mycompany-java:markdown", projectKey).get().getHtmlDescription())
+      assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), "mycompany-java:markdown", projectKey).get()
+        .getHtmlDescription())
         .isEqualTo("<h1>Title</h1><ul><li>one</li>\n"
           + "<li>two</li></ul>");
     }
@@ -1373,7 +1384,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, projectKey, false)))));
 
-      var activeRuleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, javaRuleKey(ORCHESTRATOR, "S4792"), null))
+      var activeRuleDetailsResponse = backend.getRulesService()
+        .getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, javaRuleKey(ORCHESTRATOR, "S4792"), null))
         .get();
 
       var extendedDescription = activeRuleDetailsResponse.details().getDescription().getRight();
@@ -1433,7 +1445,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         .setSonarLintUserHome(sonarUserHome)
         .build();
       var engine = new ConnectedSonarLintEngineImpl(globalConfig);
-      assertThat(engine.downloadAllProjects(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), null)).containsKeys("foo-bar1", "foo-bar2", "foo-bar3");
+      assertThat(engine.downloadAllProjects(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), null)).containsKeys("foo-bar1", "foo-bar2",
+        "foo-bar3");
     }
 
   }
@@ -1460,16 +1473,16 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     analyzeMavenProject(ORCHESTRATOR, projectDirName, Map.of("sonar.projectKey", projectKey));
   }
 
-  private static SonarLintRpcClient newDummySonarLintClient() {
-    return new SonarLintRpcClient() {
+  private static SonarLintRpcClientDelegate newDummySonarLintClient() {
+    return new SonarLintRpcClientDelegate() {
       @Override
       public void suggestBinding(SuggestBindingParams params) {
 
       }
 
       @Override
-      public CompletableFuture<FindFileByNamesInScopeResponse> findFileByNamesInScope(FindFileByNamesInScopeParams params) {
-        return CompletableFuture.completedFuture(new FindFileByNamesInScopeResponse(Collections.emptyList()));
+      public FindFileByNamesInScopeResponse findFileByNamesInScope(FindFileByNamesInScopeParams params, CancelChecker cancelChecker) {
+        return new FindFileByNamesInScopeResponse(Collections.emptyList());
       }
 
       @Override
@@ -1498,8 +1511,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       }
 
       @Override
-      public CompletableFuture<GetClientInfoResponse> getClientInfo() {
-        return CompletableFuture.completedFuture(new GetClientInfoResponse(""));
+      public GetClientInfoResponse getClientInfo(CancelChecker cancelChecker) {
+        return new GetClientInfoResponse("");
       }
 
       @Override
@@ -1513,18 +1526,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       }
 
       @Override
-      public CompletableFuture<AssistCreatingConnectionResponse> assistCreatingConnection(AssistCreatingConnectionParams params) {
-        return null;
-      }
+      public void startProgress(StartProgressParams params, CancelChecker cancelChecker) {
 
-      @Override
-      public CompletableFuture<AssistBindingResponse> assistBinding(AssistBindingParams params) {
-        return null;
-      }
-
-      @Override
-      public CompletableFuture<Void> startProgress(StartProgressParams params) {
-        return CompletableFuture.completedFuture(null);
       }
 
       @Override
@@ -1537,19 +1540,20 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       }
 
-      public CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params) {
+      @Override
+      public GetCredentialsResponse getCredentials(GetCredentialsParams params, CancelChecker cancelChecker) {
         if (params.getConnectionId().equals(CONNECTION_ID)) {
-          return CompletableFuture.completedFuture(new GetCredentialsResponse(new UsernamePasswordDto(SONARLINT_USER, SONARLINT_PWD)));
+          return new GetCredentialsResponse(new UsernamePasswordDto(SONARLINT_USER, SONARLINT_PWD));
         } else if (params.getConnectionId().equals(CONNECTION_ID_WRONG_CREDENTIALS)) {
-          return CompletableFuture.completedFuture(new GetCredentialsResponse(new UsernamePasswordDto("foo", "bar")));
+          return new GetCredentialsResponse(new UsernamePasswordDto("foo", "bar"));
         } else {
-          return CompletableFuture.failedFuture(new IllegalArgumentException("Unknown connection: " + params.getConnectionId()));
+          throw new ResponseErrorException(new ResponseError(ClientErrorCode.CONNECTION_NOT_FOUND, "Unknown connection: " + params.getConnectionId(), params.getConnectionId()));
         }
       }
 
       @Override
-      public CompletableFuture<SelectProxiesResponse> selectProxies(SelectProxiesParams params) {
-        return CompletableFuture.completedFuture(new SelectProxiesResponse(List.of(ProxyDto.NO_PROXY)));
+      public SelectProxiesResponse selectProxies(SelectProxiesParams params, CancelChecker cancelChecker) {
+        return new SelectProxiesResponse(List.of(ProxyDto.NO_PROXY));
       }
 
       @Override
@@ -1558,8 +1562,18 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       }
 
       @Override
-      public CompletableFuture<MatchSonarProjectBranchResponse> matchSonarProjectBranch(MatchSonarProjectBranchParams params) {
-        return CompletableFuture.completedFuture(new MatchSonarProjectBranchResponse(params.getSonarProjectBranches().getMainBranchName()));
+      public void didReceiveServerTaintVulnerabilityChangedOrClosedEvent(DidReceiveServerTaintVulnerabilityChangedOrClosedEvent params) {
+
+      }
+
+      @Override
+      public void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params) {
+
+      }
+
+      @Override
+      public MatchSonarProjectBranchResponse matchSonarProjectBranch(MatchSonarProjectBranchParams params, CancelChecker cancelChecker) {
+        return new MatchSonarProjectBranchResponse(params.getSonarProjectBranches().getMainBranchName());
       }
 
       @Override

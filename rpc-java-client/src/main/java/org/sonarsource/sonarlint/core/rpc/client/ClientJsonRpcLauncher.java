@@ -42,8 +42,10 @@ public class ClientJsonRpcLauncher implements Closeable {
   private final Future<Void> future;
   private final ExecutorService messageReaderExecutor;
   private final ExecutorService messageWriterExecutor;
+  private final ExecutorService requestAndNotificationsSequentialExecutor;
+  private final ExecutorService requestsExecutor;
 
-  public ClientJsonRpcLauncher(InputStream in, OutputStream out, SonarLintRpcClient client) {
+  public ClientJsonRpcLauncher(InputStream in, OutputStream out, SonarLintRpcClientDelegate clientDelegate) {
     messageReaderExecutor = Executors.newCachedThreadPool(r -> {
       var t = new Thread(r);
       t.setName("Client message reader");
@@ -54,6 +56,9 @@ public class ClientJsonRpcLauncher implements Closeable {
       t.setName("Client message writer");
       return t;
     });
+    this.requestAndNotificationsSequentialExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Client RPC sequential executor"));
+    this.requestsExecutor = Executors.newCachedThreadPool(r -> new Thread(r, "SonarLint Client RPC request executor"));
+    var client = new SonarLintRpcClientImpl(clientDelegate, requestsExecutor, requestAndNotificationsSequentialExecutor);
     var clientLauncher = new Launcher.Builder<SonarLintRpcServer>()
       .setLocalService(client)
       .setRemoteInterface(SonarLintRpcServer.class)
@@ -63,7 +68,7 @@ public class ClientJsonRpcLauncher implements Closeable {
       .configureGson(gsonBuilder -> gsonBuilder
         .registerTypeHierarchyAdapter(Path.class, new PathTypeAdapter())
       )
-      .wrapMessages(m -> new SingleThreadedMessageConsumer(m, messageWriterExecutor, msg -> client.log(new LogParams(LogLevel.ERROR, msg, null))))
+      .wrapMessages(m -> new SingleThreadedMessageConsumer(m, messageWriterExecutor, msg -> clientDelegate.log(new LogParams(LogLevel.ERROR, msg, null))))
       .create();
 
     this.serverProxy = clientLauncher.getRemoteProxy();
@@ -76,6 +81,8 @@ public class ClientJsonRpcLauncher implements Closeable {
 
   @Override
   public void close() throws IOException {
+    requestsExecutor.shutdown();
+    requestAndNotificationsSequentialExecutor.shutdown();
     // Stop the MessageProducer thread
     future.cancel(true);
     messageReaderExecutor.shutdownNow();

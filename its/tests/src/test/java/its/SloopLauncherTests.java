@@ -27,30 +27,28 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.apache.commons.lang3.SystemUtils;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.client.SloopLauncher;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.DidChangeMatchedSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityChangedOrClosedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeResponse;
@@ -110,14 +108,14 @@ class SloopLauncherTests {
     assertThat(result.getRulesByKey()).hasSize(36);
   }
 
-  static class DummySonarLintRpcClient implements SonarLintRpcClient {
+  static class DummySonarLintRpcClient implements SonarLintRpcClientDelegate {
     final List<LogParams> logs = new ArrayList<>();
 
     public List<LogParams> getLogs() {
       return logs;
     }
 
-    public void clearLogs(){
+    public void clearLogs() {
       logs.clear();
     }
 
@@ -126,8 +124,8 @@ class SloopLauncherTests {
     }
 
     @Override
-    public CompletableFuture<FindFileByNamesInScopeResponse> findFileByNamesInScope(FindFileByNamesInScopeParams params) {
-      return CompletableFuture.completedFuture(new FindFileByNamesInScopeResponse(Collections.emptyList()));
+    public FindFileByNamesInScopeResponse findFileByNamesInScope(FindFileByNamesInScopeParams params, CancelChecker cancelChecker) {
+      return new FindFileByNamesInScopeResponse(Collections.emptyList());
     }
 
     @Override
@@ -156,8 +154,8 @@ class SloopLauncherTests {
     }
 
     @Override
-    public CompletableFuture<GetClientInfoResponse> getClientInfo() {
-      return CompletableFuture.completedFuture(new GetClientInfoResponse(""));
+    public GetClientInfoResponse getClientInfo(CancelChecker cancelChecker) {
+      return new GetClientInfoResponse("");
     }
 
     @Override
@@ -171,18 +169,7 @@ class SloopLauncherTests {
     }
 
     @Override
-    public CompletableFuture<AssistCreatingConnectionResponse> assistCreatingConnection(AssistCreatingConnectionParams params) {
-      return null;
-    }
-
-    @Override
-    public CompletableFuture<AssistBindingResponse> assistBinding(AssistBindingParams params) {
-      return null;
-    }
-
-    @Override
-    public CompletableFuture<Void> startProgress(StartProgressParams params) {
-      return CompletableFuture.completedFuture(null);
+    public void startProgress(StartProgressParams params, CancelChecker cancelChecker) {
     }
 
     @Override
@@ -195,13 +182,14 @@ class SloopLauncherTests {
 
     }
 
-    public CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params) {
+    @Override
+    public GetCredentialsResponse getCredentials(GetCredentialsParams params, CancelChecker cancelChecker) {
       return null;
     }
 
     @Override
-    public CompletableFuture<SelectProxiesResponse> selectProxies(SelectProxiesParams params) {
-      return CompletableFuture.completedFuture(new SelectProxiesResponse(List.of(ProxyDto.NO_PROXY)));
+    public SelectProxiesResponse selectProxies(SelectProxiesParams params, CancelChecker cancelChecker) {
+      return new SelectProxiesResponse(List.of(ProxyDto.NO_PROXY));
     }
 
     @Override
@@ -209,8 +197,18 @@ class SloopLauncherTests {
     }
 
     @Override
-    public CompletableFuture<MatchSonarProjectBranchResponse> matchSonarProjectBranch(MatchSonarProjectBranchParams params) {
-      return null;
+    public void didReceiveServerTaintVulnerabilityChangedOrClosedEvent(DidReceiveServerTaintVulnerabilityChangedOrClosedEvent params) {
+
+    }
+
+    @Override
+    public void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params) {
+
+    }
+
+    @Override
+    public MatchSonarProjectBranchResponse matchSonarProjectBranch(MatchSonarProjectBranchParams params, CancelChecker cancelChecker) {
+      return new MatchSonarProjectBranchResponse(null);
     }
 
     @Override
