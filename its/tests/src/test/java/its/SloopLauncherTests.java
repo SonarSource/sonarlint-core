@@ -22,7 +22,6 @@ package its;
 import its.utils.PluginLocator;
 import its.utils.SloopDistLocator;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -70,7 +69,7 @@ import static its.utils.UnArchiveUtils.unarchiveDistribution;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.GO;
 
-class SloopLauncherTest {
+class SloopLauncherTests {
 
   @TempDir
   private static Path sonarUserHome;

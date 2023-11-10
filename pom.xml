@@ -62,8 +62,6 @@
     <mockito.version>5.6.0</mockito.version>
     <kotlin.version>1.6.21</kotlin.version>
     <lsp4j.version>0.21.1</lsp4j.version>
-    <plugin.download.version>1.6.8</plugin.download.version> <!--Issue in 1.7.1 https://github.com/maven-download-plugin/maven-download-plugin/issues/260 -->
-
     <version.surefire.plugin>3.1.2</version.surefire.plugin>
   </properties>
 
@@ -256,6 +254,11 @@
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
           <version>0.8.9</version>
+        </plugin>
+        <plugin>
+          <groupId>com.googlecode.maven-download-plugin</groupId>
+          <artifactId>download-maven-plugin</artifactId>
+          <version>1.6.8</version> <!--Issue in 1.7.1 https://github.com/maven-download-plugin/maven-download-plugin/issues/260 -->
         </plugin>
       </plugins>
     </pluginManagement>

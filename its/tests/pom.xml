@@ -95,7 +95,6 @@
               <plugin>
                 <groupId>com.googlecode.maven-download-plugin</groupId>
                 <artifactId>download-maven-plugin</artifactId>
-                <version>${plugin.download.version}</version>
                 <executions>
                   <execution>
                     <id>unpack-windows-jre</id>
@@ -155,7 +154,6 @@
               <plugin>
                 <groupId>com.googlecode.maven-download-plugin</groupId>
                 <artifactId>download-maven-plugin</artifactId>
-                <version>${plugin.download.version}</version>
                 <executions>
                   <execution>
                     <id>unpack-linux-jre</id>

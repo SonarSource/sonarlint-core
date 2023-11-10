@@ -43,7 +43,7 @@ import static its.utils.UnArchiveUtils.unarchiveDistribution;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.GO;
 
-class SloopLauncherWithJreTest {
+class SloopLauncherWithJreTests {
   @TempDir
   private static Path sonarUserHome;
 
@@ -52,14 +52,14 @@ class SloopLauncherWithJreTest {
 
   private static SonarLintRpcServer server;
 
-  private static SloopLauncherTest.DummySonarLintRpcClient client;
+  private static SloopLauncherTests.DummySonarLintRpcClient client;
 
   @BeforeAll
   static void setup() {
     var sloopDistPath = SystemUtils.IS_OS_WINDOWS ? SloopDistLocator.getWindowsDistPath() : SloopDistLocator.getLinux64DistPath();
     var jrePath = SystemUtils.IS_OS_WINDOWS ? JreLocator.getWindowsJrePath() : JreLocator.getLinuxJrePath();
     var sloopOutDirPath = unarchiveSloop(sloopDistPath);
-    client = new SloopLauncherTest.DummySonarLintRpcClient();
+    client = new SloopLauncherTests.DummySonarLintRpcClient();
     server = SloopLauncher.startSonarLintRpcServerWithJre(sloopOutDirPath.toAbsolutePath().toString(), client, jrePath.toAbsolutePath().toString());
   }
 
