@@ -73,8 +73,8 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   private SpringApplicationContextInitializer springApplicationContextInitializer;
 
   public SonarLintRpcServerImpl(InputStream in, OutputStream out, ExecutorService messageReaderExecutor, ExecutorService messageWriterExecutor) {
-    this.requestAndNotificationsSequentialExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint RPC sequential executor"));
-    this.requestsExecutor = Executors.newCachedThreadPool(r -> new Thread(r, "SonarLint RPC request executor"));
+    this.requestAndNotificationsSequentialExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Server RPC sequential executor"));
+    this.requestsExecutor = Executors.newCachedThreadPool(r -> new Thread(r, "SonarLint Server RPC request executor"));
     var launcher = new Launcher.Builder<SonarLintRpcClient>()
       .setLocalService(this)
       .setRemoteInterface(SonarLintRpcClient.class)
@@ -191,7 +191,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
         try {
           springApplicationContextInitializer.close();
         } catch (Exception e) {
-          throw new IllegalStateException("Error while closing spring context", e);
+          throw new RuntimeException(e);
         }
       }
       ThreadJobProcessorPool.getProcessors().forEach(JobProcessor::finish);
