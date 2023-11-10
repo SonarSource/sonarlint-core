@@ -37,7 +37,6 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
@@ -46,11 +45,13 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import mediumtest.fixtures.storage.ConfigurationScopeStorageFixture;
 import mediumtest.fixtures.storage.StorageFixture;
-import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
+import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.DidChangeActiveSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
@@ -65,6 +66,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientInfo
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.ClientErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
@@ -77,14 +79,14 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityChangedOrClosedEvent;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FoundFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.ShowHotspotParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.http.CheckServerTrustedParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.http.CheckServerTrustedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordAuthenticationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordAuthenticationResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.ProxyDto;
@@ -113,10 +115,6 @@ public class SonarLintBackendFixture {
 
   public static SonarLintClientBuilder newFakeClient() {
     return new SonarLintClientBuilder();
-  }
-
-  public static SonarLintClientBuilder newFakeClient(SonarLintRpcClient delegate) {
-    return new SonarLintClientBuilder().withDelegate(delegate);
   }
 
   public static class SonarLintBackendBuilder {
@@ -415,8 +413,6 @@ public class SonarLintBackendFixture {
     private ProxyDto proxy;
     private GetProxyPasswordAuthenticationResponse proxyAuth;
     private Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId = new HashMap<>();
-    @javax.annotation.Nullable
-    private SonarLintRpcClient delegate;
     private boolean printLogsToStdOut;
     private String resolvedSonarProjectBranch;
     private boolean isResolvedSonarProjectBranchSet;
@@ -471,13 +467,8 @@ public class SonarLintBackendFixture {
     public FakeSonarLintRpcClient build() {
       return new FakeSonarLintRpcClient(foundFiles, clientDescription, cannedAssistCreatingSonarQubeConnectionByBaseUrl,
         cannedBindingAssistByProjectKey,
-        rejectingProgress, proxy, proxyAuth, credentialsByConnectionId, delegate, printLogsToStdOut, resolvedSonarProjectBranch, isResolvedSonarProjectBranchSet,
+        rejectingProgress, proxy, proxyAuth, credentialsByConnectionId, printLogsToStdOut, resolvedSonarProjectBranch, isResolvedSonarProjectBranchSet,
         shouldErrorProjectBranchResolution);
-    }
-
-    public SonarLintClientBuilder withDelegate(SonarLintRpcClient delegate) {
-      this.delegate = delegate;
-      return this;
     }
 
     public SonarLintClientBuilder printLogsToStdOut() {
@@ -497,7 +488,7 @@ public class SonarLintBackendFixture {
     }
   }
 
-  public static class FakeSonarLintRpcClient implements SonarLintRpcClient {
+  public static class FakeSonarLintRpcClient implements SonarLintRpcClientDelegate {
     private final Map<String, List<BindingSuggestionDto>> bindingSuggestions = new HashMap<>();
 
     private final List<String> urlsToOpen = new ArrayList<>();
@@ -521,8 +512,6 @@ public class SonarLintBackendFixture {
     private final ProxyDto proxy;
     private final GetProxyPasswordAuthenticationResponse proxyAuth;
     private final Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId;
-    @Nullable
-    private final SonarLintRpcClient delegate;
     private final boolean printLogsToStdOut;
     private SonarLintRpcServer backend;
     private final Queue<LogParams> logs = new ConcurrentLinkedQueue<>();
@@ -531,7 +520,7 @@ public class SonarLintBackendFixture {
       LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
       LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, boolean rejectingProgress, @Nullable ProxyDto proxy,
       @Nullable GetProxyPasswordAuthenticationResponse proxyAuth, Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId,
-      @Nullable SonarLintRpcClient delegate, boolean printLogsToStdOut, String resolvedSonarProjectBranch, boolean isResolvedSonarProjectBranchSet,
+      boolean printLogsToStdOut, String resolvedSonarProjectBranch, boolean isResolvedSonarProjectBranchSet,
       boolean shouldErrorProjectBranchResolution) {
       this.foundFiles = foundFiles;
       this.clientDescription = clientDescription;
@@ -541,7 +530,6 @@ public class SonarLintBackendFixture {
       this.proxy = proxy;
       this.proxyAuth = proxyAuth;
       this.credentialsByConnectionId = credentialsByConnectionId;
-      this.delegate = delegate;
       this.printLogsToStdOut = printLogsToStdOut;
       this.resolvedSonarProjectBranch = resolvedSonarProjectBranch;
       this.isResolvedSonarProjectBranchSet = isResolvedSonarProjectBranchSet;
@@ -558,8 +546,8 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public CompletableFuture<FindFileByNamesInScopeResponse> findFileByNamesInScope(FindFileByNamesInScopeParams params) {
-      return CompletableFuture.completedFuture(new FindFileByNamesInScopeResponse(foundFiles));
+    public FindFileByNamesInScopeResponse findFileByNamesInScope(FindFileByNamesInScopeParams params, CancelChecker cancelChecker) {
+      return new FindFileByNamesInScopeResponse(foundFiles);
     }
 
     @Override
@@ -583,8 +571,8 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public CompletableFuture<GetClientInfoResponse> getClientInfo() {
-      return CompletableFuture.completedFuture(new GetClientInfoResponse(clientDescription));
+    public GetClientInfoResponse getClientInfo(CancelChecker cancelChecker) {
+      return new GetClientInfoResponse(clientDescription);
     }
 
     @Override
@@ -598,39 +586,33 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public CompletableFuture<AssistCreatingConnectionResponse> assistCreatingConnection(AssistCreatingConnectionParams params) {
-      return CompletableFutures.computeAsync(cancelChecker -> {
-        var cannedSonarQubeConnection = cannedAssistCreatingSonarQubeConnectionByBaseUrl.remove(params.getServerUrl());
-        if (cannedSonarQubeConnection == null) {
-          throw new CancellationException();
-        }
-        backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(cannedSonarQubeConnection), Collections.emptyList()));
-        return new AssistCreatingConnectionResponse(cannedSonarQubeConnection.getConnectionId());
-      });
+    public AssistCreatingConnectionResponse assistCreatingConnection(AssistCreatingConnectionParams params, CancelChecker cancelChecker) {
+      var cannedSonarQubeConnection = cannedAssistCreatingSonarQubeConnectionByBaseUrl.remove(params.getServerUrl());
+      if (cannedSonarQubeConnection == null) {
+        throw new CancellationException();
+      }
+      backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(cannedSonarQubeConnection), Collections.emptyList()));
+      return new AssistCreatingConnectionResponse(cannedSonarQubeConnection.getConnectionId());
     }
 
     @Override
-    public CompletableFuture<AssistBindingResponse> assistBinding(AssistBindingParams params) {
-      return CompletableFutures.computeAsync(cancelChecker -> {
-        var cannedResponse = bindingAssistResponseByProjectKey.remove(params.getProjectKey());
-        if (cannedResponse == null) {
-          throw new CancellationException();
-        }
-        var scopeId = cannedResponse.getId();
-        backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(scopeId, cannedResponse.getBinding()));
-        return new AssistBindingResponse(scopeId);
-      });
+    public AssistBindingResponse assistBinding(AssistBindingParams params, CancelChecker cancelChecker) {
+      var cannedResponse = bindingAssistResponseByProjectKey.remove(params.getProjectKey());
+      if (cannedResponse == null) {
+        throw new CancellationException();
+      }
+      var scopeId = cannedResponse.getId();
+      backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(scopeId, cannedResponse.getBinding()));
+      return new AssistBindingResponse(scopeId);
     }
 
     @Override
-    public CompletableFuture<Void> startProgress(StartProgressParams params) {
+    public void startProgress(StartProgressParams params, CancelChecker cancelChecker) {
       if (rejectingProgress) {
-
-        return CompletableFuture.failedFuture(new RuntimeException("Failed to start progress"));
+        throw new ResponseErrorException(new ResponseError(ClientErrorCode.PROGRESS_CREATION_FAILED, "Failed to start progress", null));
       }
       progressReportsByTaskId.put(params.getTaskId(),
         new ProgressReport(params.getConfigurationScopeId(), params.getTitle(), params.getMessage(), params.isIndeterminate(), params.isCancellable()));
-      return CompletableFuture.completedFuture(null);
     }
 
     @Override
@@ -661,8 +643,8 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params) {
-      return CompletableFutures.computeAsync(cancelChecker -> new GetCredentialsResponse(credentialsByConnectionId.get(params.getConnectionId())));
+    public GetCredentialsResponse getCredentials(GetCredentialsParams params, CancelChecker cancelChecker) {
+      return new GetCredentialsResponse(credentialsByConnectionId.get(params.getConnectionId()));
     }
 
     public void setToken(String connectionId, String token) {
@@ -670,48 +652,42 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public CompletableFuture<SelectProxiesResponse> selectProxies(SelectProxiesParams params) {
+    public SelectProxiesResponse selectProxies(SelectProxiesParams params, CancelChecker cancelChecker) {
       if (proxy != null) {
-        return CompletableFuture.completedFuture(new SelectProxiesResponse(List.of(proxy)));
+        return new SelectProxiesResponse(List.of(proxy));
       }
-      return CompletableFuture.completedFuture(new SelectProxiesResponse(List.of()));
+      return new SelectProxiesResponse(List.of());
     }
 
     @Override
-    public CompletableFuture<GetProxyPasswordAuthenticationResponse> getProxyPasswordAuthentication(GetProxyPasswordAuthenticationParams params) {
+    public GetProxyPasswordAuthenticationResponse getProxyPasswordAuthentication(GetProxyPasswordAuthenticationParams params, CancelChecker cancelChecker) {
       if (proxyAuth != null) {
-        return CompletableFuture.completedFuture(proxyAuth);
+        return proxyAuth;
       }
-      return CompletableFuture.completedFuture(new GetProxyPasswordAuthenticationResponse(null, null));
+      return new GetProxyPasswordAuthenticationResponse(null, null);
     }
 
     @Override
-    public CompletableFuture<CheckServerTrustedResponse> checkServerTrusted(CheckServerTrustedParams params) {
-      if (delegate != null) {
-        return delegate.checkServerTrusted(params);
-      }
-      return SonarLintRpcClient.super.checkServerTrusted(params);
+    public void didReceiveServerTaintVulnerabilityRaisedEvent(DidReceiveServerTaintVulnerabilityRaisedEvent params) {
     }
 
     @Override
     public void didReceiveServerTaintVulnerabilityChangedOrClosedEvent(DidReceiveServerTaintVulnerabilityChangedOrClosedEvent params) {
-      if (delegate != null) {
-        delegate.didReceiveServerTaintVulnerabilityChangedOrClosedEvent(params);
-      } else {
-        SonarLintRpcClient.super.didReceiveServerTaintVulnerabilityChangedOrClosedEvent(params);
-      }
     }
 
     @Override
-    public CompletableFuture<MatchSonarProjectBranchResponse> matchSonarProjectBranch(MatchSonarProjectBranchParams params) {
+    public void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params) {
+    }
+
+    @Override
+    public MatchSonarProjectBranchResponse matchSonarProjectBranch(MatchSonarProjectBranchParams params, CancelChecker cancelChecker) {
 
       var sonarProjectBranches = params.getSonarProjectBranches();
       toResolveSonarProjectBranchesPerConfigScopeId.put(params.getConfigurationScopeId(), sonarProjectBranches);
       if (shouldErrorProjectBranchResolution) {
         throw new RuntimeException("Error resolving Sonar project branch");
       }
-      return CompletableFuture.completedFuture(
-        new MatchSonarProjectBranchResponse(isResolvedSonarProjectBranchSet ? resolvedSonarProjectBranch : sonarProjectBranches.getMainBranchName()));
+      return new MatchSonarProjectBranchResponse(isResolvedSonarProjectBranchSet ? resolvedSonarProjectBranch : sonarProjectBranches.getMainBranchName());
     }
 
     @Override

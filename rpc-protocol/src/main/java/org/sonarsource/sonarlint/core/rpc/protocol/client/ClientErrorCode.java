@@ -20,6 +20,12 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.client;
 
 public class ClientErrorCode {
+
+  private ClientErrorCode() {
+    // only static
+  }
+
   public static final int CONNECTION_NOT_FOUND = -1;
+  public static final int PROGRESS_CREATION_FAILED = -2;
 
 }

@@ -37,7 +37,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
@@ -59,7 +58,7 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
@@ -526,8 +525,7 @@ class ServerSentEventsMediumTests {
 
     @Test
     void should_forward_taint_events_to_client() {
-      var sonarLintClientMock = mock(SonarLintRpcClient.class);
-      var fakeClient = newFakeClient(sonarLintClientMock).build();
+      var fakeClient = spy(newFakeClient().build());
 
       var projectKey = "projectKey";
       var branchName = "branchName";
@@ -569,7 +567,7 @@ class ServerSentEventsMediumTests {
         .build(fakeClient);
 
       var captor = ArgumentCaptor.forClass(DidReceiveServerTaintVulnerabilityChangedOrClosedEvent.class);
-      verify(sonarLintClientMock, timeout(3000)).didReceiveServerTaintVulnerabilityChangedOrClosedEvent(captor.capture());
+      verify(fakeClient, timeout(3000)).didReceiveServerTaintVulnerabilityChangedOrClosedEvent(captor.capture());
 
       assertThat(captor.getValue().getConnectionId()).isEqualTo("connectionId");
       assertThat(captor.getValue().getSonarProjectKey()).isEqualTo(projectKey);
