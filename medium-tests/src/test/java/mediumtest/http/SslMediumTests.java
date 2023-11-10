@@ -28,7 +28,6 @@ import java.security.KeyStoreException;
 import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -47,7 +46,6 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.CheckServerTrustedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.CheckServerTrustedResponse;
@@ -63,7 +61,7 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -140,15 +138,14 @@ class SslMediumTests {
 
     @Test
     void it_should_ask_user_only_once_if_server_certificate_is_trusted() throws ExecutionException, InterruptedException, KeyStoreException {
-      var sonarLintClientMock = mock(SonarLintRpcClient.class);
-      var fakeClient = newFakeClient(sonarLintClientMock).build();
+      var fakeClient = spy(newFakeClient().build());
 
       backend = newBackend().build(fakeClient);
 
       var captor = ArgumentCaptor.forClass(CheckServerTrustedParams.class);
 
-      when(sonarLintClientMock.checkServerTrusted(captor.capture()))
-        .thenReturn(CompletableFuture.completedFuture(new CheckServerTrustedResponse(true)));
+      when(fakeClient.checkServerTrusted(captor.capture(), any()))
+        .thenReturn(new CheckServerTrustedResponse(true));
 
       // Two concurrent requests should only trigger checkServerTrusted once
       var future = backend.getConnectionService().getOrganization(new GetOrganizationParams(Either.forLeft(new TokenDto("token")), "myOrg"));
@@ -157,7 +154,7 @@ class SslMediumTests {
       future.get();
       future2.get();
 
-      verify(sonarLintClientMock, times(1)).checkServerTrusted(any());
+      verify(fakeClient, times(1)).checkServerTrusted(any(), any());
 
       var params = captor.getValue();
 
@@ -221,12 +218,11 @@ class SslMediumTests {
 
     @Test
     void it_should_fail_if_client_certificate_not_provided() {
-      var sonarLintClientMock = mock(SonarLintRpcClient.class);
-      var fakeClient = newFakeClient(sonarLintClientMock).build();
+      var fakeClient = spy(newFakeClient().build());
       backend = newBackend().build(fakeClient);
 
-      when(sonarLintClientMock.checkServerTrusted(any()))
-        .thenReturn(CompletableFuture.completedFuture(new CheckServerTrustedResponse(true)));
+      when(fakeClient.checkServerTrusted(any(), any()))
+        .thenReturn(new CheckServerTrustedResponse(true));
 
       var future = backend.getConnectionService().getOrganization(new GetOrganizationParams(Either.forLeft(new TokenDto("token")), "myOrg"));
 
@@ -241,12 +237,11 @@ class SslMediumTests {
 
       System.setProperty("sonarlint.ssl.keyStorePath", toPath(Objects.requireNonNull(SslMediumTests.class.getResource("/ssl/client.p12"))).toString());
       System.setProperty("sonarlint.ssl.keyStorePassword", "pwdClientCertP12");
-      var sonarLintClientMock = mock(SonarLintRpcClient.class);
-      var fakeClient = newFakeClient(sonarLintClientMock).build();
+      var fakeClient = spy(newFakeClient().build());
       backend = newBackend().build(fakeClient);
 
-      when(fakeClient.checkServerTrusted(any()))
-        .thenReturn(CompletableFuture.completedFuture(new CheckServerTrustedResponse(true)));
+      when(fakeClient.checkServerTrusted(any(), any()))
+        .thenReturn(new CheckServerTrustedResponse(true));
 
       var future = backend.getConnectionService().getOrganization(new GetOrganizationParams(Either.forLeft(new TokenDto("token")), "myOrg"));
 

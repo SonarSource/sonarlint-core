@@ -38,7 +38,7 @@ public class SloopLauncher {
 
   private static final String WIN_LAUNCHER_SCRIPT = "sonarlint-backend.bat";
   private static final String UNIX_LAUNCHER_SCRIPT = "sonarlint-backend";
-  private static SonarLintRpcClient client;
+  private static SonarLintRpcClientDelegate client;
   private static Process process;
 
   private SloopLauncher() {
@@ -46,16 +46,16 @@ public class SloopLauncher {
   }
 
   @Nullable
-  public static SonarLintRpcServer startSonarLintRpcServer(String distPath, SonarLintRpcClient clientArg) {
+  public static SonarLintRpcServer startSonarLintRpcServer(String distPath, SonarLintRpcClientDelegate clientArg) {
     return startAndGetSonarLintRpcServer(distPath, clientArg, "");
   }
 
   @Nullable
-  public static SonarLintRpcServer startSonarLintRpcServerWithJre(String distPath, SonarLintRpcClient clientArg, String jrePath) {
+  public static SonarLintRpcServer startSonarLintRpcServerWithJre(String distPath, SonarLintRpcClientDelegate clientArg, String jrePath) {
     return startAndGetSonarLintRpcServer(distPath, clientArg, jrePath);
   }
 
-  private static SonarLintRpcServer startAndGetSonarLintRpcServer(String distPath, SonarLintRpcClient clientArg, String jrePath) {
+  private static SonarLintRpcServer startAndGetSonarLintRpcServer(String distPath, SonarLintRpcClientDelegate clientArg, String jrePath) {
     try {
       SloopLauncher.client = clientArg;
       return execute(distPath, jrePath);
