@@ -321,6 +321,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
 
   @Override
   public void sync(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, @Nullable ClientProgressMonitor monitor) {
+    setLogging(null);
     var result = serverConnection.sync(endpoint, client, projectKeys, new ProgressMonitor(monitor));
     if (result.hasAnalyzerBeenUpdated()) {
       restartAnalysisEngine();
