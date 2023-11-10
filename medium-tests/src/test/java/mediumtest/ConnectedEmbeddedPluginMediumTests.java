@@ -99,7 +99,7 @@ class ConnectedEmbeddedPluginMediumTests {
       .setConnectionId(CONNECTION_ID)
       .setSonarLintUserHome(slHome)
       .setStorageRoot(storage.getPath())
-      .setLogOutput((m, l) -> System.out.println(m))
+      .setLogOutput(TestUtils.createNoOpLogOutput())
       .addEnabledLanguages(Language.JAVA, Language.JS, Language.SECRETS)
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
       .useEmbeddedPlugin("java", PluginLocator.getJavaPluginPath())
