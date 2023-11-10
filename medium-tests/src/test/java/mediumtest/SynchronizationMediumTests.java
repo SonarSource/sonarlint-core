@@ -22,6 +22,7 @@ package mediumtest;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import mediumtest.fixtures.ServerFixture;
 import mediumtest.fixtures.SonarLintBackendFixture.FakeSonarLintRpcClient.ProgressReport;
 import mediumtest.fixtures.SonarLintBackendFixture.FakeSonarLintRpcClient.ProgressStep;
 import mediumtest.fixtures.SonarLintTestRpcServer;
@@ -42,9 +43,11 @@ import static org.awaitility.Awaitility.waitAtMost;
 
 class SynchronizationMediumTests {
 
+  private ServerFixture.Server serverWithIssues;
+
   @Test
   void it_should_automatically_synchronize_bound_projects_that_have_an_active_branch() {
-    var serverWithIssues = newSonarQubeServer("9.6")
+    serverWithIssues = newSonarQubeServer("9.6")
       .withProject("projectKey",
         project -> project.withBranch("branchName",
           branch -> branch.withIssue("key", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", "", new TextRange(1, 0, 3, 4))
@@ -65,7 +68,7 @@ class SynchronizationMediumTests {
   @Test
   void it_should_automatically_synchronize_bound_projects_when_the_active_branch_changes() {
     var fakeClient = newFakeClient().build();
-    var serverWithIssues = newSonarQubeServer("9.6")
+    serverWithIssues = newSonarQubeServer("9.6")
       .withProject("projectKey",
         project -> project.withBranch("branchName",
           branch -> branch.withIssue("key", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", "", new TextRange(1, 0, 3, 4))
@@ -87,7 +90,7 @@ class SynchronizationMediumTests {
   @Test
   void it_should_report_progress_to_the_client_when_synchronizing() {
     var fakeClient = newFakeClient().build();
-    var serverWithIssues = newSonarQubeServer("9.6")
+    serverWithIssues = newSonarQubeServer("9.6")
       .withProject("projectKey", project -> project.withEmptyBranch("branchName"))
       .withProject("projectKey2", project -> project.withEmptyBranch("branchName2"))
       .start();
@@ -113,7 +116,7 @@ class SynchronizationMediumTests {
   @Test
   void it_should_not_report_progress_to_the_client_when_synchronizing_if_client_rejects_progress() {
     var fakeClient = newFakeClient().rejectingProgress().build();
-    var serverWithIssues = newSonarQubeServer("9.6")
+    serverWithIssues = newSonarQubeServer("9.6")
       .withProject("projectKey", project -> project.withEmptyBranch("branchName"))
       .withProject("projectKey2", project -> project.withEmptyBranch("branchName2"))
       .start();
@@ -146,6 +149,9 @@ class SynchronizationMediumTests {
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
     backend.shutdown().get();
+    if (serverWithIssues != null) {
+      serverWithIssues.shutdown();
+    }
   }
 
   private SonarLintTestRpcServer backend;
