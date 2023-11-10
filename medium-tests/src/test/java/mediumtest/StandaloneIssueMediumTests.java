@@ -212,7 +212,7 @@ class StandaloneIssueMediumTests {
         .addInputFile(inputFile)
         .addIncludedRule(RuleKey.parse("javascript:S3827"))
         .build(),
-      issues::add, (m, l) -> System.out.println(m),
+      issues::add, null,
       null);
     assertThat(issues.stream().filter(i -> i.getRuleKey().equals("javascript:S3827")))
       .extracting(Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
@@ -282,7 +282,7 @@ class StandaloneIssueMediumTests {
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
         .build(),
-      issues::add, (s, level) -> System.out.println(s),
+      issues::add, null,
       null);
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
       tuple("javascript:S1481", 8, "foo.yaml"));
@@ -320,7 +320,7 @@ class StandaloneIssueMediumTests {
         .addInputFile(inputFile)
         .putExtraProperty("sonar.cfamily.build-wrapper-content", buildWrapperContent)
         .build(),
-      issues::add, (m, l) -> System.out.println(m), null);
+      issues::add, null, null);
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, i -> i.getInputFile().relativePath()).containsOnly(
       tuple("c:S3805", 1, 0, "foo.c"),
       // FIXME no sonar is not supported by the CFamily analyzer
