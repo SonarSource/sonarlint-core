@@ -29,26 +29,48 @@ if "%DIRNAME%"=="" set DIRNAME=.
 @rem This is normally unused
 set APP_BASE_NAME=%~n0
 set APP_HOME=%DIRNAME%..
+@rem set DEFAULT_JVM_OPTS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=1044"
 set DEFAULT_JVM_OPTS=
 
 @rem Resolve any "." and ".." in APP_HOME to make it shorter.
 for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
 
-set JAVA_EXE=%APP_HOME%/jre/bin/java.exe
+set args=
+
+:loop
+IF NOT "%1"=="" (
+    IF "%1"=="-j" (
+        SET JAVA_HOME_ARG=%~2
+        SHIFT
+    ) ELSE (
+        SET args=%args% %1
+    )
+    SHIFT
+    GOTO :loop
+)
+
+if defined JAVA_HOME_ARG (
+    echo Using Java from %JAVA_HOME_ARG%
+    set JAVA_EXE=%JAVA_HOME_ARG%\bin\java.exe
+) else (
+    echo Using bundled jre
+    set JAVA_EXE=%APP_HOME%\jre\bin\java.exe
+)
+
 set CLASSPATH=%APP_HOME%\lib\*;
 
 @rem Execute SLCORE
-"%JAVA_EXE%" %DEFAULT_JVM_OPTS% -classpath "%CLASSPATH%" org.sonarsource.sonarlint.core.rpc.impl.SonarLintCoreProcess %*
+"%JAVA_EXE%" %DEFAULT_JVM_OPTS% -classpath "%CLASSPATH%" org.sonarsource.sonarlint.core.rpc.impl.SonarLintCoreProcess %args%
 
 @rem End local scope for the variables with windows NT shell
 if %ERRORLEVEL% equ 0 goto mainEnd
 
 :fail
-rem Set variable JSONRPC_HELLO_WORLD_EXIT_CONSOLE if you need the _script_ return code instead of
+rem Set variable SLCORE_EXIT_CONSOLE if you need the _script_ return code instead of
 rem the _cmd.exe /c_ return code!
 set EXIT_CODE=%ERRORLEVEL%
 if %EXIT_CODE% equ 0 set EXIT_CODE=1
-if not ""=="%JSONRPC_HELLO_WORLD_EXIT_CONSOLE%" exit %EXIT_CODE%
+if not ""=="%SLCORE_EXIT_CONSOLE%" exit %EXIT_CODE%
 exit /b %EXIT_CODE%
 
 :mainEnd
