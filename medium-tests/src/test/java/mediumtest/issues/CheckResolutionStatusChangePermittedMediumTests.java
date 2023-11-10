@@ -305,7 +305,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_4_plus() {
     backend = newBackend()
       .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("10.4"))
-      .withActiveBranch("configScopeId", "branch")
+      .withMatchedBranch("configScopeId", "branch")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 

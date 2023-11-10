@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - RPC Java Client
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol;
+package org.sonarsource.sonarlint.core.rpc.client;
 
 import java.io.IOException;
 import java.net.Authenticator;
@@ -27,10 +27,10 @@ import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.SocketAddress;
 import java.net.URI;
-import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,13 +45,16 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityChangedOrClosedEvent;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.info.GetClientInfoResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordAuthenticationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.ProxyDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.info.GetClientInfoResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
@@ -63,8 +66,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeCon
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class SonarLintRpcClientTests {
+class SonarLintRpcClientDelegateTests {
 
   private ProxySelector defaultProxySelector;
   private Authenticator defaultAuthenticator;
@@ -81,7 +85,7 @@ class SonarLintRpcClientTests {
     Authenticator.setDefault(defaultAuthenticator);
   }
 
-  SonarLintRpcClient underTest = new DefaultSonarLintRpcClient();
+  SonarLintRpcClientDelegate underTest = new DefaultSonarLintRpcClientDelegate();
 
   @Test
   void testDefaultProxyBehavior() throws ExecutionException, InterruptedException {
@@ -102,13 +106,13 @@ class SonarLintRpcClientTests {
       }
     });
 
-    var selectProxiesResponse = underTest.selectProxies(new SelectProxiesParams("https://foo")).get();
+    var selectProxiesResponse = underTest.selectProxies(new SelectProxiesParams("https://foo"), null);
 
     assertThat(selectProxiesResponse.getProxies()).extracting(ProxyDto::getType, ProxyDto::getHostname, ProxyDto::getPort)
       .containsExactly(tuple(Proxy.Type.HTTP, "http://myproxy", 8085),
         tuple(Proxy.Type.HTTP, "http://myproxy2", 8086));
 
-    var selectProxiesResponseDirectProxy = underTest.selectProxies(new SelectProxiesParams("http://foo2")).get();
+    var selectProxiesResponseDirectProxy = underTest.selectProxies(new SelectProxiesParams("http://foo2"), null);
 
     assertThat(selectProxiesResponseDirectProxy.getProxies()).extracting(ProxyDto::getType, ProxyDto::getHostname, ProxyDto::getPort)
       .containsExactlyInAnyOrder(tuple(Proxy.Type.DIRECT, null, 0));
@@ -131,29 +135,29 @@ class SonarLintRpcClientTests {
       }
     });
 
-    var response = underTest.getProxyPasswordAuthentication(new GetProxyPasswordAuthenticationParams("https://foo", 8085, "protocol", "prompt", "scheme", "http://targethost"))
-      .get();
+    var response = underTest.getProxyPasswordAuthentication(new GetProxyPasswordAuthenticationParams("https://foo", 8085, "protocol", "prompt", "scheme", "http://targethost"),
+      null);
     assertThat(response.getProxyUser()).isEqualTo("username");
     assertThat(response.getProxyPassword()).isEqualTo("password");
 
   }
 
   @Test
-  void failIfInvalidURL() {
-    var future = underTest.getProxyPasswordAuthentication(new GetProxyPasswordAuthenticationParams("https://foo", 8085, "protocol", "prompt", "scheme", "invalid:url"));
-    assertThat(future).failsWithin(Duration.ofMillis(50))
-      .withThrowableOfType(ExecutionException.class)
-      .withMessage("java.net.MalformedURLException: unknown protocol: invalid");
+  void failIfInvalidURL() throws ExecutionException, InterruptedException {
+    var params = new GetProxyPasswordAuthenticationParams("https://foo", 8085, "protocol", "prompt", "scheme", "invalid:url");
+    var e = assertThrows(ResponseErrorException.class, () -> underTest.getProxyPasswordAuthentication(params, null));
+    assertThat(e).hasMessage("targetHostUrl is not a valid URL: invalid:url");
   }
 
-  private static class DefaultSonarLintRpcClient implements SonarLintRpcClient {
+  private static class DefaultSonarLintRpcClientDelegate implements SonarLintRpcClientDelegate {
+
     @Override
     public void suggestBinding(SuggestBindingParams params) {
 
     }
 
     @Override
-    public CompletableFuture<FindFileByNamesInScopeResponse> findFileByNamesInScope(FindFileByNamesInScopeParams params) {
+    public FindFileByNamesInScopeResponse findFileByNamesInScope(FindFileByNamesInScopeParams params, CancelChecker cancelChecker) {
       return null;
     }
 
@@ -168,6 +172,11 @@ class SonarLintRpcClientTests {
     }
 
     @Override
+    public void log(LogParams params) {
+
+    }
+
+    @Override
     public void showSoonUnsupportedMessage(ShowSoonUnsupportedMessageParams params) {
 
     }
@@ -178,7 +187,7 @@ class SonarLintRpcClientTests {
     }
 
     @Override
-    public CompletableFuture<GetClientInfoResponse> getClientInfo() {
+    public GetClientInfoResponse getClientInfo(CancelChecker cancelChecker) {
       return null;
     }
 
@@ -193,18 +202,18 @@ class SonarLintRpcClientTests {
     }
 
     @Override
-    public CompletableFuture<AssistCreatingConnectionResponse> assistCreatingConnection(AssistCreatingConnectionParams params) {
+    public AssistCreatingConnectionResponse assistCreatingConnection(AssistCreatingConnectionParams params, CancelChecker cancelChecker) {
       return null;
     }
 
     @Override
-    public CompletableFuture<AssistBindingResponse> assistBinding(AssistBindingParams params) {
+    public AssistBindingResponse assistBinding(AssistBindingParams params, CancelChecker cancelChecker) {
       return null;
     }
 
     @Override
-    public CompletableFuture<Void> startProgress(StartProgressParams params) {
-      return null;
+    public void startProgress(StartProgressParams params, CancelChecker cancelChecker) {
+
     }
 
     @Override
@@ -218,22 +227,31 @@ class SonarLintRpcClientTests {
     }
 
     @Override
-    public CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params) {
+    public GetCredentialsResponse getCredentials(GetCredentialsParams params, CancelChecker cancelChecker) {
       return null;
     }
 
     @Override
-    public CompletableFuture<MatchSonarProjectBranchResponse> matchSonarProjectBranch(MatchSonarProjectBranchParams params) {
+    public void didReceiveServerTaintVulnerabilityRaisedEvent(DidReceiveServerTaintVulnerabilityRaisedEvent params) {
+
+    }
+
+    public void didReceiveServerTaintVulnerabilityChangedOrClosedEvent(DidReceiveServerTaintVulnerabilityChangedOrClosedEvent params) {
+
+    }
+
+    @Override
+    public void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params) {
+
+    }
+
+    @Override
+    public MatchSonarProjectBranchResponse matchSonarProjectBranch(MatchSonarProjectBranchParams params, CancelChecker cancelChecker) {
       return null;
     }
 
     @Override
     public void didChangeMatchedSonarProjectBranch(DidChangeMatchedSonarProjectBranchParams params) {
-
-    }
-
-    @Override
-    public void log(LogParams params) {
 
     }
   }
