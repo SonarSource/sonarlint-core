@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import mediumtest.fixtures.ServerFixture;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -523,13 +524,22 @@ class ServerSentEventsMediumTests {
   @Nested
   class WhenReceivingIssueChangedEvent {
 
+    private ServerFixture.Server serverWithTaintIssues;
+
+    @AfterEach
+    void shutdown() {
+      if (serverWithTaintIssues != null) {
+        serverWithTaintIssues.shutdown();
+      }
+    }
+
     @Test
     void should_forward_taint_events_to_client() {
       var fakeClient = spy(newFakeClient().build());
 
       var projectKey = "projectKey";
       var branchName = "branchName";
-      var serverWithTaintIssues = newSonarQubeServer("10.0")
+      serverWithTaintIssues = newSonarQubeServer("10.0")
         .withProject(projectKey,
           project -> project.withBranch(branchName,
             branch -> branch.withTaintIssue("key1", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", "", new TextRange(1, 0, 3, 4))

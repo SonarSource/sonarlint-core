@@ -20,6 +20,7 @@
 package mediumtest.connection;
 
 import java.util.concurrent.ExecutionException;
+import mediumtest.fixtures.ServerFixture;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +42,7 @@ import static org.assertj.core.api.Assertions.tuple;
 class ConnectionGetAllProjectsMediumTests {
   private SonarLintRpcServer backend;
   private String oldSonarCloudUrl;
+  private ServerFixture.Server server;
 
   @BeforeEach
   void prepare() {
@@ -52,6 +54,9 @@ class ConnectionGetAllProjectsMediumTests {
     if (backend != null) {
       backend.shutdown().get();
     }
+    if (server != null) {
+      server.shutdown();
+    }
     if (oldSonarCloudUrl == null) {
       System.clearProperty("sonarlint.internal.sonarcloud.url");
     } else {
@@ -61,7 +66,7 @@ class ConnectionGetAllProjectsMediumTests {
 
   @Test
   void it_should_return_an_empty_response_if_no_projects_in_sonarqube() {
-    var server = newSonarQubeServer().start();
+    server = newSonarQubeServer().start();
     backend = newBackend().build();
 
     var response = getAllProjects(new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto(null))));
@@ -71,7 +76,7 @@ class ConnectionGetAllProjectsMediumTests {
 
   @Test
   void it_should_return_an_empty_response_if_no_projects_in_sonarcloud_organization() {
-    var server = newSonarCloudServer("myOrg").start();
+    server = newSonarCloudServer("myOrg").start();
     System.setProperty("sonarlint.internal.sonarcloud.url", server.baseUrl());
     backend = newBackend().build();
 
@@ -82,7 +87,7 @@ class ConnectionGetAllProjectsMediumTests {
 
   @Test
   void it_should_return_the_list_of_projects_on_sonarqube() {
-    var server = newSonarQubeServer()
+    server = newSonarQubeServer()
       .withProject("projectKey1", project -> project.withName("MyProject1"))
       .withProject("projectKey2", project -> project.withName("MyProject2"))
       .start();
@@ -97,7 +102,7 @@ class ConnectionGetAllProjectsMediumTests {
 
   @Test
   void it_should_return_the_list_of_projects_on_sonarcloud() {
-    var server = newSonarCloudServer("myOrg")
+    server = newSonarCloudServer("myOrg")
       .withProject("projectKey1", project -> project.withName("MyProject1"))
       .withProject("projectKey2", project -> project.withName("MyProject2"))
       .start();
