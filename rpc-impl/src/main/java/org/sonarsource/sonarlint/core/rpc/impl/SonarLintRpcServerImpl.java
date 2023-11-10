@@ -28,6 +28,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
+import jetbrains.exodus.core.execution.JobProcessor;
+import jetbrains.exodus.core.execution.ThreadJobProcessorPool;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
@@ -192,6 +194,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
           throw new IllegalStateException("Error while closing spring context", e);
         }
       }
+      ThreadJobProcessorPool.getProcessors().forEach(JobProcessor::finish);
       launcherFuture.cancel(true);
       return null;
     });
