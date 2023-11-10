@@ -256,7 +256,6 @@ class SmartNotificationsMediumTests {
     webSocketServer.start();
     System.setProperty("sonarlint.internal.sonarcloud.websocket.url", webSocketServer.getUrl());
     var fakeClient = newFakeClient().withToken(CONNECTION_ID, "token")
-      .printLogsToStdOut()
       .build();
     System.setProperty("sonarlint.internal.sonarcloud.url", mockWebServerExtension.endpointParams().getBaseUrl());
     mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
