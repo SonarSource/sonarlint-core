@@ -145,6 +145,9 @@ public interface SonarLintRpcClient {
   @JsonNotification
   void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params);
 
+  /**
+   * @throws org.eclipse.lsp4j.jsonrpc.ResponseErrorException with {@link org.sonarsource.sonarlint.core.rpc.protocol.client.ClientErrorCode#CONNECTION_NOT_FOUND} if the connection doesn't exist on the client side
+   */
   @JsonRequest
   CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params);
 
