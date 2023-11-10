@@ -39,7 +39,7 @@ public class SonarLintCoreProcess implements Callable<Integer> {
       rpcLauncher.getLauncherFuture().get();
     } catch (CancellationException shutdown) {
       System.err.println("Server is shutting down...");
-    } catch (Throwable e) {
+    } catch (Exception e) {
       e.printStackTrace(System.err);
       return -1;
     }
