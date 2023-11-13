@@ -19,6 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.rules;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,6 +41,7 @@ import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.BackendErrorCode;
@@ -55,12 +60,15 @@ import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamDefinition;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamType;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerRule;
 import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
+import org.sonarsource.sonarlint.core.serverconnection.RuleSet;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
+import org.springframework.context.event.EventListener;
 
 import static org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter.adapt;
 import static org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter.toDto;
@@ -272,6 +280,57 @@ public class RulesService {
   private synchronized void setStandaloneRuleConfig(Map<String, StandaloneRuleConfigDto> standaloneRuleConfig) {
     this.standaloneRuleConfig.clear();
     this.standaloneRuleConfig.putAll(standaloneRuleConfig);
+  }
+
+  @EventListener
+  public void onServerEventReceived(SonarServerEventReceivedEvent eventReceived) {
+    var connectionId = eventReceived.getConnectionId();
+    var serverEvent = eventReceived.getEvent();
+    if (serverEvent instanceof RuleSetChangedEvent) {
+      updateStorage(connectionId, (RuleSetChangedEvent) serverEvent);
+    }
+  }
+
+  private void updateStorage(String connectionId, RuleSetChangedEvent event) {
+    event.getProjectKeys().forEach(projectKey -> storageService.connection(connectionId).project(projectKey).analyzerConfiguration().update(currentConfiguration -> {
+      var newRuleSetByLanguageKey = incorporate(event, currentConfiguration.getRuleSetByLanguageKey());
+      return new AnalyzerConfiguration(currentConfiguration.getSettings(), newRuleSetByLanguageKey, currentConfiguration.getSchemaVersion());
+    }));
+  }
+
+  private static Map<String, RuleSet> incorporate(RuleSetChangedEvent event, Map<String, RuleSet> ruleSetByLanguageKey) {
+    Map<String, RuleSet> resultingRuleSetsByLanguageKey = new HashMap<>(ruleSetByLanguageKey);
+    event.getDeactivatedRules().forEach(deactivatedRule -> deactivate(deactivatedRule, resultingRuleSetsByLanguageKey));
+    event.getActivatedRules().forEach(activatedRule -> activate(activatedRule, resultingRuleSetsByLanguageKey));
+    return resultingRuleSetsByLanguageKey;
+  }
+
+  private static void activate(RuleSetChangedEvent.ActiveRule activatedRule, Map<String, RuleSet> ruleSetsByLanguageKey) {
+    var ruleLanguageKey = activatedRule.getLanguageKey();
+    var currentRuleSet = ruleSetsByLanguageKey.computeIfAbsent(ruleLanguageKey, k -> new RuleSet(Collections.emptyList(), ""));
+    var languageRulesByKey = new HashMap<>(currentRuleSet.getRulesByKey());
+    var ruleTemplateKey = activatedRule.getTemplateKey();
+    languageRulesByKey.put(activatedRule.getKey(), new ServerActiveRule(
+      activatedRule.getKey(),
+      activatedRule.getSeverity(),
+      activatedRule.getParameters(),
+      ruleTemplateKey == null ? "" : ruleTemplateKey));
+    ruleSetsByLanguageKey.put(ruleLanguageKey, new RuleSet(new ArrayList<>(languageRulesByKey.values()), currentRuleSet.getLastModified()));
+  }
+
+  private static void deactivate(String deactivatedRuleKey, Map<String, RuleSet> ruleSetsByLanguageKey) {
+    var ruleSetsIterator = ruleSetsByLanguageKey.entrySet().iterator();
+    while (ruleSetsIterator.hasNext()) {
+      var ruleSetEntry = ruleSetsIterator.next();
+      var ruleSet = ruleSetEntry.getValue();
+      var newRules = new HashMap<>(ruleSet.getRulesByKey());
+      newRules.remove(deactivatedRuleKey);
+      if (newRules.isEmpty()) {
+        ruleSetsIterator.remove();
+      } else {
+        ruleSetsByLanguageKey.put(ruleSetEntry.getKey(), new RuleSet(List.copyOf(newRules.values()), ruleSet.getLastModified()));
+      }
+    }
   }
 
 }

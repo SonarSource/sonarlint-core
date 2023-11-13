@@ -19,5 +19,5 @@
  */
 package org.sonarsource.sonarlint.core.commons.push;
 
-public interface ServerEvent {
+public interface SonarServerEvent {
 }
