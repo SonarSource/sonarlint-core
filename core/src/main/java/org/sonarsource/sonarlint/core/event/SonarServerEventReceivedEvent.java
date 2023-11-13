@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Server Connection
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-@ParametersAreNonnullByDefault
-package org.sonarsource.sonarlint.core.serverconnection.events;
+package org.sonarsource.sonarlint.core.event;
 
-import javax.annotation.ParametersAreNonnullByDefault;
+import org.sonarsource.sonarlint.core.commons.push.SonarServerEvent;
+
+public class SonarServerEventReceivedEvent {
+  private final String connectionId;
+  private final SonarServerEvent event;
+
+  public SonarServerEventReceivedEvent(String connectionId, SonarServerEvent event) {
+    this.connectionId = connectionId;
+    this.event = event;
+  }
+
+  public String getConnectionId() {
+    return connectionId;
+  }
+
+  public SonarServerEvent getEvent() {
+    return event;
+  }
+}

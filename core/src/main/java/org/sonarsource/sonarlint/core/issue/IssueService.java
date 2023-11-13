@@ -41,6 +41,7 @@ import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.Transition;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.local.only.XodusLocalOnlyIssueStore;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -57,10 +58,12 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenIssueResp
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
+import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
+import org.springframework.context.event.EventListener;
 
 import static org.sonarsource.sonarlint.core.utils.FutureUtils.waitForHttpRequest;
 import static org.sonarsource.sonarlint.core.utils.FutureUtils.waitForTask;
@@ -75,8 +78,7 @@ public class IssueService {
   private static final Version SQ_ANTICIPATED_TRANSITIONS_MIN_VERSION = Version.create("10.2");
   private static final Map<ResolutionStatus, Transition> transitionByResolutionStatus = Map.of(
     ResolutionStatus.WONT_FIX, Transition.WONT_FIX,
-    ResolutionStatus.FALSE_POSITIVE, Transition.FALSE_POSITIVE
-  );
+    ResolutionStatus.FALSE_POSITIVE, Transition.FALSE_POSITIVE);
   private static final Set<String> requiredTransitions = transitionByResolutionStatus.values().stream().map(Transition::getStatus).collect(Collectors.toSet());
 
   private final ConfigurationRepository configurationRepository;
@@ -274,7 +276,8 @@ public class IssueService {
     waitForHttpRequest(cancelChecker, serverApi.issue().addComment(issueKey, comment), "Add comment to server issue");
   }
 
-  private ReopenIssueResponse reopenServerIssue(ServerApi connection, String issueId, ProjectServerIssueStore projectServerIssueStore, boolean isTaintIssue, CancelChecker cancelChecker) {
+  private ReopenIssueResponse reopenServerIssue(ServerApi connection, String issueId, ProjectServerIssueStore projectServerIssueStore, boolean isTaintIssue,
+    CancelChecker cancelChecker) {
     waitForHttpRequest(cancelChecker, connection.issue().changeStatusAsync(issueId, Transition.REOPEN), "Reopen server issue");
     var serverIssue = projectServerIssueStore.updateIssueResolutionStatus(issueId, isTaintIssue, false);
     serverIssue.ifPresent(issue -> telemetryService.issueStatusChanged(issue.getRuleKey()));
@@ -291,6 +294,33 @@ public class IssueService {
     waitForTask(cancelChecker, removeIssueOnServer(localOnlyIssueStore, configurationScopeId, issueUuid), "Reopen local issue", Duration.ofMinutes(1));
     var result = localOnlyIssueStorageService.get().removeIssue(issueUuid);
     return new ReopenIssueResponse(result);
+  }
+
+  @EventListener
+  public void onServerEventReceived(SonarServerEventReceivedEvent eventReceived) {
+    var connectionId = eventReceived.getConnectionId();
+    var serverEvent = eventReceived.getEvent();
+    if (serverEvent instanceof IssueChangedEvent) {
+      updateStorage(connectionId, (IssueChangedEvent) serverEvent);
+    }
+  }
+
+  private void updateStorage(String connectionId, IssueChangedEvent event) {
+    var findingsStorage = storageService.connection(connectionId).project(event.getProjectKey()).findings();
+    event.getImpactedIssueKeys().forEach(issueKey -> findingsStorage.updateIssue(issueKey, issue -> {
+      var userSeverity = event.getUserSeverity();
+      if (userSeverity != null) {
+        issue.setUserSeverity(userSeverity);
+      }
+      var userType = event.getUserType();
+      if (userType != null) {
+        issue.setType(userType);
+      }
+      var resolved = event.getResolved();
+      if (resolved != null) {
+        issue.setResolved(resolved);
+      }
+    }));
   }
 
   private static Optional<UUID> asUUID(String key) {
