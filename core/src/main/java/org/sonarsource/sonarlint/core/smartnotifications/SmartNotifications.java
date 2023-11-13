@@ -35,19 +35,23 @@ import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
+import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.event.ServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.developers.DevelopersApi;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.websocket.WebSocketService;
+import org.sonarsource.sonarlint.core.websocket.events.SmartNotificationEvent;
+import org.springframework.context.event.EventListener;
 
 @Named
 @Singleton
@@ -152,6 +156,23 @@ public class SmartNotifications {
         e.getProjectKey(),
         e.getTime()))
       .collect(Collectors.toList());
+  }
+
+  @EventListener
+  public void onServerEventReceived(ServerEventReceivedEvent eventReceived) {
+    var serverEvent = eventReceived.getEvent();
+    if (serverEvent instanceof SmartNotificationEvent) {
+      notifyClient((SmartNotificationEvent) serverEvent);
+    }
+  }
+
+  private void notifyClient(SmartNotificationEvent event) {
+    var projectKey = event.getProject();
+    configurationRepository.getBoundScopesByProject(projectKey).stream()
+      .collect(Collectors.groupingBy(BoundScope::getConnectionId))
+      .forEach((connectionId, scope) -> client.showSmartNotification(new ShowSmartNotificationParams(event.getMessage(), event.getLink(),
+        scope.stream().map(BoundScope::getId).collect(Collectors.toSet()), event.getCategory(), connectionId)));
+    telemetryService.smartNotificationsReceived(event.getCategory());
   }
 
 }

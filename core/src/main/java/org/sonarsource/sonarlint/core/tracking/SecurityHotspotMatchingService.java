@@ -39,20 +39,27 @@ import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.event.ServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 import org.sonarsource.sonarlint.core.issuetracking.Tracker;
-import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.branch.MatchedSonarProjectBranchRepository;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlySecurityHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.MatchWithServerSecurityHotspotsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.MatchWithServerSecurityHotspotsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ServerMatchedSecurityHotspotDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
+import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotChangedEvent;
+import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotClosedEvent;
+import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotRaisedEvent;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
 import org.sonarsource.sonarlint.core.utils.FutureUtils;
+import org.springframework.context.event.EventListener;
 
 import static org.sonarsource.sonarlint.core.utils.FutureUtils.waitForTasks;
 
@@ -61,14 +68,16 @@ import static org.sonarsource.sonarlint.core.utils.FutureUtils.waitForTasks;
 public class SecurityHotspotMatchingService {
   private static final int FETCH_ALL_SECURITY_HOTSPOTS_THRESHOLD = 10;
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private final SonarLintRpcClient client;
   private final ConfigurationRepository configurationRepository;
   private final StorageService storageService;
   private final MatchedSonarProjectBranchRepository matchedSonarProjectBranchRepository;
   private final SynchronizationServiceImpl synchronizationService;
   private final ExecutorService executorService;
 
-  public SecurityHotspotMatchingService(ConfigurationRepository configurationRepository, StorageService storageService,
-                                        MatchedSonarProjectBranchRepository matchedSonarProjectBranchRepository, SynchronizationServiceImpl synchronizationService) {
+  public SecurityHotspotMatchingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, StorageService storageService,
+    MatchedSonarProjectBranchRepository matchedSonarProjectBranchRepository, SynchronizationServiceImpl synchronizationService) {
+    this.client = client;
     this.configurationRepository = configurationRepository;
     this.storageService = storageService;
     this.matchedSonarProjectBranchRepository = matchedSonarProjectBranchRepository;
@@ -104,8 +113,9 @@ public class SecurityHotspotMatchingService {
             var serverSecurityHotspot = result.getLeft();
             var creationDate = serverSecurityHotspot.getCreationDate();
             var isOnNewCode = newCodeDefinition.map(definition -> definition.isOnNewCode(creationDate.toEpochMilli())).orElse(true);
-            return MatchWithServerSecurityHotspotsResponse.ServerOrLocalSecurityHotspotDto.forLeft(new ServerMatchedSecurityHotspotDto(UUID.randomUUID(), serverSecurityHotspot.getKey(), creationDate.toEpochMilli(),
-              HotspotStatus.valueOf(serverSecurityHotspot.getStatus().name()), isOnNewCode));
+            return MatchWithServerSecurityHotspotsResponse.ServerOrLocalSecurityHotspotDto
+              .forLeft(new ServerMatchedSecurityHotspotDto(UUID.randomUUID(), serverSecurityHotspot.getKey(), creationDate.toEpochMilli(),
+                HotspotStatus.valueOf(serverSecurityHotspot.getStatus().name()), isOnNewCode));
           } else {
             return MatchWithServerSecurityHotspotsResponse.ServerOrLocalSecurityHotspotDto.forRight(new LocalOnlySecurityHotspotDto(result.getRight().getId()));
           }
@@ -149,6 +159,56 @@ public class SecurityHotspotMatchingService {
 
   private static Collection<Trackable> toServerHotspotTrackables(Collection<ServerHotspot> serverHotspots) {
     return serverHotspots.stream().map(ServerHotspotTrackable::new).collect(Collectors.toList());
+  }
+
+  @EventListener
+  public void onServerEventReceived(ServerEventReceivedEvent event) {
+    var connectionId = event.getConnectionid();
+    var serverEvent = event.getEvent();
+    if (serverEvent instanceof SecurityHotspotChangedEvent) {
+      updateStorageAndNotifyClient(connectionId, (SecurityHotspotChangedEvent) serverEvent);
+    } else if (serverEvent instanceof SecurityHotspotClosedEvent) {
+      updateStorageAndNotifyClient(connectionId, (SecurityHotspotClosedEvent) serverEvent);
+    } else if (serverEvent instanceof SecurityHotspotRaisedEvent) {
+      updateStorageAndNotifyClient(connectionId, (SecurityHotspotRaisedEvent) serverEvent);
+    }
+  }
+
+  private void updateStorageAndNotifyClient(String connectionId, SecurityHotspotRaisedEvent event) {
+    var hotspot = new ServerHotspot(
+      event.getHotspotKey(),
+      event.getRuleKey(),
+      event.getMainLocation().getMessage(),
+      event.getMainLocation().getFilePath(),
+      TaintVulnerabilityTrackingService.adapt(event.getMainLocation().getTextRange()),
+      event.getCreationDate(),
+      event.getStatus(),
+      event.getVulnerabilityProbability(),
+      null);
+    var projectKey = event.getProjectKey();
+    storageService.connection(connectionId).project(projectKey).findings().insert(event.getBranch(), hotspot);
+    client.didReceiveServerHotspotEvent(new DidReceiveServerHotspotEvent(connectionId, projectKey, event.getFilePath()));
+  }
+
+  private void updateStorageAndNotifyClient(String connectionId, SecurityHotspotClosedEvent event) {
+    var projectKey = event.getProjectKey();
+    storageService.connection(connectionId).project(projectKey).findings().deleteHotspot(event.getHotspotKey());
+    client.didReceiveServerHotspotEvent(new DidReceiveServerHotspotEvent(connectionId, projectKey, event.getFilePath()));
+  }
+
+  private void updateStorageAndNotifyClient(String connectionId, SecurityHotspotChangedEvent event) {
+    var projectKey = event.getProjectKey();
+    storageService.connection(connectionId).project(projectKey).findings().updateHotspot(event.getHotspotKey(), hotspot -> {
+      var status = event.getStatus();
+      if (status != null) {
+        hotspot.setStatus(status);
+      }
+      var assignee = event.getAssignee();
+      if (assignee != null) {
+        hotspot.setAssignee(assignee);
+      }
+    });
+    client.didReceiveServerHotspotEvent(new DidReceiveServerHotspotEvent(connectionId, projectKey, event.getFilePath()));
   }
 
   @PreDestroy

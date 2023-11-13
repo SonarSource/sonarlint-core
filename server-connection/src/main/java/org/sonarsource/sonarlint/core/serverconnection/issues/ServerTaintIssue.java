@@ -218,5 +218,4 @@ public class ServerTaintIssue implements ServerFinding {
       return textRange;
     }
   }
-
 }
