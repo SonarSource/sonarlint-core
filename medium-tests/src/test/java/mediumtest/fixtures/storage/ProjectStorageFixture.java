@@ -175,7 +175,8 @@ public class ProjectStorageFixture {
         return;
       }
       var projectBranches = Sonarlint.ProjectBranches.newBuilder()
-        .setMainBranchName(branches.stream().filter(branch -> branch.isMain).map(branch -> branch.name).findFirst().orElseThrow(() -> new IllegalArgumentException("No main branch defined")))
+        .setMainBranchName(
+          branches.stream().filter(branch -> branch.isMain).map(branch -> branch.name).findFirst().orElseThrow(() -> new IllegalArgumentException("No main branch defined")))
         .addAllBranchName(branches.stream().map(branch -> branch.name).collect(Collectors.toList()))
         .build();
       ProtobufFileUtil.writeToFile(projectBranches, projectFolder.resolve("project_branches.pb"));
@@ -256,9 +257,7 @@ public class ProjectStorageFixture {
                   taintIssueEntity.setProperty("ruleKey", taint.ruleKey);
                   taintIssueEntity.setBlobString("message", taint.message);
                   taintIssueEntity.setProperty("creationDate", taint.creationDate);
-                  if (taint.severity != null) {
-                    taintIssueEntity.setProperty("userSeverity", taint.severity);
-                  }
+                  taintIssueEntity.setProperty("severity", taint.severity);
                   if (taint.textRange != null) {
                     var textRange = taint.textRange;
                     taintIssueEntity.setProperty("startLine", textRange.getStartLine());
@@ -278,6 +277,8 @@ public class ProjectStorageFixture {
 
                   taintIssueEntity.setLink("file", fileEntity);
                   fileEntity.addLink("taintIssues", taintIssueEntity);
+                  branchEntity.addLink("taintIssues", taintIssueEntity);
+                  taintIssueEntity.setLink("branch", branchEntity);
                 });
 
               hotspotsByFilePath.getOrDefault(filePath, Collections.emptyList())

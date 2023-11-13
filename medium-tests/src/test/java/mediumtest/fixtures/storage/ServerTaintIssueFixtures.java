@@ -57,7 +57,7 @@ public class ServerTaintIssueFixtures {
 
     public ServerTaintIssue build() {
       return new ServerTaintIssue(key, resolved, ruleKey, "message", "file/path", introductionDate,
-        null, ruleType, textRangeWithHash, "contextKey", CleanCodeAttribute.CONVENTIONAL, Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM));
+        issueSeverity, ruleType, textRangeWithHash, "contextKey", CleanCodeAttribute.CONVENTIONAL, Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM));
     }
   }
 
@@ -66,6 +66,7 @@ public class ServerTaintIssueFixtures {
     protected boolean resolved = false;
     protected Instant introductionDate = Instant.now();
     protected RuleType ruleType = RuleType.BUG;
+    protected IssueSeverity issueSeverity = IssueSeverity.MINOR;
 
     protected AbstractServerTaintIssueBuilder(String key) {
       this.key = key;
@@ -81,8 +82,18 @@ public class ServerTaintIssueFixtures {
       return (T) this;
     }
 
+    public T open() {
+      this.resolved = false;
+      return (T) this;
+    }
+
     public T withType(RuleType ruleType) {
       this.ruleType = ruleType;
+      return (T) this;
+    }
+
+    public T withSeverity(IssueSeverity issueSeverity) {
+      this.issueSeverity = issueSeverity;
       return (T) this;
     }
 

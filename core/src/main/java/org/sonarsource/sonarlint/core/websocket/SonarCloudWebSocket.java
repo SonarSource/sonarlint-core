@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
+import org.sonarsource.sonarlint.core.commons.push.SonarServerEvent;
 import org.sonarsource.sonarlint.core.http.WebSocketClient;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.EventParser;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.IssueChangedEventParser;
@@ -81,7 +81,7 @@ public class SonarCloudWebSocket {
   private final AtomicBoolean closingInitiated = new AtomicBoolean(false);
   private final CompletableFuture<?> webSocketInputClosed = new CompletableFuture<>();
 
-  public static SonarCloudWebSocket create(WebSocketClient webSocketClient, Consumer<ServerEvent> serverEventConsumer, Runnable connectionEndedRunnable) {
+  public static SonarCloudWebSocket create(WebSocketClient webSocketClient, Consumer<SonarServerEvent> serverEventConsumer, Runnable connectionEndedRunnable) {
     var webSocket = new SonarCloudWebSocket();
     var currentThreadOutput = SonarLintLogger.getTargetForCopy();
     LOG.info("Creating websocket connection to " + getUrl());
@@ -139,7 +139,7 @@ public class SonarCloudWebSocket {
     });
   }
 
-  private void handleRawMessage(String message, Consumer<ServerEvent> serverEventConsumer) {
+  private void handleRawMessage(String message, Consumer<SonarServerEvent> serverEventConsumer) {
     if (history.exists(message)) {
       // SC implements at least 1 time delivery, so we need to de-duplicate the messages
       return;
@@ -154,7 +154,7 @@ public class SonarCloudWebSocket {
     }
   }
 
-  private static Optional<? extends ServerEvent> parse(WebSocketEvent event) {
+  private static Optional<? extends SonarServerEvent> parse(WebSocketEvent event) {
     var eventType = event.event;
     if (eventType == null) {
       return Optional.empty();
@@ -168,7 +168,7 @@ public class SonarCloudWebSocket {
     }
   }
 
-  private static Optional<? extends ServerEvent> tryParsing(EventParser<? extends ServerEvent> eventParser, WebSocketEvent event) {
+  private static Optional<? extends SonarServerEvent> tryParsing(EventParser<? extends SonarServerEvent> eventParser, WebSocketEvent event) {
     try {
       return eventParser.parse(event.data.toString());
     } catch (Exception e) {

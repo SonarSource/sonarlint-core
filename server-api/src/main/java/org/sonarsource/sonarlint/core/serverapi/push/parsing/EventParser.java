@@ -20,8 +20,8 @@
 package org.sonarsource.sonarlint.core.serverapi.push.parsing;
 
 import java.util.Optional;
-import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
+import org.sonarsource.sonarlint.core.commons.push.SonarServerEvent;
 
-public interface EventParser<T extends ServerEvent> {
+public interface EventParser<T extends SonarServerEvent> {
   Optional<T> parse(String jsonData);
 }
