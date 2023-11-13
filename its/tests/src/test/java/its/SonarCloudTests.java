@@ -58,6 +58,7 @@ import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsClientFactories;
 import org.sonarqube.ws.client.WsRequest;
 import org.sonarqube.ws.client.WsResponse;
+import org.sonarqube.ws.client.issues.SearchRequest;
 import org.sonarqube.ws.client.settings.ResetRequest;
 import org.sonarqube.ws.client.settings.SetRequest;
 import org.sonarqube.ws.client.usertokens.GenerateRequest;
@@ -67,7 +68,6 @@ import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
-import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -76,6 +76,9 @@ import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationParams;
@@ -83,7 +86,12 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUs
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.usertoken.RevokeTokenParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
@@ -91,12 +99,14 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 
 @Tag("SonarCloud")
 class SonarCloudTests extends AbstractConnectedTests {
+  private static final String CONFIG_SCOPE_ID = "my-ide-project-name";
   private static final String SONAR_JAVA_FILE_SUFFIXES = "sonar.java.file.suffixes";
   private static final String SONARCLOUD_STAGING_URL = "https://sc-staging.io";
   private static final String SONARCLOUD_ORGANIZATION = "sonarlint-it";
@@ -146,12 +156,9 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     backend = clientLauncher.getServerProxy();
     backend.initialize(
-      new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, new FeatureFlagsDto(false, true, false, false, false, false, false, false), sonarUserHome.resolve("storage"),
-        sonarUserHome.resolve("workDir"),
-        Collections.emptySet(), Collections.emptyMap(), Set.of(JAVA), Collections.emptySet(),
-        Collections.emptyList(), List.of(new SonarCloudConnectionConfigurationDto(CONNECTION_ID, SONARCLOUD_ORGANIZATION, true)), sonarUserHome.toString(),
-        Map.of(), false));
-
+      new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, new FeatureFlagsDto(false, true, true, false, false, false, false, true), sonarUserHome.resolve("storage"),
+        sonarUserHome.resolve("workDir"), Collections.emptySet(), Collections.emptyMap(), Set.of(JAVA), Collections.emptySet(), Collections.emptyList(),
+        List.of(new SonarCloudConnectionConfigurationDto(CONNECTION_ID, SONARCLOUD_ORGANIZATION, true)), sonarUserHome.toString(), Map.of(), false));
     randomPositiveInt = new Random().nextInt() & Integer.MAX_VALUE;
 
     adminWsClient = newAdminWsClient();
@@ -509,7 +516,6 @@ class SonarCloudTests extends AbstractConnectedTests {
       provisionProject(PROJECT_KEY_JAVA_HOTSPOT, "Sample Java Hotspot");
       associateProjectToQualityProfile(PROJECT_KEY_JAVA_HOTSPOT, "java", "SonarLint IT Java Hotspot");
       analyzeMavenProject(projectKey(PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT);
-
       engine.updateProject(sonarcloudEndpointITOrg(), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), projectKey(PROJECT_KEY_JAVA_HOTSPOT), null);
       engine.sync(sonarcloudEndpointITOrg(), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), Set.of(projectKey(PROJECT_KEY_JAVA_HOTSPOT)), null);
     }
@@ -575,33 +581,39 @@ class SonarCloudTests extends AbstractConnectedTests {
       provisionProject(PROJECT_KEY_JAVA_TAINT, "Java With Taint Vulnerabilities");
       associateProjectToQualityProfile(PROJECT_KEY_JAVA_TAINT, "java", "SonarLint Taint Java");
       analyzeMavenProject(projectKey(PROJECT_KEY_JAVA_TAINT), PROJECT_KEY_JAVA_TAINT);
-
-      engine.updateProject(sonarcloudEndpointITOrg(), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), projectKey(PROJECT_KEY_JAVA_TAINT), null);
-      engine.sync(sonarcloudEndpointITOrg(), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), Set.of(projectKey(PROJECT_KEY_JAVA_TAINT)), null);
     }
 
     @Test
-    void download_taint_vulnerabilities_for_file() {
-      ProjectBinding projectBinding = new ProjectBinding(projectKey(PROJECT_KEY_JAVA_TAINT), "", "");
+    void download_taint_vulnerabilities_for_project() throws IOException, ExecutionException, InterruptedException {
+      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY_JAVA_TAINT, true)))));
+      analyzeMavenProject("sample-java-taint", PROJECT_KEY_JAVA_TAINT);
 
-      engine.downloadAllServerTaintIssuesForFile(sonarcloudEndpointITOrg(), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), projectBinding,
-        "src/main/java/foo/DbHelper.java",
-        MAIN_BRANCH_NAME,
-        null);
+      // Ensure a vulnerability has been reported on server side
+      var issuesList = adminWsClient.issues().search(new SearchRequest().setTypes(List.of("VULNERABILITY")).setComponentKeys(List.of(PROJECT_KEY_JAVA_TAINT))).getIssuesList();
+      assertThat(issuesList).hasSize(1);
+      var issueKey = issuesList.get(0).getKey();
 
-      var sinkIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", false);
+      var taintVulnerabilities = backend.getTaintVulnerabilityTrackingService().listAll(new ListAllParams(CONFIG_SCOPE_ID, true)).get().getTaintVulnerabilities();
 
-      assertThat(sinkIssues).hasSize(1);
-
-      var taintIssue = sinkIssues.get(0);
-      assertThat(taintIssue.getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
-      assertThat(taintIssue.getSeverity()).isEqualTo(IssueSeverity.MAJOR);
-      assertThat(taintIssue.getType()).isEqualTo(RuleType.VULNERABILITY);
-      assertThat(taintIssue.getFlows()).isNotEmpty();
-      var flow = taintIssue.getFlows().get(0);
-      assertThat(flow.locations()).isNotEmpty();
-      assertThat(flow.locations().get(0).getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
-      assertThat(flow.locations().get(flow.locations().size() - 1).getTextRange().getHash()).isIn(hash("request.getParameter(\"user\")"), hash("request.getParameter(\"pass\")"));
+      assertThat(taintVulnerabilities).hasSize(1);
+      var taintVulnerability = taintVulnerabilities.get(0);
+      assertThat(taintVulnerability.getSonarServerKey()).isEqualTo(issueKey);
+      assertThat(taintVulnerability.getRuleKey()).isEqualTo("javasecurity:S3649");
+      assertThat(taintVulnerability.getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
+      // forced severity is not taken into account anymore
+      assertThat(taintVulnerability.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
+      assertThat(taintVulnerability.getType()).isEqualTo(org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.VULNERABILITY);
+      assertThat(taintVulnerability.getRuleDescriptionContextKey()).isNull();
+      assertThat(taintVulnerability.getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.COMPLETE);
+      assertThat(taintVulnerability.getImpacts()).containsExactly(entry(SoftwareQuality.SECURITY, ImpactSeverity.HIGH));
+      assertThat(taintVulnerability.getFlows()).isNotEmpty();
+      assertThat(taintVulnerability.isOnNewCode()).isTrue();
+      var flow = taintVulnerability.getFlows().get(0);
+      assertThat(flow.getLocations()).isNotEmpty();
+      assertThat(flow.getLocations().get(0).getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
+      assertThat(flow.getLocations().get(flow.getLocations().size() - 1).getTextRange().getHash()).isIn(hash("request.getParameter(\"user\")"),
+        hash("request.getParameter(\"pass\")"));
     }
   }
 

@@ -56,7 +56,8 @@ public class ShowHotspotRequestHandler implements HttpRequestHandler {
   private final TelemetryService telemetryService;
   private final RequestHandlerBindingAssistant requestHandlerBindingAssistant;
 
-  public ShowHotspotRequestHandler(SonarLintRpcClient client, ServerApiProvider serverApiProvider, TelemetryService telemetryService, RequestHandlerBindingAssistant requestHandlerBindingAssistant) {
+  public ShowHotspotRequestHandler(SonarLintRpcClient client, ServerApiProvider serverApiProvider, TelemetryService telemetryService,
+    RequestHandlerBindingAssistant requestHandlerBindingAssistant) {
     this.client = client;
     this.serverApiProvider = serverApiProvider;
     this.telemetryService = telemetryService;
@@ -94,7 +95,6 @@ public class ShowHotspotRequestHandler implements HttpRequestHandler {
     }
     return serverApi.get().hotspot().fetch(hotspotKey);
   }
-
 
   private static HotspotDetailsDto adapt(String hotspotKey, ServerHotspotDetails hotspot) {
     return new HotspotDetailsDto(
@@ -151,6 +151,5 @@ public class ShowHotspotRequestHandler implements HttpRequestHandler {
       return isNotBlank(serverUrl) && isNotBlank(projectKey) && isNotBlank(hotspotKey);
     }
   }
-
 
 }

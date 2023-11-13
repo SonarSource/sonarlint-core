@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -31,7 +33,9 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.sonarsource.sonarlint.core.rpc.protocol.SingleThreadedMessageConsumer;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
+import org.sonarsource.sonarlint.core.rpc.protocol.adapter.InstantTypeAdapter;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.PathTypeAdapter;
+import org.sonarsource.sonarlint.core.rpc.protocol.adapter.UuidTypeAdapter;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 
@@ -66,6 +70,8 @@ public class ClientJsonRpcLauncher implements Closeable {
       .setExecutorService(messageReaderExecutor)
       .configureGson(gsonBuilder -> gsonBuilder
         .registerTypeHierarchyAdapter(Path.class, new PathTypeAdapter())
+        .registerTypeHierarchyAdapter(Instant.class, new InstantTypeAdapter())
+        .registerTypeHierarchyAdapter(UUID.class, new UuidTypeAdapter())
       )
       .wrapMessages(m -> new SingleThreadedMessageConsumer(m, messageWriterExecutor, msg -> clientDelegate.log(new LogParams(LogLevel.ERROR, msg, null))))
       .create();

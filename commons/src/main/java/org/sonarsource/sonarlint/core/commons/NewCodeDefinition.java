@@ -33,6 +33,9 @@ public interface NewCodeDefinition {
 
   NewCodeMode getMode();
   boolean isOnNewCode(long creationDate);
+  default boolean isOnNewCode(Instant introductionDate) {
+    return isOnNewCode(introductionDate.toEpochMilli());
+  }
 
   boolean isSupported();
 

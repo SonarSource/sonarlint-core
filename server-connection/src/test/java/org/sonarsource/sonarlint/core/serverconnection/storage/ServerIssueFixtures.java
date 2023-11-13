@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.serverconnection.storage;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
@@ -75,6 +76,7 @@ public class ServerIssueFixtures {
 
   public static ServerTaintIssue aServerTaintIssue() {
     return new ServerTaintIssue(
+      UUID.randomUUID(),
       "key",
       false,
       "repo:key",
