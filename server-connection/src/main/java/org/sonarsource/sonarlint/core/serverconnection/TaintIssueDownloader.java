@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
@@ -96,7 +97,6 @@ public class TaintIssueDownloader {
     var issueApi = serverApi.issue();
 
     var apiResult = issueApi.pullTaintIssues(projectKey, branchName, enabledLanguages, lastSync.map(Instant::toEpochMilli).orElse(null));
-    // Ignore project level issues
     var changedIssues = apiResult.getTaintIssues()
       .stream()
       // Ignore project level issues
@@ -131,6 +131,7 @@ public class TaintIssueDownloader {
       .map(i -> Map.entry(parseProtoSoftwareQuality(i), parseProtoImpactSeverity(i)))
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     return new ServerTaintIssue(
+      UUID.randomUUID(),
       taintVulnerabilityFromWs.getKey(),
       !taintVulnerabilityFromWs.getResolution().isEmpty(),
       ruleKey.toString(),
@@ -216,15 +217,16 @@ public class TaintIssueDownloader {
     var impacts = liteTaintIssueFromWs.getImpactsList().stream()
       .map(i -> Map.entry(
         parseProtoSoftwareQuality(i),
-        parseProtoImpactSeverity(i)
-      ))
+        parseProtoImpactSeverity(i)))
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     if (mainLocation.hasTextRange()) {
-      taintIssue = new ServerTaintIssue(liteTaintIssueFromWs.getKey(), liteTaintIssueFromWs.getResolved(), liteTaintIssueFromWs.getRuleKey(), mainLocation.getMessage(),
+      taintIssue = new ServerTaintIssue(UUID.randomUUID(), liteTaintIssueFromWs.getKey(), liteTaintIssueFromWs.getResolved(), liteTaintIssueFromWs.getRuleKey(),
+        mainLocation.getMessage(),
         filePath, creationDate, severity,
         type, toServerTaintIssueTextRange(mainLocation.getTextRange()), ruleDescriptionContextKey, cleanCodeAttribute, impacts);
     } else {
-      taintIssue = new ServerTaintIssue(liteTaintIssueFromWs.getKey(), liteTaintIssueFromWs.getResolved(), liteTaintIssueFromWs.getRuleKey(), mainLocation.getMessage(),
+      taintIssue = new ServerTaintIssue(UUID.randomUUID(), liteTaintIssueFromWs.getKey(), liteTaintIssueFromWs.getResolved(), liteTaintIssueFromWs.getRuleKey(),
+        mainLocation.getMessage(),
         filePath, creationDate, severity, type, null, ruleDescriptionContextKey, cleanCodeAttribute, impacts);
     }
     taintIssue.setFlows(liteTaintIssueFromWs.getFlowsList().stream().map(TaintIssueDownloader::convertFlows).collect(Collectors.toList()));

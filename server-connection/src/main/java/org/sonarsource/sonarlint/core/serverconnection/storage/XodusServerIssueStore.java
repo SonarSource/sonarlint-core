@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -80,7 +81,7 @@ import static org.sonarsource.sonarlint.core.serverconnection.storage.StorageUti
 
 public class XodusServerIssueStore implements ProjectServerIssueStore {
 
-  static final int CURRENT_SCHEMA_VERSION = 1;
+  static final int CURRENT_SCHEMA_VERSION = 2;
 
   private static final String BACKUP_TAR_GZ = "backup.tar.gz";
 
@@ -109,6 +110,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private static final String START_LINE_OFFSET_PROPERTY_NAME = "startLineOffset";
   private static final String END_LINE_PROPERTY_NAME = "endLine";
   private static final String END_LINE_OFFSET_PROPERTY_NAME = "endLineOffset";
+  private static final String ID_PROPERTY_NAME = "id";
   private static final String KEY_PROPERTY_NAME = "key";
   private static final String RESOLVED_PROPERTY_NAME = "resolved";
   private static final String REVIEW_STATUS_PROPERTY_NAME = "status";
@@ -143,7 +145,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private final Path xodusDbDir;
 
   public XodusServerIssueStore(Path backupDir, Path workDir) throws IOException {
-    this(backupDir, workDir, XodusServerIssueStore::checkCurrentSchemaVersion);
+    this(backupDir, workDir, XodusServerIssueStore::migrate);
   }
 
   XodusServerIssueStore(Path backupDir, Path workDir, StoreTransactionalExecutable afterInit) throws IOException {
@@ -164,6 +166,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       entityStore.registerCustomPropertyType(txn, RuleType.class, new IssueTypeBinding());
       entityStore.registerCustomPropertyType(txn, Instant.class, new InstantBinding());
       entityStore.registerCustomPropertyType(txn, HotspotReviewStatus.class, new HotspotReviewStatusBinding());
+      entityStore.registerCustomPropertyType(txn, UUID.class, new UuidBinding());
     });
 
     entityStore.executeInExclusiveTransaction(afterInit);
@@ -237,6 +240,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     }
     var cleanCodeAttribute = (String) storedIssue.getProperty(CLEAN_CODE_ATTRIBUTE_PROPERTY_NAME);
     return new ServerTaintIssue(
+      (UUID) requireNonNull(storedIssue.getProperty(ID_PROPERTY_NAME)),
       (String) requireNonNull(storedIssue.getProperty(KEY_PROPERTY_NAME)),
       Boolean.TRUE.equals(storedIssue.getProperty(RESOLVED_PROPERTY_NAME)),
       (String) requireNonNull(storedIssue.getProperty(RULE_KEY_PROPERTY_NAME)),
@@ -248,7 +252,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       textRange, (String) storedIssue.getProperty(RULE_DESCRIPTION_CONTEXT_KEY_PROPERTY_NAME),
       Optional.ofNullable(cleanCodeAttribute).map(CleanCodeAttribute::valueOf).orElse(null),
       readImpacts(storedIssue.getBlob(IMPACTS_BLOB_NAME)))
-      .setFlows(readFlows(storedIssue.getBlob(FLOWS_BLOB_NAME)));
+        .setFlows(readFlows(storedIssue.getBlob(FLOWS_BLOB_NAME)));
   }
 
   private static ServerHotspot adaptHotspot(Entity storedHotspot) {
@@ -304,11 +308,6 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   @Override
   public List<ServerIssue> load(String branchName, String filePath) {
     return loadIssue(branchName, filePath, FILE_TO_ISSUES_LINK_NAME, XodusServerIssueStore::adapt);
-  }
-
-  @Override
-  public List<ServerTaintIssue> loadTaint(String branchName, String filePath) {
-    return loadIssue(branchName, filePath, FILE_TO_TAINT_ISSUES_LINK_NAME, XodusServerIssueStore::adaptTaint);
   }
 
   @Override
@@ -582,19 +581,6 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void replaceAllTaintOfFile(String branchName, String serverFilePath, List<ServerTaintIssue> issues) {
-    timed("Wrote " + issues.size() + " taint issues in store", () -> entityStore.executeInTransaction(txn -> {
-      var branch = getOrCreateBranch(branchName, txn);
-      var fileEntity = getOrCreateFile(branch, serverFilePath, txn);
-
-      fileEntity.getLinks(FILE_TO_TAINT_ISSUES_LINK_NAME).forEach(Entity::delete);
-      fileEntity.deleteLinks(FILE_TO_TAINT_ISSUES_LINK_NAME);
-
-      issues.forEach(issue -> updateOrCreateTaintIssue(branch, fileEntity, issue, txn));
-    }));
-  }
-
-  @Override
   public void replaceAllTaintsOfBranch(String branchName, List<ServerTaintIssue> taintIssues) {
     var taintsByFile = taintIssues.stream().collect(Collectors.groupingBy(ServerTaintIssue::getFilePath));
     timed(wroteMessage(taintIssues.size(), "taints"), () -> entityStore.executeInTransaction(txn -> {
@@ -659,13 +645,14 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   private static void updateOrCreateTaintIssue(Entity branchEntity, Entity fileEntity, ServerTaintIssue issue, StoreTransaction transaction) {
-    var issueEntity = updateOrCreateIssueCommon(fileEntity, issue.getKey(), transaction, TAINT_ISSUE_ENTITY_TYPE, FILE_TO_TAINT_ISSUES_LINK_NAME);
+    var issueEntity = updateOrCreateIssueCommon(fileEntity, issue.getSonarServerKey(), transaction, TAINT_ISSUE_ENTITY_TYPE, FILE_TO_TAINT_ISSUES_LINK_NAME);
     updateTaintIssueEntity(issue, issueEntity);
     branchEntity.addLink(BRANCH_TO_TAINT_ISSUES_LINK_NAME, issueEntity);
     issueEntity.setLink(TAINT_ISSUE_TO_BRANCH_LINK_NAME, branchEntity);
   }
 
   private static void updateTaintIssueEntity(ServerTaintIssue issue, Entity issueEntity) {
+    issueEntity.setProperty(ID_PROPERTY_NAME, issue.getId());
     issueEntity.setProperty(RESOLVED_PROPERTY_NAME, issue.isResolved());
     issueEntity.setProperty(RULE_KEY_PROPERTY_NAME, issue.getRuleKey());
     issueEntity.setBlobString(MESSAGE_BLOB_NAME, issue.getMessage());
@@ -739,9 +726,10 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       });
   }
 
-  private static void removeTaint(String issueKey, @NotNull StoreTransaction txn) {
-    findUnique(txn, TAINT_ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issueKey)
-      .ifPresent(issueEntity -> {
+  private static Optional<UUID> removeTaint(String issueKey, @NotNull StoreTransaction txn) {
+    return findUnique(txn, TAINT_ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issueKey)
+      .map(issueEntity -> {
+        var id = (UUID) issueEntity.getProperty(ID_PROPERTY_NAME);
         var fileEntity = issueEntity.getLink(ISSUE_TO_FILE_LINK_NAME);
         if (fileEntity != null) {
           fileEntity.deleteLink(FILE_TO_TAINT_ISSUES_LINK_NAME, issueEntity);
@@ -753,6 +741,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
         }
         issueEntity.deleteLinks(TAINT_ISSUE_TO_BRANCH_LINK_NAME);
         issueEntity.delete();
+        return id;
       });
   }
 
@@ -831,21 +820,23 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater) {
-    entityStore.executeInTransaction(txn -> {
+  public Optional<ServerTaintIssue> updateTaintIssueBySonarServerKey(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater) {
+    return entityStore.computeInTransaction(txn -> {
       var optionalEntity = findUnique(txn, TAINT_ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issueKey);
       if (optionalEntity.isPresent()) {
         var taintEntity = optionalEntity.get();
         var currentIssue = adaptTaint(taintEntity);
         taintIssueUpdater.accept(currentIssue);
         updateTaintIssueEntity(currentIssue, taintEntity);
+        return Optional.of(currentIssue);
       }
+      return Optional.empty();
     });
   }
 
   @Override
   public void insert(String branchName, ServerTaintIssue taintIssue) {
-    entityStore.executeInTransaction(txn -> findUnique(txn, TAINT_ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, taintIssue.getKey())
+    entityStore.executeInTransaction(txn -> findUnique(txn, TAINT_ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, taintIssue.getSonarServerKey())
       .ifPresentOrElse(issueEntity -> LOG.error("Trying to store a taint vulnerability that already exists"), () -> {
         var branch = getOrCreateBranch(branchName, txn);
         var fileEntity = getOrCreateFile(branch, taintIssue.getFilePath(), txn);
@@ -864,8 +855,8 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void deleteTaintIssue(String issueKeyToDelete) {
-    entityStore.executeInTransaction(txn -> removeTaint(issueKeyToDelete, txn));
+  public Optional<UUID> deleteTaintIssueBySonarServerKey(String issueKeyToDelete) {
+    return entityStore.computeInTransaction(txn -> removeTaint(issueKeyToDelete, txn));
   }
 
   @Override
@@ -957,11 +948,15 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     return location.build();
   }
 
-  static void checkCurrentSchemaVersion(StoreTransaction txn) {
+  static void migrate(StoreTransaction txn) {
     var currentSchemaVersion = getCurrentSchemaVersion(txn);
-    if (currentSchemaVersion < CURRENT_SCHEMA_VERSION) {
+    if (currentSchemaVersion < 1) {
       // Migrate v0 to v1: force re-sync of taint vulnerabilities
       txn.getAll(BRANCH_ENTITY_TYPE).forEach(b -> b.setProperty(LAST_TAINT_SYNC_PROPERTY_NAME, Instant.EPOCH));
+    }
+    if (currentSchemaVersion < CURRENT_SCHEMA_VERSION) {
+      // Migrate v1 to v2: assign a UUID to each taint
+      txn.getAll(TAINT_ISSUE_ENTITY_TYPE).forEach(entity -> entity.setProperty(ID_PROPERTY_NAME, UUID.randomUUID()));
 
       // Set schema version to current after migration(s)
       txn.getAll(SCHEMA_ENTITY_TYPE).forEach(Entity::delete);

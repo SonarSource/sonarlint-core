@@ -24,6 +24,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CancellationException;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -31,13 +32,12 @@ import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityChangedOrClosedEvent;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FoundFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordAuthenticationResponse;
@@ -153,14 +153,6 @@ public class MockSonarLintRpcClientDelegate implements SonarLintRpcClientDelegat
   }
 
   @Override
-  public void didReceiveServerTaintVulnerabilityRaisedEvent(DidReceiveServerTaintVulnerabilityRaisedEvent params) {
-  }
-
-  @Override
-  public void didReceiveServerTaintVulnerabilityChangedOrClosedEvent(DidReceiveServerTaintVulnerabilityChangedOrClosedEvent params) {
-  }
-
-  @Override
   public void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params) {
 
   }
@@ -182,7 +174,7 @@ public class MockSonarLintRpcClientDelegate implements SonarLintRpcClientDelegat
   }
 
   @Override
-  public List<String> listAllFilePaths(String configurationScopeId) throws ConfigScopeNotFoundException {
+  public List<String> listAllFilePaths(String configurationScopeId) {
     return List.of();
   }
 
@@ -190,5 +182,10 @@ public class MockSonarLintRpcClientDelegate implements SonarLintRpcClientDelegat
   public TelemetryLiveAttributesResponse getTelemetryLiveAttributes() {
     System.err.println("Telemetry should be disabled in ITs");
     throw new CancellationException("Telemetry should be disabled in ITs");
+  }
+
+  @Override
+  public void didChangeTaintVulnerabilities(String configurationScopeId, Set<UUID> closedTaintVulnerabilityIds, List<TaintVulnerabilityDto> addedTaintVulnerabilities, List<TaintVulnerabilityDto> updatedTaintVulnerabilities) {
+
   }
 }
