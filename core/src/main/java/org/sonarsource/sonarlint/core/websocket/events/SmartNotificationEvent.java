@@ -19,9 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.websocket.events;
 
-import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
+import org.sonarsource.sonarlint.core.commons.push.SonarServerEvent;
 
-public class SmartNotificationEvent implements ServerEvent {
+public class SmartNotificationEvent implements SonarServerEvent {
 
   private final String message;
   private final String link;

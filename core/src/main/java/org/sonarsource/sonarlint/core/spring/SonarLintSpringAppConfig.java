@@ -71,6 +71,7 @@ import org.sonarsource.sonarlint.core.smartnotifications.SmartNotifications;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
 import org.sonarsource.sonarlint.core.sync.SynchronizationStatusRepository;
+import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.tracking.IssueTrackingService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
@@ -131,7 +132,8 @@ import org.springframework.scheduling.support.TaskUtils;
   RequestHandlerBindingAssistant.class,
   FileService.class,
   FilePathTranslationRepository.class,
-  SynchronizationStatusRepository.class
+  SynchronizationStatusRepository.class,
+  TaintVulnerabilityTrackingService.class
 })
 public class SonarLintSpringAppConfig {
 

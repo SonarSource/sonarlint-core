@@ -831,17 +831,15 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public boolean updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater) {
-    return entityStore.computeInTransaction(txn -> {
+  public void updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater) {
+    entityStore.executeInTransaction(txn -> {
       var optionalEntity = findUnique(txn, TAINT_ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issueKey);
       if (optionalEntity.isPresent()) {
         var taintEntity = optionalEntity.get();
         var currentIssue = adaptTaint(taintEntity);
         taintIssueUpdater.accept(currentIssue);
         updateTaintIssueEntity(currentIssue, taintEntity);
-        return true;
       }
-      return false;
     });
   }
 

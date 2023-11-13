@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.sonarsource.sonarlint.core.rpc.protocol.SingleThreadedMessageConsumer;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.PathTypeAdapter;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
