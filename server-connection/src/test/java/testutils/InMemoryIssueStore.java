@@ -279,12 +279,11 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public boolean updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater) {
+  public void updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater) {
     if (taintIssuesByKey.containsKey(issueKey)) {
-      taintIssueUpdater.accept(taintIssuesByKey.get(issueKey));
-      return true;
+      var serverTaintIssue = taintIssuesByKey.get(issueKey);
+      taintIssueUpdater.accept(serverTaintIssue);
     }
-    return false;
   }
 
   @Override
