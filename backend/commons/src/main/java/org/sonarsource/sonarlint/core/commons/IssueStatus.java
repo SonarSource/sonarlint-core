@@ -19,6 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.commons;
 
+<<<<<<<< HEAD:backend/commons/src/main/java/org/sonarsource/sonarlint/core/commons/IssueStatus.java
 public enum IssueStatus {
   ACCEPT, WONT_FIX, FALSE_POSITIVE
+========
+public interface SonarServerEvent {
+>>>>>>>> 7fd22943b (SLCORE-625 Dispatch server events to services):commons/src/main/java/org/sonarsource/sonarlint/core/commons/push/SonarServerEvent.java
 }
