@@ -27,15 +27,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityChangedOrClosedEvent;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
-import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
@@ -43,19 +37,13 @@ import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionCredentialsChangedEvent;
+import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
-import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
-import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotChangedEvent;
-import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotClosedEvent;
-import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotRaisedEvent;
-import org.sonarsource.sonarlint.core.serverapi.push.ServerHotspotEvent;
-import org.sonarsource.sonarlint.core.serverapi.push.SonarProjectEvent;
-import org.sonarsource.sonarlint.core.serverapi.push.TaintVulnerabilityClosedEvent;
-import org.sonarsource.sonarlint.core.serverapi.push.TaintVulnerabilityRaisedEvent;
-import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
 import static java.util.Objects.requireNonNull;
@@ -63,25 +51,22 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toSet;
 
 public class ServerEventsService {
-  private final SonarLintRpcClient client;
   private final ConfigurationRepository configurationRepository;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
-  private final StorageService storageService;
   private final ServerApiProvider serverApiProvider;
   private final LanguageSupportRepository languageSupportRepository;
   private final boolean shouldManageServerSentEvents;
+  private final ApplicationEventPublisher eventPublisher;
   private final Map<String, SonarQubeEventStream> streamsPerConnectionId = new ConcurrentHashMap<>();
 
-  public ServerEventsService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionConfigurationRepository,
-    StorageService storageService,
-    ServerApiProvider serverApiProvider, LanguageSupportRepository languageSupportRepository, InitializeParams initializeParams) {
-    this.client = client;
+  public ServerEventsService(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionConfigurationRepository,
+    ServerApiProvider serverApiProvider, LanguageSupportRepository languageSupportRepository, InitializeParams initializeParams, ApplicationEventPublisher eventPublisher) {
     this.configurationRepository = configurationRepository;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
-    this.storageService = storageService;
     this.serverApiProvider = serverApiProvider;
     this.languageSupportRepository = languageSupportRepository;
     this.shouldManageServerSentEvents = initializeParams.getFeatureFlags().shouldManageServerSentEvents();
+    this.eventPublisher = eventPublisher;
   }
 
   @EventListener
@@ -184,26 +169,8 @@ public class ServerEventsService {
   }
 
   private SonarQubeEventStream openStream(String connectionId) {
-    return new SonarQubeEventStream(storageService.connection(connectionId), languageSupportRepository.getEnabledLanguagesInConnectedMode(), connectionId, serverApiProvider,
-      e -> notifyClient(connectionId, e));
-  }
-
-  private void notifyClient(String connectionId, ServerEvent serverEvent) {
-    if (serverEvent instanceof TaintVulnerabilityRaisedEvent) {
-      var projectKey = ((TaintVulnerabilityRaisedEvent) serverEvent).getProjectKey();
-      var taintEvent = (TaintVulnerabilityRaisedEvent) serverEvent;
-      client.didReceiveServerTaintVulnerabilityRaisedEvent(new DidReceiveServerTaintVulnerabilityRaisedEvent(connectionId, projectKey,
-        taintEvent.getMainLocation().getFilePath(), taintEvent.getBranchName(), taintEvent.getKey()));
-    } else if (serverEvent instanceof TaintVulnerabilityClosedEvent ||
-      ((serverEvent instanceof IssueChangedEvent) && !((IssueChangedEvent) serverEvent).getImpactedTaintIssueKeys().isEmpty())) {
-        var projectKey = ((SonarProjectEvent) serverEvent).getProjectKey();
-        client.didReceiveServerTaintVulnerabilityChangedOrClosedEvent(new DidReceiveServerTaintVulnerabilityChangedOrClosedEvent(connectionId, projectKey));
-      } else if (serverEvent instanceof SecurityHotspotChangedEvent ||
-        serverEvent instanceof SecurityHotspotClosedEvent ||
-        serverEvent instanceof SecurityHotspotRaisedEvent) {
-          var projectKey = ((SonarProjectEvent) serverEvent).getProjectKey();
-          client.didReceiveServerHotspotEvent(new DidReceiveServerHotspotEvent(connectionId, projectKey, ((ServerHotspotEvent) serverEvent).getFilePath()));
-        }
+    return new SonarQubeEventStream(languageSupportRepository.getEnabledLanguagesInConnectedMode(), connectionId, serverApiProvider,
+      e -> eventPublisher.publishEvent(new SonarServerEventReceivedEvent(connectionId, e)));
   }
 
   private boolean supportsServerSentEvents(String connectionId) {

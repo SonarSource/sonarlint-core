@@ -52,7 +52,7 @@ public class ServerIssueFixtures {
     }
 
     public ServerIssue build() {
-      return new ServerIssue(key, resolved, ruleKey, "message", "file/path", introductionDate, null, ruleType, textRangeWithHash);
+      return new ServerIssue(key, resolved, ruleKey, "message", "file/path", introductionDate, issueSeverity, ruleType, textRangeWithHash);
     }
   }
 
@@ -71,7 +71,7 @@ public class ServerIssueFixtures {
     }
 
     public ServerIssue build() {
-      return new ServerIssue(key, resolved, "ruleKey", "message", "file/path", introductionDate, null, ruleType, lineNumber, lineHash);
+      return new ServerIssue(key, resolved, "ruleKey", "message", "file/path", introductionDate, issueSeverity, ruleType, lineNumber, lineHash);
     }
   }
 
@@ -80,6 +80,7 @@ public class ServerIssueFixtures {
     protected boolean resolved = false;
     protected Instant introductionDate = Instant.now();
     protected RuleType ruleType = RuleType.BUG;
+    protected IssueSeverity issueSeverity;
 
     protected AbstractServerIssueBuilder(String key) {
       this.key = key;
@@ -95,11 +96,20 @@ public class ServerIssueFixtures {
       return (T) this;
     }
 
+    public T open() {
+      this.resolved = false;
+      return (T) this;
+    }
+
     public T withType(RuleType ruleType) {
       this.ruleType = ruleType;
       return (T) this;
     }
 
+    public T withSeverity(IssueSeverity issueSeverity) {
+      this.issueSeverity = issueSeverity;
+      return (T) this;
+    }
   }
 
   public static class ServerIssue {
