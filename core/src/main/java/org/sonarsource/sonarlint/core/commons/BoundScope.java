@@ -17,6 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+<<<<<<<< HEAD:core/src/main/java/org/sonarsource/sonarlint/core/commons/BoundScope.java
 package org.sonarsource.sonarlint.core.commons;
 
 /**
@@ -25,13 +26,26 @@ package org.sonarsource.sonarlint.core.commons;
 public class BoundScope {
 
   private final String configScopeId;
-  private final String connectionId;
-  private final String sonarProjectKey;
+========
+package org.sonarsource.sonarlint.core.event;
 
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerFinding;
+
+public class ServerIssueStatusChangedEvent {
+>>>>>>>> 612e67c69 (SLCORE-612 Move taint vulnerabilities management to the backend):core/src/main/java/org/sonarsource/sonarlint/core/event/ServerIssueStatusChangedEvent.java
+  private final String connectionId;
+  private final String projectKey;
+  private final ServerFinding finding;
+
+<<<<<<<< HEAD:core/src/main/java/org/sonarsource/sonarlint/core/commons/BoundScope.java
   public BoundScope(String configScopeId, String connectionId, String sonarProjectKey) {
     this.configScopeId = configScopeId;
+========
+  public ServerIssueStatusChangedEvent(String connectionId, String projectKey, ServerFinding finding) {
+>>>>>>>> 612e67c69 (SLCORE-612 Move taint vulnerabilities management to the backend):core/src/main/java/org/sonarsource/sonarlint/core/event/ServerIssueStatusChangedEvent.java
     this.connectionId = connectionId;
-    this.sonarProjectKey = sonarProjectKey;
+    this.projectKey = projectKey;
+    this.finding = finding;
   }
 
   public String getConfigScopeId() {
@@ -42,8 +56,12 @@ public class BoundScope {
     return connectionId;
   }
 
-  public String getSonarProjectKey() {
-    return sonarProjectKey;
+  public String getProjectKey() {
+    return projectKey;
+  }
+
+  public ServerFinding getFinding() {
+    return finding;
   }
 
 }
