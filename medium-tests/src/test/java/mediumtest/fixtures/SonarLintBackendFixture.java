@@ -35,9 +35,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
@@ -60,13 +62,12 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientCons
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityChangedOrClosedEvent;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FoundFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordAuthenticationResponse;
@@ -80,6 +81,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgres
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryConstantAttributesDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
@@ -433,6 +435,7 @@ public class SonarLintBackendFixture {
     private final Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId;
     private final boolean printLogsToStdOut;
     private final Queue<LogParams> logs = new ConcurrentLinkedQueue<>();
+    private final List<DidChangeTaintVulnerabilitiesParams> taintVulnerabilityChanges = new CopyOnWriteArrayList<>();
 
     public FakeSonarLintRpcClient(Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId, boolean printLogsToStdOut) {
       this.credentialsByConnectionId = credentialsByConnectionId;
@@ -532,14 +535,6 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public void didReceiveServerTaintVulnerabilityRaisedEvent(DidReceiveServerTaintVulnerabilityRaisedEvent params) {
-    }
-
-    @Override
-    public void didReceiveServerTaintVulnerabilityChangedOrClosedEvent(DidReceiveServerTaintVulnerabilityChangedOrClosedEvent params) {
-    }
-
-    @Override
     public void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params) {
     }
 
@@ -579,6 +574,11 @@ public class SonarLintBackendFixture {
     }
 
     @Override
+    public void didChangeTaintVulnerabilities(String configurationScopeId, Set<UUID> closedTaintVulnerabilityIds, List<TaintVulnerabilityDto> addedTaintVulnerabilities, List<TaintVulnerabilityDto> updatedTaintVulnerabilities) {
+      this.taintVulnerabilityChanges.add(new DidChangeTaintVulnerabilitiesParams(configurationScopeId, closedTaintVulnerabilityIds, addedTaintVulnerabilities, updatedTaintVulnerabilities));
+    }
+
+    @Override
     public void log(LogParams params) {
       this.logs.add(params);
       if (printLogsToStdOut) {
@@ -594,14 +594,6 @@ public class SonarLintBackendFixture {
     @Override
     public List<String> listAllFilePaths(String configurationScopeId) {
       return List.of();
-    }
-
-    public boolean hasReceivedSmartNotifications() {
-      return !smartNotificationsToShow.isEmpty();
-    }
-
-    public List<ShowSoonUnsupportedMessageParams> getSoonUnsupportedMessagesToShow() {
-      return soonUnsupportedMessagesToShow;
     }
 
     public List<ShowSmartNotificationParams> getSmartNotificationsToShow() {
@@ -622,6 +614,10 @@ public class SonarLintBackendFixture {
 
     public List<String> getLogMessages() {
       return logs.stream().map(LogParams::getMessage).collect(Collectors.toList());
+    }
+
+    public List<DidChangeTaintVulnerabilitiesParams> getTaintVulnerabilityChanges() {
+      return taintVulnerabilityChanges;
     }
 
     public void clearLogs() {

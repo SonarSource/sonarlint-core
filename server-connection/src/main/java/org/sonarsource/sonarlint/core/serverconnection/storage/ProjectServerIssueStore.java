@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.Language;
@@ -48,6 +49,7 @@ public interface ProjectServerIssueStore {
    * @return true if the hotspot with the given key was found, else false
    */
   boolean changeHotspotStatus(String hotspotKey, HotspotReviewStatus newStatus);
+
   /**
    * Store issues for a single file by replacing existing ones and moving issues if necessary.
    */
@@ -124,28 +126,9 @@ public interface ProjectServerIssueStore {
   List<ServerIssue> load(String branchName, String sqFilePath);
 
   /**
-   * Store taint issues for a single file.
-   * For filesystem-based implementations, watch out for:
-   * - Too long paths
-   * - Directories with too many files
-   * - (Too deep paths?)
-   */
-  void replaceAllTaintOfFile(String branchName, String serverFilePath, List<ServerTaintIssue> taintIssues);
-
-  /**
    * Store taint issues for a branch.
    */
   void replaceAllTaintsOfBranch(String branchName, List<ServerTaintIssue> taintIssues);
-
-  /**
-   * Load taint issues stored for specified file.
-   *
-   *
-   * @param branchName
-   * @param sqFilePath the relative path to the base of project, in SonarQube
-   * @return issues, possibly empty
-   */
-  List<ServerTaintIssue> loadTaint(String branchName, String sqFilePath);
 
   /**
    * Load hotspots stored for specified file.
@@ -193,12 +176,16 @@ public interface ProjectServerIssueStore {
   /**
    * @return the updated issue if found, else empty
    */
-  void updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater);
+  Optional<ServerTaintIssue> updateTaintIssueBySonarServerKey(String sonarServerKey, Consumer<ServerTaintIssue> taintIssueUpdater);
 
   void insert(String branchName, ServerTaintIssue taintIssue);
+
   void insert(String branchName, ServerHotspot hotspot);
 
-  void deleteTaintIssue(String issueKeyToDelete);
+  /**
+   * @return the id of the deleted taint issue if it was found
+   */
+  Optional<UUID> deleteTaintIssueBySonarServerKey(String sonarServerKeyToDelete);
 
   void deleteHotspot(String hotspotKey);
 

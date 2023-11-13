@@ -43,6 +43,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesRpcService
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.IssueTrackingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.SecurityHotspotMatchingRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityTrackingRpcService;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 
 import static java.util.Objects.requireNonNull;
@@ -137,6 +138,11 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
   @Override
   public NewCodeRpcService getNewCodeService() {
     return serverUsingRpc.getNewCodeService();
+  }
+
+  @Override
+  public TaintVulnerabilityTrackingRpcService getTaintVulnerabilityTrackingService() {
+    return serverUsingRpc.getTaintVulnerabilityTrackingService();
   }
 
   public Path getWorkDir() {

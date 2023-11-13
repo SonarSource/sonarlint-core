@@ -279,7 +279,7 @@ class TaintIssueDownloaderTests {
     assertThat(result.getClosedIssueKeys()).isEmpty();
 
     var serverTaintIssue = result.getChangedTaintIssues().get(0);
-    assertThat(serverTaintIssue.getKey()).isEqualTo("uuid1");
+    assertThat(serverTaintIssue.getSonarServerKey()).isEqualTo("uuid1");
     assertThat(serverTaintIssue.getMessage()).isEqualTo("Primary message");
     assertThat(serverTaintIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
     assertThat(serverTaintIssue.getSeverity()).isEqualTo(IssueSeverity.MAJOR);
@@ -302,7 +302,7 @@ class TaintIssueDownloaderTests {
     assertThat(serverTaintIssue.getFlows().get(1).locations()).hasSize(1);
 
     var taintIssueNoRange = result.getChangedTaintIssues().get(1);
-    assertThat(taintIssueNoRange.getKey()).isEqualTo("uuid2");
+    assertThat(taintIssueNoRange.getSonarServerKey()).isEqualTo("uuid2");
     assertThat(taintIssueNoRange.getFilePath()).isEqualTo("foo/bar/Hello.java");
     assertThat(taintIssueNoRange.getTextRange()).isNull();
 

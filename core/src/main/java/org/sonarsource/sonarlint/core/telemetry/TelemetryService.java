@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Telemetry
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -32,12 +32,15 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.event.LocalOnlyIssueStatusChangedEvent;
+import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
+import org.springframework.context.event.EventListener;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 
@@ -220,7 +223,17 @@ public class TelemetryService {
     }
   }
 
-  public void issueStatusChanged(String ruleKey) {
+  @EventListener
+  public void onServerIssueStatusChanged(ServerIssueStatusChangedEvent event) {
+    issueStatusChanged(event.getFinding().getRuleKey());
+  }
+
+  @EventListener
+  public void onLocalOnlyIssueStatusChanged(LocalOnlyIssueStatusChangedEvent event) {
+    issueStatusChanged(event.getIssue().getRuleKey());
+  }
+
+  private void issueStatusChanged(String ruleKey) {
     if (isEnabled()) {
       getTelemetryLocalStorageManager().tryUpdateAtomically(telemetryLocalStorage -> telemetryLocalStorage.addIssueStatusChanged(ruleKey));
     }

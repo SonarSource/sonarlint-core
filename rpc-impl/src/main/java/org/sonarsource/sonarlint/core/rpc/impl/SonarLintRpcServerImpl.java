@@ -23,6 +23,8 @@ import com.google.common.util.concurrent.MoreExecutors;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -43,9 +45,11 @@ import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SingleThreadedMessageConsumer;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
-import org.sonarsource.sonarlint.core.rpc.protocol.adapter.PathTypeAdapter;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
+import org.sonarsource.sonarlint.core.rpc.protocol.adapter.InstantTypeAdapter;
+import org.sonarsource.sonarlint.core.rpc.protocol.adapter.PathTypeAdapter;
+import org.sonarsource.sonarlint.core.rpc.protocol.adapter.UuidTypeAdapter;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.BindingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.SonarProjectBranchRpcService;
@@ -60,6 +64,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesRpcService
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.IssueTrackingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.SecurityHotspotMatchingRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityTrackingRpcService;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ConfigurableApplicationContext;
 
@@ -83,7 +88,9 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
       .setOutput(out)
       .setExecutorService(messageReaderExecutor)
       .configureGson(gsonBuilder -> gsonBuilder
-        .registerTypeHierarchyAdapter(Path.class, new PathTypeAdapter()))
+        .registerTypeHierarchyAdapter(Path.class, new PathTypeAdapter())
+        .registerTypeHierarchyAdapter(Instant.class, new InstantTypeAdapter())
+        .registerTypeHierarchyAdapter(UUID.class, new UuidTypeAdapter()))
       .wrapMessages(m -> new SingleThreadedMessageConsumer(m, messageWriterExecutor, System.err::println))
       .create();
 
@@ -183,6 +190,11 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   @Override
   public NewCodeRpcService getNewCodeService() {
     return new NewCodeRpcServiceDelegate(this);
+  }
+
+  @Override
+  public TaintVulnerabilityTrackingRpcService getTaintVulnerabilityTrackingService() {
+    return new TaintVulnerabilityTrackingRpcServiceDelegate(this);
   }
 
   @Override
