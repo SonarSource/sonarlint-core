@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -89,7 +90,7 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
     taintIssuesByFileByBranch
       .computeIfAbsent(branchName, __ -> new HashMap<>())
       .putAll(issuesToMergeByFilePath);
-    issuesToMerge.forEach(issue -> taintIssuesByKey.put(issue.getKey(), issue));
+    issuesToMerge.forEach(issue -> taintIssuesByKey.put(issue.getSonarServerKey(), issue));
     closedIssueKeysToDelete.forEach(taintIssuesByKey::remove);
     lastTaintSyncByBranch.put(branchName, syncTimestamp);
 
@@ -208,30 +209,8 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void replaceAllTaintOfFile(String branchName, String filePath, List<ServerTaintIssue> issues) {
-    var branchTaints = taintIssuesByFileByBranch.get(branchName);
-    if (branchTaints != null) {
-      var fileTaints = branchTaints.get(filePath);
-      if (fileTaints != null) {
-        fileTaints.forEach(taint -> taintIssuesByKey.remove(taint.getKey()));
-      }
-    }
-    taintIssuesByFileByBranch
-      .computeIfAbsent(branchName, __ -> new HashMap<>())
-      .put(filePath, issues);
-    taintIssuesByKey.putAll(issues.stream().collect(Collectors.toMap(ServerTaintIssue::getKey, Function.identity())));
-  }
-
-  @Override
   public void replaceAllTaintsOfBranch(String branchName, List<ServerTaintIssue> taintIssues) {
     taintIssuesByFileByBranch.put(branchName, taintIssues.stream().collect(Collectors.groupingBy(ServerTaintIssue::getFilePath)));
-  }
-
-  @Override
-  public List<ServerTaintIssue> loadTaint(String branchName, String sqFilePath) {
-    return taintIssuesByFileByBranch
-      .getOrDefault(branchName, Map.of())
-      .getOrDefault(sqFilePath, List.of());
   }
 
   @Override
@@ -279,11 +258,13 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void updateTaintIssue(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater) {
+  public Optional<ServerTaintIssue> updateTaintIssueBySonarServerKey(String issueKey, Consumer<ServerTaintIssue> taintIssueUpdater) {
     if (taintIssuesByKey.containsKey(issueKey)) {
       var serverTaintIssue = taintIssuesByKey.get(issueKey);
       taintIssueUpdater.accept(serverTaintIssue);
+      return Optional.of(serverTaintIssue);
     }
+    return Optional.empty();
   }
 
   @Override
@@ -303,9 +284,13 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void deleteTaintIssue(String issueKeyToDelete) {
+  public Optional<UUID> deleteTaintIssueBySonarServerKey(String issueKeyToDelete) {
+    var reference = new UUID[1];
     taintIssuesByFileByBranch.forEach(
-      (branchName, taintIssuesByFile) -> taintIssuesByFile.forEach((file, taintIssues) -> taintIssues.removeIf(taintIssue -> issueKeyToDelete.equals(taintIssue.getKey()))));
+      (branchName, taintIssuesByFile) -> taintIssuesByFile.forEach((file, taintIssues) -> {
+        taintIssues.stream().filter(taintIssue -> issueKeyToDelete.equals(taintIssue.getSonarServerKey())).findFirst().ifPresent(issue -> reference[0] = issue.getId());
+      }));
+    return Optional.ofNullable(reference[0]);
   }
 
   @Override

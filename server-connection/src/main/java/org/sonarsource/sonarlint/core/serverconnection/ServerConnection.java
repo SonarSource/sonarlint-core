@@ -43,6 +43,7 @@ import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.prefix.FileTreeMatcher;
+import org.sonarsource.sonarlint.core.serverconnection.storage.UpdateSummary;
 
 public class ServerConnection {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -119,20 +120,6 @@ public class ServerConnection {
     return issueStoreReader.getServerIssues(projectBinding, branchName, ideFilePath);
   }
 
-  public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName, String ideFilePath, boolean includeResolved) {
-    return enhanceWithNewCodeInformation(projectBinding.projectKey(), issueStoreReader.getServerTaintIssues(projectBinding, branchName, ideFilePath, includeResolved));
-  }
-
-  public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName) {
-    return enhanceWithNewCodeInformation(projectBinding.projectKey(), issueStoreReader.getRawServerTaintIssues(projectBinding, branchName));
-  }
-
-  private List<ServerTaintIssue> enhanceWithNewCodeInformation(String projectKey, List<ServerTaintIssue> issues) {
-    var newCodeDefinition = storage.project(projectKey).newCodeDefinition().read();
-    issues.forEach(taintIssue -> taintIssue.setIsOnNewCode(newCodeDefinition.map(definition -> definition.isOnNewCode(taintIssue.getCreationDate().toEpochMilli())).orElse(true)));
-    return issues;
-  }
-
   public ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> ideFilePaths) {
     List<Path> idePathList = ideFilePaths.stream()
       .map(Paths::get)
@@ -156,13 +143,6 @@ public class ServerConnection {
   public void downloadServerIssuesForFile(ServerApi serverApi, String projectKey, String serverFileRelativePath, String branchName) {
     var serverVersion = readOrSynchronizeServerVersion(serverApi);
     issuesUpdater.updateFileIssues(serverApi, projectKey, serverFileRelativePath, branchName, isSonarCloud, serverVersion);
-  }
-
-  public void downloadServerTaintIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
-    ProgressMonitor progress) {
-    var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
-    var serverVersion = readOrSynchronizeServerVersion(serverApi);
-    issuesUpdater.updateFileTaints(serverApi, projectBinding, ideFilePath, branchName, isSonarCloud, serverVersion, progress);
   }
 
   public Version readOrSynchronizeServerVersion(ServerApi serverApi) {
@@ -234,27 +214,13 @@ public class ServerConnection {
     }
   }
 
-  public void syncServerTaintIssuesForProject(EndpointParams endpoint, HttpClient client, String projectKey, String branchName) {
-    syncServerTaintIssuesForProject(new ServerApi(new ServerApiHelper(endpoint, client)), projectKey, branchName);
-  }
-
-  public void syncServerTaintIssuesForProject(ServerApi serverApi, String projectKey, String branchName) {
+  public UpdateSummary<ServerTaintIssue> updateServerTaintIssuesForProject(ServerApi serverApi, String projectKey, String branchName) {
     var serverVersion = readOrSynchronizeServerVersion(serverApi);
     if (IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
       LOG.info("[SYNC] Synchronizing taint issues for project '{}' on branch '{}'", projectKey, branchName);
-      issuesUpdater.syncTaints(serverApi, projectKey, branchName, enabledLanguagesToSync);
+      return issuesUpdater.syncTaints(serverApi, projectKey, branchName, enabledLanguagesToSync);
     } else {
-      LOG.debug("Incremental taint issue sync is not supported. Skipping.");
-    }
-  }
-
-  public void updateServerTaintIssuesForProject(ServerApi serverApi, String projectKey, String branchName) {
-    var serverVersion = readOrSynchronizeServerVersion(serverApi);
-    if (IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
-      LOG.info("[SYNC] Synchronizing taint issues for project '{}' on branch '{}'", projectKey, branchName);
-      issuesUpdater.syncTaints(serverApi, projectKey, branchName, enabledLanguagesToSync);
-    } else {
-      issuesUpdater.downloadProjectTaints(serverApi, projectKey, branchName);
+      return issuesUpdater.downloadProjectTaints(serverApi, projectKey, branchName);
     }
   }
 

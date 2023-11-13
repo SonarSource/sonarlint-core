@@ -50,6 +50,7 @@ import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.event.MatchedSonarProjectBranchChangedEvent;
+import org.sonarsource.sonarlint.core.event.TaintVulnerabilitiesSynchronizedEvent;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.FilePathTranslationRepository;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
@@ -65,6 +66,7 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverconnection.ServerConnection;
 import org.sonarsource.sonarlint.core.serverconnection.prefix.FileTreeMatcher;
 import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
 import static java.util.Objects.requireNonNull;
@@ -91,12 +93,13 @@ public class SynchronizationServiceImpl {
   private final SonarProjectBranchTrackingService branchTrackingService;
   private final FilePathTranslationRepository filePathTranslationRepository;
   private final SynchronizationStatusRepository synchronizationStatusRepository;
+  private final ApplicationEventPublisher eventPublisher;
   private ScheduledExecutorService scheduledSynchronizer;
 
   public SynchronizationServiceImpl(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
     SonarProjectBranchTrackingService branchService, ServerApiProvider serverApiProvider, StorageService storageService, InitializeParams params,
     SonarProjectBranchTrackingService branchTrackingService, FilePathTranslationRepository filePathTranslationRepository,
-    SynchronizationStatusRepository synchronizationStatusRepository) {
+    SynchronizationStatusRepository synchronizationStatusRepository, ApplicationEventPublisher eventPublisher) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
@@ -110,6 +113,7 @@ public class SynchronizationServiceImpl {
     this.branchTrackingService = branchTrackingService;
     this.filePathTranslationRepository = filePathTranslationRepository;
     this.synchronizationStatusRepository = synchronizationStatusRepository;
+    this.eventPublisher = eventPublisher;
   }
 
   @PostConstruct
@@ -134,11 +138,11 @@ public class SynchronizationServiceImpl {
     var bindingsPerConnectionId = configurationRepository.getEffectiveBindingForLeafConfigScopesById()
       .entrySet().stream().collect(
         groupingBy(e -> e.getValue().getConnectionId(),
-          mapping(e -> new BoundConfigurationScope(e.getKey(), e.getValue().getSonarProjectKey()), toList())));
+          mapping(e -> new BoundScope(e.getKey(), e.getValue().getConnectionId(), e.getValue().getSonarProjectKey()), toList())));
     synchronizeProjects(bindingsPerConnectionId);
   }
 
-  private void synchronizeProjects(Map<String, List<BoundConfigurationScope>> bindingsPerConnectionId) {
+  private void synchronizeProjects(Map<String, List<BoundScope>> bindingsPerConnectionId) {
     if (bindingsPerConnectionId.isEmpty()) {
       return;
     }
@@ -159,7 +163,7 @@ public class SynchronizationServiceImpl {
     });
   }
 
-  private void synchronizeProjects(String connectionId, List<BoundConfigurationScope> boundConfigurationScopes, ProgressNotifier notifier, Set<String> synchronizedConfScopeIds,
+  private void synchronizeProjects(String connectionId, List<BoundScope> boundConfigurationScopes, ProgressNotifier notifier, Set<String> synchronizedConfScopeIds,
     float progress, float progressGap) {
     if (boundConfigurationScopes.isEmpty()) {
       return;
@@ -168,8 +172,8 @@ public class SynchronizationServiceImpl {
       var serverConnection = getServerConnection(connectionId, serverApi);
       var subProgressGap = progressGap / boundConfigurationScopes.size();
       var subProgress = progress;
-      for (BoundConfigurationScope scope : boundConfigurationScopes) {
-        notifier.notify("Synchronizing project '" + scope.sonarProjectKey + "'...", Math.round(subProgress));
+      for (BoundScope scope : boundConfigurationScopes) {
+        notifier.notify("Synchronizing project '" + scope.getSonarProjectKey() + "'...", Math.round(subProgress));
         autoSyncBoundConfigurationScope(scope, serverApi, serverConnection, synchronizedConfScopeIds);
         subProgress += subProgressGap;
       }
@@ -182,16 +186,30 @@ public class SynchronizationServiceImpl {
       languageSupportRepository.getEnabledLanguagesInConnectedMode(), connectedModeEmbeddedPluginKeys);
   }
 
-  private void autoSyncBoundConfigurationScope(BoundConfigurationScope boundScope, ServerApi serverApi,
+  private void autoSyncBoundConfigurationScope(BoundScope boundScope, ServerApi serverApi,
     ServerConnection serverConnection, Set<String> synchronizedConfScopeIds) {
-    branchService.getEffectiveMatchedSonarProjectBranch(boundScope.configurationScopeId).ifPresent(branch -> {
-      serverConnection.syncServerIssuesForProject(serverApi, boundScope.sonarProjectKey, branch);
-      if (languageSupportRepository.areTaintVulnerabilitiesSupported()) {
-        serverConnection.updateServerTaintIssuesForProject(serverApi, boundScope.sonarProjectKey, branch);
-      }
-      serverConnection.syncServerHotspotsForProject(serverApi, boundScope.sonarProjectKey, branch);
-      synchronizedConfScopeIds.add(boundScope.configurationScopeId);
+    branchService.getEffectiveMatchedSonarProjectBranch(boundScope.getId()).ifPresent(branch -> {
+      serverConnection.syncServerIssuesForProject(serverApi, boundScope.getSonarProjectKey(), branch);
+      synchronizeTaintVulnerabilities(serverApi, serverConnection, boundScope, branch);
+      serverConnection.syncServerHotspotsForProject(serverApi, boundScope.getSonarProjectKey(), branch);
+      synchronizedConfScopeIds.add(boundScope.getId());
     });
+  }
+
+  public void synchronizeTaintVulnerabilities(String configurationScopeId, Binding binding, String branchName) {
+    var connectionId = binding.getConnectionId();
+    serverApiProvider.getServerApi(connectionId).ifPresent(serverApi -> {
+      var serverConnection = getServerConnection(connectionId, serverApi);
+      synchronizeTaintVulnerabilities(serverApi, serverConnection, new BoundScope(configurationScopeId, binding.getConnectionId(), binding.getSonarProjectKey()), branchName);
+    });
+  }
+
+  private void synchronizeTaintVulnerabilities(ServerApi serverApi, ServerConnection serverConnection, BoundScope boundScope, String branch) {
+    if (languageSupportRepository.areTaintVulnerabilitiesSupported()) {
+      var projectKey = boundScope.getSonarProjectKey();
+      var summary = serverConnection.updateServerTaintIssuesForProject(serverApi, projectKey, branch);
+      eventPublisher.publishEvent(new TaintVulnerabilitiesSynchronizedEvent(boundScope, summary));
+    }
   }
 
   @EventListener
@@ -242,7 +260,7 @@ public class SynchronizationServiceImpl {
         matchPaths(serverApi, projectKey, configScopeIds);
         configScopeIds.forEach(branchTrackingService::matchSonarProjectBranch);
       });
-      synchronizeProjects(Map.of(connectionId, scopesToSync.stream().map(scope -> new BoundConfigurationScope(scope.getId(), scope.getSonarProjectKey())).collect(toList())));
+      synchronizeProjects(Map.of(connectionId, scopesToSync.stream().map(scope -> new BoundScope(scope.getId(), connectionId, scope.getSonarProjectKey())).collect(toList())));
     } catch (Exception e) {
       LOG.error("Error during synchronization", e);
     }
@@ -294,7 +312,7 @@ public class SynchronizationServiceImpl {
     }
     var configurationScopeId = changedEvent.getConfigurationScopeId();
     configurationRepository.getEffectiveBinding(configurationScopeId).ifPresent(binding -> synchronizeProjects(Map.of(requireNonNull(binding.getConnectionId()),
-      List.of(new BoundConfigurationScope(configurationScopeId, binding.getSonarProjectKey())))));
+      List.of(new BoundScope(configurationScopeId, binding.getConnectionId(), binding.getSonarProjectKey())))));
   }
 
   public void fetchProjectIssues(Binding binding, String activeBranch) {
@@ -329,16 +347,6 @@ public class SynchronizationServiceImpl {
   public void shutdown() {
     if (scheduledSynchronizer != null && !MoreExecutors.shutdownAndAwaitTermination(scheduledSynchronizer, 5, TimeUnit.SECONDS)) {
       LOG.warn("Unable to stop synchronizer executor service in a timely manner");
-    }
-  }
-
-  private static class BoundConfigurationScope {
-    private final String configurationScopeId;
-    private final String sonarProjectKey;
-
-    private BoundConfigurationScope(String configurationScopeId, String sonarProjectKey) {
-      this.configurationScopeId = configurationScopeId;
-      this.sonarProjectKey = sonarProjectKey;
     }
   }
 }

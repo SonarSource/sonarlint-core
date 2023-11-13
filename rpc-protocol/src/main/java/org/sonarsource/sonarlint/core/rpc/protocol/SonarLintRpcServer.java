@@ -33,6 +33,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.IssueRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.NewCodeRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityTrackingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.IssueTrackingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.SecurityHotspotMatchingRpcService;
@@ -83,6 +84,9 @@ public interface SonarLintRpcServer {
 
   @JsonDelegate
   NewCodeRpcService getNewCodeService();
+
+  @JsonDelegate
+  TaintVulnerabilityTrackingRpcService getTaintVulnerabilityTrackingService();
 
   @JsonRequest
   CompletableFuture<Void> shutdown();

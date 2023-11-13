@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -49,6 +50,7 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.IssueSeverityBind
 import org.sonarsource.sonarlint.core.serverconnection.storage.IssueTypeBinding;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
+import org.sonarsource.sonarlint.core.serverconnection.storage.UuidBinding;
 
 import static org.apache.commons.lang3.StringUtils.trimToEmpty;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.XodusServerIssueStore.toProtoFlow;
@@ -200,6 +202,7 @@ public class ProjectStorageFixture {
         entityStore.registerCustomPropertyType(txn, RuleType.class, new IssueTypeBinding());
         entityStore.registerCustomPropertyType(txn, Instant.class, new InstantBinding());
         entityStore.registerCustomPropertyType(txn, HotspotReviewStatus.class, new HotspotReviewStatusBinding());
+        entityStore.registerCustomPropertyType(txn, UUID.class, new UuidBinding());
         branches.forEach(branch -> {
           var branchEntity = txn.newEntity("Branch");
           branchEntity.setProperty("name", branch.name);
@@ -251,6 +254,7 @@ public class ProjectStorageFixture {
               taintIssuesByFilePath.getOrDefault(filePath, Collections.emptyList())
                 .forEach(taint -> {
                   var taintIssueEntity = txn.newEntity("TaintIssue");
+                  taintIssueEntity.setProperty("id", UUID.randomUUID());
                   taintIssueEntity.setProperty("key", taint.key);
                   taintIssueEntity.setProperty("type", taint.type);
                   taintIssueEntity.setProperty("resolved", taint.resolved);

@@ -37,8 +37,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityChangedOrClosedEvent;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListAllFilePathsParams;
@@ -61,6 +59,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgress
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
 
 /**
  * This interface defines the RPC requests or notifications the backend can call on the client.
@@ -176,12 +175,6 @@ public interface SonarLintRpcClient {
   CompletableFuture<CheckServerTrustedResponse> checkServerTrusted(CheckServerTrustedParams params);
 
   @JsonNotification
-  void didReceiveServerTaintVulnerabilityRaisedEvent(DidReceiveServerTaintVulnerabilityRaisedEvent params);
-
-  @JsonNotification
-  void didReceiveServerTaintVulnerabilityChangedOrClosedEvent(DidReceiveServerTaintVulnerabilityChangedOrClosedEvent params);
-
-  @JsonNotification
   void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params);
 
   @JsonRequest
@@ -201,4 +194,16 @@ public interface SonarLintRpcClient {
    */
   @JsonRequest
   CompletableFuture<ListAllFilePathsResponse> listAllFilePaths(ListAllFilePathsParams params);
+
+  /**
+   * Called whenever there is a change in the list of taint vulnerabilities of a configuration scope. The change can be caused by:
+   * <ul>
+   *   <li>a synchronization</li>
+   *   <li>a server event</li>
+   *   <li>a taint vulnerability has been resolved by the client</li>
+   *   <li>a vulnerability was on new code and is not anymore</li>
+   * </ul>
+   */
+  @JsonNotification
+  void didChangeTaintVulnerabilities(DidChangeTaintVulnerabilitiesParams params);
 }

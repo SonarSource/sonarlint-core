@@ -22,13 +22,8 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
-import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
-
-import static java.util.function.Predicate.not;
 
 public class IssueStoreReader {
   private final ConnectionStorage storage;
@@ -47,26 +42,6 @@ public class IssueStoreReader {
     return loadedIssues;
   }
 
-  public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName, String ideFilePath, boolean includeResolved) {
-    var sqPath = IssueStorePaths.idePathToServerPath(projectBinding, ideFilePath);
-    if (sqPath == null) {
-      return Collections.emptyList();
-    }
-    var loadedIssues = storage.project(projectBinding.projectKey()).findings().loadTaint(branchName, sqPath);
-
-    if (!includeResolved) {
-      loadedIssues = filterOutResolvedIssues(loadedIssues);
-    }
-
-    loadedIssues.forEach(issue -> issue.setFilePath(ideFilePath));
-    return loadedIssues;
-  }
-
-  public List<ServerTaintIssue> getRawServerTaintIssues(ProjectBinding projectBinding, String branchName) {
-    var loadedIssues = storage.project(projectBinding.projectKey()).findings().loadTaint(branchName);
-    return filterOutResolvedIssues(loadedIssues);
-  }
-
   public Collection<ServerHotspot> getServerHotspots(ProjectBinding projectBinding, String branchName, String ideFilePath) {
     var serverFilePath = IssueStorePaths.idePathToServerPath(projectBinding, ideFilePath);
     if (serverFilePath == null) {
@@ -75,10 +50,5 @@ public class IssueStoreReader {
     var loadedHotspots = storage.project(projectBinding.projectKey()).findings().loadHotspots(branchName, serverFilePath);
     loadedHotspots.forEach(hotspot -> hotspot.setFilePath(ideFilePath));
     return loadedHotspots;
-  }
-
-  @NotNull
-  private static List<ServerTaintIssue> filterOutResolvedIssues(List<ServerTaintIssue> loadedIssues) {
-    return loadedIssues.stream().filter(not(ServerTaintIssue::isResolved)).collect(Collectors.toList());
   }
 }
