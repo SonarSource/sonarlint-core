@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
@@ -34,6 +35,7 @@ import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 
 public class ServerTaintIssue implements ServerFinding {
+  private final UUID id;
   private String key;
   private boolean resolved;
   private String ruleKey;
@@ -49,11 +51,11 @@ public class ServerTaintIssue implements ServerFinding {
   @Nullable
   private final CleanCodeAttribute cleanCodeAttribute;
   private final Map<SoftwareQuality, ImpactSeverity> impacts;
-  private boolean isOnNewCode;
 
-  public ServerTaintIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant creationDate, IssueSeverity severity, RuleType type,
-    @Nullable TextRangeWithHash textRange, @Nullable String ruleDescriptionContextKey, @Nullable CleanCodeAttribute cleanCodeAttribute,
-    Map<SoftwareQuality, ImpactSeverity> impacts) {
+  public ServerTaintIssue(UUID id, String key, boolean resolved, String ruleKey, String message, String filePath, Instant creationDate, IssueSeverity severity, RuleType type,
+                          @Nullable TextRangeWithHash textRange, @Nullable String ruleDescriptionContextKey, @Nullable CleanCodeAttribute cleanCodeAttribute,
+                          Map<SoftwareQuality, ImpactSeverity> impacts) {
+    this.id = id;
     this.key = key;
     this.resolved = resolved;
     this.ruleKey = ruleKey;
@@ -68,7 +70,11 @@ public class ServerTaintIssue implements ServerFinding {
     this.impacts = impacts;
   }
 
-  public String getKey() {
+  public UUID getId() {
+    return id;
+  }
+
+  public String getSonarServerKey() {
     return key;
   }
 
@@ -171,14 +177,6 @@ public class ServerTaintIssue implements ServerFinding {
   public ServerTaintIssue setFlows(List<Flow> flows) {
     this.flows = flows;
     return this;
-  }
-
-  public void setIsOnNewCode(boolean isOnNewCode) {
-    this.isOnNewCode = isOnNewCode;
-  }
-
-  public boolean isOnNewCode() {
-    return isOnNewCode;
   }
 
   public static class Flow {

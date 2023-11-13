@@ -17,27 +17,18 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+package org.sonarsource.sonarlint.core.event;
 
-package org.sonarsource.sonarlint.core.local.only;
+import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 
-import java.io.ByteArrayInputStream;
-import java.util.UUID;
-import jetbrains.exodus.bindings.BindingUtils;
-import jetbrains.exodus.bindings.ComparableBinding;
-import jetbrains.exodus.util.LightOutputStream;
-import org.jetbrains.annotations.NotNull;
+public class LocalOnlyIssueStatusChangedEvent {
+  private final LocalOnlyIssue issue;
 
-public class UuidBinding extends ComparableBinding {
-
-  @Override
-  public Comparable readObject(@NotNull ByteArrayInputStream stream) {
-    return UUID.fromString(BindingUtils.readString(stream));
+  public LocalOnlyIssueStatusChangedEvent(LocalOnlyIssue issue) {
+    this.issue = issue;
   }
 
-  @Override
-  public void writeObject(@NotNull LightOutputStream output, @NotNull Comparable object) {
-    final var uuid = (UUID) object;
-    output.writeString(uuid.toString());
+  public LocalOnlyIssue getIssue() {
+    return issue;
   }
-
 }

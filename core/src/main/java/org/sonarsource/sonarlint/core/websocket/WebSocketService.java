@@ -42,8 +42,6 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.serverconnection.StorageFacade;
-import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
@@ -56,19 +54,17 @@ public class WebSocketService {
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final ConfigurationRepository configurationRepository;
   private final ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider;
-  private final StorageFacade storageFacade;
   private final ApplicationEventPublisher eventPublisher;
   protected SonarCloudWebSocket sonarCloudWebSocket;
   private String connectionIdUsedToCreateConnection;
 
   public WebSocketService(ConnectionConfigurationRepository connectionConfigurationRepository, ConfigurationRepository configurationRepository,
-    ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider, StorageService storageService, InitializeParams params,
+    ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider, InitializeParams params,
     ApplicationEventPublisher eventPublisher) {
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.configurationRepository = configurationRepository;
     this.connectionAwareHttpClientProvider = connectionAwareHttpClientProvider;
     this.shouldEnableWebSockets = params.getFeatureFlags().shouldManageServerSentEvents();
-    this.storageFacade = storageService.getStorageFacade();
     this.eventPublisher = eventPublisher;
   }
 

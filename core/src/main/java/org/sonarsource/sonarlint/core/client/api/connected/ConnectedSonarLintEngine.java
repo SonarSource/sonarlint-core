@@ -43,7 +43,6 @@ import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.DownloadException;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
-import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
 /**
  * Entry point for SonarLint.
@@ -75,26 +74,6 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    */
   @Deprecated(since = "9.3")
   List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String branchName, String filePath);
-
-  /**
-   * Gets locally stored server taint issues for a given file.
-   *
-   * @param projectBinding  information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ClientProgressMonitor)})
-   * @param branchName      branch name
-   * @param filePath        relative to the project.
-   * @param includeResolved whether the resolved Taint Vulnerabilities should be included or not
-   * @return All server taint issues in the local storage for the given file. If file has no issues, an empty list is returned.
-   */
-  List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName, String filePath, boolean includeResolved);
-
-  /**
-   * Gets locally stored server taint issues.
-   *
-   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ClientProgressMonitor)})
-   * @param branchName     branch name
-   * @return All server taint issues in the local storage for the given branch.
-   */
-  List<ServerTaintIssue> getAllServerTaintIssues(ProjectBinding projectBinding, String branchName);
 
   /**
    * Tries to find the best way to match files in a IDE project with files in the sonarqube project identified
@@ -158,16 +137,6 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
     @Nullable ClientProgressMonitor monitor);
 
   /**
-   * Downloads and stores server taint issues for a given file. Starting from SQ 9.6, this is noop as taint issues updates are coming by SSE.
-   *
-   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ClientProgressMonitor)})
-   * @param ideFilePath    relative to the project in the IDE.
-   * @throws DownloadException if it fails to download
-   */
-  void downloadAllServerTaintIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
-    @Nullable ClientProgressMonitor monitor);
-
-  /**
    * Downloads and stores all server issues for a given project.
    *
    * @param endpoint from which to download issues
@@ -183,14 +152,6 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    */
   @Deprecated(since = "10.0")
   void syncServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor);
-
-  /**
-   * Sync server taint issues incrementally for a given project (will only work for supported servers).
-   *
-   * @param endpoint from which to download issues
-   * @param projectKey   key of the project
-   */
-  void syncServerTaintIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor);
 
   /**
    * Sync server hotspots incrementally for a given project (will only work for supported servers).

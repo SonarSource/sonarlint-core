@@ -22,10 +22,14 @@ package mediumtest.server.events;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -49,7 +53,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.Did
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityChangedOrClosedEvent;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.notFound;
@@ -61,8 +67,12 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JS;
 
@@ -537,13 +547,14 @@ class ServerSentEventsMediumTests {
     @Test
     void should_forward_taint_events_to_client() {
       var fakeClient = newFakeClient().build();
-
-      var projectKey = "projectKey";
       var branchName = "branchName";
+      when(fakeClient.matchSonarProjectBranch(eq("configScope"), eq("main"), eq(Set.of("main", branchName)), any())).thenReturn(branchName);
+      var projectKey = "projectKey";
+      var introductionDate = Instant.now().truncatedTo(ChronoUnit.SECONDS);
       serverWithTaintIssues = newSonarQubeServer("10.0")
         .withProject(projectKey,
           project -> project.withBranch(branchName,
-            branch -> branch.withTaintIssue("key1", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", Instant.now(), new TextRange(1, 0, 3, 4), RuleType.BUG)
+            branch -> branch.withTaintIssue("key1", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", introductionDate, new TextRange(1, 0, 3, 4), RuleType.VULNERABILITY)
               .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))))
         .start();
 
@@ -572,16 +583,32 @@ class ServerSentEventsMediumTests {
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
-        .withProjectSynchronization()
+        .withFullSynchronization()
         .withSonarQubeConnection("connectionId", serverWithTaintIssues)
         .withBoundConfigScope("configScope", "connectionId", projectKey, branchName)
         .build(fakeClient);
 
-      var captor = ArgumentCaptor.forClass(DidReceiveServerTaintVulnerabilityChangedOrClosedEvent.class);
-      verify(fakeClient, timeout(3000)).didReceiveServerTaintVulnerabilityChangedOrClosedEvent(captor.capture());
+      ArgumentCaptor<List<TaintVulnerabilityDto>> captor = ArgumentCaptor.forClass(List.class);
+      verify(fakeClient, timeout(3000)).didChangeTaintVulnerabilities(eq("configScope"), eq(Set.of()), captor.capture(), eq(List.of()));
 
-      assertThat(captor.getValue().getConnectionId()).isEqualTo("connectionId");
-      assertThat(captor.getValue().getSonarProjectKey()).isEqualTo(projectKey);
+      // initial sync
+      assertThat(captor.getValue())
+        .usingRecursiveComparison()
+        .ignoringFields("id")
+        .isEqualTo(List.of(new TaintVulnerabilityDto(UUID.randomUUID(), "key1", false, "ruleKey", "msg", Paths.get("file/path"), introductionDate, IssueSeverity.MAJOR,
+          org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.BUG, Collections.emptyList(), new TextRangeWithHashDto(1, 0, 3, 4, "hash"), null, null,
+          Collections.emptyMap(), true)));
+
+      reset(fakeClient);
+      verify(fakeClient, timeout(3000)).didChangeTaintVulnerabilities(eq("configScope"), eq(Set.of()), eq(List.of()), captor.capture());
+
+      // server event
+      assertThat(captor.getValue())
+        .usingRecursiveComparison()
+        .ignoringFields("id")
+        .isEqualTo(List.of(new TaintVulnerabilityDto(UUID.randomUUID(), "key1", false, "ruleKey", "msg", Paths.get("file/path"), introductionDate, IssueSeverity.MAJOR,
+          org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.BUG, Collections.emptyList(), new TextRangeWithHashDto(1, 0, 3, 4, "hash"), null, null,
+          Collections.emptyMap(), true)));
     }
   }
 
