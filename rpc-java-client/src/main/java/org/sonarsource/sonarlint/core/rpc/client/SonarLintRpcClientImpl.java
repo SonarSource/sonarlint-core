@@ -45,8 +45,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityChangedOrClosedEvent;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListAllFilePathsParams;
@@ -68,6 +66,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgres
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
 
 /**
@@ -246,16 +245,6 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   }
 
   @Override
-  public void didReceiveServerTaintVulnerabilityRaisedEvent(DidReceiveServerTaintVulnerabilityRaisedEvent params) {
-    notify(() -> delegate.didReceiveServerTaintVulnerabilityRaisedEvent(params));
-  }
-
-  @Override
-  public void didReceiveServerTaintVulnerabilityChangedOrClosedEvent(DidReceiveServerTaintVulnerabilityChangedOrClosedEvent params) {
-    notify(() -> delegate.didReceiveServerTaintVulnerabilityChangedOrClosedEvent(params));
-  }
-
-  @Override
   public void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params) {
     notify(() -> delegate.didReceiveServerHotspotEvent(params));
   }
@@ -296,6 +285,12 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   private static ResponseErrorException configScopeNotFoundError(String configScopeId) {
     return new ResponseErrorException(
       new ResponseError(SonarLintRpcErrorCode.CONFIG_SCOPE_NOT_FOUND, "Unknown config scope: " + configScopeId, configScopeId));
+  }
+
+  @Override
+  public void didChangeTaintVulnerabilities(DidChangeTaintVulnerabilitiesParams params) {
+    notify(() -> delegate.didChangeTaintVulnerabilities(params.getConfigurationScopeId(), params.getClosedTaintVulnerabilityIds(), params.getAddedTaintVulnerabilities(),
+      params.getUpdatedTaintVulnerabilities()));
   }
 
   private class CancelCheckerWrapper implements CancelChecker {

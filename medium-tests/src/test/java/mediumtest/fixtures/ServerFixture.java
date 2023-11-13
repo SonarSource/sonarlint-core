@@ -33,6 +33,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -580,7 +581,11 @@ public class ServerFixture {
     private void registerProjectBranchesApiResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> mockServer.stubFor(get("/api/project_branches/list.protobuf?project=" + projectKey)
         .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(ProjectBranches.ListWsResponse.newBuilder()
-          .addBranches(ProjectBranches.Branch.newBuilder().setName("main").setIsMain(true).setType(Common.BranchType.LONG).build()).build())))));
+          .addBranches(ProjectBranches.Branch.newBuilder().setName("main").setIsMain(true).setType(Common.BranchType.LONG).build())
+          .addAllBranches(project.branchesByName.keySet().stream()
+            .filter(Objects::nonNull)
+            .map(branchName -> ProjectBranches.Branch.newBuilder().setName(branchName).setIsMain(false).setType(Common.BranchType.LONG).build()).collect(Collectors.toList()))
+          .build())))));
     }
 
     private void registerHotspotsApiResponses() {

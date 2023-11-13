@@ -81,7 +81,6 @@ import org.sonarsource.sonarlint.core.serverconnection.IssueStorePaths;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 import org.sonarsource.sonarlint.core.serverconnection.ServerConnection;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
-import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 
 import static java.util.Objects.requireNonNull;
@@ -410,18 +409,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
-  public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName, String ideFilePath, boolean includeResolved) {
-    setLogging(null);
-    return serverConnection.getServerTaintIssues(projectBinding, branchName, ideFilePath, includeResolved);
-  }
-
-  @Override
-  public List<ServerTaintIssue> getAllServerTaintIssues(ProjectBinding projectBinding, String branchName) {
-    setLogging(null);
-    return serverConnection.getServerTaintIssues(projectBinding, branchName);
-  }
-
-  @Override
   public <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> fileIdePathExtractor, Predicate<G> testFilePredicate) {
     setLogging(null);
     AnalyzerConfiguration analyzerConfig;
@@ -463,13 +450,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
-  public void downloadAllServerTaintIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
-    @Nullable ClientProgressMonitor monitor) {
-    setLogging(null);
-    serverConnection.downloadServerTaintIssuesForFile(endpoint, client, projectBinding, ideFilePath, branchName, new ProgressMonitor(monitor));
-  }
-
-  @Override
   public void downloadAllServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor) {
     setLogging(null);
     serverConnection.downloadServerIssuesForProject(endpoint, client, projectKey, branchName);
@@ -479,12 +459,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   public void syncServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor) {
     setLogging(null);
     serverConnection.syncServerIssuesForProject(endpoint, client, projectKey, branchName);
-  }
-
-  @Override
-  public void syncServerTaintIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor) {
-    setLogging(null);
-    serverConnection.syncServerTaintIssuesForProject(endpoint, client, projectKey, branchName);
   }
 
   @Override

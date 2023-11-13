@@ -36,9 +36,12 @@ import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.Transition;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.event.LocalOnlyIssueStatusChangedEvent;
+import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.local.only.XodusLocalOnlyIssueStore;
@@ -54,6 +57,7 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssu
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
 import static org.sonarsource.sonarlint.core.utils.FutureUtils.waitForHttpRequest;
@@ -77,16 +81,18 @@ public class IssueService {
   private final LocalOnlyIssueStorageService localOnlyIssueStorageService;
   private final LocalOnlyIssueRepository localOnlyIssueRepository;
   private final TelemetryService telemetryService;
+  private final ApplicationEventPublisher eventPublisher;
 
-  public IssueService(ConfigurationRepository configurationRepository, ServerApiProvider serverApiProvider,
-    StorageService storageService, LocalOnlyIssueStorageService localOnlyIssueStorageService,
-    TelemetryService telemetryService, LocalOnlyIssueRepository localOnlyIssueRepository) {
+  public IssueService(ConfigurationRepository configurationRepository, ServerApiProvider serverApiProvider, StorageService storageService,
+    LocalOnlyIssueStorageService localOnlyIssueStorageService, TelemetryService telemetryService, LocalOnlyIssueRepository localOnlyIssueRepository,
+    ApplicationEventPublisher eventPublisher) {
     this.configurationRepository = configurationRepository;
     this.serverApiProvider = serverApiProvider;
     this.storageService = storageService;
     this.localOnlyIssueStorageService = localOnlyIssueStorageService;
     this.localOnlyIssueRepository = localOnlyIssueRepository;
     this.telemetryService = telemetryService;
+    this.eventPublisher = eventPublisher;
   }
 
   public void changeStatus(String configurationScopeId, String issueKey, ResolutionStatus newStatus, boolean isTaintIssue, CancelChecker cancelChecker) {
@@ -98,7 +104,7 @@ public class IssueService {
     if (isServerIssue) {
       waitForHttpRequest(cancelChecker, serverApi.issue().changeStatusAsync(issueKey, reviewStatus), "change status");
       projectServerIssueStore.updateIssueResolutionStatus(issueKey, isTaintIssue, true)
-        .ifPresent(issue -> telemetryService.issueStatusChanged(issue.getRuleKey()));
+        .ifPresent(issue -> eventPublisher.publishEvent(new ServerIssueStatusChangedEvent(binding.getConnectionId(), binding.getSonarProjectKey(), issue)));
     } else {
       var localIssueOpt = asUUID(issueKey)
         .flatMap(localOnlyIssueRepository::findByKey);
@@ -113,7 +119,7 @@ public class IssueService {
       waitForHttpRequest(cancelChecker, serverApi.issue()
         .anticipatedTransitions(binding.getSonarProjectKey(), concat(localOnlyIssueStore.loadAll(configurationScopeId), issue)), "update anticipated transitions");
       localOnlyIssueStore.storeLocalOnlyIssue(configurationScopeId, issue);
-      telemetryService.issueStatusChanged(issue.getRuleKey());
+      eventPublisher.publishEvent(new LocalOnlyIssueStatusChangedEvent(issue));
     }
   }
 
@@ -193,7 +199,7 @@ public class IssueService {
     var projectServerIssueStore = storageService.binding(binding).findings();
     boolean isServerIssue = projectServerIssueStore.containsIssue(issueId, isTaintIssue);
     if (isServerIssue) {
-      return reopenServerIssue(serverApiConnection, issueId, projectServerIssueStore, isTaintIssue, cancelChecker);
+      return reopenServerIssue(serverApiConnection, binding, issueId, projectServerIssueStore, isTaintIssue, cancelChecker);
     } else {
       return reopenLocalIssue(issueId, configurationScopeId, cancelChecker);
     }
@@ -250,11 +256,11 @@ public class IssueService {
     waitForHttpRequest(cancelChecker, serverApi.issue().addComment(issueKey, comment), "Add comment to server issue");
   }
 
-  private boolean reopenServerIssue(ServerApi connection, String issueId, ProjectServerIssueStore projectServerIssueStore, boolean isTaintIssue,
+  private boolean reopenServerIssue(ServerApi connection, Binding binding, String issueId, ProjectServerIssueStore projectServerIssueStore, boolean isTaintIssue,
     CancelChecker cancelChecker) {
     waitForHttpRequest(cancelChecker, connection.issue().changeStatusAsync(issueId, Transition.REOPEN), "Reopen server issue");
     var serverIssue = projectServerIssueStore.updateIssueResolutionStatus(issueId, isTaintIssue, false);
-    serverIssue.ifPresent(issue -> telemetryService.issueStatusChanged(issue.getRuleKey()));
+    serverIssue.ifPresent(issue -> eventPublisher.publishEvent(new ServerIssueStatusChangedEvent(binding.getConnectionId(), binding.getSonarProjectKey(), issue)));
     return true;
   }
 

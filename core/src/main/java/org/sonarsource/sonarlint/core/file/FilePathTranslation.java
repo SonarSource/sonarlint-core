@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.file;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class FilePathTranslation {
   private final Path idePathPrefix;
@@ -36,5 +37,17 @@ public class FilePathTranslation {
 
   public Path getServerPathPrefix() {
     return serverPathPrefix;
+  }
+
+  public Path translate(String serverFilePathString) {
+    var serverFilePath = Paths.get(serverFilePathString);
+    if (!serverFilePath.startsWith(serverPathPrefix)) {
+      return serverFilePath;
+    }
+    var localPrefixLen = serverPathPrefix.toString().length();
+    if (localPrefixLen > 0) {
+      localPrefixLen++;
+    }
+    return idePathPrefix.resolve(serverFilePath.toString().substring(localPrefixLen));
   }
 }

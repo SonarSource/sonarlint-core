@@ -137,14 +137,14 @@ class XodusServerIssueStoreTests {
     var creationDate = Instant.now();
 
     store
-      .replaceAllTaintOfFile("branch", "file/path", List.of(aServerTaintIssue().setCreationDate(creationDate)
+      .replaceAllTaintsOfBranch("branch", List.of(aServerTaintIssue().setCreationDate(creationDate)
         .setFlows(List.of(new ServerTaintIssue.Flow(List.of(new ServerTaintIssue.ServerIssueLocation("file/path",
           new TextRangeWithHash(5, 6, 7, 8, "myFlowRangeHash"), "flow message")))))));
 
-    var savedIssues = store.loadTaint("branch", "file/path");
+    var savedIssues = store.loadTaint("branch");
     assertThat(savedIssues).isNotEmpty();
     var savedIssue = savedIssues.get(0);
-    assertThat(savedIssue.getKey()).isEqualTo("key");
+    assertThat(savedIssue.getSonarServerKey()).isEqualTo("key");
     assertThat(savedIssue.isResolved()).isFalse();
     assertThat(savedIssue.getRuleKey()).isEqualTo("repo:key");
     assertThat(savedIssue.getMessage()).isEqualTo("message");
@@ -172,7 +172,7 @@ class XodusServerIssueStoreTests {
       aServerIssue().setFilePath("file/path1").setKey("key3")));
     store.replaceAllIssuesOfFile("branch", "file/path2", List.of(
       aServerIssue().setFilePath("file/path2").setKey("key2")));
-    store.replaceAllTaintOfFile("branch", "file/path1", List.of(
+    store.replaceAllTaintsOfBranch("branch", List.of(
       aServerTaintIssue().setFilePath("file/path1").setKey("key4")));
 
     var issues = store.load("branch", "file/path1");
@@ -182,18 +182,19 @@ class XodusServerIssueStoreTests {
   }
 
   @Test
-  void should_load_all_taint_issues_of_a_file() {
-    store.replaceAllTaintOfFile("branch", "file/path1", List.of(
+  void should_load_all_taint_issues_of_a_branch() {
+    store.replaceAllTaintsOfBranch("branch", List.of(
+      aServerTaintIssue().setFilePath("file/path1").setKey("key0"),
+      aServerTaintIssue().setFilePath("file/path2").setKey("key2")));
+    store.replaceAllTaintsOfBranch("branch", List.of(
       aServerTaintIssue().setFilePath("file/path1").setKey("key1"),
       aServerTaintIssue().setFilePath("file/path1").setKey("key3")));
-    store.replaceAllTaintOfFile("branch", "file/path2", List.of(
-      aServerTaintIssue().setFilePath("file/path2").setKey("key2")));
     store.replaceAllIssuesOfBranch("branch", List.of(
       aServerIssue().setFilePath("file/path1").setKey("key4")));
 
-    var issues = store.loadTaint("branch", "file/path1");
+    var issues = store.loadTaint("branch");
     assertThat(issues)
-      .extracting(ServerTaintIssue::getKey)
+      .extracting(ServerTaintIssue::getSonarServerKey)
       .containsOnly("key1", "key3");
   }
 
@@ -212,13 +213,12 @@ class XodusServerIssueStoreTests {
   void should_load_all_taint_issues_on_a_branch() {
     var branchName = "branch1";
 
-    store.replaceAllTaintOfFile(branchName, "file/path1", List.of(aServerTaintIssue().setFilePath("file/path1").setKey("key1")));
-    store.replaceAllTaintOfFile(branchName, "file/path2", List.of(aServerTaintIssue().setFilePath("file/path2").setKey("key2")));
+    store.replaceAllTaintsOfBranch(branchName, List.of(aServerTaintIssue().setFilePath("file/path1").setKey("key1"), aServerTaintIssue().setFilePath("file/path2").setKey("key2")));
 
     var issues = store.loadTaint(branchName);
 
     assertThat(issues)
-      .extracting(ServerTaintIssue::getKey)
+      .extracting(ServerTaintIssue::getSonarServerKey)
       .containsOnly("key1", "key2");
   }
 
@@ -279,15 +279,15 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_remove_closed_taints_by_key_when_merging() {
-    store.replaceAllTaintOfFile("branch", "file/path", List.of(
+    store.replaceAllTaintsOfBranch("branch", List.of(
       aServerTaintIssue().setKey("key1"),
       aServerTaintIssue().setKey("key2"),
       aServerTaintIssue().setKey("key3")));
 
     store.mergeTaintIssues("branch", List.of(), Set.of("key1", "key3"), Instant.now(), Set.of());
 
-    assertThat(store.loadTaint("branch", "file/path"))
-      .extracting(ServerTaintIssue::getKey)
+    assertThat(store.loadTaint("branch"))
+      .extracting(ServerTaintIssue::getSonarServerKey)
       .containsOnly("key2");
   }
 
@@ -298,14 +298,14 @@ class XodusServerIssueStoreTests {
       aServerTaintIssue().setKey("key2"),
       aServerTaintIssue().setKey("key3")), Set.of(), Instant.now(), Set.of());
 
-    assertThat(store.loadTaint("branch", "file/path"))
-      .extracting(ServerTaintIssue::getKey)
+    assertThat(store.loadTaint("branch"))
+      .extracting(ServerTaintIssue::getSonarServerKey)
       .containsOnly("key1", "key2", "key3");
   }
 
   @Test
   void should_update_existing_taints_when_merging() {
-    store.replaceAllTaintOfFile("branch", "file/path", List.of(
+    store.replaceAllTaintsOfBranch("branch", List.of(
       aServerTaintIssue().setType(RuleType.VULNERABILITY).setKey("key1"),
       aServerTaintIssue().setType(RuleType.VULNERABILITY).setKey("key2")));
 
@@ -314,8 +314,8 @@ class XodusServerIssueStoreTests {
       aServerTaintIssue().setType(RuleType.BUG).setKey("key2"),
       aServerTaintIssue().setType(RuleType.VULNERABILITY).setKey("key3")), Set.of(), Instant.now(), Set.of());
 
-    assertThat(store.loadTaint("branch", "file/path"))
-      .extracting(ServerTaintIssue::getKey, ServerTaintIssue::getType)
+    assertThat(store.loadTaint("branch"))
+      .extracting(ServerTaintIssue::getSonarServerKey, ServerTaintIssue::getType)
       .containsOnly(tuple("key1", RuleType.CODE_SMELL), tuple("key2", RuleType.BUG), tuple("key3", RuleType.VULNERABILITY));
   }
 
@@ -331,21 +331,21 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_save_taint_issue_without_range() {
-    store.replaceAllTaintOfFile("branch", "file/path", List.of(
+    store.replaceAllTaintsOfBranch("branch", List.of(
       aServerTaintIssue().setKey("key1").setTextRange(null)));
 
-    var issues = store.loadTaint("branch", "file/path");
+    var issues = store.loadTaint("branch");
 
     assertThat(issues).isNotEmpty();
     assertThat(issues.get(0).getTextRange()).isNull();
   }
 
   @Test
-  void should_replace_existing_taint_issues_on_file() {
-    store.replaceAllTaintOfFile("branch", "file/path", List.of(aServerTaintIssue().setKey("key1").setTextRange(null)));
-    store.replaceAllTaintOfFile("branch", "file/path", List.of(aServerTaintIssue().setKey("key2").setTextRange(null)));
+  void should_replace_existing_taint_issues_on_branch() {
+    store.replaceAllTaintsOfBranch("branch", List.of(aServerTaintIssue().setKey("key1").setTextRange(null)));
+    store.replaceAllTaintsOfBranch("branch", List.of(aServerTaintIssue().setKey("key2").setTextRange(null)));
 
-    var issues = store.loadTaint("branch", "file/path");
+    var issues = store.loadTaint("branch");
 
     assertThat(issues)
       .extracting("key", "message")
@@ -564,7 +564,7 @@ class XodusServerIssueStoreTests {
   void should_insert_taints() {
     store.insert("branch", aServerTaintIssue());
 
-    var taintIssues = store.loadTaint("branch", "file/path");
+    var taintIssues = store.loadTaint("branch");
     assertThat(taintIssues)
       .extracting("key", "resolved", "ruleKey", "message", "filePath", "severity", "type", "ruleDescriptionContextKey")
       .containsOnly(tuple("key", false, "repo:key", "message", "file/path", IssueSeverity.MINOR, RuleType.VULNERABILITY, "context"));
@@ -588,7 +588,7 @@ class XodusServerIssueStoreTests {
       null,
       "message"))))));
 
-    var taintIssues = store.loadTaint("branch", "file/path");
+    var taintIssues = store.loadTaint("branch");
     assertThat(taintIssues)
       .flatExtracting(ServerTaintIssue::getFlows)
       .flatExtracting(Flow::locations)
@@ -605,7 +605,7 @@ class XodusServerIssueStoreTests {
       null,
       "message"))))));
 
-    var taintIssues = store.loadTaint("branch", "file/path");
+    var taintIssues = store.loadTaint("branch");
     assertThat(taintIssues)
       .flatExtracting(ServerTaintIssue::getFlows)
       .flatExtracting(Flow::locations)
@@ -617,21 +617,21 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_delete_taints() {
-    store.replaceAllTaintOfFile("branch", "file/path", List.of(aServerTaintIssue()));
+    store.replaceAllTaintsOfBranch("branch", List.of(aServerTaintIssue()));
 
-    store.deleteTaintIssue("key");
+    store.deleteTaintIssueBySonarServerKey("key");
 
-    var taintIssues = store.loadTaint("branch", "file/path");
+    var taintIssues = store.loadTaint("branch");
     assertThat(taintIssues).isEmpty();
   }
 
   @Test
   void should_update_taints() {
-    store.replaceAllTaintOfFile("branch", "file/path", List.of(aServerTaintIssue()));
+    store.replaceAllTaintsOfBranch("branch", List.of(aServerTaintIssue()));
 
-    store.updateTaintIssue("key", taintIssue -> taintIssue.setResolved(true));
+    store.updateTaintIssueBySonarServerKey("key", taintIssue -> taintIssue.setResolved(true));
 
-    var taintIssues = store.loadTaint("branch", "file/path");
+    var taintIssues = store.loadTaint("branch");
     assertThat(taintIssues)
       .extracting("resolved")
       .containsOnly(true);
@@ -639,11 +639,11 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_update_taint_issue_status() {
-    store.replaceAllTaintOfFile("branch", "file/path", List.of(aServerTaintIssue()));
+    store.replaceAllTaintsOfBranch("branch", List.of(aServerTaintIssue()));
 
     store.updateIssueResolutionStatus("key", true, true);
 
-    var taintIssues = store.loadTaint("branch", "file/path");
+    var taintIssues = store.loadTaint("branch");
     var issues = store.load("branch", "file/path");
     assertThat(taintIssues)
       .extracting("resolved")
@@ -657,7 +657,7 @@ class XodusServerIssueStoreTests {
 
     store.updateIssueResolutionStatus("key", false, true);
 
-    var taintIssues = store.loadTaint("branch", "file/path");
+    var taintIssues = store.loadTaint("branch");
     var issues = store.load("branch", "file/path");
     assertThat(issues)
       .extracting("resolved")
@@ -669,7 +669,7 @@ class XodusServerIssueStoreTests {
   void should_not_update_issue_status_if_issue_is_not_in_storage() {
     store.updateIssueResolutionStatus("key", false, true);
 
-    var taintIssues = store.loadTaint("branch", "file/path");
+    var taintIssues = store.loadTaint("branch");
     var issues = store.load("branch", "file/path");
     assertThat(issues).isEmpty();
     assertThat(taintIssues).isEmpty();
@@ -853,7 +853,7 @@ class XodusServerIssueStoreTests {
     var creationDate = Instant.now();
 
     store
-      .replaceAllTaintOfFile("branch", "file/path", List.of(aServerTaintIssue().setFilePath("file/path").setCreationDate(creationDate)));
+      .replaceAllTaintsOfBranch("branch", List.of(aServerTaintIssue().setFilePath("file/path").setCreationDate(creationDate)));
 
     assertThat(store.containsIssue("key", true)).isTrue();
   }
