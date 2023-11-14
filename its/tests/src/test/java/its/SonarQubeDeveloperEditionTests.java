@@ -87,7 +87,6 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
@@ -131,9 +130,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspotDetails;
-import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
-import org.sonarsource.sonarlint.core.serverapi.push.TaintVulnerabilityClosedEvent;
-import org.sonarsource.sonarlint.core.serverapi.push.TaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
@@ -184,7 +180,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   @TempDir
   private static Path sonarUserHome;
 
-  private static final Deque<DidReceiveServerTaintVulnerabilityRaisedEvent> events = new ConcurrentLinkedDeque<>();
+  private static final Deque<DidReceiveServerTaintVulnerabilityRaisedEvent> taintRaisedEvents = new ConcurrentLinkedDeque<>();
+  private static final Deque<DidReceiveServerTaintVulnerabilityChangedOrClosedEvent> taintChangedOrClosedEvents = new ConcurrentLinkedDeque<>();
 
   @BeforeAll
   static void start() throws IOException {
@@ -518,7 +515,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
         assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), javaRuleKey("myrule"), projectKey).get()
           .getHtmlDescription())
-          .contains("my_rule_description");
+            .contains("my_rule_description");
 
       } finally {
 
@@ -648,7 +645,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     @Test
     @OnlyOnSonarQube(from = "9.4")
-    void shouldUpdateQualityProfileInLocalStorageWhenProfileChangedOnServer() throws IOException {
+    void shouldUpdateQualityProfileInLocalStorageWhenProfileChangedOnServer() {
       var projectKey = "projectKey-sse";
       provisionProject(ORCHESTRATOR, projectKey, "Sample Java");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint.xml"));
@@ -763,7 +760,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       } else {
         assertThat(
           adminWsClient.issues().search(new SearchRequest().setTypes(List.of("SECURITY_HOTSPOT")).setComponentKeys(List.of(PROJECT_KEY))).getIssuesList())
-          .isNotEmpty();
+            .isNotEmpty();
       }
     }
 
@@ -828,7 +825,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     private ConnectedSonarLintEngine engine;
 
     @BeforeEach
-    void prepare(@TempDir Path sonarUserHome) {
+    void prepare() {
       provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_TAINT, "Java With Taint Vulnerabilities");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint-with-taint.xml"));
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_TAINT, "java", "SonarLint Taint Java");
@@ -910,8 +907,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     @OnlyOnSonarQube(from = "9.6")
     void shouldUpdateTaintVulnerabilityInLocalStorageWhenChangedOnServer() {
       engine.updateProject(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), PROJECT_KEY_JAVA_TAINT, null);
-      Deque<ServerEvent> events = new ConcurrentLinkedDeque<>();
-      engine.subscribeForEvents(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), Set.of(PROJECT_KEY_JAVA_TAINT), events::add, null);
+      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY_JAVA_TAINT, true)))));
       var projectBinding = new ProjectBinding(PROJECT_KEY_JAVA_TAINT, "", "");
       assertThat(engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", false)).isEmpty();
       assertThat(engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", true)).isEmpty();
@@ -920,12 +917,11 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       analyzeMavenProject("sample-java-taint", PROJECT_KEY_JAVA_TAINT);
 
       waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
-        assertThat(events).isNotEmpty();
-        assertThat(events.getLast())
-          .isInstanceOfSatisfying(TaintVulnerabilityRaisedEvent.class, e -> {
-            assertThat(e.getRuleKey()).isEqualTo("javasecurity:S3649");
-            assertThat(e.getProjectKey()).isEqualTo(PROJECT_KEY_JAVA_TAINT);
-          });
+        assertThat(taintRaisedEvents).isNotEmpty();
+        assertThat(taintRaisedEvents.getLast())
+          .usingRecursiveComparison()
+          .ignoringFields("eventKey")
+          .isEqualTo(new DidReceiveServerTaintVulnerabilityRaisedEvent(CONNECTION_ID, PROJECT_KEY_JAVA_TAINT, "src/main/java/foo/DbHelper.java", MAIN_BRANCH_NAME, ""));
       });
 
       var issues = getIssueKeys(adminWsClient, "javasecurity:S3649");
@@ -958,55 +954,40 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
             "d123d615e9ea7cc7e78c784c768f2941"),
           tuple("Source: a user can craft an HTTP request with malicious content", "src/main/java/foo/Endpoint.java", 8, 18, 8, 46, "2ef54227b849e317e7104dc550be8146"));
 
-      // check IssueChangedEvent is received
       resolveIssueAsWontFix(adminWsClient, issueKey);
-      waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
-        assertThat(events).isNotEmpty();
-        assertThat(events.getLast())
-          .isInstanceOfSatisfying(IssueChangedEvent.class, e -> {
-            assertThat(e.getImpactedIssueKeys()).containsOnly(issueKey);
-            assertThat(e.getResolved()).isTrue();
-            assertThat(e.getProjectKey()).isEqualTo(PROJECT_KEY_JAVA_TAINT);
-          });
-      });
-
-      taintIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", false);
-      taintIssuesResolved = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", true);
-      assertThat(taintIssues).isEmpty();
-      assertThat(taintIssuesResolved.get(0).getKey()).isEqualTo(issues.get(0));
 
       // check IssueChangedEvent is received
-      reopenIssue(adminWsClient, issueKey);
       waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
-        assertThat(events).isNotEmpty();
-        assertThat(events.getLast())
-          .isInstanceOfSatisfying(IssueChangedEvent.class, e -> {
-            assertThat(e.getImpactedIssueKeys()).containsOnly(issueKey);
-            assertThat(e.getResolved()).isFalse();
-            assertThat(e.getProjectKey()).isEqualTo(PROJECT_KEY_JAVA_TAINT);
-          });
+        var newTaintIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", false);
+        var newTaintIssuesResolved = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", true);
+        assertThat(newTaintIssues).isEmpty();
+        assertThat(newTaintIssuesResolved.get(0).getKey()).isEqualTo(issues.get(0));
       });
-      taintIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", false);
-      taintIssuesResolved = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", true);
-      assertThat(taintIssues).isNotEmpty().extracting("key")
-        .containsExactlyInAnyOrderElementsOf(taintIssuesResolved.stream().map(ServerTaintIssue::getKey).collect(Collectors.toList()));
+
+      reopenIssue(adminWsClient, issueKey);
+
+      // check IssueChangedEvent is received
+      waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
+        var newTaintIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", false);
+        var newTaintIssuesResolved = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", true);
+        assertThat(newTaintIssues).isNotEmpty().extracting("key")
+          .containsExactlyInAnyOrderElementsOf(newTaintIssuesResolved.stream().map(ServerTaintIssue::getKey).collect(Collectors.toList()));
+      });
 
       // analyze another project under the same project key to close the taint issue
       analyzeMavenProject("sample-java", PROJECT_KEY_JAVA_TAINT);
 
       // check TaintVulnerabilityClosed is received
       waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
-        assertThat(events).isNotEmpty();
-        assertThat(events.getLast())
-          .isInstanceOfSatisfying(TaintVulnerabilityClosedEvent.class, e -> {
-            assertThat(e.getTaintIssueKey()).isEqualTo(issueKey);
-            assertThat(e.getProjectKey()).isEqualTo(PROJECT_KEY_JAVA_TAINT);
-          });
+        assertThat(taintChangedOrClosedEvents).isNotEmpty();
+        assertThat(taintChangedOrClosedEvents.getLast())
+          .usingRecursiveComparison()
+          .isEqualTo(new DidReceiveServerTaintVulnerabilityChangedOrClosedEvent(CONNECTION_ID, PROJECT_KEY_JAVA_TAINT));
+        var newTaintIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", false);
+        var newTaintIssuesResolved = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", true);
+        assertThat(newTaintIssues).isEmpty();
+        assertThat(newTaintIssuesResolved).isEmpty();
       });
-      taintIssues = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", false);
-      taintIssuesResolved = engine.getServerTaintIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/foo/DbHelper.java", true);
-      assertThat(taintIssues).isEmpty();
-      assertThat(taintIssuesResolved).isEmpty();
     }
   }
 
@@ -1244,7 +1225,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), javaRuleKey("S106"), projectKey).get()
         .getExtendedDescription())
-        .isEmpty();
+          .isEmpty();
 
       var extendedDescription = " = Title\n*my dummy extended description*";
 
@@ -1264,7 +1245,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       }
       assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), javaRuleKey("S106"), projectKey).get()
         .getExtendedDescription())
-        .isEqualTo(expected);
+          .isEqualTo(expected);
     }
 
     @Test
@@ -1278,8 +1259,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), "mycompany-java:markdown", projectKey).get()
         .getHtmlDescription())
-        .isEqualTo("<h1>Title</h1><ul><li>one</li>\n"
-          + "<li>two</li></ul>");
+          .isEqualTo("<h1>Title</h1><ul><li>one</li>\n"
+            + "<li>two</li></ul>");
     }
 
     @Test
@@ -1558,12 +1539,12 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       @Override
       public void didReceiveServerTaintVulnerabilityRaisedEvent(DidReceiveServerTaintVulnerabilityRaisedEvent params) {
-        events.add(params);
+        taintRaisedEvents.add(params);
       }
 
       @Override
       public void didReceiveServerTaintVulnerabilityChangedOrClosedEvent(DidReceiveServerTaintVulnerabilityChangedOrClosedEvent params) {
-
+        taintChangedOrClosedEvents.add(params);
       }
 
       @Override
