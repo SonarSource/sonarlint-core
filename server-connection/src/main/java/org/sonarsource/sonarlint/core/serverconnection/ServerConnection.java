@@ -26,14 +26,12 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FilenameUtils;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -42,7 +40,6 @@ import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
-import org.sonarsource.sonarlint.core.serverconnection.events.ServerEventsAutoSubscriber;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.prefix.FileTreeMatcher;
@@ -57,7 +54,6 @@ public class ServerConnection {
   private final IssueStoreReader issueStoreReader;
   private final LocalStorageSynchronizer storageSynchronizer;
   private final ProjectStorageUpdateExecutor projectStorageUpdateExecutor;
-  private final ServerEventsAutoSubscriber serverEventsAutoSubscriber;
   private final ServerIssueUpdater issuesUpdater;
   private final ServerHotspotUpdater hotspotsUpdater;
   private final boolean isSonarCloud;
@@ -80,7 +76,6 @@ public class ServerConnection {
     this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguagesToSync, embeddedPluginKeys, serverInfoSynchronizer, storage);
     this.projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(storage);
     storage.plugins().cleanUp();
-    this.serverEventsAutoSubscriber = new ServerEventsAutoSubscriber(storage, enabledLanguagesToSync);
   }
 
   public Map<String, Path> getStoredPluginPathsByKey() {
@@ -126,11 +121,6 @@ public class ServerConnection {
     var newCodeDefinition = storage.project(projectKey).newCodeDefinition().read();
     issues.forEach(taintIssue -> taintIssue.setIsOnNewCode(newCodeDefinition.map(definition -> definition.isOnNewCode(taintIssue.getCreationDate().toEpochMilli())).orElse(true)));
     return issues;
-  }
-
-  public void subscribeForEvents(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, Consumer<ServerEvent> clientEventConsumer) {
-    serverEventsAutoSubscriber.subscribePermanently(new ServerApi(new ServerApiHelper(endpoint, client)), projectKeys,
-      clientEventConsumer);
   }
 
   public ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> ideFilePaths) {
@@ -264,9 +254,5 @@ public class ServerConnection {
 
   public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, ProgressMonitor monitor) {
     projectStorageUpdateExecutor.update(new ServerApi(new ServerApiHelper(endpoint, client)), projectKey, monitor);
-  }
-
-  public void stop(boolean deleteStorage) {
-    serverEventsAutoSubscriber.stop();
   }
 }
