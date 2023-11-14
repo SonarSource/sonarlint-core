@@ -37,6 +37,7 @@ import static java.util.Collections.singletonList;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class MapSettingsTests {
 
@@ -366,5 +367,35 @@ class MapSettingsTests {
     var settings = new MapSettings(definitions, Map.of("new_multi_values", " A , B "));
     assertThat(settings.getStringArray("new_multi_values")).isEqualTo(new String[] {"A", "B"});
     assertThat(settings.getStringArray("old_multi_values")).isEqualTo(new String[] {"A", "B"});
+  }
+
+  @Test
+  void testParsingMultiValues() {
+    assertThat(getStringArray("")).isEmpty();
+    assertThat(getStringArray(",")).isEmpty();
+    assertThat(getStringArray(",,")).isEmpty();
+    assertThat(getStringArray("a")).containsExactly("a");
+    assertThat(getStringArray("a b")).containsExactly("a b");
+    assertThat(getStringArray("a , b")).containsExactly("a", "b");
+    assertThat(getStringArray("\"a \",\" b\"")).containsExactly("a ", " b");
+    assertThat(getStringArray("\"a,b\",c")).containsExactly("a,b", "c");
+    assertThat(getStringArray("\"a\nb\",c")).containsExactly("a\nb", "c");
+    assertThat(getStringArray("\"a\",\n  b\n")).containsExactly("a", "b");
+    assertThat(getStringArray("a\n,b\n")).containsExactly("a", "b");
+    assertThat(getStringArray("a\n,b\n,\"\"")).containsExactly("a", "b", "");
+    assertThat(getStringArray("a\n,  \"  \"  ,b\n")).containsExactly("a", "  ", "b");
+    assertThat(getStringArray("  \" , ,, \", a\n,b\n")).containsExactly(" , ,, ", "a", "b");
+    assertThat(getStringArray("a\n,,b\n")).containsExactly("a", "b");
+    assertThat(getStringArray("a,\n\nb,c")).containsExactly("a", "b", "c");
+    assertThat(getStringArray("a,b\n\nc,d")).containsExactly("a", "b\nc", "d");
+    assertThat(getStringArray("a,\"\",b")).containsExactly("a", "", "b");
+
+    var thrown = assertThrows(IllegalStateException.class, () -> getStringArray("\"a ,b"));
+    assertThat(thrown).hasMessage("Property: 'multi_values' doesn't contain a valid CSV value: '\"a ,b'");
+  }
+
+  private String[] getStringArray(String value) {
+    var settings = new MapSettings(definitions, Map.of("multi_values", value));
+    return settings.getStringArray("multi_values");
   }
 }
