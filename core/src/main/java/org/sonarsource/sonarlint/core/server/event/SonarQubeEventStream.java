@@ -25,10 +25,23 @@ import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
+import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
+import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
+import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotChangedEvent;
+import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotClosedEvent;
+import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotRaisedEvent;
+import org.sonarsource.sonarlint.core.serverapi.push.TaintVulnerabilityClosedEvent;
+import org.sonarsource.sonarlint.core.serverapi.push.TaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.serverapi.stream.EventStream;
 import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
 import org.sonarsource.sonarlint.core.serverconnection.events.EventDispatcher;
-import org.sonarsource.sonarlint.core.serverconnection.events.ServerEventsAutoSubscriber;
+import org.sonarsource.sonarlint.core.serverconnection.events.hotspot.UpdateStorageOnSecurityHotspotChanged;
+import org.sonarsource.sonarlint.core.serverconnection.events.hotspot.UpdateStorageOnSecurityHotspotClosed;
+import org.sonarsource.sonarlint.core.serverconnection.events.hotspot.UpdateStorageOnSecurityHotspotRaised;
+import org.sonarsource.sonarlint.core.serverconnection.events.issue.UpdateStorageOnIssueChanged;
+import org.sonarsource.sonarlint.core.serverconnection.events.ruleset.UpdateStorageOnRuleSetChanged;
+import org.sonarsource.sonarlint.core.serverconnection.events.taint.UpdateStorageOnTaintVulnerabilityClosed;
+import org.sonarsource.sonarlint.core.serverconnection.events.taint.UpdateStorageOnTaintVulnerabilityRaised;
 
 public class SonarQubeEventStream {
   private EventStream eventStream;
@@ -41,7 +54,14 @@ public class SonarQubeEventStream {
 
   public SonarQubeEventStream(ConnectionStorage storage, Set<Language> enabledLanguages, String connectionId, ServerApiProvider serverApiProvider,
     Consumer<ServerEvent> eventConsumer) {
-    coreEventRouter = ServerEventsAutoSubscriber.getCoreEventHandlers(storage);
+    coreEventRouter = new EventDispatcher()
+      .dispatch(RuleSetChangedEvent.class, new UpdateStorageOnRuleSetChanged(storage))
+      .dispatch(IssueChangedEvent.class, new UpdateStorageOnIssueChanged(storage))
+      .dispatch(TaintVulnerabilityRaisedEvent.class, new UpdateStorageOnTaintVulnerabilityRaised(storage))
+      .dispatch(TaintVulnerabilityClosedEvent.class, new UpdateStorageOnTaintVulnerabilityClosed(storage))
+      .dispatch(SecurityHotspotRaisedEvent.class, new UpdateStorageOnSecurityHotspotRaised(storage))
+      .dispatch(SecurityHotspotChangedEvent.class, new UpdateStorageOnSecurityHotspotChanged(storage))
+      .dispatch(SecurityHotspotClosedEvent.class, new UpdateStorageOnSecurityHotspotClosed(storage));
     this.enabledLanguages = enabledLanguages;
     this.connectionId = connectionId;
     this.serverApiProvider = serverApiProvider;
