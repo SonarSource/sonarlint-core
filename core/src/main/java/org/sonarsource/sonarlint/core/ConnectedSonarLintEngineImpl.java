@@ -30,7 +30,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -66,7 +65,6 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoadResult;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
@@ -458,13 +456,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
-  public void subscribeForEvents(EndpointParams endpoint, HttpClient client, Set<String> projectKeys,
-    Consumer<ServerEvent> eventConsumer, @Nullable ClientLogOutput clientLogOutput) {
-    setLogging(null);
-    serverConnection.subscribeForEvents(endpoint, client, projectKeys, eventConsumer);
-  }
-
-  @Override
   public void downloadAllServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
     @Nullable ClientProgressMonitor monitor) {
     setLogging(null);
@@ -541,7 +532,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     setLogging(null);
     try {
       analysisContext.get().destroy();
-      serverConnection.stop(deleteStorage);
     } catch (Exception e) {
       throw SonarLintWrappedException.wrap(e);
     }
