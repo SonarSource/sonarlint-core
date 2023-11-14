@@ -20,42 +20,49 @@
 package org.sonarsource.sonarlint.core.analysis.sonarapi;
 
 import java.io.IOException;
+import java.io.StringReader;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.function.UnaryOperator;
 import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
+
+import static java.util.function.UnaryOperator.identity;
 
 public class MultivalueProperty {
-
-  private static final CSVFormat SONAR_CSV_FORMAT = CSVFormat.DEFAULT.builder()
-    .setSkipHeaderRecord(true)
-    .setIgnoreEmptyLines(false)
-    .setIgnoreSurroundingSpaces(true)
-    .build();
-
   private MultivalueProperty() {
     // prevents instantiation
   }
 
   public static String[] parseAsCsv(String key, String value) {
+    return parseAsCsv(key, value, identity());
+  }
+
+  public static String[] parseAsCsv(String key, String value, UnaryOperator<String> valueProcessor) {
+    String cleanValue = MultivalueProperty.trimFieldsAndRemoveEmptyFields(value);
     List<String> result = new ArrayList<>();
-    try (var csvParser = CSVParser.parse(value, SONAR_CSV_FORMAT)) {
-      var records = csvParser.getRecords();
+    try (var csvParser = CSVFormat.RFC4180.builder()
+      .setSkipHeaderRecord(true)
+      .setIgnoreEmptyLines(true)
+      .setIgnoreSurroundingSpaces(true)
+      .build()
+      .parse(new StringReader(cleanValue))) {
+      List<CSVRecord> records = csvParser.getRecords();
       if (records.isEmpty()) {
         return ArrayUtils.EMPTY_STRING_ARRAY;
       }
-      processRecords(result, records);
-      return result.stream().filter(StringUtils::isNotEmpty).toArray(String[]::new);
-    } catch (IOException e) {
+      processRecords(result, records, valueProcessor);
+      return result.toArray(new String[0]);
+    } catch (IOException | UncheckedIOException e) {
       throw new IllegalStateException("Property: '" + key + "' doesn't contain a valid CSV value: '" + value + "'", e);
     }
   }
 
   /**
-   * In most cases we expect a single record. <br>Having multiple records means the input value was split over multiple lines (this is common in Maven).
+   * In most cases we expect a single record. <br>Having multiple records means the input value was splitted over multiple lines (this is common in Maven).
    * For example:
    * <pre>
    *   &lt;sonar.exclusions&gt;
@@ -76,23 +83,129 @@ public class MultivalueProperty {
    * </pre>
    * will produce ['a\nb', 'c']
    */
-  private static void processRecords(List<String> result, List<CSVRecord> records) {
+  private static void processRecords(List<String> result, List<CSVRecord> records, UnaryOperator<String> valueProcessor) {
     for (CSVRecord csvRecord : records) {
-      var it = csvRecord.iterator();
+      Iterator<String> it = csvRecord.iterator();
       if (!result.isEmpty()) {
-        var next = it.next();
+        String next = it.next();
         if (!next.isEmpty()) {
-          var lastItemIdx = result.size() - 1;
-          var previous = result.get(lastItemIdx);
+          int lastItemIdx = result.size() - 1;
+          String previous = result.get(lastItemIdx);
           if (previous.isEmpty()) {
-            result.set(lastItemIdx, next);
+            result.set(lastItemIdx, valueProcessor.apply(next));
           } else {
-            result.set(lastItemIdx, previous + "\n" + next);
+            result.set(lastItemIdx, valueProcessor.apply(previous + "\n" + next));
           }
         }
       }
-      it.forEachRemaining(result::add);
+      it.forEachRemaining(s -> {
+        String apply = valueProcessor.apply(s);
+        result.add(apply);
+      });
     }
+  }
+
+  /**
+   * Removes the empty fields from the value of a multi-value property from empty fields, including trimming each field.
+   * <p>
+   * Quotes can be used to prevent an empty field to be removed (as it is used to preserve empty spaces).
+   * <ul>
+   *    <li>{@code "" => ""}</li>
+   *    <li>{@code " " => ""}</li>
+   *    <li>{@code "," => ""}</li>
+   *    <li>{@code ",," => ""}</li>
+   *    <li>{@code ",,," => ""}</li>
+   *    <li>{@code ",a" => "a"}</li>
+   *    <li>{@code "a," => "a"}</li>
+   *    <li>{@code ",a," => "a"}</li>
+   *    <li>{@code "a,,b" => "a,b"}</li>
+   *    <li>{@code "a,   ,b" => "a,b"}</li>
+   *    <li>{@code "a,\"\",b" => "a,b"}</li>
+   *    <li>{@code "\"a\",\"b\"" => "\"a\",\"b\""}</li>
+   *    <li>{@code "\"  a  \",\"b \"" => "\"  a  \",\"b \""}</li>
+   *    <li>{@code "\"a\",\"\",\"b\"" => "\"a\",\"\",\"b\""}</li>
+   *    <li>{@code "\"a\",\"  \",\"b\"" => "\"a\",\"  \",\"b\""}</li>
+   *    <li>{@code "\"  a,,b,c  \",\"d \"" => "\"  a,,b,c  \",\"d \""}</li>
+   *    <li>{@code "a,\"  \",b" => "ab"]}</li>
+   * </ul>
+   */
+  static String trimFieldsAndRemoveEmptyFields(String str) {
+    char[] chars = str.toCharArray();
+    var res = new char[chars.length];
+    /*
+     * set when reading the first non trimmable char after a separator char (or the beginning of the string)
+     * unset when reading a separator
+     */
+    var inField = false;
+    var inQuotes = false;
+    var i = 0;
+    var resI = 0;
+    for (; i < chars.length; i++) {
+      boolean isSeparator = chars[i] == ',';
+      if (!inQuotes && isSeparator) {
+        // exiting field (may already be unset)
+        inField = false;
+        if (resI > 0) {
+          resI = retroTrim(res, resI);
+        }
+      } else {
+        boolean isTrimmed = !inQuotes && istrimmable(chars[i]);
+        if (isTrimmed && !inField) {
+          // we haven't met any non trimmable char since the last separator yet
+          continue;
+        }
+
+        boolean isEscape = isEscapeChar(chars[i]);
+        if (isEscape) {
+          inQuotes = !inQuotes;
+        }
+
+        // add separator as we already had one field
+        if (!inField && resI > 0) {
+          res[resI] = ',';
+          resI++;
+        }
+
+        // register in field (may already be set)
+        inField = true;
+        // copy current char
+        res[resI] = chars[i];
+        resI++;
+      }
+    }
+    // inQuotes can only be true at this point if quotes are unbalanced
+    if (!inQuotes) {
+      // trim end of str
+      resI = retroTrim(res, resI);
+    }
+    return new String(res, 0, resI);
+  }
+
+  private static boolean isEscapeChar(char aChar) {
+    return aChar == '"';
+  }
+
+  private static boolean istrimmable(char aChar) {
+    return aChar <= ' ';
+  }
+
+  /**
+   * Reads from index {@code resI} to the beginning into {@code res} looking up the location of the trimmable char with
+   * the lowest index before encountering a non-trimmable char.
+   * <p>
+   * This basically trims {@code res} from any trimmable char at its end.
+   *
+   * @return index of next location to put new char in res
+   */
+  private static int retroTrim(char[] res, int resI) {
+    int i = resI;
+    while (i >= 1) {
+      if (!istrimmable(res[i - 1])) {
+        return i;
+      }
+      i--;
+    }
+    return i;
   }
 
 }
