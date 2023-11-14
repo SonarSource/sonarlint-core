@@ -101,6 +101,11 @@
       <artifactId>sonarlint-medium-tests</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>sonarlint-rpc-java-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
   
   <build>
