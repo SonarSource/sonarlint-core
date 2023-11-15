@@ -25,9 +25,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcS
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetSupportedFilePatternsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetSupportedFilePatternsResponse;
 
-class AnalysisServiceRpcDelegate extends AbstractRpcServiceDelegate implements AnalysisRpcService {
+class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements AnalysisRpcService {
 
-  public AnalysisServiceRpcDelegate(SonarLintRpcServerImpl server) {
+  public AnalysisRpcServiceDelegate(SonarLintRpcServerImpl server) {
     super(server);
   }
 
