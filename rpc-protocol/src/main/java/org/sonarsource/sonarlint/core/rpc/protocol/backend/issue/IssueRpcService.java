@@ -123,5 +123,5 @@ public interface IssueRpcService {
    * @return true if entity for file was found and actually deleted and false otherwise
    */
   @JsonRequest
-  CompletableFuture<ReopenIssueResponse> reopenAllIssuesForFile(ReopenAllIssuesForFileParams params);
+  CompletableFuture<ReopenAllIssuesForFileResponse> reopenAllIssuesForFile(ReopenAllIssuesForFileParams params);
 }
