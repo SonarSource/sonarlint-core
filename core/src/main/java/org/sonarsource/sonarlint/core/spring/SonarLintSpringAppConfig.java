@@ -133,7 +133,8 @@ import org.springframework.scheduling.support.TaskUtils;
   FileService.class,
   FilePathTranslationRepository.class,
   SynchronizationStatusRepository.class,
-  TaintVulnerabilityTrackingService.class
+  TaintVulnerabilityTrackingService.class,
+  TelemetryService.class
 })
 public class SonarLintSpringAppConfig {
 
@@ -142,11 +143,6 @@ public class SonarLintSpringAppConfig {
     var eventMulticaster = new SimpleApplicationEventMulticaster();
     eventMulticaster.setErrorHandler(TaskUtils.LOG_AND_SUPPRESS_ERROR_HANDLER);
     return eventMulticaster;
-  }
-
-  @Bean
-  TelemetryService provideTelemetryService(InitializeParams params, @Named("userHome") Path sonarlintUserHome) {
-    return new TelemetryService(params.getClientInfo().getTelemetryProductKey(), sonarlintUserHome, params.isFocusOnNewCode());
   }
 
   @Bean(name = "userHome")
@@ -184,5 +180,4 @@ public class SonarLintSpringAppConfig {
       throw new IllegalStateException("Cannot create directory '" + path + "'", e);
     }
   }
-
 }

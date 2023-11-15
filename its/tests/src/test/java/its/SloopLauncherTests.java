@@ -68,6 +68,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgres
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryInitDto;
 
 import static its.utils.UnArchiveUtils.unarchiveDistribution;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -100,7 +101,9 @@ class SloopLauncherTests {
 
   @Test
   void test_all_rules_returns() throws Exception {
-    var clientInfo = new ClientInfoDto("clientName", "integrationTests", "SonarLint ITs");
+    var telemetryInitDto = new TelemetryInitDto("SonarLint ITs", "SonarLint ITs",
+      "1.2.3", "4.5.6", "linux", "x64", Collections.emptyMap());
+    var clientInfo = new ClientInfoDto("clientName", "integrationTests", telemetryInitDto);
     var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false);
 
     server.initialize(new InitializeParams(clientInfo, featureFlags, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),

@@ -62,6 +62,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgres
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryPayloadResponse;
 
 public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
@@ -180,6 +181,11 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   @Override
   public CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params) {
     return requestAsync(cancelChecker -> delegate.getCredentials(params, cancelChecker));
+  }
+
+  @Override
+  public CompletableFuture<TelemetryPayloadResponse> getTelemetryPayload() {
+    return requestAsync(cancelChecker -> delegate.getTelemetryPayload());
   }
 
   @Override

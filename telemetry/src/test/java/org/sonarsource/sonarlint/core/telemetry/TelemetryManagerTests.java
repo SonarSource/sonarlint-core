@@ -19,18 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,7 +33,10 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryPayloadResponse;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -57,64 +55,21 @@ class TelemetryManagerTests {
   private static final String FOO_EVENT = "foo_event";
   private static final String SUGGEST_FEATURE = "suggestFeature";
 
-  private final TelemetryClientAttributesProvider attributes = new TelemetryClientAttributesProvider() {
-
-    @Override
-    public boolean usesConnectedMode() {
-      return true;
-    }
-
-    @Override
-    public boolean useSonarCloud() {
-      return true;
-    }
-
-    @Override
-    public Optional<String> nodeVersion() {
-      return Optional.of("10.5.2");
-    }
-
-    @Override
-    public boolean devNotificationsDisabled() {
-      return true;
-    }
-
-    @Override
-    public Collection<String> getNonDefaultEnabledRules() {
-      return null;
-    }
-
-    @Override
-    public Collection<String> getDefaultDisabledRules() {
-      return null;
-    }
-
-    @Override
-    public Map<String, Object> additionalAttributes() {
-      return Collections.emptyMap();
-    }
-
-  };
   private TelemetryHttpClient client;
   private Path storagePath;
   private TelemetryManager manager;
   private TelemetryLocalStorageManager storage;
 
   @BeforeEach
-  void setUp(@TempDir Path temp) throws IOException {
+  void setUp(@TempDir Path temp) {
     client = mock(TelemetryHttpClient.class);
     storagePath = temp.resolve("storage");
     storage = new TelemetryLocalStorageManager(storagePath);
-    manager = new TelemetryManager(storagePath, client, attributes);
+    manager = new TelemetryManager(storagePath, client);
   }
 
   @Test
-  void should_be_enabled_by_default(@TempDir Path temp) throws IOException {
-    assertThat(new TelemetryManager(temp.resolve("storage"), mock(TelemetryHttpClient.class), mock(TelemetryClientAttributesProvider.class)).isEnabled()).isTrue();
-  }
-
-  @Test
-  void should_save_on_first_analysis(@TempDir Path temp) throws IOException {
+  void should_save_on_first_analysis(@TempDir Path temp) {
     var storage = mockTelemetryStorage();
     var manager = stubbedTelemetryManager(temp, storage);
     manager.analysisDoneOnMultipleFiles();
@@ -122,7 +77,7 @@ class TelemetryManagerTests {
   }
 
   @Test
-  void should_increment_numDays_on_analysis_once_per_day() throws IOException {
+  void should_increment_numDays_on_analysis_once_per_day() {
     createAndSaveSampleData(storage);
 
     var data = storage.tryRead();
@@ -139,42 +94,50 @@ class TelemetryManagerTests {
   }
 
   @Test
-  void stop_should_trigger_upload_once_per_day() throws IOException {
-    manager.stop();
-    manager.stop();
+  void stop_should_trigger_upload_once_per_day() {
+    var telemetryPayload = new TelemetryPayloadResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
 
-    verify(client).upload(any(TelemetryLocalStorage.class), eq(attributes));
+    manager.stop(telemetryPayload);
+    manager.stop(telemetryPayload);
+
+    verify(client).upload(any(TelemetryLocalStorage.class), eq(telemetryPayload));
     verifyNoMoreInteractions(client);
   }
 
   @Test
-  void enable_should_trigger_upload_once_per_day() throws IOException {
-    manager.enable();
-    manager.enable();
+  void enable_should_trigger_upload_once_per_day() {
+    var telemetryPayload = new TelemetryPayloadResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
 
-    verify(client).upload(any(TelemetryLocalStorage.class), eq(attributes));
+    manager.enable(telemetryPayload);
+    manager.enable(telemetryPayload);
+
+    verify(client).upload(any(TelemetryLocalStorage.class), eq(telemetryPayload));
     verifyNoMoreInteractions(client);
   }
 
   @Test
-  void disable_should_trigger_optout(@TempDir Path temp) throws IOException {
+  void disable_should_trigger_optout(@TempDir Path temp) {
     var storage = mockTelemetryStorage();
     var manager = stubbedTelemetryManager(temp, storage);
-    manager.disable();
+    var telemetryPayload = new TelemetryPayloadResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
 
-    verify(client).optOut(any(TelemetryLocalStorage.class), eq(attributes));
+    manager.disable(telemetryPayload);
+
+    verify(client).optOut(any(TelemetryLocalStorage.class), eq(telemetryPayload));
     verifyNoMoreInteractions(client);
   }
 
   @Test
-  void uploadLazily_should_trigger_upload_once_per_day() throws IOException {
+  void uploadLazily_should_trigger_upload_once_per_day() {
+    var telemetryPayload = new TelemetryPayloadResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+
     storage.tryUpdateAtomically(d -> d.setUsedAnalysis("java", 1000));
 
     var data = storage.tryRead();
     assertThat(data.analyzers()).isNotEmpty();
     assertThat(data.lastUploadTime()).isNull();
 
-    manager.uploadLazily();
+    manager.uploadLazily(telemetryPayload);
 
     var reloaded = storage.tryRead();
 
@@ -184,19 +147,21 @@ class TelemetryManagerTests {
     var lastUploadTime = reloaded.lastUploadTime();
     assertThat(lastUploadTime).isNotNull();
 
-    manager.uploadLazily();
+    manager.uploadLazily(telemetryPayload);
 
     reloaded = storage.tryRead();
 
     assertThat(reloaded.lastUploadTime()).isEqualTo(lastUploadTime);
-    verify(client).upload(any(TelemetryLocalStorage.class), eq(attributes));
+    verify(client).upload(any(TelemetryLocalStorage.class), eq(telemetryPayload));
     verifyNoMoreInteractions(client);
   }
 
   @Test
-  void uploadLazily_should_trigger_upload_if_day_changed_and_hours_elapsed() throws IOException {
+  void uploadLazily_should_trigger_upload_if_day_changed_and_hours_elapsed() {
+    var telemetryPayload = new TelemetryPayloadResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+
     createAndSaveSampleData(storage);
-    manager.uploadLazily();
+    manager.uploadLazily(telemetryPayload);
 
     var data = storage.tryRead();
 
@@ -205,21 +170,23 @@ class TelemetryManagerTests {
       .minusHours(TelemetryManager.MIN_HOURS_BETWEEN_UPLOAD);
     storage.tryUpdateAtomically(d -> d.setLastUploadTime(lastUploadTime));
 
-    manager.uploadLazily();
+    manager.uploadLazily(telemetryPayload);
 
-    verify(client, times(2)).upload(any(TelemetryLocalStorage.class), eq(attributes));
+    verify(client, times(2)).upload(any(TelemetryLocalStorage.class), eq(telemetryPayload));
     verifyNoMoreInteractions(client);
   }
 
   @Test
   void enable_should_not_wipe_out_more_recent_data() {
+    var telemetryPayload = new TelemetryPayloadResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+
     createAndSaveSampleData(storage);
 
     var data = storage.tryRead();
     assertThat(data.enabled()).isFalse();
 
     // note: the manager hasn't seen the saved data
-    manager.enable();
+    manager.enable(telemetryPayload);
 
     var reloaded = storage.tryRead();
     assertThat(reloaded.enabled()).isTrue();
@@ -231,6 +198,8 @@ class TelemetryManagerTests {
 
   @Test
   void disable_should_not_wipe_out_more_recent_data() {
+    var telemetryPayload = new TelemetryPayloadResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+
     createAndSaveSampleData(storage);
     storage.tryUpdateAtomically(data -> data.setEnabled(true));
 
@@ -238,7 +207,7 @@ class TelemetryManagerTests {
     assertThat(data.enabled()).isTrue();
 
     // note: the manager hasn't seen the saved data
-    manager.disable();
+    manager.disable(telemetryPayload);
 
     var reloaded = storage.tryRead();
     assertThat(reloaded.enabled()).isFalse();
@@ -250,7 +219,7 @@ class TelemetryManagerTests {
   }
 
   @Test
-  void reporting_analysis_done_should_not_wipe_out_more_recent_data() throws IOException {
+  void reporting_analysis_done_should_not_wipe_out_more_recent_data() {
     createAndSaveSampleData(storage);
 
     var data = storage.tryRead();
@@ -269,7 +238,7 @@ class TelemetryManagerTests {
   }
 
   @Test
-  void reporting_analysis_on_language() throws IOException {
+  void reporting_analysis_on_language() {
     createAndSaveSampleData(storage);
 
     var data = storage.tryRead();
@@ -288,7 +257,7 @@ class TelemetryManagerTests {
   }
 
   @Test
-  void accumulate_received_dev_notifications() throws IOException {
+  void accumulate_received_dev_notifications() {
     createAndSaveSampleData(storage);
 
     var data = storage.tryRead();
@@ -309,7 +278,7 @@ class TelemetryManagerTests {
   }
 
   @Test
-  void accumulate_clicked_dev_notifications() throws IOException {
+  void accumulate_clicked_dev_notifications() {
     createAndSaveSampleData(storage);
 
     var data = storage.tryRead();
@@ -368,6 +337,8 @@ class TelemetryManagerTests {
 
   @Test
   void uploadLazily_should_clear_accumulated_data() {
+    var telemetryPayload = new TelemetryPayloadResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+
     createAndSaveSampleData(storage);
 
     // note: the manager hasn't seen the saved data
@@ -380,7 +351,7 @@ class TelemetryManagerTests {
     manager.addQuickFixAppliedForRule("ruleKey1");
     manager.helpAndFeedbackLinkClicked("faq");
 
-    manager.uploadLazily();
+    manager.uploadLazily(telemetryPayload);
 
     var reloaded = storage.tryRead();
     assertThat(reloaded.analyzers()).isEmpty();
@@ -460,8 +431,8 @@ class TelemetryManagerTests {
     return storage;
   }
 
-  private TelemetryManager stubbedTelemetryManager(Path path, TelemetryLocalStorageManager storage) throws IOException {
-    return new TelemetryManager(path, client, attributes) {
+  private TelemetryManager stubbedTelemetryManager(Path path, TelemetryLocalStorageManager storage) {
+    return new TelemetryManager(path, client) {
       @Override
       TelemetryLocalStorageManager newTelemetryStorage(Path ignored) {
         return storage;

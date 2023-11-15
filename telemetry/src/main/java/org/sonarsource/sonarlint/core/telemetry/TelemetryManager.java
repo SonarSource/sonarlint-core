@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.Set;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryPayloadResponse;
 
 import static org.sonarsource.sonarlint.core.telemetry.TelemetryUtils.dayChanged;
 
@@ -36,11 +37,9 @@ public class TelemetryManager {
 
   private final TelemetryLocalStorageManager storage;
   private final TelemetryHttpClient client;
-  private final TelemetryClientAttributesProvider attributesProvider;
 
-  public TelemetryManager(Path path, TelemetryHttpClient client, TelemetryClientAttributesProvider attributesProvider) {
+  public TelemetryManager(Path path, TelemetryHttpClient client) {
     this.storage = newTelemetryStorage(path);
-    this.attributesProvider = attributesProvider;
     this.client = client;
   }
 
@@ -48,22 +47,18 @@ public class TelemetryManager {
     return new TelemetryLocalStorageManager(path);
   }
 
-  public boolean isEnabled() {
-    return storage.tryRead().enabled();
-  }
-
-  public void enable() {
+  public void enable(TelemetryPayloadResponse telemetryPayload) {
     storage.tryUpdateAtomically(data -> data.setEnabled(true));
-    uploadLazily();
+    uploadLazily(telemetryPayload);
   }
 
   /**
    * Disable telemetry (opt-out).
    */
-  public void disable() {
+  public void disable(TelemetryPayloadResponse telemetryPayload) {
     storage.tryUpdateAtomically(data -> {
       data.setEnabled(false);
-      client.optOut(data, attributesProvider);
+      client.optOut(data, telemetryPayload);
     });
   }
 
@@ -73,14 +68,14 @@ public class TelemetryManager {
    * - the grace period has elapsed since the last upload
    * To be called periodically once a day.
    */
-  public void uploadLazily() {
+  public void uploadLazily(TelemetryPayloadResponse telemetryPayload) {
     var readData = storage.tryRead();
     if (!dayChanged(readData.lastUploadTime(), MIN_HOURS_BETWEEN_UPLOAD)) {
       return;
     }
 
     storage.tryUpdateAtomically(data -> {
-      client.upload(data, attributesProvider);
+      client.upload(data, telemetryPayload);
       data.setLastUploadTime();
       data.clearAfterPing();
     });
@@ -132,14 +127,10 @@ public class TelemetryManager {
     storage.tryUpdateAtomically(s -> s.helpAndFeedbackLinkClicked(itemId));
   }
 
-  public void smartNotificationsSent(String itemId) {
-    storage.tryUpdateAtomically(s -> s.helpAndFeedbackLinkClicked(itemId));
-  }
-
   /**
    * Save and upload lazily telemetry data.
    */
-  public void stop() {
-    uploadLazily();
+  public void stop(TelemetryPayloadResponse telemetryPayload) {
+    uploadLazily(telemetryPayload);
   }
 }
