@@ -36,13 +36,9 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.BackendErrorCode;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.ChangeHotspotStatusParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckLocalDetectionSupportedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckLocalDetectionSupportedResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckStatusChangePermittedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.OpenHotspotInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -82,23 +78,22 @@ public class HotspotService {
     this.telemetryService = telemetryService;
   }
 
-  public void openHotspotInBrowser(OpenHotspotInBrowserParams params) {
-    var effectiveBinding = configurationRepository.getEffectiveBinding(params.getConfigScopeId());
+  public void openHotspotInBrowser(String configScopeId, String branch, String hotspotKey) {
+    var effectiveBinding = configurationRepository.getEffectiveBinding(configScopeId);
     var endpointParams = effectiveBinding.flatMap(binding -> connectionRepository.getEndpointParams(binding.getConnectionId()));
     if (effectiveBinding.isEmpty() || endpointParams.isEmpty()) {
-      LOG.warn("Configuration scope {} is not bound properly, unable to open hotspot", params.getConfigScopeId());
+      LOG.warn("Configuration scope {} is not bound properly, unable to open hotspot", configScopeId);
       return;
     }
 
-    var url = buildHotspotUrl(effectiveBinding.get().getSonarProjectKey(), params.getBranch(), params.getHotspotKey(), endpointParams.get());
+    var url = buildHotspotUrl(effectiveBinding.get().getSonarProjectKey(), branch, hotspotKey, endpointParams.get());
 
     client.openUrlInBrowser(new OpenUrlInBrowserParams(url));
 
     telemetryService.hotspotOpenedInBrowser();
   }
 
-  public CheckLocalDetectionSupportedResponse checkLocalDetectionSupported(CheckLocalDetectionSupportedParams params, CancelChecker cancelChecker) {
-    var configScopeId = params.getConfigScopeId();
+  public CheckLocalDetectionSupportedResponse checkLocalDetectionSupported(String configScopeId) {
     var configScope = configurationRepository.getConfigurationScope(configScopeId);
     if (configScope == null) {
       ResponseError error = new ResponseError(BackendErrorCode.CONFIG_SCOPE_NOT_FOUND, "The provided configuration scope does not exist: " + configScopeId, configScopeId);
@@ -111,7 +106,8 @@ public class HotspotService {
     var connectionId = effectiveBinding.get().getConnectionId();
     var connection = connectionRepository.getConnectionById(connectionId);
     if (connection == null) {
-      ResponseError error = new ResponseError(BackendErrorCode.CONNECTION_NOT_FOUND, "The provided configuration scope is bound to an unknown connection: " + connectionId, connectionId);
+      ResponseError error = new ResponseError(BackendErrorCode.CONNECTION_NOT_FOUND, "The provided configuration scope is bound to an unknown connection: " + connectionId,
+        connectionId);
       throw new ResponseErrorException(error);
     }
 
@@ -119,12 +115,11 @@ public class HotspotService {
     return new CheckLocalDetectionSupportedResponse(supported, supported ? null : UNSUPPORTED_SONARQUBE_REASON);
   }
 
-  public CheckStatusChangePermittedResponse checkStatusChangePermitted(CheckStatusChangePermittedParams params, CancelChecker cancelChecker) {
-    var connectionId = params.getConnectionId();
+  public CheckStatusChangePermittedResponse checkStatusChangePermitted(String connectionId, String hotspotKey, CancelChecker cancelChecker) {
     // fixme add getConnectionByIdOrThrow
     var connection = connectionRepository.getConnectionById(connectionId);
     var serverApi = serverApiProvider.getServerApiOrThrow(connectionId);
-    var r = FutureUtils.waitForTaskWithResult(cancelChecker, serverApi.hotspot().show(params.getHotspotKey()), "check permission on hostpot", Duration.ofMinutes(1));
+    var r = FutureUtils.waitForTaskWithResult(cancelChecker, serverApi.hotspot().show(hotspotKey), "check permission on hostpot", Duration.ofMinutes(1));
     var allowedStatuses = HotspotReviewStatus.allowedStatusesOn(connection.getKind());
     // canChangeStatus is false when the 'Administer Hotspots' permission is missing
     // normally the 'Browse' permission is also required, but we assume it's present as the client knows the hotspot key
@@ -140,8 +135,7 @@ public class HotspotService {
         .collect(Collectors.toList()));
   }
 
-  public void changeStatus(ChangeHotspotStatusParams params, CancelChecker cancelChecker) {
-    var configurationScopeId = params.getConfigurationScopeId();
+  public void changeStatus(String configurationScopeId, String hotspotKey, HotspotReviewStatus newStatus, CancelChecker cancelChecker) {
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     if (effectiveBindingOpt.isEmpty()) {
       LOG.debug("No binding for config scope {}", configurationScopeId);
@@ -152,14 +146,9 @@ public class HotspotService {
       LOG.debug("Connection {} is gone", effectiveBindingOpt.get().getConnectionId());
       return;
     }
-    var reviewStatus = toCore(params.getNewStatus());
-    FutureUtils.waitForHttpRequest(cancelChecker, connectionOpt.get().hotspot().changeStatusAsync(params.getHotspotKey(), reviewStatus), "change hotspot status");
-    saveStatusInStorage(effectiveBindingOpt.get(), params.getHotspotKey(), reviewStatus);
+    FutureUtils.waitForHttpRequest(cancelChecker, connectionOpt.get().hotspot().changeStatusAsync(hotspotKey, newStatus), "change hotspot status");
+    saveStatusInStorage(effectiveBindingOpt.get(), hotspotKey, newStatus);
     telemetryService.hotspotStatusChanged();
-  }
-
-  private static HotspotReviewStatus toCore(HotspotStatus newStatus) {
-    return HotspotReviewStatus.valueOf(newStatus.name());
   }
 
   private void saveStatusInStorage(Binding binding, String hotspotKey, HotspotReviewStatus newStatus) {
