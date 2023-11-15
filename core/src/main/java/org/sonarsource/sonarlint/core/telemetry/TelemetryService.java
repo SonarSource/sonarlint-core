@@ -41,12 +41,15 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryPayloadResponse;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+
 @Named
 @Singleton
 public class TelemetryService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  static final String DISABLE_PROPERTY_KEY = "sonarlint.telemetry.disabled";
+  private static final String DISABLE_PROPERTY_KEY = "sonarlint.telemetry.disabled";
+  private static final long TELEMETRY_UPLOAD_DELAY = TimeUnit.HOURS.toMinutes(6);
 
   private final TelemetryLocalStorageManager telemetryLocalStorageManager;
   private final ScheduledExecutorService scheduledExecutor;
@@ -80,8 +83,7 @@ public class TelemetryService {
     }
     this.telemetryLocalStorageManager.tryUpdateAtomically(storage -> storage.setInitialNewCodeFocus(initializeParams.isFocusOnNewCode()));
     var initialDelay = Integer.parseInt(System.getProperty("sonarlint.internal.telemetry.initialDelay", "1"));
-    //todo check the delay for all IDEs
-    scheduledExecutor.scheduleWithFixedDelay(this::upload, initialDelay, TimeUnit.HOURS.toMinutes(6), TimeUnit.MINUTES);
+    scheduledExecutor.scheduleWithFixedDelay(this::upload, initialDelay, TELEMETRY_UPLOAD_DELAY, MINUTES);
   }
 
   private void upload() {
@@ -234,7 +236,7 @@ public class TelemetryService {
   public void stop() {
     var clientTelemetryPayload = getClientTelemetryPayload();
     if (Objects.nonNull(clientTelemetryPayload)) {
-      telemetryManager.stop(clientTelemetryPayload);
+      telemetryManager.uploadLazily(clientTelemetryPayload);
     }
     stopTelemetryScheduledExecutor();
   }

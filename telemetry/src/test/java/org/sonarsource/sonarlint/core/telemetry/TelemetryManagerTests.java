@@ -24,8 +24,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,42 +64,6 @@ class TelemetryManagerTests {
     storagePath = temp.resolve("storage");
     storage = new TelemetryLocalStorageManager(storagePath);
     manager = new TelemetryManager(storagePath, client);
-  }
-
-  @Test
-  void should_save_on_first_analysis(@TempDir Path temp) {
-    var storage = mockTelemetryStorage();
-    var manager = stubbedTelemetryManager(temp, storage);
-    manager.analysisDoneOnMultipleFiles();
-    verify(storage).tryUpdateAtomically(any(Consumer.class));
-  }
-
-  @Test
-  void should_increment_numDays_on_analysis_once_per_day() {
-    createAndSaveSampleData(storage);
-
-    var data = storage.tryRead();
-    assertThat(data.numUseDays()).isEqualTo(5);
-
-    // note: the manager hasn't seen the saved data
-    manager.analysisDoneOnMultipleFiles();
-
-    var reloaded = storage.tryRead();
-    assertThat(reloaded.numUseDays()).isEqualTo(6);
-
-    manager.analysisDoneOnMultipleFiles();
-    assertThat(reloaded.numUseDays()).isEqualTo(6);
-  }
-
-  @Test
-  void stop_should_trigger_upload_once_per_day() {
-    var telemetryPayload = new TelemetryPayloadResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
-
-    manager.stop(telemetryPayload);
-    manager.stop(telemetryPayload);
-
-    verify(client).upload(any(TelemetryLocalStorage.class), eq(telemetryPayload));
-    verifyNoMoreInteractions(client);
   }
 
   @Test
@@ -219,25 +181,6 @@ class TelemetryManagerTests {
   }
 
   @Test
-  void reporting_analysis_done_should_not_wipe_out_more_recent_data() {
-    createAndSaveSampleData(storage);
-
-    var data = storage.tryRead();
-
-    // note: the manager hasn't seen the saved data
-    manager.analysisDoneOnMultipleFiles();
-
-    var reloaded = storage.tryRead();
-    assertThat(reloaded.enabled()).isEqualTo(data.enabled());
-    assertThat(reloaded.installTime()).isEqualTo(data.installTime().truncatedTo(ChronoUnit.MILLIS));
-    assertThat(reloaded.lastUseDate()).isEqualTo(LocalDate.now());
-    assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays() + 1);
-    assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
-    assertThat(reloaded.analyzers()).isEmpty();
-    assertThat(reloaded.notifications().get(FOO_EVENT).getDevNotificationsCount()).isEqualTo(10);
-  }
-
-  @Test
   void reporting_analysis_on_language() {
     createAndSaveSampleData(storage);
 
@@ -257,99 +200,24 @@ class TelemetryManagerTests {
   }
 
   @Test
-  void accumulate_received_dev_notifications() {
-    createAndSaveSampleData(storage);
-
-    var data = storage.tryRead();
-
-    // note: the manager hasn't seen the saved data
-    manager.devNotificationsReceived(FOO_EVENT);
-    manager.devNotificationsReceived(FOO_EVENT);
-    manager.devNotificationsReceived(FOO_EVENT);
-
-    var reloaded = storage.tryRead();
-    assertThat(reloaded.enabled()).isEqualTo(data.enabled());
-    assertThat(reloaded.installTime()).isEqualTo(data.installTime().truncatedTo(ChronoUnit.MILLIS));
-    assertThat(reloaded.lastUseDate()).isEqualTo(data.lastUseDate());
-    assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays());
-    assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
-    assertThat(reloaded.analyzers()).isEmpty();
-    assertThat(reloaded.notifications().get(FOO_EVENT).getDevNotificationsCount()).isEqualTo(DEFAULT_NOTIF_COUNT + 3);
-  }
-
-  @Test
-  void accumulate_clicked_dev_notifications() {
-    createAndSaveSampleData(storage);
-
-    var data = storage.tryRead();
-
-    // note: the manager hasn't seen the saved data
-    manager.devNotificationsClicked(FOO_EVENT);
-    manager.devNotificationsClicked(FOO_EVENT);
-
-    var reloaded = storage.tryRead();
-
-    assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays() + 1);
-    assertThat(reloaded.notifications().get(FOO_EVENT).getDevNotificationsClicked()).isEqualTo(DEFAULT_NOTIF_CLICKED + 2);
-  }
-
-  @Test
-  void accumulate_received_open_hotspot_requests() {
-    createAndSaveSampleData(storage);
-
-    // note: the manager hasn't seen the saved data
-    manager.showHotspotRequestReceived();
-    manager.showHotspotRequestReceived();
-
-    var reloaded = storage.tryRead();
-
-    assertThat(reloaded.showHotspotRequestsCount()).isEqualTo(2);
-  }
-
-  @Test
-  void accumulate_open_hotspot_in_browser() {
-    createAndSaveSampleData(storage);
-
-    // note: the manager hasn't seen the saved data
-    manager.showHotspotRequestReceived();
-    manager.showHotspotRequestReceived();
-
-    var reloaded = storage.tryRead();
-
-    assertThat(reloaded.showHotspotRequestsCount()).isEqualTo(2);
-  }
-
-  @Test
-  void accumulate_investigated_taint_vulnerabilities() {
-    createAndSaveSampleData(storage);
-
-    // note: the manager hasn't seen the saved data
-    manager.taintVulnerabilitiesInvestigatedLocally();
-    manager.taintVulnerabilitiesInvestigatedLocally();
-    manager.taintVulnerabilitiesInvestigatedLocally();
-    manager.taintVulnerabilitiesInvestigatedRemotely();
-
-    var reloaded = storage.tryRead();
-
-    assertThat(reloaded.taintVulnerabilitiesInvestigatedLocallyCount()).isEqualTo(3);
-    assertThat(reloaded.taintVulnerabilitiesInvestigatedRemotelyCount()).isEqualTo(1);
-  }
-
-  @Test
   void uploadLazily_should_clear_accumulated_data() {
     var telemetryPayload = new TelemetryPayloadResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
 
     createAndSaveSampleData(storage);
-
-    // note: the manager hasn't seen the saved data
-    manager.analysisDoneOnSingleLanguage(Language.JAVA, 10);
-    manager.showHotspotRequestReceived();
-    manager.devNotificationsClicked(FOO_EVENT);
-    manager.taintVulnerabilitiesInvestigatedLocally();
-    manager.taintVulnerabilitiesInvestigatedRemotely();
-    manager.addReportedRules(new HashSet<>(Arrays.asList("ruleKey1", "ruleKey2")));
-    manager.addQuickFixAppliedForRule("ruleKey1");
-    manager.helpAndFeedbackLinkClicked("faq");
+    storage.tryUpdateAtomically(data -> {
+      data.setEnabled(true);
+      data.setUsedAnalysis("java", 1000);
+      data.incrementHotspotStatusChangedCount();
+      data.incrementOpenHotspotInBrowserCount();
+      data.incrementShowHotspotRequestCount();
+      data.incrementShowIssueRequestCount();
+      data.incrementTaintVulnerabilitiesInvestigatedLocallyCount();
+      data.incrementTaintVulnerabilitiesInvestigatedRemotelyCount();
+      data.setLastUploadTime(LocalDateTime.now().minusDays(2));
+      data.setNumUseDays(5);
+      data.notifications().put(FOO_EVENT, new TelemetryNotificationsCounter(DEFAULT_NOTIF_COUNT, DEFAULT_NOTIF_CLICKED));
+      data.getHelpAndFeedbackLinkClickedCounter().put(SUGGEST_FEATURE, new TelemetryHelpAndFeedbackCounter(DEFAULT_HELP_AND_FEEDBACK_COUNT));
+    });
 
     manager.uploadLazily(telemetryPayload);
 
@@ -360,49 +228,9 @@ class TelemetryManagerTests {
     assertThat(reloaded.taintVulnerabilitiesInvestigatedLocallyCount()).isZero();
     assertThat(reloaded.taintVulnerabilitiesInvestigatedRemotelyCount()).isZero();
     assertThat(reloaded.hotspotStatusChangedCount()).isZero();
-    assertThat(reloaded.getRaisedIssuesRules()).isEmpty();
-    assertThat(reloaded.getQuickFixesApplied()).isEmpty();
+    assertThat(reloaded.getShowIssueRequestsCount()).isZero();
+    assertThat(reloaded.openHotspotInBrowserCount()).isZero();
     assertThat(reloaded.getHelpAndFeedbackLinkClickedCounter()).isEmpty();
-  }
-
-  @Test
-  void accumulate_rules_activation_settings_and_reported_rules() {
-    createAndSaveSampleData(storage);
-
-    manager.addReportedRules(new HashSet<>(Arrays.asList("ruleKey1", "ruleKey1", "ruleKey2")));
-
-    var reloaded = storage.tryRead();
-    assertThat(reloaded.getRaisedIssuesRules()).hasSize(2);
-    assertThat(reloaded.getRaisedIssuesRules()).contains("ruleKey1", "ruleKey2");
-  }
-
-  @Test
-  void accumulate_applied_quick_fixes() {
-    createAndSaveSampleData(storage);
-
-    manager.addQuickFixAppliedForRule("ruleKey1");
-    manager.addQuickFixAppliedForRule("ruleKey2");
-    manager.addQuickFixAppliedForRule("ruleKey1");
-
-    var reloaded = storage.tryRead();
-    assertThat(reloaded.getQuickFixesApplied()).containsExactlyInAnyOrder("ruleKey1", "ruleKey2");
-  }
-
-  @Test
-  void accumulate_help_and_feedback_clicks() {
-    createAndSaveSampleData(storage);
-
-    manager.helpAndFeedbackLinkClicked("faq");
-    manager.helpAndFeedbackLinkClicked("docs");
-    manager.helpAndFeedbackLinkClicked("docs");
-    manager.helpAndFeedbackLinkClicked("getHelp");
-
-    var reloaded = storage.tryRead();
-    assertThat(reloaded.getHelpAndFeedbackLinkClickedCounter()).hasSize(4);
-    assertThat(reloaded.getHelpAndFeedbackLinkClickedCounter().get(SUGGEST_FEATURE).getHelpAndFeedbackLinkClickedCount()).isEqualTo(12);
-    assertThat(reloaded.getHelpAndFeedbackLinkClickedCounter().get("docs").getHelpAndFeedbackLinkClickedCount()).isEqualTo(2);
-    assertThat(reloaded.getHelpAndFeedbackLinkClickedCounter().get("faq").getHelpAndFeedbackLinkClickedCount()).isEqualTo(1);
-    assertThat(reloaded.getHelpAndFeedbackLinkClickedCounter().get("getHelp").getHelpAndFeedbackLinkClickedCount()).isEqualTo(1);
   }
 
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {

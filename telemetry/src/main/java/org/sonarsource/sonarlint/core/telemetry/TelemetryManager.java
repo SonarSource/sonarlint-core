@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import java.nio.file.Path;
-import java.util.Set;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryPayloadResponse;
@@ -89,48 +88,5 @@ public class TelemetryManager {
         data.setUsedAnalysis(language.getLanguageKey(), analysisTimeMs);
       }
     });
-  }
-
-  public void analysisDoneOnMultipleFiles() {
-    storage.tryUpdateAtomically(TelemetryLocalStorage::setUsedAnalysis);
-  }
-
-  public void devNotificationsReceived(String eventType) {
-    storage.tryUpdateAtomically(s -> s.incrementDevNotificationsCount(eventType));
-  }
-
-  public void devNotificationsClicked(String eventType) {
-    storage.tryUpdateAtomically(s -> s.incrementDevNotificationsClicked(eventType));
-  }
-
-  public void showHotspotRequestReceived() {
-    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementShowHotspotRequestCount);
-  }
-
-  public void taintVulnerabilitiesInvestigatedLocally() {
-    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementTaintVulnerabilitiesInvestigatedLocallyCount);
-  }
-
-  public void taintVulnerabilitiesInvestigatedRemotely() {
-    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementTaintVulnerabilitiesInvestigatedRemotelyCount);
-  }
-
-  public void addReportedRules(Set<String> ruleKeys) {
-    storage.tryUpdateAtomically(s -> s.addReportedRules(ruleKeys));
-  }
-
-  public void addQuickFixAppliedForRule(String ruleKey) {
-    storage.tryUpdateAtomically(s -> s.addQuickFixAppliedForRule(ruleKey));
-  }
-
-  public void helpAndFeedbackLinkClicked(String itemId) {
-    storage.tryUpdateAtomically(s -> s.helpAndFeedbackLinkClicked(itemId));
-  }
-
-  /**
-   * Save and upload lazily telemetry data.
-   */
-  public void stop(TelemetryPayloadResponse telemetryPayload) {
-    uploadLazily(telemetryPayload);
   }
 }

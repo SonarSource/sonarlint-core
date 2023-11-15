@@ -62,7 +62,9 @@ public class TelemetryPayloadResponse {
    */
   private final Map<String, Object> additionalAttributes;
 
-  public TelemetryPayloadResponse(boolean usesConnectedMode, boolean useSonarCloud, @Nullable String nodeVersion, boolean devNotificationsDisabled, List<String> nonDefaultEnabledRules, List<String> defaultDisabledRules, Map<String, Object> additionalAttributes) {
+  public TelemetryPayloadResponse(boolean usesConnectedMode, boolean useSonarCloud, @Nullable String nodeVersion,
+    boolean devNotificationsDisabled, List<String> nonDefaultEnabledRules, List<String> defaultDisabledRules,
+    Map<String, Object> additionalAttributes) {
     this.usesConnectedMode = usesConnectedMode;
     this.useSonarCloud = useSonarCloud;
     this.nodeVersion = nodeVersion;
