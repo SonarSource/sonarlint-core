@@ -29,7 +29,6 @@ import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRep
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
@@ -61,10 +60,9 @@ public class TokenGeneratorHelper {
     this.httpClientProvider = httpClientProvider;
   }
 
-  public HelpGenerateUserTokenResponse helpGenerateUserToken(HelpGenerateUserTokenParams params, CancelChecker cancelChecker) {
-    var serverBaseUrl = params.getServerUrl();
+  public HelpGenerateUserTokenResponse helpGenerateUserToken(String serverBaseUrl, boolean isSonarCloud, CancelChecker cancelChecker) {
 
-    var automaticTokenGenerationSupported = doesServerSupportAutomaticUserTokenGeneration(serverBaseUrl, params.isSonarCloud(), cancelChecker);
+    var automaticTokenGenerationSupported = doesServerSupportAutomaticUserTokenGeneration(serverBaseUrl, isSonarCloud, cancelChecker);
     client.openUrlInBrowser(new OpenUrlInBrowserParams(ServerApiHelper.concat(serverBaseUrl, getUserTokenGenerationRelativeUrlToOpen(automaticTokenGenerationSupported))));
     var shouldWaitIncomingToken = automaticTokenGenerationSupported && embeddedServer.isStarted();
     if (shouldWaitIncomingToken) {
