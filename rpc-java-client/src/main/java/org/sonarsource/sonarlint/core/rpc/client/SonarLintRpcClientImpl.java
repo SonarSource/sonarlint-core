@@ -130,7 +130,7 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   @Override
   public void showMessage(ShowMessageParams params) {
-    notify(() -> delegate.showMessage(params));
+    notify(() -> delegate.showMessage(params.getType(), params.getText()));
   }
 
   @Override

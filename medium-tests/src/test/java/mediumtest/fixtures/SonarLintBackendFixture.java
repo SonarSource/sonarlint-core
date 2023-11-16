@@ -65,7 +65,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFla
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.ClientErrorCode;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.DidChangeMatchedSonarProjectBranchParams;
@@ -91,7 +90,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesResp
 import org.sonarsource.sonarlint.core.rpc.protocol.client.info.GetClientInfoResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidUpdatePluginsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
@@ -498,7 +496,6 @@ public class SonarLintBackendFixture {
   }
 
   public static class FakeSonarLintRpcClient implements SonarLintRpcClientDelegate {
-    private final List<ShowMessageParams> messagesToShow = new ArrayList<>();
     private final List<ShowSoonUnsupportedMessageParams> soonUnsupportedMessagesToShow = new ArrayList<>();
     private final List<ShowSmartNotificationParams> smartNotificationsToShow = new ArrayList<>();
     private final String clientDescription;
@@ -545,11 +542,6 @@ public class SonarLintBackendFixture {
 
     public void setBackend(SonarLintTestRpcServer backend) {
       this.backend = backend;
-    }
-
-    @Override
-    public void showMessage(ShowMessageParams params) {
-      messagesToShow.add(params);
     }
 
     @Override
@@ -719,10 +711,6 @@ public class SonarLintBackendFixture {
 
     public boolean hasReceivedSmartNotifications() {
       return !smartNotificationsToShow.isEmpty();
-    }
-
-    public List<ShowMessageParams> getMessagesToShow() {
-      return messagesToShow;
     }
 
     public List<ShowSoonUnsupportedMessageParams> getSoonUnsupportedMessagesToShow() {

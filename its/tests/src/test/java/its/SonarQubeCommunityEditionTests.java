@@ -517,12 +517,6 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
   private static SonarLintRpcClientDelegate newDummySonarLintClient() {
     return new SonarLintRpcClientDelegate() {
-
-      @Override
-      public void showMessage(ShowMessageParams params) {
-
-      }
-
       @Override
       public void log(LogParams params) {
 

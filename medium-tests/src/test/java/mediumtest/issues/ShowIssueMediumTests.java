@@ -42,6 +42,9 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 class ShowIssueMediumTests {
 
@@ -213,9 +216,11 @@ class ShowIssueMediumTests {
       .build(fakeClient);
 
     var statusCode = executeOpenIssueRequest(ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
-
     assertThat(statusCode).isEqualTo(200);
-    assertThat(fakeClient.getMessagesToShow()).isEmpty();
+
+    Thread.sleep(100);
+    verify(fakeClient, never()).showMessage(any(), any());
+
     await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getIssueParamsToShowByIssueKey()).containsOnlyKeys(ISSUE_KEY));
     assertThat(fakeClient.getIssueParamsToShowByIssueKey().get(ISSUE_KEY).getRuleKey()).isEqualTo(RULE_KEY);
   }
@@ -230,9 +235,11 @@ class ShowIssueMediumTests {
       .build(fakeClient);
 
     var statusCode = executeOpenIssueRequest(ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
-
     assertThat(statusCode).isEqualTo(200);
-    assertThat(fakeClient.getMessagesToShow()).isEmpty();
+
+    Thread.sleep(100);
+    verify(fakeClient, never()).showMessage(any(), any());
+
     await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getIssueParamsToShowByIssueKey()).containsOnlyKeys(ISSUE_KEY));
     assertThat(fakeClient.getIssueParamsToShowByIssueKey().get(ISSUE_KEY).getRuleKey()).isEqualTo(RULE_KEY);
   }

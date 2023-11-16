@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
@@ -39,6 +40,12 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 
 class OpenHotspotInIdeMediumTests {
@@ -106,8 +113,8 @@ class OpenHotspotInIdeMediumTests {
   }
 
   @Test
-  void it_should_open_hotspot_in_ide_when_project_bound() {
-    var fakeClient = newFakeClient().build();
+  void it_should_open_hotspot_in_ide_when_project_bound() throws InterruptedException {
+    var fakeClient = spy(newFakeClient().build());
     backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, serverWithHotspot)
       .withBoundConfigScope("scopeId", CONNECTION_ID, "projectKey")
@@ -115,9 +122,11 @@ class OpenHotspotInIdeMediumTests {
       .build(fakeClient);
 
     var statusCode = requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
-
     assertThat(statusCode).isEqualTo(200);
-    assertThat(fakeClient.getMessagesToShow()).isEmpty();
+
+    Thread.sleep(100);
+    verify(fakeClient, never()).showMessage(any(), any());
+
     await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys("scopeId"));
     assertThat(fakeClient.getHotspotToShowByConfigScopeId().get("scopeId"))
       .extracting(HotspotDetailsDto::getKey, HotspotDetailsDto::getMessage, HotspotDetailsDto::getAuthor, HotspotDetailsDto::getFilePath,
@@ -143,7 +152,7 @@ class OpenHotspotInIdeMediumTests {
   }
 
   @Test
-  void it_should_assist_creating_the_connection_when_server_url_unknown() {
+  void it_should_assist_creating_the_connection_when_server_url_unknown() throws InterruptedException {
     var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", CONNECTION_ID, serverWithHotspot.baseUrl(), "projectKey").build();
     backend = newBackend()
       .withUnboundConfigScope("scopeId")
@@ -151,9 +160,11 @@ class OpenHotspotInIdeMediumTests {
       .build(fakeClient);
 
     var statusCode = requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
-
     assertThat(statusCode).isEqualTo(200);
-    assertThat(fakeClient.getMessagesToShow()).isEmpty();
+
+    Thread.sleep(100);
+    verify(fakeClient, never()).showMessage(any(), any());
+
     await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys("scopeId"));
     assertThat(fakeClient.getHotspotToShowByConfigScopeId().get("scopeId"))
       .extracting(HotspotDetailsDto::getMessage)
@@ -161,7 +172,7 @@ class OpenHotspotInIdeMediumTests {
   }
 
   @Test
-  void it_should_assist_creating_the_binding_if_scope_not_bound() {
+  void it_should_assist_creating_the_binding_if_scope_not_bound() throws InterruptedException {
     var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", CONNECTION_ID, serverWithHotspot.baseUrl(), "projectKey").build();
     backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, serverWithHotspot)
@@ -170,9 +181,11 @@ class OpenHotspotInIdeMediumTests {
       .build(fakeClient);
 
     var statusCode = requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
-
     assertThat(statusCode).isEqualTo(200);
-    assertThat(fakeClient.getMessagesToShow()).isEmpty();
+
+    Thread.sleep(100);
+    verify(fakeClient, never()).showMessage(any(), any());
+
     await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys("scopeId"));
     assertThat(fakeClient.getHotspotToShowByConfigScopeId().get("scopeId"))
       .extracting(HotspotDetailsDto::getMessage)
@@ -180,7 +193,7 @@ class OpenHotspotInIdeMediumTests {
   }
 
   @Test
-  void it_should_display_a_message_when_failing_to_fetch_the_hotspot() {
+  void it_should_display_a_message_when_failing_to_fetch_the_hotspot() throws InterruptedException {
     var fakeClient = newFakeClient().build();
     backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, serverWithoutHotspot)
@@ -189,12 +202,10 @@ class OpenHotspotInIdeMediumTests {
       .build(fakeClient);
 
     var statusCode = requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithoutHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
-
     assertThat(statusCode).isEqualTo(200);
-    await().atMost(2, TimeUnit.SECONDS).until(() -> !fakeClient.getMessagesToShow().isEmpty());
-    assertThat(fakeClient.getMessagesToShow())
-      .extracting(ShowMessageParams::getType, ShowMessageParams::getText)
-      .containsExactly(tuple("ERROR", "Could not show the hotspot. See logs for more details"));
+
+    verify(fakeClient, timeout(2000)).showMessage(MessageType.ERROR, "Could not show the hotspot. See logs for more details");
+
     assertThat(fakeClient.getHotspotToShowByConfigScopeId()).isEmpty();
   }
 

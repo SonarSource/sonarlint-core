@@ -157,11 +157,6 @@ class SonarLintRpcClientDelegateTests {
   private static class DefaultSonarLintRpcClientDelegate implements SonarLintRpcClientDelegate {
 
     @Override
-    public void showMessage(ShowMessageParams params) {
-
-    }
-
-    @Override
     public void log(LogParams params) {
 
     }
