@@ -37,7 +37,7 @@ import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionCredentialsChangedEvent;
-import org.sonarsource.sonarlint.core.event.ServerEventReceivedEvent;
+import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -170,7 +170,7 @@ public class ServerEventsService {
 
   private SonarQubeEventStream openStream(String connectionId) {
     return new SonarQubeEventStream(languageSupportRepository.getEnabledLanguagesInConnectedMode(), connectionId, serverApiProvider,
-      e -> eventPublisher.publishEvent(new ServerEventReceivedEvent(connectionId, e)));
+      e -> eventPublisher.publishEvent(new SonarServerEventReceivedEvent(connectionId, e)));
   }
 
   private boolean supportsServerSentEvents(String connectionId) {

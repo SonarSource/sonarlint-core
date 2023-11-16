@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Commons
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,24 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.event;
+package org.sonarsource.sonarlint.core.commons.push;
 
-import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
-
-public class ServerEventReceivedEvent {
-  private final String connectionid;
-  private final ServerEvent event;
-
-  public ServerEventReceivedEvent(String connectionid, ServerEvent event) {
-    this.connectionid = connectionid;
-    this.event = event;
-  }
-
-  public String getConnectionid() {
-    return connectionid;
-  }
-
-  public ServerEvent getEvent() {
-    return event;
-  }
+public interface SonarServerEvent {
 }

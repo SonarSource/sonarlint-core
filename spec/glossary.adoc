@@ -21,7 +21,8 @@
 [[rule_repo]]Rule Repository:: A rule repository is a logical grouping of rules. This is not a concept exposed in SonarLint. It is mostly used to differentiate rules of the same language that are assessed by different <<sonar_analyzer, analyzers>> or <<sensor,sensors>>.
 [[sensor]]Sensor:: A Sensor is the Java interface implemented by <<sonar_analyzer,Sonar analyzers>> to analyze source files and report <<finding,findings>>.
 [[sonar_analyzer]]Sonar Analyzer:: A component responsible to analyze user's code, for one or multiple languages.
-[[sonar_project]]Sonar Project:: A project that exists on SonarQube or SonarCloud. Sonar Projects are identified by a <<project_key,projectKey>>.
+[[sonar_project]]Sonar Project:: A project that exists on the <<sonar_server,Sonar Server>> (either SonarQube or SonarCloud). Sonar Projects are identified by a <<project_key,projectKey>>.
 [[smart_notification]]Smart Notifications:: A feature that enables the IDE to receive notifications, only available in <<connected_mode,connected mode>> with SonarQube or SonarCloud. You receive a smart notification when the quality gate status of an opened project in your IDE changes, or when an analysis raises new issues that you've introduced in an opened project.
 [[sonar_project_branch]]Sonar Project Branch:: A branch that has already been analyzed on a <<sonar_project,Sonar Project>>.
+[[sonar_server]]Sonar Server:: An instance of SonarQube or the SonarCloud service, to which SonarLint can be connected.
 [[standalone_mode]]Standalone Mode:: The use of SonarLint without a SonarQube server or SonarCloud.  See also <<connected_mode,connected mode>>.

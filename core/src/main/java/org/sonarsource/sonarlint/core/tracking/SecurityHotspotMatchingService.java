@@ -39,7 +39,7 @@ import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.event.ServerEventReceivedEvent;
+import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 import org.sonarsource.sonarlint.core.issuetracking.Tracker;
 import org.sonarsource.sonarlint.core.repository.branch.MatchedSonarProjectBranchRepository;
@@ -162,8 +162,8 @@ public class SecurityHotspotMatchingService {
   }
 
   @EventListener
-  public void onServerEventReceived(ServerEventReceivedEvent event) {
-    var connectionId = event.getConnectionid();
+  public void onServerEventReceived(SonarServerEventReceivedEvent event) {
+    var connectionId = event.getConnectionId();
     var serverEvent = event.getEvent();
     if (serverEvent instanceof SecurityHotspotChangedEvent) {
       updateStorageAndNotifyClient(connectionId, (SecurityHotspotChangedEvent) serverEvent);

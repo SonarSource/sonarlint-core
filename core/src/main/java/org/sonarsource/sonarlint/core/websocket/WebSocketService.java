@@ -28,7 +28,7 @@ import javax.annotation.CheckForNull;
 import javax.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
-import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
+import org.sonarsource.sonarlint.core.commons.push.SonarServerEvent;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
@@ -36,7 +36,7 @@ import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionCredentialsChangedEvent;
-import org.sonarsource.sonarlint.core.event.ServerEventReceivedEvent;
+import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
@@ -275,13 +275,13 @@ public class WebSocketService {
     connectionIdsInterestedInNotifications.add(connectionId);
     if (this.sonarCloudWebSocket == null) {
       this.sonarCloudWebSocket = SonarCloudWebSocket.create(connectionAwareHttpClientProvider.getWebSocketClient(connectionId),
-        this::handleEvent, this::reopenConnectionOnClose);
+        this::handleSonarServerEvent, this::reopenConnectionOnClose);
       this.connectionIdUsedToCreateConnection = connectionId;
     }
   }
 
-  private void handleEvent(ServerEvent event) {
-    connectionIdsInterestedInNotifications.forEach(id -> eventPublisher.publishEvent(new ServerEventReceivedEvent(id, event)));
+  private void handleSonarServerEvent(SonarServerEvent event) {
+    connectionIdsInterestedInNotifications.forEach(id -> eventPublisher.publishEvent(new SonarServerEventReceivedEvent(id, event)));
   }
 
   private void closeSocket() {
