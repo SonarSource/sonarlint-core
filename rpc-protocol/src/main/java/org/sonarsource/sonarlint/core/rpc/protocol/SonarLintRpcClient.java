@@ -62,11 +62,20 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.Show
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
 
+/**
+ * This interface defines the RPC requests or notifications the backend can call on the client.
+ */
 public interface SonarLintRpcClient {
 
+  /**
+   * Suggest some bindings to the client, based on registered connections, config scope, and binding clues.
+   */
   @JsonNotification
   void suggestBinding(SuggestBindingParams params);
 
+  /**
+   * Find files by names in the given configuration scope.
+   */
   @JsonRequest
   CompletableFuture<FindFileByNamesInScopeResponse> findFileByNamesInScope(FindFileByNamesInScopeParams params);
 

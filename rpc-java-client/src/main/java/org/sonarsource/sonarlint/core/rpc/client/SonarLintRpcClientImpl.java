@@ -64,6 +64,16 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.Show
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
 
+/**
+ * Implementation of {@link SonarLintRpcClient} that delegates to {@link SonarLintRpcClientDelegate} in order to simplify Java clients and avoid
+ * leaking too many RPC-specific concept in each Java IDE.
+ * In particular, this class attempt to:
+ * <ul>
+ *   <li>Hide the fact that RPC is asynchronous (don't let clients manipulate completable futures)</li>
+ *   <li>Hide cancellation except if there is a functional need</li>
+ *   <li>Convert Java exceptions to RPC error messages</li>
+ * </ul>
+ */
 public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   private final SonarLintRpcClientDelegate delegate;
