@@ -22,10 +22,8 @@ package org.sonarsource.sonarlint.core.newcode;
 import java.util.Optional;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.GetNewCodeDefinitionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.GetNewCodeDefinitionResponse;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
@@ -43,8 +41,7 @@ public class NewCodeService {
     this.telemetryService = telemetryService;
   }
 
-  public GetNewCodeDefinitionResponse getNewCodeDefinition(GetNewCodeDefinitionParams params, CancelChecker cancelChecker) {
-    var configScopeId = params.getConfigScopeId();
+  public GetNewCodeDefinitionResponse getNewCodeDefinition(String configScopeId) {
     return getFullNewCodeDefinition(configScopeId)
       .map(newCodeDefinition -> new GetNewCodeDefinitionResponse(newCodeDefinition.toString(), newCodeDefinition.isSupported()))
       .orElse(new GetNewCodeDefinitionResponse("No new code definition found", false));
@@ -52,7 +49,9 @@ public class NewCodeService {
 
   public Optional<NewCodeDefinition> getFullNewCodeDefinition(String configScopeId) {
     var effectiveBinding = configurationRepository.getEffectiveBinding(configScopeId);
-    if (effectiveBinding.isEmpty()) return Optional.empty();
+    if (effectiveBinding.isEmpty()) {
+      return Optional.empty();
+    }
     var binding = effectiveBinding.get();
     var sonarProjectStorage = storageService.binding(binding);
     return sonarProjectStorage.newCodeDefinition().read();

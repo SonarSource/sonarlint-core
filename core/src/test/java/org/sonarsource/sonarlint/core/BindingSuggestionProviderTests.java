@@ -43,7 +43,6 @@ import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurat
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetBindingSuggestionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
@@ -328,9 +327,9 @@ class BindingSuggestionProviderTests {
     when(sonarProjectsCache.getTextSearchIndex(SQ_1_ID)).thenReturn(searchIndex);
     when(sonarProjectsCache.getSonarProject(SQ_1_ID, PROJECT_KEY_1)).thenReturn(Optional.empty());
 
-    var bindingSuggestions = underTest.getBindingSuggestions(new GetBindingSuggestionParams(CONFIG_SCOPE_ID_1, SQ_1_ID), new NoopCancelChecker());
-    assertThat(bindingSuggestions.getSuggestions()).hasSize(1);
-    assertThat(bindingSuggestions.getSuggestions().get(CONFIG_SCOPE_ID_1))
+    var bindingSuggestions = underTest.getBindingSuggestions(CONFIG_SCOPE_ID_1, SQ_1_ID, new NoopCancelChecker());
+    assertThat(bindingSuggestions).hasSize(1);
+    assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID_1))
       .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
       .containsOnly(
         tuple(SQ_1_ID, PROJECT_KEY_1, "Project 1"));

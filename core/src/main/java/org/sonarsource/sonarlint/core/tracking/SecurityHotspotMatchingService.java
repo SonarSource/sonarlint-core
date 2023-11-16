@@ -48,7 +48,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlySecurityHotspotDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.MatchWithServerSecurityHotspotsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.MatchWithServerSecurityHotspotsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ServerMatchedSecurityHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
@@ -85,25 +84,24 @@ public class SecurityHotspotMatchingService {
     this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-server-tracking-hotspot-updater"));
   }
 
-  public MatchWithServerSecurityHotspotsResponse matchWithServerSecurityHotspots(MatchWithServerSecurityHotspotsParams params, CancelChecker cancelChecker) {
-    var configurationScopeId = params.getConfigurationScopeId();
+  public Map<String, List<MatchWithServerSecurityHotspotsResponse.ServerOrLocalSecurityHotspotDto>> matchWithServerSecurityHotspots(String configurationScopeId,
+    Map<String, List<ClientTrackedFindingDto>> clientTrackedHotspotsByServerRelativePath, boolean shouldFetchHotspotsFromServer, CancelChecker cancelChecker) {
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     var activeBranchOpt = matchedSonarProjectBranchRepository.getMatchedBranch(configurationScopeId);
     if (effectiveBindingOpt.isEmpty() || activeBranchOpt.isEmpty()) {
-      return new MatchWithServerSecurityHotspotsResponse(params.getClientTrackedHotspotsByServerRelativePath().entrySet().stream()
+      return clientTrackedHotspotsByServerRelativePath.entrySet().stream()
         .map(e -> Map.entry(e.getKey(), e.getValue().stream()
           .map(issue -> MatchWithServerSecurityHotspotsResponse.ServerOrLocalSecurityHotspotDto.forRight(new LocalOnlySecurityHotspotDto(UUID.randomUUID())))
           .collect(Collectors.toList())))
-        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
     var binding = effectiveBindingOpt.get();
     var activeBranch = activeBranchOpt.get();
-    if (params.shouldFetchHotspotsFromServer()) {
-      refreshServerSecurityHotspots(cancelChecker, binding, activeBranch, params);
+    if (shouldFetchHotspotsFromServer) {
+      refreshServerSecurityHotspots(cancelChecker, binding, activeBranch, clientTrackedHotspotsByServerRelativePath);
     }
     var newCodeDefinition = storageService.binding(binding).newCodeDefinition().read();
-    var clientTrackedIssuesByServerRelativePath = params.getClientTrackedHotspotsByServerRelativePath();
-    return new MatchWithServerSecurityHotspotsResponse(clientTrackedIssuesByServerRelativePath.entrySet().stream().map(e -> {
+    return clientTrackedHotspotsByServerRelativePath.entrySet().stream().map(e -> {
       var serverRelativePath = e.getKey();
       var serverHotspots = storageService.binding(binding).findings().loadHotspots(activeBranch, serverRelativePath);
       var clientHotspotTrackables = toTrackables(e.getValue());
@@ -121,11 +119,12 @@ public class SecurityHotspotMatchingService {
           }
         }).collect(Collectors.toList());
       return Map.entry(serverRelativePath, matches);
-    }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+    }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
-  private void refreshServerSecurityHotspots(CancelChecker cancelChecker, Binding binding, String activeBranch, MatchWithServerSecurityHotspotsParams params) {
-    var serverFileRelativePaths = params.getClientTrackedHotspotsByServerRelativePath().keySet();
+  private void refreshServerSecurityHotspots(CancelChecker cancelChecker, Binding binding, String activeBranch,
+    Map<String, List<ClientTrackedFindingDto>> clientTrackedHotspotsByServerRelativePath) {
+    var serverFileRelativePaths = clientTrackedHotspotsByServerRelativePath.keySet();
     var downloadAllSecurityHotspotsAtOnce = serverFileRelativePaths.size() > FETCH_ALL_SECURITY_HOTSPOTS_THRESHOLD;
     var fetchTasks = new LinkedList<Future<?>>();
     if (downloadAllSecurityHotspotsAtOnce) {

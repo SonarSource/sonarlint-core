@@ -19,8 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.issue;
 
-public enum ResolutionStatus {
-  WONT_FIX,
-  FALSE_POSITIVE;
+public class ReopenAllIssuesForFileResponse {
 
+  private final boolean success;
+
+  public ReopenAllIssuesForFileResponse(boolean success) {
+    this.success = success;
+  }
+
+  public boolean isSuccess() {
+    return success;
+  }
 }

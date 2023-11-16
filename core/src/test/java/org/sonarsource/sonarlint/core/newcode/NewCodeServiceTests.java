@@ -25,13 +25,11 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.GetNewCodeDefinitionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.GetNewCodeDefinitionResponse;
 import org.sonarsource.sonarlint.core.serverconnection.SonarProjectStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.NewCodeDefinitionStorage;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
-import testutils.NoopCancelChecker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -53,7 +51,7 @@ class NewCodeServiceTests {
 
   @Test
   void getNewCodeDefinition_noBinding() {
-    var ncd = underTest.getNewCodeDefinition(new GetNewCodeDefinitionParams("scope"), new NoopCancelChecker());
+    var ncd = underTest.getNewCodeDefinition("scope");
     assertThat(ncd).extracting(GetNewCodeDefinitionResponse::getDescription, GetNewCodeDefinitionResponse::isSupported)
       .containsExactly("No new code definition found", false);
   }
@@ -69,7 +67,7 @@ class NewCodeServiceTests {
       .thenReturn(storage);
     var newCodeDefStorage = mock(NewCodeDefinitionStorage.class);
     when(storage.newCodeDefinition()).thenReturn(newCodeDefStorage);
-    var ncd = underTest.getNewCodeDefinition(new GetNewCodeDefinitionParams("scope"), new NoopCancelChecker());
+    var ncd = underTest.getNewCodeDefinition("scope");
     assertThat(ncd).extracting(GetNewCodeDefinitionResponse::getDescription, GetNewCodeDefinitionResponse::isSupported)
       .containsExactly("No new code definition found", false);
   }
@@ -87,7 +85,7 @@ class NewCodeServiceTests {
     when(storage.newCodeDefinition()).thenReturn(newCodeDefStorage);
     var newCodeDefinition = NewCodeDefinition.withNumberOfDays(42, 1234567890123L);
     when(newCodeDefStorage.read()).thenReturn(Optional.of(newCodeDefinition));
-    var ncd = underTest.getNewCodeDefinition(new GetNewCodeDefinitionParams("scope"), new NoopCancelChecker());
+    var ncd = underTest.getNewCodeDefinition("scope");
     assertThat(ncd).extracting(GetNewCodeDefinitionResponse::getDescription, GetNewCodeDefinitionResponse::isSupported)
       .containsExactly("From last 42 days", true);
   }

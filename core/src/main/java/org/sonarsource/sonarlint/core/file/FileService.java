@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.file;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.GetPathTranslationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.GetPathTranslationResponse;
 
 import static org.apache.commons.io.FilenameUtils.separatorsToUnix;
@@ -35,8 +34,8 @@ public class FileService {
     this.pathTranslationRepository = pathTranslationRepository;
   }
 
-  public GetPathTranslationResponse getPathTranslation(GetPathTranslationParams params) {
-    return pathTranslationRepository.getPathTranslation(params.getConfigurationScopeId())
+  public GetPathTranslationResponse getPathTranslation(String configurationScopeId) {
+    return pathTranslationRepository.getPathTranslation(configurationScopeId)
       .map(
         translation -> new GetPathTranslationResponse(separatorsToUnix(translation.getIdePathPrefix().toString()), separatorsToUnix(translation.getServerPathPrefix().toString())))
       .orElseGet(() -> new GetPathTranslationResponse(null, null));

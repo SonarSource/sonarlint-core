@@ -85,7 +85,7 @@ class ConnectionServiceTests {
   void add_new_connection_and_post_event() {
     underTest = new ConnectionService(eventPublisher, repository, List.of(), List.of(), null, null);
 
-    underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_1), List.of()));
+    underTest.didUpdateConnections(List.of(SQ_DTO_1), List.of());
     assertThat(repository.getConnectionsById()).containsOnlyKeys("sq1");
     assertThat(repository.getConnectionById("sq1"))
       .asInstanceOf(InstanceOfAssertFactories.type(SonarQubeConnectionConfiguration.class))
@@ -93,10 +93,10 @@ class ConnectionServiceTests {
         SonarQubeConnectionConfiguration::getKind)
       .containsOnly("sq1", "url1", true, ConnectionKind.SONARQUBE);
 
-    underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_1, SQ_DTO_2), List.of()));
+    underTest.didUpdateConnections(List.of(SQ_DTO_1, SQ_DTO_2), List.of());
     assertThat(repository.getConnectionsById()).containsOnlyKeys("sq1", "sq2");
 
-    underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_1, SQ_DTO_2), List.of(SC_DTO_1)));
+    underTest.didUpdateConnections(List.of(SQ_DTO_1, SQ_DTO_2), List.of(SC_DTO_1));
     assertThat(repository.getConnectionsById()).containsOnlyKeys("sq1", "sq2", "sc1");
     assertThat(repository.getConnectionById("sc1"))
       .asInstanceOf(InstanceOfAssertFactories.type(SonarCloudConnectionConfiguration.class))
@@ -114,9 +114,9 @@ class ConnectionServiceTests {
   @Test
   void multiple_connections_with_same_id_should_log_and_ignore() {
     underTest = new ConnectionService(eventPublisher, repository, List.of(), List.of(), null, null);
-    underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_1), List.of()));
+    underTest.didUpdateConnections(List.of(SQ_DTO_1), List.of());
 
-    underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_1, SQ_DTO_1_DUP), List.of()));
+    underTest.didUpdateConnections(List.of(SQ_DTO_1, SQ_DTO_1_DUP), List.of());
 
     assertThat(repository.getConnectionById("sq1"))
       .asInstanceOf(InstanceOfAssertFactories.type(SonarQubeConnectionConfiguration.class))
@@ -132,10 +132,10 @@ class ConnectionServiceTests {
     underTest = new ConnectionService(eventPublisher, repository, List.of(SQ_DTO_1), List.of(SC_DTO_1), null, null);
     assertThat(repository.getConnectionsById()).containsKeys("sq1", "sc1");
 
-    underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_1), List.of()));
+    underTest.didUpdateConnections(List.of(SQ_DTO_1), List.of());
     assertThat(repository.getConnectionsById()).containsKeys("sq1");
 
-    underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(), List.of()));
+    underTest.didUpdateConnections(List.of(), List.of());
     assertThat(repository.getConnectionsById()).isEmpty();
 
     var captor = ArgumentCaptor.forClass(ConnectionConfigurationRemovedEvent.class);
@@ -154,7 +154,7 @@ class ConnectionServiceTests {
     when(mockedRepo.getConnectionsById()).thenReturn(Map.of("id", new SonarQubeConnectionConfiguration("id", "http://foo", true)));
     when(mockedRepo.remove("id")).thenReturn(null);
 
-    underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(), List.of()));
+    underTest.didUpdateConnections(List.of(), List.of());
 
     assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).containsExactly("Attempt to remove connection 'id' that was not registered. Possibly a race condition?");
   }
@@ -163,7 +163,7 @@ class ConnectionServiceTests {
   void update_connection() {
     underTest = new ConnectionService(eventPublisher, repository, List.of(SQ_DTO_1), List.of(), null, null);
 
-    underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_1_DUP), List.of()));
+    underTest.didUpdateConnections(List.of(SQ_DTO_1_DUP), List.of());
 
     assertThat(repository.getConnectionById("sq1"))
       .asInstanceOf(InstanceOfAssertFactories.type(SonarQubeConnectionConfiguration.class))
@@ -187,7 +187,7 @@ class ConnectionServiceTests {
     when(mockedRepo.getConnectionsById()).thenReturn(Map.of(SQ_DTO_2.getConnectionId(), new SonarQubeConnectionConfiguration(SQ_DTO_2.getConnectionId(), "http://foo", true)));
     when(mockedRepo.addOrReplace(any())).thenReturn(null);
 
-    underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_2), List.of()));
+    underTest.didUpdateConnections(List.of(SQ_DTO_2), List.of());
 
     assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).containsExactly("Attempt to update connection 'sq2' that was not registered. Possibly a race condition?");
   }

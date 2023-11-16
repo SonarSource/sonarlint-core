@@ -52,8 +52,7 @@ public class AnalysisService {
     this.storageService = storageService;
   }
 
-  public GetSupportedFilePatternsResponse getSupportedFilePatterns(GetSupportedFilePatternsParams params, CancelChecker cancelToken) {
-    var configScopeId = params.getConfigScopeId();
+  public List<String> getSupportedFilePatterns(String configScopeId) {
     var effectiveBinding = configurationRepository.getEffectiveBinding(configScopeId);
     Set<Language> enabledLanguages;
     Map<String, String> analysisSettings;
@@ -66,8 +65,7 @@ public class AnalysisService {
         .analyzerConfiguration().read().getSettings().getAll();
     }
     // TODO merge client side analysis settings
-    var patterns = getPatterns(enabledLanguages, analysisSettings);
-    return new GetSupportedFilePatternsResponse(patterns);
+    return getPatterns(enabledLanguages, analysisSettings);
   }
 
   @NotNull
