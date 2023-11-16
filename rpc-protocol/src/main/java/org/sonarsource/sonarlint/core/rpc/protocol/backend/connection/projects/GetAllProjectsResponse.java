@@ -23,13 +23,13 @@ import java.util.List;
 
 public class GetAllProjectsResponse {
 
-  private final List<SonarProject> sonarProjects;
+  private final List<SonarProjectDto> sonarProjects;
 
-  public GetAllProjectsResponse(List<SonarProject> sonarProjects) {
+  public GetAllProjectsResponse(List<SonarProjectDto> sonarProjects) {
     this.sonarProjects = sonarProjects;
   }
 
-  public List<SonarProject> getSonarProjects() {
+  public List<SonarProjectDto> getSonarProjects() {
     return sonarProjects;
   }
 }

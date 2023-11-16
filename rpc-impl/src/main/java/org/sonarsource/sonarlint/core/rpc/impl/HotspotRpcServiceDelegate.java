@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
+import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.ChangeHotspotStatusParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckLocalDetectionSupportedParams;
@@ -27,6 +28,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckLocalDet
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckStatusChangePermittedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.OpenHotspotInBrowserParams;
 
 class HotspotRpcServiceDelegate extends AbstractRpcServiceDelegate implements HotspotRpcService {
@@ -35,24 +37,29 @@ class HotspotRpcServiceDelegate extends AbstractRpcServiceDelegate implements Ho
     super(server);
   }
 
-
   @Override
   public void openHotspotInBrowser(OpenHotspotInBrowserParams params) {
-    notify(() -> getBean(HotspotService.class).openHotspotInBrowser(params), params.getConfigScopeId());
+    notify(() -> getBean(HotspotService.class).openHotspotInBrowser(params.getConfigScopeId(), params.getBranch(), params.getHotspotKey()), params.getConfigScopeId());
   }
 
   @Override
   public CompletableFuture<CheckLocalDetectionSupportedResponse> checkLocalDetectionSupported(CheckLocalDetectionSupportedParams params) {
-    return requestAsync(cancelChecker -> getBean(HotspotService.class).checkLocalDetectionSupported(params, cancelChecker), params.getConfigScopeId());
+    return requestAsync(cancelChecker -> getBean(HotspotService.class).checkLocalDetectionSupported(params.getConfigScopeId()), params.getConfigScopeId());
   }
 
   @Override
   public CompletableFuture<CheckStatusChangePermittedResponse> checkStatusChangePermitted(CheckStatusChangePermittedParams params) {
-    return requestAsync(cancelChecker -> getBean(HotspotService.class).checkStatusChangePermitted(params, cancelChecker));
+    return requestAsync(cancelChecker -> getBean(HotspotService.class).checkStatusChangePermitted(params.getConnectionId(), params.getHotspotKey(), cancelChecker));
   }
 
   @Override
   public CompletableFuture<Void> changeStatus(ChangeHotspotStatusParams params) {
-    return runAsync(cancelChecker -> getBean(HotspotService.class).changeStatus(params, cancelChecker), params.getConfigurationScopeId());
+    return runAsync(
+      cancelChecker -> getBean(HotspotService.class).changeStatus(params.getConfigurationScopeId(), params.getHotspotKey(), adapt(params.getNewStatus()), cancelChecker),
+      params.getConfigurationScopeId());
+  }
+
+  private static HotspotReviewStatus adapt(HotspotStatus newStatus) {
+    return HotspotReviewStatus.valueOf(newStatus.name());
   }
 }

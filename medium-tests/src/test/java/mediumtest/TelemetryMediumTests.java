@@ -32,6 +32,7 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorageManager;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 class TelemetryMediumTests {
   @RegisterExtension
@@ -86,7 +87,8 @@ class TelemetryMediumTests {
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isTrue();
 
     this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "master", "ab12ef45"));
-    assertThat(backend.telemetryFilePath()).isNotEmptyFile();
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).isNotEmptyFile());
   }
 
   @Test

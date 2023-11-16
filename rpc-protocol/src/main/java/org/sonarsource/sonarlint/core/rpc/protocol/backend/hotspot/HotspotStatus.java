@@ -20,25 +20,9 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot;
 
 public enum HotspotStatus {
-  // order is important here, it will be applied in the UI
-  TO_REVIEW("To Review", "This Security Hotspot needs to be reviewed to assess whether the code poses a risk."),
-  ACKNOWLEDGED("Acknowledged", "The code has been reviewed and does pose a risk. A fix is required."),
-  FIXED("Fixed", "The code has been modified to follow recommended secure coding practices."),
-  SAFE("Safe", "The code has been reviewed and does not pose a risk. It does not need to be modified.");
+  TO_REVIEW,
+  ACKNOWLEDGED,
+  FIXED,
+  SAFE;
 
-  private final String title;
-  private final String description;
-
-  HotspotStatus(String title, String description) {
-    this.title = title;
-    this.description = description;
-  }
-
-  public String getTitle() {
-    return title;
-  }
-
-  public String getDescription() {
-    return description;
-  }
 }
