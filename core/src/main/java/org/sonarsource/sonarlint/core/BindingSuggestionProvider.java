@@ -135,9 +135,8 @@ public class BindingSuggestionProvider {
     }
   }
 
-  public GetBindingSuggestionsResponse getBindingSuggestions(GetBindingSuggestionParams params, CancelChecker cancelChecker) {
-    var suggestions = computeBindingSuggestions(Set.of(params.getConfigScopeId()), Set.of(params.getConnectionId()), cancelChecker);
-    return new GetBindingSuggestionsResponse(suggestions);
+  public Map<String, List<BindingSuggestionDto>> getBindingSuggestions(String configScopeId, String connectionId, CancelChecker cancelChecker) {
+    return computeBindingSuggestions(Set.of(configScopeId), Set.of(connectionId), cancelChecker);
   }
 
   private void queueBindingSuggestionComputation(Set<String> configScopeIds, Set<String> candidateConnectionIds) {

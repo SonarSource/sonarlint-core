@@ -33,16 +33,16 @@ class ConfigurationRpcServiceDelegate extends AbstractRpcServiceDelegate impleme
 
   @Override
   public void didAddConfigurationScopes(DidAddConfigurationScopesParams params) {
-    notify(() -> getBean(ConfigurationService.class).didAddConfigurationScopes(params));
+    notify(() -> getBean(ConfigurationService.class).didAddConfigurationScopes(params.getAddedScopes()));
   }
 
   @Override
   public void didRemoveConfigurationScope(DidRemoveConfigurationScopeParams params) {
-    notify(() -> getBean(ConfigurationService.class).didRemoveConfigurationScope(params));
+    notify(() -> getBean(ConfigurationService.class).didRemoveConfigurationScope(params.getRemovedId()));
   }
 
   @Override
   public void didUpdateBinding(DidUpdateBindingParams params) {
-    notify(() -> getBean(ConfigurationService.class).didUpdateBinding(params));
+    notify(() -> getBean(ConfigurationService.class).didUpdateBinding(params.getConfigScopeId(), params.getUpdatedBinding()));
   }
 }

@@ -25,7 +25,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDefinitionDto;
-import testutils.NoopCancelChecker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -49,7 +48,7 @@ class RulesServiceTests {
     when(extractionHelper.extractEmbeddedRules()).thenReturn(List.of(aRule()));
     var rulesService = new RulesService(null, null, rulesRepository, null, null, Map.of());
 
-    var embeddedRules = rulesService.listAllStandaloneRulesDefinitions(new NoopCancelChecker()).getRulesByKey().values();
+    var embeddedRules = rulesService.listAllStandaloneRulesDefinitions().values();
 
     assertThat(embeddedRules)
       .extracting(RuleDefinitionDto::getKey, RuleDefinitionDto::getName)

@@ -21,9 +21,7 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import java.nio.file.Path;
 import javax.annotation.CheckForNull;
-import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
 
 public class TelemetryService {
 
@@ -54,11 +52,7 @@ public class TelemetryService {
     return telemetryLocalStorageManager;
   }
 
-  public GetStatusResponse getStatus(CancelChecker cancelChecker) {
-    return new GetStatusResponse(isEnabled());
-  }
-
-  private boolean isEnabled() {
+  public boolean isEnabled() {
     return !isDisabledBySystemProperty() && telemetryLocalStorageManager != null && telemetryLocalStorageManager.tryRead().enabled();
   }
 

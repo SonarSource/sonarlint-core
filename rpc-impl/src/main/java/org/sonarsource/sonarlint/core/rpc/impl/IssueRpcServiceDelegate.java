@@ -29,6 +29,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChan
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.IssueRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenIssueResponse;
 
@@ -39,31 +40,38 @@ public class IssueRpcServiceDelegate extends AbstractRpcServiceDelegate implemen
 
   @Override
   public CompletableFuture<Void> changeStatus(ChangeIssueStatusParams params) {
-    return runAsync(cancelChecker -> getBean(IssueService.class).changeStatus(params, cancelChecker), params.getConfigurationScopeId());
+    return runAsync(cancelChecker -> getBean(IssueService.class).changeStatus(params.getConfigurationScopeId(), params.getIssueKey(), params.getNewStatus(), params.isTaintIssue(),
+      cancelChecker), params.getConfigurationScopeId());
   }
 
   @Override
   public CompletableFuture<Void> addComment(AddIssueCommentParams params) {
-    return runAsync(cancelChecker -> getBean(IssueService.class).addComment(params, cancelChecker), params.getConfigurationScopeId());
+    return runAsync(cancelChecker -> getBean(IssueService.class).addComment(params.getConfigurationScopeId(), params.getIssueKey(), params.getText(), cancelChecker),
+      params.getConfigurationScopeId());
   }
 
   @Override
   public CompletableFuture<CheckAnticipatedStatusChangeSupportedResponse> checkAnticipatedStatusChangeSupported(CheckAnticipatedStatusChangeSupportedParams params) {
-    return requestAsync(cancelChecker -> getBean(IssueService.class).checkAnticipatedStatusChangeSupported(params, cancelChecker), params.getConfigScopeId());
+    return requestAsync(cancelChecker -> new CheckAnticipatedStatusChangeSupportedResponse(
+      getBean(IssueService.class).checkAnticipatedStatusChangeSupported(params.getConfigScopeId())), params.getConfigScopeId());
   }
 
   @Override
   public CompletableFuture<CheckStatusChangePermittedResponse> checkStatusChangePermitted(CheckStatusChangePermittedParams params) {
-    return requestAsync(cancelChecker -> getBean(IssueService.class).checkStatusChangePermitted(params, cancelChecker));
+    return requestAsync(cancelChecker -> getBean(IssueService.class).checkStatusChangePermitted(params.getConnectionId(), params.getIssueKey(), cancelChecker));
   }
 
   @Override
   public CompletableFuture<ReopenIssueResponse> reopenIssue(ReopenIssueParams params) {
-    return requestAsync(cancelChecker -> getBean(IssueService.class).reopenIssue(params, cancelChecker), params.getConfigurationScopeId());
+    return requestAsync(
+      cancelChecker -> new ReopenIssueResponse(
+        getBean(IssueService.class).reopenIssue(params.getConfigurationScopeId(), params.getIssueId(), params.isTaintIssue(), cancelChecker)),
+      params.getConfigurationScopeId());
   }
 
   @Override
-  public CompletableFuture<ReopenIssueResponse> reopenAllIssuesForFile(ReopenAllIssuesForFileParams params) {
-    return requestAsync(cancelChecker -> getBean(IssueService.class).reopenAllIssuesForFile(params, cancelChecker), params.getConfigurationScopeId());
+  public CompletableFuture<ReopenAllIssuesForFileResponse> reopenAllIssuesForFile(ReopenAllIssuesForFileParams params) {
+    return requestAsync(cancelChecker -> new ReopenAllIssuesForFileResponse(getBean(IssueService.class).reopenAllIssuesForFile(params, cancelChecker)),
+      params.getConfigurationScopeId());
   }
 }

@@ -73,7 +73,7 @@ class ConfigurationServiceTests {
 
   @Test
   void add_configuration_should_post_event() {
-    underTest.didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(CONFIG_DTO_2)));
+    underTest.didAddConfigurationScopes(List.of(CONFIG_DTO_2));
 
     assertThat(repository.getConfigScopeIds()).containsOnly("id2");
     assertThat(repository.getBindingConfiguration("id2")).usingRecursiveComparison().isEqualTo(BINDING_DTO_2);
@@ -87,7 +87,7 @@ class ConfigurationServiceTests {
 
   @Test
   void add_multiple_configurations_should_post_batch_event() {
-    underTest.didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(CONFIG_DTO_1, CONFIG_DTO_2)));
+    underTest.didAddConfigurationScopes(List.of(CONFIG_DTO_1, CONFIG_DTO_2));
 
     assertThat(repository.getConfigScopeIds()).containsOnly("id1", "id2");
     assertThat(repository.getBindingConfiguration("id1")).usingRecursiveComparison().isEqualTo(BINDING_DTO_1);
@@ -102,10 +102,10 @@ class ConfigurationServiceTests {
 
   @Test
   void add_duplicate_should_log_and_update() {
-    underTest.didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(CONFIG_DTO_1)));
+    underTest.didAddConfigurationScopes(List.of(CONFIG_DTO_1));
     assertThat(repository.getBindingConfiguration("id1")).usingRecursiveComparison().isEqualTo(BINDING_DTO_1);
 
-    underTest.didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(CONFIG_DTO_1_DUP)));
+    underTest.didAddConfigurationScopes(List.of(CONFIG_DTO_1_DUP));
 
     assertThat(repository.getConfigScopeIds()).containsOnly("id1");
     assertThat(repository.getBindingConfiguration("id1")).usingRecursiveComparison().isEqualTo(BINDING_DTO_2);
@@ -115,20 +115,20 @@ class ConfigurationServiceTests {
 
   @Test
   void remove_configuration() {
-    underTest.didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(CONFIG_DTO_1)));
+    underTest.didAddConfigurationScopes(List.of(CONFIG_DTO_1));
     assertThat(repository.getConfigScopeIds()).containsOnly("id1");
 
-    underTest.didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams("id1"));
+    underTest.didRemoveConfigurationScope("id1");
 
     assertThat(repository.getConfigScopeIds()).isEmpty();
   }
 
   @Test
   void remove_unknown_configuration_should_log() {
-    underTest.didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(CONFIG_DTO_1)));
+    underTest.didAddConfigurationScopes(List.of(CONFIG_DTO_1));
     assertThat(repository.getConfigScopeIds()).containsOnly("id1");
 
-    underTest.didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams("id2"));
+    underTest.didRemoveConfigurationScope("id2");
 
     assertThat(repository.getConfigScopeIds()).containsOnly("id1");
     assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).containsExactly("Attempt to remove configuration scope 'id2' that was not registered");
@@ -136,13 +136,13 @@ class ConfigurationServiceTests {
 
   @Test
   void update_binding_config_and_post_event() {
-    underTest.didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(CONFIG_DTO_1)));
+    underTest.didAddConfigurationScopes(List.of(CONFIG_DTO_1));
     assertThat(repository.getBindingConfiguration("id1")).usingRecursiveComparison().isEqualTo(BINDING_DTO_1);
 
     // Ignore add event
     Mockito.reset(eventPublisher);
 
-    underTest.didUpdateBinding(new DidUpdateBindingParams("id1", BINDING_DTO_2));
+    underTest.didUpdateBinding("id1", BINDING_DTO_2);
 
     assertThat(repository.getConfigScopeIds()).containsOnly("id1");
     assertThat(repository.getBindingConfiguration("id1")).usingRecursiveComparison().isEqualTo(BINDING_DTO_2);
@@ -163,9 +163,9 @@ class ConfigurationServiceTests {
 
   @Test
   void update_binding_config_for_unknown_config_scope_should_log() {
-    underTest.didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(CONFIG_DTO_1)));
+    underTest.didAddConfigurationScopes(List.of(CONFIG_DTO_1));
 
-    underTest.didUpdateBinding(new DidUpdateBindingParams("id2", BINDING_DTO_2));
+    underTest.didUpdateBinding("id2", BINDING_DTO_2);
 
     assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).containsExactly("Attempt to update binding in configuration scope 'id2' that was not registered");
   }
