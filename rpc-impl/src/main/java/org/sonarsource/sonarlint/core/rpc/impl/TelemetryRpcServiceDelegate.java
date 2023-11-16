@@ -20,12 +20,9 @@
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.function.Supplier;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
-import org.springframework.beans.factory.BeanFactory;
 
 class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements TelemetryRpcService {
 
@@ -35,6 +32,6 @@ class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements 
 
   @Override
   public CompletableFuture<GetStatusResponse> getStatus() {
-    return requestAsync(cancelChecker -> getBean(TelemetryService.class).getStatus(cancelChecker));
+    return requestAsync(cancelChecker -> new GetStatusResponse(getBean(TelemetryService.class).isEnabled()));
   }
 }
