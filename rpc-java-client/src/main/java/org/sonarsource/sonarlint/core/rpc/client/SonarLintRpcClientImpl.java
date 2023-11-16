@@ -115,7 +115,7 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   @Override
   public void openUrlInBrowser(OpenUrlInBrowserParams params) {
-    notify(() -> delegate.openUrlInBrowser(params));
+    notify(() -> delegate.openUrlInBrowser(params.getUrl()));
   }
 
   @Override

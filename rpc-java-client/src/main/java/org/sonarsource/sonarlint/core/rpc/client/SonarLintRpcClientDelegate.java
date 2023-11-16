@@ -39,7 +39,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.Bindin
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.ClientErrorCode;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.DidChangeMatchedSonarProjectBranchParams;
@@ -85,7 +84,9 @@ public interface SonarLintRpcClientDelegate {
     return List.of();
   }
 
-  void openUrlInBrowser(OpenUrlInBrowserParams params);
+  default void openUrlInBrowser(String url) {
+    // Do nothing by default
+  }
 
   /**
    * Display a message to the user, usually in a small notification.

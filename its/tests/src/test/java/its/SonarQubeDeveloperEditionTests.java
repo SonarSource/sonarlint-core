@@ -1461,11 +1461,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     return new SonarLintRpcClientDelegate() {
 
       @Override
-      public void openUrlInBrowser(OpenUrlInBrowserParams params) {
-
-      }
-
-      @Override
       public void showMessage(ShowMessageParams params) {
 
       }

@@ -498,7 +498,6 @@ public class SonarLintBackendFixture {
   }
 
   public static class FakeSonarLintRpcClient implements SonarLintRpcClientDelegate {
-    private final List<String> urlsToOpen = new ArrayList<>();
     private final List<ShowMessageParams> messagesToShow = new ArrayList<>();
     private final List<ShowSoonUnsupportedMessageParams> soonUnsupportedMessagesToShow = new ArrayList<>();
     private final List<ShowSmartNotificationParams> smartNotificationsToShow = new ArrayList<>();
@@ -546,11 +545,6 @@ public class SonarLintBackendFixture {
 
     public void setBackend(SonarLintTestRpcServer backend) {
       this.backend = backend;
-    }
-
-    @Override
-    public void openUrlInBrowser(OpenUrlInBrowserParams params) {
-      urlsToOpen.add(params.getUrl());
     }
 
     @Override
@@ -725,10 +719,6 @@ public class SonarLintBackendFixture {
 
     public boolean hasReceivedSmartNotifications() {
       return !smartNotificationsToShow.isEmpty();
-    }
-
-    public List<String> getUrlsToOpen() {
-      return urlsToOpen;
     }
 
     public List<ShowMessageParams> getMessagesToShow() {

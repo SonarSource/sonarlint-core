@@ -28,7 +28,11 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.OpenHotspotIn
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 class OpenHotspotInBrowserMediumTests {
 
@@ -41,7 +45,7 @@ class OpenHotspotInBrowserMediumTests {
 
   @Test
   void it_should_open_hotspot_in_sonarqube() {
-    var fakeClient = newFakeClient().build();
+    var fakeClient = spy(newFakeClient().build());
     backend = newBackend()
       .withSonarQubeConnection("connectionId", "http://localhost:12345")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
@@ -49,20 +53,23 @@ class OpenHotspotInBrowserMediumTests {
 
     this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "master", "ab12ef45"));
 
-    await().untilAsserted(() -> assertThat(fakeClient.getUrlsToOpen()).containsExactly("http://localhost:12345/security_hotspots?id=projectKey&branch=master&hotspots=ab12ef45"));
+    verify(fakeClient, timeout(5000)).openUrlInBrowser("http://localhost:12345/security_hotspots?id=projectKey&branch=master&hotspots=ab12ef45");
+
     assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"openHotspotInBrowserCount\":1");
   }
 
   @Test
-  void it_should_not_open_hotspot_if_unbound() {
-    var fakeClient = newFakeClient().build();
+  void it_should_not_open_hotspot_if_unbound() throws InterruptedException {
+    var fakeClient = spy(newFakeClient().build());
     backend = newBackend()
       .withUnboundConfigScope("scopeId")
       .build(fakeClient);
 
     this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "master", "ab12ef45"));
 
-    assertThat(fakeClient.getUrlsToOpen()).isEmpty();
+    Thread.sleep(100);
+
+    verify(fakeClient, never()).openUrlInBrowser(anyString());
   }
 
 }

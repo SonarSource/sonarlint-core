@@ -157,11 +157,6 @@ class SonarLintRpcClientDelegateTests {
   private static class DefaultSonarLintRpcClientDelegate implements SonarLintRpcClientDelegate {
 
     @Override
-    public void openUrlInBrowser(OpenUrlInBrowserParams params) {
-
-    }
-
-    @Override
     public void showMessage(ShowMessageParams params) {
 
     }
