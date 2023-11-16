@@ -24,7 +24,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
+import org.sonarsource.sonarlint.core.commons.push.SonarServerEvent;
 import org.sonarsource.sonarlint.core.serverapi.stream.EventStream;
 
 public class SonarQubeEventStream {
@@ -33,9 +33,9 @@ public class SonarQubeEventStream {
   private final Set<Language> enabledLanguages;
   private final String connectionId;
   private final ServerApiProvider serverApiProvider;
-  private final Consumer<ServerEvent> eventConsumer;
+  private final Consumer<SonarServerEvent> eventConsumer;
 
-  public SonarQubeEventStream(Set<Language> enabledLanguages, String connectionId, ServerApiProvider serverApiProvider, Consumer<ServerEvent> eventConsumer) {
+  public SonarQubeEventStream(Set<Language> enabledLanguages, String connectionId, ServerApiProvider serverApiProvider, Consumer<SonarServerEvent> eventConsumer) {
     this.enabledLanguages = enabledLanguages;
     this.connectionId = connectionId;
     this.serverApiProvider = serverApiProvider;
@@ -72,8 +72,8 @@ public class SonarQubeEventStream {
     }
   }
 
-  private static void notifyHandlers(ServerEvent serverEvent, Consumer<ServerEvent> clientEventConsumer) {
-    clientEventConsumer.accept(serverEvent);
+  private static void notifyHandlers(SonarServerEvent sonarServerEvent, Consumer<SonarServerEvent> clientEventConsumer) {
+    clientEventConsumer.accept(sonarServerEvent);
   }
 
   private void cancelSubscription() {

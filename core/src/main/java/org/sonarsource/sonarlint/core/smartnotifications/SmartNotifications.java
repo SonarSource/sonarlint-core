@@ -38,7 +38,7 @@ import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.event.ServerEventReceivedEvent;
+import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
@@ -159,7 +159,7 @@ public class SmartNotifications {
   }
 
   @EventListener
-  public void onServerEventReceived(ServerEventReceivedEvent eventReceived) {
+  public void onServerEventReceived(SonarServerEventReceivedEvent eventReceived) {
     var serverEvent = eventReceived.getEvent();
     if (serverEvent instanceof SmartNotificationEvent) {
       notifyClient((SmartNotificationEvent) serverEvent);

@@ -41,7 +41,7 @@ import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.Transition;
 import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.event.ServerEventReceivedEvent;
+import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.local.only.XodusLocalOnlyIssueStore;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -297,8 +297,8 @@ public class IssueService {
   }
 
   @EventListener
-  public void onServerEventReceived(ServerEventReceivedEvent eventReceived) {
-    var connectionId = eventReceived.getConnectionid();
+  public void onServerEventReceived(SonarServerEventReceivedEvent eventReceived) {
+    var connectionId = eventReceived.getConnectionId();
     var serverEvent = eventReceived.getEvent();
     if (serverEvent instanceof IssueChangedEvent) {
       updateStorage(connectionId, (IssueChangedEvent) serverEvent);

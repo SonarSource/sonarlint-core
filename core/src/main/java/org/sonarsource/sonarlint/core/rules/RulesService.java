@@ -41,7 +41,7 @@ import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.event.ServerEventReceivedEvent;
+import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.BackendErrorCode;
@@ -283,8 +283,8 @@ public class RulesService {
   }
 
   @EventListener
-  public void onServerEventReceived(ServerEventReceivedEvent eventReceived) {
-    var connectionId = eventReceived.getConnectionid();
+  public void onServerEventReceived(SonarServerEventReceivedEvent eventReceived) {
+    var connectionId = eventReceived.getConnectionId();
     var serverEvent = eventReceived.getEvent();
     if (serverEvent instanceof RuleSetChangedEvent) {
       updateStorage(connectionId, (RuleSetChangedEvent) serverEvent);

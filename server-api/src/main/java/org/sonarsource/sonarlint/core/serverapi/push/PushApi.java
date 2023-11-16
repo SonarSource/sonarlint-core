@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
+import org.sonarsource.sonarlint.core.commons.push.SonarServerEvent;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.EventParser;
@@ -59,7 +59,7 @@ public class PushApi {
     this.helper = helper;
   }
 
-  public EventStream subscribe(Set<String> projectKeys, Set<Language> enabledLanguages, Consumer<ServerEvent> serverEventConsumer) {
+  public EventStream subscribe(Set<String> projectKeys, Set<Language> enabledLanguages, Consumer<SonarServerEvent> serverEventConsumer) {
     return new EventStream(helper, rawEvent -> handleRawEvent(rawEvent, serverEventConsumer))
       .connect(getWsPath(projectKeys, enabledLanguages));
   }
@@ -71,12 +71,12 @@ public class PushApi {
       enabledLanguages.stream().map(Language::getLanguageKey).map(UrlUtils::urlEncode).collect(Collectors.joining(","));
   }
 
-  private static void handleRawEvent(Event rawEvent, Consumer<ServerEvent> serverEventConsumer) {
+  private static void handleRawEvent(Event rawEvent, Consumer<SonarServerEvent> serverEventConsumer) {
     LOG.debug("Server event received: {}", rawEvent);
     parse(rawEvent).ifPresent(serverEventConsumer);
   }
 
-  private static Optional<? extends ServerEvent> parse(Event event) {
+  private static Optional<? extends SonarServerEvent> parse(Event event) {
     var eventType = event.getType();
     if (!parsersByType.containsKey(eventType)) {
       LOG.error("Unknown '{}' event type ", eventType);
