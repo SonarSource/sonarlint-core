@@ -157,11 +157,6 @@ class SonarLintRpcClientDelegateTests {
   private static class DefaultSonarLintRpcClientDelegate implements SonarLintRpcClientDelegate {
 
     @Override
-    public FindFileByNamesInScopeResponse findFileByNamesInScope(FindFileByNamesInScopeParams params, CancelChecker cancelChecker) {
-      return null;
-    }
-
-    @Override
     public void openUrlInBrowser(OpenUrlInBrowserParams params) {
 
     }

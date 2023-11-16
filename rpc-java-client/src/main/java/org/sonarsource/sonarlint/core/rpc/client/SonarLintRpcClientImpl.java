@@ -110,7 +110,7 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   @Override
   public CompletableFuture<FindFileByNamesInScopeResponse> findFileByNamesInScope(FindFileByNamesInScopeParams params) {
-    return requestAsync(cancelChecker -> delegate.findFileByNamesInScope(params, cancelChecker));
+    return requestAsync(cancelChecker -> new FindFileByNamesInScopeResponse(delegate.findFileByNamesInScope(params.getConfigScopeId(), params.getFilenames(), cancelChecker)));
   }
 
   @Override

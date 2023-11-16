@@ -20,8 +20,6 @@
 package mediumtest;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -39,6 +37,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.Configur
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FoundFileDto;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Components;
 
@@ -52,9 +51,11 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static testutils.TestUtils.protobufBody;
 
 class BindingSuggestionsMediumTests {
@@ -160,9 +161,12 @@ class BindingSuggestionsMediumTests {
   @Test
   void test_uses_binding_clues() {
     var fakeClient = spy(newFakeClient()
-      .withFoundFile("sonar-project.properties", "/home/user/Project/sonar-project.properties",
-        "sonar.host.url=" + sonarqubeMock.baseUrl() + "\nsonar.projectKey=" + SLCORE_PROJECT_KEY)
       .build());
+
+    when(fakeClient.findFileByNamesInScope(eq(CONFIG_SCOPE_ID), argThat(files -> files.contains("sonar-project.properties")), any()))
+      .thenReturn(List.of(new FoundFileDto("sonar-project.properties", "/home/user/Project/sonar-project.properties",
+        "sonar.host.url=" + sonarqubeMock.baseUrl() + "\nsonar.projectKey=" + SLCORE_PROJECT_KEY)));
+
     backend = newBackend()
       .withSonarQubeConnection(MYSONAR, sonarqubeMock.baseUrl())
       .withSonarQubeConnection("another")

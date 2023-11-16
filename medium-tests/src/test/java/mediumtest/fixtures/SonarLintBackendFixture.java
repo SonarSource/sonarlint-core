@@ -54,7 +54,6 @@ import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
@@ -69,7 +68,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.ClientErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.DidChangeMatchedSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchResponse;
@@ -81,9 +79,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredenti
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityChangedOrClosedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityRaisedEvent;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FoundFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListAllFilePathsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListAllFilePathsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
@@ -418,7 +413,6 @@ public class SonarLintBackendFixture {
   }
 
   public static class SonarLintClientBuilder {
-    private final List<FoundFileDto> foundFiles = new ArrayList<>();
     private String clientDescription = "";
     private final LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl = new LinkedHashMap<>();
     private final LinkedHashMap<String, ConfigurationScopeDto> cannedBindingAssistByProjectKey = new LinkedHashMap<>();
@@ -432,11 +426,6 @@ public class SonarLintBackendFixture {
     private boolean isResolvedSonarProjectBranchSet;
     private boolean shouldErrorProjectBranchResolution;
     private final Map<String, List<String>> relativeFilePathsByConfigScopeId = new HashMap<>();
-
-    public SonarLintClientBuilder withFoundFile(String name, String path, String content) {
-      foundFiles.add(new FoundFileDto(name, path, content));
-      return this;
-    }
 
     public SonarLintClientBuilder withClientDescription(String clientDescription) {
       this.clientDescription = clientDescription;
@@ -479,8 +468,8 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-     public FakeSonarLintRpcClient build() {
-      return new FakeSonarLintRpcClient(foundFiles, clientDescription, cannedAssistCreatingSonarQubeConnectionByBaseUrl,
+    public FakeSonarLintRpcClient build() {
+      return new FakeSonarLintRpcClient(clientDescription, cannedAssistCreatingSonarQubeConnectionByBaseUrl,
         cannedBindingAssistByProjectKey,
         rejectingProgress, proxy, proxyAuth, credentialsByConnectionId, printLogsToStdOut, resolvedSonarProjectBranch, isResolvedSonarProjectBranchSet,
         shouldErrorProjectBranchResolution, relativeFilePathsByConfigScopeId);
@@ -513,7 +502,6 @@ public class SonarLintBackendFixture {
     private final List<ShowMessageParams> messagesToShow = new ArrayList<>();
     private final List<ShowSoonUnsupportedMessageParams> soonUnsupportedMessagesToShow = new ArrayList<>();
     private final List<ShowSmartNotificationParams> smartNotificationsToShow = new ArrayList<>();
-    private final List<FoundFileDto> foundFiles;
     private final String clientDescription;
     private final LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl;
     private final LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey;
@@ -536,13 +524,12 @@ public class SonarLintBackendFixture {
     private final Queue<LogParams> logs = new ConcurrentLinkedQueue<>();
     private final List<String> connectionsWhichUpdatedPlugins = new CopyOnWriteArrayList<>();
 
-    public FakeSonarLintRpcClient(List<FoundFileDto> foundFiles, String clientDescription,
-                                  LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
-                                  LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, boolean rejectingProgress, @Nullable ProxyDto proxy,
-                                  @Nullable GetProxyPasswordAuthenticationResponse proxyAuth, Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId,
-                                  boolean printLogsToStdOut, String resolvedSonarProjectBranch, boolean isResolvedSonarProjectBranchSet,
-                                  boolean shouldErrorProjectBranchResolution, Map<String, List<String>> relativeFilePathsByConfigScopeId) {
-      this.foundFiles = foundFiles;
+    public FakeSonarLintRpcClient(String clientDescription,
+      LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
+      LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, boolean rejectingProgress, @Nullable ProxyDto proxy,
+      @Nullable GetProxyPasswordAuthenticationResponse proxyAuth, Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId,
+      boolean printLogsToStdOut, String resolvedSonarProjectBranch, boolean isResolvedSonarProjectBranchSet,
+      boolean shouldErrorProjectBranchResolution, Map<String, List<String>> relativeFilePathsByConfigScopeId) {
       this.clientDescription = clientDescription;
       this.cannedAssistCreatingSonarQubeConnectionByBaseUrl = cannedAssistCreatingSonarQubeConnectionByBaseUrl;
       this.bindingAssistResponseByProjectKey = bindingAssistResponseByProjectKey;
@@ -559,11 +546,6 @@ public class SonarLintBackendFixture {
 
     public void setBackend(SonarLintTestRpcServer backend) {
       this.backend = backend;
-    }
-
-    @Override
-    public FindFileByNamesInScopeResponse findFileByNamesInScope(FindFileByNamesInScopeParams params, CancelChecker cancelChecker) {
-      return new FindFileByNamesInScopeResponse(foundFiles);
     }
 
     @Override
