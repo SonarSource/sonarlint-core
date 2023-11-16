@@ -32,6 +32,6 @@ public class FileRpcServiceDelegate extends AbstractRpcServiceDelegate implement
 
   @Override
   public CompletableFuture<GetPathTranslationResponse> getPathTranslation(GetPathTranslationParams params) {
-    return requestAsync(cancelChecker -> getBean(FileService.class).getPathTranslation(params));
+    return requestAsync(cancelChecker -> getBean(FileService.class).getPathTranslation(params.getConfigurationScopeId()));
   }
 }

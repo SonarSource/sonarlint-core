@@ -35,7 +35,6 @@ import org.sonarsource.sonarlint.core.rules.RulesService;
 
 class RulesRpcServiceDelegate extends AbstractRpcServiceDelegate implements RulesRpcService {
 
-
   public RulesRpcServiceDelegate(SonarLintRpcServerImpl server) {
     super(server);
   }
@@ -44,7 +43,8 @@ class RulesRpcServiceDelegate extends AbstractRpcServiceDelegate implements Rule
   public CompletableFuture<GetEffectiveRuleDetailsResponse> getEffectiveRuleDetails(GetEffectiveRuleDetailsParams params) {
     return requestAsync(cancelChecker -> {
       try {
-        return getBean(RulesService.class).getEffectiveRuleDetails(params, cancelChecker);
+        return new GetEffectiveRuleDetailsResponse(
+          getBean(RulesService.class).getEffectiveRuleDetails(params.getConfigurationScopeId(), params.getRuleKey(), params.getContextKey()));
       } catch (RuleNotFoundException e) {
         ResponseError error = new ResponseError(BackendErrorCode.RULE_NOT_FOUND, e.getMessage(), e.getRuleKey());
         throw new ResponseErrorException(error);
@@ -54,16 +54,16 @@ class RulesRpcServiceDelegate extends AbstractRpcServiceDelegate implements Rule
 
   @Override
   public CompletableFuture<ListAllStandaloneRulesDefinitionsResponse> listAllStandaloneRulesDefinitions() {
-    return requestAsync(cancelChecker -> getBean(RulesService.class).listAllStandaloneRulesDefinitions(cancelChecker));
+    return requestAsync(cancelChecker -> new ListAllStandaloneRulesDefinitionsResponse(getBean(RulesService.class).listAllStandaloneRulesDefinitions()));
   }
 
   @Override
   public CompletableFuture<GetStandaloneRuleDescriptionResponse> getStandaloneRuleDetails(GetStandaloneRuleDescriptionParams params) {
-    return requestAsync(cancelChecker -> getBean(RulesService.class).getStandaloneRuleDetails(params, cancelChecker));
+    return requestAsync(cancelChecker -> getBean(RulesService.class).getStandaloneRuleDetails(params.getRuleKey()));
   }
 
   @Override
   public void updateStandaloneRulesConfiguration(UpdateStandaloneRulesConfigurationParams params) {
-    notify(() -> getBean(RulesService.class).updateStandaloneRulesConfiguration(params));
+    notify(() -> getBean(RulesService.class).updateStandaloneRulesConfiguration(params.getRuleConfigByKey()));
   }
 }

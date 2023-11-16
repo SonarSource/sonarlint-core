@@ -33,6 +33,9 @@ class BindingRpcServiceDelegate extends AbstractRpcServiceDelegate implements Bi
 
   @Override
   public CompletableFuture<GetBindingSuggestionsResponse> getBindingSuggestions(GetBindingSuggestionParams params) {
-    return requestAsync(cancelChecker -> getBean(BindingSuggestionProvider.class).getBindingSuggestions(params, cancelChecker), params.getConfigScopeId());
+    return requestAsync(
+      cancelChecker -> new GetBindingSuggestionsResponse(
+        getBean(BindingSuggestionProvider.class).getBindingSuggestions(params.getConfigScopeId(), params.getConnectionId(), cancelChecker)),
+      params.getConfigScopeId());
   }
 }

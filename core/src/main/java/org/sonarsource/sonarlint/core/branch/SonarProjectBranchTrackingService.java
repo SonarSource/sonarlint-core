@@ -36,9 +36,6 @@ import org.sonarsource.sonarlint.core.event.MatchedSonarProjectBranchChangedEven
 import org.sonarsource.sonarlint.core.repository.branch.MatchedSonarProjectBranchRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.DidVcsRepositoryChangeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.GetMatchedSonarProjectBranchParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.GetMatchedSonarProjectBranchResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.DidChangeMatchedSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.SonarProjectBranches;
@@ -99,8 +96,8 @@ public class SonarProjectBranchTrackingService {
     // a new matching will be triggered after this new binding has been synchronized
   }
 
-  public void didVcsRepositoryChange(DidVcsRepositoryChangeParams params) {
-    matchSonarProjectBranchAsync(params.getConfigurationScopeId());
+  public void didVcsRepositoryChange(String configurationScopeId) {
+    matchSonarProjectBranchAsync(configurationScopeId);
   }
 
   private void matchSonarProjectBranchAsync(String configurationScopeId) {
@@ -146,8 +143,9 @@ public class SonarProjectBranchTrackingService {
     return null;
   }
 
-  public GetMatchedSonarProjectBranchResponse getMatchedSonarProjectBranch(GetMatchedSonarProjectBranchParams params) {
-    return new GetMatchedSonarProjectBranchResponse(matchedSonarProjectBranchRepository.getMatchedBranch(params.getConfigurationScopeId()).orElse(null));
+  @CheckForNull
+  public String getMatchedSonarProjectBranch(String configurationScopeId) {
+    return matchedSonarProjectBranchRepository.getMatchedBranch(configurationScopeId).orElse(null);
   }
 
   @PreDestroy

@@ -328,7 +328,7 @@ class IssuesStatusChangeMediumTests {
     var response = backend.getIssueService().reopenIssue(new ReopenIssueParams("configScopeId", issueId.toString(), false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    assertThat(response.get().isIssueReopened()).isTrue();
+    assertThat(response.get().isSuccess()).isTrue();
     storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll("configScopeId");
     assertThat(storedIssues).isEmpty();
   }
@@ -391,7 +391,7 @@ class IssuesStatusChangeMediumTests {
       .reopenAllIssuesForFile(new ReopenAllIssuesForFileParams("configScopeId", "file/path"));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    assertThat(response.get().isIssueReopened()).isTrue();
+    assertThat(response.get().isSuccess()).isTrue();
     storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll("configScopeId");
     assertThat(storedIssues).extracting(LocalOnlyIssue::getId).containsOnly(otherFileIssueId);
   }
@@ -409,7 +409,7 @@ class IssuesStatusChangeMediumTests {
     var response = backend.getIssueService().reopenIssue(new ReopenIssueParams("configScopeId", invalidIssueId, false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    assertThat(response.get().isIssueReopened()).isFalse();
+    assertThat(response.get().isSuccess()).isFalse();
     var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", "file/path");
     assertThat(storedIssues).extracting(LocalOnlyIssue::getId).containsOnly(issueId);
   }
@@ -427,7 +427,7 @@ class IssuesStatusChangeMediumTests {
     var response = backend.getIssueService().reopenIssue(new ReopenIssueParams("configScopeId", nonExistingIssueId.toString(), false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    assertThat(response.get().isIssueReopened()).isFalse();
+    assertThat(response.get().isSuccess()).isFalse();
     var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", "file/path");
     assertThat(storedIssues)
       .extracting(LocalOnlyIssue::getId)
@@ -449,6 +449,6 @@ class IssuesStatusChangeMediumTests {
     var reopen_response = backend.getIssueService().reopenIssue(new ReopenIssueParams("configScopeId", "myIssueKey", false));
 
     assertThat(reopen_response).succeedsWithin(Duration.ofSeconds(2));
-    assertThat(reopen_response.get().isIssueReopened()).isTrue();
+    assertThat(reopen_response.get().isSuccess()).isTrue();
   }
 }
