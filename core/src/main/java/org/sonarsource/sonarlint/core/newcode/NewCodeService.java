@@ -49,8 +49,9 @@ public class NewCodeService {
 
   public Optional<NewCodeDefinition> getFullNewCodeDefinition(String configScopeId) {
     var effectiveBinding = configurationRepository.getEffectiveBinding(configScopeId);
-    if (effectiveBinding.isEmpty())
+    if (effectiveBinding.isEmpty()) {
       return Optional.empty();
+    }
     var binding = effectiveBinding.get();
     var sonarProjectStorage = storageService.binding(binding);
     return sonarProjectStorage.newCodeDefinition().read();
