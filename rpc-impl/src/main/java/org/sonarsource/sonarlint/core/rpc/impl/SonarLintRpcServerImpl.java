@@ -146,7 +146,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
 
   @Override
   public AnalysisRpcService getAnalysisService() {
-    return new AnalysisServiceRpcDelegate(this);
+    return new AnalysisRpcServiceDelegate(this);
   }
 
   @Override
