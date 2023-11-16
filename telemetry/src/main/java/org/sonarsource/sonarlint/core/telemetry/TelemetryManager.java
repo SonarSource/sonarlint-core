@@ -37,7 +37,7 @@ public class TelemetryManager {
   private final TelemetryLocalStorageManager storage;
   private final TelemetryHttpClient client;
 
-  public TelemetryManager(Path path, TelemetryHttpClient client) {
+  TelemetryManager(Path path, TelemetryHttpClient client) {
     this.storage = newTelemetryStorage(path);
     this.client = client;
   }
@@ -46,7 +46,7 @@ public class TelemetryManager {
     return new TelemetryLocalStorageManager(path);
   }
 
-  public void enable(TelemetryPayloadResponse telemetryPayload) {
+  void enable(TelemetryPayloadResponse telemetryPayload) {
     storage.tryUpdateAtomically(data -> data.setEnabled(true));
     uploadLazily(telemetryPayload);
   }
@@ -54,7 +54,7 @@ public class TelemetryManager {
   /**
    * Disable telemetry (opt-out).
    */
-  public void disable(TelemetryPayloadResponse telemetryPayload) {
+  void disable(TelemetryPayloadResponse telemetryPayload) {
     storage.tryUpdateAtomically(data -> {
       data.setEnabled(false);
       client.optOut(data, telemetryPayload);
@@ -67,7 +67,7 @@ public class TelemetryManager {
    * - the grace period has elapsed since the last upload
    * To be called periodically once a day.
    */
-  public void uploadLazily(TelemetryPayloadResponse telemetryPayload) {
+  void uploadLazily(TelemetryPayloadResponse telemetryPayload) {
     var readData = storage.tryRead();
     if (!dayChanged(readData.lastUploadTime(), MIN_HOURS_BETWEEN_UPLOAD)) {
       return;
@@ -80,7 +80,7 @@ public class TelemetryManager {
     });
   }
 
-  public void analysisDoneOnSingleLanguage(@Nullable Language language, int analysisTimeMs) {
+  void analysisDoneOnSingleLanguage(@Nullable Language language, int analysisTimeMs) {
     storage.tryUpdateAtomically(data -> {
       if (language == null) {
         data.setUsedAnalysis("others", analysisTimeMs);
