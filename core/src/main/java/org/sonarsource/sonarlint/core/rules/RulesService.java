@@ -46,11 +46,9 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.BackendErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetStandaloneRuleDescriptionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetStandaloneRuleDescriptionResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ListAllStandaloneRulesDefinitionsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDefinitionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleParamDefinitionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleParamType;
@@ -102,19 +100,18 @@ public class RulesService {
     this.standaloneRuleConfig.putAll(standaloneRuleConfigByKey);
   }
 
-  public GetEffectiveRuleDetailsResponse getEffectiveRuleDetails(GetEffectiveRuleDetailsParams params, CancelChecker cancelToken) throws RuleNotFoundException {
-    var ruleKey = params.getRuleKey();
-    var effectiveBinding = configurationRepository.getEffectiveBinding(params.getConfigurationScopeId());
+  public EffectiveRuleDetailsDto getEffectiveRuleDetails(String configurationScopeId, String ruleKey, @Nullable String contextKey) throws RuleNotFoundException {
+    var effectiveBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
     if (effectiveBinding.isEmpty()) {
       var embeddedRule = rulesRepository.getEmbeddedRule(ruleKey);
       if (embeddedRule.isEmpty()) {
         throw new RuleNotFoundException(COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules", ruleKey);
       }
       var ruleDetails = RuleDetails.from(embeddedRule.get(), standaloneRuleConfig.get(ruleKey));
-      return buildResponse(ruleDetails, params.getContextKey());
+      return buildResponse(ruleDetails, contextKey);
     }
     var ruleDetails = getActiveRuleForBinding(ruleKey, effectiveBinding.get());
-    return buildResponse(ruleDetails, params.getContextKey());
+    return buildResponse(ruleDetails, contextKey);
   }
 
   private RuleDetails getActiveRuleForBinding(String ruleKey, Binding binding) {
@@ -131,7 +128,8 @@ public class RulesService {
       .orElseGet(() -> rulesRepository.getRule(connectionId, ruleKey)
         .map(r -> RuleDetails.from(r, standaloneRuleConfig.get(ruleKey)))
         .orElseThrow(() -> {
-          ResponseError error = new ResponseError(BackendErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in plugins loaded from '" + connectionId + "'", new Object[]{connectionId, ruleKey});
+          ResponseError error = new ResponseError(BackendErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in plugins loaded from '" + connectionId + "'",
+            new Object[] {connectionId, ruleKey});
           return new ResponseErrorException(error);
         }));
   }
@@ -188,7 +186,7 @@ public class RulesService {
 
   private static ResponseErrorException ruleNotFound(String connectionId, String ruleKey, Exception e) {
     LOG.error("Failed to fetch rule details from server", e);
-    ResponseError error = new ResponseError(BackendErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' on '" + connectionId + "'", new Object[]{ruleKey, connectionId});
+    ResponseError error = new ResponseError(BackendErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' on '" + connectionId + "'", new Object[] {ruleKey, connectionId});
     return new ResponseErrorException(error);
   }
 
@@ -222,16 +220,15 @@ public class RulesService {
     }
   }
 
-  private static GetEffectiveRuleDetailsResponse buildResponse(RuleDetails ruleDetails, @Nullable String contextKey) {
-    return new GetEffectiveRuleDetailsResponse(RuleDetailsAdapter.transform(ruleDetails, contextKey));
+  private static EffectiveRuleDetailsDto buildResponse(RuleDetails ruleDetails, @Nullable String contextKey) {
+    return RuleDetailsAdapter.transform(ruleDetails, contextKey);
   }
 
-  public ListAllStandaloneRulesDefinitionsResponse listAllStandaloneRulesDefinitions(CancelChecker cancelToken) {
-    return new ListAllStandaloneRulesDefinitionsResponse(
-      rulesRepository.getEmbeddedRules()
-        .stream()
-        .map(RulesService::convert)
-        .collect(Collectors.toMap(RuleDefinitionDto::getKey, r -> r)));
+  public Map<String, RuleDefinitionDto> listAllStandaloneRulesDefinitions() {
+    return rulesRepository.getEmbeddedRules()
+      .stream()
+      .map(RulesService::convert)
+      .collect(Collectors.toMap(RuleDefinitionDto::getKey, r -> r));
   }
 
   @NotNull
@@ -260,11 +257,10 @@ public class RulesService {
     }
   }
 
-  public GetStandaloneRuleDescriptionResponse getStandaloneRuleDetails(GetStandaloneRuleDescriptionParams params, CancelChecker cancelToken) {
-    var ruleKey = params.getRuleKey();
+  public GetStandaloneRuleDescriptionResponse getStandaloneRuleDetails(String ruleKey) {
     var embeddedRule = rulesRepository.getEmbeddedRule(ruleKey);
     if (embeddedRule.isEmpty()) {
-      ResponseError error = new ResponseError(BackendErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules", new Object[]{ruleKey});
+      ResponseError error = new ResponseError(BackendErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules", new Object[] {ruleKey});
       throw new ResponseErrorException(error);
     }
     var ruleDefinition = embeddedRule.get();
@@ -273,8 +269,8 @@ public class RulesService {
     return new GetStandaloneRuleDescriptionResponse(convert(ruleDefinition), RuleDetailsAdapter.transformDescriptions(ruleDetails, null));
   }
 
-  public void updateStandaloneRulesConfiguration(UpdateStandaloneRulesConfigurationParams params) {
-    setStandaloneRuleConfig(params.getRuleConfigByKey());
+  public void updateStandaloneRulesConfiguration(Map<String, StandaloneRuleConfigDto> ruleConfigByKey) {
+    setStandaloneRuleConfig(ruleConfigByKey);
   }
 
   private synchronized void setStandaloneRuleConfig(Map<String, StandaloneRuleConfigDto> standaloneRuleConfig) {
