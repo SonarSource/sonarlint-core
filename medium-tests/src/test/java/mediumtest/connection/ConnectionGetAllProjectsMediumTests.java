@@ -30,7 +30,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.Tra
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProject;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProjectDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 
 import static mediumtest.fixtures.ServerFixture.newSonarCloudServer;
@@ -96,7 +96,7 @@ class ConnectionGetAllProjectsMediumTests {
     var response = getAllProjects(new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto("token"))));
 
     assertThat(response.getSonarProjects())
-      .extracting(SonarProject::getKey, SonarProject::getName)
+      .extracting(SonarProjectDto::getKey, SonarProjectDto::getName)
       .containsOnly(tuple("projectKey1", "MyProject1"), tuple("projectKey2", "MyProject2"));
   }
 
@@ -112,7 +112,7 @@ class ConnectionGetAllProjectsMediumTests {
     var response = getAllProjects(new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto("token"))));
 
     assertThat(response.getSonarProjects())
-      .extracting(SonarProject::getKey, SonarProject::getName)
+      .extracting(SonarProjectDto::getKey, SonarProjectDto::getName)
       .containsOnly(tuple("projectKey1", "MyProject1"), tuple("projectKey2", "MyProject2"));
   }
 

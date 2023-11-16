@@ -25,14 +25,16 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcS
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetSupportedFilePatternsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetSupportedFilePatternsResponse;
 
-class AnalysisServiceRpcDelegate extends AbstractRpcServiceDelegate implements AnalysisRpcService {
+class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements AnalysisRpcService {
 
-  public AnalysisServiceRpcDelegate(SonarLintRpcServerImpl server) {
+  public AnalysisRpcServiceDelegate(SonarLintRpcServerImpl server) {
     super(server);
   }
 
   @Override
   public CompletableFuture<GetSupportedFilePatternsResponse> getSupportedFilePatterns(GetSupportedFilePatternsParams params) {
-    return requestAsync(cancelChecker -> getBean(AnalysisService.class).getSupportedFilePatterns(params, cancelChecker), params.getConfigScopeId());
+    return requestAsync(
+      cancelChecker -> new GetSupportedFilePatternsResponse(getBean(AnalysisService.class).getSupportedFilePatterns(params.getConfigScopeId())),
+      params.getConfigScopeId());
   }
 }

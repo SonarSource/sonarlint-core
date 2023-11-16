@@ -19,11 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects;
 
-public class SonarProject {
+public class SonarProjectDto {
   private final String key;
   private final String name;
 
-  public SonarProject(String key, String name) {
+  public SonarProjectDto(String key, String name) {
     this.key = key;
     this.name = name;
   }

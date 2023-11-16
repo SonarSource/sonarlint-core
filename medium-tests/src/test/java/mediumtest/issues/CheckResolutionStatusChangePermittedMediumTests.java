@@ -47,7 +47,6 @@ import testutils.MockWebServerExtensionWithProtobuf;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class CheckResolutionStatusChangePermittedMediumTests {
@@ -102,10 +101,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .succeedsWithin(Duration.ofSeconds(2))
       .extracting(CheckStatusChangePermittedResponse::getAllowedStatuses)
       .asInstanceOf(InstanceOfAssertFactories.list(ResolutionStatus.class))
-      .extracting(ResolutionStatus::getTitle, ResolutionStatus::getDescription)
-      .containsExactly(
-        tuple("Won't Fix", "The issue is valid but does not need fixing. It represents accepted technical debt."),
-        tuple("False Positive", "The issue is raised unexpectedly on code that should not trigger an issue."));
+      .containsExactly(ResolutionStatus.WONT_FIX, ResolutionStatus.FALSE_POSITIVE);
   }
 
   @Test
@@ -122,10 +118,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .succeedsWithin(Duration.ofSeconds(2))
       .extracting(CheckStatusChangePermittedResponse::getAllowedStatuses)
       .asInstanceOf(InstanceOfAssertFactories.list(ResolutionStatus.class))
-      .extracting(ResolutionStatus::getTitle, ResolutionStatus::getDescription)
-      .containsExactly(
-        tuple("Accept", "The issue is valid but will not be fixed now. It represents accepted technical debt."),
-        tuple("False Positive", "The issue is raised unexpectedly on code that should not trigger an issue."));
+      .containsExactly(ResolutionStatus.ACCEPT, ResolutionStatus.FALSE_POSITIVE);
   }
 
   @Test
@@ -142,10 +135,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .succeedsWithin(Duration.ofSeconds(2))
       .extracting(CheckStatusChangePermittedResponse::getAllowedStatuses)
       .asInstanceOf(InstanceOfAssertFactories.list(ResolutionStatus.class))
-      .extracting(ResolutionStatus::getTitle, ResolutionStatus::getDescription)
-      .containsExactly(
-        tuple("Won't Fix", "The issue is valid but does not need fixing. It represents accepted technical debt."),
-        tuple("False Positive", "The issue is raised unexpectedly on code that should not trigger an issue."));
+      .containsExactly(ResolutionStatus.WONT_FIX, ResolutionStatus.FALSE_POSITIVE);
   }
 
   @Test

@@ -33,6 +33,9 @@ public class SecurityHotspotMatchingRpcServiceDelegate extends AbstractRpcServic
 
   @Override
   public CompletableFuture<MatchWithServerSecurityHotspotsResponse> matchWithServerSecurityHotspots(MatchWithServerSecurityHotspotsParams params) {
-    return requestAsync(cancelChecker -> getBean(SecurityHotspotMatchingService.class).matchWithServerSecurityHotspots(params, cancelChecker), params.getConfigurationScopeId());
+    return requestAsync(
+      cancelChecker -> new MatchWithServerSecurityHotspotsResponse(getBean(SecurityHotspotMatchingService.class).matchWithServerSecurityHotspots(params.getConfigurationScopeId(),
+        params.getClientTrackedHotspotsByServerRelativePath(), params.shouldFetchHotspotsFromServer(), cancelChecker)),
+      params.getConfigurationScopeId());
   }
 }
