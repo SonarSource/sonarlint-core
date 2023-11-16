@@ -517,10 +517,6 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
   private static SonarLintRpcClientDelegate newDummySonarLintClient() {
     return new SonarLintRpcClientDelegate() {
-      @Override
-      public void suggestBinding(SuggestBindingParams params) {
-
-      }
 
       @Override
       public FindFileByNamesInScopeResponse findFileByNamesInScope(FindFileByNamesInScopeParams params, CancelChecker cancelChecker) {

@@ -105,7 +105,7 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   @Override
   public void suggestBinding(SuggestBindingParams params) {
-    notify(() -> delegate.suggestBinding(params));
+    notify(() -> delegate.suggestBinding(params.getSuggestions()));
   }
 
   @Override

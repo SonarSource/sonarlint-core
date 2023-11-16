@@ -23,12 +23,14 @@ import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetBindingSuggestionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
@@ -48,6 +50,11 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 import static testutils.TestUtils.protobufBody;
 
 class BindingSuggestionsMediumTests {
@@ -71,7 +78,7 @@ class BindingSuggestionsMediumTests {
 
   @Test
   void test_connection_added_should_suggest_binding_with_no_matches() {
-    var fakeClient = newFakeClient().build();
+    var fakeClient = spy(newFakeClient().build());
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID, "My Project 1")
       .build(fakeClient);
@@ -80,15 +87,17 @@ class BindingSuggestionsMediumTests {
     backend.getConnectionService()
       .didUpdateConnections(new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto(MYSONAR, sonarqubeMock.baseUrl(), true)), List.of()));
 
-    await().atMost(Duration.of(5, ChronoUnit.SECONDS)).until(fakeClient::hasReceivedSuggestions);
-    var bindingSuggestions = fakeClient.getBindingSuggestions();
+    ArgumentCaptor<Map<String, List<BindingSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
+
+    var bindingSuggestions = suggestionCaptor.getValue();
     assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID)).isEmpty();
   }
 
   @Test
   void test_connection_added_should_suggest_binding_with_matches() {
-    var fakeClient = newFakeClient().build();
+    var fakeClient = spy(newFakeClient().build());
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID, "sonarlint-core")
       .build(fakeClient);
@@ -106,8 +115,10 @@ class BindingSuggestionsMediumTests {
     backend.getConnectionService()
       .didUpdateConnections(new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto(MYSONAR, sonarqubeMock.baseUrl(), true)), List.of()));
 
-    await().atMost(Duration.of(5, ChronoUnit.SECONDS)).until(fakeClient::hasReceivedSuggestions);
-    var bindingSuggestions = fakeClient.getBindingSuggestions();
+    ArgumentCaptor<Map<String, List<BindingSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
+
+    var bindingSuggestions = suggestionCaptor.getValue();
     assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
       .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
@@ -116,7 +127,7 @@ class BindingSuggestionsMediumTests {
 
   @Test
   void test_project_added_should_suggest_binding_with_matches() {
-    var fakeClient = newFakeClient().build();
+    var fakeClient = spy(newFakeClient().build());
     backend = newBackend()
       .withSonarQubeConnection(MYSONAR, sonarqubeMock.baseUrl())
       .build(fakeClient);
@@ -136,8 +147,10 @@ class BindingSuggestionsMediumTests {
           new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "sonarlint-core",
             new BindingConfigurationDto(null, null, false)))));
 
-    await().atMost(Duration.of(5, ChronoUnit.SECONDS)).until(fakeClient::hasReceivedSuggestions);
-    var bindingSuggestions = fakeClient.getBindingSuggestions();
+    ArgumentCaptor<Map<String, List<BindingSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
+
+    var bindingSuggestions = suggestionCaptor.getValue();
     assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
       .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
@@ -146,10 +159,10 @@ class BindingSuggestionsMediumTests {
 
   @Test
   void test_uses_binding_clues() {
-    var fakeClient = newFakeClient()
+    var fakeClient = spy(newFakeClient()
       .withFoundFile("sonar-project.properties", "/home/user/Project/sonar-project.properties",
         "sonar.host.url=" + sonarqubeMock.baseUrl() + "\nsonar.projectKey=" + SLCORE_PROJECT_KEY)
-      .build();
+      .build());
     backend = newBackend()
       .withSonarQubeConnection(MYSONAR, sonarqubeMock.baseUrl())
       .withSonarQubeConnection("another")
@@ -169,8 +182,10 @@ class BindingSuggestionsMediumTests {
           new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "sonarlint-core",
             new BindingConfigurationDto(null, null, false)))));
 
-    await().atMost(Duration.of(5, ChronoUnit.SECONDS)).until(fakeClient::hasReceivedSuggestions);
-    var bindingSuggestions = fakeClient.getBindingSuggestions();
+    ArgumentCaptor<Map<String, List<BindingSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
+
+    var bindingSuggestions = suggestionCaptor.getValue();
     assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
       .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
@@ -179,7 +194,7 @@ class BindingSuggestionsMediumTests {
 
   @Test
   void test_binding_suggestion_via_service() throws ExecutionException, InterruptedException {
-    var fakeClient = newFakeClient().build();
+    var fakeClient = spy(newFakeClient().build());
     backend = newBackend()
       .withSonarQubeConnection(MYSONAR, sonarqubeMock.baseUrl())
       .build(fakeClient);
@@ -199,7 +214,9 @@ class BindingSuggestionsMediumTests {
           new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "sonarlint-core",
             new BindingConfigurationDto(null, null, false)))));
 
-    await().atMost(Duration.of(5, ChronoUnit.SECONDS)).until(fakeClient::hasReceivedSuggestions);
+    // Ignore the automatic binding suggestions
+    verify(fakeClient, timeout(5000)).suggestBinding(any());
+
     var bindingParamsCompletableFuture = backend.getBindingService().getBindingSuggestions(new GetBindingSuggestionParams(CONFIG_SCOPE_ID, MYSONAR));
     var bindingSuggestions = bindingParamsCompletableFuture.get().getSuggestions();
     assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);

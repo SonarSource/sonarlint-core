@@ -126,10 +126,6 @@ class SloopLauncherTests {
     }
 
     @Override
-    public void suggestBinding(SuggestBindingParams params) {
-    }
-
-    @Override
     public FindFileByNamesInScopeResponse findFileByNamesInScope(FindFileByNamesInScopeParams params, CancelChecker cancelChecker) {
       return new FindFileByNamesInScopeResponse(Collections.emptyList());
     }

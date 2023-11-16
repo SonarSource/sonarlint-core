@@ -509,8 +509,6 @@ public class SonarLintBackendFixture {
   }
 
   public static class FakeSonarLintRpcClient implements SonarLintRpcClientDelegate {
-    private final Map<String, List<BindingSuggestionDto>> bindingSuggestions = new HashMap<>();
-
     private final List<String> urlsToOpen = new ArrayList<>();
     private final List<ShowMessageParams> messagesToShow = new ArrayList<>();
     private final List<ShowSoonUnsupportedMessageParams> soonUnsupportedMessagesToShow = new ArrayList<>();
@@ -561,11 +559,6 @@ public class SonarLintBackendFixture {
 
     public void setBackend(SonarLintTestRpcServer backend) {
       this.backend = backend;
-    }
-
-    @Override
-    public void suggestBinding(SuggestBindingParams params) {
-      bindingSuggestions.putAll(params.getSuggestions());
     }
 
     @Override
@@ -748,16 +741,8 @@ public class SonarLintBackendFixture {
       return new ListAllFilePathsResponse(relativeFilePathsByConfigScopeId.getOrDefault(params.getConfigurationScopeId(), emptyList()));
     }
 
-    public boolean hasReceivedSuggestions() {
-      return !bindingSuggestions.isEmpty();
-    }
-
     public boolean hasReceivedSmartNotifications() {
       return !smartNotificationsToShow.isEmpty();
-    }
-
-    public Map<String, List<BindingSuggestionDto>> getBindingSuggestions() {
-      return bindingSuggestions;
     }
 
     public List<String> getUrlsToOpen() {

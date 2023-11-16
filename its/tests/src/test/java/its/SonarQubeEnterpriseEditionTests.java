@@ -366,11 +366,6 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     return new SonarLintRpcClientDelegate() {
 
       @Override
-      public void suggestBinding(SuggestBindingParams params) {
-
-      }
-
-      @Override
       public FindFileByNamesInScopeResponse findFileByNamesInScope(FindFileByNamesInScopeParams params, CancelChecker cancelChecker) {
         return new FindFileByNamesInScopeResponse(Collections.emptyList());
       }
