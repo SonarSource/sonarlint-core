@@ -21,13 +21,13 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.issue;
 
 public class ReopenIssueResponse {
 
-  private final boolean issueReopened;
+  private final boolean success;
 
-  public ReopenIssueResponse(boolean issueReopened) {
-    this.issueReopened = issueReopened;
+  public ReopenIssueResponse(boolean success) {
+    this.success = success;
   }
 
-  public boolean isIssueReopened() {
-    return issueReopened;
+  public boolean isSuccess() {
+    return success;
   }
 }

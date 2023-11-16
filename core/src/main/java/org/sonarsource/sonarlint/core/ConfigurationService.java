@@ -34,10 +34,7 @@ import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
 import org.springframework.context.ApplicationEventPublisher;
 
 @Named
@@ -54,10 +51,9 @@ public class ConfigurationService {
     this.repository = repository;
   }
 
-  public void didAddConfigurationScopes(DidAddConfigurationScopesParams params) {
-    var addedDtos = params.getAddedScopes();
+  public void didAddConfigurationScopes(List<ConfigurationScopeDto> addedScopes) {
     Set<String> addedIds = new HashSet<>();
-    for (var addedDto : addedDtos) {
+    for (var addedDto : addedScopes) {
       var previous = addOrUpdateRepository(addedDto);
       if (previous != null) {
         LOG.error("Duplicate configuration scope registered: {}", addedDto.getId());
@@ -85,18 +81,17 @@ public class ConfigurationService {
     return new ConfigurationScope(dto.getId(), dto.getParentId(), dto.isBindable(), dto.getName());
   }
 
-  public void didRemoveConfigurationScope(DidRemoveConfigurationScopeParams params) {
-    var idToRemove = params.getRemovedId();
-    var removed = repository.remove(idToRemove);
+  public void didRemoveConfigurationScope(String removedId) {
+    var removed = repository.remove(removedId);
     if (removed == null) {
-      LOG.error("Attempt to remove configuration scope '{}' that was not registered", idToRemove);
+      LOG.error("Attempt to remove configuration scope '{}' that was not registered", removedId);
     } else {
       applicationEventPublisher.publishEvent(new ConfigurationScopeRemovedEvent(removed.getScope(), removed.getBindingConfiguration()));
     }
   }
 
-  public void didUpdateBinding(DidUpdateBindingParams params) {
-    var boundEvent = bind(params.getConfigScopeId(), params.getUpdatedBinding());
+  public void didUpdateBinding(String configScopeId, BindingConfigurationDto updatedBinding) {
+    var boundEvent = bind(configScopeId, updatedBinding);
     if (boundEvent != null) {
       applicationEventPublisher.publishEvent(boundEvent);
     }

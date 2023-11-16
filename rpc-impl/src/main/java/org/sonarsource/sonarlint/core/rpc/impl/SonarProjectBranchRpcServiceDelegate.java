@@ -34,11 +34,12 @@ class SonarProjectBranchRpcServiceDelegate extends AbstractRpcServiceDelegate im
 
   @Override
   public void didVcsRepositoryChange(DidVcsRepositoryChangeParams params) {
-    notify(() -> getBean(SonarProjectBranchTrackingService.class).didVcsRepositoryChange(params));
+    notify(() -> getBean(SonarProjectBranchTrackingService.class).didVcsRepositoryChange(params.getConfigurationScopeId()));
   }
 
   @Override
   public CompletableFuture<GetMatchedSonarProjectBranchResponse> getMatchedSonarProjectBranch(GetMatchedSonarProjectBranchParams params) {
-    return requestAsync(cancelChecker -> getBean(SonarProjectBranchTrackingService.class).getMatchedSonarProjectBranch(params));
+    return requestAsync(
+      cancelChecker -> new GetMatchedSonarProjectBranchResponse(getBean(SonarProjectBranchTrackingService.class).getMatchedSonarProjectBranch(params.getConfigurationScopeId())));
   }
 }

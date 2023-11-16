@@ -24,12 +24,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import javax.annotation.CheckForNull;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectionValidator;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
@@ -44,25 +44,13 @@ import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionCo
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.check.CheckSmartNotificationsSupportedParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.check.CheckSmartNotificationsSupportedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidChangeCredentialsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.OrganizationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProject;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProjectDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
@@ -103,11 +91,11 @@ public class ConnectionService {
     initSonarCloudConnections.forEach(c -> repository.addOrReplace(adapt(c)));
   }
 
-  private static AbstractConnectionConfiguration adapt(SonarQubeConnectionConfigurationDto sqDto) {
+  private static SonarQubeConnectionConfiguration adapt(SonarQubeConnectionConfigurationDto sqDto) {
     return new SonarQubeConnectionConfiguration(sqDto.getConnectionId(), sqDto.getServerUrl(), sqDto.getDisableNotifications());
   }
 
-  private static AbstractConnectionConfiguration adapt(SonarCloudConnectionConfigurationDto scDto) {
+  private static SonarCloudConnectionConfiguration adapt(SonarCloudConnectionConfigurationDto scDto) {
     return new SonarCloudConnectionConfiguration(scDto.getConnectionId(), scDto.getOrganization(), scDto.getDisableNotifications());
   }
 
@@ -117,10 +105,10 @@ public class ConnectionService {
     }
   }
 
-  public void didUpdateConnections(DidUpdateConnectionsParams params) {
+  public void didUpdateConnections(List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections) {
     var newConnectionsById = new HashMap<String, AbstractConnectionConfiguration>();
-    params.getSonarQubeConnections().forEach(config -> putAndLogIfDuplicateId(newConnectionsById, adapt(config)));
-    params.getSonarCloudConnections().forEach(config -> putAndLogIfDuplicateId(newConnectionsById, adapt(config)));
+    sonarQubeConnections.forEach(config -> putAndLogIfDuplicateId(newConnectionsById, adapt(config)));
+    sonarCloudConnections.forEach(config -> putAndLogIfDuplicateId(newConnectionsById, adapt(config)));
 
     var previousConnectionsById = repository.getConnectionsById();
 
@@ -139,8 +127,8 @@ public class ConnectionService {
     removedConnectionIds.forEach(this::removeConnection);
   }
 
-  public void didChangeCredentials(DidChangeCredentialsParams params) {
-    applicationEventPublisher.publishEvent(new ConnectionCredentialsChangedEvent(params.getConnectionId()));
+  public void didChangeCredentials(String connectionId) {
+    applicationEventPublisher.publishEvent(new ConnectionCredentialsChangedEvent(connectionId));
   }
 
   private void addConnection(AbstractConnectionConfiguration connectionConfiguration) {
@@ -168,33 +156,32 @@ public class ConnectionService {
     }
   }
 
-  public ValidateConnectionResponse validateConnection(ValidateConnectionParams params, CancelChecker cancelToken) {
-    var helper = buildServerApiHelper(params.getTransientConnection());
+  public ValidateConnectionResponse validateConnection(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection, CancelChecker cancelToken) {
+    var helper = buildServerApiHelper(transientConnection);
     var connectionValidator = new ConnectionValidator(helper);
     var r = connectionValidator.validateConnection(cancelToken);
     return new ValidateConnectionResponse(r.success(), r.message());
   }
 
-  public CheckSmartNotificationsSupportedResponse checkSmartNotificationsSupported(CheckSmartNotificationsSupportedParams params, CancelChecker cancelToken) {
-    var helper = buildServerApiHelper(params.getTransientConnection());
+  public boolean checkSmartNotificationsSupported(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection) {
+    var helper = buildServerApiHelper(transientConnection);
     var developersApi = new ServerApi(helper).developers();
-    return new CheckSmartNotificationsSupportedResponse(developersApi.isSupported());
+    return developersApi.isSupported();
   }
 
-  public ListUserOrganizationsResponse listUserOrganizations(ListUserOrganizationsParams params, CancelChecker cancelToken) {
-    var helper = buildSonarCloudNoOrgApiHelper(params.getCredentials());
+  public List<OrganizationDto> listUserOrganizations(Either<TokenDto, UsernamePasswordDto> credentials) {
+    var helper = buildSonarCloudNoOrgApiHelper(credentials);
     var serverOrganizations = new OrganizationApi(helper).listUserOrganizations(new ProgressMonitor(null));
-    return new ListUserOrganizationsResponse(
-      serverOrganizations.stream().map(o -> new OrganizationDto(o.getKey(), o.getName(), o.getDescription())).collect(Collectors.toList()));
+    return serverOrganizations.stream().map(o -> new OrganizationDto(o.getKey(), o.getName(), o.getDescription())).collect(Collectors.toList());
   }
 
-  public GetOrganizationResponse getOrganization(GetOrganizationParams params, CancelChecker cancelToken) {
-    var helper = buildSonarCloudNoOrgApiHelper(params.getCredentials());
-    var serverOrganization = new OrganizationApi(helper).getOrganization(params.getOrganizationKey(), new ProgressMonitor(null));
-    return new GetOrganizationResponse(serverOrganization.map(o -> new OrganizationDto(o.getKey(), o.getName(), o.getDescription())).orElse(null));
+  @CheckForNull
+  public OrganizationDto getOrganization(Either<TokenDto, UsernamePasswordDto> credentials, String organizationKey) {
+    var helper = buildSonarCloudNoOrgApiHelper(credentials);
+    var serverOrganization = new OrganizationApi(helper).getOrganization(organizationKey, new ProgressMonitor(null));
+    return serverOrganization.map(o -> new OrganizationDto(o.getKey(), o.getName(), o.getDescription())).orElse(null);
   }
 
-  @NotNull
   ServerApiHelper buildServerApiHelper(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection) {
     var endpointParams = transientConnection.map(
       sq -> new EndpointParams(sq.getServerUrl(), false, null),
@@ -204,7 +191,6 @@ public class ConnectionService {
     return new ServerApiHelper(endpointParams, httpClient);
   }
 
-  @NotNull
   ServerApiHelper buildSonarCloudNoOrgApiHelper(Either<TokenDto, UsernamePasswordDto> credentials) {
     var endpointParams = new EndpointParams(SonarCloudConnectionConfiguration.getSonarCloudUrl(), true, null);
     var httpClient = getClientFor(credentials);
@@ -217,16 +203,15 @@ public class ConnectionService {
       userPass -> httpClientProvider.getHttpClientWithPreemptiveAuth(userPass.getUsername(), userPass.getPassword()));
   }
 
-  public HelpGenerateUserTokenResponse helpGenerateUserToken(HelpGenerateUserTokenParams params, CancelChecker cancelToken) {
-    return tokenGeneratorHelper.helpGenerateUserToken(params, cancelToken);
+  public HelpGenerateUserTokenResponse helpGenerateUserToken(String serverUrl, boolean isSonarCloud, CancelChecker cancelToken) {
+    return tokenGeneratorHelper.helpGenerateUserToken(serverUrl, isSonarCloud, cancelToken);
   }
 
-  public GetAllProjectsResponse getAllProjects(GetAllProjectsParams params, CancelChecker cancelChecker) {
-    var helper = buildServerApiHelper(params.getTransientConnection());
-    var allProjects = new ServerApi(helper).component().getAllProjects(new ProgressMonitor(new CancelCheckerAwareProgressMonitor(cancelChecker)))
-      .stream().map(serverProject -> new SonarProject(serverProject.getKey(), serverProject.getName()))
+  public List<SonarProjectDto> getAllProjects(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection, CancelChecker cancelChecker) {
+    var helper = buildServerApiHelper(transientConnection);
+    return new ServerApi(helper).component().getAllProjects(new ProgressMonitor(new CancelCheckerAwareProgressMonitor(cancelChecker)))
+      .stream().map(serverProject -> new SonarProjectDto(serverProject.getKey(), serverProject.getName()))
       .collect(Collectors.toList());
-    return new GetAllProjectsResponse(allProjects);
   }
 
   private static class CancelCheckerAwareProgressMonitor implements ClientProgressMonitor {
