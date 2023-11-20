@@ -24,7 +24,7 @@ import java.time.temporal.ChronoUnit;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.http.HttpClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryPayloadResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
 import org.sonarsource.sonarlint.core.telemetry.payload.HotspotPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.IssuePayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.ShowHotspotPayload;
@@ -64,7 +64,7 @@ public class TelemetryHttpClient {
     this.endpoint = System.getProperty("sonarlint.internal.telemetry.endpoint", endpoint);
   }
 
-  void upload(TelemetryLocalStorage data, TelemetryPayloadResponse telemetryPayload) {
+  void upload(TelemetryLocalStorage data, TelemetryLiveAttributesResponse telemetryPayload) {
     try {
       sendPost(createPayload(data, telemetryPayload));
     } catch (Throwable catchEmAll) {
@@ -74,7 +74,7 @@ public class TelemetryHttpClient {
     }
   }
 
-  void optOut(TelemetryLocalStorage data, TelemetryPayloadResponse telemetryPayload) {
+  void optOut(TelemetryLocalStorage data, TelemetryLiveAttributesResponse telemetryPayload) {
     try {
       sendDelete(createPayload(data, telemetryPayload));
     } catch (Throwable catchEmAll) {
@@ -84,7 +84,7 @@ public class TelemetryHttpClient {
     }
   }
 
-  private TelemetryPayload createPayload(TelemetryLocalStorage data, TelemetryPayloadResponse telemetryPayload) {
+  private TelemetryPayload createPayload(TelemetryLocalStorage data, TelemetryLiveAttributesResponse telemetryPayload) {
     var systemTime = OffsetDateTime.now();
     var daysSinceInstallation = data.installTime().until(systemTime, ChronoUnit.DAYS);
     var analyzers = TelemetryUtils.toPayload(data.analyzers());

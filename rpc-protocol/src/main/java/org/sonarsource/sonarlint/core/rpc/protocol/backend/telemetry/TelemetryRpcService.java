@@ -51,9 +51,6 @@ public interface TelemetryRpcService {
   void devNotificationsClicked(DevNotificationsClickedParams params);
 
   @JsonNotification
-  void showHotspotRequestReceived();
-
-  @JsonNotification
   void taintVulnerabilitiesInvestigatedLocally();
 
   @JsonNotification

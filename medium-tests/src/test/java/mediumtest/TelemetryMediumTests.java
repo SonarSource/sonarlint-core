@@ -35,7 +35,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddReportedR
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryPayloadResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.telemetry.InternalDebug;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorageManager;
@@ -165,7 +165,7 @@ class TelemetryMediumTests {
     System.setProperty("sonarlint.internal.telemetry.initialDelay", "0");
     System.clearProperty("sonarlint.telemetry.disabled");
     var fakeClient = spy(newFakeClient().build());
-    when(fakeClient.getTelemetryPayload()).thenReturn(new TelemetryPayloadResponse(true, false, null, false, emptyList(), emptyList(), emptyMap()));
+    when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap()));
 
     backend = newBackend()
       .withSonarQubeConnection("connectionId")
@@ -192,7 +192,7 @@ class TelemetryMediumTests {
     System.setProperty("sonarlint.internal.telemetry.initialDelay", "0");
 
     var fakeClient = spy(newFakeClient().build());
-    when(fakeClient.getTelemetryPayload()).thenReturn(new TelemetryPayloadResponse(true, false, null, false, emptyList(), emptyList(), emptyMap()));
+    when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap()));
 
     backend = newBackend()
       .withSonarQubeConnection("connectionId")
@@ -223,7 +223,7 @@ class TelemetryMediumTests {
     System.setProperty("sonarlint.internal.telemetry.initialDelay", "0");
 
     var fakeClient = spy(newFakeClient().build());
-    when(fakeClient.getTelemetryPayload()).thenReturn(new TelemetryPayloadResponse(true, false, null, false, emptyList(), emptyList(), emptyMap()));
+    when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap()));
 
     backend = newBackend()
       .withSonarQubeConnection("connectionId")
@@ -241,7 +241,7 @@ class TelemetryMediumTests {
   @Test
   void it_should_not_crash_when_cannot_build_payload() {
     var fakeClient = spy(newFakeClient().build());
-    when(fakeClient.getTelemetryPayload()).thenThrow(new IllegalStateException("Unexpected error"));
+    when(fakeClient.getTelemetryLiveAttributes()).thenThrow(new IllegalStateException("Unexpected error"));
     backend = newBackend()
       .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
@@ -256,7 +256,7 @@ class TelemetryMediumTests {
     InternalDebug.setEnabled(true);
 
     var fakeClient = spy(newFakeClient().build());
-    when(fakeClient.getTelemetryPayload()).thenThrow(new IllegalStateException("Unexpected error"));
+    when(fakeClient.getTelemetryLiveAttributes()).thenThrow(new IllegalStateException("Unexpected error"));
     backend = newBackend()
       .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
@@ -285,7 +285,7 @@ class TelemetryMediumTests {
     System.clearProperty("sonarlint.internal.telemetry.initialDelay");
 
     var fakeClient = spy(newFakeClient().build());
-    when(fakeClient.getTelemetryPayload()).thenReturn(new TelemetryPayloadResponse(true, false, null, false, emptyList(), emptyList(), emptyMap()));
+    when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap()));
 
     backend = newBackend()
       .withSonarQubeConnection("connectionId")
@@ -309,19 +309,6 @@ class TelemetryMediumTests {
         "}", true, true))));
 
     System.clearProperty("sonarlint.internal.telemetry.initialDelay");
-  }
-
-  @Test
-  void it_should_accumulate_received_open_hotspot_requests() {
-    setupClientAndBackend();
-
-    backend.getTelemetryService().showHotspotRequestReceived();
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains(
-      "\"showHotspotRequestsCount\":1"));
-
-    backend.getTelemetryService().showHotspotRequestReceived();
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains(
-      "\"showHotspotRequestsCount\":2"));
   }
 
   @Test
@@ -393,14 +380,6 @@ class TelemetryMediumTests {
 
     backend.getTelemetryService().taintVulnerabilitiesInvestigatedLocally();
     await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"taintVulnerabilitiesInvestigatedLocallyCount\":1"));
-  }
-
-  @Test
-  void it_should_record_showHotspotRequestReceived(){
-    setupClientAndBackend();
-
-    backend.getTelemetryService().showHotspotRequestReceived();
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"showHotspotRequestsCount\":1"));
   }
 
   @Test

@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.telemetry;
 import java.nio.file.Path;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryPayloadResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
 
 import static org.sonarsource.sonarlint.core.telemetry.TelemetryUtils.dayChanged;
 
@@ -46,7 +46,7 @@ public class TelemetryManager {
     return new TelemetryLocalStorageManager(path);
   }
 
-  void enable(TelemetryPayloadResponse telemetryPayload) {
+  void enable(TelemetryLiveAttributesResponse telemetryPayload) {
     storage.tryUpdateAtomically(data -> data.setEnabled(true));
     uploadLazily(telemetryPayload);
   }
@@ -54,7 +54,7 @@ public class TelemetryManager {
   /**
    * Disable telemetry (opt-out).
    */
-  void disable(TelemetryPayloadResponse telemetryPayload) {
+  void disable(TelemetryLiveAttributesResponse telemetryPayload) {
     storage.tryUpdateAtomically(data -> {
       data.setEnabled(false);
       client.optOut(data, telemetryPayload);
@@ -67,7 +67,7 @@ public class TelemetryManager {
    * - the grace period has elapsed since the last upload
    * To be called periodically once a day.
    */
-  void uploadLazily(TelemetryPayloadResponse telemetryPayload) {
+  void uploadLazily(TelemetryLiveAttributesResponse telemetryPayload) {
     var readData = storage.tryRead();
     if (!dayChanged(readData.lastUploadTime(), MIN_HOURS_BETWEEN_UPLOAD)) {
       return;

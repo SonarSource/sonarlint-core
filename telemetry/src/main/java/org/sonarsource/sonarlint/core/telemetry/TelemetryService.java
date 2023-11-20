@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -34,12 +35,8 @@ import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddQuickFixAppliedForRule;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddReportedRulesParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryPayloadResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 
@@ -87,7 +84,7 @@ public class TelemetryService {
   }
 
   private void upload() {
-    var clientTelemetryPayload = getClientTelemetryPayload();
+    var clientTelemetryPayload = getTelemetryLiveAttributes();
     if (Objects.nonNull(clientTelemetryPayload)) {
       telemetryManager.uploadLazily(clientTelemetryPayload);
     }
@@ -98,23 +95,23 @@ public class TelemetryService {
   }
 
   public void enableTelemetry() {
-    var clientTelemetryPayload = getClientTelemetryPayload();
+    var clientTelemetryPayload = getTelemetryLiveAttributes();
     if (Objects.nonNull(clientTelemetryPayload)) {
       telemetryManager.enable(clientTelemetryPayload);
     }
   }
 
   public void disableTelemetry() {
-    var clientTelemetryPayload = getClientTelemetryPayload();
+    var clientTelemetryPayload = getTelemetryLiveAttributes();
     if (Objects.nonNull(clientTelemetryPayload)) {
       telemetryManager.disable(clientTelemetryPayload);
     }
   }
 
   @Nullable
-  private TelemetryPayloadResponse getClientTelemetryPayload() {
+  private TelemetryLiveAttributesResponse getTelemetryLiveAttributes() {
     try {
-      return client.getTelemetryPayload().get(10, TimeUnit.SECONDS);
+      return client.getTelemetryLiveAttributes().get(10, TimeUnit.SECONDS);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       if (InternalDebug.isEnabled()) {
@@ -185,9 +182,10 @@ public class TelemetryService {
     }
   }
 
-  public void analysisDoneOnSingleLanguage(AnalysisDoneOnSingleLanguageParams params) {
+  public void analysisDoneOnSingleLanguage(@Nullable org.sonarsource.sonarlint.core.rpc.protocol.common.Language language, int analysisTimeMs) {
     if (isEnabled()){
-      telemetryManager.analysisDoneOnSingleLanguage(Language.valueOf(params.getLanguage().name()), params.getAnalysisTimeMs());
+      var coreLanguage = Objects.nonNull(language) ? Language.valueOf(language.name()) : null;
+      telemetryManager.analysisDoneOnSingleLanguage(coreLanguage, analysisTimeMs);
     }
   }
 
@@ -197,21 +195,21 @@ public class TelemetryService {
     }
   }
 
-  public void smartNotificationsClicked(DevNotificationsClickedParams params) {
+  public void smartNotificationsClicked(String eventType) {
     if (isEnabled()) {
-      getTelemetryLocalStorageManager().tryUpdateAtomically(s -> s.incrementDevNotificationsClicked(params.getEventType()));
+      getTelemetryLocalStorageManager().tryUpdateAtomically(s -> s.incrementDevNotificationsClicked(eventType));
     }
   }
 
-  public void addQuickFixAppliedForRule(AddQuickFixAppliedForRule params) {
+  public void addQuickFixAppliedForRule(String ruleKey) {
     if (isEnabled()) {
-      getTelemetryLocalStorageManager().tryUpdateAtomically(s -> s.addQuickFixAppliedForRule(params.getRuleKey()));
+      getTelemetryLocalStorageManager().tryUpdateAtomically(s -> s.addQuickFixAppliedForRule(ruleKey));
     }
   }
 
-  public void addReportedRules(AddReportedRulesParams params) {
+  public void addReportedRules(Set<String> ruleKeys) {
     if (isEnabled()){
-      getTelemetryLocalStorageManager().tryUpdateAtomically(s -> s.addReportedRules(params.getRuleKeys()));
+      getTelemetryLocalStorageManager().tryUpdateAtomically(s -> s.addReportedRules(ruleKeys));
     }
   }
 
@@ -234,7 +232,7 @@ public class TelemetryService {
   }
 
   public void stop() {
-    var clientTelemetryPayload = getClientTelemetryPayload();
+    var clientTelemetryPayload = getTelemetryLiveAttributes();
     if (Objects.nonNull(clientTelemetryPayload)) {
       telemetryManager.uploadLazily(clientTelemetryPayload);
     }

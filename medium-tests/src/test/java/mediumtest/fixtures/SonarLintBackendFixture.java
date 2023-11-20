@@ -103,8 +103,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgres
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryInitDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryPayloadResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryConstantAttributesDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
@@ -369,7 +369,7 @@ public class SonarLintBackendFixture {
         var sonarLintBackend = createTestBackend(client);
 
         client.setBackend(sonarLintBackend);
-        var telemetryInitDto = new TelemetryInitDto("mediumTests", "mediumTests",
+        var telemetryInitDto = new TelemetryConstantAttributesDto("mediumTests", "mediumTests",
           "1.2.3", "4.5.6", "linux", "x64", emptyMap());
         var clientInfo = new ClientInfoDto(clientName, userAgent, telemetryInitDto);
         var featureFlags = new FeatureFlagsDto(manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, startEmbeddedServer, areSecurityHotspotsEnabled,
@@ -726,8 +726,8 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public TelemetryPayloadResponse getTelemetryPayload() {
-      return new TelemetryPayloadResponse(false, false, null, false, emptyList(), emptyList(), emptyMap());
+    public TelemetryLiveAttributesResponse getTelemetryLiveAttributes() {
+      return new TelemetryLiveAttributesResponse(false, false, null, false, emptyList(), emptyList(), emptyMap());
     }
 
     @Override

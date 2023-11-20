@@ -31,7 +31,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryPayloadResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -68,7 +68,7 @@ class TelemetryManagerTests {
 
   @Test
   void enable_should_trigger_upload_once_per_day() {
-    var telemetryPayload = new TelemetryPayloadResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+    var telemetryPayload = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
 
     manager.enable(telemetryPayload);
     manager.enable(telemetryPayload);
@@ -81,7 +81,7 @@ class TelemetryManagerTests {
   void disable_should_trigger_optout(@TempDir Path temp) {
     var storage = mockTelemetryStorage();
     var manager = stubbedTelemetryManager(temp, storage);
-    var telemetryPayload = new TelemetryPayloadResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+    var telemetryPayload = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
 
     manager.disable(telemetryPayload);
 
@@ -91,7 +91,7 @@ class TelemetryManagerTests {
 
   @Test
   void uploadLazily_should_trigger_upload_once_per_day() {
-    var telemetryPayload = new TelemetryPayloadResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+    var telemetryPayload = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
 
     storage.tryUpdateAtomically(d -> d.setUsedAnalysis("java", 1000));
 
@@ -120,7 +120,7 @@ class TelemetryManagerTests {
 
   @Test
   void uploadLazily_should_trigger_upload_if_day_changed_and_hours_elapsed() {
-    var telemetryPayload = new TelemetryPayloadResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+    var telemetryPayload = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
 
     createAndSaveSampleData(storage);
     manager.uploadLazily(telemetryPayload);
@@ -140,7 +140,7 @@ class TelemetryManagerTests {
 
   @Test
   void enable_should_not_wipe_out_more_recent_data() {
-    var telemetryPayload = new TelemetryPayloadResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+    var telemetryPayload = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
 
     createAndSaveSampleData(storage);
 
@@ -160,7 +160,7 @@ class TelemetryManagerTests {
 
   @Test
   void disable_should_not_wipe_out_more_recent_data() {
-    var telemetryPayload = new TelemetryPayloadResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+    var telemetryPayload = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
 
     createAndSaveSampleData(storage);
     storage.tryUpdateAtomically(data -> data.setEnabled(true));
@@ -201,7 +201,7 @@ class TelemetryManagerTests {
 
   @Test
   void uploadLazily_should_clear_accumulated_data() {
-    var telemetryPayload = new TelemetryPayloadResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+    var telemetryPayload = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
 
     createAndSaveSampleData(storage);
     storage.tryUpdateAtomically(data -> {

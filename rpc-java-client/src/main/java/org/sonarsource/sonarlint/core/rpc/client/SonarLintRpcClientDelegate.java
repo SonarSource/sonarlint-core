@@ -72,7 +72,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgres
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryPayloadResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
 
 public interface SonarLintRpcClientDelegate {
 
@@ -199,7 +199,7 @@ public interface SonarLintRpcClientDelegate {
   void didUpdatePlugins(DidUpdatePluginsParams params);
   ListAllFilePathsResponse listAllFilePaths(ListAllFilePathsParams params);
 
-  default TelemetryPayloadResponse getTelemetryPayload() {
+  default TelemetryLiveAttributesResponse getTelemetryLiveAttributes() {
     throw new CancellationException("Not implemented");
   }
 }

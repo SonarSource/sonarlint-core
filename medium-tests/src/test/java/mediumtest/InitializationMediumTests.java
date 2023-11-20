@@ -29,7 +29,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryInitDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryConstantAttributesDto;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -50,7 +50,7 @@ class InitializationMediumTests {
   void it_should_fail_to_initialize_the_backend_twice() {
     backend = newBackend()
       .build();
-    var telemetryInitDto = new TelemetryInitDto("mediumTests", "mediumTests","1.2.3", "4.5.6", "linux", "x64", emptyMap());
+    var telemetryInitDto = new TelemetryConstantAttributesDto("mediumTests", "mediumTests","1.2.3", "4.5.6", "linux", "x64", emptyMap());
     var future = backend
       .initialize(new InitializeParams(new ClientInfoDto("name", "productKey", telemetryInitDto), new FeatureFlagsDto(false, false, false, false, false, false, false),
         Path.of("unused"), Path.of("unused"),

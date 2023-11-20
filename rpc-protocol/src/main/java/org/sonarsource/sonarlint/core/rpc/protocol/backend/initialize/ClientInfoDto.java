@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
 
 import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryInitDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryConstantAttributesDto;
 
 /**
  * Static information to describe the client. Dynamic information will be provided when needed by calling {@link SonarLintRpcClient#getClientInfo()}
@@ -37,12 +37,15 @@ public class ClientInfoDto {
    */
   private final String userAgent;
 
-  private final TelemetryInitDto telemetryInitDto;
+  /**
+   * Static information about the client, that will be sent with the telemetry payload
+   */
+  private final TelemetryConstantAttributesDto telemetryConstantAttributesDto;
 
-  public ClientInfoDto(@NonNull String name, @NonNull String userAgent, TelemetryInitDto telemetryInitDto) {
+  public ClientInfoDto(@NonNull String name, @NonNull String userAgent, TelemetryConstantAttributesDto telemetryConstantAttributesDto) {
     this.name = name;
     this.userAgent = userAgent;
-    this.telemetryInitDto = telemetryInitDto;
+    this.telemetryConstantAttributesDto = telemetryConstantAttributesDto;
   }
 
   @NonNull
@@ -54,7 +57,7 @@ public class ClientInfoDto {
     return userAgent;
   }
 
-  public TelemetryInitDto getTelemetryInitDto() {
-    return telemetryInitDto;
+  public TelemetryConstantAttributesDto getTelemetryInitDto() {
+    return telemetryConstantAttributesDto;
   }
 }

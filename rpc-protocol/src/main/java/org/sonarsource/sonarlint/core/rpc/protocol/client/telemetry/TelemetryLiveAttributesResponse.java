@@ -24,7 +24,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 
-public class TelemetryPayloadResponse {
+public class TelemetryLiveAttributesResponse {
   /**
    * At least one project in the IDE is bound to a SQ server or SC
    */
@@ -62,7 +62,7 @@ public class TelemetryPayloadResponse {
    */
   private final Map<String, Object> additionalAttributes;
 
-  public TelemetryPayloadResponse(boolean usesConnectedMode, boolean useSonarCloud, @Nullable String nodeVersion,
+  public TelemetryLiveAttributesResponse(boolean usesConnectedMode, boolean useSonarCloud, @Nullable String nodeVersion,
     boolean devNotificationsDisabled, List<String> nonDefaultEnabledRules, List<String> defaultDisabledRules,
     Map<String, Object> additionalAttributes) {
     this.usesConnectedMode = usesConnectedMode;

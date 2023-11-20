@@ -52,7 +52,7 @@ class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements 
 
   @Override
   public void analysisDoneOnSingleLanguage(AnalysisDoneOnSingleLanguageParams params) {
-    notify(() -> getBean(TelemetryService.class).analysisDoneOnSingleLanguage(params));
+    notify(() -> getBean(TelemetryService.class).analysisDoneOnSingleLanguage(params.getLanguage(), params.getAnalysisTimeMs()));
   }
 
   @Override
@@ -62,12 +62,7 @@ class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements 
 
   @Override
   public void devNotificationsClicked(DevNotificationsClickedParams params) {
-    notify(() -> getBean(TelemetryService.class).smartNotificationsClicked(params));
-  }
-
-  @Override
-  public void showHotspotRequestReceived() {
-    notify(() -> getBean(TelemetryService.class).showHotspotRequestReceived());
+    notify(() -> getBean(TelemetryService.class).smartNotificationsClicked(params.getEventType()));
   }
 
   @Override
@@ -82,12 +77,12 @@ class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements 
 
   @Override
   public void addReportedRules(AddReportedRulesParams params) {
-    notify(() -> getBean(TelemetryService.class).addReportedRules(params));
+    notify(() -> getBean(TelemetryService.class).addReportedRules(params.getRuleKeys()));
   }
 
   @Override
   public void addQuickFixAppliedForRule(AddQuickFixAppliedForRule params) {
-    notify(() -> getBean(TelemetryService.class).addQuickFixAppliedForRule(params));
+    notify(() -> getBean(TelemetryService.class).addQuickFixAppliedForRule(params.getRuleKey()));
   }
 
   @Override
