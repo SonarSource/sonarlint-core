@@ -38,10 +38,12 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServer
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityChangedOrClosedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FoundFileDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordAuthenticationResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.ProxyDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.X509CertificateDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
@@ -91,12 +93,12 @@ public interface SonarLintRpcClientDelegate {
    */
   String getClientDescription();
 
-  void showHotspot(ShowHotspotParams params);
+  void showHotspot(String configurationScopeId, HotspotDetailsDto hotspotDetails);
 
   /**
-   * Sends a notification to the client to show a specific issue (specified by {@link ShowIssueParams}) in the IDE
+   * Sends a notification to the client to show a specific issue in the IDE
    */
-  void showIssue(ShowIssueParams params);
+  void showIssue(String configurationScopeId, IssueDetailsDto issueDetails);
 
   /**
    * Can be triggered by the backend when trying to handle a feature that needs a connection, e.g. open hotspot.

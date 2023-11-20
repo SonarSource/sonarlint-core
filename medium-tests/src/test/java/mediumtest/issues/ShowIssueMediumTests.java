@@ -52,10 +52,11 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 class ShowIssueMediumTests {
 
@@ -137,22 +138,25 @@ class ShowIssueMediumTests {
       .build(fakeClient);
 
     var statusCode = executeOpenIssueRequest(ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
-
     assertThat(statusCode).isEqualTo(200);
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getIssueParamsToShowByIssueKey()).containsOnlyKeys(issueKey));
-    var showIssueParams = fakeClient.getIssueParamsToShowByIssueKey().get(issueKey);
-    assertThat(showIssueParams.getIssueKey()).isEqualTo(issueKey);
-    assertThat(showIssueParams.isTaint()).isFalse();
-    assertThat(showIssueParams.getMessage()).isEqualTo("msg");
-    assertThat(showIssueParams.getConfigScopeId()).isEqualTo(configScopeId);
-    assertThat(showIssueParams.getRuleKey()).isEqualTo("ruleKey");
-    assertThat(showIssueParams.getCreationDate()).isEqualTo("2023-12-25T12:30:35+0000");
-    assertThat(showIssueParams.getTextRange()).extracting(TextRangeDto::getStartLine, TextRangeDto::getStartLineOffset,
+
+    verify(fakeClient, timeout(2000)).showIssue(any(), any());
+
+    assertThat(fakeClient.getIssueToShowByConfigScopeId()).containsOnlyKeys(configScopeId);
+    var issues = fakeClient.getIssueToShowByConfigScopeId().get(configScopeId);
+    assertThat(issues).hasSize(1);
+    var issueDetails = issues.get(0);
+    assertThat(issueDetails.getIssueKey()).isEqualTo(issueKey);
+    assertThat(issueDetails.isTaint()).isFalse();
+    assertThat(issueDetails.getMessage()).isEqualTo("msg");
+    assertThat(issueDetails.getRuleKey()).isEqualTo("ruleKey");
+    assertThat(issueDetails.getCreationDate()).isEqualTo("2023-12-25T12:30:35+0000");
+    assertThat(issueDetails.getTextRange()).extracting(TextRangeDto::getStartLine, TextRangeDto::getStartLineOffset,
       TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
       .contains(1, 0, 3, 4);
-    assertThat(showIssueParams.getCodeSnippet()).isEqualTo("source\ncode\nfile");
-    assertThat(showIssueParams.getBranch()).isEqualTo(BRANCH_NAME);
-    assertThat(showIssueParams.getPullRequest()).isNull();
+    assertThat(issueDetails.getCodeSnippet()).isEqualTo("source\ncode\nfile");
+    assertThat(issueDetails.getBranch()).isEqualTo(BRANCH_NAME);
+    assertThat(issueDetails.getPullRequest()).isNull();
   }
 
   @Test
@@ -169,22 +173,25 @@ class ShowIssueMediumTests {
       .build(fakeClient);
 
     var statusCode = executeOpenIssueRequest(PR_ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, "1234");
-
     assertThat(statusCode).isEqualTo(200);
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getIssueParamsToShowByIssueKey()).containsOnlyKeys(PR_ISSUE_KEY));
-    var showIssueParams = fakeClient.getIssueParamsToShowByIssueKey().get(PR_ISSUE_KEY);
-    assertThat(showIssueParams.getIssueKey()).isEqualTo(PR_ISSUE_KEY);
-    assertThat(showIssueParams.isTaint()).isFalse();
-    assertThat(showIssueParams.getMessage()).isEqualTo("msg");
-    assertThat(showIssueParams.getConfigScopeId()).isEqualTo(configScopeId);
-    assertThat(showIssueParams.getRuleKey()).isEqualTo("ruleKey");
-    assertThat(showIssueParams.getCreationDate()).isEqualTo("2023-12-25T12:30:35+0000");
-    assertThat(showIssueParams.getTextRange()).extracting(TextRangeDto::getStartLine, TextRangeDto::getStartLineOffset,
+
+    verify(fakeClient, timeout(2000)).showIssue(any(), any());
+
+    assertThat(fakeClient.getIssueToShowByConfigScopeId()).containsOnlyKeys(configScopeId);
+    var issues = fakeClient.getIssueToShowByConfigScopeId().get(configScopeId);
+    assertThat(issues).hasSize(1);
+    var issueDetails = issues.get(0);
+    assertThat(issueDetails.getIssueKey()).isEqualTo(PR_ISSUE_KEY);
+    assertThat(issueDetails.isTaint()).isFalse();
+    assertThat(issueDetails.getMessage()).isEqualTo("msg");
+    assertThat(issueDetails.getRuleKey()).isEqualTo("ruleKey");
+    assertThat(issueDetails.getCreationDate()).isEqualTo("2023-12-25T12:30:35+0000");
+    assertThat(issueDetails.getTextRange()).extracting(TextRangeDto::getStartLine, TextRangeDto::getStartLineOffset,
       TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
       .contains(1, 0, 3, 4);
-    assertThat(showIssueParams.getCodeSnippet()).isEqualTo("source\ncode\nfile");
-    assertThat(showIssueParams.getBranch()).isEqualTo(BRANCH_NAME);
-    assertThat(showIssueParams.getPullRequest()).isEqualTo("1234");
+    assertThat(issueDetails.getCodeSnippet()).isEqualTo("source\ncode\nfile");
+    assertThat(issueDetails.getBranch()).isEqualTo(BRANCH_NAME);
+    assertThat(issueDetails.getPullRequest()).isEqualTo("1234");
   }
 
   @Test
@@ -202,20 +209,23 @@ class ShowIssueMediumTests {
       .build(fakeClient);
 
     var statusCode = executeOpenIssueRequest(FILE_LEVEL_ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
-
     assertThat(statusCode).isEqualTo(200);
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getIssueParamsToShowByIssueKey()).containsOnlyKeys(issueKey));
-    var showIssueParams = fakeClient.getIssueParamsToShowByIssueKey().get(issueKey);
-    assertThat(showIssueParams.getIssueKey()).isEqualTo(issueKey);
-    assertThat(showIssueParams.isTaint()).isFalse();
-    assertThat(showIssueParams.getMessage()).isEqualTo("msg");
-    assertThat(showIssueParams.getConfigScopeId()).isEqualTo(configScopeId);
-    assertThat(showIssueParams.getRuleKey()).isEqualTo("ruleKey");
-    assertThat(showIssueParams.getCreationDate()).isEqualTo("2023-12-25T12:30:35+0000");
-    assertThat(showIssueParams.getTextRange()).extracting(TextRangeDto::getStartLine, TextRangeDto::getStartLineOffset,
+
+    verify(fakeClient, timeout(2000)).showIssue(any(), any());
+
+    assertThat(fakeClient.getIssueToShowByConfigScopeId()).containsOnlyKeys(configScopeId);
+    var issues = fakeClient.getIssueToShowByConfigScopeId().get(configScopeId);
+    assertThat(issues).hasSize(1);
+    var issueDetails = issues.get(0);
+    assertThat(issueDetails.getIssueKey()).isEqualTo(issueKey);
+    assertThat(issueDetails.isTaint()).isFalse();
+    assertThat(issueDetails.getMessage()).isEqualTo("msg");
+    assertThat(issueDetails.getRuleKey()).isEqualTo("ruleKey");
+    assertThat(issueDetails.getCreationDate()).isEqualTo("2023-12-25T12:30:35+0000");
+    assertThat(issueDetails.getTextRange()).extracting(TextRangeDto::getStartLine, TextRangeDto::getStartLineOffset,
       TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
       .contains(0, 0, 0, 0);
-    assertThat(showIssueParams.getCodeSnippet()).isEqualTo("source\ncode\nfile\nfive\nlines");
+    assertThat(issueDetails.getCodeSnippet()).isEqualTo("source\ncode\nfile\nfive\nlines");
   }
 
   @Test
@@ -240,11 +250,8 @@ class ShowIssueMediumTests {
     var statusCode = executeOpenIssueRequest(ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
     assertThat(statusCode).isEqualTo(200);
 
-    Thread.sleep(100);
+    verify(fakeClient, timeout(2000)).showIssue(eq(CONFIG_SCOPE_ID), any());
     verify(fakeClient, never()).showMessage(any(), any());
-
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getIssueParamsToShowByIssueKey()).containsOnlyKeys(ISSUE_KEY));
-    assertThat(fakeClient.getIssueParamsToShowByIssueKey().get(ISSUE_KEY).getRuleKey()).isEqualTo(RULE_KEY);
   }
 
   @Test
@@ -268,11 +275,8 @@ class ShowIssueMediumTests {
     var statusCode = executeOpenIssueRequest(ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
     assertThat(statusCode).isEqualTo(200);
 
-    Thread.sleep(100);
+    verify(fakeClient, timeout(2000)).showIssue(eq(CONFIG_SCOPE_ID), any());
     verify(fakeClient, never()).showMessage(any(), any());
-
-    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getIssueParamsToShowByIssueKey()).containsOnlyKeys(ISSUE_KEY));
-    assertThat(fakeClient.getIssueParamsToShowByIssueKey().get(ISSUE_KEY).getRuleKey()).isEqualTo(RULE_KEY);
   }
 
   @Test

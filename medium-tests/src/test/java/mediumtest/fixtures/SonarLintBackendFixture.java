@@ -69,11 +69,10 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServer
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FoundFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordAuthenticationResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.ProxyDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.X509CertificateDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
@@ -421,8 +420,8 @@ public class SonarLintBackendFixture {
   public static class FakeSonarLintRpcClient implements SonarLintRpcClientDelegate {
     private final List<ShowSoonUnsupportedMessageParams> soonUnsupportedMessagesToShow = new ArrayList<>();
     private final List<ShowSmartNotificationParams> smartNotificationsToShow = new ArrayList<>();
-    private final Map<String, Collection<HotspotDetailsDto>> hotspotToShowByConfigScopeId = new HashMap<>();
-    private final Map<String, ShowIssueParams> issueParamsToShowByIssueKey = new HashMap<>();
+    private final Map<String, List<HotspotDetailsDto>> hotspotToShowByConfigScopeId = new HashMap<>();
+    private final Map<String, List<IssueDetailsDto>> issueToShowByConfigScopeId = new HashMap<>();
     private final Map<String, ProgressReport> progressReportsByTaskId = new ConcurrentHashMap<>();
     private final Set<String> synchronizedConfigScopeIds = new HashSet<>();
     private final Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId;
@@ -450,13 +449,13 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public void showHotspot(ShowHotspotParams params) {
-      hotspotToShowByConfigScopeId.computeIfAbsent(params.getConfigurationScopeId(), k -> new ArrayList<>()).add(params.getHotspotDetails());
+    public void showHotspot(String configurationScopeId, HotspotDetailsDto hotspotDetails) {
+      hotspotToShowByConfigScopeId.computeIfAbsent(configurationScopeId, k -> new ArrayList<>()).add(hotspotDetails);
     }
 
     @Override
-    public void showIssue(ShowIssueParams params) {
-      issueParamsToShowByIssueKey.putIfAbsent(params.getIssueKey(), params);
+    public void showIssue(String configurationScopeId, IssueDetailsDto issueDetails) {
+      issueToShowByConfigScopeId.computeIfAbsent(configurationScopeId, k -> new ArrayList<>()).add(issueDetails);
     }
 
     @Override
@@ -603,12 +602,12 @@ public class SonarLintBackendFixture {
       return smartNotificationsToShow;
     }
 
-    public Map<String, Collection<HotspotDetailsDto>> getHotspotToShowByConfigScopeId() {
+    public Map<String, List<HotspotDetailsDto>> getHotspotToShowByConfigScopeId() {
       return hotspotToShowByConfigScopeId;
     }
 
-    public Map<String, ShowIssueParams> getIssueParamsToShowByIssueKey() {
-      return issueParamsToShowByIssueKey;
+    public Map<String, List<IssueDetailsDto>> getIssueToShowByConfigScopeId() {
+      return issueToShowByConfigScopeId;
     }
 
     public Queue<LogParams> getLogs() {

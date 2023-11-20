@@ -39,10 +39,12 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServer
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityChangedOrClosedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityRaisedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FoundFileDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordAuthenticationResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.ProxyDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.X509CertificateDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
@@ -97,12 +99,12 @@ public class MockSonarLintRpcClientDelegate implements SonarLintRpcClientDelegat
   }
 
   @Override
-  public void showHotspot(ShowHotspotParams params) {
+  public void showHotspot(String configurationScopeId, HotspotDetailsDto hotspotDetails) {
 
   }
 
   @Override
-  public void showIssue(ShowIssueParams params) {
+  public void showIssue(String configurationScopeId, IssueDetailsDto issueDetails) {
 
   }
 

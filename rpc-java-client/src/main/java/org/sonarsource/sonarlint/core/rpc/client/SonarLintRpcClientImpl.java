@@ -173,12 +173,12 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   @Override
   public void showHotspot(ShowHotspotParams params) {
-    notify(() -> delegate.showHotspot(params));
+    notify(() -> delegate.showHotspot(params.getConfigurationScopeId(), params.getHotspotDetails()));
   }
 
   @Override
   public void showIssue(ShowIssueParams params) {
-    notify(() -> delegate.showIssue(params));
+    notify(() -> delegate.showIssue(params.getConfigurationScopeId(), params.getIssueDetails()));
   }
 
   @Override
