@@ -403,14 +403,8 @@ public class SonarLintBackendFixture {
   public static class SonarLintClientBuilder {
     private final LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl = new LinkedHashMap<>();
     private final LinkedHashMap<String, ConfigurationScopeDto> cannedBindingAssistByProjectKey = new LinkedHashMap<>();
-    private boolean rejectingProgress;
     private Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId = new HashMap<>();
     private boolean printLogsToStdOut;
-
-    public SonarLintClientBuilder rejectingProgress() {
-      this.rejectingProgress = true;
-      return this;
-    }
 
     public SonarLintClientBuilder withCredentials(String connectionId, String user, String password) {
       credentialsByConnectionId.put(connectionId, Either.forRight(new UsernamePasswordDto(user, password)));
@@ -429,9 +423,7 @@ public class SonarLintBackendFixture {
     }
 
     public FakeSonarLintRpcClient build() {
-      return spy(new FakeSonarLintRpcClient(cannedAssistCreatingSonarQubeConnectionByBaseUrl,
-        cannedBindingAssistByProjectKey,
-        rejectingProgress, credentialsByConnectionId, printLogsToStdOut));
+      return spy(new FakeSonarLintRpcClient(cannedAssistCreatingSonarQubeConnectionByBaseUrl, cannedBindingAssistByProjectKey, credentialsByConnectionId, printLogsToStdOut));
     }
 
     public SonarLintClientBuilder printLogsToStdOut() {
@@ -445,7 +437,6 @@ public class SonarLintBackendFixture {
     private final List<ShowSmartNotificationParams> smartNotificationsToShow = new ArrayList<>();
     private final LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl;
     private final LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey;
-    private final boolean rejectingProgress;
     private final Map<String, Collection<HotspotDetailsDto>> hotspotToShowByConfigScopeId = new HashMap<>();
     private final Map<String, ShowIssueParams> issueParamsToShowByIssueKey = new HashMap<>();
     private final Map<String, ProgressReport> progressReportsByTaskId = new ConcurrentHashMap<>();
@@ -456,12 +447,10 @@ public class SonarLintBackendFixture {
     private final Queue<LogParams> logs = new ConcurrentLinkedQueue<>();
 
     public FakeSonarLintRpcClient(LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
-      LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, boolean rejectingProgress,
-      Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId,
+      LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId,
       boolean printLogsToStdOut) {
       this.cannedAssistCreatingSonarQubeConnectionByBaseUrl = cannedAssistCreatingSonarQubeConnectionByBaseUrl;
       this.bindingAssistResponseByProjectKey = bindingAssistResponseByProjectKey;
-      this.rejectingProgress = rejectingProgress;
       this.credentialsByConnectionId = credentialsByConnectionId;
       this.printLogsToStdOut = printLogsToStdOut;
     }
@@ -518,9 +507,6 @@ public class SonarLintBackendFixture {
 
     @Override
     public void startProgress(StartProgressParams params) throws UnsupportedOperationException {
-      if (rejectingProgress) {
-        throw new UnsupportedOperationException("Failed to start progress");
-      }
       progressReportsByTaskId.put(params.getTaskId(),
         new ProgressReport(params.getConfigurationScopeId(), params.getTitle(), params.getMessage(), params.isIndeterminate(), params.isCancellable()));
     }
