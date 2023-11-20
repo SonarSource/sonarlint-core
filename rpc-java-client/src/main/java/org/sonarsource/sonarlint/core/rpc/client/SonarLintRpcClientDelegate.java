@@ -57,7 +57,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 /**
  * This is the interface that should be implemented by Java clients. We are trying to decouple from the RPC framework as much as possible,
  * but most of those methods should be pretty similar to {@link org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient}.
- * The "conversion" is made in {@link SonarLintRpcClientImpl}
+ * The "delegation" is made in {@link SonarLintRpcClientImpl}
  */
 public interface SonarLintRpcClientDelegate {
 

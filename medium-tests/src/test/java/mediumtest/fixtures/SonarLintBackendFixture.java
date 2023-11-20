@@ -50,7 +50,6 @@ import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
@@ -347,8 +346,6 @@ public class SonarLintBackendFixture {
       }
       try {
         var sonarLintBackend = createTestBackend(client);
-
-        client.setBackend(sonarLintBackend);
         var telemetryInitDto = new TelemetryConstantAttributesDto("mediumTests", "mediumTests",
           "1.2.3", "4.5.6", "linux", "x64", emptyMap());
         var clientInfo = new ClientInfoDto(clientName, userAgent, telemetryInitDto);
@@ -430,16 +427,11 @@ public class SonarLintBackendFixture {
     private final Set<String> synchronizedConfigScopeIds = new HashSet<>();
     private final Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId;
     private final boolean printLogsToStdOut;
-    private SonarLintRpcServer backend;
     private final Queue<LogParams> logs = new ConcurrentLinkedQueue<>();
 
     public FakeSonarLintRpcClient(Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId, boolean printLogsToStdOut) {
       this.credentialsByConnectionId = credentialsByConnectionId;
       this.printLogsToStdOut = printLogsToStdOut;
-    }
-
-    public void setBackend(SonarLintTestRpcServer backend) {
-      this.backend = backend;
     }
 
     @Override
