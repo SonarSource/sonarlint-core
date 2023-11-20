@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -54,10 +53,8 @@ import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientInfoDto;
@@ -401,8 +398,6 @@ public class SonarLintBackendFixture {
   }
 
   public static class SonarLintClientBuilder {
-    private final LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl = new LinkedHashMap<>();
-    private final LinkedHashMap<String, ConfigurationScopeDto> cannedBindingAssistByProjectKey = new LinkedHashMap<>();
     private Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId = new HashMap<>();
     private boolean printLogsToStdOut;
 
@@ -416,14 +411,8 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintClientBuilder assistingConnectingAndBindingToSonarQube(String scopeId, String connectionId, String baseUrl, String projectKey) {
-      this.cannedAssistCreatingSonarQubeConnectionByBaseUrl.put(baseUrl, new SonarQubeConnectionConfigurationDto(connectionId, baseUrl, true));
-      this.cannedBindingAssistByProjectKey.put(projectKey, new ConfigurationScopeDto(scopeId, null, true, scopeId, new BindingConfigurationDto(connectionId, projectKey, false)));
-      return this;
-    }
-
     public FakeSonarLintRpcClient build() {
-      return spy(new FakeSonarLintRpcClient(cannedAssistCreatingSonarQubeConnectionByBaseUrl, cannedBindingAssistByProjectKey, credentialsByConnectionId, printLogsToStdOut));
+      return spy(new FakeSonarLintRpcClient(credentialsByConnectionId, printLogsToStdOut));
     }
 
     public SonarLintClientBuilder printLogsToStdOut() {
@@ -435,8 +424,6 @@ public class SonarLintBackendFixture {
   public static class FakeSonarLintRpcClient implements SonarLintRpcClientDelegate {
     private final List<ShowSoonUnsupportedMessageParams> soonUnsupportedMessagesToShow = new ArrayList<>();
     private final List<ShowSmartNotificationParams> smartNotificationsToShow = new ArrayList<>();
-    private final LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl;
-    private final LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey;
     private final Map<String, Collection<HotspotDetailsDto>> hotspotToShowByConfigScopeId = new HashMap<>();
     private final Map<String, ShowIssueParams> issueParamsToShowByIssueKey = new HashMap<>();
     private final Map<String, ProgressReport> progressReportsByTaskId = new ConcurrentHashMap<>();
@@ -446,11 +433,7 @@ public class SonarLintBackendFixture {
     private SonarLintRpcServer backend;
     private final Queue<LogParams> logs = new ConcurrentLinkedQueue<>();
 
-    public FakeSonarLintRpcClient(LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
-      LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId,
-      boolean printLogsToStdOut) {
-      this.cannedAssistCreatingSonarQubeConnectionByBaseUrl = cannedAssistCreatingSonarQubeConnectionByBaseUrl;
-      this.bindingAssistResponseByProjectKey = bindingAssistResponseByProjectKey;
+    public FakeSonarLintRpcClient(Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId, boolean printLogsToStdOut) {
       this.credentialsByConnectionId = credentialsByConnectionId;
       this.printLogsToStdOut = printLogsToStdOut;
     }
@@ -486,23 +469,12 @@ public class SonarLintBackendFixture {
 
     @Override
     public AssistCreatingConnectionResponse assistCreatingConnection(AssistCreatingConnectionParams params, CancelChecker cancelChecker) {
-      var cannedSonarQubeConnection = cannedAssistCreatingSonarQubeConnectionByBaseUrl.remove(params.getServerUrl());
-      if (cannedSonarQubeConnection == null) {
-        throw new CancellationException();
-      }
-      backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(cannedSonarQubeConnection), emptyList()));
-      return new AssistCreatingConnectionResponse(cannedSonarQubeConnection.getConnectionId());
+      throw new CancellationException("Not stubbed in medium tests");
     }
 
     @Override
     public AssistBindingResponse assistBinding(AssistBindingParams params, CancelChecker cancelChecker) {
-      var cannedResponse = bindingAssistResponseByProjectKey.remove(params.getProjectKey());
-      if (cannedResponse == null) {
-        throw new CancellationException();
-      }
-      var scopeId = cannedResponse.getId();
-      backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(scopeId, cannedResponse.getBinding()));
-      return new AssistBindingResponse(scopeId);
+      throw new CancellationException("Not stubbed in medium tests");
     }
 
     @Override
