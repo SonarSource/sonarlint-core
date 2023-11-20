@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.rpc.protocol.client.http;
 
 import java.net.Authenticator;
 import java.net.InetAddress;
+import java.net.URL;
 
 /**
  * @see Authenticator#requestPasswordAuthentication(String, InetAddress, int, String, String, String)
@@ -33,16 +34,15 @@ public class GetProxyPasswordAuthenticationParams {
   private final String protocol;
   private final String prompt;
   private final String scheme;
+  private final URL targetHost;
 
-  private final String targetHostURL;
-
-  public GetProxyPasswordAuthenticationParams(String host, int port, String protocol, String prompt, String scheme, String targetHostURL) {
+  public GetProxyPasswordAuthenticationParams(String host, int port, String protocol, String prompt, String scheme, URL targetHost) {
     this.host = host;
     this.port = port;
     this.protocol = protocol;
     this.prompt = prompt;
     this.scheme = scheme;
-    this.targetHostURL = targetHostURL;
+    this.targetHost = targetHost;
   }
 
   public String getHost() {
@@ -65,7 +65,7 @@ public class GetProxyPasswordAuthenticationParams {
     return scheme;
   }
 
-  public String getTargetHostURL() {
-    return targetHostURL;
+  public URL getTargetHost() {
+    return targetHost;
   }
 }

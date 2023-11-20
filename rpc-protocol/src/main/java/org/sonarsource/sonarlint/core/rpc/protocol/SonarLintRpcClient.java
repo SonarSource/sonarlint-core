@@ -50,7 +50,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordA
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordAuthenticationResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.info.GetClientInfoResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.info.GetClientDescriptionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
@@ -105,11 +105,15 @@ public interface SonarLintRpcClient {
   void showSmartNotification(ShowSmartNotificationParams params);
 
   /**
-   * Ask the client to provide the dynamic information that can change during the runtime. Static information are provided during {@link SonarLintRpcServer#initialize(InitializeParams)}
-   * in {@link ClientInfoDto}
+   * Ask the client to provide its dynamic description that can change during the runtime. This is used as a complement to
+   * static information provided during {@link SonarLintRpcServer#initialize(InitializeParams)}
+   * in {@link ClientInfoDto}.
+   * For clients that support multiple instances, the description should be specific enough to identify the instance
+   * (example: Eclipse Workspace, IntelliJ flavor, ...). Still be careful to not expose sensitive data, as the content may be accessed externally.
+   * This will be used to disambiguate between multiple instances of the same client for the open issue/hotspot in IDE feature.
    */
   @JsonRequest
-  CompletableFuture<GetClientInfoResponse> getClientInfo();
+  CompletableFuture<GetClientDescriptionResponse> getClientDescription();
 
   @JsonNotification
   void showHotspot(ShowHotspotParams params);
@@ -193,9 +197,7 @@ public interface SonarLintRpcClient {
    * Called when at least one plugin has been downloaded during the full synchronization
    */
   @JsonNotification
-  default void didUpdatePlugins(DidUpdatePluginsParams params) {
-    // not implemented
-  }
+  void didUpdatePlugins(DidUpdatePluginsParams params);
 
   /**
    * Must return all file paths for the given configuration scope.

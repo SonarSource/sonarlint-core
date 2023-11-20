@@ -30,7 +30,6 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -45,7 +44,7 @@ class OpenHotspotInBrowserMediumTests {
 
   @Test
   void it_should_open_hotspot_in_sonarqube() {
-    var fakeClient = spy(newFakeClient().build());
+    var fakeClient = newFakeClient().build();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", "http://localhost:12345")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
@@ -60,7 +59,7 @@ class OpenHotspotInBrowserMediumTests {
 
   @Test
   void it_should_not_open_hotspot_if_unbound() throws InterruptedException {
-    var fakeClient = spy(newFakeClient().build());
+    var fakeClient = newFakeClient().build();
     backend = newBackend()
       .withUnboundConfigScope("scopeId")
       .build(fakeClient);

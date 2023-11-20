@@ -26,7 +26,10 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
@@ -52,7 +55,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordA
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordAuthenticationResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.info.GetClientInfoResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.info.GetClientDescriptionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
@@ -120,7 +123,13 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   @Override
   public CompletableFuture<FindFileByNamesInScopeResponse> findFileByNamesInScope(FindFileByNamesInScopeParams params) {
-    return requestAsync(cancelChecker -> new FindFileByNamesInScopeResponse(delegate.findFileByNamesInScope(params.getConfigScopeId(), params.getFilenames(), cancelChecker)));
+    return requestAsync(cancelChecker -> {
+      try {
+        return new FindFileByNamesInScopeResponse(delegate.findFileByNamesInScope(params.getConfigScopeId(), params.getFilenames(), cancelChecker));
+      } catch (ConfigScopeNotFoundException e) {
+        throw configScopeNotFoundError(params.getConfigScopeId());
+      }
+    });
   }
 
   @Override
@@ -149,8 +158,8 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   }
 
   @Override
-  public CompletableFuture<GetClientInfoResponse> getClientInfo() {
-    return requestAsync(delegate::getClientInfo);
+  public CompletableFuture<GetClientDescriptionResponse> getClientDescription() {
+    return requestAsync(cancelChecker -> new GetClientDescriptionResponse(delegate.getClientDescription()));
   }
 
   @Override
@@ -175,7 +184,13 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   @Override
   public CompletableFuture<Void> startProgress(StartProgressParams params) {
-    return runAsync(cancelChecker -> delegate.startProgress(params, cancelChecker));
+    return runAsync(cancelChecker -> {
+      try {
+        delegate.startProgress(params);
+      } catch (UnsupportedOperationException e) {
+        throw new ResponseErrorException(new ResponseError(SonarLintRpcErrorCode.PROGRESS_CREATION_FAILED, e.getMessage(), null));
+      }
+    });
   }
 
   @Override
@@ -190,7 +205,14 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   @Override
   public CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params) {
-    return requestAsync(cancelChecker -> delegate.getCredentials(params, cancelChecker));
+    return requestAsync(cancelChecker -> {
+      try {
+        return new GetCredentialsResponse(delegate.getCredentials(params.getConnectionId()));
+      } catch (ConnectionNotFoundException e) {
+        throw new ResponseErrorException(
+          new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, "Unknown connection: " + params.getConnectionId(), params.getConnectionId()));
+      }
+    });
   }
 
   @Override
@@ -200,17 +222,18 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   @Override
   public CompletableFuture<SelectProxiesResponse> selectProxies(SelectProxiesParams params) {
-    return requestAsync(cancelChecker -> delegate.selectProxies(params, cancelChecker));
+    return requestAsync(cancelChecker -> new SelectProxiesResponse(delegate.selectProxies(params.getUri())));
   }
 
   @Override
   public CompletableFuture<GetProxyPasswordAuthenticationResponse> getProxyPasswordAuthentication(GetProxyPasswordAuthenticationParams params) {
-    return requestAsync(cancelChecker -> delegate.getProxyPasswordAuthentication(params, cancelChecker));
+    return requestAsync(cancelChecker -> delegate.getProxyPasswordAuthentication(params.getHost(), params.getPort(), params.getProtocol(), params.getPrompt(), params.getScheme(),
+      params.getTargetHost()));
   }
 
   @Override
   public CompletableFuture<CheckServerTrustedResponse> checkServerTrusted(CheckServerTrustedParams params) {
-    return requestAsync(cancelChecker -> delegate.checkServerTrusted(params, cancelChecker));
+    return requestAsync(cancelChecker -> new CheckServerTrustedResponse(delegate.checkServerTrusted(params.getChain(), params.getAuthType())));
   }
 
   @Override
@@ -230,22 +253,40 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   @Override
   public CompletableFuture<MatchSonarProjectBranchResponse> matchSonarProjectBranch(MatchSonarProjectBranchParams params) {
-    return requestAsync(cancelChecker -> delegate.matchSonarProjectBranch(params, cancelChecker));
+    return requestAsync(cancelChecker -> {
+      try {
+        return new MatchSonarProjectBranchResponse(
+          delegate.matchSonarProjectBranch(params.getConfigurationScopeId(), params.getMainSonarBranchName(), params.getAllSonarBranchesNames(), cancelChecker));
+      } catch (ConfigScopeNotFoundException e) {
+        throw configScopeNotFoundError(params.getConfigurationScopeId());
+      }
+    });
   }
 
   @Override
   public void didChangeMatchedSonarProjectBranch(DidChangeMatchedSonarProjectBranchParams params) {
-    notify(() -> delegate.didChangeMatchedSonarProjectBranch(params));
+    notify(() -> delegate.didChangeMatchedSonarProjectBranch(params.getConfigScopeId(), params.getNewMatchedBranchName()));
   }
 
   @Override
   public void didUpdatePlugins(DidUpdatePluginsParams params) {
-    notify(() -> delegate.didUpdatePlugins(params));
+    notify(() -> delegate.didUpdatePlugins(params.getConnectionId()));
   }
 
   @Override
   public CompletableFuture<ListAllFilePathsResponse> listAllFilePaths(ListAllFilePathsParams params) {
-    return requestAsync(cancelChecker -> delegate.listAllFilePaths(params));
+    return requestAsync(cancelChecker -> {
+      try {
+        return new ListAllFilePathsResponse(delegate.listAllFilePaths(params.getConfigurationScopeId()));
+      } catch (ConfigScopeNotFoundException e) {
+        throw configScopeNotFoundError(params.getConfigurationScopeId());
+      }
+    });
+  }
+
+  private static ResponseErrorException configScopeNotFoundError(String configScopeId) {
+    return new ResponseErrorException(
+      new ResponseError(SonarLintRpcErrorCode.CONFIG_SCOPE_NOT_FOUND, "Unknown config scope: " + configScopeId, configScopeId));
   }
 
   private class CancelCheckerWrapper implements CancelChecker {

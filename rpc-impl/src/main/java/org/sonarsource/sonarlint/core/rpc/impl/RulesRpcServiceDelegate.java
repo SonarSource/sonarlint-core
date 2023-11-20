@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.BackendErrorCode;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetStandaloneRuleDescriptionParams;
@@ -46,7 +46,7 @@ class RulesRpcServiceDelegate extends AbstractRpcServiceDelegate implements Rule
         return new GetEffectiveRuleDetailsResponse(
           getBean(RulesService.class).getEffectiveRuleDetails(params.getConfigurationScopeId(), params.getRuleKey(), params.getContextKey()));
       } catch (RuleNotFoundException e) {
-        ResponseError error = new ResponseError(BackendErrorCode.RULE_NOT_FOUND, e.getMessage(), e.getRuleKey());
+        ResponseError error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, e.getMessage(), e.getRuleKey());
         throw new ResponseErrorException(error);
       }
     }, params.getConfigurationScopeId());

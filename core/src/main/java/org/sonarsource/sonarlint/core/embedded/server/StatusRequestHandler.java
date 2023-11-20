@@ -76,7 +76,7 @@ public class StatusRequestHandler implements HttpRequestHandler {
   private String getDescription(boolean trustedServer) {
     if (trustedServer) {
       try {
-        var getClientInfoResponse = client.getClientInfo().get(1, TimeUnit.SECONDS);
+        var getClientInfoResponse = client.getClientDescription().get(1, TimeUnit.SECONDS);
         return getClientInfoResponse.getDescription();
       } catch (InterruptedException e) {
         throw new RuntimeException(e);

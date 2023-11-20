@@ -19,15 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.info;
 
-public class GetClientInfoResponse {
+public class GetClientDescriptionResponse {
 
-  /**
-   * The description of the client. For clients that support multiple instances, the description should be specific enough to identify the instance
-   * (example: Eclipse Workspace, IntelliJ flavor, ...). Still be careful to not expose sensitive data, as the content may be accessed externally.
-   */
   private final String description;
 
-  public GetClientInfoResponse(String description) {
+  public GetClientDescriptionResponse(String description) {
     this.description = description;
   }
 

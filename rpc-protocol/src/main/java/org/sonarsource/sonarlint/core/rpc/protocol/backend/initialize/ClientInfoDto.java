@@ -24,7 +24,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryConstantAttributesDto;
 
 /**
- * Static information to describe the client. Dynamic information will be provided when needed by calling {@link SonarLintRpcClient#getClientInfo()}
+ * Static information to describe the client. Dynamic information will be provided when needed by calling {@link SonarLintRpcClient#getClientDescription()}
  */
 public class ClientInfoDto {
   /**

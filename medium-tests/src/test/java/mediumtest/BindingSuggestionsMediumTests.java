@@ -29,6 +29,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
+import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetBindingSuggestionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
@@ -52,7 +53,6 @@ import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -79,7 +79,7 @@ class BindingSuggestionsMediumTests {
 
   @Test
   void test_connection_added_should_suggest_binding_with_no_matches() {
-    var fakeClient = spy(newFakeClient().build());
+    var fakeClient = newFakeClient().build();
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID, "My Project 1")
       .build(fakeClient);
@@ -98,7 +98,7 @@ class BindingSuggestionsMediumTests {
 
   @Test
   void test_connection_added_should_suggest_binding_with_matches() {
-    var fakeClient = spy(newFakeClient().build());
+    var fakeClient = newFakeClient().build();
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID, "sonarlint-core")
       .build(fakeClient);
@@ -128,7 +128,7 @@ class BindingSuggestionsMediumTests {
 
   @Test
   void test_project_added_should_suggest_binding_with_matches() {
-    var fakeClient = spy(newFakeClient().build());
+    var fakeClient = newFakeClient().build();
     backend = newBackend()
       .withSonarQubeConnection(MYSONAR, sonarqubeMock.baseUrl())
       .build(fakeClient);
@@ -159,9 +159,8 @@ class BindingSuggestionsMediumTests {
   }
 
   @Test
-  void test_uses_binding_clues() {
-    var fakeClient = spy(newFakeClient()
-      .build());
+  void test_uses_binding_clues() throws ConfigScopeNotFoundException {
+    var fakeClient = newFakeClient().build();
 
     when(fakeClient.findFileByNamesInScope(eq(CONFIG_SCOPE_ID), argThat(files -> files.contains("sonar-project.properties")), any()))
       .thenReturn(List.of(new FoundFileDto("sonar-project.properties", "/home/user/Project/sonar-project.properties",
@@ -198,7 +197,7 @@ class BindingSuggestionsMediumTests {
 
   @Test
   void test_binding_suggestion_via_service() throws ExecutionException, InterruptedException {
-    var fakeClient = spy(newFakeClient().build());
+    var fakeClient = newFakeClient().build();
     backend = newBackend()
       .withSonarQubeConnection(MYSONAR, sonarqubeMock.baseUrl())
       .build(fakeClient);

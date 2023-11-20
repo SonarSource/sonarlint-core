@@ -32,7 +32,6 @@ import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
@@ -41,9 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
@@ -114,7 +111,7 @@ class OpenHotspotInIdeMediumTests {
 
   @Test
   void it_should_open_hotspot_in_ide_when_project_bound() throws InterruptedException {
-    var fakeClient = spy(newFakeClient().build());
+    var fakeClient = newFakeClient().build();
     backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, serverWithHotspot)
       .withBoundConfigScope("scopeId", CONNECTION_ID, "projectKey")
@@ -145,10 +142,9 @@ class OpenHotspotInIdeMediumTests {
     requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
 
     await().atMost(2, TimeUnit.SECONDS)
-      .untilAsserted(() ->
-        assertThat(backend.telemetryFilePath())
-          .content().asBase64Decoded().asString()
-          .contains("\"showHotspotRequestsCount\":1"));
+      .untilAsserted(() -> assertThat(backend.telemetryFilePath())
+        .content().asBase64Decoded().asString()
+        .contains("\"showHotspotRequestsCount\":1"));
   }
 
   @Test

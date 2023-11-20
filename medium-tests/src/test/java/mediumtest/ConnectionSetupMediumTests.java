@@ -42,7 +42,6 @@ import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -58,7 +57,7 @@ class ConnectionSetupMediumTests {
 
   @Test
   void it_should_open_the_security_url_for_sonarcloud() {
-    var fakeClient = spy(newFakeClient().build());
+    var fakeClient = newFakeClient().build();
     backend = newBackend().build(fakeClient);
 
     var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams("https://sonarcloud.io", true));
@@ -72,7 +71,7 @@ class ConnectionSetupMediumTests {
 
   @Test
   void it_should_open_the_security_url_for_sonarqube_older_than_9_7() {
-    var fakeClient = spy(newFakeClient().build());
+    var fakeClient = newFakeClient().build();
     backend = newBackend().build(fakeClient);
     server = newSonarQubeServer("9.6").start();
 
@@ -88,7 +87,7 @@ class ConnectionSetupMediumTests {
 
   @Test
   void it_should_open_the_sonarlint_auth_url_for_sonarqube_9_7_plus() throws IOException, InterruptedException {
-    var fakeClient = spy(newFakeClient().build());
+    var fakeClient = newFakeClient().build();
     server = newSonarQubeServer("9.7").start();
     backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", server).build(fakeClient);
 
@@ -112,7 +111,7 @@ class ConnectionSetupMediumTests {
 
   @Test
   void it_should_reject_tokens_from_missing_origin() throws IOException, InterruptedException {
-    var fakeClient = spy(newFakeClient().build());
+    var fakeClient = newFakeClient().build();
     server = newSonarQubeServer("9.7").start();
     backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", server).build(fakeClient);
 
@@ -130,7 +129,7 @@ class ConnectionSetupMediumTests {
 
   @Test
   void it_should_reject_tokens_from_unexpected_origin() throws IOException, InterruptedException {
-    var fakeClient = spy(newFakeClient().build());
+    var fakeClient = newFakeClient().build();
     server = newSonarQubeServer("9.7").start();
     backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", server).build(fakeClient);
 
@@ -149,7 +148,7 @@ class ConnectionSetupMediumTests {
 
   @Test
   void it_should_open_the_sonarlint_auth_url_without_port_for_sonarqube_9_7_plus_when_server_is_not_started() {
-    var fakeClient = spy(newFakeClient().build());
+    var fakeClient = newFakeClient().build();
     backend = newBackend().withClientName("ClientName").build(fakeClient);
     server = newSonarQubeServer("9.7").start();
 

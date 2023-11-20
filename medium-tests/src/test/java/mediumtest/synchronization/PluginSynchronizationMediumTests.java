@@ -44,6 +44,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.InstanceOfAssertFactories.MAP;
 import static org.awaitility.Awaitility.waitAtMost;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 
 class PluginSynchronizationMediumTests {
@@ -86,10 +88,8 @@ class PluginSynchronizationMediumTests {
       .withFullSynchronization()
       .build(client);
 
-    waitAtMost(3, SECONDS).untilAsserted(() -> {
-      assertThat(getPluginsStorageFolder()).isNotEmptyDirectory();
-      assertThat(client.getConnectionsWhichUpdatedPlugins()).containsExactly("connectionId");
-    });
+    waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(getPluginsStorageFolder()).isNotEmptyDirectory());
+    verify(client, timeout(100)).didUpdatePlugins("connectionId");
   }
 
   @Test
