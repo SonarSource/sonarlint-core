@@ -67,7 +67,7 @@ public class MockSonarLintRpcClientDelegate implements SonarLintRpcClientDelegat
   }
 
   @Override
-  public void openUrlInBrowser(String url) {
+  public void openUrlInBrowser(URL url) {
 
   }
 

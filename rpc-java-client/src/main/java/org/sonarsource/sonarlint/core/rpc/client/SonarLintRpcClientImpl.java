@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.rpc.client;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -28,6 +30,7 @@ import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
@@ -134,7 +137,13 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   @Override
   public void openUrlInBrowser(OpenUrlInBrowserParams params) {
-    notify(() -> delegate.openUrlInBrowser(params.getUrl()));
+    notify(() -> {
+      try {
+        delegate.openUrlInBrowser(new URL(params.getUrl()));
+      } catch (MalformedURLException e) {
+        throw new ResponseErrorException(new ResponseError(ResponseErrorCode.InvalidParams, "Not a valid URL: " + params.getUrl(), params.getUrl()));
+      }
+    });
   }
 
   @Override

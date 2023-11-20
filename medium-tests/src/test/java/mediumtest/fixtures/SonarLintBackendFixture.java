@@ -559,7 +559,7 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public void openUrlInBrowser(String url) {
+    public void openUrlInBrowser(URL url) {
 
     }
 

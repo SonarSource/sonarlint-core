@@ -19,6 +19,8 @@
  */
 package mediumtest;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
@@ -28,6 +30,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.OpenHotspotIn
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
@@ -43,7 +46,7 @@ class OpenHotspotInBrowserMediumTests {
   }
 
   @Test
-  void it_should_open_hotspot_in_sonarqube() {
+  void it_should_open_hotspot_in_sonarqube() throws MalformedURLException {
     var fakeClient = newFakeClient().build();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", "http://localhost:12345")
@@ -52,7 +55,7 @@ class OpenHotspotInBrowserMediumTests {
 
     this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "master", "ab12ef45"));
 
-    verify(fakeClient, timeout(5000)).openUrlInBrowser("http://localhost:12345/security_hotspots?id=projectKey&branch=master&hotspots=ab12ef45");
+    verify(fakeClient, timeout(5000)).openUrlInBrowser(new URL("http://localhost:12345/security_hotspots?id=projectKey&branch=master&hotspots=ab12ef45"));
 
     assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"openHotspotInBrowserCount\":1");
   }
@@ -68,7 +71,7 @@ class OpenHotspotInBrowserMediumTests {
 
     Thread.sleep(100);
 
-    verify(fakeClient, never()).openUrlInBrowser(anyString());
+    verify(fakeClient, never()).openUrlInBrowser(any());
   }
 
 }

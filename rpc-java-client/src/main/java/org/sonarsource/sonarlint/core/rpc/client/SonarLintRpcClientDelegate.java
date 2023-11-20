@@ -65,7 +65,7 @@ public interface SonarLintRpcClientDelegate {
 
   List<FoundFileDto> findFileByNamesInScope(String configScopeId, List<String> filenames, CancelChecker cancelChecker) throws ConfigScopeNotFoundException;
 
-  void openUrlInBrowser(String url);
+  void openUrlInBrowser(URL url);
 
   /**
    * Display a message to the user, usually in a small notification.

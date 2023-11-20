@@ -137,7 +137,7 @@ class SloopLauncherTests {
     }
 
     @Override
-    public void openUrlInBrowser(String url) {
+    public void openUrlInBrowser(URL url) {
 
     }
 
