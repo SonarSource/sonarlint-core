@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Set;
@@ -84,9 +85,9 @@ public class TelemetryService {
   }
 
   private void upload() {
-    var clientTelemetryPayload = getTelemetryLiveAttributes();
-    if (Objects.nonNull(clientTelemetryPayload)) {
-      telemetryManager.uploadLazily(clientTelemetryPayload);
+    var telemetryLiveAttributes = getTelemetryLiveAttributes();
+    if (Objects.nonNull(telemetryLiveAttributes)) {
+      telemetryManager.uploadLazily(telemetryLiveAttributes);
     }
   }
 
@@ -95,16 +96,16 @@ public class TelemetryService {
   }
 
   public void enableTelemetry() {
-    var clientTelemetryPayload = getTelemetryLiveAttributes();
-    if (Objects.nonNull(clientTelemetryPayload)) {
-      telemetryManager.enable(clientTelemetryPayload);
+    var telemetryLiveAttributes = getTelemetryLiveAttributes();
+    if (Objects.nonNull(telemetryLiveAttributes)) {
+      telemetryManager.enable(telemetryLiveAttributes);
     }
   }
 
   public void disableTelemetry() {
-    var clientTelemetryPayload = getTelemetryLiveAttributes();
-    if (Objects.nonNull(clientTelemetryPayload)) {
-      telemetryManager.disable(clientTelemetryPayload);
+    var telemetryLiveAttributes = getTelemetryLiveAttributes();
+    if (Objects.nonNull(telemetryLiveAttributes)) {
+      telemetryManager.disable(telemetryLiveAttributes);
     }
   }
 
@@ -231,31 +232,10 @@ public class TelemetryService {
     }
   }
 
-  public void stop() {
-    var clientTelemetryPayload = getTelemetryLiveAttributes();
-    if (Objects.nonNull(clientTelemetryPayload)) {
-      telemetryManager.uploadLazily(clientTelemetryPayload);
-    }
-    stopTelemetryScheduledExecutor();
-  }
-
   @PreDestroy
   public void close() {
-    if (Objects.nonNull(scheduledExecutor)) {
-      stopTelemetryScheduledExecutor();
+    if ((!MoreExecutors.shutdownAndAwaitTermination(scheduledExecutor, 1, TimeUnit.SECONDS)) && (InternalDebug.isEnabled())) {
+      LOG.error("Failed to stop telemetry executor");
     }
   }
-
-  private void stopTelemetryScheduledExecutor() {
-    try {
-      scheduledExecutor.shutdown();
-      scheduledExecutor.awaitTermination(5, TimeUnit.SECONDS);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      if (InternalDebug.isEnabled()) {
-        LOG.error("Failed to stop telemetry executor", e);
-      }
-    }
-  }
-
 }

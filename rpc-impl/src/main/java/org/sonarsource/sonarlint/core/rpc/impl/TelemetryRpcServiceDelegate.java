@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddQuickFixAppliedForRule;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddQuickFixAppliedForRuleParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddReportedRulesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
@@ -81,17 +81,12 @@ class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements 
   }
 
   @Override
-  public void addQuickFixAppliedForRule(AddQuickFixAppliedForRule params) {
+  public void addQuickFixAppliedForRule(AddQuickFixAppliedForRuleParams params) {
     notify(() -> getBean(TelemetryService.class).addQuickFixAppliedForRule(params.getRuleKey()));
   }
 
   @Override
   public void helpAndFeedbackLinkClicked(HelpAndFeedbackClickedParams params) {
     notify(() -> getBean(TelemetryService.class).helpAndFeedbackLinkClicked(params));
-  }
-
-  @Override
-  public void stop() {
-    notify(() -> getBean(TelemetryService.class).stop());
   }
 }

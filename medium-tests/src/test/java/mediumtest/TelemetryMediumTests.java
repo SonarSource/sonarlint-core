@@ -30,7 +30,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.OpenHotspotInBrowserParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddQuickFixAppliedForRule;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddQuickFixAppliedForRuleParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddReportedRulesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
@@ -112,7 +112,7 @@ class TelemetryMediumTests {
   }
 
   @Test
-  void it_should_create_telemetry_file_if_telemetry_enabled() throws ExecutionException, InterruptedException {
+  void it_should_create_telemetry_file_if_telemetry_enabled() {
     System.clearProperty("sonarlint.telemetry.disabled");
     System.setProperty("sonarlint.internal.telemetry.initialDelay", "0");
 
@@ -280,38 +280,6 @@ class TelemetryMediumTests {
   }
 
   @Test
-  void stop_should_trigger_upload_once_per_day() throws ExecutionException, InterruptedException {
-    System.setProperty("sonarlint.internal.telemetry.initialDelay", "0");
-    System.clearProperty("sonarlint.internal.telemetry.initialDelay");
-
-    var fakeClient = spy(newFakeClient().build());
-    when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap()));
-
-    backend = newBackend()
-      .withSonarQubeConnection("connectionId")
-      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .build(fakeClient);
-
-    assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isTrue();
-
-    backend.getTelemetryService().stop();
-    backend.getTelemetryService().stop();
-
-    await().untilAsserted(() -> telemetryEndpointMock.verify(1, postRequestedFor(urlEqualTo("/sonarlint-telemetry"))
-      .withRequestBody(equalToJson("{\n" +
-        "  \"sonarlint_version\" : \"1.2.3\",\n" +
-        "  \"sonarlint_product\" : \"mediumTests\",\n" +
-        "  \"ide_version\" : \"4.5.6\",\n" +
-        "  \"platform\" : \"linux\",\n" +
-        "  \"architecture\" : \"x64\",\n" +
-        "  \"connected_mode_used\" : true,\n" +
-        "  \"connected_mode_sonarcloud\" : false\n" +
-        "}", true, true))));
-
-    System.clearProperty("sonarlint.internal.telemetry.initialDelay");
-  }
-
-  @Test
   void it_should_accumulate_investigated_taint_vulnerabilities() {
     setupClientAndBackend();
 
@@ -354,7 +322,7 @@ class TelemetryMediumTests {
   void it_should_record_addQuickFixAppliedForRule() {
     setupClientAndBackend();
 
-    backend.getTelemetryService().addQuickFixAppliedForRule(new AddQuickFixAppliedForRule("ruleKey"));
+    backend.getTelemetryService().addQuickFixAppliedForRule(new AddQuickFixAppliedForRuleParams("ruleKey"));
     await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"quickFixesApplied\":[\"ruleKey\"]"));
   }
 

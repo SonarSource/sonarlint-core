@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddQuickFixAppliedForRule;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddQuickFixAppliedForRuleParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddReportedRulesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
@@ -60,11 +60,8 @@ public interface TelemetryRpcService {
   void addReportedRules(AddReportedRulesParams params);
 
   @JsonNotification
-  void addQuickFixAppliedForRule(AddQuickFixAppliedForRule params);
+  void addQuickFixAppliedForRule(AddQuickFixAppliedForRuleParams params);
 
   @JsonNotification
   void helpAndFeedbackLinkClicked(HelpAndFeedbackClickedParams params);
-
-  @JsonNotification
-  void stop();
 }

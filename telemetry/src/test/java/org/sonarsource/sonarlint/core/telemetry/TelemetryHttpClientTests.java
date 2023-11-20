@@ -62,8 +62,8 @@ class TelemetryHttpClientTests {
     sonarqubeMock.stubFor(delete("/")
       .willReturn(aResponse()));
 
-    var telemetryPayload = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
-    underTest.optOut(new TelemetryLocalStorage(), telemetryPayload);
+    var telemetryLiveAttributesResponse = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+    underTest.optOut(new TelemetryLocalStorage(), telemetryLiveAttributesResponse);
 
     sonarqubeMock.verify(deleteRequestedFor(urlEqualTo("/"))
       .withRequestBody(
@@ -77,8 +77,8 @@ class TelemetryHttpClientTests {
     sonarqubeMock.stubFor(post("/")
       .willReturn(aResponse()));
 
-    var telemetryPayload = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
-    underTest.upload(new TelemetryLocalStorage(), telemetryPayload);
+    var telemetryLiveAttributesResponse = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+    underTest.upload(new TelemetryLocalStorage(), telemetryLiveAttributesResponse);
 
     sonarqubeMock.verify(postRequestedFor(urlEqualTo("/"))
       .withRequestBody(
@@ -92,8 +92,8 @@ class TelemetryHttpClientTests {
     sonarqubeMock.stubFor(post("/")
       .willReturn(aResponse().withStatus(500)));
 
-    var telemetryPayload = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
-    underTest.upload(new TelemetryLocalStorage(), telemetryPayload);
+    var telemetryLiveAttributesResponse = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+    underTest.upload(new TelemetryLocalStorage(), telemetryLiveAttributesResponse);
 
     sonarqubeMock.verify(postRequestedFor(urlEqualTo("/")));
   }
@@ -103,8 +103,8 @@ class TelemetryHttpClientTests {
     sonarqubeMock.stubFor(delete("/")
       .willReturn(aResponse().withStatus(500)));
 
-    var telemetryPayload = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
-    underTest.optOut(new TelemetryLocalStorage(), telemetryPayload);
+    var telemetryLiveAttributesResponse = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+    underTest.optOut(new TelemetryLocalStorage(), telemetryLiveAttributesResponse);
 
     sonarqubeMock.verify(deleteRequestedFor(urlEqualTo("/")));
   }
@@ -113,8 +113,8 @@ class TelemetryHttpClientTests {
   void failed_upload_should_log_if_debug() {
     InternalDebug.setEnabled(true);
 
-    var telemetryPayload = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
-    underTest.upload(new TelemetryLocalStorage(), telemetryPayload);
+    var telemetryLiveAttributesResponse = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+    underTest.upload(new TelemetryLocalStorage(), telemetryLiveAttributesResponse);
 
     assertThat(logTester.logs(Level.ERROR)).anyMatch(l -> l.matches("Failed to upload telemetry data: .*404.*"));
   }
@@ -123,8 +123,8 @@ class TelemetryHttpClientTests {
   void failed_optout_should_log_if_debug() {
     InternalDebug.setEnabled(true);
 
-    var telemetryPayload = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
-    underTest.optOut(new TelemetryLocalStorage(), telemetryPayload);
+    var telemetryLiveAttributesResponse = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+    underTest.optOut(new TelemetryLocalStorage(), telemetryLiveAttributesResponse);
 
     assertThat(logTester.logs(Level.ERROR)).anyMatch(l -> l.matches("Failed to upload telemetry opt-out: .*404.*"));
   }

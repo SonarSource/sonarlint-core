@@ -19,10 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
 
-public class AddQuickFixAppliedForRule {
+public class AddQuickFixAppliedForRuleParams {
   private final String ruleKey;
 
-  public AddQuickFixAppliedForRule(String ruleKey) {
+  public AddQuickFixAppliedForRuleParams(String ruleKey) {
     this.ruleKey = ruleKey;
   }
 
