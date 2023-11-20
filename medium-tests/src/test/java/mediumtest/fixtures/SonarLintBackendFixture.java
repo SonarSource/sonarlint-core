@@ -401,17 +401,11 @@ public class SonarLintBackendFixture {
   }
 
   public static class SonarLintClientBuilder {
-    private String clientDescription = "";
     private final LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl = new LinkedHashMap<>();
     private final LinkedHashMap<String, ConfigurationScopeDto> cannedBindingAssistByProjectKey = new LinkedHashMap<>();
     private boolean rejectingProgress;
     private Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId = new HashMap<>();
     private boolean printLogsToStdOut;
-
-    public SonarLintClientBuilder withClientDescription(String clientDescription) {
-      this.clientDescription = clientDescription;
-      return this;
-    }
 
     public SonarLintClientBuilder rejectingProgress() {
       this.rejectingProgress = true;
@@ -435,7 +429,7 @@ public class SonarLintBackendFixture {
     }
 
     public FakeSonarLintRpcClient build() {
-      return spy(new FakeSonarLintRpcClient(clientDescription, cannedAssistCreatingSonarQubeConnectionByBaseUrl,
+      return spy(new FakeSonarLintRpcClient(cannedAssistCreatingSonarQubeConnectionByBaseUrl,
         cannedBindingAssistByProjectKey,
         rejectingProgress, credentialsByConnectionId, printLogsToStdOut));
     }
@@ -449,7 +443,6 @@ public class SonarLintBackendFixture {
   public static class FakeSonarLintRpcClient implements SonarLintRpcClientDelegate {
     private final List<ShowSoonUnsupportedMessageParams> soonUnsupportedMessagesToShow = new ArrayList<>();
     private final List<ShowSmartNotificationParams> smartNotificationsToShow = new ArrayList<>();
-    private final String clientDescription;
     private final LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl;
     private final LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey;
     private final boolean rejectingProgress;
@@ -462,12 +455,10 @@ public class SonarLintBackendFixture {
     private SonarLintRpcServer backend;
     private final Queue<LogParams> logs = new ConcurrentLinkedQueue<>();
 
-    public FakeSonarLintRpcClient(String clientDescription,
-      LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
+    public FakeSonarLintRpcClient(LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
       LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, boolean rejectingProgress,
       Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId,
       boolean printLogsToStdOut) {
-      this.clientDescription = clientDescription;
       this.cannedAssistCreatingSonarQubeConnectionByBaseUrl = cannedAssistCreatingSonarQubeConnectionByBaseUrl;
       this.bindingAssistResponseByProjectKey = bindingAssistResponseByProjectKey;
       this.rejectingProgress = rejectingProgress;
@@ -491,7 +482,7 @@ public class SonarLintBackendFixture {
 
     @Override
     public String getClientDescription() {
-      return clientDescription;
+      return "";
     }
 
     @Override

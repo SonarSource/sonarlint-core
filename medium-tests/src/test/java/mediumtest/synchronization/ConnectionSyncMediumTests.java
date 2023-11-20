@@ -34,6 +34,7 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 
 class ConnectionSyncMediumTests {
@@ -49,9 +50,10 @@ class ConnectionSyncMediumTests {
   @Test
   void it_should_cache_extracted_rule_metadata_per_connection() {
     var client = newFakeClient()
-      .withClientDescription(this.getClass().getName())
       .withCredentials("connectionId", "user", "pw")
       .build();
+    when(client.getClientDescription()).thenReturn(this.getClass().getName());
+
     backend = newBackend()
       .withSonarQubeConnection("connectionId", storage -> storage.withPlugin(TestPlugin.JAVA))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
@@ -75,9 +77,10 @@ class ConnectionSyncMediumTests {
   @Test
   void it_should_evict_cache_when_connection_is_removed() {
     var client = newFakeClient()
-      .withClientDescription(this.getClass().getName())
       .withCredentials("connectionId", "user", "pw")
       .build();
+    when(client.getClientDescription()).thenReturn(this.getClass().getName());
+
     backend = newBackend()
       .withSonarQubeConnection("connectionId", storage -> storage.withPlugin(TestPlugin.JAVA))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
