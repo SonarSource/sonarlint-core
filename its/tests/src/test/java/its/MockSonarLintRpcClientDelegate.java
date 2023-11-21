@@ -53,6 +53,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgres
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
@@ -185,5 +186,11 @@ public class MockSonarLintRpcClientDelegate implements SonarLintRpcClientDelegat
   @Override
   public List<String> listAllFilePaths(String configurationScopeId) throws ConfigScopeNotFoundException {
     return List.of();
+  }
+
+  @Override
+  public TelemetryLiveAttributesResponse getTelemetryLiveAttributes() {
+    System.err.println("Telemetry should be disabled in ITs");
+    throw new CancellationException("Telemetry should be disabled in ITs");
   }
 }

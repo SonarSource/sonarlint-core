@@ -52,7 +52,6 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 class TelemetryMediumTests {
@@ -127,7 +126,6 @@ class TelemetryMediumTests {
     this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "master", "ab12ef45"));
     await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).isNotEmptyFile());
 
-
     await().untilAsserted(() -> telemetryEndpointMock.verify(postRequestedFor(urlEqualTo("/sonarlint-telemetry"))
       .withRequestBody(equalToJson("{\n" +
         "  \"sonarlint_version\" : \"1.2.3\",\n" +
@@ -164,7 +162,7 @@ class TelemetryMediumTests {
   void it_should_ping_telemetry_endpoint() throws ExecutionException, InterruptedException {
     System.setProperty("sonarlint.internal.telemetry.initialDelay", "0");
     System.clearProperty("sonarlint.telemetry.disabled");
-    var fakeClient = spy(newFakeClient().build());
+    var fakeClient = newFakeClient().build();
     when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap()));
 
     backend = newBackend()
@@ -191,7 +189,7 @@ class TelemetryMediumTests {
   void it_should_disable_telemetry() throws ExecutionException, InterruptedException {
     System.setProperty("sonarlint.internal.telemetry.initialDelay", "0");
 
-    var fakeClient = spy(newFakeClient().build());
+    var fakeClient = newFakeClient().build();
     when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap()));
 
     backend = newBackend()
@@ -222,7 +220,7 @@ class TelemetryMediumTests {
   void it_should_enable_disabled_telemetry() throws ExecutionException, InterruptedException {
     System.setProperty("sonarlint.internal.telemetry.initialDelay", "0");
 
-    var fakeClient = spy(newFakeClient().build());
+    var fakeClient = newFakeClient().build();
     when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap()));
 
     backend = newBackend()
@@ -240,7 +238,7 @@ class TelemetryMediumTests {
 
   @Test
   void it_should_not_crash_when_cannot_build_payload() {
-    var fakeClient = spy(newFakeClient().build());
+    var fakeClient = newFakeClient().build();
     when(fakeClient.getTelemetryLiveAttributes()).thenThrow(new IllegalStateException("Unexpected error"));
     backend = newBackend()
       .withSonarQubeConnection("connectionId")
@@ -255,7 +253,7 @@ class TelemetryMediumTests {
     var originalValue = InternalDebug.isEnabled();
     InternalDebug.setEnabled(true);
 
-    var fakeClient = spy(newFakeClient().build());
+    var fakeClient = newFakeClient().build();
     when(fakeClient.getTelemetryLiveAttributes()).thenThrow(new IllegalStateException("Unexpected error"));
     backend = newBackend()
       .withSonarQubeConnection("connectionId")
@@ -302,11 +300,11 @@ class TelemetryMediumTests {
 
     backend.getTelemetryService().devNotificationsClicked(new DevNotificationsClickedParams(notificationEvent));
     await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"notificationsCountersByEventType" +
-      "\":{\""+ notificationEvent + "\":{\"devNotificationsCount\":0,\"devNotificationsClicked\":1}}"));
+      "\":{\"" + notificationEvent + "\":{\"devNotificationsCount\":0,\"devNotificationsClicked\":1}}"));
 
     backend.getTelemetryService().devNotificationsClicked(new DevNotificationsClickedParams(notificationEvent));
     await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"notificationsCountersByEventType" +
-      "\":{\""+ notificationEvent + "\":{\"devNotificationsCount\":0,\"devNotificationsClicked\":2}}"));
+      "\":{\"" + notificationEvent + "\":{\"devNotificationsCount\":0,\"devNotificationsClicked\":2}}"));
   }
 
   @Test
@@ -327,7 +325,7 @@ class TelemetryMediumTests {
   }
 
   @Test
-  void it_should_record_addReportedRules(){
+  void it_should_record_addReportedRules() {
     setupClientAndBackend();
 
     backend.getTelemetryService().addReportedRules(new AddReportedRulesParams(Set.of("ruleA")));
@@ -335,7 +333,7 @@ class TelemetryMediumTests {
   }
 
   @Test
-  void it_should_record_taintVulnerabilitiesInvestigatedRemotely(){
+  void it_should_record_taintVulnerabilitiesInvestigatedRemotely() {
     setupClientAndBackend();
 
     backend.getTelemetryService().taintVulnerabilitiesInvestigatedRemotely();
@@ -343,7 +341,7 @@ class TelemetryMediumTests {
   }
 
   @Test
-  void it_should_record_taintVulnerabilitiesInvestigatedLocally(){
+  void it_should_record_taintVulnerabilitiesInvestigatedLocally() {
     setupClientAndBackend();
 
     backend.getTelemetryService().taintVulnerabilitiesInvestigatedLocally();
@@ -351,7 +349,7 @@ class TelemetryMediumTests {
   }
 
   @Test
-  void it_should_record_analysisDoneOnSingleLanguage(){
+  void it_should_record_analysisDoneOnSingleLanguage() {
     setupClientAndBackend();
 
     backend.getTelemetryService().analysisDoneOnSingleLanguage(new AnalysisDoneOnSingleLanguageParams(Language.JAVA, 1000));
@@ -360,7 +358,7 @@ class TelemetryMediumTests {
   }
 
   @Test
-  void it_should_record_analysisDoneOnMultipleFiles(){
+  void it_should_record_analysisDoneOnMultipleFiles() {
     setupClientAndBackend();
 
     backend.getTelemetryService().analysisDoneOnMultipleFiles();
@@ -368,7 +366,7 @@ class TelemetryMediumTests {
   }
 
   private void setupClientAndBackend() {
-    var fakeClient = spy(newFakeClient().build());
+    var fakeClient = newFakeClient().build();
 
     backend = newBackend()
       .withSonarQubeConnection("connectionId")

@@ -70,6 +70,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgress
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryConstantAttributesDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
@@ -257,5 +258,10 @@ class SloopLauncherTests {
       return List.of();
     }
 
+    @Override
+    public TelemetryLiveAttributesResponse getTelemetryLiveAttributes() {
+      System.err.println("Telemetry should be disabled in tests");
+      throw new CancellationException("Telemetry should be disabled in tests");
+    }
   }
 }

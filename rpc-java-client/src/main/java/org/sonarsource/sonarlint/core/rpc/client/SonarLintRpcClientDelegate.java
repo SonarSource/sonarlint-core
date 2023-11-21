@@ -162,7 +162,5 @@ public interface SonarLintRpcClientDelegate {
 
   List<String> listAllFilePaths(String configurationScopeId) throws ConfigScopeNotFoundException;
 
-  default TelemetryLiveAttributesResponse getTelemetryLiveAttributes() {
-    throw new CancellationException("Not implemented");
-  }
+  TelemetryLiveAttributesResponse getTelemetryLiveAttributes();
 }
