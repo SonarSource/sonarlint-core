@@ -37,7 +37,7 @@ import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientInfoDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 
 @Named
@@ -46,12 +46,12 @@ public class StatusRequestHandler implements HttpRequestHandler {
 
   private final SonarLintRpcClient client;
   private final ConnectionConfigurationRepository repository;
-  private final ClientInfoDto clientInfo;
+  private final ClientConstantInfoDto clientInfo;
 
   public StatusRequestHandler(SonarLintRpcClient client, ConnectionConfigurationRepository repository, InitializeParams params) {
     this.client = client;
     this.repository = repository;
-    this.clientInfo = params.getClientInfo();
+    this.clientInfo = params.getClientConstantInfo();
   }
 
   @Override
@@ -74,7 +74,7 @@ public class StatusRequestHandler implements HttpRequestHandler {
 
   private String getDescription(boolean trustedServer) {
     if (trustedServer) {
-      var getClientInfoResponse = client.getClientInfo().join();
+      var getClientInfoResponse = client.getClientLiveInfo().join();
       return getClientInfoResponse.getDescription();
     }
     return "";

@@ -40,6 +40,8 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 
 class BranchSpecificSynchronizationMediumTests {
 
@@ -51,7 +53,7 @@ class BranchSpecificSynchronizationMediumTests {
       .withProject("projectKey",
         project -> project.withBranch("branchName",
           branch -> branch.withIssue("key", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", Instant.now(), new TextRange(1, 0, 3, 4))
-          .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))))
+            .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))))
       .start();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", serverWithIssues)
@@ -93,7 +95,11 @@ class BranchSpecificSynchronizationMediumTests {
 
   @Test
   void it_should_not_report_progress_to_the_client_when_synchronizing_if_client_rejects_progress() {
-    var fakeClient = newFakeClient().rejectingProgress().build();
+    var fakeClient = newFakeClient().build();
+    doThrow(new UnsupportedOperationException("Failed to start progress"))
+      .when(fakeClient)
+      .startProgress(any());
+
     serverWithIssues = newSonarQubeServer("9.6")
       .withProject("projectKey", project -> project.withEmptyBranch("branchName"))
       .withProject("projectKey2", project -> project.withEmptyBranch("branchName2"))

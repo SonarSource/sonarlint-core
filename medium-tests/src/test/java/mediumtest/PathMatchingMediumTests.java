@@ -39,14 +39,14 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.waitAtMost;
+import static org.mockito.Mockito.when;
 
 class PathMatchingMediumTests {
 
   @Test
   void it_should_return_no_prefixes_when_matching_did_not_happen() {
     var server = newSonarQubeServer("10.3")
-      .withProject("projectKey", project ->
-        project.withBranch("main"))
+      .withProject("projectKey", project -> project.withBranch("main"))
       .start();
     backend = newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
@@ -63,8 +63,7 @@ class PathMatchingMediumTests {
   @Test
   void it_should_match_without_prefixes_when_no_local_and_main_branch_server_files_exist() {
     var server = newSonarQubeServer("10.3")
-      .withProject("projectKey", project ->
-        project.withBranch("main"))
+      .withProject("projectKey", project -> project.withBranch("main"))
       .start();
     backend = newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
@@ -82,13 +81,11 @@ class PathMatchingMediumTests {
   @Test
   void it_should_match_without_prefixes_when_local_and_main_branch_server_paths_are_the_same() {
     var server = newSonarQubeServer("10.3")
-      .withProject("projectKey", project ->
-        project.withBranch("main")
+      .withProject("projectKey", project -> project.withBranch("main")
         .withFile("relative/path/to/a/file"))
       .start();
-    var client = newFakeClient()
-      .withFile("configScopeId", "relative/path/to/a/file")
-      .build();
+    var client = newFakeClient().build();
+    when(client.listAllFilePaths("configScopeId")).thenReturn(List.of("relative/path/to/a/file"));
     backend = newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
@@ -105,13 +102,11 @@ class PathMatchingMediumTests {
   @Test
   void it_should_match_with_prefixes_when_local_and_main_branch_server_paths_differ() {
     var server = newSonarQubeServer("10.3")
-      .withProject("projectKey", project ->
-        project.withBranch("main")
-          .withFile("server/path/to/a/file"))
+      .withProject("projectKey", project -> project.withBranch("main")
+        .withFile("server/path/to/a/file"))
       .start();
-    var client = newFakeClient()
-      .withFile("configScopeId", "local/path/to/a/file")
-      .build();
+    var client = newFakeClient().build();
+    when(client.listAllFilePaths("configScopeId")).thenReturn(List.of("local/path/to/a/file"));
     backend = newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)

@@ -40,8 +40,8 @@ public class ShowMessageParams {
     this.text = text;
   }
 
-  public String getType() {
-    return type.name();
+  public MessageType getType() {
+    return type;
   }
 
   public String getText() {
