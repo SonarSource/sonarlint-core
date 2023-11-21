@@ -17,21 +17,36 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package mediumtest;
+package mediumtest.hotspots;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import mediumtest.fixtures.ServerFixture;
+import mediumtest.fixtures.SonarLintBackendFixture;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.stubbing.Answer;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
@@ -39,16 +54,24 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 
 class OpenHotspotInIdeMediumTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
   public static final String CONNECTION_ID = "connectionId";
+  public static final String SCOPE_ID = "scopeId";
 
   private SonarLintTestRpcServer backend;
+  public static final String PROJECT_KEY = "projectKey";
   static ServerFixture.Server serverWithHotspot = newSonarQubeServer("1.2.3")
-    .withProject("projectKey",
+    .withProject(PROJECT_KEY,
       project -> project.withDefaultBranch(branch -> branch.withHotspot("key",
         hotspot -> hotspot.withRuleKey("ruleKey")
           .withMessage("msg")
@@ -106,20 +129,22 @@ class OpenHotspotInIdeMediumTests {
   }
 
   @Test
-  void it_should_open_hotspot_in_ide_when_project_bound() {
+  void it_should_open_hotspot_in_ide_when_project_bound() throws InterruptedException {
     var fakeClient = newFakeClient().build();
     backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, serverWithHotspot)
-      .withBoundConfigScope("scopeId", CONNECTION_ID, "projectKey")
+      .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withEmbeddedServer()
       .build(fakeClient);
 
     var statusCode = requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
-
     assertThat(statusCode).isEqualTo(200);
-    assertThat(fakeClient.getMessagesToShow()).isEmpty();
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys("scopeId"));
-    assertThat(fakeClient.getHotspotToShowByConfigScopeId().get("scopeId"))
+
+    Thread.sleep(100);
+    verify(fakeClient, never()).showMessage(any(), any());
+
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys(SCOPE_ID));
+    assertThat(fakeClient.getHotspotToShowByConfigScopeId().get(SCOPE_ID))
       .extracting(HotspotDetailsDto::getKey, HotspotDetailsDto::getMessage, HotspotDetailsDto::getAuthor, HotspotDetailsDto::getFilePath,
         HotspotDetailsDto::getStatus, HotspotDetailsDto::getResolution, HotspotDetailsDto::getCodeSnippet)
       .containsExactly(tuple("key", "msg", "author", "file/path", "REVIEWED", "SAFE", "source\ncode\nfile"));
@@ -129,72 +154,79 @@ class OpenHotspotInIdeMediumTests {
   void it_should_update_telemetry_data_when_opening_hotspot_in_ide() {
     backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, serverWithHotspot)
-      .withBoundConfigScope("scopeId", CONNECTION_ID, "projectKey")
+      .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withEmbeddedServer()
       .build();
 
     requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
 
     await().atMost(2, TimeUnit.SECONDS)
-      .untilAsserted(() ->
-        assertThat(backend.telemetryFilePath())
-          .content().asBase64Decoded().asString()
-          .contains("\"showHotspotRequestsCount\":1"));
+      .untilAsserted(() -> assertThat(backend.telemetryFilePath())
+        .content().asBase64Decoded().asString()
+        .contains("\"showHotspotRequestsCount\":1"));
   }
 
   @Test
-  void it_should_assist_creating_the_connection_when_server_url_unknown() {
-    var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", CONNECTION_ID, serverWithHotspot.baseUrl(), "projectKey").build();
+  void it_should_assist_creating_the_connection_when_server_url_unknown() throws InterruptedException {
+    var fakeClient = newFakeClient().build();
+    mockAssistCreatingConnection(fakeClient, CONNECTION_ID);
+    mockAssistBinding(fakeClient, SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
+
     backend = newBackend()
-      .withUnboundConfigScope("scopeId")
+      .withUnboundConfigScope(SCOPE_ID)
       .withEmbeddedServer()
       .build(fakeClient);
 
     var statusCode = requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
-
     assertThat(statusCode).isEqualTo(200);
-    assertThat(fakeClient.getMessagesToShow()).isEmpty();
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys("scopeId"));
-    assertThat(fakeClient.getHotspotToShowByConfigScopeId().get("scopeId"))
+
+    Thread.sleep(100);
+    verify(fakeClient, never()).showMessage(any(), any());
+
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys(SCOPE_ID));
+    assertThat(fakeClient.getHotspotToShowByConfigScopeId().get(SCOPE_ID))
       .extracting(HotspotDetailsDto::getMessage)
       .containsExactly("msg");
   }
 
   @Test
-  void it_should_assist_creating_the_binding_if_scope_not_bound() {
-    var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", CONNECTION_ID, serverWithHotspot.baseUrl(), "projectKey").build();
+  void it_should_assist_creating_the_binding_if_scope_not_bound() throws InterruptedException {
+    var fakeClient = newFakeClient().build();
+    mockAssistCreatingConnection(fakeClient, CONNECTION_ID);
+    mockAssistBinding(fakeClient, SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
+
     backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, serverWithHotspot)
-      .withUnboundConfigScope("scopeId")
+      .withUnboundConfigScope(SCOPE_ID)
       .withEmbeddedServer()
       .build(fakeClient);
 
     var statusCode = requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
-
     assertThat(statusCode).isEqualTo(200);
-    assertThat(fakeClient.getMessagesToShow()).isEmpty();
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys("scopeId"));
-    assertThat(fakeClient.getHotspotToShowByConfigScopeId().get("scopeId"))
+
+    Thread.sleep(100);
+    verify(fakeClient, never()).showMessage(any(), any());
+
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys(SCOPE_ID));
+    assertThat(fakeClient.getHotspotToShowByConfigScopeId().get(SCOPE_ID))
       .extracting(HotspotDetailsDto::getMessage)
       .containsExactly("msg");
   }
 
   @Test
-  void it_should_display_a_message_when_failing_to_fetch_the_hotspot() {
+  void it_should_display_a_message_when_failing_to_fetch_the_hotspot() throws InterruptedException {
     var fakeClient = newFakeClient().build();
     backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, serverWithoutHotspot)
-      .withBoundConfigScope("scopeId", CONNECTION_ID, "projectKey")
+      .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withEmbeddedServer()
       .build(fakeClient);
 
     var statusCode = requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithoutHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
-
     assertThat(statusCode).isEqualTo(200);
-    await().atMost(2, TimeUnit.SECONDS).until(() -> !fakeClient.getMessagesToShow().isEmpty());
-    assertThat(fakeClient.getMessagesToShow())
-      .extracting(ShowMessageParams::getType, ShowMessageParams::getText)
-      .containsExactly(tuple("ERROR", "Could not show the hotspot. See logs for more details"));
+
+    verify(fakeClient, timeout(2000)).showMessage(MessageType.ERROR, "Could not show the hotspot. See logs for more details");
+
     assertThat(fakeClient.getHotspotToShowByConfigScopeId()).isEmpty();
   }
 
@@ -203,7 +235,7 @@ class OpenHotspotInIdeMediumTests {
     var fakeClient = newFakeClient().build();
     backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, serverWithoutHotspot)
-      .withBoundConfigScope("scopeId", CONNECTION_ID, "projectKey")
+      .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withEmbeddedServer()
       .build(fakeClient);
 
@@ -213,19 +245,42 @@ class OpenHotspotInIdeMediumTests {
   }
 
   private int requestGetOpenHotspotWithParams(String query) {
-    var embeddedServerPort = backend.getEmbeddedServerPort();
-    var response = backend.getHttpClient(CONNECTION_ID).get("http://localhost:" + embeddedServerPort + "/sonarlint/api/hotspots/show?" + query);
-    var statusCode = response.code();
-    response.close();
-    return statusCode;
+    return requestOpenHotspotWithParams(query, "GET", HttpRequest.BodyPublishers.noBody());
   }
 
   private int requestPostOpenHotspotWithParams(String query) {
-    var embeddedServerPort = backend.getEmbeddedServerPort();
-    var response = backend.getHttpClient(CONNECTION_ID).post("http://localhost:" + embeddedServerPort + "/sonarlint/api/hotspots/show?" + query, "application/json", "");
-    var statusCode = response.code();
-    response.close();
-    return statusCode;
+    return requestOpenHotspotWithParams(query, "POST", HttpRequest.BodyPublishers.ofString(""));
+  }
+
+  private int requestOpenHotspotWithParams(String query, String method, HttpRequest.BodyPublisher bodyPublisher) {
+    var request = HttpRequest.newBuilder()
+      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/hotspots/show?" + query))
+      .method(method, bodyPublisher)
+      .build();
+    HttpResponse<String> response = null;
+    try {
+      response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+    return response.statusCode();
+  }
+
+  private void mockAssistBinding(SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient, String configScopeId, String connectionId, String sonarProjectKey) {
+    doAnswer((Answer<AssistBindingResponse>) invocation -> {
+      backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(connectionId, sonarProjectKey, false)));
+      return new AssistBindingResponse(configScopeId);
+    }).when(fakeClient).assistBinding(any(), any());
+  }
+
+  private void mockAssistCreatingConnection(SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient, String connectionId) {
+    doAnswer((Answer<AssistCreatingConnectionResponse>) invocation -> {
+      backend.getConnectionService().didUpdateConnections(
+        new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto(connectionId, serverWithHotspot.baseUrl(), true)), Collections.emptyList()));
+      return new AssistCreatingConnectionResponse(connectionId);
+    }).when(fakeClient).assistCreatingConnection(any(), any());
   }
 
 }

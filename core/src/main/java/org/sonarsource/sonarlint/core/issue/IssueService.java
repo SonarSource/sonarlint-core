@@ -43,7 +43,7 @@ import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.local.only.XodusLocalOnlyIssueStore;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.BackendErrorCode;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
@@ -111,7 +111,7 @@ public class IssueService {
       var localIssueOpt = asUUID(issueKey)
         .flatMap(localOnlyIssueRepository::findByKey);
       if (localIssueOpt.isEmpty()) {
-        var error = new ResponseError(BackendErrorCode.ISSUE_NOT_FOUND, "Issue key " + issueKey + " was not found", issueKey);
+        var error = new ResponseError(SonarLintRpcErrorCode.ISSUE_NOT_FOUND, "Issue key " + issueKey + " was not found", issueKey);
         throw new ResponseErrorException(error);
       }
       var coreStatus = org.sonarsource.sonarlint.core.commons.IssueStatus.valueOf(newStatus.name());

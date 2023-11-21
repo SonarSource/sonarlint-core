@@ -23,7 +23,14 @@ import java.util.List;
 
 public class CheckServerTrustedParams {
 
+  /**
+   * the peer certificate chain
+   */
   private final List<X509CertificateDto> chain;
+
+  /**
+   * the key exchange algorithm used
+   */
   private final String authType;
 
   public CheckServerTrustedParams(List<X509CertificateDto> chain, String authType) {

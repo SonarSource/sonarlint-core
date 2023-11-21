@@ -19,20 +19,28 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.branch;
 
+import java.util.Set;
+
 public class MatchSonarProjectBranchParams {
   private final String configurationScopeId;
-  private final SonarProjectBranches sonarProjectBranches;
+  private final String mainSonarBranchName;
+  private final Set<String> allSonarBranchesNames;
 
-  public MatchSonarProjectBranchParams(String configurationScopeId, SonarProjectBranches sonarProjectBranches) {
+  public MatchSonarProjectBranchParams(String configurationScopeId, String mainSonarBranchName, Set<String> allSonarBranchesNames) {
     this.configurationScopeId = configurationScopeId;
-    this.sonarProjectBranches = sonarProjectBranches;
+    this.mainSonarBranchName = mainSonarBranchName;
+    this.allSonarBranchesNames = allSonarBranchesNames;
   }
 
   public String getConfigurationScopeId() {
     return configurationScopeId;
   }
 
-  public SonarProjectBranches getSonarProjectBranches() {
-    return sonarProjectBranches;
+  public String getMainSonarBranchName() {
+    return mainSonarBranchName;
+  }
+
+  public Set<String> getAllSonarBranchesNames() {
+    return allSonarBranchesNames;
   }
 }

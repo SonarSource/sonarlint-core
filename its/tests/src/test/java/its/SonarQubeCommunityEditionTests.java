@@ -46,9 +46,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
-import org.eclipse.lsp4j.jsonrpc.CancelChecker;
-import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
-import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -76,40 +74,14 @@ import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
+import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.ClientErrorCode;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.DidChangeMatchedSonarProjectBranchParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityChangedOrClosedEvent;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityRaisedEvent;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListAllFilePathsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListAllFilePathsResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.ShowHotspotParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.http.ProxyDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.info.GetClientInfoResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidUpdatePluginsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
@@ -155,7 +127,8 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     backend = clientLauncher.getServerProxy();
     try {
       backend.initialize(
-        new InitializeParams(IT_CLIENT_INFO, new FeatureFlagsDto(false, true, false, false, false, false, false, false), sonarUserHome.resolve("storage"),
+        new InitializeParams(IT_CLIENT_INFO,
+          IT_TELEMETRY_ATTRIBUTES, new FeatureFlagsDto(false, true, false, false, false, false, false, false), sonarUserHome.resolve("storage"),
           sonarUserHome.resolve("workDir"),
           Collections.emptySet(), Collections.emptyMap(), Set.of(JAVA), Collections.emptySet(),
           List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(),
@@ -223,7 +196,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
       } else {
         assertThat(
           adminWsClient.issues().search(new SearchRequest().setTypes(List.of("SECURITY_HOTSPOT")).setComponentKeys(List.of(XOO_PROJECT_KEY))).getIssuesList())
-            .isNotEmpty();
+          .isNotEmpty();
       }
     }
 
@@ -516,115 +489,16 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
   }
 
   private static SonarLintRpcClientDelegate newDummySonarLintClient() {
-    return new SonarLintRpcClientDelegate() {
-      @Override
-      public void suggestBinding(SuggestBindingParams params) {
-
-      }
+    return new MockSonarLintRpcClientDelegate() {
 
       @Override
-      public FindFileByNamesInScopeResponse findFileByNamesInScope(FindFileByNamesInScopeParams params, CancelChecker cancelChecker) {
-        return new FindFileByNamesInScopeResponse(Collections.emptyList());
-      }
-
-      @Override
-      public void openUrlInBrowser(OpenUrlInBrowserParams params) {
-
-      }
-
-      @Override
-      public void showMessage(ShowMessageParams params) {
-
-      }
-
-      @Override
-      public void log(LogParams params) {
-
-      }
-
-      @Override
-      public void showSoonUnsupportedMessage(ShowSoonUnsupportedMessageParams params) {
-
-      }
-
-      @Override
-      public void showSmartNotification(ShowSmartNotificationParams params) {
-
-      }
-
-      @Override
-      public GetClientInfoResponse getClientInfo(CancelChecker cancelChecker) {
-        return new GetClientInfoResponse("");
-      }
-
-      @Override
-      public void showHotspot(ShowHotspotParams params) {
-
-      }
-
-      @Override
-      public void showIssue(ShowIssueParams params) {
-
-      }
-
-      @Override
-      public void reportProgress(ReportProgressParams params) {
-
-      }
-
-      @Override
-      public void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params) {
-
-      }
-
-      @Override
-      public GetCredentialsResponse getCredentials(GetCredentialsParams params, CancelChecker cancelChecker) {
-        if (params.getConnectionId().equals(CONNECTION_ID)) {
-          return new GetCredentialsResponse(new UsernamePasswordDto(SONARLINT_USER, SONARLINT_PWD));
-        } else {
-          throw new ResponseErrorException(new ResponseError(ClientErrorCode.CONNECTION_NOT_FOUND, "Unknown connection: " + params.getConnectionId(), params.getConnectionId()));
+      public Either<TokenDto, UsernamePasswordDto> getCredentials(String connectionId) throws ConnectionNotFoundException {
+        if (connectionId.equals(CONNECTION_ID)) {
+          return Either.forRight(new UsernamePasswordDto(SONARLINT_USER, SONARLINT_PWD));
         }
+        return super.getCredentials(connectionId);
       }
 
-      @Override
-      public SelectProxiesResponse selectProxies(SelectProxiesParams params, CancelChecker cancelChecker) {
-        return new SelectProxiesResponse(List.of(ProxyDto.NO_PROXY));
-      }
-
-      @Override
-      public void didReceiveServerTaintVulnerabilityRaisedEvent(DidReceiveServerTaintVulnerabilityRaisedEvent params) {
-
-      }
-
-      @Override
-      public void didReceiveServerTaintVulnerabilityChangedOrClosedEvent(DidReceiveServerTaintVulnerabilityChangedOrClosedEvent params) {
-
-      }
-
-      @Override
-      public void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params) {
-
-      }
-
-      @Override
-      public MatchSonarProjectBranchResponse matchSonarProjectBranch(MatchSonarProjectBranchParams params, CancelChecker cancelChecker) {
-        return new MatchSonarProjectBranchResponse(params.getSonarProjectBranches().getMainBranchName());
-      }
-
-      @Override
-      public void didChangeMatchedSonarProjectBranch(DidChangeMatchedSonarProjectBranchParams params) {
-
-      }
-
-      @Override
-      public void didUpdatePlugins(DidUpdatePluginsParams params) {
-
-      }
-
-      @Override
-      public ListAllFilePathsResponse listAllFilePaths(ListAllFilePathsParams params) {
-        return null;
-      }
     };
   }
 }

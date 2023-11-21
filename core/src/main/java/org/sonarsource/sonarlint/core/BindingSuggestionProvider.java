@@ -150,9 +150,9 @@ public class BindingSuggestionProvider {
   }
 
   private void computeAndNotifyBindingSuggestions(Set<String> configScopeIds, Set<String> candidateConnectionIds, CancelChecker cancelChecker) {
-    Map<String, List<BindingSuggestionDto>> suggestions = computeBindingSuggestions(configScopeIds, candidateConnectionIds, cancelChecker);
-    if (!suggestions.isEmpty()) {
-      client.suggestBinding(new SuggestBindingParams(suggestions));
+    Map<String, List<BindingSuggestionDto>> suggestionsByConfigScope = computeBindingSuggestions(configScopeIds, candidateConnectionIds, cancelChecker);
+    if (!suggestionsByConfigScope.isEmpty()) {
+      client.suggestBinding(new SuggestBindingParams(suggestionsByConfigScope));
     }
   }
 
@@ -170,16 +170,16 @@ public class BindingSuggestionProvider {
       return emptyMap();
     }
 
-    Map<String, List<BindingSuggestionDto>> suggestions = new HashMap<>();
+    Map<String, List<BindingSuggestionDto>> suggestionsByConfigScope = new HashMap<>();
 
     for (var configScopeId : eligibleConfigScopesForBindingSuggestion) {
       cancelChecker.checkCanceled();
       var scopeSuggestions = suggestBindingForEligibleScope(configScopeId, candidateConnectionIds, cancelChecker);
       LOG.debug("Found {} {} for configuration scope '{}'", scopeSuggestions.size(), singlePlural(scopeSuggestions.size(), "suggestion", "suggestions"), configScopeId);
-      suggestions.put(configScopeId, scopeSuggestions);
+      suggestionsByConfigScope.put(configScopeId, scopeSuggestions);
     }
 
-    return suggestions;
+    return suggestionsByConfigScope;
   }
 
   private List<BindingSuggestionDto> suggestBindingForEligibleScope(String checkedConfigScopeId, Set<String> candidateConnectionIds, CancelChecker cancelToken) {

@@ -35,7 +35,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.BackendErrorCode;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckLocalDetectionSupportedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
@@ -96,7 +96,7 @@ public class HotspotService {
   public CheckLocalDetectionSupportedResponse checkLocalDetectionSupported(String configScopeId) {
     var configScope = configurationRepository.getConfigurationScope(configScopeId);
     if (configScope == null) {
-      var error = new ResponseError(BackendErrorCode.CONFIG_SCOPE_NOT_FOUND, "The provided configuration scope does not exist: " + configScopeId, configScopeId);
+      var error = new ResponseError(SonarLintRpcErrorCode.CONFIG_SCOPE_NOT_FOUND, "The provided configuration scope does not exist: " + configScopeId, configScopeId);
       throw new ResponseErrorException(error);
     }
     var effectiveBinding = configurationRepository.getEffectiveBinding(configScopeId);
@@ -106,7 +106,7 @@ public class HotspotService {
     var connectionId = effectiveBinding.get().getConnectionId();
     var connection = connectionRepository.getConnectionById(connectionId);
     if (connection == null) {
-      var error = new ResponseError(BackendErrorCode.CONNECTION_NOT_FOUND, "The provided configuration scope is bound to an unknown connection: " + connectionId,
+      var error = new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, "The provided configuration scope is bound to an unknown connection: " + connectionId,
         connectionId);
       throw new ResponseErrorException(error);
     }

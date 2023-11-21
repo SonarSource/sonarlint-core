@@ -20,8 +20,10 @@
 package mediumtest.http;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import java.net.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.SonarLintTestRpcServer;
@@ -32,10 +34,11 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
-import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordAuthenticationResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.http.ProxyDto;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 
@@ -50,6 +53,10 @@ import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 import static testutils.TestUtils.protobufBody;
 
 class ProxyMediumTests {
@@ -96,8 +103,10 @@ class ProxyMediumTests {
   @Test
   void it_should_honor_http_proxy_settings() {
     var fakeClient = newFakeClient()
-      .withHttpProxy("localhost", proxyMock.getPort())
       .build();
+
+    when(fakeClient.selectProxies(any())).thenReturn(List.of(new ProxyDto(Proxy.Type.HTTP, "localhost", proxyMock.getPort())));
+
     backend = newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
@@ -121,8 +130,10 @@ class ProxyMediumTests {
   @Test
   void it_should_honor_http_direct_proxy_settings() {
     var fakeClient = newFakeClient()
-      .withDirectProxy()
       .build();
+
+    when(fakeClient.selectProxies(any())).thenReturn(List.of(ProxyDto.NO_PROXY));
+
     backend = newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
@@ -149,10 +160,12 @@ class ProxyMediumTests {
   void it_should_honor_http_proxy_authentication() {
     var proxyLogin = "proxyLogin";
     var proxyPassword = "proxyPassword";
-    var fakeClient = newFakeClient()
-      .withHttpProxy("localhost", proxyMock.getPort())
-      .withHttpProxyAuth(proxyLogin, proxyPassword)
-      .build();
+    var fakeClient = newFakeClient().build();
+
+    when(fakeClient.selectProxies(any())).thenReturn(List.of(new ProxyDto(Proxy.Type.HTTP, "localhost", proxyMock.getPort())));
+    when(fakeClient.getProxyPasswordAuthentication(anyString(), anyInt(), anyString(), anyString(), anyString(), any()))
+      .thenReturn(new GetProxyPasswordAuthenticationResponse(proxyLogin, proxyPassword));
+
     backend = newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
@@ -178,10 +191,12 @@ class ProxyMediumTests {
   @Tag(PROXY_AUTH_ENABLED)
   void it_should_honor_http_proxy_authentication_with_null_password() {
     var proxyLogin = "proxyLogin";
-    var fakeClient = newFakeClient()
-      .withHttpProxy("localhost", proxyMock.getPort())
-      .withHttpProxyAuth(proxyLogin, null)
-      .build();
+    var fakeClient = newFakeClient().build();
+
+    when(fakeClient.selectProxies(any())).thenReturn(List.of(new ProxyDto(Proxy.Type.HTTP, "localhost", proxyMock.getPort())));
+    when(fakeClient.getProxyPasswordAuthentication(anyString(), anyInt(), anyString(), anyString(), anyString(), any()))
+      .thenReturn(new GetProxyPasswordAuthenticationResponse(proxyLogin, null));
+
     backend = newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
@@ -207,10 +222,12 @@ class ProxyMediumTests {
   @Tag(PROXY_AUTH_ENABLED)
   void it_should_fail_if_proxy_port_is_smaller_than_valid_range() {
     var proxyLogin = "proxyLogin";
-    var fakeClient = newFakeClient()
-      .withHttpProxy("localhost", -1)
-      .withHttpProxyAuth(proxyLogin, null)
-      .build();
+    var fakeClient = newFakeClient().build();
+
+    when(fakeClient.selectProxies(any())).thenReturn(List.of(new ProxyDto(Proxy.Type.HTTP, "localhost", -1)));
+    when(fakeClient.getProxyPasswordAuthentication(anyString(), anyInt(), anyString(), anyString(), anyString(), any()))
+      .thenReturn(new GetProxyPasswordAuthenticationResponse(proxyLogin, null));
+
     backend = newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
@@ -237,10 +254,12 @@ class ProxyMediumTests {
   @Tag(PROXY_AUTH_ENABLED)
   void it_should_fail_if_proxy_port_is_higher_than_valid_range() {
     var proxyLogin = "proxyLogin";
-    var fakeClient = newFakeClient()
-      .withHttpProxy("localhost", 70000)
-      .withHttpProxyAuth(proxyLogin, null)
-      .build();
+    var fakeClient = newFakeClient().build();
+
+    when(fakeClient.selectProxies(any())).thenReturn(List.of(new ProxyDto(Proxy.Type.HTTP, "localhost", 70000)));
+    when(fakeClient.getProxyPasswordAuthentication(anyString(), anyInt(), anyString(), anyString(), anyString(), any()))
+      .thenReturn(new GetProxyPasswordAuthenticationResponse(proxyLogin, null));
+
     backend = newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),

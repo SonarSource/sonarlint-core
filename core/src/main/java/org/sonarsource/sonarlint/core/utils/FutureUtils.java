@@ -33,7 +33,7 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.BackendErrorCode;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 
 public class FutureUtils {
 
@@ -58,7 +58,7 @@ public class FutureUtils {
       return waitForFutureWithTimeout(cancelChecker, task, timeoutDuration);
     } catch (TimeoutException ex) {
       task.cancel(true);
-      var error = new ResponseError(BackendErrorCode.TASK_EXECUTION_TIMEOUT, "Task '" + taskName + "' timed out after " + timeoutDuration.toSeconds() + "s", null);
+      var error = new ResponseError(SonarLintRpcErrorCode.TASK_EXECUTION_TIMEOUT, "Task '" + taskName + "' timed out after " + timeoutDuration.toSeconds() + "s", null);
       throw new ResponseErrorException(error);
     } catch (InterruptedException ex) {
       Thread.currentThread().interrupt();
@@ -66,7 +66,7 @@ public class FutureUtils {
       throw new ResponseErrorException(error);
     } catch (Exception ex) {
       LOG.error(taskName + " task failed", ex);
-      var error = new ResponseError(BackendErrorCode.HTTP_REQUEST_FAILED, "Task '" + taskName + "' failed: " + ex.getMessage(), null);
+      var error = new ResponseError(SonarLintRpcErrorCode.HTTP_REQUEST_FAILED, "Task '" + taskName + "' failed: " + ex.getMessage(), null);
       throw new ResponseErrorException(error);
     }
   }
@@ -80,7 +80,7 @@ public class FutureUtils {
       waitForFutureWithTimeout(cancelChecker, task, timeoutDuration);
     } catch (TimeoutException ex) {
       task.cancel(true);
-      var error = new ResponseError(BackendErrorCode.HTTP_REQUEST_TIMEOUT, "Request '" + taskName + "' timed out after " + timeoutDuration.toSeconds() + "s", null);
+      var error = new ResponseError(SonarLintRpcErrorCode.HTTP_REQUEST_TIMEOUT, "Request '" + taskName + "' timed out after " + timeoutDuration.toSeconds() + "s", null);
       throw new ResponseErrorException(error);
     } catch (InterruptedException ex) {
       Thread.currentThread().interrupt();
@@ -90,7 +90,7 @@ public class FutureUtils {
     } catch (Exception ex) {
       LOG.error(taskName + " task failed", ex);
       // TODO distinguish authentication errors from other errors, provide the HTTP error code
-      var error = new ResponseError(BackendErrorCode.HTTP_REQUEST_FAILED, "Request '" + taskName + "' failed: " + ex.getMessage(), null);
+      var error = new ResponseError(SonarLintRpcErrorCode.HTTP_REQUEST_FAILED, "Request '" + taskName + "' failed: " + ex.getMessage(), null);
       throw new ResponseErrorException(error);
     }
   }
