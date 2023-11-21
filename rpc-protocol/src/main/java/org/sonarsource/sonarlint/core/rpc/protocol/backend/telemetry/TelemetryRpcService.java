@@ -20,12 +20,48 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddQuickFixAppliedForRuleParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddReportedRulesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
 
 @JsonSegment("telemetry")
 public interface TelemetryRpcService {
 
   @JsonRequest
   CompletableFuture<GetStatusResponse> getStatus();
+
+  @JsonNotification
+  void enableTelemetry();
+
+  @JsonNotification
+  void disableTelemetry();
+
+  @JsonNotification
+  void analysisDoneOnSingleLanguage(AnalysisDoneOnSingleLanguageParams params);
+
+  @JsonNotification
+  void analysisDoneOnMultipleFiles();
+
+  @JsonNotification
+  void devNotificationsClicked(DevNotificationsClickedParams params);
+
+  @JsonNotification
+  void taintVulnerabilitiesInvestigatedLocally();
+
+  @JsonNotification
+  void taintVulnerabilitiesInvestigatedRemotely();
+
+  @JsonNotification
+  void addReportedRules(AddReportedRulesParams params);
+
+  @JsonNotification
+  void addQuickFixAppliedForRule(AddQuickFixAppliedForRuleParams params);
+
+  @JsonNotification
+  void helpAndFeedbackLinkClicked(HelpAndFeedbackClickedParams params);
 }

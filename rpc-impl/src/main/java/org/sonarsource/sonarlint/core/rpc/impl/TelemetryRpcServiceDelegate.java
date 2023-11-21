@@ -22,6 +22,11 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddQuickFixAppliedForRuleParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddReportedRulesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements TelemetryRpcService {
@@ -32,6 +37,56 @@ class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements 
 
   @Override
   public CompletableFuture<GetStatusResponse> getStatus() {
-    return requestAsync(cancelChecker -> new GetStatusResponse(getBean(TelemetryService.class).isEnabled()));
+    return requestAsync(cancelChecker -> getBean(TelemetryService.class).getStatus());
+  }
+
+  @Override
+  public void enableTelemetry() {
+    notify(() -> getBean(TelemetryService.class).enableTelemetry());
+  }
+
+  @Override
+  public void disableTelemetry() {
+    notify(() -> getBean(TelemetryService.class).disableTelemetry());
+  }
+
+  @Override
+  public void analysisDoneOnSingleLanguage(AnalysisDoneOnSingleLanguageParams params) {
+    notify(() -> getBean(TelemetryService.class).analysisDoneOnSingleLanguage(params.getLanguage(), params.getAnalysisTimeMs()));
+  }
+
+  @Override
+  public void analysisDoneOnMultipleFiles() {
+    notify(() -> getBean(TelemetryService.class).analysisDoneOnMultipleFiles());
+  }
+
+  @Override
+  public void devNotificationsClicked(DevNotificationsClickedParams params) {
+    notify(() -> getBean(TelemetryService.class).smartNotificationsClicked(params.getEventType()));
+  }
+
+  @Override
+  public void taintVulnerabilitiesInvestigatedLocally() {
+    notify(() -> getBean(TelemetryService.class).taintVulnerabilitiesInvestigatedLocally());
+  }
+
+  @Override
+  public void taintVulnerabilitiesInvestigatedRemotely() {
+    notify(() -> getBean(TelemetryService.class).taintVulnerabilitiesInvestigatedRemotely());
+  }
+
+  @Override
+  public void addReportedRules(AddReportedRulesParams params) {
+    notify(() -> getBean(TelemetryService.class).addReportedRules(params.getRuleKeys()));
+  }
+
+  @Override
+  public void addQuickFixAppliedForRule(AddQuickFixAppliedForRuleParams params) {
+    notify(() -> getBean(TelemetryService.class).addQuickFixAppliedForRule(params.getRuleKey()));
+  }
+
+  @Override
+  public void helpAndFeedbackLinkClicked(HelpAndFeedbackClickedParams params) {
+    notify(() -> getBean(TelemetryService.class).helpAndFeedbackLinkClicked(params));
   }
 }
