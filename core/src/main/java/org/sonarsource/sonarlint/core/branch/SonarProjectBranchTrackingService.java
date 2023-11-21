@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.branch;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -38,7 +39,6 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.DidChangeMatchedSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.SonarProjectBranches;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.storage.StorageService;
@@ -115,10 +115,10 @@ public class SonarProjectBranchTrackingService {
           return;
         }
         var storedBranches = branchesStorage.read();
-        var sonarProjectBranches = new SonarProjectBranches(storedBranches.getMainBranchName(), storedBranches.getBranchNames());
-        var matchedSonarBranch = requestClientToMatchSonarProjectBranch(configurationScopeId, sonarProjectBranches);
+        var mainBranchName = storedBranches.getMainBranchName();
+        var matchedSonarBranch = requestClientToMatchSonarProjectBranch(configurationScopeId, mainBranchName, storedBranches.getBranchNames());
         if (matchedSonarBranch == null) {
-          matchedSonarBranch = sonarProjectBranches.getMainBranchName();
+          matchedSonarBranch = mainBranchName;
         }
         if (!matchedSonarBranch.equals(previousSonarProjectBranch)) {
           matchedSonarProjectBranchRepository.setMatchedBranchName(configurationScopeId, matchedSonarBranch);
@@ -130,9 +130,9 @@ public class SonarProjectBranchTrackingService {
   }
 
   @CheckForNull
-  private String requestClientToMatchSonarProjectBranch(String configurationScopeId, SonarProjectBranches sonarProjectBranches) {
+  private String requestClientToMatchSonarProjectBranch(String configurationScopeId, String mainSonarBranchName, Set<String> allSonarBranchesNames) {
     try {
-      return client.matchSonarProjectBranch(new MatchSonarProjectBranchParams(configurationScopeId, sonarProjectBranches))
+      return client.matchSonarProjectBranch(new MatchSonarProjectBranchParams(configurationScopeId, mainSonarBranchName, allSonarBranchesNames))
         .get().getMatchedSonarProjectBranch();
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();

@@ -20,7 +20,9 @@
 package mediumtest;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
@@ -42,7 +44,8 @@ import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 class ConnectionSetupMediumTests {
 
@@ -55,7 +58,7 @@ class ConnectionSetupMediumTests {
   }
 
   @Test
-  void it_should_open_the_security_url_for_sonarcloud() {
+  void it_should_open_the_security_url_for_sonarcloud() throws MalformedURLException {
     var fakeClient = newFakeClient().build();
     backend = newBackend().build(fakeClient);
 
@@ -65,11 +68,11 @@ class ConnectionSetupMediumTests {
       .succeedsWithin(Duration.ofSeconds(3))
       .extracting(HelpGenerateUserTokenResponse::getToken)
       .isNull();
-    assertThat(fakeClient.getUrlsToOpen()).containsExactly("https://sonarcloud.io/account/security");
+    verify(fakeClient, timeout(5000)).openUrlInBrowser(new URL("https://sonarcloud.io/account/security"));
   }
 
   @Test
-  void it_should_open_the_security_url_for_sonarqube_older_than_9_7() {
+  void it_should_open_the_security_url_for_sonarqube_older_than_9_7() throws MalformedURLException {
     var fakeClient = newFakeClient().build();
     backend = newBackend().build(fakeClient);
     server = newSonarQubeServer("9.6").start();
@@ -80,7 +83,8 @@ class ConnectionSetupMediumTests {
       .succeedsWithin(Duration.ofSeconds(3))
       .extracting(HelpGenerateUserTokenResponse::getToken)
       .isNull();
-    assertThat(fakeClient.getUrlsToOpen()).containsExactly(server.url("account/security"));
+
+    verify(fakeClient, timeout(5000)).openUrlInBrowser(new URL(server.url("account/security")));
   }
 
   @Test
@@ -91,9 +95,7 @@ class ConnectionSetupMediumTests {
 
     var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
 
-    await().atMost(Duration.ofSeconds(3)).until(() -> !fakeClient.getUrlsToOpen().isEmpty());
-    assertThat(fakeClient.getUrlsToOpen())
-      .containsExactly(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort()));
+    verify(fakeClient, timeout(3000)).openUrlInBrowser(new URL(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort())));
 
     var request = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
@@ -117,9 +119,7 @@ class ConnectionSetupMediumTests {
 
     backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
 
-    await().atMost(Duration.ofSeconds(3)).until(() -> !fakeClient.getUrlsToOpen().isEmpty());
-    assertThat(fakeClient.getUrlsToOpen())
-      .containsExactly(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort()));
+    verify(fakeClient, timeout(3000)).openUrlInBrowser(new URL(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort())));
 
     var request = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
@@ -137,9 +137,7 @@ class ConnectionSetupMediumTests {
 
     backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
 
-    await().atMost(Duration.ofSeconds(3)).until(() -> !fakeClient.getUrlsToOpen().isEmpty());
-    assertThat(fakeClient.getUrlsToOpen())
-      .containsExactly(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort()));
+    verify(fakeClient, timeout(3000)).openUrlInBrowser(new URL(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort())));
 
     var request = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
@@ -151,7 +149,7 @@ class ConnectionSetupMediumTests {
   }
 
   @Test
-  void it_should_open_the_sonarlint_auth_url_without_port_for_sonarqube_9_7_plus_when_server_is_not_started() {
+  void it_should_open_the_sonarlint_auth_url_without_port_for_sonarqube_9_7_plus_when_server_is_not_started() throws MalformedURLException {
     var fakeClient = newFakeClient().build();
     backend = newBackend().withClientName("ClientName").build(fakeClient);
     server = newSonarQubeServer("9.7").start();
@@ -162,7 +160,7 @@ class ConnectionSetupMediumTests {
       .succeedsWithin(Duration.ofSeconds(3))
       .extracting(HelpGenerateUserTokenResponse::getToken)
       .isNull();
-    assertThat(fakeClient.getUrlsToOpen()).containsExactly(server.url("/sonarlint/auth?ideName=ClientName"));
+    verify(fakeClient, timeout(3000)).openUrlInBrowser(new URL(server.url("/sonarlint/auth?ideName=ClientName")));
   }
 
   @Test

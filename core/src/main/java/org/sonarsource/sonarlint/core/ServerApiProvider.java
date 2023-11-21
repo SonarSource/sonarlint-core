@@ -27,7 +27,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.BackendErrorCode;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 
 @Named
@@ -55,7 +55,7 @@ public class ServerApiProvider {
   public ServerApi getServerApiOrThrow(String connectionId) {
     var params = connectionRepository.getEndpointParams(connectionId);
     if (params.isEmpty()) {
-      ResponseError error = new ResponseError(BackendErrorCode.CONNECTION_NOT_FOUND, "Connection '" + connectionId + "' is gone", connectionId);
+      ResponseError error = new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, "Connection '" + connectionId + "' is gone", connectionId);
       throw new ResponseErrorException(error);
     }
     return new ServerApi(params.get(), httpClientProvider.getHttpClient(connectionId));

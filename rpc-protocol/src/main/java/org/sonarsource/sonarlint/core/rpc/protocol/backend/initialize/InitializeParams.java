@@ -28,10 +28,11 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryConstantAttributesDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 
 public class InitializeParams {
-  private final ClientInfoDto clientInfo;
+  private final ClientConstantInfoDto clientConstantInfo;
   private final FeatureFlagsDto featureFlags;
 
   private final Path storageRoot;
@@ -46,17 +47,20 @@ public class InitializeParams {
   private final String sonarlintUserHome;
   private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey;
   private final boolean isFocusOnNewCode;
+  private final TelemetryConstantAttributesDto telemetryConstantAttributes;
 
   /**
+   * @param telemetryConstantAttributes Static information about the client, that will be sent with the telemetry payload
    * @param workDir                   Path to work directory. If null, will default to [sonarlintUserHome]/work
    * @param sonarlintUserHome         Path to SonarLint user home directory. If null, will default to ~/.sonarlint
    * @param standaloneRuleConfigByKey Local rule configuration for standalone analysis. This configuration will override defaults rule activation and parameters.
    */
-  public InitializeParams(ClientInfoDto clientInfo, FeatureFlagsDto featureFlags, Path storageRoot, @Nullable Path workDir, Set<Path> embeddedPluginPaths,
+  public InitializeParams(ClientConstantInfoDto clientConstantInfo, TelemetryConstantAttributesDto telemetryConstantAttributes, FeatureFlagsDto featureFlags, Path storageRoot, @Nullable Path workDir, Set<Path> embeddedPluginPaths,
     Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> extraEnabledLanguagesInConnectedMode,
     List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections, @Nullable String sonarlintUserHome,
     Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey, boolean isFocusOnNewCode) {
-    this.clientInfo = clientInfo;
+    this.clientConstantInfo = clientConstantInfo;
+    this.telemetryConstantAttributes = telemetryConstantAttributes;
     this.featureFlags = featureFlags;
     this.storageRoot = storageRoot;
     this.workDir = workDir;
@@ -71,8 +75,12 @@ public class InitializeParams {
     this.isFocusOnNewCode = isFocusOnNewCode;
   }
 
-  public ClientInfoDto getClientInfo() {
-    return clientInfo;
+  public ClientConstantInfoDto getClientConstantInfo() {
+    return clientConstantInfo;
+  }
+
+  public TelemetryConstantAttributesDto getTelemetryConstantAttributes() {
+    return telemetryConstantAttributes;
   }
 
   public FeatureFlagsDto getFeatureFlags() {

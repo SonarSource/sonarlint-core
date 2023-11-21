@@ -61,7 +61,6 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
@@ -537,7 +536,7 @@ class ServerSentEventsMediumTests {
 
     @Test
     void should_forward_taint_events_to_client() {
-      var fakeClient = spy(newFakeClient().build());
+      var fakeClient = newFakeClient().build();
 
       var projectKey = "projectKey";
       var branchName = "branchName";
@@ -560,8 +559,8 @@ class ServerSentEventsMediumTests {
           "}]," +
           "\"userType\": \"BUG\"" +
           "}\n\n")
-            // Add a delay to ensure the auto-sync of the issue storage had been completed
-            .withFixedDelay(2000))
+          // Add a delay to ensure the auto-sync of the issue storage had been completed
+          .withFixedDelay(2000))
         .willSetStateTo("Event delivered"));
       // avoid later reconnection
       serverWithTaintIssues.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java,js")

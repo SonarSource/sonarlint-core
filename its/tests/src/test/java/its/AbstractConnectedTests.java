@@ -48,16 +48,16 @@ import org.sonarqube.ws.client.qualityprofiles.SearchRequest;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientInfoDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryConstantAttributesDto;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class AbstractConnectedTests {
-  public static final ClientInfoDto IT_CLIENT_INFO = new ClientInfoDto("clientName", "integrationTests",
-    new TelemetryConstantAttributesDto("SonarLint ITs", "SonarLint ITs",
-    "1.2.3", "4.5.6", "linux", "x64", Collections.emptyMap()));
+  public static final TelemetryConstantAttributesDto IT_TELEMETRY_ATTRIBUTES = new TelemetryConstantAttributesDto("SonarLint ITs", "SonarLint ITs",
+    "1.2.3", "4.5.6", "linux", "x64", Collections.emptyMap());
+  public static final ClientConstantInfoDto IT_CLIENT_INFO = new ClientConstantInfoDto("clientName", "integrationTests");
   protected static final String SONARLINT_USER = "sonarlint";
   protected static final String SONARLINT_PWD = "sonarlintpwd";
   protected static final String MAIN_BRANCH_NAME = "master";

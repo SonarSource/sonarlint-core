@@ -48,7 +48,7 @@ public class ClientProxySelector extends ProxySelector {
   @Override
   public List<Proxy> select(URI uri) {
     try {
-      return client.selectProxies(new SelectProxiesParams(uri.toString())).get().getProxies().stream()
+      return client.selectProxies(new SelectProxiesParams(uri)).get().getProxies().stream()
         .map(p -> {
           if (p.getType() == Proxy.Type.DIRECT) {
             return Proxy.NO_PROXY;

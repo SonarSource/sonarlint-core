@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientInfoDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
@@ -50,7 +50,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordA
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordAuthenticationResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.info.GetClientInfoResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.info.GetClientLiveInfoResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
@@ -62,11 +62,20 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.Show
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
 
+/**
+ * This interface defines the RPC requests or notifications the backend can call on the client.
+ */
 public interface SonarLintRpcClient {
 
+  /**
+   * Suggest some bindings to the client, based on registered connections, config scope, and binding clues.
+   */
   @JsonNotification
   void suggestBinding(SuggestBindingParams params);
 
+  /**
+   * Find files by names in the given configuration scope.
+   */
   @JsonRequest
   CompletableFuture<FindFileByNamesInScopeResponse> findFileByNamesInScope(FindFileByNamesInScopeParams params);
 
@@ -96,11 +105,12 @@ public interface SonarLintRpcClient {
   void showSmartNotification(ShowSmartNotificationParams params);
 
   /**
-   * Ask the client to provide the dynamic information that can change during the runtime. Static information are provided during {@link SonarLintRpcServer#initialize(InitializeParams)}
-   * in {@link ClientInfoDto}
+   * Ask the client to provide its dynamic info that can change during the runtime. This is used as a complement to
+   * static information provided during {@link SonarLintRpcServer#initialize(InitializeParams)}
+   * in {@link ClientConstantInfoDto}.
    */
   @JsonRequest
-  CompletableFuture<GetClientInfoResponse> getClientInfo();
+  CompletableFuture<GetClientLiveInfoResponse> getClientLiveInfo();
 
   @JsonNotification
   void showHotspot(ShowHotspotParams params);
@@ -145,7 +155,7 @@ public interface SonarLintRpcClient {
   void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params);
 
   /**
-   * @throws org.eclipse.lsp4j.jsonrpc.ResponseErrorException with {@link org.sonarsource.sonarlint.core.rpc.protocol.client.ClientErrorCode#CONNECTION_NOT_FOUND} if the connection doesn't exist on the client side
+   * @throws org.eclipse.lsp4j.jsonrpc.ResponseErrorException with {@link org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode#CONNECTION_NOT_FOUND} if the connection doesn't exist on the client side
    */
   @JsonRequest
   CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params);
@@ -184,9 +194,7 @@ public interface SonarLintRpcClient {
    * Called when at least one plugin has been downloaded during the full synchronization
    */
   @JsonNotification
-  default void didUpdatePlugins(DidUpdatePluginsParams params) {
-    // not implemented
-  }
+  void didUpdatePlugins(DidUpdatePluginsParams params);
 
   /**
    * Must return all file paths for the given configuration scope.
