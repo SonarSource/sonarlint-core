@@ -43,7 +43,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.BackendErrorCode;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetStandaloneRuleDescriptionResponse;
@@ -125,7 +125,7 @@ public class RulesService {
       .orElseGet(() -> rulesRepository.getRule(connectionId, ruleKey)
         .map(r -> RuleDetails.from(r, standaloneRuleConfig.get(ruleKey)))
         .orElseThrow(() -> {
-          var error = new ResponseError(BackendErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in plugins loaded from '" + connectionId + "'",
+          var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in plugins loaded from '" + connectionId + "'",
             new Object[] {connectionId, ruleKey});
           return new ResponseErrorException(error);
         }));
@@ -166,7 +166,7 @@ public class RulesService {
 
   @NotNull
   private static ResponseErrorException unknownConnection(String connectionId) {
-    var error = new ResponseError(BackendErrorCode.CONNECTION_NOT_FOUND, "Connection with ID '" + connectionId + "' does not exist", connectionId);
+    var error = new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, "Connection with ID '" + connectionId + "' does not exist", connectionId);
     return new ResponseErrorException(error);
   }
 
@@ -183,12 +183,12 @@ public class RulesService {
 
   private static ResponseErrorException ruleNotFound(String connectionId, String ruleKey, Exception e) {
     LOG.error("Failed to fetch rule details from server", e);
-    var error = new ResponseError(BackendErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' on '" + connectionId + "'", new Object[] {ruleKey, connectionId});
+    var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' on '" + connectionId + "'", new Object[] {ruleKey, connectionId});
     return new ResponseErrorException(error);
   }
 
   private static ResponseErrorException ruleDefinitionNotFound(String templateKey) {
-    var error = new ResponseError(BackendErrorCode.RULE_NOT_FOUND, "Unable to find rule definition for rule template " + templateKey, templateKey);
+    var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, "Unable to find rule definition for rule template " + templateKey, templateKey);
     return new ResponseErrorException(error);
   }
 
@@ -257,7 +257,7 @@ public class RulesService {
   public GetStandaloneRuleDescriptionResponse getStandaloneRuleDetails(String ruleKey) {
     var embeddedRule = rulesRepository.getEmbeddedRule(ruleKey);
     if (embeddedRule.isEmpty()) {
-      var error = new ResponseError(BackendErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules", new Object[] {ruleKey});
+      var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules", new Object[] {ruleKey});
       throw new ResponseErrorException(error);
     }
     var ruleDefinition = embeddedRule.get();

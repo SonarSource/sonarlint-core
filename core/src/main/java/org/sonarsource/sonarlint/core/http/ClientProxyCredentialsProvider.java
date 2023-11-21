@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.http;
 
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.CheckForNull;
@@ -32,9 +34,9 @@ import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.http.URIScheme;
 import org.apache.hc.core5.http.protocol.HttpContext;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordAuthenticationParams;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 /**
  * Inspired by {@link org.apache.hc.client5.http.impl.auth.SystemDefaultCredentialsProvider} but asking client instead of
@@ -54,15 +56,15 @@ public class ClientProxyCredentialsProvider implements CredentialsProvider {
   @Override
   public Credentials getCredentials(AuthScope authScope, @Nullable HttpContext context) {
     var host = authScope.getHost();
-    if (host == null) {
+    if (host == null || context == null) {
       return null;
     }
-    var targetHostURL = getTargetHostURL(context);
-    var protocol = getProtocol(authScope);
     try {
+      var targetHostURI = HttpClientContext.adapt(context).getRequest().getUri();
+      var protocol = getProtocol(authScope);
       var response = client.getProxyPasswordAuthentication(
         new GetProxyPasswordAuthenticationParams(authScope.getHost(), authScope.getPort(), protocol,
-          authScope.getRealm(), authScope.getSchemeName(), targetHostURL))
+          authScope.getRealm(), authScope.getSchemeName(), targetHostURI.toURL()))
         .get();
       var proxyUser = response.getProxyUser();
       if (proxyUser != null) {
@@ -72,7 +74,7 @@ public class ClientProxyCredentialsProvider implements CredentialsProvider {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       logger.warn("Interrupted!", e);
-    } catch (ExecutionException e) {
+    } catch (URISyntaxException | MalformedURLException | ExecutionException e) {
       logger.warn("Unable to get proxy credentials from the client", e);
     }
     return null;
@@ -86,19 +88,5 @@ public class ClientProxyCredentialsProvider implements CredentialsProvider {
       protocol = (authScope.getPort() == 443 ? URIScheme.HTTPS.id : URIScheme.HTTP.id);
     }
     return protocol;
-  }
-
-  @CheckForNull
-  private static String getTargetHostURL(@Nullable HttpContext context) {
-    var clientContext = context != null ? HttpClientContext.adapt(context) : null;
-    var request = context != null ? clientContext.getRequest() : null;
-    String targetHostURL;
-    try {
-      var uri = request != null ? request.getUri() : null;
-      targetHostURL = uri != null ? uri.toString() : null;
-    } catch (final URISyntaxException ignore) {
-      targetHostURL = null;
-    }
-    return targetHostURL;
   }
 }

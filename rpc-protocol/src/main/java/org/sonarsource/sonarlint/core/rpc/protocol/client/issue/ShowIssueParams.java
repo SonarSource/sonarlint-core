@@ -19,90 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.issue;
 
-import java.util.List;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.FlowDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
-
-import javax.annotation.Nullable;
-
 public class ShowIssueParams {
-  private final String configScopeId;
-  private final String issueKey;
-  private final String ruleKey;
-  private final String serverRelativeFilePath;
-  private final String branch;
-  @Nullable
-  private final String pullRequest;
-  private final String message;
-  private final String creationDate;
-  private final String codeSnippet;
-  private final boolean isTaint;
-  private final List<FlowDto> flows;
-  private final TextRangeDto textRange;
 
-  public ShowIssueParams(TextRangeDto textRange, String configScopeId, String ruleKey, String issueKey,
-    String serverRelativeFilePath, String branch, @Nullable String pullRequest, String message, String creationDate,
-    String codeSnippet, boolean isTaint, List<FlowDto> flows) {
-    this.configScopeId = configScopeId;
-    this.issueKey = issueKey;
-    this.ruleKey = ruleKey;
-    this.textRange = textRange;
-    this.serverRelativeFilePath = serverRelativeFilePath;
-    this.branch = branch;
-    this.pullRequest = pullRequest;
-    this.message = message;
-    this.creationDate = creationDate;
-    this.codeSnippet = codeSnippet;
-    this.isTaint = isTaint;
-    this.flows = flows;
+  private final String configurationScopeId;
+  private final IssueDetailsDto issueDetails;
+
+  public ShowIssueParams(String configurationScopeId, IssueDetailsDto issueDetails) {
+    this.configurationScopeId = configurationScopeId;
+    this.issueDetails = issueDetails;
   }
 
-  public TextRangeDto getTextRange() {
-    return textRange;
+  public String getConfigurationScopeId() {
+    return configurationScopeId;
   }
 
-  public String getConfigScopeId() {
-    return configScopeId;
-  }
-
-  public String getRuleKey() {
-    return ruleKey;
-  }
-
-  public String getIssueKey() {
-    return issueKey;
-  }
-
-  public String getCreationDate() {
-    return creationDate;
-  }
-
-  public String getServerRelativeFilePath() {
-    return serverRelativeFilePath;
-  }
-
-  public String getBranch() {
-    return branch;
-  }
-
-  @Nullable
-  public String getPullRequest() {
-    return pullRequest;
-  }
-
-  public String getCodeSnippet() {
-    return codeSnippet;
-  }
-
-  public String getMessage() {
-    return message;
-  }
-
-  public boolean isTaint() {
-    return isTaint;
-  }
-
-  public List<FlowDto> getFlows() {
-    return flows;
+  public IssueDetailsDto getIssueDetails() {
+    return issueDetails;
   }
 }

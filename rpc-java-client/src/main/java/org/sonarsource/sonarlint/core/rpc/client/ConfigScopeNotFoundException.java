@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - RPC Java Client
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,15 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.client;
+package org.sonarsource.sonarlint.core.rpc.client;
 
-public class ClientErrorCode {
-
-  private ClientErrorCode() {
-    // only static
-  }
-
-  public static final int CONNECTION_NOT_FOUND = -1;
-  public static final int PROGRESS_CREATION_FAILED = -2;
-
+public class ConfigScopeNotFoundException extends Exception {
 }

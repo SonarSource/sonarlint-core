@@ -58,7 +58,7 @@ public class TelemetryService {
   public TelemetryService(InitializeParams initializeParams, SonarLintRpcClient sonarlintClient, HttpClientProvider httpClientProvider, @Named("userHome") Path userHome) {
     this.userHome = userHome;
     this.client = sonarlintClient;
-    var telemetryInitParams = initializeParams.getClientInfo().getTelemetryInitDto();
+    var telemetryInitParams = initializeParams.getTelemetryConstantAttributes();
     var storagePath = getStoragePath(telemetryInitParams.getProductKey());
     this.telemetryLocalStorageManager = new TelemetryLocalStorageManager(storagePath);
     var telemetryClient = new TelemetryHttpClient(telemetryInitParams.getProductName(), telemetryInitParams.getProductVersion(),
