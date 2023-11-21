@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
 
 import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryConstantAttributesDto;
 
 /**
  * Static information to describe the client. Dynamic information will be provided when needed by calling {@link SonarLintRpcClient#getClientInfo()}
@@ -32,19 +33,19 @@ public class ClientInfoDto {
   private final String name;
 
   /**
-   * SonarLint product key (vscode, idea, eclipse, ...)
-   */
-  private final String telemetryProductKey;
-
-  /**
    * User agent used for all HTTP requests made by the backend
    */
   private final String userAgent;
 
-  public ClientInfoDto(@NonNull String name, @NonNull String telemetryProductKey, @NonNull String userAgent) {
+  /**
+   * Static information about the client, that will be sent with the telemetry payload
+   */
+  private final TelemetryConstantAttributesDto telemetryConstantAttributesDto;
+
+  public ClientInfoDto(@NonNull String name, @NonNull String userAgent, TelemetryConstantAttributesDto telemetryConstantAttributesDto) {
     this.name = name;
-    this.telemetryProductKey = telemetryProductKey;
     this.userAgent = userAgent;
+    this.telemetryConstantAttributesDto = telemetryConstantAttributesDto;
   }
 
   @NonNull
@@ -52,11 +53,11 @@ public class ClientInfoDto {
     return name;
   }
 
-  public String getTelemetryProductKey() {
-    return telemetryProductKey;
-  }
-
   public String getUserAgent() {
     return userAgent;
+  }
+
+  public TelemetryConstantAttributesDto getTelemetryInitDto() {
+    return telemetryConstantAttributesDto;
   }
 }

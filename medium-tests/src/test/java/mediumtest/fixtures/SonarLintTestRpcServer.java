@@ -45,7 +45,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.IssueTrackin
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.SecurityHotspotMatchingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.usertoken.UserTokenRpcService;
 import org.sonarsource.sonarlint.core.storage.StorageService;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryPathManager;
 
 import static java.util.Objects.requireNonNull;
 
@@ -57,8 +56,8 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
   private final ClientJsonRpcLauncher clientLauncher;
   private Path userHome;
   private Path workDir;
-  private Path telemetryFilePath;
   private Path storageRoot;
+  private String productKey;
 
   public SonarLintTestRpcServer(BackendJsonRpcLauncher serverLauncher, ClientJsonRpcLauncher clientLauncher) {
     this.serverUsingRpc = clientLauncher.getServerProxy();
@@ -69,10 +68,10 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
 
   @Override
   public CompletableFuture<Void> initialize(InitializeParams params) {
+    this.productKey = params.getClientInfo().getTelemetryInitDto().getProductKey();
     this.userHome = Path.of(requireNonNull(params.getSonarlintUserHome()));
     this.workDir = requireNonNull(params.getWorkDir());
     this.storageRoot = requireNonNull(params.getStorageRoot());
-    this.telemetryFilePath = TelemetryPathManager.getPath(userHome, params.getClientInfo().getTelemetryProductKey());
     return serverUsingRpc.initialize(params);
   }
 
@@ -159,7 +158,7 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
   }
 
   public Path telemetryFilePath() {
-    return telemetryFilePath;
+    return userHome.resolve("telemetry").resolve(productKey).resolve("usage");
   }
 
   public LocalOnlyIssueStorageService getLocalOnlyIssueStorageService() {

@@ -27,7 +27,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -104,11 +103,14 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgres
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryConstantAttributesDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static mediumtest.fixtures.storage.StorageFixture.newStorage;
 
 public class SonarLintBackendFixture {
@@ -373,7 +375,9 @@ public class SonarLintBackendFixture {
         var sonarLintBackend = createTestBackend(client);
 
         client.setBackend(sonarLintBackend);
-        var clientInfo = new ClientInfoDto(clientName, "mediumTests", userAgent);
+        var telemetryInitDto = new TelemetryConstantAttributesDto("mediumTests", "mediumTests",
+          "1.2.3", "4.5.6", "linux", "x64", emptyMap());
+        var clientInfo = new ClientInfoDto(clientName, userAgent, telemetryInitDto);
         var featureFlags = new FeatureFlagsDto(manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, startEmbeddedServer, areSecurityHotspotsEnabled,
           manageServerSentEvents, enableDataflowBugDetection, shouldManageFullSynchronization);
 
@@ -481,7 +485,7 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public FakeSonarLintRpcClient build() {
+     public FakeSonarLintRpcClient build() {
       return new FakeSonarLintRpcClient(foundFiles, clientDescription, cannedAssistCreatingSonarQubeConnectionByBaseUrl,
         cannedBindingAssistByProjectKey,
         rejectingProgress, proxy, proxyAuth, credentialsByConnectionId, printLogsToStdOut, resolvedSonarProjectBranch, isResolvedSonarProjectBranchSet,
@@ -616,7 +620,7 @@ public class SonarLintBackendFixture {
       if (cannedSonarQubeConnection == null) {
         throw new CancellationException();
       }
-      backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(cannedSonarQubeConnection), Collections.emptyList()));
+      backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(cannedSonarQubeConnection), emptyList()));
       return new AssistCreatingConnectionResponse(cannedSonarQubeConnection.getConnectionId());
     }
 
@@ -725,6 +729,11 @@ public class SonarLintBackendFixture {
 
     public Map<String, String> getMatchedSonarProjectBranchPerConfigScopeId() {
       return matchedSonarProjectBranchPerConfigScopeId;
+    }
+
+    @Override
+    public TelemetryLiveAttributesResponse getTelemetryLiveAttributes() {
+      return new TelemetryLiveAttributesResponse(false, false, null, false, emptyList(), emptyList(), emptyMap());
     }
 
     @Override
