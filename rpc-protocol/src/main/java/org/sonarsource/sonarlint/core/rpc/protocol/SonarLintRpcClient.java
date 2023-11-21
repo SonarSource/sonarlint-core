@@ -60,6 +60,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgres
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
 
 public interface SonarLintRpcClient {
 
@@ -148,6 +149,9 @@ public interface SonarLintRpcClient {
    */
   @JsonRequest
   CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params);
+
+  @JsonRequest
+  CompletableFuture<TelemetryLiveAttributesResponse> getTelemetryLiveAttributes();
 
   @JsonRequest
   CompletableFuture<SelectProxiesResponse> selectProxies(SelectProxiesParams params);
