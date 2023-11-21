@@ -33,7 +33,7 @@ public class GetCredentialsResponse {
   @Nullable
   private final Either<TokenDto, UsernamePasswordDto> credentials;
 
-  public GetCredentialsResponse(Either<TokenDto, UsernamePasswordDto> credentials) {
+  public GetCredentialsResponse(@Nullable Either<TokenDto, UsernamePasswordDto> credentials) {
     this.credentials = credentials;
   }
 

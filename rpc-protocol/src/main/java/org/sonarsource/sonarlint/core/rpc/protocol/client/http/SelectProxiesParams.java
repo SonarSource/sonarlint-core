@@ -19,15 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.http;
 
+import java.net.URI;
+
 public class SelectProxiesParams {
 
-  private final String uri;
+  private final URI uri;
 
-  public SelectProxiesParams(String uri) {
+  public SelectProxiesParams(URI uri) {
     this.uri = uri;
   }
 
-  public String getUri() {
+  public URI getUri() {
     return uri;
   }
 }

@@ -37,7 +37,7 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.BackendErrorCode;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 
 import static java.util.Objects.requireNonNull;
 
@@ -92,7 +92,7 @@ public class ConfigurationRepository {
 
   public Binding getEffectiveBindingOrThrow(String configScopeId) {
     return getEffectiveBinding(configScopeId).orElseThrow(() -> {
-      var error = new ResponseError(BackendErrorCode.CONFIG_SCOPE_NOT_BOUND, "No binding for config scope '" + configScopeId + "'", configScopeId);
+      var error = new ResponseError(SonarLintRpcErrorCode.CONFIG_SCOPE_NOT_BOUND, "No binding for config scope '" + configScopeId + "'", configScopeId);
       throw new ResponseErrorException(error);
     });
   }

@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.embedded.server;
 
-
 import java.util.List;
 import java.util.Optional;
 import org.apache.hc.core5.http.message.BasicClassicHttpRequest;
@@ -96,26 +95,26 @@ class ShowIssueRequestHandlerTests {
     var components = List.of(
       Issues.Component.newBuilder().setKey(issueComponentKey).setPath(issuePath).build(),
       Issues.Component.newBuilder().setKey(locationComponentKey_1).setPath(flowLocationPath_1).build(),
-      Issues.Component.newBuilder().setKey(locationComponentKey_2).setPath(flowLocationPath_2).build()
-    );
+      Issues.Component.newBuilder().setKey(locationComponentKey_2).setPath(flowLocationPath_2).build());
     var serverIssueDetails = new IssueApi.ServerIssueDetails(issue, issuePath, components, codeSnippet);
 
     var showIssueParams = showIssueRequestHandler.getShowIssueParams(serverIssueDetails, connectionId, configScopeId, "branch", "");
-    assertThat(showIssueParams.getConfigScopeId()).isEqualTo(configScopeId);
-    assertThat(showIssueParams.getIssueKey()).isEqualTo(issueKey);
-    assertThat(showIssueParams.getCreationDate()).isEqualTo(issueCreationDate);
-    assertThat(showIssueParams.getRuleKey()).isEqualTo(issueRuleKey);
-    assertThat(showIssueParams.isTaint()).isTrue();
-    assertThat(showIssueParams.getMessage()).isEqualTo(issueMessage);
-    assertThat(showIssueParams.getTextRange().getStartLine()).isEqualTo(1);
-    assertThat(showIssueParams.getTextRange().getEndLine()).isEqualTo(2);
-    assertThat(showIssueParams.getTextRange().getStartLineOffset()).isEqualTo(3);
-    assertThat(showIssueParams.getTextRange().getEndLineOffset()).isEqualTo(4);
-    assertThat(showIssueParams.getServerRelativeFilePath()).isEqualTo(issuePath);
-    assertThat(showIssueParams.getFlows()).hasSize(1);
-    assertThat(showIssueParams.getCodeSnippet()).isEqualTo(codeSnippet);
+    assertThat(showIssueParams.getConfigurationScopeId()).isEqualTo(configScopeId);
+    var issueDetails = showIssueParams.getIssueDetails();
+    assertThat(issueDetails.getIssueKey()).isEqualTo(issueKey);
+    assertThat(issueDetails.getCreationDate()).isEqualTo(issueCreationDate);
+    assertThat(issueDetails.getRuleKey()).isEqualTo(issueRuleKey);
+    assertThat(issueDetails.isTaint()).isTrue();
+    assertThat(issueDetails.getMessage()).isEqualTo(issueMessage);
+    assertThat(issueDetails.getTextRange().getStartLine()).isEqualTo(1);
+    assertThat(issueDetails.getTextRange().getEndLine()).isEqualTo(2);
+    assertThat(issueDetails.getTextRange().getStartLineOffset()).isEqualTo(3);
+    assertThat(issueDetails.getTextRange().getEndLineOffset()).isEqualTo(4);
+    assertThat(issueDetails.getServerRelativeFilePath()).isEqualTo(issuePath);
+    assertThat(issueDetails.getFlows()).hasSize(1);
+    assertThat(issueDetails.getCodeSnippet()).isEqualTo(codeSnippet);
 
-    var locations = showIssueParams.getFlows().get(0).getLocations();
+    var locations = issueDetails.getFlows().get(0).getLocations();
     assertThat(locations).hasSize(2);
     assertThat(locations.get(0).getTextRange().getStartLine()).isEqualTo(5);
     assertThat(locations.get(0).getTextRange().getEndLine()).isEqualTo(5);

@@ -19,74 +19,59 @@
  */
 package org.sonarsource.sonarlint.core.rpc.client;
 
-import java.net.Authenticator;
-import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
-import java.net.Proxy;
-import java.net.ProxySelector;
 import java.net.URI;
 import java.net.URL;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CancellationException;
-import java.util.stream.Collectors;
+import javax.annotation.CheckForNull;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
-import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
-import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
-import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientInfoDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.ClientErrorCode;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.DidChangeMatchedSonarProjectBranchParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityChangedOrClosedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerTaintVulnerabilityRaisedEvent;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListAllFilePathsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListAllFilePathsResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.ShowHotspotParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.http.CheckServerTrustedParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.http.CheckServerTrustedResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordAuthenticationParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FoundFileDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordAuthenticationResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.ProxyDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.info.GetClientInfoResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.http.X509CertificateDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidUpdatePluginsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
+/**
+ * This is the interface that should be implemented by Java clients. We are trying to decouple from the RPC framework as much as possible,
+ * but most of those methods should be pretty similar to {@link org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient}.
+ * The "delegation" is made in {@link SonarLintRpcClientImpl}
+ */
 public interface SonarLintRpcClientDelegate {
 
-  void suggestBinding(SuggestBindingParams params);
+  void suggestBinding(Map<String, List<BindingSuggestionDto>> suggestionsByConfigScope);
 
-  FindFileByNamesInScopeResponse findFileByNamesInScope(FindFileByNamesInScopeParams params, CancelChecker cancelChecker);
+  List<FoundFileDto> findFileByNamesInScope(String configScopeId, List<String> filenames, CancelChecker cancelChecker) throws ConfigScopeNotFoundException;
 
-  void openUrlInBrowser(OpenUrlInBrowserParams params);
+  void openUrlInBrowser(URL url);
 
   /**
    * Display a message to the user, usually in a small notification.
    * The message is informative and does not imply applying an action.
    */
-  void showMessage(ShowMessageParams params);
+  void showMessage(MessageType type, String text);
 
   void log(LogParams params);
 
@@ -101,43 +86,37 @@ public interface SonarLintRpcClientDelegate {
   void showSmartNotification(ShowSmartNotificationParams params);
 
   /**
-   * Ask the client to provide the dynamic information that can change during the runtime. Static information are provided during {@link SonarLintRpcServer#initialize(InitializeParams)}
-   * in {@link ClientInfoDto}
+   * Return the client dynamic description.
+   * @see SonarLintRpcClient#getClientLiveInfo()
    */
-  GetClientInfoResponse getClientInfo(CancelChecker cancelChecker);
+  String getClientLiveDescription();
 
-  void showHotspot(ShowHotspotParams params);
+  void showHotspot(String configurationScopeId, HotspotDetailsDto hotspotDetails);
 
   /**
-   * Sends a notification to the client to show a specific issue (specified by {@link ShowIssueParams}) in the IDE
+   * Sends a notification to the client to show a specific issue in the IDE
    */
-  void showIssue(ShowIssueParams params);
+  void showIssue(String configurationScopeId, IssueDetailsDto issueDetails);
 
   /**
    * Can be triggered by the backend when trying to handle a feature that needs a connection, e.g. open hotspot.
    * @return the response to this connection creation assist request, that contains the new connection. The client can cancel the request if the user stops the creation process.
    * @throws java.util.concurrent.CancellationException if the client cancels the process
    */
-  default AssistCreatingConnectionResponse assistCreatingConnection(AssistCreatingConnectionParams params, CancelChecker cancelChecker) {
-    throw new CancellationException("Not implemented");
-  }
+  AssistCreatingConnectionResponse assistCreatingConnection(AssistCreatingConnectionParams params, CancelChecker cancelChecker) throws CancellationException;
 
   /**
    * Can be triggered by the backend when trying to handle a feature that needs a bound project, e.g. open hotspot.
    * @return the response to this binding assist request, that contains the bound project. The client can cancel the request if the user stops the binding process.
    * @throws java.util.concurrent.CancellationException if the client cancels the process
    */
-  default AssistBindingResponse assistBinding(AssistBindingParams params, CancelChecker cancelChecker) {
-    throw new CancellationException("Not implemented");
-  }
+  AssistBindingResponse assistBinding(AssistBindingParams params, CancelChecker cancelChecker) throws CancellationException;
 
   /**
    * Requests the client to start showing progress to users.
-   * @throws org.eclipse.lsp4j.jsonrpc.ResponseErrorException with {@link ClientErrorCode#PROGRESS_CREATION_FAILED} if there is an error while creating the corresponding UI
+   * @throws UnsupportedOperationException if there is an error while creating the corresponding UI
    */
-  default void startProgress(StartProgressParams params, CancelChecker cancelChecker) {
-    throw new ResponseErrorException(new ResponseError(ClientErrorCode.PROGRESS_CREATION_FAILED, "Progress not supported", null));
-  }
+  void startProgress(StartProgressParams params) throws UnsupportedOperationException;
 
   /**
    * Reports progress to the client.
@@ -147,45 +126,21 @@ public interface SonarLintRpcClientDelegate {
   void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params);
 
   /**
-   * @throws org.eclipse.lsp4j.jsonrpc.ResponseErrorException with {@link ClientErrorCode#CONNECTION_NOT_FOUND} if the connection doesn't exist on the client side
+   * @throws ConnectionNotFoundException if the connection doesn't exist on the client side
+   * @return null if no credentials are available for this connection (backend may use unauthenticated HTTP requests)
    */
-  GetCredentialsResponse getCredentials(GetCredentialsParams params, CancelChecker cancelChecker);
+  @CheckForNull
+  Either<TokenDto, UsernamePasswordDto> getCredentials(String connectionId) throws ConnectionNotFoundException;
 
-  default SelectProxiesResponse selectProxies(SelectProxiesParams params, CancelChecker cancelChecker) {
-    var proxies = ProxySelector.getDefault().select(URI.create(params.getUri()));
-    return new SelectProxiesResponse(proxies.stream().map(SonarLintRpcClientDelegate::convert).collect(Collectors.toList()));
-  }
+  List<ProxyDto> selectProxies(URI uri);
 
-  private static ProxyDto convert(Proxy proxy) {
-    if (proxy.type() == Proxy.Type.DIRECT) {
-      return ProxyDto.NO_PROXY;
-    }
-    var address = (InetSocketAddress) proxy.address();
-    var server = address.getHostString();
-    var port = address.getPort();
-    return new ProxyDto(proxy.type(), server, port);
-  }
+  GetProxyPasswordAuthenticationResponse getProxyPasswordAuthentication(String host, int port, String protocol, String prompt, String scheme, URL targetHost);
 
   /**
-   * @throws org.eclipse.lsp4j.jsonrpc.ResponseErrorException with {@link ResponseErrorCode#InvalidParams} if the targetHostUrl is not a valid URL
+   * @param chain the peer certificate chain
+   * @param authType the key exchange algorithm used
    */
-  default GetProxyPasswordAuthenticationResponse getProxyPasswordAuthentication(GetProxyPasswordAuthenticationParams params, CancelChecker cancelChecker) {
-    // use null addr, because the authentication fails if it does not exactly match the expected realm's host
-    URL targetHostUrl;
-    try {
-      targetHostUrl = new URL(params.getTargetHostURL());
-    } catch (MalformedURLException e) {
-      throw new ResponseErrorException(new ResponseError(ResponseErrorCode.InvalidParams, "targetHostUrl is not a valid URL: " + params.getTargetHostURL(), null));
-    }
-    var passwordAuthentication = Authenticator.requestPasswordAuthentication(params.getHost(), null, params.getPort(), params.getProtocol(), params.getPrompt(), params.getScheme(),
-      targetHostUrl, Authenticator.RequestorType.PROXY);
-    return new GetProxyPasswordAuthenticationResponse(passwordAuthentication != null ? passwordAuthentication.getUserName() : null,
-      passwordAuthentication != null ? new String(passwordAuthentication.getPassword()) : null);
-  }
-
-  default CheckServerTrustedResponse checkServerTrusted(CheckServerTrustedParams params, CancelChecker cancelChecker) {
-    return new CheckServerTrustedResponse(false);
-  }
+  boolean checkServerTrusted(List<X509CertificateDto> chain, String authType);
 
   void didReceiveServerTaintVulnerabilityRaisedEvent(DidReceiveServerTaintVulnerabilityRaisedEvent params);
 
@@ -193,13 +148,17 @@ public interface SonarLintRpcClientDelegate {
 
   void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params);
 
-  MatchSonarProjectBranchResponse matchSonarProjectBranch(MatchSonarProjectBranchParams params, CancelChecker cancelChecker);
+  /**
+   * @return null if the client is unable to match the branch
+   */
+  @CheckForNull
+  String matchSonarProjectBranch(String configurationScopeId, String mainBranchName, Set<String> allBranchesNames, CancelChecker cancelChecker) throws ConfigScopeNotFoundException;
 
-  void didChangeMatchedSonarProjectBranch(DidChangeMatchedSonarProjectBranchParams params);
-  void didUpdatePlugins(DidUpdatePluginsParams params);
-  ListAllFilePathsResponse listAllFilePaths(ListAllFilePathsParams params);
+  void didChangeMatchedSonarProjectBranch(String configScopeId, String newMatchedBranchName);
 
-  default TelemetryLiveAttributesResponse getTelemetryLiveAttributes() {
-    throw new CancellationException("Not implemented");
-  }
+  void didUpdatePlugins(String connectionId);
+
+  List<String> listAllFilePaths(String configurationScopeId) throws ConfigScopeNotFoundException;
+
+  TelemetryLiveAttributesResponse getTelemetryLiveAttributes();
 }

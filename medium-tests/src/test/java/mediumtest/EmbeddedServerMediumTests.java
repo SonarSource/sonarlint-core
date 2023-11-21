@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 class EmbeddedServerMediumTests {
 
@@ -58,7 +59,9 @@ class EmbeddedServerMediumTests {
 
   @Test
   void it_should_not_trust_origin_having_known_connection_prefix() throws IOException, InterruptedException {
-    var fakeClient = newFakeClient().withClientDescription("WorkspaceTitle").build();
+    var fakeClient = newFakeClient().build();
+    when(fakeClient.getClientLiveDescription()).thenReturn("WorkspaceTitle");
+
     backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").build(fakeClient);
 
     var request = HttpRequest.newBuilder()
@@ -74,7 +77,9 @@ class EmbeddedServerMediumTests {
 
   @Test
   void it_should_return_the_ide_name_and_full_description_if_the_origin_is_trusted() throws IOException, InterruptedException {
-    var fakeClient = newFakeClient().withClientDescription("WorkspaceTitle").build();
+    var fakeClient = newFakeClient().build();
+    when(fakeClient.getClientLiveDescription()).thenReturn("WorkspaceTitle");
+
     backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").build(fakeClient);
 
     var request = HttpRequest.newBuilder()
@@ -90,7 +95,9 @@ class EmbeddedServerMediumTests {
 
   @Test
   void it_should_set_preflight_response_accordingly_when_receiving_preflight_request() throws IOException, InterruptedException {
-    var fakeClient = newFakeClient().withClientDescription("WorkspaceTitle").build();
+    var fakeClient = newFakeClient().build();
+    when(fakeClient.getClientLiveDescription()).thenReturn("WorkspaceTitle");
+
     backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "http://sonar.my").build(fakeClient);
 
     var request = HttpRequest.newBuilder()
@@ -108,7 +115,9 @@ class EmbeddedServerMediumTests {
 
   @Test
   void it_should_receive_bad_request_response_if_not_right_method() throws IOException, InterruptedException {
-    var fakeClient = newFakeClient().withClientDescription("WorkspaceTitle").build();
+    var fakeClient = newFakeClient().build();
+    when(fakeClient.getClientLiveDescription()).thenReturn("WorkspaceTitle");
+
     backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").build(fakeClient);
 
     var requestToken = HttpRequest.newBuilder()

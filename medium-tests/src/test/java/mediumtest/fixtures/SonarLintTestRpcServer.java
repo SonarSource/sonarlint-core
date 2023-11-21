@@ -67,7 +67,7 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
 
   @Override
   public CompletableFuture<Void> initialize(InitializeParams params) {
-    this.productKey = params.getClientInfo().getTelemetryInitDto().getProductKey();
+    this.productKey = params.getTelemetryConstantAttributes().getProductKey();
     this.userHome = Path.of(requireNonNull(params.getSonarlintUserHome()));
     this.workDir = requireNonNull(params.getWorkDir());
     this.storageRoot = requireNonNull(params.getStorageRoot());

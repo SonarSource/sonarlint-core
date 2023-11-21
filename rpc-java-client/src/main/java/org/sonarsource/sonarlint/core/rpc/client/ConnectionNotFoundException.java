@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - RPC Java Client
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,24 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.client.branch;
+package org.sonarsource.sonarlint.core.rpc.client;
 
-import java.util.Set;
-
-public class SonarProjectBranches {
-  private final String mainBranchName;
-  private final Set<String> allBranchesNames;
-
-  public SonarProjectBranches(String mainBranchName, Set<String> allBranchesNames) {
-    this.mainBranchName = mainBranchName;
-    this.allBranchesNames = allBranchesNames;
-  }
-
-  public String getMainBranchName() {
-    return mainBranchName;
-  }
-
-  public Set<String> getAllBranchesNames() {
-    return allBranchesNames;
-  }
+public class ConnectionNotFoundException extends Exception {
 }
