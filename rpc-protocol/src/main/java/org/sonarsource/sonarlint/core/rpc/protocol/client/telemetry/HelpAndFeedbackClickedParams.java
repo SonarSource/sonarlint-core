@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-@ParametersAreNonnullByDefault
-package org.sonarsource.sonarlint.core.telemetry;
+package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
 
-import javax.annotation.ParametersAreNonnullByDefault;
+public class HelpAndFeedbackClickedParams {
+  private final String itemId;
+
+  public HelpAndFeedbackClickedParams(String itemId) {
+    this.itemId = itemId;
+  }
+
+  public String getItemId() {
+    return itemId;
+  }
+}
