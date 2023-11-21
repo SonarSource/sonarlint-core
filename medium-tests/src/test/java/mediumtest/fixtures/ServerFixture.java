@@ -481,7 +481,7 @@ public class ServerFixture {
       }
     }
 
-    private void registerSystemApiResponses() {
+    public void registerSystemApiResponses() {
       mockServer.stubFor(get("/api/system/status")
         .willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"" + version + "\",\"status\": " +
           "\"" + serverStatus + "\"}")));

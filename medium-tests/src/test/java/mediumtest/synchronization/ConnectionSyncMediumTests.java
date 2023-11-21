@@ -19,17 +19,25 @@
  */
 package mediumtest.synchronization;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidChangeCredentialsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,6 +46,8 @@ import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 
 class ConnectionSyncMediumTests {
+  public static final String CONNECTION_ID = "connectionId";
+  public static final String SCOPE_ID = "scopeId";
   private SonarLintRpcServer backend;
 
   @AfterEach
@@ -50,13 +60,13 @@ class ConnectionSyncMediumTests {
   @Test
   void it_should_cache_extracted_rule_metadata_per_connection() {
     var client = newFakeClient()
-      .withCredentials("connectionId", "user", "pw")
+      .withCredentials(CONNECTION_ID, "user", "pw")
       .build();
     when(client.getClientLiveDescription()).thenReturn(this.getClass().getName());
 
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", storage -> storage.withPlugin(TestPlugin.JAVA))
-      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withSonarQubeConnection(CONNECTION_ID, storage -> storage.withPlugin(TestPlugin.JAVA))
+      .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, "projectKey")
       .withEnabledLanguageInStandaloneMode(JAVA)
       .build(client);
     await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Binding suggestion computation queued for config scopes 'scopeId'..."));
@@ -64,34 +74,69 @@ class ConnectionSyncMediumTests {
     assertThat(client.getLogMessages()).doesNotContain("Extracting rules metadata for connection 'connectionId'");
 
     // Trigger lazy initialization of the rules metadata
-    getEffectiveRuleDetails("scopeId", "java:S106");
+    getEffectiveRuleDetails(SCOPE_ID, "java:S106");
     await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Extracting rules metadata for connection 'connectionId'"));
 
     // Second call should not trigger init as results are already cached
     client.clearLogs();
 
-    getEffectiveRuleDetails("scopeId", "java:S106");
+    getEffectiveRuleDetails(SCOPE_ID, "java:S106");
     assertThat(client.getLogs()).extracting(LogParams::getLevel, LogParams::getMessage).isEmpty();
   }
 
   @Test
   void it_should_evict_cache_when_connection_is_removed() {
     var client = newFakeClient()
-      .withCredentials("connectionId", "user", "pw")
+      .withCredentials(CONNECTION_ID, "user", "pw")
       .build();
     when(client.getClientLiveDescription()).thenReturn(this.getClass().getName());
 
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", storage -> storage.withPlugin(TestPlugin.JAVA))
-      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withSonarQubeConnection(CONNECTION_ID, storage -> storage.withPlugin(TestPlugin.JAVA))
+      .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, "projectKey")
       .withEnabledLanguageInStandaloneMode(JAVA)
       .build(client);
     await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Binding suggestion computation queued for config scopes 'scopeId'..."));
-    getEffectiveRuleDetails("scopeId", "java:S106");
+    getEffectiveRuleDetails(SCOPE_ID, "java:S106");
 
     backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(), List.of()));
 
     await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Evict cached rules definitions for connection 'connectionId'"));
+  }
+
+  @Test
+  void it_should_sync_when_credentials_are_updated() {
+    var client = newFakeClient()
+      .withCredentials(CONNECTION_ID, "user", "pw")
+      .build();
+    when(client.getClientLiveDescription()).thenReturn(this.getClass().getName());
+
+    var introductionDate = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+    var server = newSonarQubeServer()
+      .withProject("projectKey",
+        project -> project.withBranch("main",
+          branch -> branch.withTaintIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, introductionDate, new TextRange(1, 2, 3, 4),
+            RuleType.VULNERABILITY)))
+      .start();
+
+    server.getMockServer().stubFor(get("/api/system/status").willReturn(aResponse().withStatus(401)));
+
+    backend = newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage.withPlugin(TestPlugin.JAVA))
+      .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, "projectKey")
+      .withEnabledLanguageInStandaloneMode(JAVA)
+      .withProjectSynchronization()
+      .withFullSynchronization()
+      .build(client);
+    await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Error during synchronization"));
+
+    server.registerSystemApiResponses();
+
+    backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams(CONNECTION_ID));
+
+    await().untilAsserted(() -> assertThat(client.getLogMessages()).contains(
+      "Synchronizing connection 'connectionId' after credential changed",
+      "[SYNC] Synchronizing project branches for project 'projectKey'"));
   }
 
   private EffectiveRuleDetailsDto getEffectiveRuleDetails(String configScopeId, String ruleKey) {

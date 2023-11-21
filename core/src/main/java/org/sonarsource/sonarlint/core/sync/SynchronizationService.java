@@ -49,6 +49,7 @@ import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConnectionCredentialsChangedEvent;
 import org.sonarsource.sonarlint.core.event.MatchedSonarProjectBranchChangedEvent;
 import org.sonarsource.sonarlint.core.event.TaintVulnerabilitiesSynchronizedEvent;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
@@ -77,7 +78,7 @@ import static java.util.stream.Collectors.toSet;
 
 @Named
 @Singleton
-public class SynchronizationServiceImpl {
+public class SynchronizationService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final SonarLintRpcClient client;
@@ -96,7 +97,7 @@ public class SynchronizationServiceImpl {
   private final ApplicationEventPublisher eventPublisher;
   private ScheduledExecutorService scheduledSynchronizer;
 
-  public SynchronizationServiceImpl(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
+  public SynchronizationService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
     SonarProjectBranchTrackingService branchService, ServerApiProvider serverApiProvider, StorageService storageService, InitializeParams params,
     SonarProjectBranchTrackingService branchTrackingService, FilePathTranslationRepository filePathTranslationRepository,
     SynchronizationStatusRepository synchronizationStatusRepository, ApplicationEventPublisher eventPublisher) {
@@ -217,6 +218,7 @@ public class SynchronizationServiceImpl {
     if (!fullSynchronizationEnabled) {
       return;
     }
+    LOG.debug("Synchronizing new configuration scopes: {}", event.getAddedConfigurationScopeIds());
     var scopesToSynchronize = event.getAddedConfigurationScopeIds()
       .stream().map(configurationRepository::getBoundScope)
       .filter(Objects::nonNull)
@@ -240,6 +242,21 @@ public class SynchronizationServiceImpl {
       serverApiProvider.getServerApi(newConnectionId).ifPresent(serverApi -> synchronizeConnectionAndProjectsIfNeeded(newConnectionId, serverApi,
         List.of(new BoundScope(configScopeId, newConnectionId, requireNonNull(event.getNewConfig().getSonarProjectKey())))));
     }
+  }
+
+  @EventListener
+  public void onConnectionCredentialsChanged(ConnectionCredentialsChangedEvent event) {
+    if (!fullSynchronizationEnabled) {
+      return;
+    }
+    var connectionId = event.getConnectionId();
+    LOG.debug("Synchronizing connection '{}' after credential changed", connectionId);
+    var bindingsForUpdatedConnection = configurationRepository.getBoundScopesByConnection(connectionId)
+      .stream()
+      .map(b -> new BoundScope(connectionId, connectionId, b.getSonarProjectKey()))
+      .collect(toList());
+    serverApiProvider.getServerApi(connectionId)
+      .ifPresent(serverApi -> synchronizeConnectionAndProjectsIfNeeded(connectionId, serverApi, bindingsForUpdatedConnection));
   }
 
   private void synchronizeConnectionAndProjectsIfNeeded(String connectionId, ServerApi serverApi, List<BoundScope> boundScopes) {
