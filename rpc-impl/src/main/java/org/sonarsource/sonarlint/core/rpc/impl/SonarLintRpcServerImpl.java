@@ -43,7 +43,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SingleThreadedMessageConsumer
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.PathTypeAdapter;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.BackendErrorCode;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.BindingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.SonarProjectBranchRpcService;
@@ -105,7 +105,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
         springApplicationContextInitializer = new SpringApplicationContextInitializer(client, params);
         initialized.set(true);
       } else {
-        var error = new ResponseError(BackendErrorCode.BACKEND_ALREADY_INITIALIZED, "Backend already initialized", null);
+        var error = new ResponseError(SonarLintRpcErrorCode.BACKEND_ALREADY_INITIALIZED, "Backend already initialized", null);
         throw new ResponseErrorException(error);
       }
       return null;

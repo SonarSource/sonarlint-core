@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - RPC Java Client
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,6 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+<<<<<<<< HEAD:rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/client/analysis/DidChangeNodeJsParams.java
 package org.sonarsource.sonarlint.core.rpc.protocol.client.analysis;
 
 import java.nio.file.Path;
@@ -40,4 +41,9 @@ public class DidChangeNodeJsParams {
   public String getVersion() {
     return version;
   }
+========
+package org.sonarsource.sonarlint.core.rpc.client;
+
+public class ConnectionNotFoundException extends Exception {
+>>>>>>>> f63286f2b (SLCORE-626 Remove unnecessary RPC wrapping on client side (#783)):rpc-java-client/src/main/java/org/sonarsource/sonarlint/core/rpc/client/ConnectionNotFoundException.java
 }
