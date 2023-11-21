@@ -26,13 +26,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
-import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
@@ -58,7 +56,6 @@ import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 import org.springframework.context.event.EventListener;
 
 import static org.sonarsource.sonarlint.core.utils.FutureUtils.waitForHttpRequest;
-import static org.sonarsource.sonarlint.core.utils.FutureUtils.waitForTask;
 import static org.sonarsource.sonarlint.core.utils.FutureUtils.waitForTaskWithResult;
 
 @Named
@@ -237,33 +234,27 @@ public class IssueService {
     var configurationScopeId = params.getConfigurationScopeId();
     var filePath = params.getRelativePath();
     var localOnlyIssueStore = localOnlyIssueStorageService.get();
-    waitForTask(cancelChecker, removeAllIssuesForFile(localOnlyIssueStore, configurationScopeId, filePath), "Reopen all issues for file", Duration.ofMinutes(1));
+    removeAllIssuesForFile(localOnlyIssueStore, configurationScopeId, filePath, cancelChecker);
     return localOnlyIssueStorageService.get().removeAllIssuesForFile(configurationScopeId, filePath);
   }
 
-  private CompletableFuture<Void> removeAllIssuesForFile(XodusLocalOnlyIssueStore localOnlyIssueStore,
-    String configurationScopeId, String filePath) {
-    return CompletableFutures.computeAsync(cancelChecker -> {
-      var allIssues = localOnlyIssueStore.loadAll(configurationScopeId);
-      var issuesForFile = localOnlyIssueStore.loadForFile(configurationScopeId, filePath);
-      var issuesToSync = subtract(allIssues, issuesForFile);
-      var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
-      var serverConnection = serverApiProvider.getServerApiOrThrow(binding.getConnectionId());
-      waitForHttpRequest(cancelChecker, serverConnection.issue().anticipatedTransitions(binding.getSonarProjectKey(), issuesToSync), "Reopen all issues for file");
-      return null;
-    });
+  private void removeAllIssuesForFile(XodusLocalOnlyIssueStore localOnlyIssueStore,
+    String configurationScopeId, String filePath, CancelChecker cancelChecker) {
+    var allIssues = localOnlyIssueStore.loadAll(configurationScopeId);
+    var issuesForFile = localOnlyIssueStore.loadForFile(configurationScopeId, filePath);
+    var issuesToSync = subtract(allIssues, issuesForFile);
+    var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
+    var serverConnection = serverApiProvider.getServerApiOrThrow(binding.getConnectionId());
+    waitForHttpRequest(cancelChecker, serverConnection.issue().anticipatedTransitions(binding.getSonarProjectKey(), issuesToSync), "Reopen all issues for file");
   }
 
-  private CompletableFuture<Void> removeIssueOnServer(XodusLocalOnlyIssueStore localOnlyIssueStore,
-    String configurationScopeId, UUID issueId) {
-    return CompletableFutures.computeAsync(cancelChecker -> {
-      var allIssues = localOnlyIssueStore.loadAll(configurationScopeId);
-      var issuesToSync = allIssues.stream().filter(it -> !it.getId().equals(issueId)).collect(Collectors.toList());
-      var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
-      var serverConnection = serverApiProvider.getServerApiOrThrow(binding.getConnectionId());
-      waitForHttpRequest(cancelChecker, serverConnection.issue().anticipatedTransitions(binding.getSonarProjectKey(), issuesToSync), "Remove issue on server");
-      return null;
-    });
+  private void removeIssueOnServer(XodusLocalOnlyIssueStore localOnlyIssueStore,
+    String configurationScopeId, UUID issueId, CancelChecker cancelChecker) {
+    var allIssues = localOnlyIssueStore.loadAll(configurationScopeId);
+    var issuesToSync = allIssues.stream().filter(it -> !it.getId().equals(issueId)).collect(Collectors.toList());
+    var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
+    var serverConnection = serverApiProvider.getServerApiOrThrow(binding.getConnectionId());
+    waitForHttpRequest(cancelChecker, serverConnection.issue().anticipatedTransitions(binding.getSonarProjectKey(), issuesToSync), "Remove issue on server");
   }
 
   private void setCommentOnLocalOnlyIssue(String configurationScopeId, UUID issueId, String comment, CancelChecker cancelChecker) {
@@ -305,7 +296,7 @@ public class IssueService {
     }
     var issueUuid = issueUuidOptional.get();
     var localOnlyIssueStore = localOnlyIssueStorageService.get();
-    waitForTask(cancelChecker, removeIssueOnServer(localOnlyIssueStore, configurationScopeId, issueUuid), "Reopen local issue", Duration.ofMinutes(1));
+    removeIssueOnServer(localOnlyIssueStore, configurationScopeId, issueUuid, cancelChecker);
     return localOnlyIssueStorageService.get().removeIssue(issueUuid);
   }
 
