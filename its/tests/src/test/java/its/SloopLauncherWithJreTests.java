@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryConstantAttributesDto;
 
 import static its.utils.UnArchiveUtils.unarchiveDistribution;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,7 +73,9 @@ class SloopLauncherWithJreTests {
 
   @Test
   void test_all_rules_returns() throws Exception {
-    var clientInfo = new ClientInfoDto("clientName", "integrationTests", "SonarLint ITs");
+    var telemetryInitDto = new TelemetryConstantAttributesDto("SonarLint ITs", "SonarLint ITs",
+      "1.2.3", "4.5.6", "linux", "x64", Collections.emptyMap());
+    var clientInfo = new ClientInfoDto("clientName", "integrationTests", telemetryInitDto);
     var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false);
 
     server.initialize(new InitializeParams(clientInfo, featureFlags, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),

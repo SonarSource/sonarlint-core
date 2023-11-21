@@ -20,9 +20,9 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import java.nio.file.Path;
-import java.util.Set;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
 
 import static org.sonarsource.sonarlint.core.telemetry.TelemetryUtils.dayChanged;
 
@@ -36,11 +36,9 @@ public class TelemetryManager {
 
   private final TelemetryLocalStorageManager storage;
   private final TelemetryHttpClient client;
-  private final TelemetryClientAttributesProvider attributesProvider;
 
-  public TelemetryManager(Path path, TelemetryHttpClient client, TelemetryClientAttributesProvider attributesProvider) {
+  TelemetryManager(Path path, TelemetryHttpClient client) {
     this.storage = newTelemetryStorage(path);
-    this.attributesProvider = attributesProvider;
     this.client = client;
   }
 
@@ -48,22 +46,18 @@ public class TelemetryManager {
     return new TelemetryLocalStorageManager(path);
   }
 
-  public boolean isEnabled() {
-    return storage.tryRead().enabled();
-  }
-
-  public void enable() {
+  void enable(TelemetryLiveAttributesResponse telemetryPayload) {
     storage.tryUpdateAtomically(data -> data.setEnabled(true));
-    uploadLazily();
+    uploadLazily(telemetryPayload);
   }
 
   /**
    * Disable telemetry (opt-out).
    */
-  public void disable() {
+  void disable(TelemetryLiveAttributesResponse telemetryPayload) {
     storage.tryUpdateAtomically(data -> {
       data.setEnabled(false);
-      client.optOut(data, attributesProvider);
+      client.optOut(data, telemetryPayload);
     });
   }
 
@@ -73,20 +67,20 @@ public class TelemetryManager {
    * - the grace period has elapsed since the last upload
    * To be called periodically once a day.
    */
-  public void uploadLazily() {
+  void uploadLazily(TelemetryLiveAttributesResponse telemetryPayload) {
     var readData = storage.tryRead();
     if (!dayChanged(readData.lastUploadTime(), MIN_HOURS_BETWEEN_UPLOAD)) {
       return;
     }
 
     storage.tryUpdateAtomically(data -> {
-      client.upload(data, attributesProvider);
+      client.upload(data, telemetryPayload);
       data.setLastUploadTime();
       data.clearAfterPing();
     });
   }
 
-  public void analysisDoneOnSingleLanguage(@Nullable Language language, int analysisTimeMs) {
+  void analysisDoneOnSingleLanguage(@Nullable Language language, int analysisTimeMs) {
     storage.tryUpdateAtomically(data -> {
       if (language == null) {
         data.setUsedAnalysis("others", analysisTimeMs);
@@ -94,52 +88,5 @@ public class TelemetryManager {
         data.setUsedAnalysis(language.getLanguageKey(), analysisTimeMs);
       }
     });
-  }
-
-  public void analysisDoneOnMultipleFiles() {
-    storage.tryUpdateAtomically(TelemetryLocalStorage::setUsedAnalysis);
-  }
-
-  public void devNotificationsReceived(String eventType) {
-    storage.tryUpdateAtomically(s -> s.incrementDevNotificationsCount(eventType));
-  }
-
-  public void devNotificationsClicked(String eventType) {
-    storage.tryUpdateAtomically(s -> s.incrementDevNotificationsClicked(eventType));
-  }
-
-  public void showHotspotRequestReceived() {
-    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementShowHotspotRequestCount);
-  }
-
-  public void taintVulnerabilitiesInvestigatedLocally() {
-    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementTaintVulnerabilitiesInvestigatedLocallyCount);
-  }
-
-  public void taintVulnerabilitiesInvestigatedRemotely() {
-    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementTaintVulnerabilitiesInvestigatedRemotelyCount);
-  }
-
-  public void addReportedRules(Set<String> ruleKeys) {
-    storage.tryUpdateAtomically(s -> s.addReportedRules(ruleKeys));
-  }
-
-  public void addQuickFixAppliedForRule(String ruleKey) {
-    storage.tryUpdateAtomically(s -> s.addQuickFixAppliedForRule(ruleKey));
-  }
-
-  public void helpAndFeedbackLinkClicked(String itemId) {
-    storage.tryUpdateAtomically(s -> s.helpAndFeedbackLinkClicked(itemId));
-  }
-
-  public void smartNotificationsSent(String itemId) {
-    storage.tryUpdateAtomically(s -> s.helpAndFeedbackLinkClicked(itemId));
-  }
-
-  /**
-   * Save and upload lazily telemetry data.
-   */
-  public void stop() {
-    uploadLazily();
   }
 }
