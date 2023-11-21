@@ -19,11 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.info;
 
-public class GetClientDescriptionResponse {
+public class GetClientLiveInfoResponse {
 
   private final String description;
 
-  public GetClientDescriptionResponse(String description) {
+  /**
+   * @param description For clients that support multiple instances, the description should be specific enough to identify the instance
+   *     (example: Eclipse Workspace, IntelliJ flavor, ...). Still be careful to not expose sensitive data, as the content may be accessed externally.
+   *     This will be used to disambiguate between multiple instances of the same client for the open issue/hotspot in IDE feature.
+   */
+  public GetClientLiveInfoResponse(String description) {
     this.description = description;
   }
 

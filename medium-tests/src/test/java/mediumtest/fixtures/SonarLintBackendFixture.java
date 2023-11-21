@@ -56,7 +56,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.Configur
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientInfoDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
@@ -347,12 +347,12 @@ public class SonarLintBackendFixture {
         var sonarLintBackend = createTestBackend(client);
         var telemetryInitDto = new TelemetryConstantAttributesDto("mediumTests", "mediumTests",
           "1.2.3", "4.5.6", "linux", "x64", emptyMap());
-        var clientInfo = new ClientInfoDto(clientName, userAgent, telemetryInitDto);
+        var clientInfo = new ClientConstantInfoDto(clientName, userAgent);
         var featureFlags = new FeatureFlagsDto(manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, startEmbeddedServer, areSecurityHotspotsEnabled,
           manageServerSentEvents, shouldManageFullSynchronization);
 
         sonarLintBackend
-          .initialize(new InitializeParams(clientInfo, featureFlags,
+          .initialize(new InitializeParams(clientInfo, telemetryInitDto, featureFlags,
             storageRoot, workDir, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
             enabledLanguages, extraEnabledLanguagesInConnectedMode, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
             standaloneConfigByKey, isFocusOnNewCode))
@@ -444,7 +444,7 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public String getClientDescription() {
+    public String getClientLiveDescription() {
       return "";
     }
 

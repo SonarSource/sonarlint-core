@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import mediumtest.fixtures.ServerFixture;
+import mediumtest.fixtures.SonarLintBackendFixture;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -58,7 +59,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-class ShowIssueMediumTests {
+class OpenIssueInIdeMediumTests {
 
   public static final String PROJECT_KEY = "projectKey";
   @RegisterExtension
@@ -231,15 +232,8 @@ class ShowIssueMediumTests {
   @Test
   void it_should_assist_creating_the_binding_if_scope_not_bound() throws Exception {
     var fakeClient = newFakeClient().build();
-    doAnswer((Answer<AssistCreatingConnectionResponse>) invocation -> {
-      backend.getConnectionService().didUpdateConnections(
-        new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, serverWithIssues.baseUrl(), true)), Collections.emptyList()));
-      return new AssistCreatingConnectionResponse(CONNECTION_ID);
-    }).when(fakeClient).assistCreatingConnection(any(), any());
-    doAnswer((Answer<AssistBindingResponse>) invocation -> {
-      backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID, new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY, false)));
-      return new AssistBindingResponse(CONFIG_SCOPE_ID);
-    }).when(fakeClient).assistBinding(any(), any());
+    mockAssistCreatingConnection(fakeClient, CONNECTION_ID);
+    mockAssistBinding(fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
     backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, serverWithIssues)
@@ -257,15 +251,8 @@ class ShowIssueMediumTests {
   @Test
   void it_should_assist_creating_the_connection_when_server_url_unknown() throws Exception {
     var fakeClient = newFakeClient().build();
-    doAnswer((Answer<AssistCreatingConnectionResponse>) invocation -> {
-      backend.getConnectionService().didUpdateConnections(
-        new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, serverWithIssues.baseUrl(), true)), Collections.emptyList()));
-      return new AssistCreatingConnectionResponse(CONNECTION_ID);
-    }).when(fakeClient).assistCreatingConnection(any(), any());
-    doAnswer((Answer<AssistBindingResponse>) invocation -> {
-      backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID, new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY, false)));
-      return new AssistBindingResponse(CONFIG_SCOPE_ID);
-    }).when(fakeClient).assistBinding(any(), any());
+    mockAssistCreatingConnection(fakeClient, CONNECTION_ID);
+    mockAssistBinding(fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
@@ -327,5 +314,20 @@ class ShowIssueMediumTests {
         + branchParam + pullRequestParam))
       .header("Origin", "https://sonar.my")
       .GET().build();
+  }
+
+  private void mockAssistBinding(SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient, String configScopeId, String connectionId, String sonarProjectKey) {
+    doAnswer((Answer<AssistBindingResponse>) invocation -> {
+      backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(connectionId, sonarProjectKey, false)));
+      return new AssistBindingResponse(configScopeId);
+    }).when(fakeClient).assistBinding(any(), any());
+  }
+
+  private void mockAssistCreatingConnection(SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient, String connectionId) {
+    doAnswer((Answer<AssistCreatingConnectionResponse>) invocation -> {
+      backend.getConnectionService().didUpdateConnections(
+        new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto(connectionId, serverWithIssues.baseUrl(), true)), Collections.emptyList()));
+      return new AssistCreatingConnectionResponse(connectionId);
+    }).when(fakeClient).assistCreatingConnection(any(), any());
   }
 }

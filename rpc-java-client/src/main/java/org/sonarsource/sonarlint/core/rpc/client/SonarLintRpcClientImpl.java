@@ -58,7 +58,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordA
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordAuthenticationResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.info.GetClientDescriptionResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.info.GetClientLiveInfoResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
@@ -167,8 +167,8 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   }
 
   @Override
-  public CompletableFuture<GetClientDescriptionResponse> getClientDescription() {
-    return requestAsync(cancelChecker -> new GetClientDescriptionResponse(delegate.getClientDescription()));
+  public CompletableFuture<GetClientLiveInfoResponse> getClientLiveInfo() {
+    return requestAsync(cancelChecker -> new GetClientLiveInfoResponse(delegate.getClientLiveDescription()));
   }
 
   @Override

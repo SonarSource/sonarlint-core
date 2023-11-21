@@ -56,7 +56,7 @@ public class TokenGeneratorHelper {
     this.client = client;
     this.embeddedServer = embeddedServer;
     this.awaitingUserTokenFutureRepository = awaitingUserTokenFutureRepository;
-    this.clientName = params.getClientInfo().getName();
+    this.clientName = params.getClientConstantInfo().getName();
     this.httpClientProvider = httpClientProvider;
   }
 

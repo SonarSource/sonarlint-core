@@ -52,7 +52,7 @@ class ConnectionSyncMediumTests {
     var client = newFakeClient()
       .withCredentials("connectionId", "user", "pw")
       .build();
-    when(client.getClientDescription()).thenReturn(this.getClass().getName());
+    when(client.getClientLiveDescription()).thenReturn(this.getClass().getName());
 
     backend = newBackend()
       .withSonarQubeConnection("connectionId", storage -> storage.withPlugin(TestPlugin.JAVA))
@@ -79,7 +79,7 @@ class ConnectionSyncMediumTests {
     var client = newFakeClient()
       .withCredentials("connectionId", "user", "pw")
       .build();
-    when(client.getClientDescription()).thenReturn(this.getClass().getName());
+    when(client.getClientLiveDescription()).thenReturn(this.getClass().getName());
 
     backend = newBackend()
       .withSonarQubeConnection("connectionId", storage -> storage.withPlugin(TestPlugin.JAVA))

@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientInfoDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
@@ -50,7 +50,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordA
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordAuthenticationResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.info.GetClientDescriptionResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.info.GetClientLiveInfoResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
@@ -105,15 +105,12 @@ public interface SonarLintRpcClient {
   void showSmartNotification(ShowSmartNotificationParams params);
 
   /**
-   * Ask the client to provide its dynamic description that can change during the runtime. This is used as a complement to
+   * Ask the client to provide its dynamic info that can change during the runtime. This is used as a complement to
    * static information provided during {@link SonarLintRpcServer#initialize(InitializeParams)}
-   * in {@link ClientInfoDto}.
-   * For clients that support multiple instances, the description should be specific enough to identify the instance
-   * (example: Eclipse Workspace, IntelliJ flavor, ...). Still be careful to not expose sensitive data, as the content may be accessed externally.
-   * This will be used to disambiguate between multiple instances of the same client for the open issue/hotspot in IDE feature.
+   * in {@link ClientConstantInfoDto}.
    */
   @JsonRequest
-  CompletableFuture<GetClientDescriptionResponse> getClientDescription();
+  CompletableFuture<GetClientLiveInfoResponse> getClientLiveInfo();
 
   @JsonNotification
   void showHotspot(ShowHotspotParams params);
@@ -158,7 +155,7 @@ public interface SonarLintRpcClient {
   void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params);
 
   /**
-   * @throws org.eclipse.lsp4j.jsonrpc.ResponseErrorException with {@link org.sonarsource.sonarlint.core.rpc.protocol.client.ClientErrorCode#CONNECTION_NOT_FOUND} if the connection doesn't exist on the client side
+   * @throws org.eclipse.lsp4j.jsonrpc.ResponseErrorException with {@link org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode#CONNECTION_NOT_FOUND} if the connection doesn't exist on the client side
    */
   @JsonRequest
   CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params);

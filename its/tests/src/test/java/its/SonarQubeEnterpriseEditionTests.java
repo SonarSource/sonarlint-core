@@ -110,7 +110,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     backend = clientLauncher.getServerProxy();
     try {
       backend.initialize(
-        new InitializeParams(IT_CLIENT_INFO, new FeatureFlagsDto(false, true, false, false, false, false, false), sonarUserHome.resolve("storage"),
+        new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, new FeatureFlagsDto(false, true, false, false, false, false, false), sonarUserHome.resolve("storage"),
           sonarUserHome.resolve("workDir"),
           Collections.emptySet(),
           Collections.emptyMap(), Set.of(JAVA), Collections.emptySet(),

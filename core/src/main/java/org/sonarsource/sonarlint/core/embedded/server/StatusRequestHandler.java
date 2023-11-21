@@ -39,7 +39,7 @@ import org.apache.hc.core5.http.io.HttpRequestHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientInfoDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 
@@ -49,12 +49,12 @@ public class StatusRequestHandler implements HttpRequestHandler {
 
   private final SonarLintRpcClient client;
   private final ConnectionConfigurationRepository repository;
-  private final ClientInfoDto clientInfo;
+  private final ClientConstantInfoDto clientInfo;
 
   public StatusRequestHandler(SonarLintRpcClient client, ConnectionConfigurationRepository repository, InitializeParams params) {
     this.client = client;
     this.repository = repository;
-    this.clientInfo = params.getClientInfo();
+    this.clientInfo = params.getClientConstantInfo();
   }
 
   @Override
@@ -76,7 +76,7 @@ public class StatusRequestHandler implements HttpRequestHandler {
   private String getDescription(boolean trustedServer) {
     if (trustedServer) {
       try {
-        var getClientInfoResponse = client.getClientDescription().get(1, TimeUnit.SECONDS);
+        var getClientInfoResponse = client.getClientLiveInfo().get(1, TimeUnit.SECONDS);
         return getClientInfoResponse.getDescription();
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
