@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-parent</artifactId>
-    <version>9.5-SNAPSHOT</version>
+    <version>9.6-SNAPSHOT</version>
   </parent>
   <artifactId>sonarlint-medium-tests</artifactId>
   <name>SonarLint Core - Medium Tests</name>
