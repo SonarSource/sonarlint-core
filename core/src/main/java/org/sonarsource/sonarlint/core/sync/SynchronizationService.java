@@ -124,7 +124,7 @@ public class SynchronizationService {
       return;
     }
     scheduledSynchronizer = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SonarLint Local Storage Synchronizer"));
-    scheduledSynchronizer.scheduleAtFixedRate(this::safeAutoSync, 1L, 3600, TimeUnit.SECONDS);
+    scheduledSynchronizer.scheduleAtFixedRate(this::safeAutoSync, 3600L, 3600L, TimeUnit.SECONDS);
   }
 
   // we must catch errors for the scheduling to not stop
