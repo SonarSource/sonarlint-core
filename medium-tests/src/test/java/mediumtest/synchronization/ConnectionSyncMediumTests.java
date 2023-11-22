@@ -135,7 +135,7 @@ class ConnectionSyncMediumTests {
     backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams(CONNECTION_ID));
 
     await().untilAsserted(() -> assertThat(client.getLogMessages()).contains(
-      "Synchronizing connection 'connectionId' after credential changed",
+      "Synchronizing connection 'connectionId' after credentials changed",
       "[SYNC] Synchronizing project branches for project 'projectKey'"));
   }
 

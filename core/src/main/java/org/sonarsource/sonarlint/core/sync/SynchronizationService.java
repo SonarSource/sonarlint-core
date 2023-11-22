@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -93,14 +94,14 @@ public class SynchronizationService {
   private final boolean fullSynchronizationEnabled;
   private final SonarProjectBranchTrackingService branchTrackingService;
   private final FilePathTranslationRepository filePathTranslationRepository;
-  private final SynchronizationStatusRepository synchronizationStatusRepository;
+  private final SynchronizationTimestampRepository synchronizationTimestampRepository;
   private final ApplicationEventPublisher eventPublisher;
   private ScheduledExecutorService scheduledSynchronizer;
 
   public SynchronizationService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
     SonarProjectBranchTrackingService branchService, ServerApiProvider serverApiProvider, StorageService storageService, InitializeParams params,
     SonarProjectBranchTrackingService branchTrackingService, FilePathTranslationRepository filePathTranslationRepository,
-    SynchronizationStatusRepository synchronizationStatusRepository, ApplicationEventPublisher eventPublisher) {
+    SynchronizationTimestampRepository synchronizationTimestampRepository, ApplicationEventPublisher eventPublisher) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
@@ -113,7 +114,7 @@ public class SynchronizationService {
     this.fullSynchronizationEnabled = params.getFeatureFlags().shouldManageFullSynchronization();
     this.branchTrackingService = branchTrackingService;
     this.filePathTranslationRepository = filePathTranslationRepository;
-    this.synchronizationStatusRepository = synchronizationStatusRepository;
+    this.synchronizationTimestampRepository = synchronizationTimestampRepository;
     this.eventPublisher = eventPublisher;
   }
 
@@ -230,13 +231,13 @@ public class SynchronizationService {
 
   @EventListener
   public void onConfigurationScopeRemoved(ConfigurationScopeRemovedEvent event) {
-    synchronizationStatusRepository.clearLastSynchronizationNow(event.getRemovedConfigurationScopeId());
+    synchronizationTimestampRepository.clearLastSynchronizationTimestamp(event.getRemovedConfigurationScopeId());
   }
 
   @EventListener
   public void onBindingChanged(BindingConfigChangedEvent event) {
     var configScopeId = event.getConfigScopeId();
-    synchronizationStatusRepository.clearLastSynchronizationNow(configScopeId);
+    synchronizationTimestampRepository.clearLastSynchronizationTimestamp(configScopeId);
     var newConnectionId = event.getNewConfig().getConnectionId();
     if (newConnectionId != null) {
       serverApiProvider.getServerApi(newConnectionId).ifPresent(serverApi -> synchronizeConnectionAndProjectsIfNeeded(newConnectionId, serverApi,
@@ -250,21 +251,20 @@ public class SynchronizationService {
       return;
     }
     var connectionId = event.getConnectionId();
-    LOG.debug("Synchronizing connection '{}' after credential changed", connectionId);
-    var bindingsForUpdatedConnection = configurationRepository.getBoundScopesByConnection(connectionId)
-      .stream()
-      .map(b -> new BoundScope(connectionId, connectionId, b.getSonarProjectKey()))
-      .collect(toList());
+    LOG.debug("Synchronizing connection '{}' after credentials changed", connectionId);
+    var bindingsForUpdatedConnection = configurationRepository.getBoundScopesByConnection(connectionId);
+    // Clear the synchronization timestamp for all the scopes so that sync is not skipped
+    bindingsForUpdatedConnection.forEach( boundScope -> synchronizationTimestampRepository.clearLastSynchronizationTimestamp(boundScope.getId()));
     serverApiProvider.getServerApi(connectionId)
       .ifPresent(serverApi -> synchronizeConnectionAndProjectsIfNeeded(connectionId, serverApi, bindingsForUpdatedConnection));
   }
 
-  private void synchronizeConnectionAndProjectsIfNeeded(String connectionId, ServerApi serverApi, List<BoundScope> boundScopes) {
+  private void synchronizeConnectionAndProjectsIfNeeded(String connectionId, ServerApi serverApi, Collection<BoundScope> boundScopes) {
     var scopesToSync = boundScopes.stream().filter(this::shouldSynchronizeScope).collect(toList());
     if (scopesToSync.isEmpty()) {
       return;
     }
-    scopesToSync.forEach(scope -> synchronizationStatusRepository.setLastSynchronizationNow(scope.getId()));
+    scopesToSync.forEach(scope -> synchronizationTimestampRepository.setLastSynchronizationTimestampToNow(scope.getId()));
     var serverConnection = getServerConnection(connectionId, serverApi);
     try {
       var anyPluginUpdated = serverConnection.sync(serverApi);
@@ -284,9 +284,13 @@ public class SynchronizationService {
   }
 
   private boolean shouldSynchronizeScope(BoundScope configScope) {
-    return synchronizationStatusRepository.getLastSynchronizationDate(configScope.getId())
+    var result =  synchronizationTimestampRepository.getLastSynchronizationDate(configScope.getId())
       .map(lastSync -> lastSync.isBefore(Instant.now().minus(5, ChronoUnit.MINUTES)))
       .orElse(true);
+    if (!result) {
+      LOG.debug("Skipping synchronization of configuration scope '{}' because it was synchronized recently", configScope.getId());
+    }
+    return result;
   }
 
   private void matchPaths(ServerApi serverApi, String projectKey, Set<String> configScopeIds) {

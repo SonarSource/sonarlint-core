@@ -28,17 +28,17 @@ import javax.inject.Singleton;
 
 @Named
 @Singleton
-public class SynchronizationStatusRepository {
-  private final Map<String, Instant> lastSynchronizationDatePerConfigScopeId = new ConcurrentHashMap<>();
+public class SynchronizationTimestampRepository {
+  private final Map<String, Instant> lastSynchronizationTimestampPerConfigScopeId = new ConcurrentHashMap<>();
   public Optional<Instant> getLastSynchronizationDate(String configurationScopeId) {
-    return Optional.ofNullable(lastSynchronizationDatePerConfigScopeId.get(configurationScopeId));
+    return Optional.ofNullable(lastSynchronizationTimestampPerConfigScopeId.get(configurationScopeId));
   }
 
-  public void setLastSynchronizationNow(String configurationScopeId) {
-    lastSynchronizationDatePerConfigScopeId.put(configurationScopeId, Instant.now());
+  public void setLastSynchronizationTimestampToNow(String configurationScopeId) {
+    lastSynchronizationTimestampPerConfigScopeId.put(configurationScopeId, Instant.now());
   }
 
-  public void clearLastSynchronizationNow(String configurationScopeId) {
-    lastSynchronizationDatePerConfigScopeId.remove(configurationScopeId);
+  public void clearLastSynchronizationTimestamp(String configurationScopeId) {
+    lastSynchronizationTimestampPerConfigScopeId.remove(configurationScopeId);
   }
 }
