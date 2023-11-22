@@ -1168,9 +1168,10 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("true"));
       try {
+        var rule = ORCHESTRATOR.getServer().version().isGreaterThan(7, 9) ? "'java:S106'" : "'squid:S106'";
         var ex = assertThrows(ExecutionException.class,
           () -> backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, javaRuleKey("S106"), null)).get());
-        assertThat(ex.getCause()).hasMessage("Could not find rule 'java:S106' in plugins loaded from '" + CONNECTION_ID_WRONG_CREDENTIALS + "'");
+        assertThat(ex.getCause()).hasMessage("Could not find rule " + rule + " in plugins loaded from '" + CONNECTION_ID_WRONG_CREDENTIALS + "'");
       } finally {
         adminWsClient.settings().reset(new ResetRequest().setKeys(List.of("sonar.forceAuthentication")));
       }
