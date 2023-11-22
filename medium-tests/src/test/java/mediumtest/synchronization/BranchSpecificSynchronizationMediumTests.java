@@ -45,20 +45,20 @@ import static org.mockito.Mockito.doThrow;
 
 class BranchSpecificSynchronizationMediumTests {
 
-  private ServerFixture.Server serverWithIssues;
+  private ServerFixture.Server server;
 
   @Test
   void it_should_automatically_synchronize_bound_projects_that_have_an_active_branch() {
-    serverWithIssues = newSonarQubeServer("9.6")
+    server = newSonarQubeServer("9.6")
       .withProject("projectKey",
-        project -> project.withBranch("branchName",
+        project -> project.withBranch("main",
           branch -> branch.withIssue("key", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", Instant.now(), new TextRange(1, 0, 3, 4))
             .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))))
       .start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", serverWithIssues)
+      .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "branchName")
-      .withProjectSynchronization()
+      .withFullSynchronization()
       .build();
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
@@ -70,27 +70,25 @@ class BranchSpecificSynchronizationMediumTests {
   @Test
   void it_should_report_progress_to_the_client_when_synchronizing() {
     var fakeClient = newFakeClient().build();
-    serverWithIssues = newSonarQubeServer("9.6")
-      .withProject("projectKey", project -> project.withEmptyBranch("branchName"))
-      .withProject("projectKey2", project -> project.withEmptyBranch("branchName2"))
+    server = newSonarQubeServer("9.6")
+      .withProject("projectKey", project -> project.withBranch("main"))
+      .withProject("projectKey2", project -> project.withBranch("main"))
       .start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", serverWithIssues)
+      .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "branchName")
       .withBoundConfigScope("configScopeId2", "connectionId", "projectKey2", "branchName2")
-      .withProjectSynchronization()
+      .withFullSynchronization()
       .build(fakeClient);
 
-    waitAtMost(3, SECONDS).untilAsserted(() -> {
-      assertThat(fakeClient.getProgressReportsByTaskId())
-        .hasKeySatisfying(isUUID())
-        .containsValue(new ProgressReport(null, "Synchronizing projects...", null, false, false,
-          List.of(
-            new ProgressStep("Synchronizing with 'connectionId'...", 0),
-            new ProgressStep("Synchronizing project 'projectKey'...", 0),
-            new ProgressStep("Synchronizing project 'projectKey2'...", 50)),
-          true));
-    });
+    waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(fakeClient.getProgressReportsByTaskId())
+      .hasKeySatisfying(isUUID())
+      .containsValue(new ProgressReport(null, "Synchronizing projects...", null, false, false,
+        List.of(
+          new ProgressStep("Synchronizing with 'connectionId'...", 0),
+          new ProgressStep("Synchronizing project 'projectKey'...", 0),
+          new ProgressStep("Synchronizing project 'projectKey2'...", 50)),
+        true)));
   }
 
   @Test
@@ -100,15 +98,15 @@ class BranchSpecificSynchronizationMediumTests {
       .when(fakeClient)
       .startProgress(any());
 
-    serverWithIssues = newSonarQubeServer("9.6")
-      .withProject("projectKey", project -> project.withEmptyBranch("branchName"))
-      .withProject("projectKey2", project -> project.withEmptyBranch("branchName2"))
+    server = newSonarQubeServer("9.6")
+      .withProject("projectKey", project -> project.withBranch("main"))
+      .withProject("projectKey2", project -> project.withBranch("main"))
       .start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", serverWithIssues)
+      .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "branchName")
       .withBoundConfigScope("configScopeId2", "connectionId", "projectKey2", "branchName2")
-      .withProjectSynchronization()
+      .withFullSynchronization()
       .build(fakeClient);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
@@ -133,8 +131,8 @@ class BranchSpecificSynchronizationMediumTests {
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
     backend.shutdown().get();
-    if (serverWithIssues != null) {
-      serverWithIssues.shutdown();
+    if (server != null) {
+      server.shutdown();
     }
   }
 
