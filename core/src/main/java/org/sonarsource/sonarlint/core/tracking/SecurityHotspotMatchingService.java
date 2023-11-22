@@ -56,7 +56,7 @@ import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotChangedEvent
 import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotClosedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotRaisedEvent;
 import org.sonarsource.sonarlint.core.storage.StorageService;
-import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
+import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 import org.sonarsource.sonarlint.core.utils.FutureUtils;
 import org.springframework.context.event.EventListener;
 
@@ -71,11 +71,11 @@ public class SecurityHotspotMatchingService {
   private final ConfigurationRepository configurationRepository;
   private final StorageService storageService;
   private final MatchedSonarProjectBranchRepository matchedSonarProjectBranchRepository;
-  private final SynchronizationServiceImpl synchronizationService;
+  private final SynchronizationService synchronizationService;
   private final ExecutorService executorService;
 
   public SecurityHotspotMatchingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, StorageService storageService,
-    MatchedSonarProjectBranchRepository matchedSonarProjectBranchRepository, SynchronizationServiceImpl synchronizationService) {
+    MatchedSonarProjectBranchRepository matchedSonarProjectBranchRepository, SynchronizationService synchronizationService) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.storageService = storageService;
