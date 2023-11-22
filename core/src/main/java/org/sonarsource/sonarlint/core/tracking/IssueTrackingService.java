@@ -62,7 +62,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithSer
 import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.storage.StorageService;
-import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
+import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 import org.sonarsource.sonarlint.core.utils.FutureUtils;
 
 import static org.sonarsource.sonarlint.core.utils.FutureUtils.waitForTasks;
@@ -75,14 +75,14 @@ public class IssueTrackingService {
   private final ConfigurationRepository configurationRepository;
   private final StorageService storageService;
   private final MatchedSonarProjectBranchRepository matchedSonarProjectBranchRepository;
-  private final SynchronizationServiceImpl synchronizationService;
+  private final SynchronizationService synchronizationService;
   private final LocalOnlyIssueRepository localOnlyIssueRepository;
   private final LocalOnlyIssueStorageService localOnlyIssueStorageService;
   private final NewCodeService newCodeService;
   private final ExecutorService executorService;
 
   public IssueTrackingService(ConfigurationRepository configurationRepository, StorageService storageService,
-    MatchedSonarProjectBranchRepository matchedSonarProjectBranchRepository, SynchronizationServiceImpl synchronizationService,
+    MatchedSonarProjectBranchRepository matchedSonarProjectBranchRepository, SynchronizationService synchronizationService,
     LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
     NewCodeService newCodeService) {
     this.configurationRepository = configurationRepository;
