@@ -41,7 +41,7 @@ import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverconnection.VersionUtils;
-import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
+import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 import org.springframework.context.event.EventListener;
 
 @Named
@@ -56,12 +56,12 @@ public class VersionSoonUnsupportedHelper {
   private final ConfigurationRepository configRepository;
   private final ConnectionConfigurationRepository connectionRepository;
   private final ServerApiProvider serverApiProvider;
-  private final SynchronizationServiceImpl synchronizationService;
+  private final SynchronizationService synchronizationService;
   private final Map<String, Version> cacheConnectionIdPerVersion = new ConcurrentHashMap<>();
   private final ExecutorService executorService;
 
   public VersionSoonUnsupportedHelper(SonarLintRpcClient client, ConfigurationRepository configRepository, ServerApiProvider serverApiProvider,
-    ConnectionConfigurationRepository connectionRepository, SynchronizationServiceImpl synchronizationService) {
+    ConnectionConfigurationRepository connectionRepository, SynchronizationService synchronizationService) {
     this.client = client;
     this.configRepository = configRepository;
     this.connectionRepository = connectionRepository;
