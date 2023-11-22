@@ -39,7 +39,7 @@ import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionC
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverconnection.ServerConnection;
 import org.sonarsource.sonarlint.core.serverconnection.VersionUtils;
-import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
+import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -61,7 +61,7 @@ class VersionSoonUnsupportedHelperTests {
 
   private final SonarLintRpcClient client = mock(SonarLintRpcClient.class);
   private final ServerApiProvider serverApiProvider = mock(ServerApiProvider.class);
-  private final SynchronizationServiceImpl synchronizationService = mock(SynchronizationServiceImpl.class);
+  private final SynchronizationService synchronizationService = mock(SynchronizationService.class);
 
   private ConfigurationRepository configRepository;
   private ConnectionConfigurationRepository connectionRepository;

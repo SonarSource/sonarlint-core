@@ -62,7 +62,7 @@ import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
 import org.sonarsource.sonarlint.core.serverconnection.RuleSet;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 import org.sonarsource.sonarlint.core.storage.StorageService;
-import org.sonarsource.sonarlint.core.sync.SynchronizationServiceImpl;
+import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 import org.springframework.context.event.EventListener;
 
 import static org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter.adapt;
@@ -77,18 +77,18 @@ public class RulesService {
   private final ConfigurationRepository configurationRepository;
   private final RulesRepository rulesRepository;
   private final StorageService storageService;
-  private final SynchronizationServiceImpl synchronizationService;
+  private final SynchronizationService synchronizationService;
   private static final String COULD_NOT_FIND_RULE = "Could not find rule '";
   private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfig = new ConcurrentHashMap<>();
 
   @Inject
   public RulesService(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository, StorageService storageService,
-    SynchronizationServiceImpl synchronizationService, InitializeParams params) {
+    SynchronizationService synchronizationService, InitializeParams params) {
     this(serverApiProvider, configurationRepository, rulesRepository, storageService, synchronizationService, params.getStandaloneRuleConfigByKey());
   }
 
   RulesService(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository, StorageService storageService,
-    SynchronizationServiceImpl synchronizationService, Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
+    SynchronizationService synchronizationService, Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
     this.serverApiProvider = serverApiProvider;
     this.configurationRepository = configurationRepository;
     this.rulesRepository = rulesRepository;
