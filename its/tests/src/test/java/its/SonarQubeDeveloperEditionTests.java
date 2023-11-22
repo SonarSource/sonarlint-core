@@ -38,13 +38,11 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -98,11 +96,10 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRul
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDescriptionTabDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
@@ -491,6 +488,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       try {
         updateProject(engine, projectKey);
+        backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+          List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, projectKey, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
 
         var issueListener = new SaveIssueListener();
         engine.analyze(createAnalysisConfiguration(projectKey, "sample-java", "src/main/java/foo/Foo.java"),
@@ -498,9 +497,9 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
         assertThat(issueListener.getIssues()).hasSize(3);
 
-        assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), javaRuleKey("myrule"), projectKey).get()
-          .getHtmlDescription())
-            .contains("my_rule_description");
+        var ruleDetails = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, javaRuleKey("myrule"), null)).get();
+        assertThat(ruleDetails.details().getDescription().getLeft().getHtmlContent()).contains("my_rule_description");
+        assertThat(ruleDetails.details().getName()).isEqualTo("myrule");
 
       } finally {
 
@@ -1094,17 +1093,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     @Test
     @OnlyOnSonarQube(from = "9.7")
     void loadHotspotRuleDescription() throws Exception {
-      updateProject(engine, PROJECT_KEY_JAVA_HOTSPOT);
+      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, PROJECT_KEY_JAVA_HOTSPOT, new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY_JAVA_HOTSPOT, true)))));
 
-      var ruleDetails = engine
-        .getActiveRuleDetails(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), javaRuleKey(ORCHESTRATOR, "S4792"), PROJECT_KEY_JAVA_HOTSPOT)
-        .get();
-
-      assertThat(ruleDetails.getName()).isEqualTo("Configuring loggers is security-sensitive");
-      // HTML description is null for security hotspots when accessed through the deprecated engine API
-      // When accessed through the backend service, the rule descriptions are split into sections
-      // see its.ConnectedModeBackendTest.returnConvertedDescriptionSectionsForHotspotRules
-      assertThat(ruleDetails.getHtmlDescription()).isNull();
+      var ruleDetails = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, "java:S4792", null)).get();
+      assertThat(ruleDetails.details().getName()).isEqualTo("Configuring loggers is security-sensitive");
+      assertThat(ruleDetails.details().getDescription().getRight().getTabs().get(2).getContent().getLeft().getHtmlContent())
+        .contains("Check that your production deployment doesn’t have its loggers in \"debug\" mode");
     }
 
     @Test
@@ -1212,8 +1207,14 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).isNotEmpty());
 
       var ruleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, javaRuleKey("S106"), null)).get();
-      var ruleTabs = ruleDetailsResponse.details().getDescription().getRight().getTabs();
-      assertThat(ruleTabs.get(ruleTabs.size() -1).getContent().getLeft().getHtmlContent()).contains(expected);
+      var ruleDescription = ruleDetailsResponse.details().getDescription();
+      if (!ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
+        // no description sections at that time
+        assertThat(ruleDescription.isRight()).isFalse();
+      } else {
+        var ruleTabs = ruleDescription.getRight().getTabs();
+        assertThat(ruleTabs.get(ruleTabs.size() -1).getContent().getLeft().getHtmlContent()).contains(expected);
+      }
     }
 
     @Test
