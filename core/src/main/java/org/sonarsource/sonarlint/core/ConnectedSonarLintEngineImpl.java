@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -50,7 +49,6 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.DefaultClientIs
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBranches;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
@@ -71,8 +69,6 @@ import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader.Configuration;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
-import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
@@ -328,57 +324,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   private void restartAnalysisEngine() {
     var oldAnalysisContext = start();
     oldAnalysisContext.finishGracefully();
-  }
-
-  @Override
-  public CompletableFuture<ConnectedRuleDetails> getActiveRuleDetails(EndpointParams endpoint, HttpClient client, String ruleKey, @Nullable String projectKey) {
-    setLogging(null);
-    // TODO migrate?
-    var ruleDefFromPluginOpt = analysisContext.get().findRule(ruleKey);
-    if (ruleDefFromPluginOpt.isPresent()) {
-      var ruleDefFromPlugin = ruleDefFromPluginOpt.get();
-      if ((!serverConnection.supportsSecretAnalysis() && ruleDefFromPlugin.getLanguage().equals(Language.SECRETS)) || projectKey == null) {
-        // if no project key, or secrets are not supported by server and it's a secret rule
-        return CompletableFuture.completedFuture(
-          new ConnectedRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(), ruleDefFromPlugin.getDefaultSeverity(),
-            ruleDefFromPlugin.getType(),
-            ruleDefFromPlugin.getLanguage(), ""));
-      }
-    }
-    if (projectKey != null) {
-      var analyzerConfiguration = serverConnection.getAnalyzerConfiguration(projectKey);
-      var storageActiveRule = analyzerConfiguration.getRuleSetByLanguageKey().values().stream()
-        .flatMap(s -> s.getRules().stream())
-        .filter(r -> tryConvertDeprecatedKeys(r).getRuleKey().equals(ruleKey)).findFirst();
-      if (storageActiveRule.isPresent()) {
-        var activeRuleFromStorage = storageActiveRule.get();
-        var serverSeverity = activeRuleFromStorage.getSeverity();
-        if (StringUtils.isNotBlank(activeRuleFromStorage.getTemplateKey())) {
-          var templateRuleDefFromPlugin = analysisContext.get().findRule(activeRuleFromStorage.getTemplateKey())
-            .orElseThrow(() -> new IllegalStateException("Unable to find rule definition for rule template " + activeRuleFromStorage.getTemplateKey()));
-          return new ServerApi(new ServerApiHelper(endpoint, client)).rules().getRule(activeRuleFromStorage.getRuleKey())
-            .thenApply(
-              serverRule -> new ConnectedRuleDetails(
-                ruleKey,
-                serverRule.getName(),
-                serverRule.getHtmlDesc(),
-                serverSeverity,
-                templateRuleDefFromPlugin.getType(),
-                templateRuleDefFromPlugin.getLanguage(),
-                serverRule.getHtmlNote()));
-        } else {
-          return new ServerApi(new ServerApiHelper(endpoint, client)).rules().getRule(activeRuleFromStorage.getRuleKey())
-            .thenApply(serverRule -> ruleDefFromPluginOpt
-              .map(ruleDefFromPlugin -> new ConnectedRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(),
-                Optional.ofNullable(serverSeverity).orElse(ruleDefFromPlugin.getDefaultSeverity()), ruleDefFromPlugin.getType(), ruleDefFromPlugin.getLanguage(),
-                serverRule.getHtmlNote()))
-              .orElse(new ConnectedRuleDetails(ruleKey, serverRule.getName(), serverRule.getHtmlDesc(),
-                Optional.ofNullable(serverSeverity).orElse(serverRule.getSeverity()),
-                serverRule.getType(), serverRule.getLanguage(), serverRule.getHtmlNote())));
-        }
-      }
-    }
-    throw new IllegalStateException("Unable to find rule details for '" + ruleKey + "'");
   }
 
   @Override
