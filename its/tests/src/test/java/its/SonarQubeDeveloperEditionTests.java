@@ -96,6 +96,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRul
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDescriptionTabDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
@@ -116,6 +117,7 @@ import static org.apache.commons.lang3.StringUtils.abbreviate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -157,6 +159,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   private static Path sonarUserHome;
 
   private static final List<DidChangeTaintVulnerabilitiesParams> didChangeTaintVulnerabilitiesEvents = new CopyOnWriteArrayList<>();
+  private static final List<String> didSynchronizeConfigurationScopes = new CopyOnWriteArrayList<>();
 
   @BeforeAll
   static void start() throws IOException {
@@ -172,11 +175,15 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     backend = clientLauncher.getServerProxy();
     try {
       backend.initialize(
-        new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, new FeatureFlagsDto(false, true, false, false, false, true, false, true), sonarUserHome.resolve("storage"),
-          sonarUserHome.resolve("workDir"),
-          Collections.emptySet(), Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(),
-          List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(),
-          Map.of(), false))
+          new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, new FeatureFlagsDto(false, true, true, false, false, true, false, true),
+            sonarUserHome.resolve("storage"),
+            sonarUserHome.resolve("workDir"),
+            Collections.emptySet(), Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(),
+            List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true),
+              new SonarQubeConnectionConfigurationDto(CONNECTION_ID_WRONG_CREDENTIALS, ORCHESTRATOR.getServer().getUrl(), true)),
+            Collections.emptyList(),
+            sonarUserHome.toString(),
+            Map.of(), false))
         .get();
     } catch (Exception e) {
       throw new IllegalStateException("Cannot initialize the backend", e);
@@ -468,7 +475,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           .setParam("template_key", javaRuleKey("S2253"));
       }
 
-      ;
       try (var response = adminWsClient.wsConnector().call(request)) {
         assertTrue(response.isSuccessful());
       }
@@ -482,6 +488,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       try {
         updateProject(engine, projectKey);
+        backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+          List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, projectKey, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
 
         var issueListener = new SaveIssueListener();
         engine.analyze(createAnalysisConfiguration(projectKey, "sample-java", "src/main/java/foo/Foo.java"),
@@ -489,9 +497,9 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
         assertThat(issueListener.getIssues()).hasSize(3);
 
-        assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), javaRuleKey("myrule"), projectKey).get()
-          .getHtmlDescription())
-            .contains("my_rule_description");
+        var ruleDetails = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, javaRuleKey("myrule"), null)).get();
+        assertThat(ruleDetails.details().getDescription().getLeft().getHtmlContent()).contains("my_rule_description");
+        assertThat(ruleDetails.details().getName()).isEqualTo("myrule");
 
       } finally {
 
@@ -606,9 +614,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         .setConnectionId(CONNECTION_ID)
         .setSonarLintUserHome(sonarUserHome)
         .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.JAVA)
-        .setLogOutput((msg, level) -> {
-          System.out.println(msg);
-        })
+        .setLogOutput((msg, level) -> System.out.println(msg))
         .build();
       engine = new ConnectedSonarLintEngineImpl(globalConfig);
 
@@ -1001,9 +1007,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         .setConnectionId(CONNECTION_ID)
         .setSonarLintUserHome(sonarUserHome)
         .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.JAVA)
-        .setLogOutput((msg, level) -> {
-          System.out.println(msg);
-        })
+        .setLogOutput((msg, level) -> System.out.println(msg))
         .setExtraProperties(globalProps);
       if (!info.getTags().contains(HOTSPOT_FEATURE_DISABLED)) {
         globalConfigBuilder.enableHotspots();
@@ -1089,17 +1093,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     @Test
     @OnlyOnSonarQube(from = "9.7")
     void loadHotspotRuleDescription() throws Exception {
-      updateProject(engine, PROJECT_KEY_JAVA_HOTSPOT);
+      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, PROJECT_KEY_JAVA_HOTSPOT, new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY_JAVA_HOTSPOT, true)))));
 
-      var ruleDetails = engine
-        .getActiveRuleDetails(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), javaRuleKey(ORCHESTRATOR, "S4792"), PROJECT_KEY_JAVA_HOTSPOT)
-        .get();
-
-      assertThat(ruleDetails.getName()).isEqualTo("Configuring loggers is security-sensitive");
-      // HTML description is null for security hotspots when accessed through the deprecated engine API
-      // When accessed through the backend service, the rule descriptions are split into sections
-      // see its.ConnectedModeBackendTest.returnConvertedDescriptionSectionsForHotspotRules
-      assertThat(ruleDetails.getHtmlDescription()).isNull();
+      var ruleDetails = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, "java:S4792", null)).get();
+      assertThat(ruleDetails.details().getName()).isEqualTo("Configuring loggers is security-sensitive");
+      assertThat(ruleDetails.details().getDescription().getRight().getTabs().get(2).getContent().getLeft().getHtmlContent())
+        .contains("Check that your production deployment doesn’t have its loggers in \"debug\" mode");
     }
 
     @Test
@@ -1150,41 +1150,27 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
   @Nested
   class RuleDescription {
-    private ConnectedSonarLintEngine engine;
 
     @BeforeEach
     void start() {
-      var globalConfig = ConnectedGlobalConfiguration.sonarQubeBuilder()
-        .setConnectionId(CONNECTION_ID)
-        .setSonarLintUserHome(sonarUserHome)
-        .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.JAVA)
-        .setLogOutput((msg, level) -> {
-          System.out.println(msg);
-        })
-        .build();
-      engine = new ConnectedSonarLintEngineImpl(globalConfig);
-    }
-
-    @AfterEach
-    void stop() throws ExecutionException, InterruptedException {
-      engine.stop(true);
+      didSynchronizeConfigurationScopes.clear();
     }
 
     @Test
     void shouldFailIfNotAuthenticated() {
       var projectKey = "noAuth";
-      provisionProject(ORCHESTRATOR, projectKey, "Sample Javascript");
+      var projectName = "Sample Javascript";
+      provisionProject(ORCHESTRATOR, projectKey, projectName);
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint.xml"));
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Java");
-      updateProject(engine, projectKey);
+      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, projectName, new BindingConfigurationDto(CONNECTION_ID_WRONG_CREDENTIALS, projectKey, true)))));
 
       adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("true"));
       try {
         var ex = assertThrows(ExecutionException.class,
-          () -> engine
-            .getActiveRuleDetails(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID_WRONG_CREDENTIALS), javaRuleKey("S106"), projectKey)
-            .get());
-        assertThat(ex.getCause()).hasMessage("Not authorized. Please check server credentials.");
+          () -> backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, javaRuleKey("S106"), null)).get());
+        assertThat(ex.getCause()).hasMessage("Could not find rule '" + javaRuleKey("S106") + "' in plugins loaded from '" + CONNECTION_ID_WRONG_CREDENTIALS + "'");
       } finally {
         adminWsClient.settings().reset(new ResetRequest().setKeys(List.of("sonar.forceAuthentication")));
       }
@@ -1193,15 +1179,10 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     @Test
     void shouldContainExtendedDescription() throws Exception {
       var projectKey = "project-with-extended-description";
-
-      provisionProject(ORCHESTRATOR, projectKey, "Project With Extended Description");
+      var projectName = "Project With Extended Description";
+      provisionProject(ORCHESTRATOR, projectKey, projectName);
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint.xml"));
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Java");
-      updateProject(engine, projectKey);
-
-      assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), javaRuleKey("S106"), projectKey).get()
-        .getExtendedDescription())
-          .isEmpty();
 
       var extendedDescription = " = Title\n*my dummy extended description*";
 
@@ -1219,35 +1200,54 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         // For some reason, there is an extra line break in the generated HTML
         expected = "<h1>Title\n</h1><strong>my dummy extended description</strong>";
       }
-      assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), javaRuleKey("S106"), projectKey).get()
-        .getExtendedDescription())
-          .isEqualTo(expected);
+
+      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, projectName, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
+
+      await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+
+      var ruleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID,
+        javaRuleKey("S106"), null)).get();
+      var ruleDescription = ruleDetailsResponse.details().getDescription();
+      if (ORCHESTRATOR.getServer().version().isGreaterThan(9, 5)) {
+        var ruleTabs = ruleDescription.getRight().getTabs();
+        assertThat(ruleTabs.get(ruleTabs.size() - 1).getContent().getLeft().getHtmlContent()).contains(expected);
+      } else {
+        // no description sections at that time
+        assertThat(ruleDescription.isRight()).isFalse();
+
+      }
     }
 
     @Test
     void shouldSupportsMarkdownDescription() throws Exception {
       var projectKey = "project-with-markdown-description";
-
-      provisionProject(ORCHESTRATOR, projectKey, "Project With Markdown Description");
+      var projectName = "Project With Markdown Description";
+      provisionProject(ORCHESTRATOR, projectKey, projectName);
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint-with-markdown.xml"));
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Java Markdown");
-      updateProject(engine, projectKey);
+      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, projectName, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
 
-      assertThat(engine.getActiveRuleDetails(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), "mycompany-java:markdown", projectKey).get()
-        .getHtmlDescription())
-          .isEqualTo("<h1>Title</h1><ul><li>one</li>\n"
-            + "<li>two</li></ul>");
+      await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+
+      var ruleDetailsResponse =
+        backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, "mycompany-java:markdown",
+          null)).get();
+
+      assertThat(ruleDetailsResponse.details().getDescription().getLeft().getHtmlContent())
+        .isEqualTo("<h1>Title</h1><ul><li>one</li>\n"
+          + "<li>two</li></ul>");
     }
 
     @Test
     void shouldReturnAllContextsWithOthersSelectedIfNoContextProvided() throws ExecutionException, InterruptedException {
       var projectKey = "sample-java-taint-new-backend";
 
-      provisionProject(ORCHESTRATOR, projectKey, "Java With Taint Vulnerabilities");
-      // sync is still done by the engine for now
-      updateProject(engine, projectKey);
+      var projectName = "Java With Taint Vulnerabilities";
+      provisionProject(ORCHESTRATOR, projectKey, projectName);
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, projectKey, false)))));
+        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, projectName, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
 
       var activeRuleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, "javasecurity:S2083", null)).get();
 
@@ -1284,8 +1284,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var projectKey = "sample-java-taint-rule-context-new-backend";
 
       provisionProject(ORCHESTRATOR, projectKey, "Java With Taint Vulnerabilities And Multiple Contexts");
-      // sync is still done by the engine for now
-      updateProject(engine, projectKey);
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, projectKey, false)))));
 
@@ -1336,8 +1334,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var projectKey = "sample-java-hotspot-new-backend";
 
       provisionProject(ORCHESTRATOR, projectKey, "Java With Security Hotspots");
-      updateProject(engine, projectKey);
-
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, projectKey, false)))));
 
@@ -1449,6 +1445,11 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         List<TaintVulnerabilityDto> updatedTaintVulnerabilities) {
         didChangeTaintVulnerabilitiesEvents
           .add(new DidChangeTaintVulnerabilitiesParams(configurationScopeId, closedTaintVulnerabilityIds, addedTaintVulnerabilities, updatedTaintVulnerabilities));
+      }
+
+      @Override
+      public void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params) {
+        didSynchronizeConfigurationScopes.addAll(params.getConfigurationScopeIds());
       }
     };
   }

@@ -86,6 +86,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUs
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.usertoken.RevokeTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
@@ -156,7 +157,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     backend = clientLauncher.getServerProxy();
     backend.initialize(
-      new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, new FeatureFlagsDto(false, true, true, false, false, false, false, true), sonarUserHome.resolve("storage"),
+      new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, new FeatureFlagsDto(false, true, true, false, false, true, false, true), sonarUserHome.resolve("storage"),
         sonarUserHome.resolve("workDir"), Collections.emptySet(), Collections.emptyMap(), Set.of(JAVA), Collections.emptySet(), Collections.emptyList(),
         List.of(new SonarCloudConnectionConfigurationDto(CONNECTION_ID, SONARCLOUD_ORGANIZATION, true)), sonarUserHome.toString(), Map.of(), false));
     randomPositiveInt = new Random().nextInt() & Integer.MAX_VALUE;
@@ -328,10 +329,11 @@ class SonarCloudTests extends AbstractConnectedTests {
 
   @Test
   void testRuleDescription() throws Exception {
-    assertThat(
-      engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), "java:S106", projectKey(PROJECT_KEY_JAVA)).get()
-        .getHtmlDescription())
-      .contains("logs serve as a record of events within an application");
+    backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+      List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, projectKey(PROJECT_KEY_JAVA), new BindingConfigurationDto(CONNECTION_ID, projectKey(PROJECT_KEY_JAVA), true)))));
+
+    var ruleDetails = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, "java:S106", null)).get();
+    assertThat(ruleDetails.details().getDescription().getRight().getTabs().get(0).getContent().getLeft().getHtmlContent()).contains("logs serve as a record of events within an application");
   }
 
   @Test
@@ -348,10 +350,12 @@ class SonarCloudTests extends AbstractConnectedTests {
       assertThat(response.code()).isEqualTo(200);
     }
 
-    assertThat(
-      engine.getActiveRuleDetails(sonarcloudEndpointITOrg(), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), ruleKey, projectKey(PROJECT_KEY_JAVA)).get()
-        .getExtendedDescription())
-      .isEqualTo(extendedDescription);
+    backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+      List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, projectKey(PROJECT_KEY_JAVA), new BindingConfigurationDto(CONNECTION_ID, projectKey(PROJECT_KEY_JAVA), true)))));
+
+    var ruleDetails = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, "java" +
+      ":S106", null)).get();
+    assertThat(ruleDetails.details().getDescription().getRight().getTabs().get(1).getContent().getLeft().getHtmlContent()).contains(extendedDescription);
   }
 
   @Test
@@ -535,14 +539,13 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     @Test
     void loadHotspotRuleDescription() throws Exception {
-      var ruleDetails = engine
-        .getActiveRuleDetails(sonarcloudEndpointITOrg(), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), "java:S4792", projectKey(PROJECT_KEY_JAVA_HOTSPOT)).get();
+      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, projectKey(PROJECT_KEY_JAVA_HOTSPOT), new BindingConfigurationDto(CONNECTION_ID, projectKey(PROJECT_KEY_JAVA_HOTSPOT), true)))));
 
-      assertThat(ruleDetails.getName()).isEqualTo("Configuring loggers is security-sensitive");
-      // HTML description is null for security hotspots when accessed through the deprecated engine API
-      // When accessed through the backend service, the rule descriptions are split into sections
-      // see its.ConnectedModeBackendTest.returnConvertedDescriptionSectionsForHotspotRules
-      assertThat(ruleDetails.getHtmlDescription()).isNull();
+      var ruleDetails = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, "java:S4792", null)).get();
+      assertThat(ruleDetails.details().getName()).isEqualTo("Configuring loggers is security-sensitive");
+      assertThat(ruleDetails.details().getDescription().getRight().getTabs().get(2).getContent().getLeft().getHtmlContent())
+        .contains("Check that your production deployment doesn’t have its loggers in \"debug\" mode");
     }
 
     @Test
