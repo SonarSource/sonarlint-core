@@ -83,6 +83,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.Tra
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProjectDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -312,7 +314,7 @@ class SonarCloudTests extends AbstractConnectedTests {
   }
 
   @Test
-  void sync_all_project_branches() throws IOException {
+  void sync_all_project_branches() {
     assertThat(engine.getServerBranches(projectKey(PROJECT_KEY_JAVA)).getBranchNames()).containsOnly(MAIN_BRANCH_NAME);
     assertThat(engine.getServerBranches(projectKey(PROJECT_KEY_JAVA)).getMainBranchName()).contains(MAIN_BRANCH_NAME);
   }
@@ -320,11 +322,14 @@ class SonarCloudTests extends AbstractConnectedTests {
   @Test
   void downloadProjects() {
     provisionProject("foo-bar", "Foo");
-    waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
-      assertThat(engine.downloadAllProjects(sonarcloudEndpointITOrg(), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), null)).containsKeys(projectKey("foo-bar"),
-        projectKey(PROJECT_KEY_JAVA),
-        projectKey(PROJECT_KEY_PHP));
-    });
+    var getAllProjectsParams = new GetAllProjectsParams(new TransientSonarCloudConnectionDto(SONARCLOUD_ORGANIZATION,
+      Either.forRight(new UsernamePasswordDto(SONARCLOUD_USER, SONARCLOUD_PASSWORD))));
+
+    waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() ->
+      assertThat(backend.getConnectionService().getAllProjects(getAllProjectsParams).get().getSonarProjects())
+        .extracting(SonarProjectDto::getKey)
+        .contains(projectKey("foo-bar"), projectKey(PROJECT_KEY_JAVA), projectKey(PROJECT_KEY_PHP))
+    );
   }
 
   @Test
