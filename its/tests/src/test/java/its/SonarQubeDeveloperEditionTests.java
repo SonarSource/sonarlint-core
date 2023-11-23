@@ -1168,10 +1168,9 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("true"));
       try {
-        var rule = ORCHESTRATOR.getServer().version().isGreaterThan(7, 9) ? "'java:S106'" : "'squid:S106'";
         var ex = assertThrows(ExecutionException.class,
           () -> backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, javaRuleKey("S106"), null)).get());
-        assertThat(ex.getCause()).hasMessage("Could not find rule " + rule + " in plugins loaded from '" + CONNECTION_ID_WRONG_CREDENTIALS + "'");
+        assertThat(ex.getCause()).hasMessage("Could not find rule '" + javaRuleKey("S106") + "' in plugins loaded from '" + CONNECTION_ID_WRONG_CREDENTIALS + "'");
       } finally {
         adminWsClient.settings().reset(new ResetRequest().setKeys(List.of("sonar.forceAuthentication")));
       }
@@ -1205,16 +1204,18 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, projectName, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
 
-      await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).isNotEmpty());
+      await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
 
-      var ruleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, javaRuleKey("S106"), null)).get();
+      var ruleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID,
+        javaRuleKey("S106"), null)).get();
       var ruleDescription = ruleDetailsResponse.details().getDescription();
-      if (!ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
+      if (ORCHESTRATOR.getServer().version().isGreaterThan(9, 5)) {
+        var ruleTabs = ruleDescription.getRight().getTabs();
+        assertThat(ruleTabs.get(ruleTabs.size() - 1).getContent().getLeft().getHtmlContent()).contains(expected);
+      } else {
         // no description sections at that time
         assertThat(ruleDescription.isRight()).isFalse();
-      } else {
-        var ruleTabs = ruleDescription.getRight().getTabs();
-        assertThat(ruleTabs.get(ruleTabs.size() -1).getContent().getLeft().getHtmlContent()).contains(expected);
+
       }
     }
 
@@ -1228,7 +1229,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, projectName, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
 
-      await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).isNotEmpty());
+      await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
 
       var ruleDetailsResponse =
         backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, "mycompany-java:markdown",
@@ -1448,7 +1449,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       @Override
       public void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params) {
-        didSynchronizeConfigurationScopes.add(params.getConfigurationScopeIds().toString());
+        didSynchronizeConfigurationScopes.addAll(params.getConfigurationScopeIds());
       }
     };
   }
