@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -35,8 +34,6 @@ import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.GetPathTranslationParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesRpcService;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
@@ -50,14 +47,6 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 public interface ConnectedSonarLintEngine extends SonarLintEngine {
 
   void stop(boolean deleteStorage);
-
-  /**
-   * Return rule details in the context of a given project (severity may have been overridden in the quality profile).
-   * @param projectKey if null, the default QP will be considered
-   * @deprecated use {@link RulesRpcService#getEffectiveRuleDetails(GetEffectiveRuleDetailsParams)} instead
-   */
-  @Deprecated(since = "8.12")
-  CompletableFuture<ConnectedRuleDetails> getActiveRuleDetails(EndpointParams endpoint, HttpClient client, String ruleKey, @Nullable String projectKey);
 
   /**
    * Trigger an analysis
