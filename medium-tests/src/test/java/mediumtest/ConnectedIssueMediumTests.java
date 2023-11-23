@@ -69,7 +69,6 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static mediumtest.fixtures.storage.StorageFixture.newStorage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static testutils.TestUtils.createNoOpLogOutput;
 
@@ -142,22 +141,11 @@ class ConnectedIssueMediumTests {
   }
 
   @Test
-  void unknownRuleKey() {
-    assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails(null, null, "not_found", null), "Invalid rule key: not_found");
-    assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails(null, null, "not_found", null), "Invalid active rule key: not_found");
-    assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails(null, null, "not_found", JAVA_MODULE_KEY), "Invalid active rule key: not_found");
-  }
-
-  @Test
   void simpleJavaBound(@TempDir Path baseDir) throws Exception {
     var inputFile = prepareJavaInputFile(baseDir);
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=java:S1481",
       Rules.ShowResponse.newBuilder().setRule(Rules.Rule.newBuilder().setLang(Language.JAVA.getLanguageKey()).setSeverity("INFO").setType(RuleType.BUG)).build());
 
-    // Severity of java:S1481 changed to BLOCKER in the quality profile
-    assertThat(sonarlint.getActiveRuleDetails(null, null, "java:S1481", null).get().getDefaultSeverity()).isEqualTo(IssueSeverity.MINOR);
-    assertThat(sonarlint.getActiveRuleDetails(mockWebServerExtension.endpointParams(), backend.getHttpClient("connectionId"), "java:S1481", JAVA_MODULE_KEY).get().getDefaultSeverity())
-      .isEqualTo(IssueSeverity.BLOCKER);
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
         .setProjectKey(JAVA_MODULE_KEY)
@@ -171,36 +159,6 @@ class ConnectedIssueMediumTests {
       tuple("java:S106", 4, inputFile.getPath(), IssueSeverity.MAJOR),
       tuple("java:S1220", null, inputFile.getPath(), IssueSeverity.MINOR),
       tuple("java:S1481", 3, inputFile.getPath(), IssueSeverity.BLOCKER));
-  }
-
-  @Test
-  void rule_description_come_from_plugin() throws Exception {
-    assertThat(sonarlint.getActiveRuleDetails(null, null, "java:S106", null).get().getHtmlDescription())
-      .isEqualTo("<p>When logging a message there are several important requirements which must be fulfilled:</p>\n"
-        + "<ul>\n"
-        + "  <li> The user must be able to easily retrieve the logs </li>\n"
-        + "  <li> The format of all logged message must be uniform to allow the user to easily read the log </li>\n"
-        + "  <li> Logged data must actually be recorded </li>\n"
-        + "  <li> Sensitive data must only be logged securely </li>\n"
-        + "</ul>\n"
-        + "<p>If a program directly writes to the standard outputs, there is absolutely no way to comply with those requirements. That’s why defining and using a\n"
-        + "dedicated logger is highly recommended.</p>\n"
-        + "<h2>Noncompliant Code Example</h2>\n"
-        + "<pre>\n"
-        + "System.out.println(\"My Message\");  // Noncompliant\n"
-        + "</pre>\n"
-        + "<h2>Compliant Solution</h2>\n"
-        + "<pre>\n"
-        + "logger.log(\"My Message\");\n"
-        + "</pre>\n"
-        + "<h2>See</h2>\n"
-        + "<ul>\n"
-        + "  <li> <a href=\"https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/\">OWASP Top 10 2021 Category A9</a> - Security Logging and\n"
-        + "  Monitoring Failures </li>\n"
-        + "  <li> <a href=\"https://www.owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure\">OWASP Top 10 2017 Category A3</a> - Sensitive Data\n"
-        + "  Exposure </li>\n"
-        + "  <li> <a href=\"https://wiki.sei.cmu.edu/confluence/x/nzdGBQ\">CERT, ERR02-J.</a> - Prevent exceptions while logging data </li>\n"
-        + "</ul>");
   }
 
   @Test
