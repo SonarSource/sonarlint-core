@@ -45,13 +45,9 @@ import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.RuleType;
-import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
-import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules.Rule;
 import testutils.MockWebServerExtensionWithProtobuf;
 import testutils.PluginLocator;
 import testutils.TestUtils;
@@ -130,85 +126,6 @@ class ConnectedEmbeddedPluginMediumTests {
     if (backend != null) {
       backend.shutdown().get();
     }
-  }
-
-  @Test
-  void rule_description_come_from_embedded() throws Exception {
-    assertThat(sonarlint.getActiveRuleDetails(null, null, "java:S106", null).get().getHtmlDescription())
-      .isEqualTo("<p>When logging a message there are several important requirements which must be fulfilled:</p>\n"
-        + "<ul>\n"
-        + "  <li> The user must be able to easily retrieve the logs </li>\n"
-        + "  <li> The format of all logged message must be uniform to allow the user to easily read the log </li>\n"
-        + "  <li> Logged data must actually be recorded </li>\n"
-        + "  <li> Sensitive data must only be logged securely </li>\n"
-        + "</ul>\n"
-        + "<p>If a program directly writes to the standard outputs, there is absolutely no way to comply with those requirements. That’s why defining and using a\n"
-        + "dedicated logger is highly recommended.</p>\n"
-        + "<h2>Noncompliant Code Example</h2>\n"
-        + "<pre>\n"
-        + "System.out.println(\"My Message\");  // Noncompliant\n"
-        + "</pre>\n"
-        + "<h2>Compliant Solution</h2>\n"
-        + "<pre>\n"
-        + "logger.log(\"My Message\");\n"
-        + "</pre>\n"
-        + "<h2>See</h2>\n"
-        + "<ul>\n"
-        + "  <li> <a href=\"https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/\">OWASP Top 10 2021 Category A9</a> - Security Logging and\n"
-        + "  Monitoring Failures </li>\n"
-        + "  <li> <a href=\"https://www.owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure\">OWASP Top 10 2017 Category A3</a> - Sensitive Data\n"
-        + "  Exposure </li>\n"
-        + "  <li> <a href=\"https://wiki.sei.cmu.edu/confluence/x/nzdGBQ\">CERT, ERR02-J.</a> - Prevent exceptions while logging data </li>\n"
-        + "</ul>");
-  }
-
-  /**
-   * SLCORE-365
-   * The server is only aware of rules squid:S106 and squid:myCustomRule (that is a custom rule based on template rule squid:S124)
-   * The embedded analyzer is only aware of rules java:S106 and java:S124
-   */
-  @Test
-  void convert_deprecated_keys_from_server_for_rules_and_templates(@TempDir Path baseDir) throws Exception {
-    var inputFile = prepareJavaInputFile(baseDir);
-
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
-        .setProjectKey(JAVA_MODULE_KEY)
-        .setBaseDir(baseDir)
-        .addInputFile(inputFile)
-        .setModuleKey("key")
-        .build(),
-      new StoreIssueListener(issues), null, null);
-
-    // Reported issues will refer to new rule keys
-    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("java:S106", 4, inputFile.getPath(), IssueSeverity.BLOCKER),
-      tuple("java:myCustomRule", 5, inputFile.getPath(), IssueSeverity.MAJOR),
-      tuple("java:S1220", null, inputFile.getPath(), IssueSeverity.MINOR),
-      tuple("java:S1481", 3, inputFile.getPath(), IssueSeverity.BLOCKER));
-
-    // Requests to the server should be made using deprecated rule keys
-    mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=squid:S106",
-      Rules.ShowResponse.newBuilder()
-        .setRule(Rule.newBuilder().setLang(Language.JAVA.getLanguageKey()).setHtmlNote("S106 Extended rule description").setSeverity("MAJOR").setType(RuleType.BUG)).build());
-    mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=squid:myCustomRule",
-      Rules.ShowResponse.newBuilder()
-        .setRule(Rule.newBuilder().setLang(Language.JAVA.getLanguageKey()).setHtmlDesc("My custom rule template desc").setHtmlNote("My custom rule extended description")
-          .setSeverity("MINOR").setType(RuleType.CODE_SMELL))
-        .build());
-
-    ConnectedRuleDetails s106RuleDetails = sonarlint.getActiveRuleDetails(mockWebServerExtension.endpointParams(), backend.getHttpClient(CONNECTION_ID), "java:S106", JAVA_MODULE_KEY).get();
-    assertThat(s106RuleDetails.getDefaultSeverity()).isEqualTo(IssueSeverity.BLOCKER);
-    assertThat(s106RuleDetails.getLanguage()).isEqualTo(Language.JAVA);
-    assertThat(s106RuleDetails.getType()).isEqualTo(org.sonarsource.sonarlint.core.commons.RuleType.CODE_SMELL);
-    assertThat(s106RuleDetails.getHtmlDescription()).contains("<p>When logging a message there are several important requirements");
-    assertThat(s106RuleDetails.getExtendedDescription()).isEqualTo("S106 Extended rule description");
-
-    ConnectedRuleDetails myCustomRuleDetails = sonarlint.getActiveRuleDetails(mockWebServerExtension.endpointParams(), backend.getHttpClient(CONNECTION_ID), "java:myCustomRule", JAVA_MODULE_KEY).get();
-    assertThat(myCustomRuleDetails.getDefaultSeverity()).isEqualTo(IssueSeverity.MAJOR);
-    assertThat(s106RuleDetails.getLanguage()).isEqualTo(Language.JAVA);
-    assertThat(myCustomRuleDetails.getHtmlDescription()).isEqualTo("My custom rule template desc");
-    assertThat(myCustomRuleDetails.getExtendedDescription()).isEqualTo("My custom rule extended description");
   }
 
   @Test

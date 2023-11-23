@@ -72,9 +72,6 @@ class ConnectedStorageProblemsMediumTests {
     var serverBranchesError = assertThrows(StorageException.class, () -> sonarlint.getServerBranches("foo"));
     assertThat(serverBranchesError).hasMessageContaining("Failed to read file");
 
-    var thrown = assertThrows(IllegalStateException.class, () -> sonarlint.getActiveRuleDetails(null, null, "rule", null));
-    assertThat(thrown).hasMessage("Unable to find rule details for 'rule'");
-
     var analysisConfig = ConnectedAnalysisConfiguration.builder()
       .setBaseDir(baseDir)
       .setProjectKey("myProject")
