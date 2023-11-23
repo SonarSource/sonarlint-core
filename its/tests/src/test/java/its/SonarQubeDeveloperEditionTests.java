@@ -89,7 +89,10 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.Bindin
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProjectDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
@@ -1388,18 +1391,14 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    void downloadAllProjects(@TempDir Path sonarUserHome) {
+    void downloadAllProjects() throws ExecutionException, InterruptedException {
       provisionProject(ORCHESTRATOR, "foo-bar1", "Foo1");
       provisionProject(ORCHESTRATOR, "foo-bar2", "Foo2");
       provisionProject(ORCHESTRATOR, "foo-bar3", "Foo3");
-      var globalConfig = ConnectedGlobalConfiguration.sonarQubeBuilder()
-        .setLogOutput(new ConsoleLogOutput(false))
-        .setConnectionId(CONNECTION_ID)
-        .setSonarLintUserHome(sonarUserHome)
-        .build();
-      var engine = new ConnectedSonarLintEngineImpl(globalConfig);
-      assertThat(engine.downloadAllProjects(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), null)).containsKeys("foo-bar1", "foo-bar2",
-        "foo-bar3");
+      var getAllProjectsParams = new GetAllProjectsParams(new TransientSonarQubeConnectionDto(ORCHESTRATOR.getServer().getUrl(),
+        Either.forRight(new UsernamePasswordDto(SONARLINT_USER, SONARLINT_PWD))));
+      var allProjectsResponse = backend.getConnectionService().getAllProjects(getAllProjectsParams).get();
+      assertThat(allProjectsResponse.getSonarProjects()).extracting(SonarProjectDto::getKey).contains("foo-bar1", "foo-bar2", "foo-bar3");
     }
 
   }
