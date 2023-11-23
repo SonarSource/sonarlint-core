@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -32,10 +31,8 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.GetPathTranslationParams;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
-import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.DownloadException;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
@@ -87,16 +84,6 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
   ProjectBranches getServerBranches(String projectKey);
 
   // REQUIRES SERVER TO BE REACHABLE
-
-  /**
-   * Attempts to download the list of projects and to return all projects by key
-   *
-   * @throws DownloadException if it fails to download
-   * @since 2.5
-   * @deprecated use {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService#getAllProjects(GetAllProjectsParams)}
-   */
-  @Deprecated(since = "10.0")
-  Map<String, ServerProject> downloadAllProjects(EndpointParams endpoint, HttpClient client, @Nullable ClientProgressMonitor monitor);
 
   /**
    * @deprecated synchronization is managed by the new backend

@@ -36,7 +36,6 @@ import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
@@ -89,15 +88,6 @@ public class ServerConnection {
 
   public ProjectBranches getProjectBranches(String projectKey) {
     return storage.project(projectKey).branches().read();
-  }
-
-  public Map<String, ServerProject> downloadAllProjects(EndpointParams endpoint, HttpClient client, ProgressMonitor monitor) {
-    try {
-      return new ServerApi(endpoint, client).component().getAllProjects(monitor).stream().collect(Collectors.toMap(ServerProject::getKey, p -> p));
-    } catch (Exception e) {
-      LOG.error("Failed to get project list", e);
-    }
-    return Map.of();
   }
 
   public SynchronizationResult sync(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, ProgressMonitor monitor) {
