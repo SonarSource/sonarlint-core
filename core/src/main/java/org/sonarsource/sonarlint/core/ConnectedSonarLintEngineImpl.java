@@ -69,7 +69,6 @@ import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader.Configuration;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
-import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
@@ -332,11 +331,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
-  public Map<String, ServerProject> downloadAllProjects(EndpointParams endpoint, HttpClient client, @Nullable ClientProgressMonitor monitor) {
-    return wrapErrors(() -> serverConnection.downloadAllProjects(endpoint, client, new ProgressMonitor(monitor)));
-  }
-
-  @Override
   public ProjectBranches getServerBranches(String projectKey) {
     setLogging(null);
     var projectBranchesFromStorage = serverConnection.getProjectBranches(projectKey);
@@ -452,15 +446,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     try {
       analysisContext.get().destroy();
     } catch (Exception e) {
-      throw SonarLintWrappedException.wrap(e);
-    }
-  }
-
-  private <T> T wrapErrors(Supplier<T> callable) {
-    setLogging(null);
-    try {
-      return callable.get();
-    } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     }
   }
