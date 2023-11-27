@@ -782,7 +782,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         .getMatchedSonarProjectBranch(new GetMatchedSonarProjectBranchParams(CONFIG_SCOPE_ID))
         .get().getMatchedSonarProjectBranch())
         .isEqualTo(SHORT_BRANCH));
-      await().untilAsserted(() -> assertThat(allBranchNamesForProject).contains(MAIN_BRANCH_NAME, SHORT_BRANCH, LONG_BRANCH));
+
+      // Starting from SQ 8.1, concept of short vs long living branch has been removed
+      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 1)) {
+        await().untilAsserted(() -> assertThat(allBranchNamesForProject).contains(MAIN_BRANCH_NAME, SHORT_BRANCH, LONG_BRANCH));
+      } else {
+        await().untilAsserted(() -> assertThat(allBranchNamesForProject).contains(MAIN_BRANCH_NAME, LONG_BRANCH));
+      }
     }
 
     @Test
