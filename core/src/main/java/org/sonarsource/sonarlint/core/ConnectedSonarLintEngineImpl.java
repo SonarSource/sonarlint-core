@@ -31,7 +31,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
@@ -50,7 +49,6 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.connected.ProjectBranches;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
@@ -328,17 +326,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   @Override
   public Collection<PluginDetails> getPluginDetails() {
     return analysisContext.get().pluginDetails;
-  }
-
-  @Override
-  public ProjectBranches getServerBranches(String projectKey) {
-    setLogging(null);
-    var projectBranchesFromStorage = serverConnection.getProjectBranches(projectKey);
-    return toApi(projectBranchesFromStorage);
-  }
-
-  private static ProjectBranches toApi(org.sonarsource.sonarlint.core.serverconnection.ProjectBranches projectBranchesFromStorage) {
-    return new ProjectBranches(projectBranchesFromStorage.getBranchNames(), projectBranchesFromStorage.getMainBranchName());
   }
 
   @Override

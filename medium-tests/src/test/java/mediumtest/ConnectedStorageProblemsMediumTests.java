@@ -69,9 +69,6 @@ class ConnectedStorageProblemsMediumTests {
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
 
-    var serverBranchesError = assertThrows(StorageException.class, () -> sonarlint.getServerBranches("foo"));
-    assertThat(serverBranchesError).hasMessageContaining("Failed to read file");
-
     var analysisConfig = ConnectedAnalysisConfiguration.builder()
       .setBaseDir(baseDir)
       .setProjectKey("myProject")

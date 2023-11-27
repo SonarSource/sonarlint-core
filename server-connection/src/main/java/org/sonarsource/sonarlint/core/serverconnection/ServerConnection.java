@@ -86,10 +86,6 @@ public class ServerConnection {
     return storage.project(projectKey).analyzerConfiguration().read();
   }
 
-  public ProjectBranches getProjectBranches(String projectKey) {
-    return storage.project(projectKey).branches().read();
-  }
-
   public SynchronizationResult sync(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, ProgressMonitor monitor) {
     return sync(new ServerApi(new ServerApiHelper(endpoint, client)), projectKeys, monitor);
   }
