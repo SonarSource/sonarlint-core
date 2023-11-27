@@ -73,16 +73,6 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
   @Deprecated(since = "10.0")
   ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> ideFilePaths);
 
-  /**
-   * Returns analyzed branches for a given project. Requires a {@link #sync(EndpointParams, HttpClient, Set, ClientProgressMonitor)} to have been successfully done before for this project.
-   *
-   * @param projectKey
-   * @return branches analyzed on the server for this project.
-   * @deprecated use {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.SonarProjectBranchRpcService}
-   */
-  @Deprecated(since = "10.0")
-  ProjectBranches getServerBranches(String projectKey);
-
   // REQUIRES SERVER TO BE REACHABLE
 
   /**
