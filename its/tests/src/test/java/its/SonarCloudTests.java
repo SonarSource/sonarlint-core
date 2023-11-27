@@ -76,6 +76,7 @@ import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.GetMatchedSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
@@ -104,6 +105,7 @@ import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 
@@ -314,9 +316,12 @@ class SonarCloudTests extends AbstractConnectedTests {
   }
 
   @Test
-  void sync_all_project_branches() {
-    assertThat(engine.getServerBranches(projectKey(PROJECT_KEY_JAVA)).getBranchNames()).containsOnly(MAIN_BRANCH_NAME);
-    assertThat(engine.getServerBranches(projectKey(PROJECT_KEY_JAVA)).getMainBranchName()).contains(MAIN_BRANCH_NAME);
+  void sync_all_project_branches() throws ExecutionException, InterruptedException {
+    backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+      List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID, projectKey(PROJECT_KEY_JAVA), true)))));
+
+    var sonarProjectBranch = backend.getSonarProjectBranchService().getMatchedSonarProjectBranch(new GetMatchedSonarProjectBranchParams(CONFIG_SCOPE_ID)).get();
+    await().untilAsserted(() -> assertThat(sonarProjectBranch.getMatchedSonarProjectBranch()).isEqualTo(MAIN_BRANCH_NAME));
   }
 
   @Test
