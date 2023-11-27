@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.issue;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +30,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Named;
 import javax.inject.Singleton;
+
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.AddIssueCommentParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.issue.ChangeIssueStatusParams;
@@ -51,6 +51,7 @@ import org.sonarsource.sonarlint.core.local.only.XodusLocalOnlyIssueStore;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
+import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
@@ -63,11 +64,16 @@ public class IssueServiceImpl implements IssueService {
   private static final String STATUS_CHANGE_PERMISSION_MISSING_REASON = "Marking an issue as resolved requires the 'Administer Issues' permission";
   private static final String UNSUPPORTED_SQ_VERSION_REASON = "Marking a local-only issue as resolved requires SonarQube 10.2+";
   private static final Version SQ_ANTICIPATED_TRANSITIONS_MIN_VERSION = Version.create("10.2");
+
+  /** With SQ 10.4 the transitions changed from "Won't fix" to "Accept" */
+  private static final Version SQ_ACCEPTED_TRANSITION_MIN_VERSION = Version.create("10.4");
+  private static final List<ResolutionStatus> NEW_RESOLUTION_STATUSES = List.of(ResolutionStatus.ACCEPT, ResolutionStatus.FALSE_POSITIVE);
+  private static final List<ResolutionStatus> OLD_RESOLUTION_STATUSES = List.of(ResolutionStatus.WONT_FIX, ResolutionStatus.FALSE_POSITIVE);
   private static final Map<ResolutionStatus, Transition> transitionByResolutionStatus = Map.of(
+    ResolutionStatus.ACCEPT, Transition.ACCEPT,
     ResolutionStatus.WONT_FIX, Transition.WONT_FIX,
     ResolutionStatus.FALSE_POSITIVE, Transition.FALSE_POSITIVE
   );
-  private static final Set<String> requiredTransitions = transitionByResolutionStatus.values().stream().map(Transition::getStatus).collect(Collectors.toSet());
 
   private final ConfigurationRepository configurationRepository;
   private final ServerApiProvider serverApiProvider;
@@ -175,29 +181,58 @@ public class IssueServiceImpl implements IssueService {
     }
     var issueKey = params.getIssueKey();
     var serverApi = serverApiOpt.get();
+
     return asUUID(issueKey)
       .flatMap(localOnlyIssueRepository::findByKey)
       .map(r -> {
-        var anticipateTransitionsSupported = checkAnticipatedStatusChangeSupported(serverApi, connectionId);
-        // no way to easily check if 'Administer Issue' permission is granted, might fail later
-        return CompletableFuture.completedFuture(toResponse(anticipateTransitionsSupported, UNSUPPORTED_SQ_VERSION_REASON));
+        // For anticipated issues we currently don't get the information from SonarQube (as there is no web API
+        // endpoint) regarding the available transitions. SonarCloud doesn't provide it currently anyway. That's why we
+        // have to rely on the version check for SonarQube (>= 10.2 / >=10.4)
+        List<ResolutionStatus> statuses = List.of();
+        if (checkAnticipatedStatusChangeSupported(serverApi, connectionId)) {
+          var is104orNewer = !serverApi.isSonarCloud() && is104orNewer(connectionId, serverApi);
+          statuses = is104orNewer ? NEW_RESOLUTION_STATUSES : OLD_RESOLUTION_STATUSES;
+        }
+
+        return CompletableFuture.completedFuture(toResponse(statuses, UNSUPPORTED_SQ_VERSION_REASON));
       })
       .orElseGet(() -> serverApi.issue().searchByKey(params.getIssueKey())
-        .thenApply(issue -> toResponse(hasAdministerIssuePermission(issue), STATUS_CHANGE_PERMISSION_MISSING_REASON)));
+        .thenApply(issue -> toResponse(getAdministerIssueTransitions(issue), STATUS_CHANGE_PERMISSION_MISSING_REASON)));
   }
 
-  private static CheckStatusChangePermittedResponse toResponse(boolean permitted, String reason) {
-    return new CheckStatusChangePermittedResponse(permitted,
-      permitted ? null : reason,
-      // even if not permitted, return the possible statuses, if clients still want to show users what's supported
-      Arrays.asList(ResolutionStatus.values()));
+  /** For checking whether SonarQube is already on 10.4 or not. NEVER apply to SonarCloud as their version differs! */
+  private boolean is104orNewer(String connectionId, ServerApi serverApi) {
+    var serverVersionSynchronizer = new ServerInfoSynchronizer(storageService.connection(connectionId));
+    var serverVersion = serverVersionSynchronizer.readOrSynchronizeServerInfo(serverApi);
+    return serverVersion.getVersion().compareToIgnoreQualifier(SQ_ACCEPTED_TRANSITION_MIN_VERSION) >= 0;
   }
 
-  private static boolean hasAdministerIssuePermission(Issues.Issue issue) {
+  private static CheckStatusChangePermittedResponse toResponse(List<ResolutionStatus> statuses, String reason) {
+    var permitted = !statuses.isEmpty();
+
+    // No status available means it is not permitted or not supported (e.g. SonarCloud for anticipated issues)
+    return new CheckStatusChangePermittedResponse(permitted, permitted ? null : reason, statuses);
+  }
+
+  private static List<ResolutionStatus> getAdministerIssueTransitions(Issues.Issue issue) {
     // the 2 required transitions are not available when the 'Administer Issues' permission is missing
     // normally the 'Browse' permission is also required, but we assume it's present as the client knows the issue key
     var possibleTransitions = new HashSet<>(issue.getTransitions().getTransitionsList());
-    return possibleTransitions.containsAll(requiredTransitions);
+
+    if (possibleTransitions.containsAll(toTransitionStatus(NEW_RESOLUTION_STATUSES))) {
+      return NEW_RESOLUTION_STATUSES;
+    }
+
+    // No transitions meaning you're not allowed. That's it.
+    return possibleTransitions.containsAll(toTransitionStatus(OLD_RESOLUTION_STATUSES))
+      ? OLD_RESOLUTION_STATUSES
+      : List.of();
+  }
+
+  private static Set<String> toTransitionStatus(List<ResolutionStatus> resolutions) {
+    return resolutions.stream()
+      .map(resolution -> transitionByResolutionStatus.get(resolution).getStatus())
+      .collect(Collectors.toSet());
   }
 
   @Override

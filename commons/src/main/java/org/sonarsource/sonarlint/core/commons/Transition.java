@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.commons;
 
 public enum Transition {
 
+  ACCEPT("accept"),
   WONT_FIX("wontfix"),
   FALSE_POSITIVE("falsepositive"),
   REOPEN("reopen");

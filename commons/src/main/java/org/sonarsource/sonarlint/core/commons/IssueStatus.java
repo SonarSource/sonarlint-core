@@ -20,5 +20,5 @@
 package org.sonarsource.sonarlint.core.commons;
 
 public enum IssueStatus {
-  WONT_FIX, FALSE_POSITIVE
+  ACCEPT, WONT_FIX, FALSE_POSITIVE
 }
