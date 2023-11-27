@@ -121,12 +121,9 @@ public class ConfigurationRepository {
 
   @CheckForNull
   public BoundScope getBoundScope(String configScopeId) {
-    var bindingConfiguration = bindingPerConfigScopeId.get(configScopeId);
-    if (bindingConfiguration != null && bindingConfiguration.isBound()) {
-      return new BoundScope(configScopeId, requireNonNull(bindingConfiguration.getConnectionId()),
-        requireNonNull(bindingConfiguration.getSonarProjectKey()));
-    }
-    return null;
+    var effectiveBinding = getEffectiveBinding(configScopeId);
+    return effectiveBinding.map(binding -> new BoundScope(configScopeId, requireNonNull(binding.getConnectionId()),
+      requireNonNull(binding.getSonarProjectKey()))).orElse(null);
   }
 
   public List<ConfigurationScope> getBoundScopesByConnection(String connectionId, String projectKey) {

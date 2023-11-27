@@ -105,8 +105,9 @@ public class SonarProjectBranchTrackingService {
   }
 
   public void matchSonarProjectBranch(String configurationScopeId) {
+    LOG.debug("Matching Sonar project branch for configuration scope '{}'", configurationScopeId);
     configurationRepository.getEffectiveBinding(configurationScopeId)
-      .ifPresent(binding -> {
+      .ifPresentOrElse(binding -> {
         var previousSonarProjectBranch = matchedSonarProjectBranchRepository.getMatchedBranch(configurationScopeId).orElse(null);
         var branchesStorage = storageService.binding(binding).branches();
         if (!branchesStorage.exists()) {
@@ -121,12 +122,15 @@ public class SonarProjectBranchTrackingService {
           matchedSonarBranch = mainBranchName;
         }
         if (!matchedSonarBranch.equals(previousSonarProjectBranch)) {
+          LOG.debug("Matched Sonar project branch for configuration scope '{}' changed from '{}' to '{}'", configurationScopeId, previousSonarProjectBranch, matchedSonarBranch);
           matchedSonarProjectBranchRepository.setMatchedBranchName(configurationScopeId, matchedSonarBranch);
           client.didChangeMatchedSonarProjectBranch(
             new DidChangeMatchedSonarProjectBranchParams(configurationScopeId, matchedSonarBranch));
           applicationEventPublisher.publishEvent(new MatchedSonarProjectBranchChangedEvent(configurationScopeId, matchedSonarBranch));
+        } else {
+          LOG.debug("Matched Sonar project branch for configuration scope '{}' is still '{}'", configurationScopeId, matchedSonarBranch);
         }
-      });
+      }, () -> LOG.debug("No binding for configuration scope '{}'", configurationScopeId));
   }
 
   @CheckForNull

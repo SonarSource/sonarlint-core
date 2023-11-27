@@ -61,7 +61,9 @@ public class ConfigurationService {
         addedIds.add(addedDto.getId());
       }
     }
-    applicationEventPublisher.publishEvent(new ConfigurationScopesAddedEvent(addedIds));
+    if (!addedIds.isEmpty()) {
+      applicationEventPublisher.publishEvent(new ConfigurationScopesAddedEvent(addedIds));
+    }
   }
 
   private ConfigurationScope addOrUpdateRepository(ConfigurationScopeDto dto) {

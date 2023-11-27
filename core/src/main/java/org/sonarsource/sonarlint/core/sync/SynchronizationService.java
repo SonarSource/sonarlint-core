@@ -267,12 +267,14 @@ public class SynchronizationService {
     scopesToSync.forEach(scope -> synchronizationTimestampRepository.setLastSynchronizationTimestampToNow(scope.getId()));
     var serverConnection = getServerConnection(connectionId, serverApi);
     try {
+      LOG.debug("Synchronizing storage of connection '{}'", connectionId);
       var anyPluginUpdated = serverConnection.sync(serverApi);
       if (anyPluginUpdated) {
         client.didUpdatePlugins(new DidUpdatePluginsParams(connectionId));
       }
       var scopesPerProjectKey = scopesToSync.stream().collect(groupingBy(BoundScope::getSonarProjectKey, mapping(BoundScope::getId, toSet())));
       scopesPerProjectKey.forEach((projectKey, configScopeIds) -> {
+        LOG.debug("Synchronizing storage of Sonar project '{}' for connection '{}'", projectKey, connectionId);
         serverConnection.sync(serverApi, projectKey);
         matchPaths(serverApi, projectKey, configScopeIds);
         configScopeIds.forEach(branchTrackingService::matchSonarProjectBranch);
