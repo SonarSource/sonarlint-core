@@ -133,7 +133,6 @@ class TrackWithServerIssuesMediumTests {
         .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue))))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build(client);
-    client.waitForBranchMatched("configScopeId");
     var response = trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
       Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
@@ -158,7 +157,6 @@ class TrackWithServerIssuesMediumTests {
         .withProject("projectKey", project -> project.withMainBranch("main")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build(client);
-    client.waitForBranchMatched("configScopeId");
 
     var response = trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
       Map.of("file/path",
@@ -185,7 +183,6 @@ class TrackWithServerIssuesMediumTests {
         .withProject("projectKey", project -> project.withMainBranch("main")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build(client);
-    client.waitForBranchMatched("configScopeId");
     var issuesByServerRelativePath = IntStream.rangeClosed(1, 11).boxed().collect(Collectors.<Integer, String, List<ClientTrackedFindingDto>>toMap(index -> "file/path" + index,
       i -> List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "rule:key", "message"))));
 

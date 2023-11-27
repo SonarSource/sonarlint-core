@@ -130,8 +130,6 @@ class MatchWithServerHotspotsMediumTests {
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build(client);
 
-    client.waitForBranchMatched("configScopeId");
-
     var response = matchWithServerHotspots(new MatchWithServerSecurityHotspotsParams("configScopeId",
       Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
@@ -152,14 +150,12 @@ class MatchWithServerHotspotsMediumTests {
           .withCreationDate(Instant.ofEpochMilli(123456789))
           .withTextRange(new TextRange(1, 2, 3, 4)))))
       .start();
-    var client = newFakeClient().printLogsToStdOut().build();
+    var client = newFakeClient().build();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server, storage -> storage.withServerVersion("10.0")
         .withProject("projectKey", project -> project.withMainBranch("main")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build(client);
-
-    client.waitForBranchMatched("configScopeId");
 
     var response = matchWithServerHotspots(new MatchWithServerSecurityHotspotsParams("configScopeId",
       Map.of("file/path",

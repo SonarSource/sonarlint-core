@@ -195,8 +195,6 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build(client);
 
-    client.waitForBranchMatched("configScopeId");
-
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
       Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
@@ -221,8 +219,6 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build(client);
 
-    client.waitForBranchMatched("configScopeId");
-
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
       Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
@@ -240,15 +236,13 @@ class CheckResolutionStatusChangePermittedMediumTests {
 
   @Test
   void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_2_plus() throws ExecutionException, InterruptedException {
-    var client = newFakeClient().printLogsToStdOut().build();
+    var client = newFakeClient().build();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", storage -> storage
         .withServerVersion("10.2")
         .withProject("projectKey", project -> project.withMainBranch("main")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build(client);
-
-    client.waitForBranchMatched("configScopeId");
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
       Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),

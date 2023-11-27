@@ -92,16 +92,17 @@ public class SynchronizationService {
   private final Set<String> connectedModeEmbeddedPluginKeys;
   private final boolean branchSpecificSynchronizationEnabled;
   private final boolean fullSynchronizationEnabled;
-  private final SonarProjectBranchTrackingService branchTrackingService;
   private final FilePathTranslationRepository filePathTranslationRepository;
   private final SynchronizationTimestampRepository synchronizationTimestampRepository;
   private final ApplicationEventPublisher eventPublisher;
+  private final SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService;
   private ScheduledExecutorService scheduledSynchronizer;
 
   public SynchronizationService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
     SonarProjectBranchTrackingService branchService, ServerApiProvider serverApiProvider, StorageService storageService, InitializeParams params,
-    SonarProjectBranchTrackingService branchTrackingService, FilePathTranslationRepository filePathTranslationRepository,
-    SynchronizationTimestampRepository synchronizationTimestampRepository, ApplicationEventPublisher eventPublisher) {
+    FilePathTranslationRepository filePathTranslationRepository,
+    SynchronizationTimestampRepository synchronizationTimestampRepository, ApplicationEventPublisher eventPublisher,
+    SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
@@ -112,10 +113,10 @@ public class SynchronizationService {
     this.connectedModeEmbeddedPluginKeys = params.getConnectedModeEmbeddedPluginPathsByKey().keySet();
     this.branchSpecificSynchronizationEnabled = params.getFeatureFlags().shouldSynchronizeProjects();
     this.fullSynchronizationEnabled = params.getFeatureFlags().shouldManageFullSynchronization();
-    this.branchTrackingService = branchTrackingService;
     this.filePathTranslationRepository = filePathTranslationRepository;
     this.synchronizationTimestampRepository = synchronizationTimestampRepository;
     this.eventPublisher = eventPublisher;
+    this.sonarProjectBranchesSynchronizationService = sonarProjectBranchesSynchronizationService;
   }
 
   @PostConstruct
@@ -190,7 +191,7 @@ public class SynchronizationService {
 
   private void autoSyncBoundConfigurationScope(BoundScope boundScope, ServerApi serverApi,
     ServerConnection serverConnection, Set<String> synchronizedConfScopeIds) {
-    branchService.getEffectiveMatchedSonarProjectBranch(boundScope.getConfigScopeId()).ifPresent(branch -> {
+    branchService.awaitEffectiveSonarProjectBranch(boundScope.getConfigScopeId()).ifPresent(branch -> {
       serverConnection.syncServerIssuesForProject(serverApi, boundScope.getSonarProjectKey(), branch);
       synchronizeTaintVulnerabilities(serverApi, serverConnection, boundScope, branch);
       serverConnection.syncServerHotspotsForProject(serverApi, boundScope.getSonarProjectKey(), branch);
@@ -254,7 +255,7 @@ public class SynchronizationService {
     LOG.debug("Synchronizing connection '{}' after credentials changed", connectionId);
     var bindingsForUpdatedConnection = configurationRepository.getBoundScopesToConnection(connectionId);
     // Clear the synchronization timestamp for all the scopes so that sync is not skipped
-    bindingsForUpdatedConnection.forEach( boundScope -> synchronizationTimestampRepository.clearLastSynchronizationTimestamp(boundScope.getConfigScopeId()));
+    bindingsForUpdatedConnection.forEach(boundScope -> synchronizationTimestampRepository.clearLastSynchronizationTimestamp(boundScope.getConfigScopeId()));
     serverApiProvider.getServerApi(connectionId)
       .ifPresent(serverApi -> synchronizeConnectionAndProjectsIfNeeded(connectionId, serverApi, bindingsForUpdatedConnection));
   }
@@ -276,17 +277,18 @@ public class SynchronizationService {
       scopesPerProjectKey.forEach((projectKey, configScopeIds) -> {
         LOG.debug("Synchronizing storage of Sonar project '{}' for connection '{}'", projectKey, connectionId);
         serverConnection.sync(serverApi, projectKey);
+        sonarProjectBranchesSynchronizationService.sync(connectionId, projectKey);
         matchPaths(serverApi, projectKey, configScopeIds);
-        configScopeIds.forEach(branchTrackingService::matchSonarProjectBranch);
       });
-      synchronizeProjects(Map.of(connectionId, scopesToSync.stream().map(scope -> new BoundScope(scope.getConfigScopeId(), connectionId, scope.getSonarProjectKey())).collect(toList())));
+      synchronizeProjects(
+        Map.of(connectionId, scopesToSync.stream().map(scope -> new BoundScope(scope.getConfigScopeId(), connectionId, scope.getSonarProjectKey())).collect(toList())));
     } catch (Exception e) {
       LOG.error("Error during synchronization", e);
     }
   }
 
   private boolean shouldSynchronizeScope(BoundScope configScope) {
-    var result =  synchronizationTimestampRepository.getLastSynchronizationDate(configScope.getConfigScopeId())
+    var result = synchronizationTimestampRepository.getLastSynchronizationDate(configScope.getConfigScopeId())
       .map(lastSync -> lastSync.isBefore(Instant.now().minus(5, ChronoUnit.MINUTES)))
       .orElse(true);
     if (!result) {

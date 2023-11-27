@@ -131,4 +131,11 @@ public class LocalStorageSynchronizer {
     return currentSchemaVersion < AnalyzerConfiguration.CURRENT_SCHEMA_VERSION;
   }
 
+  private static ProjectBranches synchronizeProjectBranches(ServerApi serverApi, String projectKey) {
+    LOG.info("[SYNC] Synchronizing project branches for project '{}'", projectKey);
+    var allBranches = serverApi.branches().getAllBranches(projectKey);
+    var mainBranch = allBranches.stream().filter(ServerBranch::isMain).findFirst().map(ServerBranch::getName)
+      .orElseThrow(() -> new IllegalStateException("No main branch for project '" + projectKey + "'"));
+    return new ProjectBranches(allBranches.stream().map(ServerBranch::getName).collect(toSet()), mainBranch);
+  }
 }

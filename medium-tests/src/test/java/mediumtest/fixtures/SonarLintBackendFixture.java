@@ -92,7 +92,6 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static mediumtest.fixtures.storage.StorageFixture.newStorage;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -626,10 +625,6 @@ public class SonarLintBackendFixture {
 
     public void waitForSynchronization() {
       verify(this, timeout(5000)).didSynchronizeConfigurationScopes(any());
-    }
-
-    public void waitForBranchMatched(String configScopeId) {
-      verify(this, timeout(5000)).didChangeMatchedSonarProjectBranch(eq(configScopeId), any());
     }
 
     public static class ProgressReport {

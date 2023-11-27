@@ -101,7 +101,7 @@ class SonarProjectBranchMediumTests {
       .build(client);
 
     // Wait for the first branch matching
-    client.waitForBranchMatched("configScopeId");
+    verify(client, timeout(5000)).didChangeMatchedSonarProjectBranch(eq("configScopeId"), any());
 
     // Trigger another branch matching
     notifyVcsRepositoryChanged("configScopeId");
