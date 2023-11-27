@@ -252,7 +252,7 @@ public class SynchronizationService {
     }
     var connectionId = event.getConnectionId();
     LOG.debug("Synchronizing connection '{}' after credentials changed", connectionId);
-    var bindingsForUpdatedConnection = configurationRepository.getBoundScopesByConnection(connectionId);
+    var bindingsForUpdatedConnection = configurationRepository.getBoundScopesToConnection(connectionId);
     // Clear the synchronization timestamp for all the scopes so that sync is not skipped
     bindingsForUpdatedConnection.forEach( boundScope -> synchronizationTimestampRepository.clearLastSynchronizationTimestamp(boundScope.getId()));
     serverApiProvider.getServerApi(connectionId)

@@ -120,7 +120,4 @@ public class ConfigurationService {
     return null;
   }
 
-  public List<ConfigurationScope> getConfigScopesWithBindingConfiguredTo(String connectionId, String projectKey) {
-    return repository.getBoundScopesByConnection(connectionId, projectKey);
-  }
 }

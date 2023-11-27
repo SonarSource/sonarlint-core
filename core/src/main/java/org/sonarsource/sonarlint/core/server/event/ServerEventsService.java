@@ -111,7 +111,7 @@ public class ServerEventsService {
     }
     // This is only to handle the case where binding was invalid (connection did not exist) and became valid (matching connection was created)
     var connectionId = event.getAddedConnectionId();
-    var boundScopes = configurationRepository.getBoundScopesByConnection(connectionId);
+    var boundScopes = configurationRepository.getBoundScopesToConnection(connectionId);
     subscribe(connectionId, boundScopes.stream().map(BoundScope::getSonarProjectKey).collect(toSet()));
   }
 
@@ -183,7 +183,7 @@ public class ServerEventsService {
       var connectionId = requireNonNull(previousBindingConfiguration.getConnectionId());
       var projectKey = requireNonNull(previousBindingConfiguration.getSonarProjectKey());
       if (supportsServerSentEvents(connectionId) && streamsPerConnectionId.containsKey(connectionId)
-        && configurationRepository.getBoundScopesByConnection(connectionId).stream().noneMatch(scope -> scope.getSonarProjectKey().equals(projectKey))) {
+        && configurationRepository.getBoundScopesToConnection(connectionId).stream().noneMatch(scope -> scope.getSonarProjectKey().equals(projectKey))) {
         streamsPerConnectionId.get(connectionId).unsubscribe(projectKey);
       }
     }

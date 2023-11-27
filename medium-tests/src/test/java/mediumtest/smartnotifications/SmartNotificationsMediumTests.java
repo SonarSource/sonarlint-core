@@ -46,6 +46,7 @@ import testutils.websockets.WebSocketServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 
 class SmartNotificationsMediumTests {
@@ -56,6 +57,7 @@ class SmartNotificationsMediumTests {
   private static final String PROJECT_KEY = "projectKey";
   private static final String PROJECT_KEY_2 = "projectKey2";
   private static final String PROJECT_KEY_3 = "projectKey3";
+  private static final String PROJECT_KEY_4 = "projectKey4";
   private static final String CONNECTION_ID = "connectionId";
   private static final String CONNECTION_ID_2 = "connectionId2";
   private static final String DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
@@ -67,24 +69,29 @@ class SmartNotificationsMediumTests {
     "\"project\": \"" + PROJECT_KEY + "\"," +
     "\"date\": \"2022-01-01T08:00:00+0000\"," +
     "\"category\": \"category\"}]}";
-  private static final String EVENT_PROJECT_2 = "{\"events\": [" +
+  private static final String EVENT_PROJECT_P2 = "{\"events\": [" +
     "{\"message\": \"msg2\"," +
     "\"link\": \"lnk\"," +
     "\"project\": \"" + PROJECT_KEY_2 + "\"," +
     "\"date\": \"2022-01-01T08:00:00+0000\"," +
     "\"category\": \"category\"}]}";
-  private static final String TWO_EVENTS_P1_P3 = "{\"events\": [" +
-    "{\"message\": \"msg2\"," +
+  private static final String THREE_EVENTS_P1_P3_P4 = "{\"events\": [" +
+    "{\"message\": \"msg1\"," +
     "\"link\": \"lnk\"," +
     "\"project\": \"" + PROJECT_KEY + "\"," +
     "\"date\": \"2022-01-01T08:00:00+0000\"," +
-    "\"category\": \"category\"" +
-    "},{" +
-    "\"message\": \"msg3\"," +
+    "\"category\": \"category\"},"
+    + "{\"message\": \"msg3\"," +
     "\"link\": \"lnk\"," +
     "\"project\": \"" + PROJECT_KEY_3 + "\"," +
     "\"date\": \"2022-01-01T08:00:00+0000\"," +
-    "\"category\": \"category\"}]}";
+    "\"category\": \"category\"},"
+    + "{\"message\": \"msg4\"," +
+    "\"link\": \"lnk\"," +
+    "\"project\": \"" + PROJECT_KEY_4 + "\"," +
+    "\"date\": \"2022-01-01T08:00:00+0000\"," +
+    "\"category\": \"category\"}"
+    + "]}";
   private static final String NEW_ISSUES_EVENT = "{\n" +
     "  \"event\": \"MyNewIssues\", \n" +
     "  \"data\": {\n" +
@@ -96,6 +103,9 @@ class SmartNotificationsMediumTests {
     "}";
   @RegisterExtension
   private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
+  @RegisterExtension
+  private final MockWebServerExtensionWithProtobuf mockWebServerExtension2 = new MockWebServerExtensionWithProtobuf();
+
   private SonarLintTestRpcServer backend;
   private WebSocketServer webSocketServer;
 
@@ -143,39 +153,70 @@ class SmartNotificationsMediumTests {
   }
 
   @Test
-  void it_should_send_notification_for_different_bindings() {
+  void it_should_send_notification_for_two_config_scope_with_inherited_binding() {
     var fakeClient = newFakeClient().build();
     mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
-    mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY_2 + "&from=" +
-      UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_2);
-    mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "," + PROJECT_KEY_3 + "&from=" +
-      UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)) + "," + UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)),
-      TWO_EVENTS_P1_P3);
+    mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
+      UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
 
     backend = newBackend()
       .withSonarQubeConnectionAndNotifications(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(),
-        storage -> storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE))
-          .withProject(PROJECT_KEY_3, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
-      .withSonarQubeConnectionAndNotifications(CONNECTION_ID_2, mockWebServerExtension.endpointParams().getBaseUrl(),
-        storage -> storage.withProject(PROJECT_KEY_2, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
+        storage -> storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
+      .withSonarQubeConnectionAndNotifications(CONNECTION_ID_2, mockWebServerExtension.endpointParams().getBaseUrl())
+      .withBoundConfigScope("parentScopeId", CONNECTION_ID, PROJECT_KEY)
+      .withChildConfigScope("childScopeId", "parentScopeId")
+      .withSmartNotifications()
+      .build(fakeClient);
+
+    await().atMost(3, TimeUnit.SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
+
+    var notificationsResult = fakeClient.getSmartNotificationsToShow();
+    assertThat(notificationsResult).hasSize(1);
+    assertThat(notificationsResult.get(0).getScopeIds()).hasSize(2).containsExactlyInAnyOrder("parentScopeId", "childScopeId");
+  }
+
+  @Test
+  void it_should_send_notification_for_different_bindings() {
+    var fakeClient = newFakeClient().printLogsToStdOut().build();
+    mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
+    mockWebServerExtension2.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
+    var timestamp = UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER));
+    mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "," + PROJECT_KEY_3 + "," + PROJECT_KEY_4 + "&from=" +
+      timestamp + "," + timestamp + "," + timestamp, THREE_EVENTS_P1_P3_P4);
+    mockWebServerExtension2.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY_2 + "," + PROJECT_KEY_4 + "&from=" +
+      timestamp + "," + timestamp, EVENT_PROJECT_P2);
+
+    backend = newBackend()
+      .withSonarQubeConnectionAndNotifications(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(),
+        storage -> storage
+          .withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE))
+          .withProject(PROJECT_KEY_3, project -> project.withLastSmartNotificationPoll(STORED_DATE))
+          .withProject(PROJECT_KEY_4, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
+      .withSonarQubeConnectionAndNotifications(CONNECTION_ID_2, mockWebServerExtension2.endpointParams().getBaseUrl(),
+        storage -> storage
+          .withProject(PROJECT_KEY_2, project -> project.withLastSmartNotificationPoll(STORED_DATE))
+          .withProject(PROJECT_KEY_4, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
       .withBoundConfigScope("scopeId", CONNECTION_ID, PROJECT_KEY)
       .withBoundConfigScope("scopeId2", CONNECTION_ID, PROJECT_KEY)
       .withBoundConfigScope("scopeId3", CONNECTION_ID_2, PROJECT_KEY_2)
       .withBoundConfigScope("scopeId4", CONNECTION_ID, PROJECT_KEY_3)
+      // We have two bindings with the same project key, but on different connection, so it might be considered as different projects
+      .withBoundConfigScope("scopeId5", CONNECTION_ID, PROJECT_KEY_4)
+      .withBoundConfigScope("scopeId6", CONNECTION_ID_2, PROJECT_KEY_4)
       .withSmartNotifications()
       .build(fakeClient);
 
-    await().atMost(3, TimeUnit.SECONDS).until(() -> fakeClient.getSmartNotificationsToShow().size() == 3);
+    await().atMost(3, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getSmartNotificationsToShow()).hasSize(4));
 
     var notificationsResult = fakeClient.getSmartNotificationsToShow();
-    assertThat(notificationsResult).hasSize(3);
-    assertThat(notificationsResult).extracting(ShowSmartNotificationParams::getScopeIds)
-      .haveExactly(1, new Condition<>(s -> s.size() == 2, "Size of 2"))
-      .haveExactly(1, new Condition<>(s -> s.containsAll(Set.of("scopeId2", "scopeId")), "Contains scopeId2 and scopeId"));
-    assertThat(notificationsResult).extracting(ShowSmartNotificationParams::getScopeIds)
-      .haveExactly(2, new Condition<>(s -> s.size() == 1, "Size of 1"))
-      .haveExactly(1, new Condition<>(s -> s.contains("scopeId4"), "Contains scopeId4"))
-      .haveExactly(1, new Condition<>(s -> s.contains("scopeId3"), "Contains scopeId3"));
+    assertThat(notificationsResult)
+      .extracting(ShowSmartNotificationParams::getConnectionId, ShowSmartNotificationParams::getScopeIds, ShowSmartNotificationParams::getText)
+      .containsExactlyInAnyOrder(
+        tuple("connectionId", Set.of("scopeId", "scopeId2"), "msg1"),
+        tuple("connectionId", Set.of("scopeId4"), "msg3"),
+        tuple("connectionId", Set.of("scopeId5"), "msg4"),
+        tuple("connectionId2", Set.of("scopeId3"), "msg2")
+      );
   }
 
   @Test

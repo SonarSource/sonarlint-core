@@ -19,6 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.commons;
 
+/**
+ * A configuration scope that is bound to a connection and a Sonar project.
+ */
 public class BoundScope {
 
   private final String configurationScopeId;

@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.repository.config;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +39,7 @@ import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.groupingBy;
 
 @Named
 @Singleton
@@ -119,6 +119,18 @@ public class ConfigurationRepository {
     return configScopePerId.get(configScopeId);
   }
 
+  private Collection<BoundScope> getAllBoundScopes() {
+    return configScopePerId.keySet()
+      .stream()
+      .map(scopeId -> {
+        var effectiveBinding = getEffectiveBinding(scopeId);
+        return effectiveBinding.map(binding -> new BoundScope(scopeId, requireNonNull(binding.getConnectionId()),
+          requireNonNull(binding.getSonarProjectKey()))).orElse(null);
+      })
+      .filter(Objects::nonNull)
+      .collect(Collectors.toList());
+  }
+
   @CheckForNull
   public BoundScope getBoundScope(String configScopeId) {
     var effectiveBinding = getEffectiveBinding(configScopeId);
@@ -126,45 +138,24 @@ public class ConfigurationRepository {
       requireNonNull(binding.getSonarProjectKey()))).orElse(null);
   }
 
-  public List<ConfigurationScope> getBoundScopesByConnection(String connectionId, String projectKey) {
-    return bindingPerConfigScopeId.entrySet().stream()
-      .filter(e -> e.getValue().isBoundTo(connectionId, projectKey))
-      .map(e -> configScopePerId.get(e.getKey()))
+  public Collection<BoundScope> getBoundScopesToConnectionAndSonarProject(String connectionId, String projectKey) {
+    return getBoundScopesToConnection(connectionId)
+      .stream()
+      .filter(b -> projectKey.equals(b.getSonarProjectKey()))
       .collect(Collectors.toList());
   }
 
-  public Collection<BoundScope> getBoundScopesByConnection(String connectionId) {
-    return bindingPerConfigScopeId.entrySet().stream()
-      .filter(e -> e.getValue().isBoundToConnection(connectionId))
-      .map(e -> new BoundScope(e.getKey(), connectionId, requireNonNull(e.getValue().getSonarProjectKey())))
+  public Collection<BoundScope> getBoundScopesToConnection(String connectionId) {
+    return getAllBoundScopes()
+      .stream()
+      .filter(b -> connectionId.equals(b.getConnectionId()))
       .collect(Collectors.toList());
   }
 
-  public List<ConfigurationScope> getConfigScopesWithBindingConfiguredTo(String connectionId) {
-    return bindingPerConfigScopeId.entrySet().stream()
-      .filter(e -> e.getValue().isBoundToConnection(connectionId))
-      .map(e -> configScopePerId.get(e.getKey()))
-      .collect(Collectors.toList());
-  }
-
-  public List<BoundScope> getBoundScopesByProject(String projectKey) {
-    return bindingPerConfigScopeId.entrySet().stream()
-      .filter(e -> e.getValue().isBoundToProject(projectKey))
-      .map(e -> new BoundScope(e.getKey(), requireNonNull(e.getValue().getConnectionId()), projectKey))
-      .collect(Collectors.toList());
-  }
-
-  public Map<String, Map<String, Set<String>>> getScopeIdsPerProjectKeyPerConnectionId() {
-    Map<String, Map<String, Set<String>>> scopeIdsPerProjectKeyPerConnectionId = new HashMap<>();
-    bindingPerConfigScopeId
-      .forEach((scopeId, bindingConfiguration) -> {
-        if (bindingConfiguration.isBound()) {
-          scopeIdsPerProjectKeyPerConnectionId.computeIfAbsent(bindingConfiguration.getConnectionId(), k -> new HashMap<>())
-            .computeIfAbsent(bindingConfiguration.getSonarProjectKey(), k -> new HashSet<>())
-            .add(scopeId);
-        }
-      });
-    return scopeIdsPerProjectKeyPerConnectionId;
+  public Map<String, Map<String, Set<BoundScope>>> getBoundScopeByConnectionAndSonarProject() {
+    return getAllBoundScopes()
+      .stream()
+      .collect(groupingBy(BoundScope::getConnectionId, groupingBy(BoundScope::getSonarProjectKey, Collectors.toSet())));
   }
 
   public Map<String, Binding> getEffectiveBindingForLeafConfigScopesById() {

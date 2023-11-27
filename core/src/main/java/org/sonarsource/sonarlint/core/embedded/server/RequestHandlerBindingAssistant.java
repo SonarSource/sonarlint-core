@@ -33,8 +33,8 @@ import javax.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
-import org.sonarsource.sonarlint.core.ConfigurationService;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
@@ -49,15 +49,16 @@ public class RequestHandlerBindingAssistant {
   private final BindingSuggestionProvider bindingSuggestionProvider;
   private final SonarLintRpcClient client;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
-  private final ConfigurationService configurationService;
+  private final ConfigurationRepository configurationRepository;
   private final ExecutorService executorService;
 
-  public RequestHandlerBindingAssistant(BindingSuggestionProvider bindingSuggestionProvider, SonarLintRpcClient client, ConnectionConfigurationRepository connectionConfigurationRepository,
-    ConfigurationService configurationService) {
+  public RequestHandlerBindingAssistant(BindingSuggestionProvider bindingSuggestionProvider, SonarLintRpcClient client,
+    ConnectionConfigurationRepository connectionConfigurationRepository,
+    ConfigurationRepository configurationRepository) {
     this.bindingSuggestionProvider = bindingSuggestionProvider;
     this.client = client;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
-    this.configurationService = configurationService;
+    this.configurationRepository = configurationRepository;
     this.executorService = new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
       new LinkedBlockingQueue<>(), r -> new Thread(r, "Show Issue or Hotspot Request Handler"));
   }
@@ -82,7 +83,8 @@ public class RequestHandlerBindingAssistant {
             return;
           }
 
-          // Wait 5s for the connection to be created in the repository. This is happening asynchronously by the ConnectionService::didUpdateConnections event
+          // Wait 5s for the connection to be created in the repository. This is happening asynchronously by the
+          // ConnectionService::didUpdateConnections event
           for (int i = 50; i >= 0; i--) {
             if (connectionConfigurationRepository.getConnectionsById().containsKey(assistNewConnectionResult.get().getNewConnectionId())) {
               break;
@@ -105,7 +107,7 @@ public class RequestHandlerBindingAssistant {
   }
 
   private void assistBindingIfNeeded(String connectionId, String projectKey, BiConsumer<String, String> andThen) {
-    var scopes = configurationService.getConfigScopesWithBindingConfiguredTo(connectionId, projectKey);
+    var scopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, projectKey);
     if (scopes.isEmpty()) {
       var assistNewBindingResult = assistBinding(connectionId, projectKey);
       if (assistNewBindingResult.isEmpty()) {
@@ -114,7 +116,7 @@ public class RequestHandlerBindingAssistant {
       andThen.accept(connectionId, assistNewBindingResult.get().getConfigurationScopeId());
     } else {
       // we pick the first bound scope but this could lead to issues later if there were several matches (make the user select the right one?)
-      andThen.accept(connectionId, scopes.get(0).getId());
+      andThen.accept(connectionId, scopes.iterator().next().getId());
     }
   }
 
@@ -149,7 +151,8 @@ public class RequestHandlerBindingAssistant {
 
   Optional<NewBinding> assistBinding(String connectionId, String projectKey) {
     try {
-      return Optional.of(client.assistBinding(new AssistBindingParams(connectionId, projectKey)).get()).map(response -> new NewBinding(connectionId, response.getConfigurationScopeId()));
+      return Optional.of(client.assistBinding(new AssistBindingParams(connectionId, projectKey)).get())
+        .map(response -> new NewBinding(connectionId, response.getConfigurationScopeId()));
     } catch (InterruptedException e) {
       LOG.debug("Interrupted!", e);
       Thread.currentThread().interrupt();
