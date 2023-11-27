@@ -40,7 +40,6 @@ import org.sonarsource.sonarlint.core.event.ConnectionCredentialsChangedEvent;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.springframework.context.ApplicationEventPublisher;
@@ -187,7 +186,7 @@ public class WebSocketService {
 
   private void considerConnection(String connectionId) {
     var configScopeIds = configurationRepository.getBoundScopesToConnection(connectionId)
-      .stream().map(BoundScope::getId)
+      .stream().map(BoundScope::getConfigScopeId)
       .collect(Collectors.toSet());
     considerAllBoundConfigurationScopes(configScopeIds);
   }
@@ -207,7 +206,7 @@ public class WebSocketService {
       reopenConnection(otherConnectionId);
     } else {
       configurationRepository.getBoundScopesToConnection(connectionId)
-        .forEach(configScope -> forget(configScope.getId()));
+        .forEach(configScope -> forget(configScope.getConfigScopeId()));
     }
   }
 
@@ -241,7 +240,7 @@ public class WebSocketService {
   private void removeProjectsFromSubscriptionListForConnection(String updatedConnectionId) {
     var configurationScopesToUnsubscribe = configurationRepository.getBoundScopesToConnection(updatedConnectionId);
     for (var configScope : configurationScopesToUnsubscribe) {
-      subscribedProjectKeysByConfigScopes.remove(configScope.getId());
+      subscribedProjectKeysByConfigScopes.remove(configScope.getConfigScopeId());
     }
   }
 

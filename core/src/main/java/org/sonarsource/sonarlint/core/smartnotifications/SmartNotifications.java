@@ -120,7 +120,7 @@ public class SmartNotifications {
 
       for (var n : notifications) {
         var smartNotification = new ShowSmartNotificationParams(n.message(), n.link(),
-          scopeIdsPerProjectKey.get(n.projectKey()).stream().map(BoundScope::getId).collect(Collectors.toSet()),
+          scopeIdsPerProjectKey.get(n.projectKey()).stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet()),
           n.category(), connectionId);
         client.showSmartNotification(smartNotification);
         telemetryService.smartNotificationsReceived(n.category());
@@ -171,7 +171,7 @@ public class SmartNotifications {
     var projectKey = event.getProject();
     var boundScopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, projectKey);
     client.showSmartNotification(new ShowSmartNotificationParams(event.getMessage(), event.getLink(),
-      boundScopes.stream().map(BoundScope::getId).collect(Collectors.toSet()), event.getCategory(), connectionId));
+      boundScopes.stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet()), event.getCategory(), connectionId));
     telemetryService.smartNotificationsReceived(event.getCategory());
   }
 

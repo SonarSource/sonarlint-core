@@ -116,7 +116,7 @@ public class RequestHandlerBindingAssistant {
       andThen.accept(connectionId, assistNewBindingResult.get().getConfigurationScopeId());
     } else {
       // we pick the first bound scope but this could lead to issues later if there were several matches (make the user select the right one?)
-      andThen.accept(connectionId, scopes.iterator().next().getId());
+      andThen.accept(connectionId, scopes.iterator().next().getConfigScopeId());
     }
   }
 

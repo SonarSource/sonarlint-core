@@ -190,11 +190,11 @@ public class SynchronizationService {
 
   private void autoSyncBoundConfigurationScope(BoundScope boundScope, ServerApi serverApi,
     ServerConnection serverConnection, Set<String> synchronizedConfScopeIds) {
-    branchService.getEffectiveMatchedSonarProjectBranch(boundScope.getId()).ifPresent(branch -> {
+    branchService.getEffectiveMatchedSonarProjectBranch(boundScope.getConfigScopeId()).ifPresent(branch -> {
       serverConnection.syncServerIssuesForProject(serverApi, boundScope.getSonarProjectKey(), branch);
       synchronizeTaintVulnerabilities(serverApi, serverConnection, boundScope, branch);
       serverConnection.syncServerHotspotsForProject(serverApi, boundScope.getSonarProjectKey(), branch);
-      synchronizedConfScopeIds.add(boundScope.getId());
+      synchronizedConfScopeIds.add(boundScope.getConfigScopeId());
     });
   }
 
@@ -254,7 +254,7 @@ public class SynchronizationService {
     LOG.debug("Synchronizing connection '{}' after credentials changed", connectionId);
     var bindingsForUpdatedConnection = configurationRepository.getBoundScopesToConnection(connectionId);
     // Clear the synchronization timestamp for all the scopes so that sync is not skipped
-    bindingsForUpdatedConnection.forEach( boundScope -> synchronizationTimestampRepository.clearLastSynchronizationTimestamp(boundScope.getId()));
+    bindingsForUpdatedConnection.forEach( boundScope -> synchronizationTimestampRepository.clearLastSynchronizationTimestamp(boundScope.getConfigScopeId()));
     serverApiProvider.getServerApi(connectionId)
       .ifPresent(serverApi -> synchronizeConnectionAndProjectsIfNeeded(connectionId, serverApi, bindingsForUpdatedConnection));
   }
@@ -264,7 +264,7 @@ public class SynchronizationService {
     if (scopesToSync.isEmpty()) {
       return;
     }
-    scopesToSync.forEach(scope -> synchronizationTimestampRepository.setLastSynchronizationTimestampToNow(scope.getId()));
+    scopesToSync.forEach(scope -> synchronizationTimestampRepository.setLastSynchronizationTimestampToNow(scope.getConfigScopeId()));
     var serverConnection = getServerConnection(connectionId, serverApi);
     try {
       LOG.debug("Synchronizing storage of connection '{}'", connectionId);
@@ -272,25 +272,25 @@ public class SynchronizationService {
       if (anyPluginUpdated) {
         client.didUpdatePlugins(new DidUpdatePluginsParams(connectionId));
       }
-      var scopesPerProjectKey = scopesToSync.stream().collect(groupingBy(BoundScope::getSonarProjectKey, mapping(BoundScope::getId, toSet())));
+      var scopesPerProjectKey = scopesToSync.stream().collect(groupingBy(BoundScope::getSonarProjectKey, mapping(BoundScope::getConfigScopeId, toSet())));
       scopesPerProjectKey.forEach((projectKey, configScopeIds) -> {
         LOG.debug("Synchronizing storage of Sonar project '{}' for connection '{}'", projectKey, connectionId);
         serverConnection.sync(serverApi, projectKey);
         matchPaths(serverApi, projectKey, configScopeIds);
         configScopeIds.forEach(branchTrackingService::matchSonarProjectBranch);
       });
-      synchronizeProjects(Map.of(connectionId, scopesToSync.stream().map(scope -> new BoundScope(scope.getId(), connectionId, scope.getSonarProjectKey())).collect(toList())));
+      synchronizeProjects(Map.of(connectionId, scopesToSync.stream().map(scope -> new BoundScope(scope.getConfigScopeId(), connectionId, scope.getSonarProjectKey())).collect(toList())));
     } catch (Exception e) {
       LOG.error("Error during synchronization", e);
     }
   }
 
   private boolean shouldSynchronizeScope(BoundScope configScope) {
-    var result =  synchronizationTimestampRepository.getLastSynchronizationDate(configScope.getId())
+    var result =  synchronizationTimestampRepository.getLastSynchronizationDate(configScope.getConfigScopeId())
       .map(lastSync -> lastSync.isBefore(Instant.now().minus(5, ChronoUnit.MINUTES)))
       .orElse(true);
     if (!result) {
-      LOG.debug("Skipping synchronization of configuration scope '{}' because it was synchronized recently", configScope.getId());
+      LOG.debug("Skipping synchronization of configuration scope '{}' because it was synchronized recently", configScope.getConfigScopeId());
     }
     return result;
   }
