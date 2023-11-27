@@ -152,7 +152,7 @@ class MatchWithServerHotspotsMediumTests {
           .withCreationDate(Instant.ofEpochMilli(123456789))
           .withTextRange(new TextRange(1, 2, 3, 4)))))
       .start();
-    var client = newFakeClient().build();
+    var client = newFakeClient().printLogsToStdOut().build();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server, storage -> storage.withServerVersion("10.0")
         .withProject("projectKey", project -> project.withMainBranch("main")))

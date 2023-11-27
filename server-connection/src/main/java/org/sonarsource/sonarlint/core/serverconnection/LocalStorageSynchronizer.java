@@ -77,8 +77,6 @@ public class LocalStorageSynchronizer {
   public void synchronize(ServerApi serverApi, String projectKey) {
     var analyzerConfiguration = synchronizeAnalyzerConfig(serverApi, projectKey, new ProgressMonitor(null));
     storage.project(projectKey).analyzerConfiguration().store(analyzerConfiguration);
-    var projectBranches = synchronizeProjectBranches(serverApi, projectKey);
-    storage.project(projectKey).branches().store(projectBranches);
     var version = storage.serverInfo().read().orElseThrow().getVersion();
     serverApi.newCodeApi().getNewCodeDefinition(projectKey, null, version)
       .ifPresent(ncd -> storage.project(projectKey).newCodeDefinition().store(ncd));
@@ -133,11 +131,4 @@ public class LocalStorageSynchronizer {
     return currentSchemaVersion < AnalyzerConfiguration.CURRENT_SCHEMA_VERSION;
   }
 
-  private static ProjectBranches synchronizeProjectBranches(ServerApi serverApi, String projectKey) {
-    LOG.info("[SYNC] Synchronizing project branches for project '{}'", projectKey);
-    var allBranches = serverApi.branches().getAllBranches(projectKey);
-    var mainBranch = allBranches.stream().filter(ServerBranch::isMain).findFirst().map(ServerBranch::getName)
-      .orElseThrow(() -> new IllegalStateException("No main branch for project '" + projectKey + "'"));
-    return new ProjectBranches(allBranches.stream().map(ServerBranch::getName).collect(toSet()), mainBranch);
-  }
 }
