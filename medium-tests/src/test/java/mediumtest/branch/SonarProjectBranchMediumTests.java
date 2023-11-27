@@ -41,6 +41,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -87,7 +88,9 @@ class SonarProjectBranchMediumTests {
 
   @Test
   void it_should_not_notify_client_if_matched_branch_did_not_change() throws InterruptedException {
-    var client = newFakeClient().build();
+    var client = newFakeClient()
+      .printLogsToStdOut()
+      .build();
     when(client.matchSonarProjectBranch(eq("configScopeId"), eq("main"), eq(Set.of("main", "myBranch")), any())).thenReturn("myBranch");
 
     backend = newBackend()
@@ -95,14 +98,17 @@ class SonarProjectBranchMediumTests {
         storage -> storage.withProject("projectKey",
           project -> project.withMainBranch("main").withNonMainBranch("myBranch")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withMatchedBranch("configScopeId", "myBranch")
       .build(client);
 
+    // Wait for the first branch matching
+    client.waitForBranchMatched("configScopeId");
+
+    // Trigger another branch matching
     notifyVcsRepositoryChanged("configScopeId");
 
-    verify(client, timeout(1000)).matchSonarProjectBranch(eq("configScopeId"), eq("main"), eq(Set.of("main", "myBranch")), any());
+    verify(client, timeout(1000).times(2)).matchSonarProjectBranch(eq("configScopeId"), eq("main"), eq(Set.of("main", "myBranch")), any());
     Thread.sleep(200);
-    verify(client, never()).didChangeMatchedSonarProjectBranch(any(), any());
+    verify(client, times(1)).didChangeMatchedSonarProjectBranch(any(), any());
   }
 
   @Test
@@ -115,7 +121,6 @@ class SonarProjectBranchMediumTests {
         storage -> storage.withProject("projectKey",
           project -> project.withMainBranch("main").withNonMainBranch("myBranch")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withMatchedBranch("configScopeId", "myBranch")
       .build(client);
 
     notifyVcsRepositoryChanged("configScopeId");
@@ -129,7 +134,6 @@ class SonarProjectBranchMediumTests {
     backend = newBackend()
       .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withMatchedBranch("configScopeId", "myBranch")
       .build(client);
 
     notifyVcsRepositoryChanged("configScopeId");
@@ -148,7 +152,6 @@ class SonarProjectBranchMediumTests {
         storage -> storage.withProject("projectKey",
           project -> project.withMainBranch("main").withNonMainBranch("myBranch")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withMatchedBranch("configScopeId", "myBranch")
       .build(client);
 
     notifyVcsRepositoryChanged("configScopeId");
@@ -215,7 +218,6 @@ class SonarProjectBranchMediumTests {
         storage -> storage.withProject("projectKey",
           project -> project.withMainBranch("main").withNonMainBranch("myBranch")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withMatchedBranch("configScopeId", "myOldBranch")
       .build(client);
 
     bind("configScopeId", "connectionId", "projectKey2");

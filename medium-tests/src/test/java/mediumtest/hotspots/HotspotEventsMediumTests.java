@@ -90,7 +90,7 @@ class HotspotEventsMediumTests {
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject("projectKey", project -> project.withMainBranch("branchName")))
-        .withBoundConfigScope("configScope", "connectionId", "projectKey", "branchName")
+        .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readHotspots("connectionId", "projectKey", "branchName", "file/path"))
@@ -118,7 +118,7 @@ class HotspotEventsMediumTests {
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject("projectKey", project -> project.withMainBranch("branchName", branch -> branch.withHotspot(aServerHotspot("hotspotKey")))))
-        .withBoundConfigScope("configScope", "connectionId", "projectKey", "branchName")
+        .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build();
 
       await().atMost(Duration.ofSeconds(4)).untilAsserted(() -> assertThat(readHotspots("connectionId", "projectKey", "branchName", "file/path"))
@@ -150,7 +150,7 @@ class HotspotEventsMediumTests {
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject("projectKey",
             project -> project.withMainBranch("branchName", branch -> branch.withHotspot(aServerHotspot("AYhSN6mVrRF_krvNbHl1").withStatus(HotspotReviewStatus.TO_REVIEW)))))
-        .withBoundConfigScope("configScope", "connectionId", "projectKey", "branchName")
+        .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readHotspots("connectionId", "projectKey", "branchName", "file/path"))
@@ -180,7 +180,7 @@ class HotspotEventsMediumTests {
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject("projectKey",
             project -> project.withMainBranch("branchName", branch -> branch.withHotspot(aServerHotspot("AYhSN6mVrRF_krvNbHl1").withAssignee("previousAssignee")))))
-        .withBoundConfigScope("configScope", "connectionId", "projectKey", "branchName")
+        .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readHotspots("connectionId", "projectKey", "branchName", "file/path"))

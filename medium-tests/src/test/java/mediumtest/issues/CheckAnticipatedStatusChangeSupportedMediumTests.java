@@ -75,7 +75,6 @@ class CheckAnticipatedStatusChangeSupportedMediumTests {
   void it_should_not_be_available_for_sonarcloud() {
     backend = newBackend()
       .withSonarCloudConnection("connectionId", "orgKey")
-      .withMatchedBranch("configScopeId", "branch")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
@@ -89,7 +88,6 @@ class CheckAnticipatedStatusChangeSupportedMediumTests {
   void it_should_not_be_available_for_sonarqube_prior_to_10_2() {
     backend = newBackend()
       .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("10.1"))
-      .withMatchedBranch("configScopeId", "branch")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
@@ -103,7 +101,6 @@ class CheckAnticipatedStatusChangeSupportedMediumTests {
   void it_should_be_available_for_sonarqube_10_2_plus() {
     backend = newBackend()
       .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("10.2"))
-      .withMatchedBranch("configScopeId", "branch")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 

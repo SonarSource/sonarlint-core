@@ -33,6 +33,7 @@ import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.event.MatchedSonarProjectBranchChangedEvent;
 import org.sonarsource.sonarlint.core.repository.branch.MatchedSonarProjectBranchRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -84,16 +85,33 @@ public class SonarProjectBranchTrackingService {
   }
 
   @EventListener
-  public void onConfigurationScopeRemoved(ConfigurationScopeRemovedEvent removedEvent) {
-    var currentConfigScopeId = removedEvent.getRemovedConfigurationScopeId();
-    matchedSonarProjectBranchRepository.clearMatchedBranch(currentConfigScopeId);
+  public void onConfigurationScopeRemoved(ConfigurationScopeRemovedEvent event) {
+    var removedConfigScopeId = event.getRemovedConfigurationScopeId();
+    LOG.debug("Configuration scope '{}' removed, clearing matched branch", removedConfigScopeId);
+    matchedSonarProjectBranchRepository.clearMatchedBranch(removedConfigScopeId);
+  }
+
+  @EventListener
+  public void onConfigurationScopesAdded(ConfigurationScopesAddedEvent event) {
+    var configScopeIds = event.getAddedConfigurationScopeIds();
+    configScopeIds.forEach(configScopeId -> {
+      if (configurationRepository.getEffectiveBinding(configScopeId).isPresent()) {
+        LOG.debug("Bound configuration scope '{}' added, queuing matching of the Sonar project branch...", configScopeId);
+        matchSonarProjectBranchAsync(configScopeId);
+      }
+    });
   }
 
   @EventListener
   public void onBindingChanged(BindingConfigChangedEvent bindingChanged) {
     var configScopeId = bindingChanged.getConfigScopeId();
-    matchedSonarProjectBranchRepository.clearMatchedBranch(configScopeId);
-    // a new matching will be triggered after this new binding has been synchronized
+    if (!bindingChanged.getNewConfig().isBound()) {
+      LOG.debug("Configuration scope '{}' unbound, clearing matched branch", configScopeId);
+      matchedSonarProjectBranchRepository.clearMatchedBranch(configScopeId);
+    } else {
+      LOG.debug("Configuration scope '{}' binding changed, queuing matching of the Sonar project branch...", configScopeId);
+      matchSonarProjectBranchAsync(configScopeId);
+    }
   }
 
   public void didVcsRepositoryChange(String configurationScopeId) {

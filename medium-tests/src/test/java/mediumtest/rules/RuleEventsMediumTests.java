@@ -77,12 +77,13 @@ class RuleEventsMediumTests {
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", server)
-        .withBoundConfigScope("configScope", "connectionId", "projectKey", "branchName")
+        .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets("connectionId", "projectKey"))
         .extractingByKey("java")
-        .isEqualTo(Sonarlint.RuleSet.newBuilder().addRule(Sonarlint.RuleSet.ActiveRule.newBuilder().setRuleKey("java:S0000").setSeverity("MAJOR").putParams("key1", "value1").build()).build()));
+        .isEqualTo(Sonarlint.RuleSet.newBuilder()
+          .addRule(Sonarlint.RuleSet.ActiveRule.newBuilder().setRuleKey("java:S0000").setSeverity("MAJOR").putParams("key1", "value1").build()).build()));
     }
 
     @Test
@@ -111,12 +112,13 @@ class RuleEventsMediumTests {
         .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey",
           project -> project.withRuleSet("java",
             ruleSet -> ruleSet.withActiveRule("java:S0000", "INFO"))))
-        .withBoundConfigScope("configScope", "connectionId", "projectKey", "branchName")
+        .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets("connectionId", "projectKey"))
         .extractingByKey("java")
-        .isEqualTo(Sonarlint.RuleSet.newBuilder().addRule(Sonarlint.RuleSet.ActiveRule.newBuilder().setRuleKey("java:S0000").setSeverity("MAJOR").putParams("key1", "value1").build()).build()));
+        .isEqualTo(Sonarlint.RuleSet.newBuilder()
+          .addRule(Sonarlint.RuleSet.ActiveRule.newBuilder().setRuleKey("java:S0000").setSeverity("MAJOR").putParams("key1", "value1").build()).build()));
     }
 
     @Test
@@ -145,7 +147,7 @@ class RuleEventsMediumTests {
         .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey",
           project -> project.withRuleSet("java",
             ruleSet -> ruleSet.withActiveRule("java:S0000", "INFO"))))
-        .withBoundConfigScope("configScope", "connectionId", "projectKey", "branchName")
+        .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets("connectionId", "projectKey"))
@@ -181,7 +183,7 @@ class RuleEventsMediumTests {
         .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey",
           project -> project.withRuleSet("java",
             ruleSet -> ruleSet.withActiveRule("java:S0000", "INFO"))))
-        .withBoundConfigScope("configScope", "connectionId", "projectKey", "branchName")
+        .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets("connectionId", "projectKey"))
@@ -208,7 +210,7 @@ class RuleEventsMediumTests {
         .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey",
           project -> project.withRuleSet("java",
             ruleSet -> ruleSet.withActiveRule("java:S0000", "INFO").withActiveRule("java:S0001", "INFO"))))
-        .withBoundConfigScope("configScope", "connectionId", "projectKey", "branchName")
+        .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets("connectionId", "projectKey"))
@@ -234,7 +236,7 @@ class RuleEventsMediumTests {
         .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey",
           project -> project.withRuleSet("java",
             ruleSet -> ruleSet.withActiveRule("java:S0000", "INFO"))))
-        .withBoundConfigScope("configScope", "connectionId", "projectKey", "branchName")
+        .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets("connectionId", "projectKey"))

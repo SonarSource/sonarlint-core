@@ -91,7 +91,11 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static mediumtest.fixtures.storage.StorageFixture.newStorage;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 public class SonarLintBackendFixture {
 
@@ -108,7 +112,6 @@ public class SonarLintBackendFixture {
     private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections = new ArrayList<>();
     private final List<ConfigurationScopeDto> configurationScopes = new ArrayList<>();
     private final List<ConfigurationScopeStorageFixture.ConfigurationScopeStorageBuilder> configurationScopeStorages = new ArrayList<>();
-    private final Map<String, String> matchedBranchPerScopeId = new HashMap<>();
     private final Set<Path> embeddedPluginPaths = new HashSet<>();
     private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey = new HashMap<>();
     private final Set<Language> enabledLanguages = new HashSet<>();
@@ -221,16 +224,6 @@ public class SonarLintBackendFixture {
     public SonarLintBackendBuilder withBoundConfigScope(String configurationScopeId, String connectionId, String projectKey,
       Consumer<ConfigurationScopeStorageFixture.ConfigurationScopeStorageBuilder> storageBuilder) {
       return withConfigScope(configurationScopeId, configurationScopeId, null, new BindingConfigurationDto(connectionId, projectKey, false), storageBuilder);
-    }
-
-    public SonarLintBackendBuilder withBoundConfigScope(String configurationScopeId, String connectionId, String projectKey, String matchedBranchName) {
-      withConfigScope(configurationScopeId, configurationScopeId, null, new BindingConfigurationDto(connectionId, projectKey, false));
-      return withMatchedBranch(configurationScopeId, matchedBranchName);
-    }
-
-    public SonarLintBackendBuilder withMatchedBranch(String configurationScopeId, String matchedBranchName) {
-      matchedBranchPerScopeId.put(configurationScopeId, matchedBranchName);
-      return this;
     }
 
     public SonarLintBackendBuilder withChildConfigScope(String configurationScopeId, String parentScopeId) {
@@ -359,8 +352,6 @@ public class SonarLintBackendFixture {
             enabledLanguages, extraEnabledLanguagesInConnectedMode, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
             standaloneConfigByKey, isFocusOnNewCode))
           .get();
-        matchedBranchPerScopeId.forEach(
-          (scopeId, branch) -> sonarLintBackend.getMatchedSonarProjectBranchRepository().setMatchedBranchName(scopeId, branch));
         sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
         return sonarLintBackend;
       } catch (Exception e) {
@@ -399,6 +390,8 @@ public class SonarLintBackendFixture {
     private Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId = new HashMap<>();
     private boolean printLogsToStdOut;
 
+    private final Map<String, String> matchedBranchPerScopeId = new HashMap<>();
+
     public SonarLintClientBuilder withCredentials(String connectionId, String user, String password) {
       credentialsByConnectionId.put(connectionId, Either.forRight(new UsernamePasswordDto(user, password)));
       return this;
@@ -410,11 +403,16 @@ public class SonarLintBackendFixture {
     }
 
     public FakeSonarLintRpcClient build() {
-      return spy(new FakeSonarLintRpcClient(credentialsByConnectionId, printLogsToStdOut));
+      return spy(new FakeSonarLintRpcClient(credentialsByConnectionId, printLogsToStdOut, matchedBranchPerScopeId));
     }
 
     public SonarLintClientBuilder printLogsToStdOut() {
       this.printLogsToStdOut = true;
+      return this;
+    }
+
+    public SonarLintClientBuilder withMatchedBranch(String configurationScopeId, String matchedBranchName) {
+      matchedBranchPerScopeId.put(configurationScopeId, matchedBranchName);
       return this;
     }
   }
@@ -430,10 +428,13 @@ public class SonarLintBackendFixture {
     private final boolean printLogsToStdOut;
     private final Queue<LogParams> logs = new ConcurrentLinkedQueue<>();
     private final List<DidChangeTaintVulnerabilitiesParams> taintVulnerabilityChanges = new CopyOnWriteArrayList<>();
+    private final Map<String, String> matchedBranchPerScopeId;
 
-    public FakeSonarLintRpcClient(Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId, boolean printLogsToStdOut) {
+    public FakeSonarLintRpcClient(Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId, boolean printLogsToStdOut,
+      Map<String, String> matchedBranchPerScopeId) {
       this.credentialsByConnectionId = credentialsByConnectionId;
       this.printLogsToStdOut = printLogsToStdOut;
+      this.matchedBranchPerScopeId = matchedBranchPerScopeId;
     }
 
     @Override
@@ -534,6 +535,9 @@ public class SonarLintBackendFixture {
 
     @Override
     public String matchSonarProjectBranch(String configurationScopeId, String mainBranchName, Set<String> allBranchesNames, CancelChecker cancelChecker) {
+      if (matchedBranchPerScopeId.containsKey(configurationScopeId)) {
+        return matchedBranchPerScopeId.get(configurationScopeId);
+      }
       return mainBranchName;
     }
 
@@ -568,8 +572,10 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public void didChangeTaintVulnerabilities(String configurationScopeId, Set<UUID> closedTaintVulnerabilityIds, List<TaintVulnerabilityDto> addedTaintVulnerabilities, List<TaintVulnerabilityDto> updatedTaintVulnerabilities) {
-      this.taintVulnerabilityChanges.add(new DidChangeTaintVulnerabilitiesParams(configurationScopeId, closedTaintVulnerabilityIds, addedTaintVulnerabilities, updatedTaintVulnerabilities));
+    public void didChangeTaintVulnerabilities(String configurationScopeId, Set<UUID> closedTaintVulnerabilityIds, List<TaintVulnerabilityDto> addedTaintVulnerabilities,
+      List<TaintVulnerabilityDto> updatedTaintVulnerabilities) {
+      this.taintVulnerabilityChanges
+        .add(new DidChangeTaintVulnerabilitiesParams(configurationScopeId, closedTaintVulnerabilityIds, addedTaintVulnerabilities, updatedTaintVulnerabilities));
     }
 
     @Override
@@ -616,6 +622,14 @@ public class SonarLintBackendFixture {
 
     public void clearLogs() {
       logs.clear();
+    }
+
+    public void waitForSynchronization() {
+      verify(this, timeout(5000)).didSynchronizeConfigurationScopes(any());
+    }
+
+    public void waitForBranchMatched(String configScopeId) {
+      verify(this, timeout(5000)).didChangeMatchedSonarProjectBranch(eq(configScopeId), any());
     }
 
     public static class ProgressReport {
