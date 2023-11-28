@@ -104,7 +104,7 @@ public class PathTranslationService {
       // Maybe a config scope without files, or the filesystem has not been initialized yet
       return new FilePathTranslation(Paths.get(""), Paths.get(""));
     }
-    var match = fileMatcher.match(serverFilePaths, localFilePaths.stream().map(ClientFile::getRelativePath).collect(toList()));
+    var match = fileMatcher.match(serverFilePaths, localFilePaths.stream().map(ClientFile::getClientRelativePath).collect(toList()));
     LOG.debug("Matched paths for config scope '{}':\n  * idePrefix={}\n  * serverPrefix={}", configScopeId, match.idePrefix(), match.sqPrefix());
     return new FilePathTranslation(match.idePrefix(), match.sqPrefix());
   }

@@ -19,20 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.file;
 
-import java.util.concurrent.CompletableFuture;
-import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
 
-public interface FileRpcService {
+public class GetFilesStatusParams {
+  
+  private final Map<String, List<URI>> fileUrisByConfigScopeId;
 
-  /**
-   * Users can open a different folder than the one analyzed on SonarCloud/SonarQube, e.g. a subproject.
-   * As a consequence, relative file paths on the client side might differ from server relative file paths.
-   * The process called 'path matching' consists in identifying what are the IDE and server path prefixes,
-   * that can be used to translate one path to another.
-   */
-  @JsonRequest
-  CompletableFuture<GetPathTranslationResponse> getPathTranslation(GetPathTranslationParams params);
+  public GetFilesStatusParams(Map<String, List<URI>> fileUrisByConfigScopeId) {
+    this.fileUrisByConfigScopeId = fileUrisByConfigScopeId;
+  }
 
-  @JsonRequest
-  CompletableFuture<GetFilesStatusResponse> getFilesStatus(GetFilesStatusParams params);
+  public Map<String, List<URI>> getFileUrisByConfigScopeId() {
+    return fileUrisByConfigScopeId;
+  }
 }

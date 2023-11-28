@@ -47,6 +47,7 @@ import org.sonarsource.sonarlint.core.embedded.server.ShowIssueRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.StatusRequestHandler;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
+import org.sonarsource.sonarlint.core.fs.FileExclusionService;
 import org.sonarsource.sonarlint.core.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.http.AskClientCertificatePredicate;
 import org.sonarsource.sonarlint.core.http.ClientProxyCredentialsProvider;
@@ -140,7 +141,8 @@ import org.springframework.scheduling.support.TaskUtils;
   IssueSynchronizationService.class,
   HotspotSynchronizationService.class,
   ClientFileSystemService.class,
-  PathTranslationService.class
+  PathTranslationService.class,
+  FileExclusionService.class
 })
 public class SonarLintSpringAppConfig {
 

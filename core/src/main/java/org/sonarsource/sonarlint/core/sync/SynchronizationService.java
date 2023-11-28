@@ -205,6 +205,8 @@ public class SynchronizationService {
     if (newConnectionId != null) {
       serverApiProvider.getServerApi(newConnectionId).ifPresent(serverApi -> synchronizeConnectionAndProjectsIfNeeded(newConnectionId, serverApi,
         List.of(new BoundScope(configScopeId, newConnectionId, requireNonNull(event.getNewConfig().getSonarProjectKey())))));
+    } else {
+      synchronizationTimestampRepository.clearLastSynchronizationTimestamp(configScopeId);
     }
   }
 

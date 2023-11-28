@@ -39,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
@@ -212,7 +213,7 @@ class SonarProjectBranchMediumTests {
       .withProject("projectKey", project -> project.withBranch("myBranch", branch -> branch.withIssue("issueKey")))
       .start();
     var client = newFakeClient().build();
-    when(client.matchSonarProjectBranch(eq("configScopeId"), eq("main"), eq(Set.of("main", "myBranch")), any())).thenReturn("oldBranchName");
+    doReturn("oldBranchName").when(client).matchSonarProjectBranch(eq("configScopeId"), eq("main"), eq(Set.of("main", "myBranch")), any());
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server,
         storage -> storage.withProject("projectKey",
@@ -220,7 +221,7 @@ class SonarProjectBranchMediumTests {
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build(client);
 
-    when(client.matchSonarProjectBranch(eq("configScopeId"), any(), any(), any())).thenReturn("branchName");
+    doReturn("branchName").when(client).matchSonarProjectBranch(eq("configScopeId"), any(), any(), any());
     bind("configScopeId", "connectionId", "projectKey2");
 
     assertThat(backend.getSonarProjectBranchService().getMatchedSonarProjectBranch(new GetMatchedSonarProjectBranchParams("configScopeId")))

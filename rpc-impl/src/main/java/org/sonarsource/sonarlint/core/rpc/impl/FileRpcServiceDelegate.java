@@ -21,7 +21,10 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
+import org.sonarsource.sonarlint.core.fs.FileExclusionService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.GetFilesStatusParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.GetFilesStatusResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.GetPathTranslationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.GetPathTranslationResponse;
 
@@ -45,4 +48,11 @@ public class FileRpcServiceDelegate extends AbstractRpcServiceDelegate implement
     });
   }
 
+  @Override
+  public CompletableFuture<GetFilesStatusResponse> getFilesStatus(GetFilesStatusParams params) {
+    return requestAsync(cancelChecker -> {
+      var statuses = getBean(FileExclusionService.class).getFilesStatus(params.getFileUrisByConfigScopeId());
+      return new GetFilesStatusResponse(statuses);
+    });
+  }
 }

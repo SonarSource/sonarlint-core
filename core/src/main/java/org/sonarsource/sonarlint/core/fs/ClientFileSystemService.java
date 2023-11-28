@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.CheckForNull;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -54,6 +55,7 @@ public class ClientFileSystemService {
   private final SonarLintRpcClient rpcClient;
   private final ApplicationEventPublisher eventPublisher;
   private final Map<URI, ClientFile> filesByUri = new ConcurrentHashMap<>();
+
   private final ExecutorService executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-filesystem"));
 
   private final AsyncLoadingCache<String, Map<URI, ClientFile>> filesByConfigScopeId = Caffeine.newBuilder()
@@ -85,7 +87,7 @@ public class ClientFileSystemService {
 
   public List<ClientFile> findFileByNamesInScope(String configScopeId, List<String> filenames) {
     return getFiles(configScopeId).stream()
-      .filter(f -> filenames.contains(f.getRelativePath().getFileName().toString()))
+      .filter(f -> filenames.contains(f.getClientRelativePath().getFileName().toString()))
       .collect(toList());
   }
 
@@ -102,18 +104,18 @@ public class ClientFileSystemService {
 
   public void updateFileSystem(UpdateFileSystemParams params) {
     var removed = new ArrayList<ClientFile>();
-    var addedOrUpdated = new ArrayList<ClientFile>();
     params.getRemovedFiles().forEach(uri -> {
       var clientFile = filesByUri.remove(uri);
       if (clientFile != null) {
-        filesByConfigScopeId.synchronous().get(clientFile.getConfigScopeId()).remove(clientFile);
+        filesByConfigScopeId.synchronous().get(clientFile.getConfigScopeId()).remove(uri);
         removed.add(clientFile);
       }
     });
+    var addedOrUpdated = new ArrayList<ClientFile>();
     params.getAddedOrChangedFiles().forEach(clientFileDto -> {
       var clientFile = fromDto(clientFileDto);
       filesByUri.put(clientFileDto.getUri(), clientFile);
-      var byScope = filesByConfigScopeId.synchronous().get(clientFileDto.getConfigScopeId());
+      var byScope = filesByConfigScopeId.synchronous().getIfPresent(clientFileDto.getConfigScopeId());
       if (byScope == null) {
         filesByConfigScopeId.synchronous().put(clientFileDto.getConfigScopeId(), new ConcurrentHashMap<>());
       }
@@ -137,5 +139,21 @@ public class ClientFileSystemService {
     if (!MoreExecutors.shutdownAndAwaitTermination(executorService, 1, TimeUnit.SECONDS)) {
       LOG.warn("Unable to stop filesystem executor service in a timely manner");
     }
+  }
+
+  /**
+   * This will trigger loading the FS from the client if needed
+   */
+  @CheckForNull
+  public ClientFile getClientFiles(String configScopeId, URI fileUri) {
+    return filesByConfigScopeId.get(configScopeId).join().get(fileUri);
+  }
+
+  /**
+   * This will NOT trigger loading the FS from the client
+   */
+  @CheckForNull
+  public ClientFile getClientFile(URI fileUri) {
+    return filesByUri.get(fileUri);
   }
 }

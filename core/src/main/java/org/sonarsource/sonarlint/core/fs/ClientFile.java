@@ -78,7 +78,7 @@ public class ClientFile {
     this.fsPath = fsPath;
   }
 
-  public Path getRelativePath() {
+  public Path getClientRelativePath() {
     return relativePath;
   }
 
@@ -121,6 +121,10 @@ public class ClientFile {
   public void setClean() {
     this.isDirty = false;
     this.clientProvidedContent = null;
+  }
+
+  public boolean isTest() {
+    return Boolean.TRUE == isTest;
   }
 
   @Override

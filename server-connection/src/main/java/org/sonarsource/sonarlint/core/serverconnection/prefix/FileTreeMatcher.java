@@ -87,7 +87,7 @@ public class FileTreeMatcher {
   }
 
   private static int depth(Path path) {
-    return path.toString().length() == 0 ? 0 : path.getNameCount();
+    return path.toString().isEmpty() ? 0 : path.getNameCount();
   }
 
   public static class Result {
