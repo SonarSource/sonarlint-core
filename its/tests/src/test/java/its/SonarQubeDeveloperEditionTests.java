@@ -107,6 +107,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParam
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.MatchWithServerSecurityHotspotsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
@@ -187,6 +189,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   private static final List<String> allBranchNamesForProject = new CopyOnWriteArrayList<>();
   private static String matchedBranchNameForProject = null;
   private static final List<String> didSynchronizeConfigurationScopes = new CopyOnWriteArrayList<>();
+  private static final List<LogParams> logs = new CopyOnWriteArrayList<>();
 
   @BeforeAll
   static void start() throws IOException {
@@ -202,13 +205,14 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     backend = clientLauncher.getServerProxy();
     try {
       var languages = Set.of(JAVA, GO, PHP, JS, PYTHON, HTML, RUBY, KOTLIN, SCALA, XML,COBOL, CLOUDFORMATION, DOCKER, KUBERNETES, TERRAFORM);
+      var featureFlags = new FeatureFlagsDto(true, true, true, false, true, true, true);
       backend.initialize(
-          new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, new FeatureFlagsDto(false, true, true, false, false, true, true),
+          new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, featureFlags,
             sonarUserHome.resolve("storage"),
             sonarUserHome.resolve("workDir"),
             Collections.emptySet(), Map.of(), languages, Collections.emptySet(),
-            List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true),
-              new SonarQubeConnectionConfigurationDto(CONNECTION_ID_WRONG_CREDENTIALS, ORCHESTRATOR.getServer().getUrl(), true)),
+            List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), false),
+              new SonarQubeConnectionConfigurationDto(CONNECTION_ID_WRONG_CREDENTIALS, ORCHESTRATOR.getServer().getUrl(), false)),
             Collections.emptyList(),
             sonarUserHome.toString(),
             Map.of(), false))
@@ -1506,6 +1510,16 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         allBranchNamesForProject.addAll(allBranchesNames);
         return matchedBranchNameForProject == null ? super.matchSonarProjectBranch(configurationScopeId, mainBranchName, allBranchesNames, cancelChecker)
           : matchedBranchNameForProject;
+      }
+
+      @Override
+      public void showSmartNotification(ShowSmartNotificationParams params) {
+        super.showSmartNotification(params);
+      }
+
+      @Override
+      public void log(LogParams params) {
+        System.out.println("ClientLog: " + params.getMessage());
       }
     };
   }
