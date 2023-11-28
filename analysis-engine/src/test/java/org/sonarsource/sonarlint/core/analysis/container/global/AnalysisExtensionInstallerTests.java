@@ -49,6 +49,7 @@ import static org.mockito.Mockito.when;
 class AnalysisExtensionInstallerTests {
   private static final String FAKE_PLUGIN_KEY = "foo";
   private static final String JAVA_PLUGIN_KEY = "java";
+  private static final String DBD_PLUGIN_KEY = "dbd";
 
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester();
@@ -132,12 +133,20 @@ class AnalysisExtensionInstallerTests {
   }
 
   @Test
-  void install_sensors_for_sonarsource_plugins() {
+  void install_sensors_for_sonarsource_plugins_by_language() {
     when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(JAVA_PLUGIN_KEY, new FakePlugin()));
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
 
     verify(container).addExtension(JAVA_PLUGIN_KEY, FakeSensor.class);
+  }
+
+  void install_sensors_for_sonarsource_plugins_by_allowlist() {
+    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(DBD_PLUGIN_KEY, new FakePlugin()));
+
+    underTest.install(container, ContainerLifespan.ANALYSIS);
+
+    verify(container).addExtension(DBD_PLUGIN_KEY, FakeSensor.class);
   }
 
   @Test
