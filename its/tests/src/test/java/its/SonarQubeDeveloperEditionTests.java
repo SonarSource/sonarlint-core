@@ -189,7 +189,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   private static final List<String> allBranchNamesForProject = new CopyOnWriteArrayList<>();
   private static String matchedBranchNameForProject = null;
   private static final List<String> didSynchronizeConfigurationScopes = new CopyOnWriteArrayList<>();
-  private static final List<LogParams> logs = new CopyOnWriteArrayList<>();
+  private static final List<LogParams> clientLogs = new CopyOnWriteArrayList<>();
 
   @BeforeAll
   static void start() throws IOException {
@@ -227,6 +227,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     didSynchronizeConfigurationScopes.clear();
     allBranchNamesForProject.clear();
     matchedBranchNameForProject = null;
+    clientLogs.clear();
   }
 
   @AfterAll
@@ -594,18 +595,26 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         issueListener, null, null);
       assertThat(issueListener.getIssues()).hasSize(2);
 
+      clientLogs.clear();
+      didSynchronizeConfigurationScopes.clear();
       // Override default file suffixes in global props so that input file is not considered as a Java file
       setSettingsMultiValue(null, "sonar.java.file.suffixes", ".foo");
-      backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)));
+      backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID, new BindingConfigurationDto(CONNECTION_ID, projectKey, false))); //todo change binding so there is a difference
+      await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+      await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
       issueListener.clear();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-java", "src/main/java/foo/Foo.java"),
         issueListener, null, null);
       assertThat(issueListener.getIssues()).isEmpty();
 
+      clientLogs.clear();
+      didSynchronizeConfigurationScopes.clear();
       // Override default file suffixes in project props so that input file is considered as a Java file again
       setSettingsMultiValue(projectKey, "sonar.java.file.suffixes", ".java");
       backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)));
+      await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+      await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
       issueListener.clear();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-java", "src/main/java/foo/Foo.java"),
@@ -1519,6 +1528,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       @Override
       public void log(LogParams params) {
+        clientLogs.add(params);
         System.out.println("ClientLog: " + params.getMessage());
       }
     };
