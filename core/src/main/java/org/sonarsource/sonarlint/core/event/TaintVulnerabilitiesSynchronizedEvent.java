@@ -19,21 +19,32 @@
  */
 package org.sonarsource.sonarlint.core.event;
 
-import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.UpdateSummary;
 
 public class TaintVulnerabilitiesSynchronizedEvent {
-  private final BoundScope boundScope;
+  private final String connectionId;
+  private final String sonarProjectKey;
+  private final String sonarBranch;
   private final UpdateSummary<ServerTaintIssue> summary;
 
-  public TaintVulnerabilitiesSynchronizedEvent(BoundScope boundScope, UpdateSummary<ServerTaintIssue> summary) {
-    this.boundScope = boundScope;
+  public TaintVulnerabilitiesSynchronizedEvent(String connectionId, String sonarProjectKey, String sonarBranch, UpdateSummary<ServerTaintIssue> summary) {
+    this.connectionId = connectionId;
+    this.sonarProjectKey = sonarProjectKey;
+    this.sonarBranch = sonarBranch;
     this.summary = summary;
   }
 
-  public BoundScope getBoundScope() {
-    return boundScope;
+  public String getConnectionId() {
+    return connectionId;
+  }
+
+  public String getSonarProjectKey() {
+    return sonarProjectKey;
+  }
+
+  public String getSonarBranch() {
+    return sonarBranch;
   }
 
   public UpdateSummary<ServerTaintIssue> getSummary() {

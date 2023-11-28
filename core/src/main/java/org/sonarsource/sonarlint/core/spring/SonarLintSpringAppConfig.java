@@ -68,9 +68,12 @@ import org.sonarsource.sonarlint.core.rules.RulesService;
 import org.sonarsource.sonarlint.core.server.event.ServerEventsService;
 import org.sonarsource.sonarlint.core.smartnotifications.SmartNotifications;
 import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.sync.HotspotSynchronizationService;
+import org.sonarsource.sonarlint.core.sync.IssueSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationTimestampRepository;
+import org.sonarsource.sonarlint.core.sync.TaintSynchronizationService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.tracking.IssueTrackingService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
@@ -134,7 +137,10 @@ import org.springframework.scheduling.support.TaskUtils;
   SynchronizationTimestampRepository.class,
   TaintVulnerabilityTrackingService.class,
   TelemetryService.class,
-  SonarProjectBranchesSynchronizationService.class
+  SonarProjectBranchesSynchronizationService.class,
+  TaintSynchronizationService.class,
+  IssueSynchronizationService.class,
+  HotspotSynchronizationService.class,
 })
 public class SonarLintSpringAppConfig {
 

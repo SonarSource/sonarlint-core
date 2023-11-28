@@ -62,7 +62,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithSer
 import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.storage.StorageService;
-import org.sonarsource.sonarlint.core.sync.SynchronizationService;
+import org.sonarsource.sonarlint.core.sync.IssueSynchronizationService;
 import org.sonarsource.sonarlint.core.utils.FutureUtils;
 
 import static org.sonarsource.sonarlint.core.utils.FutureUtils.waitForTasks;
@@ -75,20 +75,20 @@ public class IssueTrackingService {
   private final ConfigurationRepository configurationRepository;
   private final StorageService storageService;
   private final SonarProjectBranchTrackingService branchTrackingService;
-  private final SynchronizationService synchronizationService;
+  private final IssueSynchronizationService issueSynchronizationService;
   private final LocalOnlyIssueRepository localOnlyIssueRepository;
   private final LocalOnlyIssueStorageService localOnlyIssueStorageService;
   private final NewCodeService newCodeService;
   private final ExecutorService executorService;
 
   public IssueTrackingService(ConfigurationRepository configurationRepository, StorageService storageService,
-    SonarProjectBranchTrackingService branchTrackingService, SynchronizationService synchronizationService,
+    SonarProjectBranchTrackingService branchTrackingService, IssueSynchronizationService issueSynchronizationService,
     LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
     NewCodeService newCodeService) {
     this.configurationRepository = configurationRepository;
     this.storageService = storageService;
     this.branchTrackingService = branchTrackingService;
-    this.synchronizationService = synchronizationService;
+    this.issueSynchronizationService = issueSynchronizationService;
     this.localOnlyIssueRepository = localOnlyIssueRepository;
     this.localOnlyIssueStorageService = localOnlyIssueStorageService;
     this.newCodeService = newCodeService;
@@ -145,10 +145,10 @@ public class IssueTrackingService {
     var downloadAllIssuesAtOnce = serverFileRelativePaths.size() > FETCH_ALL_ISSUES_THRESHOLD;
     var fetchTasks = new LinkedList<Future<?>>();
     if (downloadAllIssuesAtOnce) {
-      fetchTasks.add(executorService.submit(() -> synchronizationService.fetchProjectIssues(binding, activeBranch)));
+      fetchTasks.add(executorService.submit(() -> issueSynchronizationService.fetchProjectIssues(binding, activeBranch)));
     } else {
       fetchTasks.addAll(serverFileRelativePaths.stream()
-        .map(serverFileRelativePath -> executorService.submit(() -> synchronizationService.fetchFileIssues(binding, serverFileRelativePath, activeBranch)))
+        .map(serverFileRelativePath -> executorService.submit(() -> issueSynchronizationService.fetchFileIssues(binding, serverFileRelativePath, activeBranch)))
         .collect(Collectors.toList()));
     }
     var waitForTasksTask = executorService.submit(() -> waitForTasks(cancelChecker, fetchTasks, "Wait for server issues", Duration.ofSeconds(20)));
