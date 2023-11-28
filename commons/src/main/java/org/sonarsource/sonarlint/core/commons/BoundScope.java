@@ -19,20 +19,23 @@
  */
 package org.sonarsource.sonarlint.core.commons;
 
+/**
+ * A configuration scope that is bound to a connection and a Sonar project.
+ */
 public class BoundScope {
 
-  private final String configurationScopeId;
+  private final String configScopeId;
   private final String connectionId;
   private final String sonarProjectKey;
 
-  public BoundScope(String configurationScopeId, String connectionId, String sonarProjectKey) {
-    this.configurationScopeId = configurationScopeId;
+  public BoundScope(String configScopeId, String connectionId, String sonarProjectKey) {
+    this.configScopeId = configScopeId;
     this.connectionId = connectionId;
     this.sonarProjectKey = sonarProjectKey;
   }
 
-  public String getId() {
-    return configurationScopeId;
+  public String getConfigScopeId() {
+    return configScopeId;
   }
 
   public String getConnectionId() {
@@ -42,4 +45,5 @@ public class BoundScope {
   public String getSonarProjectKey() {
     return sonarProjectKey;
   }
+
 }

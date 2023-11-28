@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.commons.Binding;
+import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.push.SonarServerEvent;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
@@ -39,7 +40,6 @@ import org.sonarsource.sonarlint.core.event.ConnectionCredentialsChangedEvent;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.springframework.context.ApplicationEventPublisher;
@@ -185,8 +185,8 @@ public class WebSocketService {
   }
 
   private void considerConnection(String connectionId) {
-    var configScopeIds = configurationRepository.getConfigScopesWithBindingConfiguredTo(connectionId)
-      .stream().map(ConfigurationScope::getId)
+    var configScopeIds = configurationRepository.getBoundScopesToConnection(connectionId)
+      .stream().map(BoundScope::getConfigScopeId)
       .collect(Collectors.toSet());
     considerAllBoundConfigurationScopes(configScopeIds);
   }
@@ -205,8 +205,8 @@ public class WebSocketService {
       removeProjectsFromSubscriptionListForConnection(connectionId);
       reopenConnection(otherConnectionId);
     } else {
-      configurationRepository.getConfigScopesWithBindingConfiguredTo(connectionId)
-        .forEach(configScope -> forget(configScope.getId()));
+      configurationRepository.getBoundScopesToConnection(connectionId)
+        .forEach(configScope -> forget(configScope.getConfigScopeId()));
     }
   }
 
@@ -238,9 +238,9 @@ public class WebSocketService {
   }
 
   private void removeProjectsFromSubscriptionListForConnection(String updatedConnectionId) {
-    var configurationScopesToUnsubscribe = configurationRepository.getConfigScopesWithBindingConfiguredTo(updatedConnectionId);
+    var configurationScopesToUnsubscribe = configurationRepository.getBoundScopesToConnection(updatedConnectionId);
     for (var configScope : configurationScopesToUnsubscribe) {
-      subscribedProjectKeysByConfigScopes.remove(configScope.getId());
+      subscribedProjectKeysByConfigScopes.remove(configScope.getConfigScopeId());
     }
   }
 
