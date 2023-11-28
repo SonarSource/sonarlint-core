@@ -216,8 +216,10 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   }
 
   @BeforeEach
-  void startEach() {
+  void clearState() {
     didSynchronizeConfigurationScopes.clear();
+    allBranchNamesForProject.clear();
+    matchedBranchNameForProject = null;
   }
 
   @AfterAll
@@ -705,9 +707,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, projectKey, false)))));
       await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
 
-      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, projectKey, false)))));
-
       var qualityProfile = getQualityProfile(adminWsClient, "SonarLint IT Java");
       deactivateRule(adminWsClient, qualityProfile, "java:S106");
       waitAtMost(1, TimeUnit.MINUTES).pollDelay(Duration.ofSeconds(10)).untilAsserted(() -> {
@@ -763,12 +762,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     @TempDir
     private Path sonarUserHome;
-
-    @BeforeEach
-    void prepareEach() {
-      allBranchNamesForProject.clear();
-      matchedBranchNameForProject = null;
-    }
 
     @BeforeAll
     void prepare() {
