@@ -21,10 +21,10 @@ package org.sonarsource.sonarlint.core.smartnotifications;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import java.time.ZonedDateTime;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -93,7 +93,7 @@ public class SmartNotifications {
   }
 
   private void poll() {
-    var keysAndScopeIdsPerConnectionId = configurationRepository.getScopeIdsPerProjectKeyPerConnectionId();
+    var keysAndScopeIdsPerConnectionId = configurationRepository.getBoundScopeByConnectionAndSonarProject();
 
     for (var keysAndScopeIds : keysAndScopeIdsPerConnectionId.entrySet()) {
       var connectionId = keysAndScopeIds.getKey();
@@ -106,7 +106,7 @@ public class SmartNotifications {
     }
   }
 
-  private void manageNotificationsForConnection(ServerApi serverApi, Map<String, Set<String>> scopeIdsPerProjectKey,
+  private void manageNotificationsForConnection(ServerApi serverApi, Map<String, Collection<BoundScope>> scopeIdsPerProjectKey,
     AbstractConnectionConfiguration connection) {
     var developersApi = serverApi.developers();
     var connectionId = connection.getConnectionId();
@@ -119,7 +119,8 @@ public class SmartNotifications {
       var notifications = retrieveServerNotifications(developersApi, projectKeysByLastEventPolling);
 
       for (var n : notifications) {
-        var smartNotification = new ShowSmartNotificationParams(n.message(), n.link(), scopeIdsPerProjectKey.get(n.projectKey()),
+        var smartNotification = new ShowSmartNotificationParams(n.message(), n.link(),
+          scopeIdsPerProjectKey.get(n.projectKey()).stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet()),
           n.category(), connectionId);
         client.showSmartNotification(smartNotification);
         telemetryService.smartNotificationsReceived(n.category());
@@ -162,16 +163,15 @@ public class SmartNotifications {
   public void onServerEventReceived(SonarServerEventReceivedEvent eventReceived) {
     var serverEvent = eventReceived.getEvent();
     if (serverEvent instanceof SmartNotificationEvent) {
-      notifyClient((SmartNotificationEvent) serverEvent);
+      notifyClient(eventReceived.getConnectionId(), (SmartNotificationEvent) serverEvent);
     }
   }
 
-  private void notifyClient(SmartNotificationEvent event) {
+  private void notifyClient(String connectionId, SmartNotificationEvent event) {
     var projectKey = event.getProject();
-    configurationRepository.getBoundScopesByProject(projectKey).stream()
-      .collect(Collectors.groupingBy(BoundScope::getConnectionId))
-      .forEach((connectionId, scope) -> client.showSmartNotification(new ShowSmartNotificationParams(event.getMessage(), event.getLink(),
-        scope.stream().map(BoundScope::getId).collect(Collectors.toSet()), event.getCategory(), connectionId)));
+    var boundScopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, projectKey);
+    client.showSmartNotification(new ShowSmartNotificationParams(event.getMessage(), event.getLink(),
+      boundScopes.stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet()), event.getCategory(), connectionId));
     telemetryService.smartNotificationsReceived(event.getCategory());
   }
 
