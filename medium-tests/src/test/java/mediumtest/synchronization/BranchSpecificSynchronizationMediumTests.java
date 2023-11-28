@@ -22,6 +22,7 @@ package mediumtest.synchronization;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.ServerFixture;
 import mediumtest.fixtures.SonarLintBackendFixture.FakeSonarLintRpcClient.ProgressReport;
@@ -31,6 +32,11 @@ import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.GetMatchedSonarProjectBranchParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.GetMatchedSonarProjectBranchResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.GetNewCodeDefinitionParams;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -41,7 +47,9 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 
 class BranchSpecificSynchronizationMediumTests {
 
@@ -65,6 +73,55 @@ class BranchSpecificSynchronizationMediumTests {
       assertThat(backend.getWorkDir()).isDirectoryContaining(path -> path.getFileName().toString().contains("xodus-issue-store"));
       assertThat(backend.getNewCodeService().getNewCodeDefinition(new GetNewCodeDefinitionParams("configScopeId"))).succeedsWithin(1, MINUTES);
     });
+  }
+
+  @Test
+  void it_should_honor_binding_inheritance() {
+    server = newSonarQubeServer("9.6")
+      .withProject("projectKey",
+        project -> project
+          .withBranch("branchNameParent",
+            branch -> branch.withIssue("keyParent", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", Instant.now(), new TextRange(1, 0, 3, 4))
+              .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile")))
+          .withBranch("branchNameChild",
+            branch -> branch.withIssue("keyChild", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", Instant.now(), new TextRange(1, 0, 3, 4))
+              .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))))
+      .start();
+
+    var client = newFakeClient().build();
+
+    when(client.matchSonarProjectBranch(eq("parentScope"), any(), any(), any())).thenReturn("branchNameParent");
+    when(client.matchSonarProjectBranch(eq("childScope"), any(), any(), any())).thenReturn("branchNameChild");
+
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", server)
+      .withBoundConfigScope("parentScope", "connectionId", "projectKey", "branchNameParent")
+      .withChildConfigScope("childScope", "parentScope")
+      .withMatchedBranch("childScope", "branchNameChild")
+      .withFullSynchronization()
+      .build(client);
+
+    backend.getConfigurationService().didAddConfigurationScopes(
+      new DidAddConfigurationScopesParams(List.of(
+        new ConfigurationScopeDto("parentScope", null, true, "Parent", new BindingConfigurationDto("connectionId", "projectKey", true)),
+        new ConfigurationScopeDto("childScope", null, true, "Child", new BindingConfigurationDto(null, null, true)))));
+
+    waitAtMost(3, SECONDS).untilAsserted(() -> {
+      assertThat(client.getLogMessages()).contains(
+        "Matching Sonar project branch for configuration scope 'parentScope'",
+        "Matched Sonar project branch for configuration scope 'parentScope' is still 'branchNameParent'",
+        "Matching Sonar project branch for configuration scope 'childScope'",
+        "Matched Sonar project branch for configuration scope 'childScope' is still 'branchNameChild'",
+        "[SYNC] Synchronizing issues for project 'projectKey' on branch 'branchNameParent'",
+        "[SYNC] Synchronizing issues for project 'projectKey' on branch 'branchNameChild'");
+    });
+
+    assertThat(backend.getSonarProjectBranchService().getMatchedSonarProjectBranch(new GetMatchedSonarProjectBranchParams("parentScope")))
+      .succeedsWithin(1, MINUTES)
+      .matches(response -> "branchNameParent".equals(response.getMatchedSonarProjectBranch()));
+    assertThat(backend.getSonarProjectBranchService().getMatchedSonarProjectBranch(new GetMatchedSonarProjectBranchParams("childScope")))
+      .succeedsWithin(1, MINUTES)
+      .matches(response -> "branchNameChild".equals(response.getMatchedSonarProjectBranch()));
   }
 
   @Test
