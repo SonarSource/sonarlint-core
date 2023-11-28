@@ -24,8 +24,8 @@ import java.util.Optional;
 import org.apache.hc.core5.http.message.BasicClassicHttpRequest;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
-import org.sonarsource.sonarlint.core.ConfigurationService;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -45,7 +45,7 @@ class ShowIssueRequestHandlerTests {
   @Test
   void should_transform_ServerIssueDetail_to_ShowIssueParams() {
     var repository = mock(ConnectionConfigurationRepository.class);
-    var configurationService = mock(ConfigurationService.class);
+    var configurationRepository = mock(ConfigurationRepository.class);
     var bindingSuggestionProvider = mock(BindingSuggestionProvider.class);
     var serverApiProvider = mock(ServerApiProvider.class);
     var telemetryService = mock(TelemetryService.class);
@@ -77,7 +77,7 @@ class ShowIssueRequestHandlerTests {
     when(issueApi.getCodeSnippet(eq(locationComponentKey_1), any(), any(), any())).thenReturn(Optional.of(locationCodeSnippet_1));
 
     var showIssueRequestHandler = new ShowIssueRequestHandler(sonarLintClient, serverApiProvider, telemetryService,
-      new RequestHandlerBindingAssistant(bindingSuggestionProvider, sonarLintClient, repository, configurationService));
+      new RequestHandlerBindingAssistant(bindingSuggestionProvider, sonarLintClient, repository, configurationRepository));
 
     var flow = Common.Flow.newBuilder()
       .addLocations(Common.Location.newBuilder().setTextRange(locationTextRange_1).setComponent(locationComponentKey_1).setMsg(locationMessage_1))
