@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.Binding;
-import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
@@ -111,8 +110,7 @@ public class ServerEventsService {
     }
     // This is only to handle the case where binding was invalid (connection did not exist) and became valid (matching connection was created)
     var connectionId = event.getAddedConnectionId();
-    var boundScopes = configurationRepository.getBoundScopesToConnection(connectionId);
-    subscribe(connectionId, boundScopes.stream().map(BoundScope::getSonarProjectKey).collect(toSet()));
+    subscribe(connectionId, configurationRepository.getSonarProjectsUsedForConnection(connectionId));
   }
 
   @EventListener
@@ -183,7 +181,7 @@ public class ServerEventsService {
       var connectionId = requireNonNull(previousBindingConfiguration.getConnectionId());
       var projectKey = requireNonNull(previousBindingConfiguration.getSonarProjectKey());
       if (supportsServerSentEvents(connectionId) && streamsPerConnectionId.containsKey(connectionId)
-        && configurationRepository.getBoundScopesToConnection(connectionId).stream().noneMatch(scope -> scope.getSonarProjectKey().equals(projectKey))) {
+        && configurationRepository.getSonarProjectsUsedForConnection(connectionId).stream().noneMatch(usedProjectKey -> usedProjectKey.equals(projectKey))) {
         streamsPerConnectionId.get(connectionId).unsubscribe(projectKey);
       }
     }

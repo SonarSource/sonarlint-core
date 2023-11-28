@@ -22,6 +22,7 @@ package mediumtest.synchronization;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.ServerFixture;
 import mediumtest.fixtures.SonarLintBackendFixture.FakeSonarLintRpcClient.ProgressReport;
@@ -31,6 +32,8 @@ import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.GetMatchedSonarProjectBranchParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.GetMatchedSonarProjectBranchResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
@@ -112,6 +115,13 @@ class BranchSpecificSynchronizationMediumTests {
         "[SYNC] Synchronizing issues for project 'projectKey' on branch 'branchNameParent'",
         "[SYNC] Synchronizing issues for project 'projectKey' on branch 'branchNameChild'");
     });
+
+    assertThat(backend.getSonarProjectBranchService().getMatchedSonarProjectBranch(new GetMatchedSonarProjectBranchParams("parentScope")))
+      .succeedsWithin(1, MINUTES)
+      .matches(response -> "branchNameParent".equals(response.getMatchedSonarProjectBranch()));
+    assertThat(backend.getSonarProjectBranchService().getMatchedSonarProjectBranch(new GetMatchedSonarProjectBranchParams("childScope")))
+      .succeedsWithin(1, MINUTES)
+      .matches(response -> "branchNameChild".equals(response.getMatchedSonarProjectBranch()));
   }
 
   @Test

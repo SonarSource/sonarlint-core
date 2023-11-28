@@ -21,10 +21,10 @@ package org.sonarsource.sonarlint.core.smartnotifications;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import java.time.ZonedDateTime;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -106,7 +106,7 @@ public class SmartNotifications {
     }
   }
 
-  private void manageNotificationsForConnection(ServerApi serverApi, Map<String, Set<BoundScope>> scopeIdsPerProjectKey,
+  private void manageNotificationsForConnection(ServerApi serverApi, Map<String, Collection<BoundScope>> scopeIdsPerProjectKey,
     AbstractConnectionConfiguration connection) {
     var developersApi = serverApi.developers();
     var connectionId = connection.getConnectionId();

@@ -19,9 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.repository.config;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toSet;
 
 @Named
 @Singleton
@@ -152,10 +153,21 @@ public class ConfigurationRepository {
       .collect(Collectors.toList());
   }
 
-  public Map<String, Map<String, Set<BoundScope>>> getBoundScopeByConnectionAndSonarProject() {
+  /**
+   * Return the set of Sonar Project keys used in at least one binding for the given connection.
+   */
+  public Set<String> getSonarProjectsUsedForConnection(String connectionId) {
     return getAllBoundScopes()
       .stream()
-      .collect(groupingBy(BoundScope::getConnectionId, groupingBy(BoundScope::getSonarProjectKey, Collectors.toSet())));
+      .filter(b -> connectionId.equals(b.getConnectionId()))
+      .map(BoundScope::getSonarProjectKey)
+      .collect(toSet());
+  }
+
+  public Map<String, Map<String, Collection<BoundScope>>> getBoundScopeByConnectionAndSonarProject() {
+    return getAllBoundScopes()
+      .stream()
+      .collect(groupingBy(BoundScope::getConnectionId, groupingBy(BoundScope::getSonarProjectKey, Collectors.toCollection(ArrayList::new))));
   }
 
   public Map<String, Binding> getEffectiveBindingForLeafConfigScopesById() {
