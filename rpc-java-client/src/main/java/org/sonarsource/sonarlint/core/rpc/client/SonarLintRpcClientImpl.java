@@ -45,10 +45,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListAllFilePathsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListAllFilePathsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListFilesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListFilesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.CheckServerTrustedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.CheckServerTrustedResponse;
@@ -121,17 +119,6 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   @Override
   public void suggestBinding(SuggestBindingParams params) {
     notify(() -> delegate.suggestBinding(params.getSuggestions()));
-  }
-
-  @Override
-  public CompletableFuture<FindFileByNamesInScopeResponse> findFileByNamesInScope(FindFileByNamesInScopeParams params) {
-    return requestAsync(cancelChecker -> {
-      try {
-        return new FindFileByNamesInScopeResponse(delegate.findFileByNamesInScope(params.getConfigScopeId(), params.getFilenames(), cancelChecker));
-      } catch (ConfigScopeNotFoundException e) {
-        throw configScopeNotFoundError(params.getConfigScopeId());
-      }
-    });
   }
 
   @Override
@@ -272,12 +259,12 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   }
 
   @Override
-  public CompletableFuture<ListAllFilePathsResponse> listAllFilePaths(ListAllFilePathsParams params) {
+  public CompletableFuture<ListFilesResponse> listFiles(ListFilesParams params) {
     return requestAsync(cancelChecker -> {
       try {
-        return new ListAllFilePathsResponse(delegate.listAllFilePaths(params.getConfigurationScopeId()));
+        return new ListFilesResponse(delegate.listFiles(params.getConfigScopeId()));
       } catch (ConfigScopeNotFoundException e) {
-        throw configScopeNotFoundError(params.getConfigurationScopeId());
+        throw configScopeNotFoundError(params.getConfigScopeId());
       }
     });
   }

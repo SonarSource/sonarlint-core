@@ -19,7 +19,8 @@
  */
 package mediumtest;
 
-import java.time.Duration;
+import java.net.URI;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.SonarLintTestRpcServer;
@@ -30,6 +31,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.Configur
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.GetPathTranslationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.GetPathTranslationResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -37,28 +39,9 @@ import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.waitAtMost;
-import static org.mockito.Mockito.when;
 
 class PathMatchingMediumTests {
-
-  @Test
-  void it_should_return_no_prefixes_when_matching_did_not_happen() {
-    var server = newSonarQubeServer("10.3")
-      .withProject("projectKey", project -> project.withBranch("main"))
-      .start();
-    backend = newBackend()
-      .withEnabledLanguageInStandaloneMode(Language.JAVA)
-      .withSonarQubeConnection("connectionId", server)
-      .build();
-
-    addConfigurationScope("configScopeId", "connectionId", "projectKey");
-
-    await().during(Duration.ofMillis(300)).untilAsserted(() -> assertThat(getPathTranslation("configScopeId"))
-      .extracting(GetPathTranslationResponse::getIdePathPrefix, GetPathTranslationResponse::getServerPathPrefix)
-      .containsExactly(null, null));
-  }
 
   @Test
   void it_should_match_without_prefixes_when_no_local_and_main_branch_server_files_exist() {
@@ -84,8 +67,10 @@ class PathMatchingMediumTests {
       .withProject("projectKey", project -> project.withBranch("main")
         .withFile("relative/path/to/a/file"))
       .start();
-    var client = newFakeClient().build();
-    when(client.listAllFilePaths("configScopeId")).thenReturn(List.of("relative/path/to/a/file"));
+    var client = newFakeClient()
+      .withInitialFs("configScopeId",
+        List.of(new ClientFileDto(URI.create("ftp://relative/path/to/a/file"), Paths.get("relative/path/to/a/file"), "configScopeId", null, null, null, null)))
+      .build();
     backend = newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
@@ -105,8 +90,10 @@ class PathMatchingMediumTests {
       .withProject("projectKey", project -> project.withBranch("main")
         .withFile("server/path/to/a/file"))
       .start();
-    var client = newFakeClient().build();
-    when(client.listAllFilePaths("configScopeId")).thenReturn(List.of("local/path/to/a/file"));
+    var client = newFakeClient()
+      .withInitialFs("configScopeId",
+        List.of(new ClientFileDto(URI.create("ftp://local/path/to/a/file"), Paths.get("local/path/to/a/file"), "configScopeId", null, null, null, null)))
+      .build();
     backend = newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)

@@ -68,7 +68,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingR
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FoundFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordAuthenticationResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.ProxyDto;
@@ -84,6 +83,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeCon
 import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryConstantAttributesDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
@@ -388,6 +388,7 @@ public class SonarLintBackendFixture {
   public static class SonarLintClientBuilder {
     private Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId = new HashMap<>();
     private boolean printLogsToStdOut;
+    private Map<String, List<ClientFileDto>> initialFilesByConfigScope = new HashMap<>();
 
     private final Map<String, String> matchedBranchPerScopeId = new HashMap<>();
 
@@ -402,7 +403,7 @@ public class SonarLintBackendFixture {
     }
 
     public FakeSonarLintRpcClient build() {
-      return spy(new FakeSonarLintRpcClient(credentialsByConnectionId, printLogsToStdOut, matchedBranchPerScopeId));
+      return spy(new FakeSonarLintRpcClient(credentialsByConnectionId, printLogsToStdOut, matchedBranchPerScopeId, initialFilesByConfigScope));
     }
 
     public SonarLintClientBuilder printLogsToStdOut() {
@@ -412,6 +413,11 @@ public class SonarLintBackendFixture {
 
     public SonarLintClientBuilder withMatchedBranch(String configurationScopeId, String matchedBranchName) {
       matchedBranchPerScopeId.put(configurationScopeId, matchedBranchName);
+      return this;
+    }
+
+    public SonarLintClientBuilder withInitialFs(String configScopeId, List<ClientFileDto> clientFileDtos) {
+      initialFilesByConfigScope.put(configScopeId, clientFileDtos);
       return this;
     }
   }
@@ -428,12 +434,14 @@ public class SonarLintBackendFixture {
     private final Queue<LogParams> logs = new ConcurrentLinkedQueue<>();
     private final List<DidChangeTaintVulnerabilitiesParams> taintVulnerabilityChanges = new CopyOnWriteArrayList<>();
     private final Map<String, String> matchedBranchPerScopeId;
+    private final Map<String, List<ClientFileDto>> initialFilesByConfigScope;
 
     public FakeSonarLintRpcClient(Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId, boolean printLogsToStdOut,
-      Map<String, String> matchedBranchPerScopeId) {
+      Map<String, String> matchedBranchPerScopeId, Map<String, List<ClientFileDto>> initialFilesByConfigScope) {
       this.credentialsByConnectionId = credentialsByConnectionId;
       this.printLogsToStdOut = printLogsToStdOut;
       this.matchedBranchPerScopeId = matchedBranchPerScopeId;
+      this.initialFilesByConfigScope = initialFilesByConfigScope;
     }
 
     @Override
@@ -551,11 +559,6 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public List<FoundFileDto> findFileByNamesInScope(String configScopeId, List<String> filenames, CancelChecker cancelChecker) throws ConfigScopeNotFoundException {
-      return List.of();
-    }
-
-    @Override
     public void openUrlInBrowser(URL url) {
 
     }
@@ -591,8 +594,8 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public List<String> listAllFilePaths(String configurationScopeId) {
-      return List.of();
+    public List<ClientFileDto> listFiles(String configScopeId) throws ConfigScopeNotFoundException {
+      return initialFilesByConfigScope.getOrDefault(configScopeId, List.of());
     }
 
     public List<ShowSmartNotificationParams> getSmartNotificationsToShow() {

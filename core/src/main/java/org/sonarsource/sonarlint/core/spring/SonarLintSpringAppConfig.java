@@ -45,8 +45,8 @@ import org.sonarsource.sonarlint.core.embedded.server.RequestHandlerBindingAssis
 import org.sonarsource.sonarlint.core.embedded.server.ShowHotspotRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.ShowIssueRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.StatusRequestHandler;
-import org.sonarsource.sonarlint.core.file.FilePathTranslationRepository;
-import org.sonarsource.sonarlint.core.file.FileService;
+import org.sonarsource.sonarlint.core.file.PathTranslationService;
+import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.http.AskClientCertificatePredicate;
 import org.sonarsource.sonarlint.core.http.ClientProxyCredentialsProvider;
@@ -132,8 +132,6 @@ import org.springframework.scheduling.support.TaskUtils;
   NewCodeService.class,
   SecurityHotspotMatchingService.class,
   RequestHandlerBindingAssistant.class,
-  FileService.class,
-  FilePathTranslationRepository.class,
   SynchronizationTimestampRepository.class,
   TaintVulnerabilityTrackingService.class,
   TelemetryService.class,
@@ -141,6 +139,8 @@ import org.springframework.scheduling.support.TaskUtils;
   TaintSynchronizationService.class,
   IssueSynchronizationService.class,
   HotspotSynchronizationService.class,
+  ClientFileSystemService.class,
+  PathTranslationService.class
 })
 public class SonarLintSpringAppConfig {
 

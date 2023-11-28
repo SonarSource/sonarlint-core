@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.commons;
 
+import java.util.Objects;
+
 public class Binding {
 
   private final String connectionId;
@@ -35,5 +37,22 @@ public class Binding {
 
   public String getSonarProjectKey() {
     return sonarProjectKey;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    var binding = (Binding) o;
+    return Objects.equals(connectionId, binding.connectionId) && Objects.equals(sonarProjectKey, binding.sonarProjectKey);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(connectionId, sonarProjectKey);
   }
 }

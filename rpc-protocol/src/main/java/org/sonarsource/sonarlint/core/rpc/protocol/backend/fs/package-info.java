@@ -17,30 +17,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.client.fs;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.fs;
 
-public class FoundFileDto {
+import javax.annotation.ParametersAreNonnullByDefault;
 
-  private final String fileName;
-  private final String filePath;
-
-  private final String content;
-
-  public FoundFileDto(String fileName, String filePath, String content) {
-    this.fileName = fileName;
-    this.filePath = filePath;
-    this.content = content;
-  }
-
-  public String getFileName() {
-    return fileName;
-  }
-
-  public String getFilePath() {
-    return filePath;
-  }
-
-  public String getContent() {
-    return content;
-  }
-}

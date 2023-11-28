@@ -17,8 +17,12 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-@ParametersAreNonnullByDefault
-package org.sonarsource.sonarlint.core.rpc.protocol.client.fs;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.fs;
 
-import javax.annotation.ParametersAreNonnullByDefault;
+import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 
+public interface FileSystemRpcService {
+
+  @JsonNotification
+  void updateFileSystem(UpdateFileSystemParams params);
+}

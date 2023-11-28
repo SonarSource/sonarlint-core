@@ -39,7 +39,6 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
-import org.sonarsource.sonarlint.core.event.MatchedSonarProjectBranchChangedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.DidChangeMatchedSonarProjectBranchParams;
@@ -62,7 +61,7 @@ public class SonarProjectBranchTrackingService {
   private final StorageService storageService;
   private final ConfigurationRepository configurationRepository;
   private final ApplicationEventPublisher applicationEventPublisher;
-  private final ExecutorService executorService;
+  private final ExecutorService executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-branch-matcher"));
   private final Map<String, Future<?>> matchingJobPerConfigScopeId = new ConcurrentHashMap<>();
   private final Map<String, CompletableFuture<String>> matchingResultPerConfigScopeId = new ConcurrentHashMap<>();
 
@@ -72,7 +71,6 @@ public class SonarProjectBranchTrackingService {
     this.storageService = storageService;
     this.configurationRepository = configurationRepository;
     this.applicationEventPublisher = applicationEventPublisher;
-    this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-branch-matcher"));
   }
 
   public Optional<String> awaitEffectiveSonarProjectBranch(String configurationScopeId) {

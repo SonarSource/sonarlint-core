@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - RPC Implementation
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,23 +17,19 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.event;
+package org.sonarsource.sonarlint.core.rpc.impl;
 
-public class MatchedSonarProjectBranchChangedEvent {
+import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.fs.FileSystemRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.fs.UpdateFileSystemParams;
 
-  private final String configurationScopeId;
-  private final String newBranchName;
-
-  public MatchedSonarProjectBranchChangedEvent(String configurationScopeId, String newBranchName) {
-    this.configurationScopeId = configurationScopeId;
-    this.newBranchName = newBranchName;
+public class FileSystemRpcServiceDelegate extends AbstractRpcServiceDelegate implements FileSystemRpcService {
+  public FileSystemRpcServiceDelegate(SonarLintRpcServerImpl sonarLintRpcServer) {
+    super(sonarLintRpcServer);
   }
 
-  public String getConfigurationScopeId() {
-    return configurationScopeId;
-  }
-
-  public String getNewBranchName() {
-    return newBranchName;
+  @Override
+  public void updateFileSystem(UpdateFileSystemParams params) {
+    notify(() -> getBean(ClientFileSystemService.class).updateFileSystem(params));
   }
 }

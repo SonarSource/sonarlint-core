@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core;
 
 import java.io.StringReader;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -32,15 +31,12 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.fs.ClientFile;
+import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FoundFileDto;
-import org.sonarsource.sonarlint.core.utils.FutureUtils;
 
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.StringUtils.removeEnd;
@@ -56,12 +52,14 @@ public class BindingClueProvider {
   private static final String SONAR_SCANNER_CONFIG_FILENAME = "sonar-project.properties";
   private static final String AUTOSCAN_CONFIG_FILENAME = ".sonarcloud.properties";
 
-  private final ConnectionConfigurationRepository connectionRepository;
-  private final SonarLintRpcClient client;
+  static final Set<String> ALL_BINDING_CLUE_FILENAMES = Set.of(SONAR_SCANNER_CONFIG_FILENAME, AUTOSCAN_CONFIG_FILENAME);
 
-  public BindingClueProvider(ConnectionConfigurationRepository connectionRepository, SonarLintRpcClient client) {
+  private final ConnectionConfigurationRepository connectionRepository;
+  private final ClientFileSystemService clientFs;
+
+  public BindingClueProvider(ConnectionConfigurationRepository connectionRepository, ClientFileSystemService clientFs) {
     this.connectionRepository = connectionRepository;
-    this.client = client;
+    this.clientFs = clientFs;
   }
 
   public List<BindingClueWithConnections> collectBindingCluesWithConnections(String configScopeId, Set<String> connectionIds, CancelChecker cancelToken) {
@@ -102,15 +100,9 @@ public class BindingClueProvider {
 
   private List<BindingClue> collectBindingClues(String checkedConfigScopeId, CancelChecker cancelToken) {
     LOG.debug("Query client for binding clues...");
-    FindFileByNamesInScopeResponse response;
-    try {
-      response = FutureUtils.waitForTaskWithResult(cancelToken, client.findFileByNamesInScope(new FindFileByNamesInScopeParams(checkedConfigScopeId,
-        List.of(SONAR_SCANNER_CONFIG_FILENAME, AUTOSCAN_CONFIG_FILENAME))), "search scanner clues", Duration.ofMinutes(1));
-    } catch (Exception e) {
-      return List.of();
-    }
+    var files = clientFs.findFileByNamesInScope(checkedConfigScopeId, List.copyOf(ALL_BINDING_CLUE_FILENAMES));
     List<BindingClue> bindingClues = new ArrayList<>();
-    for (var foundFile : response.getFoundFiles()) {
+    for (var foundFile : files) {
       var scannerProps = extractScannerProperties(foundFile);
       if (scannerProps == null) {
         continue;
@@ -147,13 +139,13 @@ public class BindingClueProvider {
   }
 
   @CheckForNull
-  private static ScannerProperties extractScannerProperties(FoundFileDto matchedFile) {
-    LOG.debug("Extracting scanner properties from {}", matchedFile.getFilePath());
+  private ScannerProperties extractScannerProperties(ClientFile matchedFile) {
+    LOG.debug("Extracting scanner properties from {}", matchedFile);
     var properties = new Properties();
     try {
       properties.load(new StringReader(matchedFile.getContent()));
     } catch (Exception e) {
-      LOG.error("Unable to parse content of file '{}'", matchedFile.getFilePath(), e);
+      LOG.error("Unable to parse content of file '{}'", matchedFile, e);
       return null;
     }
     return new ScannerProperties(getAndTrim(properties, "sonar.projectKey"), getAndTrim(properties, "sonar.organization"),

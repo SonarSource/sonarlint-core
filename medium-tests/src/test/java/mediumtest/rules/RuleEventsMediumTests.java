@@ -36,8 +36,12 @@ import static com.github.tomakehurst.wiremock.client.WireMock.okForContentType;
 import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 
@@ -73,6 +77,8 @@ class RuleEventsMediumTests {
         "}]," +
         "\"deactivatedRules\": [\"java:S4321\"]" +
         "}\n\n");
+      var client = newFakeClient().printLogsToStdOut().build();
+      when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
       backend = newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -106,6 +112,8 @@ class RuleEventsMediumTests {
         "}]" +
         "}]" +
         "}\n\n");
+      var client = newFakeClient().printLogsToStdOut().build();
+      when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
       backend = newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -141,6 +149,8 @@ class RuleEventsMediumTests {
         "}]" +
         "}]" +
         "}\n\n");
+      var client = newFakeClient().printLogsToStdOut().build();
+      when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
       backend = newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -177,6 +187,8 @@ class RuleEventsMediumTests {
         "}]" +
         "}]" +
         "}\n\n");
+      var client = newFakeClient().printLogsToStdOut().build();
+      when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
       backend = newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -204,6 +216,8 @@ class RuleEventsMediumTests {
         "\"activatedRules\": []," +
         "\"deactivatedRules\": [\"java:S0000\"]" +
         "}\n\n");
+      var client = newFakeClient().printLogsToStdOut().build();
+      when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
       backend = newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -230,6 +244,8 @@ class RuleEventsMediumTests {
         "\"activatedRules\": []," +
         "\"deactivatedRules\": [\"java:S0000\"]" +
         "}\n\n");
+      var client = newFakeClient().printLogsToStdOut().build();
+      when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
       backend = newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()

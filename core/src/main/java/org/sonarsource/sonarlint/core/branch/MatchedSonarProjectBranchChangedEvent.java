@@ -17,24 +17,23 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.file;
+package org.sonarsource.sonarlint.core.branch;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import javax.inject.Named;
-import javax.inject.Singleton;
+public class MatchedSonarProjectBranchChangedEvent {
 
-@Named
-@Singleton
-public class FilePathTranslationRepository {
-  private final Map<String, FilePathTranslation> pathTranslationsByConfigScopeId = new ConcurrentHashMap<>();
+  private final String configurationScopeId;
+  private final String newBranchName;
 
-  public void setPathTranslation(String configurationScopeId, FilePathTranslation translation) {
-    pathTranslationsByConfigScopeId.put(configurationScopeId, translation);
+  public MatchedSonarProjectBranchChangedEvent(String configurationScopeId, String newBranchName) {
+    this.configurationScopeId = configurationScopeId;
+    this.newBranchName = newBranchName;
   }
 
-  public Optional<FilePathTranslation> getPathTranslation(String configurationScopeId) {
-    return Optional.ofNullable(pathTranslationsByConfigScopeId.get(configurationScopeId));
+  public String getConfigurationScopeId() {
+    return configurationScopeId;
+  }
+
+  public String getNewBranchName() {
+    return newBranchName;
   }
 }
