@@ -22,8 +22,6 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintEngine;
@@ -152,14 +150,4 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
   @Deprecated(since = "9.3")
   Collection<ServerHotspot> getServerHotspots(ProjectBinding projectBinding, String branchName, String ideFilePath);
 
-  /**
-   * Get a list of files that are excluded from analysis, out of the provided files.
-   *
-   * @param projectBinding    Specifies the binding to which the files belong.
-   * @param files             The files that will be process to detect which ones are excluded from analysis
-   * @param ideFilePathExtractor Provides a IDE path of each file. The path will be processes using the binding prefixes.
-   * @param testFilePredicate Indicates whether a file is a test file.
-   * @return The list of files that are excluded from analysis.
-   */
-  <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> ideFilePathExtractor, Predicate<G> testFilePredicate);
 }
