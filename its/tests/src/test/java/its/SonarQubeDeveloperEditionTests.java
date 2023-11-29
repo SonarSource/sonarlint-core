@@ -294,7 +294,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     @AfterEach
     void stop() {
       adminWsClient.settings().reset(new ResetRequest().setKeys(singletonList("sonar.java.file.suffixes")));
-      engine.stop(true);
+      engine.stop(false);
     }
 
     // TODO should be moved to a separate class, not related to analysis
