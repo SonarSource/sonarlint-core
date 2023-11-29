@@ -260,6 +260,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         .enableHotspots()
         .setConnectionId(CONNECTION_ID)
         .setSonarLintUserHome(sonarUserHome)
+        .setWorkDir(sonarUserHome.resolve("workDir"))
         .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.JAVA)
         .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.PHP)
         .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.JS)
