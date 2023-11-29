@@ -1139,6 +1139,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     @Test
     @Tag(HOTSPOT_FEATURE_DISABLED)
+    @OnlyOnSonarQube(from = "9.7")
     void dontReportHotspotsIfNotEnabled() throws Exception {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY_JAVA_HOTSPOT, false)))));
