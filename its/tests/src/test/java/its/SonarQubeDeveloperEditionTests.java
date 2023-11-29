@@ -1184,25 +1184,24 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
+    @OnlyOnSonarQube(from = "9.7")
     void reportHotspots() throws Exception {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY_JAVA_HOTSPOT, false)))));
-      await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
+        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "Project", new BindingConfigurationDto(CONNECTION_ID,
+          PROJECT_KEY_JAVA_HOTSPOT, false)))));
+      await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer " +
+        "configuration"))).isTrue());
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_HOTSPOT, PROJECT_KEY_JAVA_HOTSPOT,
-        "src/main/java/foo/Foo.java",
-        "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath()),
+          "src/main/java/foo/Foo.java",
+          "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath()),
         issueListener, null, null);
 
-      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
-        assertThat(issueListener.getIssues()).hasSize(1)
-          .extracting(org.sonarsource.sonarlint.core.client.api.common.analysis.Issue::getRuleKey, org.sonarsource.sonarlint.core.client.api.common.analysis.Issue::getType)
-          .containsExactly(tuple(javaRuleKey(ORCHESTRATOR, "S4792"), RuleType.SECURITY_HOTSPOT));
-      } else {
-        // no hotspot detection when connected to SQ < 9.7
-        assertThat(issueListener.getIssues()).isEmpty();
-      }
+      assertThat(issueListener.getIssues()).hasSize(1)
+        .extracting(org.sonarsource.sonarlint.core.client.api.common.analysis.Issue::getRuleKey,
+          org.sonarsource.sonarlint.core.client.api.common.analysis.Issue::getType)
+        .containsExactly(tuple(javaRuleKey(ORCHESTRATOR, "S4792"), RuleType.SECURITY_HOTSPOT));
     }
 
     @Test
