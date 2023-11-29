@@ -50,14 +50,6 @@ public class ServerHotspotUpdater {
     }
   }
 
-  public void updateForFile(HotspotApi hotspotApi, ProjectBinding projectBinding, String ideFilePath, String branchName, Supplier<Version> serverVersionSupplier) {
-    String serverFilePath = IssueStorePaths.idePathToServerPath(projectBinding, ideFilePath);
-    if (serverFilePath == null) {
-      return;
-    }
-    updateForFile(hotspotApi, projectBinding.projectKey(), serverFilePath, branchName, serverVersionSupplier);
-  }
-
   public void updateForFile(HotspotApi hotspotApi, String projectKey, String serverFilePath, String branchName, Supplier<Version> serverVersionSupplier) {
     if (hotspotApi.supportHotspotsPull(serverVersionSupplier)) {
       LOG.debug("Skip downloading file hotspots on SonarQube 10.1+");

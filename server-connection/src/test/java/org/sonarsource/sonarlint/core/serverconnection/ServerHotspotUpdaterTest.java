@@ -79,35 +79,6 @@ class ServerHotspotUpdaterTest {
   }
 
   @Test
-  void should_not_update_file_hotspots_when_sync_is_enabled() {
-    when(hotspotApi.supportHotspotsPull(any())).thenReturn(true);
-
-    updater.updateForFile(hotspotApi, projectBinding, "filePath", "branch", () -> null);
-
-    verifyNoInteractions(issueStore);
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).contains("Skip downloading file hotspots on SonarQube 10.1+");
-  }
-
-  @Test
-  void should_not_update_file_hotspots_when_not_supported() {
-    when(hotspotApi.permitsTracking(any())).thenReturn(false);
-
-    updater.updateForFile(hotspotApi, projectBinding, "filePath", "branch", () -> null);
-
-    verifyNoInteractions(issueStore);
-    assertThat(logTester.logs(ClientLogOutput.Level.INFO)).contains("Skip downloading hotspots for file, not supported");
-  }
-
-  @Test
-  void should_not_update_file_hotspots_when_file_path_is_inconsistent() {
-    when(hotspotApi.permitsTracking(any())).thenReturn(false);
-
-    updater.updateForFile(hotspotApi, new ProjectBinding(PROJECT_KEY, "", "client"), "ide/filePath", "branch", () -> null);
-
-    verifyNoInteractions(issueStore);
-  }
-
-  @Test
   void should_update_all_hotspots() {
     when(hotspotApi.permitsTracking(any())).thenReturn(true);
     var hotspots = List.of(aServerHotspot());
@@ -116,17 +87,6 @@ class ServerHotspotUpdaterTest {
     updater.updateAll(hotspotApi, PROJECT_KEY, "branch", () -> null, null);
 
     verify(issueStore).replaceAllHotspotsOfBranch("branch", hotspots);
-  }
-
-  @Test
-  void should_update_file_hotspots() {
-    when(hotspotApi.permitsTracking(any())).thenReturn(true);
-    var hotspots = List.of(aServerHotspot("key", "filePath"));
-    when(hotspotApi.getFromFile(PROJECT_KEY, "filePath", "branch")).thenReturn(hotspots);
-
-    updater.updateForFile(hotspotApi, projectBinding, "filePath", "branch", () -> null);
-
-    verify(issueStore).replaceAllHotspotsOfFile("branch", "filePath", hotspots);
   }
 
   @Test

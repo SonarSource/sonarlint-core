@@ -354,31 +354,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
-  public void syncServerHotspots(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor) {
-    setLogging(null);
-    serverConnection.syncServerHotspotsForProject(endpoint, client, projectKey, branchName);
-  }
-
-  @Override
-  public void downloadAllServerHotspots(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor) {
-    setLogging(null);
-    serverConnection.downloadAllServerHotspots(endpoint, client, projectKey, branchName, new ProgressMonitor(monitor));
-  }
-
-  @Override
-  public void downloadAllServerHotspotsForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
-    @Nullable ClientProgressMonitor monitor) {
-    setLogging(null);
-    serverConnection.downloadAllServerHotspotsForFile(endpoint, client, projectBinding, ideFilePath, branchName);
-  }
-
-  @Override
-  public Collection<ServerHotspot> getServerHotspots(ProjectBinding projectBinding, String branchName, String ideFilePath) {
-    setLogging(null);
-    return serverConnection.getServerHotspots(projectBinding, branchName, ideFilePath);
-  }
-
-  @Override
   public ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> ideFilePaths) {
     setLogging(null);
     return serverConnection.calculatePathPrefixes(projectKey, ideFilePaths);

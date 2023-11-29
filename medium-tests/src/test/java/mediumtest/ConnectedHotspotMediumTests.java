@@ -134,64 +134,6 @@ class ConnectedHotspotMediumTests {
       tuple("java:S5852", 3, inputFile.getPath(), IssueSeverity.BLOCKER));
   }
 
-  @Test
-  void should_return_project_hotspots_after_downloading_them() {
-    createStorageAndEngine("9.7");
-    mockWebServer.addProtobufResponse("/api/hotspots/search.protobuf?projectKey=" + JAVA_MODULE_KEY + "&branch=master&ps=500&p=1", Hotspots.SearchWsResponse.newBuilder()
-      .setPaging(Common.Paging.newBuilder().setTotal(1).build())
-      .addHotspots(Hotspots.SearchWsResponse.Hotspot.newBuilder()
-        .setComponent("component:file/path")
-        .setTextRange(Common.TextRange.newBuilder().setStartLine(1).setStartOffset(2).setEndLine(3).setEndOffset(4).build())
-        .setStatus("TO_REVIEW")
-        .setKey("hotspotKey1")
-        .setCreationDate("2020-09-21T12:46:39+0000")
-        .setRuleKey("ruleKey1")
-        .setMessage("message1")
-        .setVulnerabilityProbability("MEDIUM")
-        .build())
-      .addComponents(Hotspots.Component.newBuilder().setKey("component:file/path").setPath("file/path").build())
-      .build());
-    sonarlint.downloadAllServerHotspots(mockWebServer.endpointParams(), backend.getHttpClient(CONNECTION_ID), JAVA_MODULE_KEY, "master", null);
-
-    var serverHotspots = sonarlint.getServerHotspots(new ProjectBinding(JAVA_MODULE_KEY, "", ""), "master", "file/path");
-
-    assertThat(serverHotspots)
-      .extracting("key", "ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "creationDate",
-        "status")
-      .containsExactly(
-        tuple("hotspotKey1", "ruleKey1", "message1", "file/path", 1, 2, 3, 4, LocalDateTime.of(2020, 9, 21, 12, 46, 39).toInstant(ZoneOffset.UTC), HotspotReviewStatus.TO_REVIEW));
-  }
-
-  @Test
-  void should_return_file_hotspots_after_downloading_them() {
-    createStorageAndEngine("9.7");
-    mockWebServer.addProtobufResponse("/api/hotspots/search.protobuf?projectKey=" + JAVA_MODULE_KEY + "&files=file%2Fpath&branch=master&ps=500&p=1",
-      Hotspots.SearchWsResponse.newBuilder()
-        .setPaging(Common.Paging.newBuilder().setTotal(1).build())
-        .addHotspots(Hotspots.SearchWsResponse.Hotspot.newBuilder()
-          .setComponent("component:file/path")
-          .setTextRange(Common.TextRange.newBuilder().setStartLine(1).setStartOffset(2).setEndLine(3).setEndOffset(4).build())
-          .setStatus("TO_REVIEW")
-          .setKey("hotspotKey1")
-          .setCreationDate("2020-09-21T12:46:39+0000")
-          .setRuleKey("ruleKey1")
-          .setMessage("message1")
-          .setVulnerabilityProbability("LOW")
-          .build())
-        .addComponents(Hotspots.Component.newBuilder().setKey("component:file/path").setPath("file/path").build())
-        .build());
-    var projectBinding = new ProjectBinding(JAVA_MODULE_KEY, "", "");
-    sonarlint.downloadAllServerHotspotsForFile(mockWebServer.endpointParams(), backend.getHttpClient(CONNECTION_ID), projectBinding, "file/path", "master", null);
-
-    var serverHotspots = sonarlint.getServerHotspots(projectBinding, "master", "file/path");
-
-    assertThat(serverHotspots)
-      .extracting("key", "ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "creationDate",
-        "status")
-      .containsExactly(
-        tuple("hotspotKey1", "ruleKey1", "message1", "file/path", 1, 2, 3, 4, LocalDateTime.of(2020, 9, 21, 12, 46, 39).toInstant(ZoneOffset.UTC), HotspotReviewStatus.TO_REVIEW));
-  }
-
   private void createStorageAndEngine(String serverVersion) {
     var fakeClient = newFakeClient()
       .build();
