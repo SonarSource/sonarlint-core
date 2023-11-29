@@ -1142,6 +1142,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     void dontReportHotspotsIfNotEnabled() throws Exception {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY_JAVA_HOTSPOT, false)))));
+      await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
+
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_HOTSPOT, PROJECT_KEY_JAVA_HOTSPOT,
         "src/main/java/foo/Foo.java",
