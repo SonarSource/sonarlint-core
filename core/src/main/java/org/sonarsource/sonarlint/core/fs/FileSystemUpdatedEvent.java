@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.fs;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class FileSystemUpdatedEvent {

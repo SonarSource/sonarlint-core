@@ -38,7 +38,7 @@ import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.fs.UpdateFileSystemParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.springframework.context.ApplicationEventPublisher;
@@ -102,7 +102,7 @@ public class ClientFileSystemService {
     return result;
   }
 
-  public void updateFileSystem(UpdateFileSystemParams params) {
+  public void didUpdateFileSystem(DidUpdateFileSystemParams params) {
     var removed = new ArrayList<ClientFile>();
     params.getRemovedFiles().forEach(uri -> {
       var clientFile = filesByUri.remove(uri);

@@ -17,12 +17,28 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.fs;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.file;
 
-import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
+import java.net.URI;
+import java.util.List;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 
-public interface FileSystemRpcService {
+public class DidUpdateFileSystemParams {
 
-  @JsonNotification
-  void updateFileSystem(UpdateFileSystemParams params);
+  private final List<URI> removedFiles;
+
+  private final List<ClientFileDto> addedOrChangedFiles;
+
+  public DidUpdateFileSystemParams(List<URI> removedFiles, List<ClientFileDto> addedOrChangedFiles) {
+    this.removedFiles = removedFiles;
+    this.addedOrChangedFiles = addedOrChangedFiles;
+  }
+
+  public List<URI> getRemovedFiles() {
+    return removedFiles;
+  }
+
+  public List<ClientFileDto> getAddedOrChangedFiles() {
+    return addedOrChangedFiles;
+  }
 }

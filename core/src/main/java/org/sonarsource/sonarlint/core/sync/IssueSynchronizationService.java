@@ -93,9 +93,8 @@ public class IssueSynchronizationService {
   }
 
   public void fetchProjectIssues(Binding binding, String activeBranch) {
-    serverApiProvider.getServerApi(binding.getConnectionId()).ifPresent(serverApi -> {
-      downloadServerIssuesForProject(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), activeBranch);
-    });
+    serverApiProvider.getServerApi(binding.getConnectionId())
+      .ifPresent(serverApi -> downloadServerIssuesForProject(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), activeBranch));
   }
 
   private void downloadServerIssuesForProject(String connectionId, ServerApi serverApi, String projectKey, String branchName) {
@@ -108,9 +107,8 @@ public class IssueSynchronizationService {
   }
 
   public void fetchFileIssues(Binding binding, String serverFileRelativePath, String activeBranch) {
-    serverApiProvider.getServerApi(binding.getConnectionId()).ifPresent(serverApi -> {
-      downloadServerIssuesForFile(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), serverFileRelativePath, activeBranch);
-    });
+    serverApiProvider.getServerApi(binding.getConnectionId())
+      .ifPresent(serverApi -> downloadServerIssuesForFile(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), serverFileRelativePath, activeBranch));
   }
 
   public void downloadServerIssuesForFile(String connectionId, ServerApi serverApi, String projectKey, String serverFileRelativePath, String branchName) {

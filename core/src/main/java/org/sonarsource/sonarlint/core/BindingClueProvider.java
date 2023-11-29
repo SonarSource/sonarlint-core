@@ -139,7 +139,7 @@ public class BindingClueProvider {
   }
 
   @CheckForNull
-  private ScannerProperties extractScannerProperties(ClientFile matchedFile) {
+  private static ScannerProperties extractScannerProperties(ClientFile matchedFile) {
     LOG.debug("Extracting scanner properties from {}", matchedFile);
     var properties = new Properties();
     try {

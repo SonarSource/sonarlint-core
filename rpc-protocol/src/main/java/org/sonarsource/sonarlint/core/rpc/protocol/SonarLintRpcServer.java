@@ -28,16 +28,15 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.SonarProjectBr
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.ConfigurationRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileRpcService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.fs.FileSystemRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.IssueRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.NewCodeRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesRpcService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityTrackingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.IssueTrackingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.SecurityHotspotMatchingRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityTrackingRpcService;
 
 public interface SonarLintRpcServer {
 
@@ -88,9 +87,6 @@ public interface SonarLintRpcServer {
 
   @JsonDelegate
   TaintVulnerabilityTrackingRpcService getTaintVulnerabilityTrackingService();
-
-  @JsonDelegate
-  FileSystemRpcService getFileSystemService();
 
   @JsonRequest
   CompletableFuture<Void> shutdown();

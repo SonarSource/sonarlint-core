@@ -34,7 +34,6 @@ import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
-import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
 import org.sonarsource.sonarlint.core.serverconnection.HotspotDownloader;
 import org.sonarsource.sonarlint.core.serverconnection.ServerHotspotUpdater;
@@ -94,9 +93,8 @@ public class HotspotSynchronizationService {
   }
 
   public void fetchProjectHotspots(Binding binding, String activeBranch) {
-    serverApiProvider.getServerApi(binding.getConnectionId()).ifPresent(serverApi -> {
-      downloadAllServerHotspots(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), activeBranch, new ProgressMonitor(null));
-    });
+    serverApiProvider.getServerApi(binding.getConnectionId())
+      .ifPresent(serverApi -> downloadAllServerHotspots(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), activeBranch, new ProgressMonitor(null)));
   }
 
   private void downloadAllServerHotspots(String connectionId, ServerApi serverApi, String projectKey, String branchName, ProgressMonitor progress) {
@@ -109,9 +107,8 @@ public class HotspotSynchronizationService {
   }
 
   public void fetchFileHotspots(Binding binding, String activeBranch, String serverFilePath) {
-    serverApiProvider.getServerApi(binding.getConnectionId()).ifPresent(serverApi -> {
-      downloadAllServerHotspotsForFile(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), serverFilePath, activeBranch);
-    });
+    serverApiProvider.getServerApi(binding.getConnectionId())
+      .ifPresent(serverApi -> downloadAllServerHotspotsForFile(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), serverFilePath, activeBranch));
   }
 
   private void downloadAllServerHotspotsForFile(String connectionId, ServerApi serverApi, String projectKey, String serverRelativeFilePath, String branchName) {
