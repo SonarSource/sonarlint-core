@@ -308,6 +308,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
       await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+      await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-javascript", "src/Person.js"), issueListener, null, null);
@@ -324,6 +325,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
       await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+      await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-java-custom", "src/main/java/foo/Foo.java"),
@@ -342,6 +344,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
       await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+      await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-php", "src/Math.php"), issueListener, null, null);
@@ -359,6 +362,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, projectName, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
       await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+      await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-python", "src/hello.py"), issueListener, null, null);
@@ -375,6 +379,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
       await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+      await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-web", "src/file.html"), issueListener, null, null);
@@ -391,6 +396,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
       await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+      await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-go", "src/sample.go"), issueListener, null, null);
@@ -408,6 +414,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
       await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+      await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-cloudformation", "src/sample.yaml"), issueListener, null, null);
@@ -425,6 +432,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
       await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+      await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-docker", "src/Dockerfile"), issueListener, null, null);
@@ -442,6 +450,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
       await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+      await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-kubernetes", "src/sample.yaml"), issueListener, null, null);
@@ -475,6 +484,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
       await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+      await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-java", "src/main/java/foo/Foo.java"),
@@ -494,6 +504,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
       await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+      await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
       assertThat(logs).contains("Start Global Extension It works");
 
@@ -557,6 +568,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
           List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
         await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+        await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
         var issueListener = new SaveIssueListener();
         engine.analyze(createAnalysisConfiguration(projectKey, "sample-java", "src/main/java/foo/Foo.java"),
@@ -589,6 +601,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, projectName, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
       await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+      await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-java", "src/main/java/foo/Foo.java"),
@@ -633,6 +646,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
       await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+      await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-ruby", "src/hello.rb"), issueListener, null, null);
@@ -649,6 +663,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
       await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+      await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-kotlin", "src/hello.kt"), issueListener, null, null);
@@ -665,6 +680,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
       await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+      await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-scala", "src/Hello.scala"), issueListener, null, null);
@@ -681,6 +697,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
       await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+      await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-xml", "src/foo.xml"), issueListener, (m, l) -> System.out.println(m), null);
