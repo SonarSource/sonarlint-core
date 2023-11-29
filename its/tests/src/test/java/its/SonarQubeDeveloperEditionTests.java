@@ -1132,7 +1132,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     void stop() {
       adminWsClient.settings().reset(new ResetRequest().setKeys(singletonList("sonar.java.file.suffixes")));
       try {
-        engine.stop(true);
+        engine.stop(false);
       } catch (Exception e) {
         // Ignore
       }
