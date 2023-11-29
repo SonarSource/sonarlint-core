@@ -209,7 +209,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       backend.initialize(
           new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, featureFlags,
             sonarUserHome.resolve("storage"),
-            sonarUserHome.resolve("workDir"),
+            sonarUserHome.resolve("work"),
             Collections.emptySet(), Map.of(), languages, Collections.emptySet(),
             List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), false),
               new SonarQubeConnectionConfigurationDto(CONNECTION_ID_WRONG_CREDENTIALS, ORCHESTRATOR.getServer().getUrl(), false)),
@@ -260,7 +260,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         .enableHotspots()
         .setConnectionId(CONNECTION_ID)
         .setSonarLintUserHome(sonarUserHome)
-        .setWorkDir(sonarUserHome.resolve("workDir"))
         .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.JAVA)
         .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.PHP)
         .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.JS)
