@@ -154,7 +154,6 @@ class BranchSpecificSynchronizationMediumTests {
   @Test
   void it_should_not_report_progress_to_the_client_when_synchronizing_if_client_rejects_progress() {
     var fakeClient = newFakeClient()
-      .printLogsToStdOut()
       .build();
     doThrow(new UnsupportedOperationException("Failed to start progress"))
       .when(fakeClient)

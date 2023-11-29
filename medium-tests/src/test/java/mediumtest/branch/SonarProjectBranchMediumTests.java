@@ -90,7 +90,6 @@ class SonarProjectBranchMediumTests {
   @Test
   void it_should_not_notify_client_if_matched_branch_did_not_change() throws InterruptedException {
     var client = newFakeClient()
-      .printLogsToStdOut()
       .build();
     when(client.matchSonarProjectBranch(eq("configScopeId"), eq("main"), eq(Set.of("main", "myBranch")), any())).thenReturn("myBranch");
 

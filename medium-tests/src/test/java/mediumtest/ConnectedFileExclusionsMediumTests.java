@@ -81,7 +81,6 @@ class ConnectedFileExclusionsMediumTests {
     var testFile2Dto = new ClientFileDto(testFile2.toUri(), tmp.resolve(testFile2), CONFIG_SCOPE_ID, true, StandardCharsets.UTF_8.name(), testFile2, null);
 
     var fakeClient = newFakeClient()
-      .printLogsToStdOut()
       .withInitialFs(CONFIG_SCOPE_ID,
         List.of(mainFile1Dto, mainFile2Dto, testFile1Dto, testFile2Dto))
       .build();

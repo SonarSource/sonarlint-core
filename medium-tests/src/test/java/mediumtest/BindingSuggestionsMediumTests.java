@@ -203,7 +203,6 @@ class BindingSuggestionsMediumTests {
   @Test
   void test_uses_binding_clues_when_updating_fs(@TempDir Path tmp) throws IOException {
     var fakeClient = newFakeClient()
-      .printLogsToStdOut()
       .build();
 
     backend = newBackend()

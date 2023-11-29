@@ -77,7 +77,7 @@ class RuleEventsMediumTests {
         "}]," +
         "\"deactivatedRules\": [\"java:S4321\"]" +
         "}\n\n");
-      var client = newFakeClient().printLogsToStdOut().build();
+      var client = newFakeClient().build();
       when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
       backend = newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -112,7 +112,7 @@ class RuleEventsMediumTests {
         "}]" +
         "}]" +
         "}\n\n");
-      var client = newFakeClient().printLogsToStdOut().build();
+      var client = newFakeClient().build();
       when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
       backend = newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -149,7 +149,7 @@ class RuleEventsMediumTests {
         "}]" +
         "}]" +
         "}\n\n");
-      var client = newFakeClient().printLogsToStdOut().build();
+      var client = newFakeClient().build();
       when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
       backend = newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -187,7 +187,7 @@ class RuleEventsMediumTests {
         "}]" +
         "}]" +
         "}\n\n");
-      var client = newFakeClient().printLogsToStdOut().build();
+      var client = newFakeClient().build();
       when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
       backend = newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -216,7 +216,7 @@ class RuleEventsMediumTests {
         "\"activatedRules\": []," +
         "\"deactivatedRules\": [\"java:S0000\"]" +
         "}\n\n");
-      var client = newFakeClient().printLogsToStdOut().build();
+      var client = newFakeClient().build();
       when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
       backend = newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -244,7 +244,7 @@ class RuleEventsMediumTests {
         "\"activatedRules\": []," +
         "\"deactivatedRules\": [\"java:S0000\"]" +
         "}\n\n");
-      var client = newFakeClient().printLogsToStdOut().build();
+      var client = newFakeClient().build();
       when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
       backend = newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
