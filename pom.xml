@@ -47,7 +47,7 @@
     <sonar-plugin-api.version>10.1.0.809</sonar-plugin-api.version>
     <sonar-markdown.version>9.4.0.54424</sonar-markdown.version>
     <sonar-scanner-protocol.version>7.9</sonar-scanner-protocol.version>
-    <protobuf.version>3.21.9</protobuf.version>
+    <protobuf.version>3.25.1</protobuf.version>
     <gitRepositoryName>sonarlint-core</gitRepositoryName>
     <okhttp.version>5.0.0-alpha.10</okhttp.version>
     <junit.jupiter.version>5.9.1</junit.jupiter.version>
