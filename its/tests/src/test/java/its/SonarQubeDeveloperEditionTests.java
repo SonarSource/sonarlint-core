@@ -527,7 +527,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       assertThat(issueListener.getIssues()).extracting("ruleKey", "message").containsOnly(
         tuple("global:inc", "Issue number 1"));
 
-      engine.stop(true);
+      engine.stop(false);
       assertThat(logs).contains("Stop Global Extension");
     }
 
@@ -726,7 +726,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     @AfterEach
     void stop() {
-      engine.stop(true);
+      engine.stop(false);
     }
 
     @Test
@@ -851,7 +851,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     @AfterAll
     public void stop() {
-      engine.stop(true);
+      engine.stop(false);
     }
 
     @Test
@@ -938,7 +938,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     @AfterEach
     void stop() {
-      engine.stop(true);
+      engine.stop(false);
       var request = new PostRequest("api/projects/bulk_delete");
       request.setParam("projects", PROJECT_KEY_JAVA_TAINT);
       try (var response = adminWsClient.wsConnector().call(request)) {
