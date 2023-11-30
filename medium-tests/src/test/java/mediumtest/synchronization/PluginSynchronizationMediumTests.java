@@ -60,7 +60,7 @@ class PluginSynchronizationMediumTests {
     backend = newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
       .build();
 
@@ -84,7 +84,7 @@ class PluginSynchronizationMediumTests {
     backend = newBackend()
       .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
       .build(client);
 
@@ -103,7 +103,7 @@ class PluginSynchronizationMediumTests {
     backend = newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
       .build(client);
 
@@ -123,7 +123,7 @@ class PluginSynchronizationMediumTests {
     backend = newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server, storage -> storage.withPlugin(TestPlugin.JAVA))
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
       .build(client);
 
@@ -148,7 +148,7 @@ class PluginSynchronizationMediumTests {
     backend = newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server, storage -> storage.withPlugin(TestPlugin.JAVA.getPluginKey(), TestPlugin.JAVA.getPath(), "differentHash"))
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
       .build(client);
 
@@ -169,7 +169,7 @@ class PluginSynchronizationMediumTests {
     backend = newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
       .build(client);
 
@@ -189,7 +189,7 @@ class PluginSynchronizationMediumTests {
     backend = newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
       .build(client);
 
@@ -209,7 +209,7 @@ class PluginSynchronizationMediumTests {
     backend = newBackend()
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
       .build(client);
 
@@ -228,7 +228,7 @@ class PluginSynchronizationMediumTests {
     var client = newFakeClient().build();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
       .build(client);
 
@@ -247,7 +247,7 @@ class PluginSynchronizationMediumTests {
     var client = newFakeClient().build();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
       .build(client);
 
@@ -272,7 +272,7 @@ class PluginSynchronizationMediumTests {
     backend = newBackend()
       .withExtraEnabledLanguagesInConnectedMode(Language.TS)
       .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
       .build(client);
 
@@ -296,7 +296,7 @@ class PluginSynchronizationMediumTests {
     var client = newFakeClient().build();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
       .build(client);
 

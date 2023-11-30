@@ -585,7 +585,7 @@ class ServerSentEventsMediumTests {
         .withServerSentEventsEnabled()
         .withFullSynchronization()
         .withSonarQubeConnection("connectionId", serverWithTaintIssues)
-        .withBoundConfigScope("configScope", "connectionId", projectKey, branchName)
+        .withBoundConfigScope("configScope", "connectionId", projectKey)
         .build(fakeClient);
 
       ArgumentCaptor<List<TaintVulnerabilityDto>> captor = ArgumentCaptor.forClass(List.class);

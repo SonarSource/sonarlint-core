@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,18 +17,23 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.client.fs;
+package org.sonarsource.sonarlint.core.branch;
 
-import java.util.List;
+public class MatchedSonarProjectBranchChangedEvent {
 
-public class ListAllFilePathsResponse {
-  private final List<String> allFilePaths;
+  private final String configurationScopeId;
+  private final String newBranchName;
 
-  public ListAllFilePathsResponse(List<String> allFilePaths) {
-    this.allFilePaths = allFilePaths;
+  public MatchedSonarProjectBranchChangedEvent(String configurationScopeId, String newBranchName) {
+    this.configurationScopeId = configurationScopeId;
+    this.newBranchName = newBranchName;
   }
 
-  public List<String> getAllFilePaths() {
-    return allFilePaths;
+  public String getConfigurationScopeId() {
+    return configurationScopeId;
+  }
+
+  public String getNewBranchName() {
+    return newBranchName;
   }
 }

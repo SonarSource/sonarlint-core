@@ -37,10 +37,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FindFileByNamesInScopeResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListAllFilePathsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListAllFilePathsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListFilesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListFilesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.CheckServerTrustedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.CheckServerTrustedResponse;
@@ -58,8 +56,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgres
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
 
 /**
  * This interface defines the RPC requests or notifications the backend can call on the client.
@@ -71,12 +69,6 @@ public interface SonarLintRpcClient {
    */
   @JsonNotification
   void suggestBinding(SuggestBindingParams params);
-
-  /**
-   * Find files by names in the given configuration scope.
-   */
-  @JsonRequest
-  CompletableFuture<FindFileByNamesInScopeResponse> findFileByNamesInScope(FindFileByNamesInScopeParams params);
 
   @JsonNotification
   void openUrlInBrowser(OpenUrlInBrowserParams params);
@@ -193,7 +185,7 @@ public interface SonarLintRpcClient {
    * Must return all file paths for the given configuration scope.
    */
   @JsonRequest
-  CompletableFuture<ListAllFilePathsResponse> listAllFilePaths(ListAllFilePathsParams params);
+  CompletableFuture<ListFilesResponse> listFiles(ListFilesParams params);
 
   /**
    * Called whenever there is a change in the list of taint vulnerabilities of a configuration scope. The change can be caused by:

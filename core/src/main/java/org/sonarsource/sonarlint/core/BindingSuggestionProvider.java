@@ -33,6 +33,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -43,14 +44,14 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
+import org.sonarsource.sonarlint.core.fs.ClientFile;
+import org.sonarsource.sonarlint.core.fs.FileSystemUpdatedEvent;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetBindingSuggestionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.GetBindingSuggestionsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.utils.ExecutorServiceShutdownCancelChecker;
 import org.springframework.context.event.EventListener;
@@ -78,13 +79,9 @@ public class BindingSuggestionProvider {
   @Inject
   public BindingSuggestionProvider(ConfigurationRepository configRepository, ConnectionConfigurationRepository connectionRepository, SonarLintRpcClient client,
     BindingClueProvider bindingClueProvider, SonarProjectsCache sonarProjectsCache) {
-    this.configRepository = configRepository;
-    this.connectionRepository = connectionRepository;
-    this.client = client;
-    this.bindingClueProvider = bindingClueProvider;
-    this.sonarProjectsCache = sonarProjectsCache;
-    this.executorService = new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
-      new LinkedBlockingQueue<>(), r -> new Thread(r, "Binding Suggestion Provider"));
+    this(configRepository, connectionRepository, client, bindingClueProvider, sonarProjectsCache,
+      new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
+        new LinkedBlockingQueue<>(), r -> new Thread(r, "Binding Suggestion Provider")));
   }
 
   BindingSuggestionProvider(ConfigurationRepository configRepository, ConnectionConfigurationRepository connectionRepository, SonarLintRpcClient client,
@@ -133,6 +130,15 @@ public class BindingSuggestionProvider {
       var candidateConnectionIds = Set.of(addedConnectionId);
       queueBindingSuggestionComputation(allConfigScopeIds, candidateConnectionIds);
     }
+  }
+
+  @EventListener
+  public void filesystemUpdated(FileSystemUpdatedEvent event) {
+    var configScopeWithAddedOrUpdatedBindingClue = event.getAddedOrUpdated().stream()
+      .filter(file -> BindingClueProvider.ALL_BINDING_CLUE_FILENAMES.contains(file.getFileName()))
+      .map(ClientFile::getConfigScopeId)
+      .collect(Collectors.toSet());
+    suggestBindingForGivenScopesAndAllConnections(configScopeWithAddedOrUpdatedBindingClue);
   }
 
   public Map<String, List<BindingSuggestionDto>> getBindingSuggestions(String configScopeId, String connectionId, CancelChecker cancelChecker) {

@@ -37,12 +37,12 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 import org.sonarsource.sonarlint.core.issuetracking.Tracker;
-import org.sonarsource.sonarlint.core.repository.branch.MatchedSonarProjectBranchRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
@@ -56,7 +56,7 @@ import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotChangedEvent
 import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotClosedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotRaisedEvent;
 import org.sonarsource.sonarlint.core.storage.StorageService;
-import org.sonarsource.sonarlint.core.sync.SynchronizationService;
+import org.sonarsource.sonarlint.core.sync.HotspotSynchronizationService;
 import org.sonarsource.sonarlint.core.utils.FutureUtils;
 import org.springframework.context.event.EventListener;
 
@@ -70,24 +70,24 @@ public class SecurityHotspotMatchingService {
   private final SonarLintRpcClient client;
   private final ConfigurationRepository configurationRepository;
   private final StorageService storageService;
-  private final MatchedSonarProjectBranchRepository matchedSonarProjectBranchRepository;
-  private final SynchronizationService synchronizationService;
+  private final SonarProjectBranchTrackingService branchTrackingService;
+  private final HotspotSynchronizationService hotspotSynchronizationService;
   private final ExecutorService executorService;
 
   public SecurityHotspotMatchingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, StorageService storageService,
-    MatchedSonarProjectBranchRepository matchedSonarProjectBranchRepository, SynchronizationService synchronizationService) {
+    SonarProjectBranchTrackingService branchTrackingService, HotspotSynchronizationService hotspotSynchronizationService) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.storageService = storageService;
-    this.matchedSonarProjectBranchRepository = matchedSonarProjectBranchRepository;
-    this.synchronizationService = synchronizationService;
+    this.branchTrackingService = branchTrackingService;
+    this.hotspotSynchronizationService = hotspotSynchronizationService;
     this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-server-tracking-hotspot-updater"));
   }
 
   public Map<String, List<MatchWithServerSecurityHotspotsResponse.ServerOrLocalSecurityHotspotDto>> matchWithServerSecurityHotspots(String configurationScopeId,
     Map<String, List<ClientTrackedFindingDto>> clientTrackedHotspotsByServerRelativePath, boolean shouldFetchHotspotsFromServer, CancelChecker cancelChecker) {
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
-    var activeBranchOpt = matchedSonarProjectBranchRepository.getMatchedBranch(configurationScopeId);
+    var activeBranchOpt = branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId);
     if (effectiveBindingOpt.isEmpty() || activeBranchOpt.isEmpty()) {
       return clientTrackedHotspotsByServerRelativePath.entrySet().stream()
         .map(e -> Map.entry(e.getKey(), e.getValue().stream()
@@ -128,10 +128,10 @@ public class SecurityHotspotMatchingService {
     var downloadAllSecurityHotspotsAtOnce = serverFileRelativePaths.size() > FETCH_ALL_SECURITY_HOTSPOTS_THRESHOLD;
     var fetchTasks = new LinkedList<Future<?>>();
     if (downloadAllSecurityHotspotsAtOnce) {
-      fetchTasks.add(executorService.submit(() -> synchronizationService.fetchProjectHotspots(binding, activeBranch)));
+      fetchTasks.add(executorService.submit(() -> hotspotSynchronizationService.fetchProjectHotspots(binding, activeBranch)));
     } else {
       fetchTasks.addAll(serverFileRelativePaths.stream()
-        .map(serverFileRelativePath -> executorService.submit(() -> synchronizationService.fetchFileHotspots(binding, activeBranch, serverFileRelativePath)))
+        .map(serverFileRelativePath -> executorService.submit(() -> hotspotSynchronizationService.fetchFileHotspots(binding, activeBranch, serverFileRelativePath)))
         .collect(Collectors.toList()));
     }
     var waitForTasksTask = executorService.submit(() -> waitForTasks(cancelChecker, fetchTasks, "Wait for server hotspots", Duration.ofSeconds(20)));
