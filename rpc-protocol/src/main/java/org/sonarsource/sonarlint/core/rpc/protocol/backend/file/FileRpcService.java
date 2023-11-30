@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.file;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 
 public interface FileRpcService {
@@ -32,4 +33,10 @@ public interface FileRpcService {
    */
   @JsonRequest
   CompletableFuture<GetPathTranslationResponse> getPathTranslation(GetPathTranslationParams params);
+
+  @JsonRequest
+  CompletableFuture<GetFilesStatusResponse> getFilesStatus(GetFilesStatusParams params);
+
+  @JsonNotification
+  void didUpdateFileSystem(DidUpdateFileSystemParams params);
 }

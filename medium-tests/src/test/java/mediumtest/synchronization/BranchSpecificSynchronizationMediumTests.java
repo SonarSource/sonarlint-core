@@ -47,9 +47,7 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.when;
 
 class BranchSpecificSynchronizationMediumTests {
 
@@ -63,11 +61,14 @@ class BranchSpecificSynchronizationMediumTests {
           branch -> branch.withIssue("key", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", Instant.now(), new TextRange(1, 0, 3, 4))
             .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))))
       .start();
+
+    var client = newFakeClient().withMatchedBranch("configScopeId", "branchName").build();
+
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "branchName")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
-      .build();
+      .build(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
       assertThat(backend.getWorkDir()).isDirectoryContaining(path -> path.getFileName().toString().contains("xodus-issue-store"));
@@ -88,16 +89,15 @@ class BranchSpecificSynchronizationMediumTests {
               .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))))
       .start();
 
-    var client = newFakeClient().build();
-
-    when(client.matchSonarProjectBranch(eq("parentScope"), any(), any(), any())).thenReturn("branchNameParent");
-    when(client.matchSonarProjectBranch(eq("childScope"), any(), any(), any())).thenReturn("branchNameChild");
+    var client = newFakeClient()
+      .withMatchedBranch("parentScope", "branchNameParent")
+      .withMatchedBranch("childScope", "branchNameChild")
+      .build();
 
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("parentScope", "connectionId", "projectKey", "branchNameParent")
+      .withBoundConfigScope("parentScope", "connectionId", "projectKey")
       .withChildConfigScope("childScope", "parentScope")
-      .withMatchedBranch("childScope", "branchNameChild")
       .withFullSynchronization()
       .build(client);
 
@@ -109,9 +109,9 @@ class BranchSpecificSynchronizationMediumTests {
     waitAtMost(3, SECONDS).untilAsserted(() -> {
       assertThat(client.getLogMessages()).contains(
         "Matching Sonar project branch for configuration scope 'parentScope'",
-        "Matched Sonar project branch for configuration scope 'parentScope' is still 'branchNameParent'",
+        "Matched Sonar project branch for configuration scope 'parentScope' changed from 'null' to 'branchNameParent'",
         "Matching Sonar project branch for configuration scope 'childScope'",
-        "Matched Sonar project branch for configuration scope 'childScope' is still 'branchNameChild'",
+        "Matched Sonar project branch for configuration scope 'childScope' changed from 'null' to 'branchNameChild'",
         "[SYNC] Synchronizing issues for project 'projectKey' on branch 'branchNameParent'",
         "[SYNC] Synchronizing issues for project 'projectKey' on branch 'branchNameChild'");
     });
@@ -126,17 +126,20 @@ class BranchSpecificSynchronizationMediumTests {
 
   @Test
   void it_should_report_progress_to_the_client_when_synchronizing() {
-    var fakeClient = newFakeClient().build();
+    var fakeClient = newFakeClient()
+      .build();
     server = newSonarQubeServer("9.6")
-      .withProject("projectKey", project -> project.withBranch("main"))
-      .withProject("projectKey2", project -> project.withBranch("main"))
+      .withProject("projectKey")
+      .withProject("projectKey2")
       .start();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "branchName")
-      .withBoundConfigScope("configScopeId2", "connectionId", "projectKey2", "branchName2")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withBoundConfigScope("configScopeId2", "connectionId", "projectKey2")
       .withFullSynchronization()
       .build(fakeClient);
+
+    fakeClient.waitForSynchronization();
 
     waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(fakeClient.getProgressReportsByTaskId())
       .hasKeySatisfying(isUUID())
@@ -150,21 +153,23 @@ class BranchSpecificSynchronizationMediumTests {
 
   @Test
   void it_should_not_report_progress_to_the_client_when_synchronizing_if_client_rejects_progress() {
-    var fakeClient = newFakeClient().build();
+    var fakeClient = newFakeClient()
+      .build();
     doThrow(new UnsupportedOperationException("Failed to start progress"))
       .when(fakeClient)
       .startProgress(any());
 
     server = newSonarQubeServer("9.6")
-      .withProject("projectKey", project -> project.withBranch("main"))
-      .withProject("projectKey2", project -> project.withBranch("main"))
+      .withProject("projectKey")
+      .withProject("projectKey2")
       .start();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "branchName")
-      .withBoundConfigScope("configScopeId2", "connectionId", "projectKey2", "branchName2")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withBoundConfigScope("configScopeId2", "connectionId", "projectKey2")
       .withFullSynchronization()
       .build(fakeClient);
+    fakeClient.waitForSynchronization();
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
       assertThat(fakeClient.getSynchronizedConfigScopeIds()).contains("configScopeId");

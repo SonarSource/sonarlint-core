@@ -87,7 +87,7 @@ class TaintVulnerabilitiesMediumTests {
               .withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withRuleKey("ruleKey")
               .withType(RuleType.VULNERABILITY)
               .withIntroductionDate(introductionDate)))))
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
       .build();
 
@@ -113,7 +113,7 @@ class TaintVulnerabilitiesMediumTests {
       .withSonarQubeConnection("connectionId", serverWithATaint,
         storage -> storage.withProject("projectKey",
           project -> project.withMainBranch("main")))
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
       .build();
     await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(listAllTaintVulnerabilities("configScopeId")).isNotEmpty());

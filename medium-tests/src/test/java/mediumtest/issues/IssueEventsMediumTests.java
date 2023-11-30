@@ -78,9 +78,8 @@ class IssueEventsMediumTests {
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", server,
-          storage -> storage.withProject("projectKey", project ->
-            project.withMainBranch("branchName", branch -> branch.withIssue(aServerIssue("key1").open()))))
-        .withBoundConfigScope("configScope", "connectionId", "projectKey", "branchName")
+          storage -> storage.withProject("projectKey", project -> project.withMainBranch("branchName", branch -> branch.withIssue(aServerIssue("key1").open()))))
+        .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readIssues("connectionId", "projectKey", "branchName", "file/path"))
@@ -107,9 +106,9 @@ class IssueEventsMediumTests {
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", server,
-          storage -> storage.withProject("projectKey", project ->
-            project.withMainBranch("branchName", branch -> branch.withIssue(aServerIssue("key1").withSeverity(IssueSeverity.INFO)))))
-        .withBoundConfigScope("configScope", "connectionId", "projectKey", "branchName")
+          storage -> storage.withProject("projectKey",
+            project -> project.withMainBranch("branchName", branch -> branch.withIssue(aServerIssue("key1").withSeverity(IssueSeverity.INFO)))))
+        .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readIssues("connectionId", "projectKey", "branchName", "file/path"))
@@ -136,9 +135,9 @@ class IssueEventsMediumTests {
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", server,
-          storage -> storage.withProject("projectKey", project ->
-            project.withMainBranch("branchName", branch -> branch.withIssue(aServerIssue("key1").withType(RuleType.VULNERABILITY)))))
-        .withBoundConfigScope("configScope", "connectionId", "projectKey", "branchName")
+          storage -> storage.withProject("projectKey",
+            project -> project.withMainBranch("branchName", branch -> branch.withIssue(aServerIssue("key1").withType(RuleType.VULNERABILITY)))))
+        .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readIssues("connectionId", "projectKey", "branchName", "file/path"))

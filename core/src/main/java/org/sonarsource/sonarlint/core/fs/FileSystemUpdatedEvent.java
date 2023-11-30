@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,16 +17,25 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.client.fs;
+package org.sonarsource.sonarlint.core.fs;
 
-public class ListAllFilePathsParams {
-  private final String configurationScopeId;
+import java.util.List;
 
-  public ListAllFilePathsParams(String configurationScopeId) {
-    this.configurationScopeId = configurationScopeId;
+public class FileSystemUpdatedEvent {
+
+  private final List<ClientFile> removed;
+  private final List<ClientFile> addedOrUpdated;
+
+  public FileSystemUpdatedEvent(List<ClientFile> removed, List<ClientFile> addedOrUpdated) {
+    this.removed = removed;
+    this.addedOrUpdated = addedOrUpdated;
   }
 
-  public String getConfigurationScopeId() {
-    return configurationScopeId;
+  public List<ClientFile> getRemoved() {
+    return removed;
+  }
+
+  public List<ClientFile> getAddedOrUpdated() {
+    return addedOrUpdated;
   }
 }

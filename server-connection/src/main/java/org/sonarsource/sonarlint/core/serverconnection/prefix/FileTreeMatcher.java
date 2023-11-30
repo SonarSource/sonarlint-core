@@ -76,9 +76,9 @@ public class FileTreeMatcher {
     Comparator<Map.Entry<Result, Double>> c = Comparator.comparing(Map.Entry::getValue);
     c = c
       // fallback on prefix depth
-      .thenComparing(x -> depth(x.getKey().sqPrefix), reverseOrder())
+      .thenComparing(x -> depth(x.getKey().serverPrefix), reverseOrder())
       // fallback on prefix lexicographic order
-      .thenComparing(x -> x.getKey().sqPrefix.toString(), reverseOrder());
+      .thenComparing(x -> x.getKey().serverPrefix.toString(), reverseOrder());
 
     return prefixes.entrySet().stream()
       .max(c)
@@ -87,16 +87,16 @@ public class FileTreeMatcher {
   }
 
   private static int depth(Path path) {
-    return path.toString().length() == 0 ? 0 : path.getNameCount();
+    return path.toString().isEmpty() ? 0 : path.getNameCount();
   }
 
   public static class Result {
     private final Path idePrefix;
-    private final Path sqPrefix;
+    private final Path serverPrefix;
 
-    Result(Path idePrefix, Path sqPrefix) {
+    Result(Path idePrefix, Path serverPrefix) {
       this.idePrefix = idePrefix;
-      this.sqPrefix = sqPrefix;
+      this.serverPrefix = serverPrefix;
     }
 
     public Path idePrefix() {
@@ -104,7 +104,7 @@ public class FileTreeMatcher {
     }
 
     public Path sqPrefix() {
-      return sqPrefix;
+      return serverPrefix;
     }
 
     @Override
@@ -116,12 +116,12 @@ public class FileTreeMatcher {
         return false;
       }
       var result = (Result) o;
-      return Objects.equals(idePrefix, result.idePrefix) && Objects.equals(sqPrefix, result.sqPrefix);
+      return Objects.equals(idePrefix, result.idePrefix) && Objects.equals(serverPrefix, result.serverPrefix);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(idePrefix, sqPrefix);
+      return Objects.hash(idePrefix, serverPrefix);
     }
   }
 }

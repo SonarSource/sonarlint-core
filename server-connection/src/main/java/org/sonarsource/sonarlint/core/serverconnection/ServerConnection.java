@@ -40,9 +40,7 @@ import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
-import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.prefix.FileTreeMatcher;
-import org.sonarsource.sonarlint.core.serverconnection.storage.UpdateSummary;
 
 public class ServerConnection {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -126,11 +124,6 @@ public class ServerConnection {
     issuesUpdater.updateFileIssues(serverApi, projectBinding, ideFilePath, branchName, isSonarCloud, serverVersion);
   }
 
-  public void downloadServerIssuesForFile(ServerApi serverApi, String projectKey, String serverFileRelativePath, String branchName) {
-    var serverVersion = readOrSynchronizeServerVersion(serverApi);
-    issuesUpdater.updateFileIssues(serverApi, projectKey, serverFileRelativePath, branchName, isSonarCloud, serverVersion);
-  }
-
   public Version readOrSynchronizeServerVersion(ServerApi serverApi) {
     return serverInfoSynchronizer.readOrSynchronizeServerInfo(serverApi).getVersion();
   }
@@ -155,10 +148,6 @@ public class ServerConnection {
   public void downloadAllServerHotspotsForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName) {
     var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
     hotspotsUpdater.updateForFile(serverApi.hotspot(), projectBinding, ideFilePath, branchName, () -> readOrSynchronizeServerVersion(serverApi));
-  }
-
-  public void downloadAllServerHotspotsForFile(ServerApi serverApi, String projectKey, String serverRelativeFilePath, String branchName) {
-    hotspotsUpdater.updateForFile(serverApi.hotspot(), projectKey, serverRelativeFilePath, branchName, () -> readOrSynchronizeServerVersion(serverApi));
   }
 
   public Collection<ServerHotspot> getServerHotspots(ProjectBinding projectBinding, String branchName, String ideFilePath) {
@@ -197,16 +186,6 @@ public class ServerConnection {
       issuesUpdater.sync(serverApi, projectKey, branchName, enabledLanguagesToSync);
     } else {
       LOG.debug("Incremental issue sync is not supported. Skipping.");
-    }
-  }
-
-  public UpdateSummary<ServerTaintIssue> updateServerTaintIssuesForProject(ServerApi serverApi, String projectKey, String branchName) {
-    var serverVersion = readOrSynchronizeServerVersion(serverApi);
-    if (IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
-      LOG.info("[SYNC] Synchronizing taint issues for project '{}' on branch '{}'", projectKey, branchName);
-      return issuesUpdater.syncTaints(serverApi, projectKey, branchName, enabledLanguagesToSync);
-    } else {
-      return issuesUpdater.downloadProjectTaints(serverApi, projectKey, branchName);
     }
   }
 

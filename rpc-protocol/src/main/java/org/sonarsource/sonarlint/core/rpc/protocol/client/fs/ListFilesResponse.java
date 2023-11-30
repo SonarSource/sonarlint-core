@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,24 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.file;
+package org.sonarsource.sonarlint.core.rpc.protocol.client.fs;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import javax.inject.Named;
-import javax.inject.Singleton;
+import java.util.List;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 
-@Named
-@Singleton
-public class FilePathTranslationRepository {
-  private final Map<String, FilePathTranslation> pathTranslationsByConfigScopeId = new ConcurrentHashMap<>();
+public class ListFilesResponse {
 
-  public void setPathTranslation(String configurationScopeId, FilePathTranslation translation) {
-    pathTranslationsByConfigScopeId.put(configurationScopeId, translation);
+  private final List<ClientFileDto> files;
+
+  public ListFilesResponse(List<ClientFileDto> files) {
+    this.files = files;
   }
 
-  public Optional<FilePathTranslation> getPathTranslation(String configurationScopeId) {
-    return Optional.ofNullable(pathTranslationsByConfigScopeId.get(configurationScopeId));
+  public List<ClientFileDto> getFiles() {
+    return files;
   }
 }

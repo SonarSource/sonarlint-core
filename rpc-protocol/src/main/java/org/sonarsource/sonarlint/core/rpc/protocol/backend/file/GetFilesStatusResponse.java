@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-@ParametersAreNonnullByDefault
-package org.sonarsource.sonarlint.core.repository.branch;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.file;
 
-import javax.annotation.ParametersAreNonnullByDefault;
+import java.net.URI;
+import java.util.Map;
+
+public class GetFilesStatusResponse {
+
+  private final Map<URI, FileStatusDto> fileStatuses;
+
+  public GetFilesStatusResponse(Map<URI, FileStatusDto> fileStatuses) {
+    this.fileStatuses = fileStatuses;
+  }
+
+  public Map<URI, FileStatusDto> getFileStatuses() {
+    return fileStatuses;
+  }
+}

@@ -46,6 +46,7 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -208,23 +209,19 @@ class CheckResolutionStatusChangePermittedMediumTests {
   }
 
   @Test
-  void it_should_not_permit_status_change_on_local_only_issues_for_sonarcloud() {
+  void it_should_not_permit_status_change_on_local_only_issues_for_sonarcloud() throws ExecutionException, InterruptedException {
+    var client = newFakeClient().build();
     backend = newBackend()
-      .withSonarCloudConnection("connectionId", "orgKey")
-      .withMatchedBranch("configScopeId", "branch")
+      .withSonarCloudConnection("connectionId", "orgKey", true, storage -> storage
+        .withProject("projectKey", project -> project.withMainBranch("main")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build();
+      .build(client);
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
       Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
-    LocalOnlyIssueDto localOnlyIssue = null;
-    try {
-      localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get("file/path").get(0).getRight();
-    } catch (Exception e) {
-      fail();
-    }
+    var localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get("file/path").get(0).getRight();
 
     var response = checkStatusChangePermitted("connectionId", localOnlyIssue.getId().toString());
 
@@ -236,23 +233,19 @@ class CheckResolutionStatusChangePermittedMediumTests {
   }
 
   @Test
-  void it_should_not_permit_status_change_on_local_only_issues_for_sonarqube_prior_to_10_2() {
+  void it_should_not_permit_status_change_on_local_only_issues_for_sonarqube_prior_to_10_2() throws ExecutionException, InterruptedException {
+    var client = newFakeClient().build();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("10.1"))
-      .withMatchedBranch("configScopeId", "branch")
+      .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("10.1")
+        .withProject("projectKey", project -> project.withMainBranch("main")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build();
+      .build(client);
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
       Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
-    LocalOnlyIssueDto localOnlyIssue = null;
-    try {
-      localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get("file/path").get(0).getRight();
-    } catch (Exception e) {
-      fail();
-    }
+    var localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get("file/path").get(0).getRight();
 
     var response = checkStatusChangePermitted("connectionId", localOnlyIssue.getId().toString());
 
@@ -264,23 +257,20 @@ class CheckResolutionStatusChangePermittedMediumTests {
   }
 
   @Test
-  void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_2_plus() {
+  void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_2_plus() throws ExecutionException, InterruptedException {
+    var client = newFakeClient().build();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("10.2"))
-      .withMatchedBranch("configScopeId", "branch")
+      .withSonarQubeConnection("connectionId", storage -> storage
+        .withServerVersion("10.2")
+        .withProject("projectKey", project -> project.withMainBranch("main")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build();
+      .build(client);
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
       Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
-    LocalOnlyIssueDto localOnlyIssue = null;
-    try {
-      localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get("file/path").get(0).getRight();
-    } catch (Exception e) {
-      fail();
-    }
+    var localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get("file/path").get(0).getRight();
 
     var response = checkStatusChangePermitted("connectionId", localOnlyIssue.getId().toString());
 

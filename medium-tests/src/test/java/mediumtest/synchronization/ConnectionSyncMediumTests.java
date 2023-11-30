@@ -136,7 +136,7 @@ class ConnectionSyncMediumTests {
 
     await().untilAsserted(() -> assertThat(client.getLogMessages()).contains(
       "Synchronizing connection 'connectionId' after credentials changed",
-      "[SYNC] Synchronizing project branches for project 'projectKey'"));
+      "Synchronizing project branches for project 'projectKey'"));
   }
 
   private EffectiveRuleDetailsDto getEffectiveRuleDetails(String configScopeId, String ruleKey) {
