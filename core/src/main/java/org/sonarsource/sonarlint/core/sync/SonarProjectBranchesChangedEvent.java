@@ -17,22 +17,21 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.event;
+package org.sonarsource.sonarlint.core.sync;
 
-import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
-import org.sonarsource.sonarlint.core.serverconnection.storage.UpdateSummary;
+import org.sonarsource.sonarlint.core.serverconnection.ProjectBranches;
 
-public class TaintVulnerabilitiesSynchronizedEvent {
+public class SonarProjectBranchesChangedEvent {
   private final String connectionId;
   private final String sonarProjectKey;
-  private final String sonarBranch;
-  private final UpdateSummary<ServerTaintIssue> summary;
+  private final ProjectBranches oldBranches;
+  private final ProjectBranches newBranches;
 
-  public TaintVulnerabilitiesSynchronizedEvent(String connectionId, String sonarProjectKey, String sonarBranch, UpdateSummary<ServerTaintIssue> summary) {
+  public SonarProjectBranchesChangedEvent(String connectionId, String sonarProjectKey, ProjectBranches oldBranches, ProjectBranches newBranches) {
     this.connectionId = connectionId;
     this.sonarProjectKey = sonarProjectKey;
-    this.sonarBranch = sonarBranch;
-    this.summary = summary;
+    this.oldBranches = oldBranches;
+    this.newBranches = newBranches;
   }
 
   public String getConnectionId() {
@@ -43,11 +42,11 @@ public class TaintVulnerabilitiesSynchronizedEvent {
     return sonarProjectKey;
   }
 
-  public String getSonarBranch() {
-    return sonarBranch;
+  public ProjectBranches getOldBranches() {
+    return oldBranches;
   }
 
-  public UpdateSummary<ServerTaintIssue> getSummary() {
-    return summary;
+  public ProjectBranches getNewBranches() {
+    return newBranches;
   }
 }

@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ServerMatche
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static mediumtest.fixtures.storage.ServerSecurityHotspotFixture.aServerHotspot;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -80,7 +81,7 @@ class MatchWithServerHotspotsMediumTests {
   void it_should_track_local_only_hotspots() {
     backend = newBackend()
       .withSonarQubeConnection("connectionId")
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
     var response = matchWithServerHotspots(new MatchWithServerSecurityHotspotsParams("configScopeId",
@@ -122,11 +123,12 @@ class MatchWithServerHotspotsMediumTests {
   void it_should_track_with_a_known_server_hotspot_at_the_same_location() {
     var serverHotspot = aServerHotspot("hotspotKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withIntroductionDate(Instant.EPOCH.plusSeconds(1))
       .withStatus(HotspotReviewStatus.SAFE);
+    var client = newFakeClient().build();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", storage -> storage
         .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withHotspot(serverHotspot))))
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
-      .build();
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .build(client);
 
     var response = matchWithServerHotspots(new MatchWithServerSecurityHotspotsParams("configScopeId",
       Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
@@ -143,15 +145,17 @@ class MatchWithServerHotspotsMediumTests {
   @Test
   void it_should_track_with_a_server_only_hotspot_when_fetching_from_legacy_server_requested() {
     server = ServerFixture.newSonarQubeServer("10.0").withProject("projectKey",
-        project -> project.withBranch("main", branch -> branch.withHotspot("hotspotKey",
-          hotspot -> hotspot.withRuleKey("rule:key").withMessage("message").withFilePath("file/path").withAuthor("author").withStatus(HotspotReviewStatus.TO_REVIEW)
-            .withCreationDate(Instant.ofEpochMilli(123456789))
-            .withTextRange(new TextRange(1, 2, 3, 4)))))
+      project -> project.withBranch("main", branch -> branch.withHotspot("hotspotKey",
+        hotspot -> hotspot.withRuleKey("rule:key").withMessage("message").withFilePath("file/path").withAuthor("author").withStatus(HotspotReviewStatus.TO_REVIEW)
+          .withCreationDate(Instant.ofEpochMilli(123456789))
+          .withTextRange(new TextRange(1, 2, 3, 4)))))
       .start();
+    var client = newFakeClient().build();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
-      .build();
+      .withSonarQubeConnection("connectionId", server, storage -> storage.withServerVersion("10.0")
+        .withProject("projectKey", project -> project.withMainBranch("main")))
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .build(client);
 
     var response = matchWithServerHotspots(new MatchWithServerSecurityHotspotsParams("configScopeId",
       Map.of("file/path",
@@ -169,10 +173,12 @@ class MatchWithServerHotspotsMediumTests {
   @Test
   void it_should_download_all_hotspots_at_once_when_tracking_hotspots_from_more_than_10_files() {
     server = ServerFixture.newSonarQubeServer("10.0").withProject("projectKey",
-      project -> project.withBranch("main", branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, Instant.now(), new TextRange(1, 2, 3, 4)))).start();
+      project -> project.withBranch("main",
+        branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, Instant.now(), new TextRange(1, 2, 3, 4))))
+      .start();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage.withServerVersion("9.5"))
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
     var hotspotsByServerRelativePath = IntStream.rangeClosed(1, 11).boxed().collect(Collectors.<Integer, String, List<ClientTrackedFindingDto>>toMap(index -> "file/path" + index,
       i -> List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "rule:key", "message"))));
