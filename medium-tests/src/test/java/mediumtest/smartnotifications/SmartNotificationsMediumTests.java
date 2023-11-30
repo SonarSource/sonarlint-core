@@ -176,7 +176,7 @@ class SmartNotificationsMediumTests {
 
   @Test
   void it_should_send_notification_for_different_bindings() {
-    var fakeClient = newFakeClient().printLogsToStdOut().build();
+    var fakeClient = newFakeClient().build();
     mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
     mockWebServerExtension2.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
     var timestamp = UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER));

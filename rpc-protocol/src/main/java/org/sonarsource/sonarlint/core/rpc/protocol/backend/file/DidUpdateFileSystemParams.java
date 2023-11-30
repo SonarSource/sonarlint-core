@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,29 +17,28 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.repository.branch;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.file;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import javax.inject.Named;
-import javax.inject.Singleton;
+import java.net.URI;
+import java.util.List;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 
-@Named
-@Singleton
-public class MatchedSonarProjectBranchRepository {
-  private final Map<String, String> branchNameByConfigScopeId = new ConcurrentHashMap<>();
+public class DidUpdateFileSystemParams {
 
+  private final List<URI> removedFiles;
 
-  public String setMatchedBranchName(String configScopeId, String newBranchName) {
-    return branchNameByConfigScopeId.put(configScopeId, newBranchName);
+  private final List<ClientFileDto> addedOrChangedFiles;
+
+  public DidUpdateFileSystemParams(List<URI> removedFiles, List<ClientFileDto> addedOrChangedFiles) {
+    this.removedFiles = removedFiles;
+    this.addedOrChangedFiles = addedOrChangedFiles;
   }
 
-  public Optional<String> getMatchedBranch(String configScopeId) {
-    return Optional.ofNullable(branchNameByConfigScopeId.get(configScopeId));
+  public List<URI> getRemovedFiles() {
+    return removedFiles;
   }
 
-  public void clearMatchedBranch(String configScopeId) {
-    branchNameByConfigScopeId.remove(configScopeId);
+  public List<ClientFileDto> getAddedOrChangedFiles() {
+    return addedOrChangedFiles;
   }
 }

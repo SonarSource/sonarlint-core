@@ -19,17 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.fs;
 
-import java.util.List;
+public class ListFilesParams {
+  
+  private final String configScopeId;
 
-public class FindFileByNamesInScopeResponse {
-
-  private final List<FoundFileDto> foundFiles;
-
-  public FindFileByNamesInScopeResponse(List<FoundFileDto> foundFiles) {
-    this.foundFiles = foundFiles;
+  public ListFilesParams(String configScopeId) {
+    this.configScopeId = configScopeId;
   }
 
-  public List<FoundFileDto> getFoundFiles() {
-    return foundFiles;
+  public String getConfigScopeId() {
+    return configScopeId;
   }
 }

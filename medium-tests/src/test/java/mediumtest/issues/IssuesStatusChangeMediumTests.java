@@ -33,11 +33,13 @@ import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssueResolution;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.DidVcsRepositoryChangeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.AddIssueCommentParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ChangeIssueStatusParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileParams;
@@ -54,13 +56,17 @@ import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static mediumtest.fixtures.LocalOnlyIssueFixtures.aLocalOnlyIssueResolved;
-import static mediumtest.fixtures.ServerFixture.ServerStatus.DOWN;
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
+import static mediumtest.fixtures.ServerFixture.ServerStatus.DOWN;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static mediumtest.fixtures.storage.ServerIssueFixtures.aServerIssue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 class IssuesStatusChangeMediumTests {
 
@@ -84,7 +90,7 @@ class IssuesStatusChangeMediumTests {
       .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage
         .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue)))
         .withServerVersion("9.8"))
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", "myIssueKey",
@@ -113,7 +119,7 @@ class IssuesStatusChangeMediumTests {
                 .withIntroductionDate(Instant.EPOCH.plusSeconds(1))
                 .withType(RuleType.BUG))))
         .withServerVersion("9.8"))
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", "myIssueKey",
@@ -148,24 +154,23 @@ class IssuesStatusChangeMediumTests {
   }
 
   @Test
-  void it_should_update_local_only_storage_when_the_issue_exists_locally() {
-    server = newSonarQubeServer().start();
+  void it_should_update_local_only_storage_when_the_issue_exists_locally() throws ExecutionException, InterruptedException {
+    server = newSonarQubeServer()
+      .withProject("projectKey")
+      .start();
+    var client = newFakeClient().build();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl())
-      .withMatchedBranch("configScopeId", "branch")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build();
+      .withFullSynchronization()
+      .build(client);
+    client.waitForSynchronization();
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
       Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
-    LocalOnlyIssueDto localOnlyIssue = null;
-    try {
-      localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get("file/path").get(0).getRight();
-    } catch (Exception e) {
-      fail();
-    }
+    LocalOnlyIssueDto localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get("file/path").get(0).getRight();
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", localOnlyIssue.getId().toString(),
       ResolutionStatus.WONT_FIX, false));
@@ -178,24 +183,23 @@ class IssuesStatusChangeMediumTests {
   }
 
   @Test
-  void it_should_sync_anticipated_transitions_with_sonarqube_when_the_issue_exists_locally() {
-    server = newSonarQubeServer().start();
+  void it_should_sync_anticipated_transitions_with_sonarqube_when_the_issue_exists_locally() throws ExecutionException, InterruptedException {
+    server = newSonarQubeServer()
+      .withProject("projectKey")
+      .start();
+    var client = newFakeClient().build();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl())
-      .withMatchedBranch("configScopeId", "branch")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build();
+      .withFullSynchronization()
+      .build(client);
+    client.waitForSynchronization();
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
       Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
-    LocalOnlyIssueDto localOnlyIssue = null;
-    try {
-      localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get("file/path").get(0).getRight();
-    } catch (Exception e) {
-      fail();
-    }
+    LocalOnlyIssueDto localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get("file/path").get(0).getRight();
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", localOnlyIssue.getId().toString(),
       ResolutionStatus.WONT_FIX, false));
@@ -205,28 +209,31 @@ class IssuesStatusChangeMediumTests {
       server.getMockServer()
         .verify(WireMock.postRequestedFor(urlEqualTo("/api/issues/anticipated_transitions?projectKey=projectKey"))
           .withHeader("Content-Type", equalTo("application/json; charset=UTF-8"))
-          .withRequestBody(equalToJson("[{\"filePath\":\"file/path\",\"line\":1,\"hash\":\"linehash\",\"ruleKey\":\"ruleKey\",\"issueMessage\":\"message\",\"transition\":\"wontfix\"}]")));
+          .withRequestBody(
+            equalToJson("[{\"filePath\":\"file/path\",\"line\":1,\"hash\":\"linehash\",\"ruleKey\":\"ruleKey\",\"issueMessage\":\"message\",\"transition\":\"wontfix\"}]")));
     });
   }
 
   @Test
-  void it_should_update_telemetry_when_changing_status_of_a_local_only_issue() {
-    server = newSonarQubeServer().start();
+  void it_should_update_telemetry_when_changing_status_of_a_local_only_issue() throws ExecutionException, InterruptedException {
+    server = newSonarQubeServer()
+      .withProject("projectKey")
+      .start();
+    var client = newFakeClient()
+      .build();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server)
-      .withMatchedBranch("configScopeId", "branch")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build();
+      .withFullSynchronization()
+      .build(client);
+
+    client.waitForSynchronization();
+
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
       Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
-    LocalOnlyIssueDto localOnlyIssue = null;
-    try {
-      localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get("file/path").get(0).getRight();
-    } catch (Exception e) {
-      fail();
-    }
+    LocalOnlyIssueDto localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get("file/path").get(0).getRight();
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", localOnlyIssue.getId().toString(),
       ResolutionStatus.WONT_FIX, false));
@@ -443,7 +450,7 @@ class IssuesStatusChangeMediumTests {
       .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage
         .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue)))
         .withServerVersion("9.8"))
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", "main")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
     var reopen_response = backend.getIssueService().reopenIssue(new ReopenIssueParams("configScopeId", "myIssueKey", false));

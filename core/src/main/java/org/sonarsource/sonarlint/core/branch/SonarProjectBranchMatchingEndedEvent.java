@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,30 +17,18 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.client.fs;
+package org.sonarsource.sonarlint.core.branch;
 
-public class FoundFileDto {
+public class SonarProjectBranchMatchingEndedEvent {
 
-  private final String fileName;
-  private final String filePath;
+  private final String configurationScopeId;
 
-  private final String content;
-
-  public FoundFileDto(String fileName, String filePath, String content) {
-    this.fileName = fileName;
-    this.filePath = filePath;
-    this.content = content;
+  public SonarProjectBranchMatchingEndedEvent(String configurationScopeId) {
+    this.configurationScopeId = configurationScopeId;
   }
 
-  public String getFileName() {
-    return fileName;
+  public String getConfigurationScopeId() {
+    return configurationScopeId;
   }
 
-  public String getFilePath() {
-    return filePath;
-  }
-
-  public String getContent() {
-    return content;
-  }
 }

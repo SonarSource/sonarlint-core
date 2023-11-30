@@ -335,40 +335,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
-  public <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> fileIdePathExtractor, Predicate<G> testFilePredicate) {
-    setLogging(null);
-    AnalyzerConfiguration analyzerConfig;
-    try {
-      analyzerConfig = serverConnection.getAnalyzerConfiguration(projectBinding.projectKey());
-    } catch (StorageException e) {
-      LOG.debug("Unable to read settings in local storage", e);
-      return List.of();
-    }
-    var settings = new MapSettings(analyzerConfig.getSettings().getAll());
-    var exclusionFilters = new ServerFileExclusions(settings.asConfig());
-    exclusionFilters.prepare();
-
-    List<G> excluded = new ArrayList<>();
-
-    for (G file : files) {
-      var idePath = fileIdePathExtractor.apply(file);
-      if (idePath == null) {
-        continue;
-      }
-      var sqPath = IssueStorePaths.idePathToServerPath(projectBinding, idePath);
-      if (sqPath == null) {
-        // we can't map it to a SonarQube path, so just apply exclusions to the original ide path
-        sqPath = idePath;
-      }
-      var type = testFilePredicate.test(file) ? Type.TEST : Type.MAIN;
-      if (!exclusionFilters.accept(sqPath, type)) {
-        excluded.add(file);
-      }
-    }
-    return excluded;
-  }
-
-  @Override
   public void downloadAllServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
     @Nullable ClientProgressMonitor monitor) {
     setLogging(null);

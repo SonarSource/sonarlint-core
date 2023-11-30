@@ -20,6 +20,11 @@
 package mediumtest;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -28,8 +33,8 @@ import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
-import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetBindingSuggestionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
@@ -38,7 +43,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.Configur
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.FoundFileDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Components;
 
@@ -52,10 +58,8 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static testutils.TestUtils.protobufBody;
 
 class BindingSuggestionsMediumTests {
@@ -159,12 +163,13 @@ class BindingSuggestionsMediumTests {
   }
 
   @Test
-  void test_uses_binding_clues() throws ConfigScopeNotFoundException {
-    var fakeClient = newFakeClient().build();
-
-    when(fakeClient.findFileByNamesInScope(eq(CONFIG_SCOPE_ID), argThat(files -> files.contains("sonar-project.properties")), any()))
-      .thenReturn(List.of(new FoundFileDto("sonar-project.properties", "/home/user/Project/sonar-project.properties",
-        "sonar.host.url=" + sonarqubeMock.baseUrl() + "\nsonar.projectKey=" + SLCORE_PROJECT_KEY)));
+  void test_uses_binding_clues_when_initializing_fs(@TempDir Path tmp) throws IOException {
+    var clue = tmp.resolve("sonar-project.properties");
+    Files.writeString(clue, "sonar.projectKey=" + SLCORE_PROJECT_KEY + "\nsonar.projectName=" + SLCORE_PROJECT_NAME, StandardCharsets.UTF_8);
+    var fakeClient = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID,
+        List.of(new ClientFileDto(clue.toUri(), Paths.get("sonar-project.properties"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null)))
+      .build();
 
     backend = newBackend()
       .withSonarQubeConnection(MYSONAR, sonarqubeMock.baseUrl())
@@ -189,6 +194,50 @@ class BindingSuggestionsMediumTests {
     verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
 
     var bindingSuggestions = suggestionCaptor.getValue();
+    assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
+    assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
+      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
+      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME));
+  }
+
+  @Test
+  void test_uses_binding_clues_when_updating_fs(@TempDir Path tmp) throws IOException {
+    var fakeClient = newFakeClient()
+      .build();
+
+    backend = newBackend()
+      .withSonarQubeConnection(MYSONAR, sonarqubeMock.baseUrl())
+      .withSonarQubeConnection("another")
+      .build(fakeClient);
+
+    sonarqubeMock.stubFor(get("/api/components/show.protobuf?component=org.sonarsource.sonarlint%3Asonarlint-core-parent")
+      .willReturn(aResponse().withResponseBody(protobufBody(Components.ShowWsResponse.newBuilder()
+        .setComponent(Components.Component.newBuilder()
+          .setKey(SLCORE_PROJECT_KEY)
+          .setName(SLCORE_PROJECT_NAME)
+          .build())
+        .build()))));
+
+    backend.getConfigurationService()
+      .didAddConfigurationScopes(
+        new DidAddConfigurationScopesParams(List.of(
+          new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "sonarlint-core",
+            new BindingConfigurationDto(null, null, false)))));
+
+    // Without binding clue, there is no matching connection/project, so the list of suggestion is empty
+    verify(fakeClient, timeout(5000)).suggestBinding(argThat(suggestion -> suggestion.get(CONFIG_SCOPE_ID).isEmpty()));
+
+    // Now add a binding clue to the FS
+    var clue = tmp.resolve("sonar-project.properties");
+    Files.writeString(clue, "sonar.projectKey=" + SLCORE_PROJECT_KEY + "\nsonar.projectName=" + SLCORE_PROJECT_NAME, StandardCharsets.UTF_8);
+
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(),
+      List.of(new ClientFileDto(clue.toUri(), Paths.get("sonar-project.properties"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null))));
+
+    ArgumentCaptor<Map<String, List<BindingSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(fakeClient, timeout(5000).times(2)).suggestBinding(suggestionCaptor.capture());
+
+    var bindingSuggestions = suggestionCaptor.getAllValues().get(1);
     assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
       .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
@@ -227,4 +276,5 @@ class BindingSuggestionsMediumTests {
       .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
       .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME));
   }
+
 }

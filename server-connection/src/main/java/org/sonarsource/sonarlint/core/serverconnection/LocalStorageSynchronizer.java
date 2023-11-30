@@ -77,8 +77,6 @@ public class LocalStorageSynchronizer {
   public void synchronize(ServerApi serverApi, String projectKey) {
     var analyzerConfiguration = synchronizeAnalyzerConfig(serverApi, projectKey, new ProgressMonitor(null));
     storage.project(projectKey).analyzerConfiguration().store(analyzerConfiguration);
-    var projectBranches = synchronizeProjectBranches(serverApi, projectKey);
-    storage.project(projectKey).branches().store(projectBranches);
     var version = storage.serverInfo().read().orElseThrow().getVersion();
     serverApi.newCodeApi().getNewCodeDefinition(projectKey, null, version)
       .ifPresent(ncd -> storage.project(projectKey).newCodeDefinition().store(ncd));

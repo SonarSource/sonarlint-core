@@ -93,34 +93,30 @@ public class SmartNotifications {
   }
 
   private void poll() {
-    var keysAndScopeIdsPerConnectionId = configurationRepository.getBoundScopeByConnectionAndSonarProject();
-
-    for (var keysAndScopeIds : keysAndScopeIdsPerConnectionId.entrySet()) {
-      var connectionId = keysAndScopeIds.getKey();
+    var boundScopeByConnectionAndSonarProject = configurationRepository.getBoundScopeByConnectionAndSonarProject();
+    boundScopeByConnectionAndSonarProject.forEach((connectionId, boundScopesByProject) -> {
       var connection = connectionRepository.getConnectionById(connectionId);
-      var httpClient = serverApiProvider.getServerApi(connectionId);
-
-      if (connection != null && !connection.isDisableNotifications() && httpClient.isPresent() && !shouldSkipPolling(connection)) {
-        manageNotificationsForConnection(httpClient.get(), keysAndScopeIds.getValue(), connection);
+      if (connection != null && !connection.isDisableNotifications() && !shouldSkipPolling(connection)) {
+        serverApiProvider.getServerApi(connectionId).ifPresent(serverApi -> manageNotificationsForConnection(serverApi, boundScopesByProject, connection));
       }
-    }
+    });
   }
 
-  private void manageNotificationsForConnection(ServerApi serverApi, Map<String, Collection<BoundScope>> scopeIdsPerProjectKey,
+  private void manageNotificationsForConnection(ServerApi serverApi, Map<String, Collection<BoundScope>> boundScopesPerProjectKey,
     AbstractConnectionConfiguration connection) {
     var developersApi = serverApi.developers();
     var connectionId = connection.getConnectionId();
     var isSupported = isConnectionIdSupported.computeIfAbsent(connectionId, v -> developersApi.isSupported());
     if (Boolean.TRUE.equals(isSupported)) {
-      var projectKeysByLastEventPolling = scopeIdsPerProjectKey.keySet().stream()
+      var projectKeysByLastEventPolling = boundScopesPerProjectKey.keySet().stream()
         .collect(Collectors.toMap(Function.identity(),
           p -> getLastNotificationTime(lastEventPollingService.getLastEventPolling(connectionId, p))));
 
       var notifications = retrieveServerNotifications(developersApi, projectKeysByLastEventPolling);
 
       for (var n : notifications) {
-        var smartNotification = new ShowSmartNotificationParams(n.message(), n.link(),
-          scopeIdsPerProjectKey.get(n.projectKey()).stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet()),
+        var scopeIds = boundScopesPerProjectKey.get(n.projectKey()).stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet());
+        var smartNotification = new ShowSmartNotificationParams(n.message(), n.link(), scopeIds,
           n.category(), connectionId);
         client.showSmartNotification(smartNotification);
         telemetryService.smartNotificationsReceived(n.category());
