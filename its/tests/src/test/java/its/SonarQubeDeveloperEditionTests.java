@@ -1111,7 +1111,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     @BeforeEach
     void start(TestInfo info) {
-      FileUtils.deleteQuietly(sonarUserHome.toFile());
       var globalProps = new HashMap<String, String>();
       globalProps.put("sonar.global.label", "It works");
 
