@@ -82,7 +82,7 @@ public class ConnectionAwareHttpClientProvider {
       var response = client.getCredentials(new GetCredentialsParams(connectionId)).get(1, TimeUnit.MINUTES);
       var credentials = response.getCredentials();
       if (credentials == null) {
-        LOG.debug("No credentials for connection {}", connectionId);
+        LOG.debug("No credentials for connection '{}'", connectionId);
         return Optional.empty();
       } else {
         return Optional.of(credentials);
@@ -91,7 +91,7 @@ public class ConnectionAwareHttpClientProvider {
       Thread.currentThread().interrupt();
       LOG.debug("Interrupted!", e);
     } catch (Exception e) {
-      LOG.error("Error getting credentials for connection {}", connectionId, e);
+      LOG.error("Error getting credentials for connection '{}'", connectionId, e);
     }
     return Optional.empty();
   }

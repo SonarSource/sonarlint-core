@@ -45,8 +45,9 @@ import org.sonarsource.sonarlint.core.embedded.server.RequestHandlerBindingAssis
 import org.sonarsource.sonarlint.core.embedded.server.ShowHotspotRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.ShowIssueRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.StatusRequestHandler;
-import org.sonarsource.sonarlint.core.file.FilePathTranslationRepository;
-import org.sonarsource.sonarlint.core.file.FileService;
+import org.sonarsource.sonarlint.core.file.PathTranslationService;
+import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
+import org.sonarsource.sonarlint.core.fs.FileExclusionService;
 import org.sonarsource.sonarlint.core.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.http.AskClientCertificatePredicate;
 import org.sonarsource.sonarlint.core.http.ClientProxyCredentialsProvider;
@@ -59,7 +60,6 @@ import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsServiceImpl;
-import org.sonarsource.sonarlint.core.repository.branch.MatchedSonarProjectBranchRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
@@ -69,8 +69,12 @@ import org.sonarsource.sonarlint.core.rules.RulesService;
 import org.sonarsource.sonarlint.core.server.event.ServerEventsService;
 import org.sonarsource.sonarlint.core.smartnotifications.SmartNotifications;
 import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.sync.HotspotSynchronizationService;
+import org.sonarsource.sonarlint.core.sync.IssueSynchronizationService;
+import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationTimestampRepository;
+import org.sonarsource.sonarlint.core.sync.TaintSynchronizationService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.tracking.IssueTrackingService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
@@ -114,7 +118,6 @@ import org.springframework.scheduling.support.TaskUtils;
   BindingClueProvider.class,
   SonarProjectsCache.class,
   SonarProjectBranchTrackingService.class,
-  MatchedSonarProjectBranchRepository.class,
   SynchronizationService.class,
   HotspotService.class,
   IssueService.class,
@@ -130,11 +133,16 @@ import org.springframework.scheduling.support.TaskUtils;
   NewCodeService.class,
   SecurityHotspotMatchingService.class,
   RequestHandlerBindingAssistant.class,
-  FileService.class,
-  FilePathTranslationRepository.class,
   SynchronizationTimestampRepository.class,
   TaintVulnerabilityTrackingService.class,
-  TelemetryService.class
+  TelemetryService.class,
+  SonarProjectBranchesSynchronizationService.class,
+  TaintSynchronizationService.class,
+  IssueSynchronizationService.class,
+  HotspotSynchronizationService.class,
+  ClientFileSystemService.class,
+  PathTranslationService.class,
+  FileExclusionService.class
 })
 public class SonarLintSpringAppConfig {
 

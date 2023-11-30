@@ -121,6 +121,10 @@ public class ServerFixture {
       return this;
     }
 
+    public ServerBuilder withProject(String projectKey) {
+      return withProject(projectKey, UnaryOperator.identity());
+    }
+
     public ServerBuilder withProject(String projectKey, UnaryOperator<ServerProjectBuilder> projectBuilder) {
       var builder = new ServerProjectBuilder();
       this.projectByProjectKey.put(projectKey, projectBuilder.apply(builder));
@@ -177,15 +181,19 @@ public class ServerFixture {
 
     public static class ServerProjectBuilder {
       private final Map<String, ServerProjectBranchBuilder> branchesByName = new HashMap<>();
+      private String mainBranchName = "main";
       private final Map<String, ServerProjectPullRequestBuilder> pullRequestsByName = new HashMap<>();
       private final List<String> qualityProfileKeys = new ArrayList<>();
       private final List<String> relativeFilePaths = new ArrayList<>();
       private String name = "MyProject";
 
-      public ServerProjectBuilder withEmptyBranch(String branchName) {
-        var builder = new ServerProjectBranchBuilder();
-        this.branchesByName.put(branchName, builder);
-        return this;
+      private ServerProjectBuilder() {
+        branchesByName.put(mainBranchName, new ServerProjectBranchBuilder());
+      }
+
+      public ServerProjectBuilder withMainBranch(String branchName) {
+        this.mainBranchName = branchName;
+        return withBranch(branchName, builder -> builder);
       }
 
       public ServerProjectBuilder withBranch(String branchName) {
@@ -581,10 +589,10 @@ public class ServerFixture {
     private void registerProjectBranchesApiResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> mockServer.stubFor(get("/api/project_branches/list.protobuf?project=" + projectKey)
         .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(ProjectBranches.ListWsResponse.newBuilder()
-          .addBranches(ProjectBranches.Branch.newBuilder().setName("main").setIsMain(true).setType(Common.BranchType.LONG).build())
           .addAllBranches(project.branchesByName.keySet().stream()
             .filter(Objects::nonNull)
-            .map(branchName -> ProjectBranches.Branch.newBuilder().setName(branchName).setIsMain(false).setType(Common.BranchType.LONG).build()).collect(Collectors.toList()))
+            .map(branchName -> ProjectBranches.Branch.newBuilder().setName(branchName).setIsMain(project.mainBranchName.equals(branchName)).setType(Common.BranchType.LONG).build())
+            .collect(Collectors.toList()))
           .build())))));
     }
 
@@ -901,7 +909,7 @@ public class ServerFixture {
         var response = aResponse().withResponseBody(protobufBodyDelimited(messages));
         mockServer.stubFor(get(
           urlMatching("\\Q/api/issues/pull_taint?projectKey=" + projectKey + branchParameter + "\\E(&languages=.*)?(\\Q&changedSince=" + timestamp.getQueryTimestamp() + "\\E)?"))
-            .willReturn(response));
+          .willReturn(response));
       }));
     }
 

@@ -17,26 +17,17 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.client.fs;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.file;
 
-import java.util.List;
+public class FileStatusDto {
+  
+  private final boolean excluded;
 
-public class FindFileByNamesInScopeParams {
-
-  private final String configScopeId;
-
-  private final List<String> filenames;
-
-  public FindFileByNamesInScopeParams(String configScopeId, List<String> filenames) {
-    this.configScopeId = configScopeId;
-    this.filenames = filenames;
+  public FileStatusDto(boolean excluded) {
+    this.excluded = excluded;
   }
 
-  public String getConfigScopeId() {
-    return configScopeId;
-  }
-
-  public List<String> getFilenames() {
-    return filenames;
+  public boolean isExcluded() {
+    return excluded;
   }
 }

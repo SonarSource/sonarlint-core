@@ -24,7 +24,6 @@ import java.util.concurrent.CompletableFuture;
 import org.apache.commons.io.FileUtils;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
-import org.sonarsource.sonarlint.core.repository.branch.MatchedSonarProjectBranchRepository;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.impl.SonarLintRpcServerImpl;
@@ -167,10 +166,6 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
 
   public StorageService getIssueStorageService() {
     return serverUsingJava.getIssueStorageService();
-  }
-
-  public MatchedSonarProjectBranchRepository getMatchedSonarProjectBranchRepository() {
-    return serverUsingJava.getInitializedApplicationContext().getBean(MatchedSonarProjectBranchRepository.class);
   }
 
   @Override
