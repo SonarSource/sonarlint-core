@@ -67,7 +67,6 @@ import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader.Configuration;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
-import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
 import org.sonarsource.sonarlint.core.serverconnection.IssueStorePaths;
@@ -369,7 +368,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
-  public void stop(boolean deleteStorage) {
+  public void stop() {
     setLogging(null);
     try {
       analysisContext.get().destroy();

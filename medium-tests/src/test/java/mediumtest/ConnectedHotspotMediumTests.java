@@ -23,8 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -44,13 +42,9 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
-import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
-import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
-import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 import testutils.MockWebServerExtensionWithProtobuf;
 import testutils.TestUtils;
 
@@ -68,7 +62,7 @@ class ConnectedHotspotMediumTests {
   @AfterEach
   void stop() {
     if (sonarlint != null) {
-      sonarlint.stop(true);
+      sonarlint.stop();
       sonarlint = null;
     }
   }

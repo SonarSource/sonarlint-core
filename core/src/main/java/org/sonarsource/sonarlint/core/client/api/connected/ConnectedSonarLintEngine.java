@@ -40,7 +40,7 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
  */
 public interface ConnectedSonarLintEngine extends SonarLintEngine {
 
-  void stop(boolean deleteStorage);
+  void stop();
 
   /**
    * Trigger an analysis

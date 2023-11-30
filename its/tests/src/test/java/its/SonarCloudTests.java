@@ -64,7 +64,6 @@ import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -100,7 +99,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -260,7 +258,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     }
 
     try {
-      engine.stop(true);
+      engine.stop();
     } catch (Exception e) {
       // Ignore
     }

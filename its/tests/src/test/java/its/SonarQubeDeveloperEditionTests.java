@@ -47,7 +47,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
-import org.apache.commons.io.FileUtils;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterAll;
@@ -294,7 +293,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     @AfterEach
     void stop() {
       adminWsClient.settings().reset(new ResetRequest().setKeys(singletonList("sonar.java.file.suffixes")));
-      engine.stop(false);
+      engine.stop();
     }
 
     // TODO should be moved to a separate class, not related to analysis
@@ -527,7 +526,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       assertThat(issueListener.getIssues()).extracting("ruleKey", "message").containsOnly(
         tuple("global:inc", "Issue number 1"));
 
-      engine.stop(false);
+      engine.stop();
       assertThat(logs).contains("Stop Global Extension");
     }
 
@@ -726,7 +725,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     @AfterEach
     void stop() {
-      engine.stop(false);
+      engine.stop();
     }
 
     @Test
@@ -794,9 +793,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     private Issue overridenSeverityIssue;
     private Issue overridenTypeIssue;
 
-    @TempDir
-    private Path sonarUserHome;
-
     @BeforeAll
     void prepare() {
       engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
@@ -851,7 +847,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     @AfterAll
     public void stop() {
-      engine.stop(false);
+      engine.stop();
     }
 
     @Test
@@ -938,7 +934,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     @AfterEach
     void stop() {
-      engine.stop(false);
+      engine.stop();
       var request = new PostRequest("api/projects/bulk_delete");
       request.setParam("projects", PROJECT_KEY_JAVA_TAINT);
       try (var response = adminWsClient.wsConnector().call(request)) {
@@ -1131,7 +1127,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     void stop() {
       adminWsClient.settings().reset(new ResetRequest().setKeys(singletonList("sonar.java.file.suffixes")));
       try {
-        engine.stop(false);
+        engine.stop();
       } catch (Exception e) {
         // Ignore
       }

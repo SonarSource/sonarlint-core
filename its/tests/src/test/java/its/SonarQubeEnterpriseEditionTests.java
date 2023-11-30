@@ -158,7 +158,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   @AfterEach
   void stop() {
     try {
-      engine.stop(true);
+      engine.stop();
     } catch (Exception e) {
       // Ignore
     }

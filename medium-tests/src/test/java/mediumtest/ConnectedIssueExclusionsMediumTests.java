@@ -91,7 +91,7 @@ class ConnectedIssueExclusionsMediumTests {
   @AfterAll
   static void stop() {
     if (sonarlint != null) {
-      sonarlint.stop(true);
+      sonarlint.stop();
       sonarlint = null;
     }
   }
