@@ -67,7 +67,6 @@ import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -87,10 +86,14 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUs
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProjectDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.MatchWithServerSecurityHotspotsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.usertoken.RevokeTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
@@ -100,7 +103,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -260,7 +262,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     }
 
     try {
-      engine.stop(true);
+      engine.stop();
     } catch (Exception e) {
       // Ignore
     }
@@ -559,27 +561,25 @@ class SonarCloudTests extends AbstractConnectedTests {
     }
 
     @Test
-    void downloadsServerHotspotsForProject() {
-      engine.downloadAllServerHotspots(sonarcloudEndpointITOrg(), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), projectKey(PROJECT_KEY_JAVA_HOTSPOT), "master",
-        null);
+    void shouldMatchServerSecurityHotspots() throws ExecutionException, InterruptedException {
+      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, projectKey(PROJECT_KEY_JAVA_HOTSPOT), new BindingConfigurationDto(CONNECTION_ID, projectKey(PROJECT_KEY_JAVA_HOTSPOT), false)))));
 
-      var serverHotspots = engine.getServerHotspots(new ProjectBinding(projectKey(PROJECT_KEY_JAVA_HOTSPOT), "", "ide"), "master", "ide/src/main/java/foo/Foo.java");
-      assertThat(serverHotspots)
-        .extracting("ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "status")
-        .containsExactly(tuple("java:S4792", "Make sure that this logger's configuration is safe.", "ide/src/main/java/foo/Foo.java", 9, 4, 9, 45, HotspotReviewStatus.TO_REVIEW));
-    }
-
-    @Test
-    void downloadsServerHotspotsForFile() {
-      var projectBinding = new ProjectBinding(projectKey(PROJECT_KEY_JAVA_HOTSPOT), "", "ide");
-
-      engine.downloadAllServerHotspotsForFile(sonarcloudEndpointITOrg(), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), projectBinding,
-        "ide/src/main/java/foo/Foo.java", "master", null);
-
-      var serverHotspots = engine.getServerHotspots(projectBinding, "master", "ide/src/main/java/foo/Foo.java");
-      assertThat(serverHotspots)
-        .extracting("ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "status")
-        .containsExactly(tuple("java:S4792", "Make sure that this logger's configuration is safe.", "ide/src/main/java/foo/Foo.java", 9, 4, 9, 45, HotspotReviewStatus.TO_REVIEW));
+      var textRangeWithHash = new TextRangeWithHashDto(9, 4, 9, 45, "qwer");
+      var clientTrackedHotspotsByServerRelativePath = Map.of(
+        "src/main/java/foo/Foo.java", List.of(new ClientTrackedFindingDto(null, null, textRangeWithHash, null, "java:S4792", "Make sure that this logger's configuration is safe.")),
+        "src/main/java/bar/Bar.java", List.of(new ClientTrackedFindingDto(null, null, textRangeWithHash, null, "java:S1234", "Some other rule"))
+      );
+      var matchWithServerSecurityHotspotsResponse =
+        backend.getSecurityHotspotMatchingService().matchWithServerSecurityHotspots(new MatchWithServerSecurityHotspotsParams(CONFIG_SCOPE_ID, clientTrackedHotspotsByServerRelativePath, true)).get();
+      assertThat(matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByServerRelativePath()).hasSize(2);
+      var fooSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByServerRelativePath().get("src/main/java/foo/Foo.java");
+      assertThat(fooSecurityHotspots).hasSize(1);
+      assertThat(fooSecurityHotspots.get(0).isLeft()).isTrue();
+      assertThat(fooSecurityHotspots.get(0).getLeft().getStatus()).isEqualTo(HotspotStatus.TO_REVIEW);
+      var barSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByServerRelativePath().get("src/main/java/bar/Bar.java");
+      assertThat(barSecurityHotspots).hasSize(1);
+      assertThat(barSecurityHotspots.get(0).isRight()).isTrue();
     }
   }
 

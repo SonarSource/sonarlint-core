@@ -233,7 +233,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
     @AfterEach
     public void stop() {
-      engine.stop(true);
+      engine.stop();
     }
 
     @Test
@@ -371,7 +371,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
     @AfterEach
     public void stop() {
-      engineWithJavaOnly.stop(true);
+      engineWithJavaOnly.stop();
     }
 
     @Test
@@ -438,7 +438,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     @AfterEach
     void stop() {
       try {
-        engine.stop(true);
+        engine.stop();
       } catch (Exception e) {
         // Ignore
       }
@@ -473,7 +473,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
       engine = createEngine(e -> e.addEnabledLanguages(Language.JAVA, Language.JS, Language.PHP));
       engine.sync(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), emptySet(), null);
       assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains(Language.JAVA.getPluginKey());
-      engine.stop(false);
+      engine.stop();
 
       engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP));
       // The description of SonarJava changed in 6.3, embedded in SQ 8.3

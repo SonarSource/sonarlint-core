@@ -37,7 +37,6 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
-import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.prefix.FileTreeMatcher;
@@ -137,23 +136,6 @@ public class ServerConnection {
     issuesUpdater.update(serverApi, projectKey, branchName, isSonarCloud, serverVersion);
   }
 
-  public void downloadAllServerHotspots(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, ProgressMonitor progress) {
-    downloadAllServerHotspots(new ServerApi(new ServerApiHelper(endpoint, client)), projectKey, branchName, progress);
-  }
-
-  public void downloadAllServerHotspots(ServerApi serverApi, String projectKey, String branchName, ProgressMonitor progress) {
-    hotspotsUpdater.updateAll(serverApi.hotspot(), projectKey, branchName, () -> readOrSynchronizeServerVersion(serverApi), progress);
-  }
-
-  public void downloadAllServerHotspotsForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName) {
-    var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
-    hotspotsUpdater.updateForFile(serverApi.hotspot(), projectBinding, ideFilePath, branchName, () -> readOrSynchronizeServerVersion(serverApi));
-  }
-
-  public Collection<ServerHotspot> getServerHotspots(ProjectBinding projectBinding, String branchName, String ideFilePath) {
-    return issueStoreReader.getServerHotspots(projectBinding, branchName, ideFilePath);
-  }
-
   public boolean permitsHotspotTracking() {
     // when storage is not present, consider hotspots should not be detected
     return storage.serverInfo().read()
@@ -187,10 +169,6 @@ public class ServerConnection {
     } else {
       LOG.debug("Incremental issue sync is not supported. Skipping.");
     }
-  }
-
-  public void syncServerHotspotsForProject(EndpointParams endpoint, HttpClient client, String projectKey, String branchName) {
-    syncServerHotspotsForProject(new ServerApi(new ServerApiHelper(endpoint, client)), projectKey, branchName);
   }
 
   public void syncServerHotspotsForProject(ServerApi serverApi, String projectKey, String branchName) {

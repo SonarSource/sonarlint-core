@@ -19,10 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 
 public class IssueStoreReader {
@@ -40,15 +38,5 @@ public class IssueStoreReader {
     var loadedIssues = storage.project(projectBinding.projectKey()).findings().load(branchName, sqPath);
     loadedIssues.forEach(issue -> issue.setFilePath(ideFilePath));
     return loadedIssues;
-  }
-
-  public Collection<ServerHotspot> getServerHotspots(ProjectBinding projectBinding, String branchName, String ideFilePath) {
-    var serverFilePath = IssueStorePaths.idePathToServerPath(projectBinding, ideFilePath);
-    if (serverFilePath == null) {
-      return Collections.emptyList();
-    }
-    var loadedHotspots = storage.project(projectBinding.projectKey()).findings().loadHotspots(branchName, serverFilePath);
-    loadedHotspots.forEach(hotspot -> hotspot.setFilePath(ideFilePath));
-    return loadedHotspots;
   }
 }

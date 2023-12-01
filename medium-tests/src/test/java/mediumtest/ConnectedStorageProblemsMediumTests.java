@@ -55,7 +55,7 @@ class ConnectedStorageProblemsMediumTests {
 
   @AfterEach
   void stop() {
-    sonarlint.stop(true);
+    sonarlint.stop();
   }
 
   @Test
