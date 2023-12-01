@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.analysis.container.global;
 
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -141,8 +142,10 @@ class AnalysisExtensionInstallerTests {
     verify(container).addExtension(JAVA_PLUGIN_KEY, FakeSensor.class);
   }
 
+  @Test
   void install_sensors_for_sonarsource_plugins_by_allowlist() {
     when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(DBD_PLUGIN_KEY, new FakePlugin()));
+    when(loadedPlugins.getAdditionalAllowedPlugins()).thenReturn(Set.of(DBD_PLUGIN_KEY));
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
 

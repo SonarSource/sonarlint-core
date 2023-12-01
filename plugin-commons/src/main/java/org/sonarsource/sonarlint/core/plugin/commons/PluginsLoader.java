@@ -49,19 +49,22 @@ public class PluginsLoader {
     private final Set<Language> enabledLanguages;
     private final boolean shouldCheckNodeVersion;
     private final Optional<Version> nodeCurrentVersion;
+    private final Set<String> additionalAllowedPlugins;
 
     public Configuration(Set<Path> pluginJarLocations, Set<Language> enabledLanguages) {
       this.pluginJarLocations = pluginJarLocations;
       this.enabledLanguages = enabledLanguages;
       this.nodeCurrentVersion = Optional.empty();
       this.shouldCheckNodeVersion = false;
+      this.additionalAllowedPlugins = Set.of();
     }
 
-    public Configuration(Set<Path> pluginJarLocations, Set<Language> enabledLanguages, Optional<Version> nodeCurrentVersion) {
+    public Configuration(Set<Path> pluginJarLocations, Set<Language> enabledLanguages, Optional<Version> nodeCurrentVersion, Set<String> additionalAllowedPlugins) {
       this.pluginJarLocations = pluginJarLocations;
       this.enabledLanguages = enabledLanguages;
       this.nodeCurrentVersion = nodeCurrentVersion;
       this.shouldCheckNodeVersion = true;
+      this.additionalAllowedPlugins = additionalAllowedPlugins;
     }
   }
 
@@ -76,7 +79,7 @@ public class PluginsLoader {
     var instancesLoader = new PluginInstancesLoader();
     var pluginInstancesByKeys = instancesLoader.instantiatePluginClasses(nonSkippedPlugins);
 
-    return new PluginsLoadResult(new LoadedPlugins(pluginInstancesByKeys, instancesLoader), pluginCheckResultByKeys);
+    return new PluginsLoadResult(new LoadedPlugins(pluginInstancesByKeys, instancesLoader, configuration.additionalAllowedPlugins), pluginCheckResultByKeys);
   }
 
   private static void logPlugins(Collection<PluginInfo> nonSkippedPlugins) {

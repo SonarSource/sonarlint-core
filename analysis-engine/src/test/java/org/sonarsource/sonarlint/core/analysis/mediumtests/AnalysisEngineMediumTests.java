@@ -76,7 +76,7 @@ class AnalysisEngineMediumTests {
       .setClientPid(1234L)
       .setWorkDir(workDir)
       .build();
-    var result = new PluginsLoader().load(new PluginsLoader.Configuration(Set.of(findPythonJarPath()), enabledLanguages, Optional.empty()));
+    var result = new PluginsLoader().load(new PluginsLoader.Configuration(Set.of(findPythonJarPath()), enabledLanguages, Optional.empty(), Set.of() ));
     this.analysisEngine = new AnalysisEngine(analysisGlobalConfig, result.getLoadedPlugins(), logTester.getLogOutput());
     engineStopped = false;
   }
