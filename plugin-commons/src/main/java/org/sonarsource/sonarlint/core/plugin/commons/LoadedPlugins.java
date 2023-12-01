@@ -22,20 +22,27 @@ package org.sonarsource.sonarlint.core.plugin.commons;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 import org.sonar.api.Plugin;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInstancesLoader;
 
 public class LoadedPlugins implements Closeable {
   private final Map<String, Plugin> pluginInstancesByKeys;
   private final PluginInstancesLoader pluginInstancesLoader;
+  private final Set<String> additionalAllowedPlugins;
 
-  public LoadedPlugins(Map<String, Plugin> pluginInstancesByKeys, PluginInstancesLoader pluginInstancesLoader) {
+  public LoadedPlugins(Map<String, Plugin> pluginInstancesByKeys, PluginInstancesLoader pluginInstancesLoader, Set<String> additionalAllowedPlugins) {
     this.pluginInstancesByKeys = pluginInstancesByKeys;
     this.pluginInstancesLoader = pluginInstancesLoader;
+    this.additionalAllowedPlugins = additionalAllowedPlugins;
   }
 
   public Map<String, Plugin> getPluginInstancesByKeys() {
     return pluginInstancesByKeys;
+  }
+
+  public Set<String> getAdditionalAllowedPlugins() {
+    return additionalAllowedPlugins;
   }
 
   @Override

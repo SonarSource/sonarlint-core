@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.global;
 
-import java.util.Set;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.utils.AnnotationUtils;
@@ -35,11 +34,6 @@ import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
 public class AnalysisExtensionInstaller extends ExtensionInstaller {
 
   private final LoadedPlugins loadedPlugins;
-
-  private static final Set<String> SONAR_PLUGINS_ALLOW_LIST = Set.of(
-    "dbdpythonfrontend",
-    "dbd"
-  );
 
   public AnalysisExtensionInstaller(SonarLintRuntime sonarRuntime, LoadedPlugins loadedPlugins, Configuration bootConfiguration) {
     super(sonarRuntime, bootConfiguration);
@@ -69,8 +63,8 @@ public class AnalysisExtensionInstaller extends ExtensionInstaller {
     return null;
   }
 
-  private static boolean onlySonarSourceSensor(String pluginKey, Object extension) {
-    return Language.containsPlugin(pluginKey) || SONAR_PLUGINS_ALLOW_LIST.contains(pluginKey) || isNotSensor(extension);
+  private boolean onlySonarSourceSensor(String pluginKey, Object extension) {
+    return Language.containsPlugin(pluginKey) || loadedPlugins.getAdditionalAllowedPlugins().contains(pluginKey) || isNotSensor(extension);
   }
 
   private static boolean isNotSensor(Object extension) {

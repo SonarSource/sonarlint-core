@@ -21,7 +21,9 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 
@@ -37,6 +39,7 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
   private final Map<String, Path> overriddenPluginsPathsByKey;
   private final boolean isSonarCloud;
   private final boolean isHotspotsEnabled;
+  private final Set<String> allowedPluginIds;
 
   private ConnectedGlobalConfiguration(Builder builder) {
     super(builder);
@@ -45,6 +48,7 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
     this.overriddenPluginsPathsByKey = new HashMap<>(builder.overriddenPluginsPathsByKey);
     this.isSonarCloud = builder.isSonarCloud;
     this.isHotspotsEnabled = builder.isHotspotsEnabled;
+    this.allowedPluginIds = builder.allowedPluginIds;
   }
 
   public static Builder sonarQubeBuilder() {
@@ -75,6 +79,9 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
     return overriddenPluginsPathsByKey;
   }
 
+  public Set<String> getAllowedPluginIds() {
+    return allowedPluginIds;
+  }
 
   public static final class Builder extends AbstractBuilder<Builder> {
     private String connectionId;
@@ -82,6 +89,7 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
     private final Map<String, Path> overriddenPluginsPathsByKey = new HashMap<>();
     private final boolean isSonarCloud;
     private boolean isHotspotsEnabled;
+    private final Set<String> allowedPluginIds = new HashSet<>();
 
     private Builder(boolean isSonarCloud) {
       this.isSonarCloud = isSonarCloud;
@@ -120,6 +128,11 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
 
     public Builder enableHotspots() {
       this.isHotspotsEnabled = true;
+      return this;
+    }
+
+    public Builder addAllowedPluginIds(String... allowedPluginIds) {
+      this.allowedPluginIds.addAll(Set.of(allowedPluginIds));
       return this;
     }
 

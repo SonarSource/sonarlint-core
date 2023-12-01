@@ -62,7 +62,7 @@ public class RuleExtractorCli implements Callable<Integer> {
     try {
       // We can pretend we have a very high Node.js version since Node is not required to load rules
       var nodeVersion = Optional.of(Version.create("99.9"));
-      var config = new PluginsLoader.Configuration(pluginsJarPaths, enabledLanguages, nodeVersion);
+      var config = new PluginsLoader.Configuration(pluginsJarPaths, enabledLanguages, nodeVersion, Set.of());
       var rules = loadRulesFromPlugins(config);
       var gson = new GsonBuilder()
         .setPrettyPrinting()

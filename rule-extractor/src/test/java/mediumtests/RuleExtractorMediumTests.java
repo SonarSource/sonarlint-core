@@ -70,7 +70,7 @@ class RuleExtractorMediumTests {
   @Test
   void extractAllRules() {
     var enabledLanguages = Set.of(Language.values());
-    var config = new PluginsLoader.Configuration(allJars, enabledLanguages, empty());
+    var config = new PluginsLoader.Configuration(allJars, enabledLanguages, empty(), Set.of());
     var result = new PluginsLoader().load(config);
 
     var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, false, false);
@@ -120,7 +120,7 @@ class RuleExtractorMediumTests {
   @Test
   void extractAllRules_include_rule_templates() throws Exception {
     var enabledLanguages = Set.of(Language.values());
-    var config = new PluginsLoader.Configuration(allJars, enabledLanguages, empty());
+    var config = new PluginsLoader.Configuration(allJars, enabledLanguages, empty(), Set.of());
     var result = new PluginsLoader().load(config);
 
     var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, true, false);
@@ -140,7 +140,7 @@ class RuleExtractorMediumTests {
   @Test
   void extractAllRules_include_security_hotspots() throws Exception {
     var enabledLanguages = Set.of(Language.values());
-    var config = new PluginsLoader.Configuration(allJars, enabledLanguages, empty());
+    var config = new PluginsLoader.Configuration(allJars, enabledLanguages, empty(), Set.of());
     var result = new PluginsLoader().load(config);
 
     var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, false, true);
@@ -170,7 +170,7 @@ class RuleExtractorMediumTests {
       // Enable C but not C++
       enabledLanguages.add(Language.C);
     }
-    var config = new PluginsLoader.Configuration(allJars, enabledLanguages, empty());
+    var config = new PluginsLoader.Configuration(allJars, enabledLanguages, empty(), Set.of());
     var result = new PluginsLoader().load(config);
 
     var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, false, false);
@@ -182,7 +182,7 @@ class RuleExtractorMediumTests {
   @Test
   void loadNoRuleIfThereIsNoPlugin() {
     var enabledLanguages = Set.of(Language.values());
-    var config = new PluginsLoader.Configuration(Set.of(), enabledLanguages, empty());
+    var config = new PluginsLoader.Configuration(Set.of(), enabledLanguages, empty(), Set.of());
     var result = new PluginsLoader().load(config);
     var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, false, false);
 
