@@ -8,9 +8,9 @@
     <artifactId>sonarlint-core-parent</artifactId>
     <version>10.0-SNAPSHOT</version>
   </parent>
-  <artifactId>sonarlint-embedded</artifactId>
-  <name>SonarLint Core - Embedded</name>
-  <description>SonarLint Core packaged as a single library, to be used embedded</description>
+  <artifactId>sonarlint-backend-embedded</artifactId>
+  <name>SonarLint Core - Backend Embedded</name>
+  <description>SonarLint backend packaged as a single library, to be used embedded</description>
 
   <build>
     <plugins>

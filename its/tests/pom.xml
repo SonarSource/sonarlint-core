@@ -13,7 +13,7 @@
   <dependencies>
     <dependency>
       <groupId>org.sonarsource.sonarlint.core</groupId>
-      <artifactId>sonarlint-embedded</artifactId>
+      <artifactId>sonarlint-backend-embedded</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -136,7 +136,7 @@
                       <artifactItems>
                         <artifactItem>
                           <groupId>org.sonarsource.sonarlint.core</groupId>
-                          <artifactId>sonarlint-process-cli</artifactId>
+                          <artifactId>sonarlint-backend-cli</artifactId>
                           <version>${project.version}</version>
                           <classifier>windows</classifier>
                           <type>zip</type>
@@ -195,7 +195,7 @@
                       <artifactItems>
                        <artifactItem>
                         <groupId>org.sonarsource.sonarlint.core</groupId>
-                        <artifactId>sonarlint-process-cli</artifactId>
+                        <artifactId>sonarlint-backend-cli</artifactId>
                         <version>${project.version}</version>
                         <classifier>linux_x64</classifier>
                         <type>tar.gz</type>
