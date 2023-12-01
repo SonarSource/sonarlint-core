@@ -28,8 +28,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
-import org.apache.commons.lang3.SystemUtils;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
@@ -65,12 +63,22 @@ public class SloopLauncher {
     return null;
   }
 
+  /**
+   * Inspired from Apache commons-lang3
+   */
+  private static boolean isWindows() {
+    var osName = System.getProperty("os.name");
+    if (osName == null) {
+      return false;
+    }
+    return osName.startsWith("Windows");
+  }
 
   private static SonarLintRpcServer execute(String distPath, String jrePath) {
     var binDirPath = distPath + File.separator + "bin";
     List<String> commands = new ArrayList<>();
     try {
-      if (SystemUtils.IS_OS_WINDOWS) {
+      if (isWindows()) {
         commands.add("cmd.exe");
         commands.add("/c");
         commands.add(WIN_LAUNCHER_SCRIPT);
@@ -112,7 +120,7 @@ public class SloopLauncher {
   }
 
   public static int waitFor() throws InterruptedException {
-    if (process.waitFor(1, TimeUnit.MINUTES)){
+    if (process.waitFor(1, TimeUnit.MINUTES)) {
       return process.exitValue();
     } else {
       process.destroyForcibly();
