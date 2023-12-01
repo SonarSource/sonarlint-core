@@ -31,6 +31,7 @@
     <module>core</module>
     <module>http</module>
     <module>issue-tracking</module>
+    <module>java-client-utils</module>
     <module>medium-tests</module>
     <module>osgi</module>
     <module>plugin-api</module>
