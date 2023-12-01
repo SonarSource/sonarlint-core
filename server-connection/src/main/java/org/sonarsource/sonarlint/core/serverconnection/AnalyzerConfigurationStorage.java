@@ -47,6 +47,7 @@ public class AnalyzerConfigurationStorage {
     var data = adapt(analyzerConfiguration);
     LOG.debug("Storing project analyzer configuration in {}", storageFilePath);
     rwLock.write(() -> writeToFile(data, storageFilePath));
+    LOG.debug("Stored project analyzer configuration");
   }
 
   public AnalyzerConfiguration read() {
