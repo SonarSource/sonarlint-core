@@ -99,15 +99,6 @@ public abstract class AbstractConnectedTests {
       .build();
   }
 
-  protected static ConnectedAnalysisConfiguration createAnalysisConfiguration(String projectKey, String absoluteFilePath) throws IOException {
-    final var path = Paths.get(absoluteFilePath).toAbsolutePath();
-    return ConnectedAnalysisConfiguration.builder()
-      .setProjectKey(projectKey)
-      .setBaseDir(path.getParent())
-      .addInputFile(new TestClientInputFile(path.getParent(), path, false, StandardCharsets.UTF_8))
-      .build();
-  }
-
   static Map<String, String> toMap(String[] keyValues) {
     Preconditions.checkArgument(keyValues.length % 2 == 0, "Must be an even number of key/values");
     Map<String, String> map = Maps.newHashMap();
