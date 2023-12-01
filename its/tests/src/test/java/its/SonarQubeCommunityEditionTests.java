@@ -21,17 +21,15 @@ package its;
 
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.build.SonarScanner;
-import com.sonar.orchestrator.junit5.OnlyOnSonarQube;
 import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
-import its.utils.ConsoleLogOutput;
-import its.utils.ItUtils;
 import its.utils.OrchestratorUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -44,7 +42,6 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterAll;
@@ -69,29 +66,38 @@ import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.GetPathTranslationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
-import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
-import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 
 import static its.utils.ItUtils.SONAR_VERSION;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.awaitility.Awaitility.await;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.CODE_SMELL;
 
 class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
   public static final String CONNECTION_ID = "orchestrator";
@@ -104,13 +110,12 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     .setServerProperty("sonar.projectCreation.mainBranchName", MAIN_BRANCH_NAME)
     .build();
 
-  private static WsClient adminWsClient;
 
   @TempDir
   private static Path sonarUserHome;
-
+  private static WsClient adminWsClient;
   private static SonarLintRpcServer backend;
-
+  private static final List<String> didSynchronizeConfigurationScopes = new CopyOnWriteArrayList<>();
   private static BackendJsonRpcLauncher serverLauncher;
 
   @BeforeAll
@@ -126,12 +131,16 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
     backend = clientLauncher.getServerProxy();
     try {
+      var featureFlags = new FeatureFlagsDto(true, true, true, false, true, true, true);
+      var enabledLanguages = Set.of(JAVA);
       backend.initialize(
         new InitializeParams(IT_CLIENT_INFO,
-          IT_TELEMETRY_ATTRIBUTES, new FeatureFlagsDto(false, true, false, false, false, false, false), sonarUserHome.resolve("storage"),
-          sonarUserHome.resolve("workDir"),
-          Collections.emptySet(), Collections.emptyMap(), Set.of(JAVA), Collections.emptySet(),
-          List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(),
+          IT_TELEMETRY_ATTRIBUTES, featureFlags, sonarUserHome.resolve("storage"),
+          sonarUserHome.resolve("work"),
+          Collections.emptySet(), Collections.emptyMap(), enabledLanguages, Collections.emptySet(),
+          List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)),
+          Collections.emptyList(),
+          sonarUserHome.toString(),
           Map.of(), false))
         .get();
     } catch (Exception e) {
@@ -148,6 +157,12 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
   static void createSonarLintUser() {
     adminWsClient = newAdminWsClient(ORCHESTRATOR);
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
+  }
+
+
+  @BeforeEach
+  void clearState() {
+    didSynchronizeConfigurationScopes.clear();
   }
 
   @Nested
@@ -201,7 +216,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     }
 
     @BeforeEach
-    public void start(@TempDir Path sonarUserHome) throws IOException {
+    public void start() {
       engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
         .setConnectionId("orchestrator")
         .setSonarLintUserHome(sonarUserHome)
@@ -213,32 +228,6 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     @AfterEach
     public void stop() {
       engine.stop();
-    }
-
-    @Test
-    void download_all_issues_not_limited_to_10k() {
-      engine.updateProject(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), XOO_PROJECT_KEY, null);
-
-      engine.downloadAllServerIssues(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), XOO_PROJECT_KEY, MAIN_BRANCH_NAME, null);
-
-      var file1Issues = engine.getServerIssues(new ProjectBinding(XOO_PROJECT_KEY, "", ""), MAIN_BRANCH_NAME, "src/500lines.xoo");
-      var file2Issues = engine.getServerIssues(new ProjectBinding(XOO_PROJECT_KEY, "", ""), MAIN_BRANCH_NAME, "src/10000lines.xoo");
-
-      // Number of issues is not limited to 10k
-      assertThat(file1Issues.size() + file2Issues.size()).isEqualTo(10_500);
-
-      Map<String, ServerIssue> allIssues = new HashMap<>();
-      engine.getServerIssues(new ProjectBinding(XOO_PROJECT_KEY, "", ""), MAIN_BRANCH_NAME, "src/500lines.xoo").forEach(i -> allIssues.put(i.getKey(), i));
-      engine.getServerIssues(new ProjectBinding(XOO_PROJECT_KEY, "", ""), MAIN_BRANCH_NAME, "src/10000lines.xoo").forEach(i -> allIssues.put(i.getKey(), i));
-
-      assertThat(allIssues).hasSize(10_500);
-      assertThat(allIssues.get(wfIssue.getKey()).isResolved()).isTrue();
-      assertThat(allIssues.get(fpIssue.getKey()).isResolved()).isTrue();
-      assertThat(allIssues.get(overridenSeverityIssue.getKey()).getUserSeverity()).isEqualTo(IssueSeverity.BLOCKER);
-      assertThat(allIssues.get(overridenTypeIssue.getKey()).getType()).isEqualTo(RuleType.BUG);
-
-      // No hotspots
-      assertThat(allIssues.values()).allSatisfy(i -> assertThat(i.getType()).isIn(RuleType.CODE_SMELL, RuleType.BUG, RuleType.VULNERABILITY));
     }
 
     @Nested
@@ -254,63 +243,39 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
       }
 
       @Test
-      void should_apply_path_prefixes_when_importing_entire_project() throws IOException {
-        engine.updateProject(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), MULTI_MODULE_PROJECT_KEY, null);
+      void should_translate_path_prefixes_for_idePath_with_prefix() throws ExecutionException, InterruptedException {
+        var configScopeId = "my-ide-project-name";
+        backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+          List.of(new ConfigurationScopeDto(configScopeId, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID, MULTI_MODULE_PROJECT_KEY, true)))));
+        await().atMost(20, SECONDS).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(configScopeId));
 
-        // entire project imported in IDE
-        var projectDir = Paths.get("projects/multi-modules-sample").toAbsolutePath();
-        var ideFiles = ItUtils.collectAllFiles(projectDir).stream()
-          .map(f -> projectDir.relativize(f).toString())
-          .collect(Collectors.toList());
+        var idePath = Path.of("src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
+        var clientFileDto = new ClientFileDto(idePath.toUri(), idePath, configScopeId, null, StandardCharsets.UTF_8.name(),
+          idePath.toAbsolutePath(), null);
+        var didUpdateFileSystemParams = new DidUpdateFileSystemParams(List.of(),List.of(clientFileDto));
+        backend.getFileService().didUpdateFileSystem(didUpdateFileSystemParams);
 
-        var projectBinding = engine.calculatePathPrefixes(MULTI_MODULE_PROJECT_KEY, ideFiles);
-        assertThat(projectBinding.serverPathPrefix()).isEmpty();
-        assertThat(projectBinding.idePathPrefix()).isEmpty();
-        engine.downloadAllServerIssuesForFile(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), projectBinding,
-          "module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java", MAIN_BRANCH_NAME, null);
-        var serverIssues = engine.getServerIssues(projectBinding, MAIN_BRANCH_NAME, "module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
-        if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6)) {
-          assertThat(serverIssues).isEmpty();
-          assertThat(logs).contains("Skip downloading file issues on SonarQube 9.6+");
-        } else {
-          assertThat(serverIssues).hasSize(2);
-        }
-        engine.syncServerIssues(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), MULTI_MODULE_PROJECT_KEY, MAIN_BRANCH_NAME, null);
-        if (!ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6)) {
-          assertThat(logs).contains("Incremental issue sync is not supported. Skipping.");
-        }
-        serverIssues = engine.getServerIssues(projectBinding, MAIN_BRANCH_NAME, "module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
-        assertThat(serverIssues).hasSize(2);
+        var translatedIdePath = backend.getFileService().getPathTranslation(new GetPathTranslationParams(configScopeId)).get();
+        assertThat(translatedIdePath.getServerPathPrefix()).isEqualTo("module_b/module_b1");
+        assertThat(translatedIdePath.getIdePathPrefix()).isEmpty();
       }
 
       @Test
-      void should_apply_path_prefixes_when_importing_module() throws IOException {
-        engine.updateProject(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), MULTI_MODULE_PROJECT_KEY, null);
+      void should_translate_path_prefixes_for_idePath_without_prefix() throws ExecutionException, InterruptedException {
+        var configScopeId = "my-ide-project-name";
+        backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+          List.of(new ConfigurationScopeDto(configScopeId, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID, MULTI_MODULE_PROJECT_KEY, true)))));
+        await().atMost(20, SECONDS).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(configScopeId));
 
-        // only module B1 imported in IDE
-        var projectDirB1 = Paths.get("projects/multi-modules-sample/module_b/module_b1").toAbsolutePath();
-        var ideFiles = ItUtils.collectAllFiles(projectDirB1).stream()
-          .map(f -> projectDirB1.relativize(f).toString())
-          .collect(Collectors.toList());
+        var entireIdePath = Path.of("module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
+        var clientFileDto = new ClientFileDto(entireIdePath.toUri(), entireIdePath, configScopeId, null, StandardCharsets.UTF_8.name(),
+          entireIdePath.toAbsolutePath(), null);
+        var didUpdateFileSystemParams = new DidUpdateFileSystemParams(List.of(),List.of(clientFileDto));
+        backend.getFileService().didUpdateFileSystem(didUpdateFileSystemParams);
 
-        var projectBinding = engine.calculatePathPrefixes(MULTI_MODULE_PROJECT_KEY, ideFiles);
-        assertThat(projectBinding.serverPathPrefix()).isEqualTo("module_b/module_b1");
-        assertThat(projectBinding.idePathPrefix()).isEmpty();
-        engine.downloadAllServerIssuesForFile(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), projectBinding,
-          "src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java", MAIN_BRANCH_NAME, null);
-        var serverIssues = engine.getServerIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
-        if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6)) {
-          assertThat(serverIssues).isEmpty();
-          assertThat(logs).contains("Skip downloading file issues on SonarQube 9.6+");
-        } else {
-          assertThat(serverIssues).hasSize(2);
-        }
-        engine.syncServerIssues(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), MULTI_MODULE_PROJECT_KEY, MAIN_BRANCH_NAME, null);
-        if (!ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 6)) {
-          assertThat(logs).contains("Incremental issue sync is not supported. Skipping.");
-        }
-        serverIssues = engine.getServerIssues(projectBinding, MAIN_BRANCH_NAME, "src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
-        assertThat(serverIssues).hasSize(2);
+        var translatedEntireIdePath = backend.getFileService().getPathTranslation(new GetPathTranslationParams(configScopeId)).get();
+        assertThat(translatedEntireIdePath.getServerPathPrefix()).isEmpty();
+        assertThat(translatedEntireIdePath.getIdePathPrefix()).isEmpty();
       }
     }
   }
@@ -320,10 +285,8 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
     private static final String PROJECT_KEY_LANGUAGE_MIX = "sample-language-mix";
 
-    private ConnectedSonarLintEngine engineWithJavaOnly;
-
     @BeforeEach
-    void prepare(@TempDir Path sonarUserHome) throws IOException {
+    void prepare() {
       provisionProject(ORCHESTRATOR, PROJECT_KEY_LANGUAGE_MIX, "Sample Language Mix");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint.xml"));
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/python-sonarlint.xml"));
@@ -336,35 +299,30 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
         .setProperty("sonar.projectKey", PROJECT_KEY_LANGUAGE_MIX)
         .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
         .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
-
-      engineWithJavaOnly = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
-        .setLogOutput(new ConsoleLogOutput(false))
-        .setConnectionId("orchestrator")
-        .setSonarLintUserHome(sonarUserHome)
-        .setExtraProperties(new HashMap<>())
-        // authorize only Java to check that Python is left aside during sync
-        .addEnabledLanguage(Language.JAVA)
-        .build());
-
-    }
-
-    @AfterEach
-    public void stop() {
-      engineWithJavaOnly.stop();
     }
 
     @Test
-    // SonarQube should support pulling issues
-    @OnlyOnSonarQube(from = "9.6")
-    void sync_all_issues_of_enabled_languages() {
-      engineWithJavaOnly.syncServerIssues(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), PROJECT_KEY_LANGUAGE_MIX, MAIN_BRANCH_NAME,
-        null);
+    void should_match_server_issues_of_enabled_languages() throws ExecutionException, InterruptedException {
+      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+        List.of(new ConfigurationScopeDto("CONFIG_SCOPE_ID", null, true, "sample-language-mix", new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY_LANGUAGE_MIX,
+          true)))));
 
-      var javaIssues = engineWithJavaOnly.getServerIssues(new ProjectBinding(PROJECT_KEY_LANGUAGE_MIX, "", ""), MAIN_BRANCH_NAME, "src/main/java/foo/Foo.java");
-      var pythonIssues = engineWithJavaOnly.getServerIssues(new ProjectBinding(PROJECT_KEY_LANGUAGE_MIX, "", ""), MAIN_BRANCH_NAME, "src/main/java/foo/main.py");
+      var javaClientTrackedFindingDto = new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(14, 4, 14, 14, "hashedHash"),
+        null, "java:S106", "Replace this use of System.out by a logger.");
+      var pythonClientTrackedFindingDto = new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(2, 4, 2, 9, "hashedHash"),
+        null, "python:PrintStatementUsage", "Replace print statement by built-in function.");
+      var trackWithServerIssuesParams = new TrackWithServerIssuesParams("CONFIG_SCOPE_ID", Map.of("src/main/java/foo/Foo.java",
+        List.of(javaClientTrackedFindingDto), "src/main/java/foo/main.py", List.of(pythonClientTrackedFindingDto)), true);
+      var issuesByServerRelativePath = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByServerRelativePath();
 
-      assertThat(javaIssues).hasSize(2);
-      assertThat(pythonIssues).isEmpty();
+      var fooJavaIssues = issuesByServerRelativePath.get("src/main/java/foo/Foo.java");
+      assertThat(fooJavaIssues).hasSize(1);
+      assertThat(fooJavaIssues.get(0).isLeft()).isTrue();
+      assertThat(fooJavaIssues.get(0).getLeft().getType()).isEqualTo(CODE_SMELL);
+
+      var mainPyIssues = issuesByServerRelativePath.get("src/main/java/foo/main.py");
+      assertThat(mainPyIssues).hasSize(1);
+      assertThat(mainPyIssues.get(0).isRight()).isTrue();
     }
   }
 
@@ -497,6 +455,11 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
           return Either.forRight(new UsernamePasswordDto(SONARLINT_USER, SONARLINT_PWD));
         }
         return super.getCredentials(connectionId);
+      }
+
+      @Override
+      public void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params) {
+        didSynchronizeConfigurationScopes.addAll(params.getConfigurationScopeIds());
       }
 
     };
