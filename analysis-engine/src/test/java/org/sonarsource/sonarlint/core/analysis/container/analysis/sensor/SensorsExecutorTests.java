@@ -21,13 +21,17 @@ package org.sonarsource.sonarlint.core.analysis.container.analysis.sensor;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.SensorDescriptor;
+import org.sonar.api.scanner.sensor.ProjectSensor;
+import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,6 +78,21 @@ class SensorsExecutorTests {
     assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).contains("Error executing sensor: 'Throwing sensor'");
   }
 
+  @Test
+  void shouldRunGlobalSensorLast() {
+    var sensorOptimizer = mock(SensorOptimizer.class);
+    when(sensorOptimizer.shouldExecute(any())).thenReturn(true);
+
+    var regularSensor = new RegularSensor();
+    var globalSensor = new GlobalSensor();
+
+    var executor = new SensorsExecutor(null, sensorOptimizer, new ProgressMonitor(null), Optional.of(List.of(globalSensor, regularSensor)));
+
+    executor.execute();
+
+    assertThat(logTester.logs(ClientLogOutput.Level.INFO)).containsExactly("Executing 'Regular sensor'", "Executing 'Global sensor'");
+  }
+
   private static class ThrowingSensor implements Sensor {
     @Override
     public void describe(SensorDescriptor descriptor) {
@@ -83,6 +102,31 @@ class SensorsExecutorTests {
     @Override
     public void execute(SensorContext context) {
       throw new Error();
+    }
+  }
+
+  private static class RegularSensor implements Sensor {
+    @Override
+    public void describe(SensorDescriptor descriptor) {
+      descriptor.name("Regular sensor");
+    }
+
+    @Override
+    public void execute(SensorContext context) {
+      SonarLintLogger.get().info("Executing 'Regular sensor'");
+    }
+  }
+
+  private static class GlobalSensor implements ProjectSensor {
+
+    @Override
+    public void describe(SensorDescriptor descriptor) {
+      descriptor.name("Global sensor");
+    }
+
+    @Override
+    public void execute(SensorContext context) {
+      SonarLintLogger.get().info("Executing 'Global sensor'");
     }
   }
 
