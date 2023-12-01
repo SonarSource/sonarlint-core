@@ -59,9 +59,20 @@ public class SensorsExecutor {
   }
 
   public void execute() {
-    var sensorGroups = sensors.stream().collect(Collectors.partitioningBy(Sensor.class::isInstance));
-    var moduleSensors = sensorGroups.get(true);
-    var globalSensors = sensorGroups.get(false);
+    var sensorGroups = sensors.stream().collect(Collectors.partitioningBy(s -> {
+      var isModernGlobalSensor = !(s instanceof Sensor);
+      if (isModernGlobalSensor) {
+        return true;
+      } else {
+        var descriptor = new DefaultSensorDescriptor();
+        s.describe(descriptor);
+        return descriptor.isGlobal();
+      }
+    }));
+
+    var moduleSensors = sensorGroups.get(false);
+    var globalSensors = sensorGroups.get(true);
+
     executeSensors(moduleSensors);
     executeSensors(globalSensors);
   }
