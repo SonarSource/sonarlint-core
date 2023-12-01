@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Java Client Utils
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.client.api.common;
+package org.sonarsource.sonarlint.core.client.utils;
 
 import java.io.File;
 import java.util.Collections;
@@ -27,39 +27,38 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class FileExclusionsTests {
-  ClientFileExclusions fileExclusions;
+class ClientFileExclusionsTests {
+  ClientFileExclusions underTest;
 
   @BeforeEach
   void before() {
     Set<String> glob = Collections.singleton("**/*.js");
     Set<String> files = Collections.singleton(new File("dir/file.java").getAbsolutePath());
     Set<String> dir = Collections.singleton("src");
-    fileExclusions = new ClientFileExclusions(files, dir, glob);
+    underTest = new ClientFileExclusions(files, dir, glob);
   }
 
   @Test
   void should_exclude_with_glob_relative_path() {
-    assertThat(fileExclusions.test(new File("dir2/file.js").getAbsolutePath())).isTrue();
-    assertThat(fileExclusions.test(new File("dir2/file.java").getAbsolutePath())).isFalse();
-
+    assertThat(underTest.test(new File("dir2/file.js").getAbsolutePath())).isTrue();
+    assertThat(underTest.test(new File("dir2/file.java").getAbsolutePath())).isFalse();
   }
 
   @Test
   void should_exclude_with_glob_absolute_path() {
-    assertThat(fileExclusions.test(new File("/absolute/dir/file.js").getAbsolutePath())).isTrue();
-    assertThat(fileExclusions.test(new File("/absolute/dir/file.java").getAbsolutePath())).isFalse();
+    assertThat(underTest.test(new File("/absolute/dir/file.js").getAbsolutePath())).isTrue();
+    assertThat(underTest.test(new File("/absolute/dir/file.java").getAbsolutePath())).isFalse();
   }
 
   @Test
   void should_exclude_with_file() {
-    assertThat(fileExclusions.test(new File("dir/file2.java").getAbsolutePath())).isFalse();
-    assertThat(fileExclusions.test(new File("dir/file.java").getAbsolutePath())).isTrue();
+    assertThat(underTest.test(new File("dir/file2.java").getAbsolutePath())).isFalse();
+    assertThat(underTest.test(new File("dir/file.java").getAbsolutePath())).isTrue();
   }
 
   @Test
   void should_exclude_with_dir() {
-    assertThat(fileExclusions.test(new File("dir/class2.java").getAbsolutePath())).isFalse();
-    assertThat(fileExclusions.test("src/class.java")).isTrue();
+    assertThat(underTest.test(new File("dir/class2.java").getAbsolutePath())).isFalse();
+    assertThat(underTest.test("src/class.java")).isTrue();
   }
 }
