@@ -47,6 +47,7 @@ public class ServerInfoStorage {
     var serverInfoToStore = adapt(serverInfo);
     LOG.debug("Storing server info in {}", storageFilePath);
     rwLock.write(() -> writeToFile(serverInfoToStore, storageFilePath));
+    LOG.debug("Stored server info");
   }
 
   public Optional<StoredServerInfo> read() {
