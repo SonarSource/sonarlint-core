@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import org.sonar.api.batch.DependedUpon;
 import org.sonar.api.batch.DependsUpon;
 import org.sonar.api.batch.Phase;
+import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.scanner.sensor.ProjectSensor;
 import org.sonar.api.utils.AnnotationUtils;
@@ -58,6 +59,14 @@ public class SensorsExecutor {
   }
 
   public void execute() {
+    var sensorGroups = sensors.stream().collect(Collectors.partitioningBy(Sensor.class::isInstance));
+    var moduleSensors = sensorGroups.get(true);
+    var globalSensors = sensorGroups.get(false);
+    executeSensors(moduleSensors);
+    executeSensors(globalSensors);
+  }
+
+  private void executeSensors(List<ProjectSensor> sensors) {
     for (var sensor : sort(sensors)) {
       progress.checkCancel();
       var descriptor = new DefaultSensorDescriptor();
