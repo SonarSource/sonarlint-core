@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - Backend CLI
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,23 +17,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.config.exclusion;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.backend.cli;
 
-import java.util.List;
+import javax.annotation.ParametersAreNonnullByDefault;
 
-public class DidUpdateGlobalExclusionsParams {
-
-  /**
-   * Patterns using the Java glob syntax.
-   * https://docs.oracle.com/javase/tutorial/essential/io/fileOps.html#glob
-   */
-  private final List<String> globPatterns;
-
-  public DidUpdateGlobalExclusionsParams(List<String> globPatterns) {
-    this.globPatterns = globPatterns;
-  }
-
-  public List<String> getGlobPatterns() {
-    return globPatterns;
-  }
-}

@@ -6,9 +6,9 @@
     <artifactId>sonarlint-core-parent</artifactId>
     <version>10.0-SNAPSHOT</version>
   </parent>
-  <artifactId>sonarlint-process-cli</artifactId>
-  <name>SonarLint Core - Process CLI</name>
-  <description>Entry point for SonarLint process</description>
+  <artifactId>sonarlint-backend-cli</artifactId>
+  <name>SonarLint Core - Backend CLI</name>
+  <description>SonarLint backend as a standalone CLI</description>
   <properties>
     <unpack.dir>${project.build.directory}/unpack</unpack.dir>
     <jre.dirname.linux>jdk-17.0.7+7-jre</jre.dirname.linux>
@@ -24,7 +24,7 @@
         <configuration>
           <archive>
             <manifest>
-              <mainClass>org.sonarsource.sonarlint.core.rpc.impl.SonarLintCoreProcess</mainClass>
+              <mainClass>org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli</mainClass>
               <addClasspath>true</addClasspath>
             </manifest>
           </archive>

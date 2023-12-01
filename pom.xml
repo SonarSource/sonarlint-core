@@ -25,16 +25,16 @@
 
   <modules>
     <module>analysis-engine</module>
+    <module>backend-cli</module>
+    <module>backend-embedded</module>
     <module>commons</module>
     <module>core</module>
-    <module>embedded</module>
     <module>http</module>
     <module>issue-tracking</module>
     <module>medium-tests</module>
     <module>osgi</module>
     <module>plugin-api</module>
     <module>plugin-commons</module>
-    <module>process-cli</module>
     <module>report-aggregate</module>
     <module>rpc-impl</module>
     <module>rpc-java-client</module>

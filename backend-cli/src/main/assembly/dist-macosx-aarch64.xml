@@ -6,7 +6,7 @@
         - the launcher script
           -->
 <assembly>
-  <id>no-arch</id>
+  <id>macosx_aarch64</id>
   <includeBaseDirectory>false</includeBaseDirectory>
   <formats>
     <format>tar.gz</format>
@@ -30,7 +30,7 @@
       <outputDirectory>lib</outputDirectory>
       <fileMode>0644</fileMode>
       <includes>
-        <include>**/sonarlint-process-cli-${project.version}.jar</include>
+        <include>**/${project.artifactId}-${project.version}.jar</include>
       </includes>
     </fileSet>
 
@@ -45,5 +45,37 @@
         <include>sonarlint-backend</include>
       </includes>
     </fileSet>
+
+    <!-- jre basic, except bin/ and misc -->
+    <fileSet>
+      <directory>${unpack.dir}/macosx_aarch64/${jre.dirname.macosx}</directory>
+      <outputDirectory>jre</outputDirectory>
+      <excludes>
+        <exclude>bin/**</exclude>
+        <exclude>man/**</exclude>
+        <exclude>lib/jspawnhelper</exclude>
+      </excludes>
+    </fileSet>
+
+    <!-- jre/bin/java -->
+    <fileSet>
+      <directory>${unpack.dir}/macosx_aarch64/${jre.dirname.macosx}/bin</directory>
+      <outputDirectory>jre/bin</outputDirectory>
+      <includes>
+        <include>java</include>
+      </includes>
+      <fileMode>0755</fileMode>
+    </fileSet>
+
+    <!-- jre lib executable files -->
+    <fileSet>
+      <directory>${unpack.dir}/macosx_aarch64/${jre.dirname.macosx}/lib</directory>
+      <outputDirectory>jre/lib</outputDirectory>
+      <includes>
+        <include>jspawnhelper</include>
+      </includes>
+      <fileMode>0755</fileMode>
+    </fileSet>
+
   </fileSets>
 </assembly>
