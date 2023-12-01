@@ -88,7 +88,7 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>sonarlint-process-cli</artifactId>
+      <artifactId>sonarlint-backend-cli</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

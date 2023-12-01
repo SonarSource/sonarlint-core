@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Process CLI
+ * SonarLint Core - Backend CLI
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,15 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.impl;
+package org.sonarsource.sonarlint.core.backend.cli;
 
 import java.io.ByteArrayInputStream;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
+import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "slcore", mixinStandardHelpOptions = true, description = "The SonarLint Core backend")
-public class SonarLintCoreProcess implements Callable<Integer> {
+public class SonarLintServerCli implements Callable<Integer> {
 
   @Override
   public Integer call() {
@@ -49,7 +50,7 @@ public class SonarLintCoreProcess implements Callable<Integer> {
 
   public static void main(String... args) {
     System.err.println("Starting SonarLint Core backend...");
-    var exitCode = new CommandLine(new SonarLintCoreProcess()).execute(args);
+    var exitCode = new CommandLine(new SonarLintServerCli()).execute(args);
     System.exit(exitCode);
   }
 }
