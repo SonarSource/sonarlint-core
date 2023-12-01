@@ -125,30 +125,6 @@ class IssueStoreReaderTests {
       .containsOnly(createServerIssue("src/path1"));
   }
 
-  @Test
-  void canReadAllHotspotsFromStorage() {
-    var queriedBranch = "branch";
-
-    issueStore.replaceAllHotspotsOfFile(queriedBranch, "file/path", List.of(aServerHotspot("key", "file/path")));
-
-    var hotspotsFromStorage = issueStoreReader.getServerHotspots(projectBinding, queriedBranch, "file/path");
-
-    assertThat(hotspotsFromStorage)
-      .extracting(ServerHotspot::getKey)
-      .containsOnly("key");
-  }
-
-  @Test
-  void cannotReadHotspotFromStorageWhenPathInconsistent() {
-    var queriedBranch = "branch";
-
-    issueStore.replaceAllHotspotsOfFile(queriedBranch, "file/path", List.of(aServerHotspot("key", "file/path")));
-
-    var hotspotsFromStorage = issueStoreReader.getServerHotspots(new ProjectBinding(PROJECT_KEY, "", "client"), queriedBranch, "ide/file/path");
-
-    assertThat(hotspotsFromStorage).isEmpty();
-  }
-
   private final Comparator<ServerIssue> simpleComparator = (o1, o2) -> {
     if (Objects.equals(o1.getFilePath(), o2.getFilePath())) {
       return 0;

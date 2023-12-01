@@ -93,7 +93,7 @@ class NotebookLanguageMediumTests {
   @AfterAll
   static void stop() throws ExecutionException, InterruptedException {
     if (sonarlint != null) {
-      sonarlint.stop(true);
+      sonarlint.stop();
       sonarlint = null;
     }
     if (backend != null) {
