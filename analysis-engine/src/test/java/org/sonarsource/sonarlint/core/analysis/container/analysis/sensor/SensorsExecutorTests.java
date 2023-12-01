@@ -85,12 +85,13 @@ class SensorsExecutorTests {
 
     var regularSensor = new RegularSensor();
     var globalSensor = new GlobalSensor();
+    var oldGlobalSensor = new OldGlobalSensor();
 
-    var executor = new SensorsExecutor(null, sensorOptimizer, new ProgressMonitor(null), Optional.of(List.of(globalSensor, regularSensor)));
+    var executor = new SensorsExecutor(null, sensorOptimizer, new ProgressMonitor(null), Optional.of(List.of(globalSensor, regularSensor, oldGlobalSensor)));
 
     executor.execute();
 
-    assertThat(logTester.logs(ClientLogOutput.Level.INFO)).containsExactly("Executing 'Regular sensor'", "Executing 'Global sensor'");
+    assertThat(logTester.logs(ClientLogOutput.Level.INFO)).containsExactly("Executing 'Regular sensor'", "Executing 'Global sensor'", "Executing 'Old Global sensor'");
   }
 
   private static class ThrowingSensor implements Sensor {
@@ -129,5 +130,18 @@ class SensorsExecutorTests {
       SonarLintLogger.get().info("Executing 'Global sensor'");
     }
   }
+
+  private static class OldGlobalSensor implements Sensor {
+    @Override
+    public void describe(SensorDescriptor descriptor) {
+      descriptor.name("Old Global sensor").global();
+    }
+
+    @Override
+    public void execute(SensorContext context) {
+      SonarLintLogger.get().info("Executing 'Old Global sensor'");
+    }
+  }
+
 
 }
