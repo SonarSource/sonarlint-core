@@ -60,7 +60,7 @@ if defined JAVA_HOME_ARG (
 set CLASSPATH=%APP_HOME%\lib\*;
 
 @rem Execute SLCORE
-"%JAVA_EXE%" %DEFAULT_JVM_OPTS% -classpath "%CLASSPATH%" org.sonarsource.sonarlint.core.rpc.impl.SonarLintCoreProcess %args%
+"%JAVA_EXE%" %DEFAULT_JVM_OPTS% -classpath "%CLASSPATH%" org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli %args%
 
 @rem End local scope for the variables with windows NT shell
 if %ERRORLEVEL% equ 0 goto mainEnd

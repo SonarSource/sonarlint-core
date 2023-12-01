@@ -6,10 +6,10 @@
         - the launcher script
           -->
 <assembly>
-  <id>macosx_aarch64</id>
+  <id>windows</id>
   <includeBaseDirectory>false</includeBaseDirectory>
   <formats>
-    <format>tar.gz</format>
+    <format>zip</format>
   </formats>
 
   <!-- The dependencies -->
@@ -30,7 +30,7 @@
       <outputDirectory>lib</outputDirectory>
       <fileMode>0644</fileMode>
       <includes>
-        <include>**/sonarlint-process-cli-${project.version}.jar</include>
+        <include>**/${project.artifactId}-${project.version}.jar</include>
       </includes>
     </fileSet>
 
@@ -39,43 +39,29 @@
       <directory>src/main/assembly/bin</directory>
       <outputDirectory>bin</outputDirectory>
       <fileMode>0755</fileMode>
-      <lineEnding>unix</lineEnding>
+      <lineEnding>dos</lineEnding>
       <filtered>true</filtered>
       <includes>
-        <include>sonarlint-backend</include>
+        <include>sonarlint-backend.bat</include>
       </includes>
     </fileSet>
 
-    <!-- jre basic, except bin/ and misc -->
+    <!-- jre basic, except bin/ -->
     <fileSet>
-      <directory>${unpack.dir}/macosx_aarch64/${jre.dirname.macosx}</directory>
+      <directory>${unpack.dir}/windows/${jre.dirname.windows}</directory>
       <outputDirectory>jre</outputDirectory>
       <excludes>
         <exclude>bin/**</exclude>
         <exclude>man/**</exclude>
-        <exclude>lib/jspawnhelper</exclude>
+        <exclude>plugin/**</exclude>
       </excludes>
     </fileSet>
 
-    <!-- jre/bin/java -->
+    <!-- jre bin -->
     <fileSet>
-      <directory>${unpack.dir}/macosx_aarch64/${jre.dirname.macosx}/bin</directory>
+      <directory>${unpack.dir}/windows/${jre.dirname.windows}/bin</directory>
       <outputDirectory>jre/bin</outputDirectory>
-      <includes>
-        <include>java</include>
-      </includes>
       <fileMode>0755</fileMode>
     </fileSet>
-
-    <!-- jre lib executable files -->
-    <fileSet>
-      <directory>${unpack.dir}/macosx_aarch64/${jre.dirname.macosx}/lib</directory>
-      <outputDirectory>jre/lib</outputDirectory>
-      <includes>
-        <include>jspawnhelper</include>
-      </includes>
-      <fileMode>0755</fileMode>
-    </fileSet>
-
   </fileSets>
 </assembly>

@@ -39,4 +39,4 @@ if [ -z "$javaHomeArg" ]; then
   JAVACMD=$APP_HOME/jre/bin/java
 fi
 
-exec "$JAVACMD" -classpath "$CLASSPATH" org.sonarsource.sonarlint.core.rpc.impl.SonarLintCoreProcess
+exec "$JAVACMD" -classpath "$CLASSPATH" org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli
