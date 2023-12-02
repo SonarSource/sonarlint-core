@@ -32,9 +32,7 @@ import java.io.PipedOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -54,12 +52,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarqube.ws.Issues.Issue;
 import org.sonarqube.ws.client.WsClient;
-import org.sonarqube.ws.client.issues.DoTransitionRequest;
-import org.sonarqube.ws.client.issues.SearchRequest;
-import org.sonarqube.ws.client.issues.SetSeverityRequest;
-import org.sonarqube.ws.client.issues.SetTypeRequest;
 import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
@@ -76,6 +69,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.GetPathTranslationParams;
@@ -92,7 +86,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import static its.utils.ItUtils.SONAR_VERSION;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
@@ -100,7 +93,8 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.CODE_SMELL;
 
 class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
-  public static final String CONNECTION_ID = "orchestrator";
+  private static final String CONNECTION_ID = "orchestrator";
+  private static final String CONFIG_SCOPE_ID = "my-ide-project-name";
 
   public static final String XOO_PLUGIN_KEY = "xoo";
   @RegisterExtension
@@ -148,135 +142,72 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     }
   }
 
-  @AfterAll
-  static void stopBackend() throws ExecutionException, InterruptedException {
-    serverLauncher.getJavaImpl().shutdown().get();
-  }
-
   @BeforeAll
   static void createSonarLintUser() {
     adminWsClient = newAdminWsClient(ORCHESTRATOR);
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
   }
 
-
   @BeforeEach
   void clearState() {
     didSynchronizeConfigurationScopes.clear();
   }
 
+  @AfterEach
+  void removeConfigScope() {
+    backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(CONFIG_SCOPE_ID));
+  }
+
+  @AfterAll
+  static void stopBackend() throws ExecutionException, InterruptedException {
+    serverLauncher.getJavaImpl().shutdown().get();
+  }
+
   @Nested
   // TODO Can be removed when switching to Java 16+ and changing prepare() to static
-  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-  class WithXoo {
+  @TestInstance(Lifecycle.PER_CLASS)
+  class PathPrefix {
 
-    private static final String XOO_PROJECT_KEY = "sample-xoo";
-
-    private ConnectedSonarLintEngine engine;
-    private final List<String> logs = new ArrayList<>();
-
-    private Issue wfIssue;
-    private Issue fpIssue;
-    private Issue overridenSeverityIssue;
-    private Issue overridenTypeIssue;
+    private static final String MULTI_MODULE_PROJECT_KEY = "com.sonarsource.it.samples:multi-modules-sample";
 
     @BeforeAll
-    void prepare() {
-      provisionProject(ORCHESTRATOR, XOO_PROJECT_KEY, "Sample Xoo");
-      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/xoo-sonarlint.xml"));
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(XOO_PROJECT_KEY, XOO_PLUGIN_KEY, "SonarLint IT Xoo");
-
-      analyzeProject("sample-xoo-v1", XOO_PROJECT_KEY);
-      // Second analysis with less issues to have closed issues
-      analyzeProject("sample-xoo-v2", XOO_PROJECT_KEY);
-
-      // Mark a few issues as closed WF and closed FP
-      var issueSearchResponse = adminWsClient.issues()
-        .search(new SearchRequest().setStatuses(List.of("OPEN")).setTypes(List.of("CODE_SMELL")).setComponentKeys(List.of(XOO_PROJECT_KEY)));
-      wfIssue = issueSearchResponse.getIssues(0);
-      fpIssue = issueSearchResponse.getIssues(1);
-      // Change severity and type
-      overridenSeverityIssue = issueSearchResponse.getIssues(2);
-      overridenTypeIssue = issueSearchResponse.getIssues(3);
-
-      adminWsClient.issues().doTransition(new DoTransitionRequest().setIssue(wfIssue.getKey()).setTransition("wontfix"));
-      adminWsClient.issues().doTransition(new DoTransitionRequest().setIssue(fpIssue.getKey()).setTransition("falsepositive"));
-
-      adminWsClient.issues().setSeverity(new SetSeverityRequest().setIssue(overridenSeverityIssue.getKey()).setSeverity("BLOCKER"));
-      adminWsClient.issues().setType(new SetTypeRequest().setIssue(overridenTypeIssue.getKey()).setType("BUG"));
-
-      // Ensure an hotspot has been reported on server side
-      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 2)) {
-        assertThat(adminWsClient.hotspots().search(new org.sonarqube.ws.client.hotspots.SearchRequest().setProjectKey(XOO_PROJECT_KEY)).getHotspotsList()).isNotEmpty();
-      } else {
-        assertThat(
-          adminWsClient.issues().search(new SearchRequest().setTypes(List.of("SECURITY_HOTSPOT")).setComponentKeys(List.of(XOO_PROJECT_KEY))).getIssuesList())
-          .isNotEmpty();
-      }
+    void analyzeMultiModuleProject() {
+      // Project has 5 modules: B, B/B1, B/B2, A, A/A1 and A/A2
+      analyzeMavenProject(ORCHESTRATOR, "multi-modules-sample");
     }
 
-    @BeforeEach
-    public void start() {
-      engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
-        .setConnectionId("orchestrator")
-        .setSonarLintUserHome(sonarUserHome)
-        .setLogOutput((msg, level) -> logs.add(msg))
-        .setExtraProperties(new HashMap<>())
-        .build());
+    @Test
+    void should_translate_path_prefixes_for_idePath_with_prefix() throws ExecutionException, InterruptedException {
+      didSynchronizeConfigurationScopes.clear();
+
+      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID,
+          MULTI_MODULE_PROJECT_KEY, true)))));
+
+      var idePath = Path.of("src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
+      var clientFileDto = new ClientFileDto(idePath.toUri(), idePath, CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(),
+        idePath.toAbsolutePath(), null);
+      var didUpdateFileSystemParams = new DidUpdateFileSystemParams(List.of(), List.of(clientFileDto));
+      backend.getFileService().didUpdateFileSystem(didUpdateFileSystemParams);
+
+      await().untilAsserted(() -> assertThat(backend.getFileService().getPathTranslation(new GetPathTranslationParams(CONFIG_SCOPE_ID)).get().getServerPathPrefix()).isEqualTo("module_b/module_b1"));
+      await().untilAsserted(() -> assertThat(backend.getFileService().getPathTranslation(new GetPathTranslationParams(CONFIG_SCOPE_ID)).get().getIdePathPrefix()).isEmpty());
     }
 
-    @AfterEach
-    public void stop() {
-      engine.stop();
-    }
+    @Test
+    void should_translate_path_prefixes_for_idePath_without_prefix() throws ExecutionException, InterruptedException {
+      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID,
+          MULTI_MODULE_PROJECT_KEY, true)))));
 
-    @Nested
-    // TODO Can be removed when switching to Java 16+ and changing prepare() to static
-    @TestInstance(Lifecycle.PER_CLASS)
-    class PathPrefix {
-      private static final String MULTI_MODULE_PROJECT_KEY = "com.sonarsource.it.samples:multi-modules-sample";
+      var entireIdePath = Path.of("module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
+      var clientFileDto = new ClientFileDto(entireIdePath.toUri(), entireIdePath, CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(),
+        entireIdePath.toAbsolutePath(), null);
+      var didUpdateFileSystemParams = new DidUpdateFileSystemParams(List.of(), List.of(clientFileDto));
+      backend.getFileService().didUpdateFileSystem(didUpdateFileSystemParams);
 
-      @BeforeAll
-      void analyzeMultiModuleProject() {
-        // Project has 5 modules: B, B/B1, B/B2, A, A/A1 and A/A2
-        analyzeMavenProject(ORCHESTRATOR, "multi-modules-sample");
-      }
-
-      @Test
-      void should_translate_path_prefixes_for_idePath_with_prefix() throws ExecutionException, InterruptedException {
-        var configScopeId = "my-ide-project-name";
-        backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-          List.of(new ConfigurationScopeDto(configScopeId, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID, MULTI_MODULE_PROJECT_KEY, true)))));
-        await().atMost(20, SECONDS).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(configScopeId));
-
-        var idePath = Path.of("src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
-        var clientFileDto = new ClientFileDto(idePath.toUri(), idePath, configScopeId, null, StandardCharsets.UTF_8.name(),
-          idePath.toAbsolutePath(), null);
-        var didUpdateFileSystemParams = new DidUpdateFileSystemParams(List.of(),List.of(clientFileDto));
-        backend.getFileService().didUpdateFileSystem(didUpdateFileSystemParams);
-
-        var translatedIdePath = backend.getFileService().getPathTranslation(new GetPathTranslationParams(configScopeId)).get();
-        assertThat(translatedIdePath.getServerPathPrefix()).isEqualTo("module_b/module_b1");
-        assertThat(translatedIdePath.getIdePathPrefix()).isEmpty();
-      }
-
-      @Test
-      void should_translate_path_prefixes_for_idePath_without_prefix() throws ExecutionException, InterruptedException {
-        var configScopeId = "my-ide-project-name";
-        backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-          List.of(new ConfigurationScopeDto(configScopeId, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID, MULTI_MODULE_PROJECT_KEY, true)))));
-        await().atMost(20, SECONDS).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(configScopeId));
-
-        var entireIdePath = Path.of("module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
-        var clientFileDto = new ClientFileDto(entireIdePath.toUri(), entireIdePath, configScopeId, null, StandardCharsets.UTF_8.name(),
-          entireIdePath.toAbsolutePath(), null);
-        var didUpdateFileSystemParams = new DidUpdateFileSystemParams(List.of(),List.of(clientFileDto));
-        backend.getFileService().didUpdateFileSystem(didUpdateFileSystemParams);
-
-        var translatedEntireIdePath = backend.getFileService().getPathTranslation(new GetPathTranslationParams(configScopeId)).get();
-        assertThat(translatedEntireIdePath.getServerPathPrefix()).isEmpty();
-        assertThat(translatedEntireIdePath.getIdePathPrefix()).isEmpty();
-      }
+      await().untilAsserted(() -> assertThat(backend.getFileService().getPathTranslation(new GetPathTranslationParams(CONFIG_SCOPE_ID)).get().getServerPathPrefix()).isEmpty());
+      await().untilAsserted(() -> assertThat(backend.getFileService().getPathTranslation(new GetPathTranslationParams(CONFIG_SCOPE_ID)).get().getIdePathPrefix()).isEmpty());
     }
   }
 
@@ -315,14 +246,19 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
         List.of(javaClientTrackedFindingDto), "src/main/java/foo/main.py", List.of(pythonClientTrackedFindingDto)), true);
       var issuesByServerRelativePath = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByServerRelativePath();
 
-      var fooJavaIssues = issuesByServerRelativePath.get("src/main/java/foo/Foo.java");
-      assertThat(fooJavaIssues).hasSize(1);
-      assertThat(fooJavaIssues.get(0).isLeft()).isTrue();
-      assertThat(fooJavaIssues.get(0).getLeft().getType()).isEqualTo(CODE_SMELL);
-
       var mainPyIssues = issuesByServerRelativePath.get("src/main/java/foo/main.py");
       assertThat(mainPyIssues).hasSize(1);
       assertThat(mainPyIssues.get(0).isRight()).isTrue();
+
+      var fooJavaIssues = issuesByServerRelativePath.get("src/main/java/foo/Foo.java");
+      assertThat(fooJavaIssues).hasSize(1);
+
+      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
+        assertThat(fooJavaIssues.get(0).isLeft()).isTrue();
+        assertThat(fooJavaIssues.get(0).getLeft().getType()).isEqualTo(CODE_SMELL);
+      } else {
+        assertThat(fooJavaIssues.get(0).isRight()).isTrue();
+      }
     }
   }
 
@@ -337,7 +273,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     private static final String PROJECT_KEY_TYPESCRIPT = "sample-typescript";
 
     @BeforeAll
-    void prepare() throws Exception {
+    void prepare() {
       provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVASCRIPT, "Sample Javascript");
       provisionProject(ORCHESTRATOR, PROJECT_KEY_TYPESCRIPT, "Sample Typescript");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/javascript-sonarlint.xml"));
@@ -364,9 +300,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
       var builder = ConnectedGlobalConfiguration.sonarQubeBuilder()
         .setConnectionId("orchestrator")
         .setSonarLintUserHome(sonarUserHome)
-        .setLogOutput((msg, level) -> {
-          logs.add(msg);
-        })
+        .setLogOutput((msg, level) -> logs.add(msg))
         .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion());
       configurator.accept(builder);
       return new ConnectedSonarLintEngineImpl(builder.build());
