@@ -98,15 +98,6 @@ public class ServerConnection {
     return serverInfoSynchronizer.readOrSynchronizeServerInfo(serverApi).getVersion();
   }
 
-  public void downloadServerIssuesForProject(EndpointParams endpoint, HttpClient client, String projectKey, String branchName) {
-    downloadServerIssuesForProject(new ServerApi(new ServerApiHelper(endpoint, client)), projectKey, branchName);
-  }
-
-  public void downloadServerIssuesForProject(ServerApi serverApi, String projectKey, String branchName) {
-    var serverVersion = readOrSynchronizeServerVersion(serverApi);
-    issuesUpdater.update(serverApi, projectKey, branchName, isSonarCloud, serverVersion);
-  }
-
   public boolean permitsHotspotTracking() {
     // when storage is not present, consider hotspots should not be detected
     return storage.serverInfo().read()
@@ -130,5 +121,9 @@ public class ServerConnection {
 
   public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, ProgressMonitor monitor) {
     projectStorageUpdateExecutor.update(new ServerApi(new ServerApiHelper(endpoint, client)), projectKey, monitor);
+  }
+
+  public Set<Language> getEnabledLanguagesToSync() {
+    return enabledLanguagesToSync;
   }
 }

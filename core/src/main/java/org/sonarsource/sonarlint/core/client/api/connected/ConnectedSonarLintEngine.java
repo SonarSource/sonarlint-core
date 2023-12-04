@@ -71,12 +71,4 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    */
   @Deprecated(since = "10.0")
   void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable ClientProgressMonitor monitor);
-
-  /**
-   * Downloads and stores all server issues for a given project.
-   *
-   * @param endpoint from which to download issues
-   * @param projectKey   key of the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ClientProgressMonitor)})
-   */
-  void downloadAllServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor);
 }
