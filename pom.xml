@@ -31,22 +31,22 @@
     <module>core</module>
     <module>http</module>
     <module>issue-tracking</module>
-    <module>java-client-utils</module>
+    <module>client/java-client-utils</module>
     <module>medium-tests</module>
     <module>osgi</module>
     <module>plugin-api</module>
     <module>plugin-commons</module>
     <module>report-aggregate</module>
-    <module>rpc-impl</module>
-    <module>rpc-java-client</module>
+    <module>backend/rpc-impl</module>
+    <module>client/rpc-java-client</module>
     <module>rpc-protocol</module>
     <module>rule-extractor</module>
     <module>rule-extractor-cli</module>
     <module>server-api</module>
     <module>server-connection</module>
     <module>slf4j-sonar-log</module>
-    <module>telemetry</module>
-    <module>vcs</module>
+    <module>backend/telemetry</module>
+    <module>client/vcs</module>
   </modules>
 
   <properties>
