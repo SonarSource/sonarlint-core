@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Version Control System
+ * SonarLint Core - Java Client Utils
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.branch;
+package org.sonarsource.sonarlint.core.client.utils;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -34,7 +34,6 @@ import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.RevWalkUtils;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 import static java.util.Comparator.naturalOrder;
 
@@ -44,27 +43,26 @@ public class GitUtils {
     // util class
   }
 
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
-
   @CheckForNull
-  public static Repository getRepositoryForDir(Path projectDir) {
+  public static Repository getRepositoryForDir(Path projectDir, ClientLogOutput clientLogOutput) {
     try {
       var builder = new RepositoryBuilder()
         .findGitDir(projectDir.toFile())
         .setMustExist(true);
       if (builder.getGitDir() == null) {
-        LOG.error("Not inside a Git work tree: " + projectDir);
+        clientLogOutput.log("Not inside a Git work tree: " + projectDir, ClientLogOutput.Level.ERROR);
         return null;
       }
       return builder.build();
     } catch (IOException e) {
-      LOG.error("Couldn't access repository for path " + projectDir, e);
+      clientLogOutput.log("Couldn't access repository for path " + projectDir, ClientLogOutput.Level.ERROR);
+      clientLogOutput.log(ClientLogOutput.stackTraceToString(e), ClientLogOutput.Level.ERROR);
     }
     return null;
   }
 
   @CheckForNull
-  public static String electBestMatchingServerBranchForCurrentHead(Repository repo, Set<String> serverCandidateNames, @Nullable String serverMainBranch) {
+  public static String electBestMatchingServerBranchForCurrentHead(Repository repo, Set<String> serverCandidateNames, @Nullable String serverMainBranch, ClientLogOutput clientLogOutput) {
     try {
 
       String currentBranch = repo.getBranch();
@@ -103,7 +101,8 @@ public class GitUtils {
       }
       return bestCandidates.iterator().next();
     } catch (IOException e) {
-      LOG.error("Couldn't find best matching branch", e);
+      clientLogOutput.log("Couldn't find best matching branch", ClientLogOutput.Level.ERROR);
+      clientLogOutput.log(ClientLogOutput.stackTraceToString(e), ClientLogOutput.Level.ERROR);
       return null;
     }
   }
