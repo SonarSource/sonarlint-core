@@ -5,6 +5,7 @@
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-parent</artifactId>
     <version>10.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>sonarlint-java-client-utils</artifactId>
   <name>SonarLint Core - Java Client Utils</name>
@@ -14,6 +15,14 @@
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>jsr305</artifactId>
       <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jgit</groupId>
+      <artifactId>org.eclipse.jgit</artifactId>
+      <version>6.0.0.202111291000-r</version>
+      <!-- The core doesn't provide JGit, since some IDEs (like Eclipse) will provide it -->
+      <scope>provided</scope>
+      <optional>true</optional>
     </dependency>
 
     <!-- unit tests -->

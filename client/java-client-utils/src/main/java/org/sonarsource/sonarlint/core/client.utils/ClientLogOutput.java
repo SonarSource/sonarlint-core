@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Version Control System
+ * SonarLint Core - Java Client Utils
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,8 +17,26 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-@ParametersAreNonnullByDefault
-package org.sonarsource.sonarlint.core.branch;
+package org.sonarsource.sonarlint.core.client.utils;
 
-import javax.annotation.ParametersAreNonnullByDefault;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
+/**
+ * Allow to redirect SonarLint logs to a custom output on client side
+ */
+public interface ClientLogOutput {
+
+  void log(String formattedMessage, Level level);
+
+  enum Level {
+    ERROR, WARN, INFO, DEBUG, TRACE;
+  }
+
+  static String stackTraceToString(Throwable t) {
+    var stringWriter = new StringWriter();
+    var printWriter = new PrintWriter(stringWriter);
+    t.printStackTrace(printWriter);
+    return stringWriter.toString();
+  }
+}

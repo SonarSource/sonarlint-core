@@ -46,7 +46,6 @@
     <module>server-connection</module>
     <module>slf4j-sonar-log</module>
     <module>backend/telemetry</module>
-    <module>client/vcs</module>
   </modules>
 
   <properties>

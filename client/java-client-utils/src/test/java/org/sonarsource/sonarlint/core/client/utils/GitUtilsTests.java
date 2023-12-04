@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Version Control System
+ * SonarLint Core - Java Client Utils
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.branch;
+package org.sonarsource.sonarlint.core.client.utils;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,9 +31,7 @@ import java.util.zip.ZipFile;
 import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.Repository;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -43,14 +41,14 @@ import static org.mockito.Mockito.when;
 
 class GitUtilsTests {
 
-  @RegisterExtension
-  private static final SonarLintLogTester logTester = new SonarLintLogTester();
+  private ClientLogOutput fakeClientLogger = (m, l) -> {
+  };
 
   @Test
   void noGitRepoShouldBeNull(@TempDir File projectDir) throws IOException {
     javaUnzip("no-git-repo.zip", projectDir);
     Path path = Paths.get(projectDir.getPath(), "no-git-repo");
-    Repository repo = GitUtils.getRepositoryForDir(path);
+    Repository repo = GitUtils.getRepositoryForDir(path, fakeClientLogger);
     assertThat(repo).isNull();
   }
 
@@ -58,10 +56,10 @@ class GitUtilsTests {
   void gitRepoShouldBeNotNull(@TempDir File projectDir) throws IOException {
     javaUnzip("dummy-git.zip", projectDir);
     Path path = Paths.get(projectDir.getPath(), "dummy-git");
-    try (Repository repo = GitUtils.getRepositoryForDir(path)) {
+    try (Repository repo = GitUtils.getRepositoryForDir(path, fakeClientLogger)) {
       Set<String> serverCandidateNames = Set.of("foo", "bar", "master");
 
-      String branch = GitUtils.electBestMatchingServerBranchForCurrentHead(repo, serverCandidateNames, "master");
+      String branch = GitUtils.electBestMatchingServerBranchForCurrentHead(repo, serverCandidateNames, "master", fakeClientLogger);
       assertThat(branch).isEqualTo("master");
     }
   }
@@ -70,10 +68,10 @@ class GitUtilsTests {
   void shouldElectAnalyzedBranch(@TempDir File projectDir) throws IOException {
     javaUnzip("analyzed-branch.zip", projectDir);
     Path path = Paths.get(projectDir.getPath(), "analyzed-branch");
-    try (Repository repo = GitUtils.getRepositoryForDir(path)) {
+    try (Repository repo = GitUtils.getRepositoryForDir(path, fakeClientLogger)) {
       Set<String> serverCandidateNames = Set.of("foo", "closest_branch", "master");
 
-      String branch = GitUtils.electBestMatchingServerBranchForCurrentHead(repo, serverCandidateNames, "master");
+      String branch = GitUtils.electBestMatchingServerBranchForCurrentHead(repo, serverCandidateNames, "master", fakeClientLogger);
       assertThat(branch).isEqualTo("closest_branch");
     }
   }
@@ -82,10 +80,10 @@ class GitUtilsTests {
   void shouldReturnNullIfNonePresentInLocalGit(@TempDir File projectDir) throws IOException {
     javaUnzip("analyzed-branch.zip", projectDir);
     Path path = Paths.get(projectDir.getPath(), "analyzed-branch");
-    try (Repository repo = GitUtils.getRepositoryForDir(path)) {
+    try (Repository repo = GitUtils.getRepositoryForDir(path, fakeClientLogger)) {
       Set<String> serverCandidateNames = Set.of("unknown1", "unknown2", "unknown3");
 
-      String branch = GitUtils.electBestMatchingServerBranchForCurrentHead(repo, serverCandidateNames, "master");
+      String branch = GitUtils.electBestMatchingServerBranchForCurrentHead(repo, serverCandidateNames, "master", fakeClientLogger);
       assertThat(branch).isNull();
     }
   }
@@ -95,11 +93,11 @@ class GitUtilsTests {
     javaUnzip("closest-branch.zip", projectDir);
     Path path = Paths.get(projectDir.getPath(), "closest-branch");
 
-    try (Repository repo = GitUtils.getRepositoryForDir(path)) {
+    try (Repository repo = GitUtils.getRepositoryForDir(path, fakeClientLogger)) {
 
       Set<String> serverCandidateNames = Set.of("foo", "closest_branch", "master");
 
-      String branch = GitUtils.electBestMatchingServerBranchForCurrentHead(repo, serverCandidateNames, "master");
+      String branch = GitUtils.electBestMatchingServerBranchForCurrentHead(repo, serverCandidateNames, "master", fakeClientLogger);
       assertThat(branch).isEqualTo("closest_branch");
     }
   }
@@ -109,11 +107,11 @@ class GitUtilsTests {
     javaUnzip("closest-branch.zip", projectDir);
     Path path = Paths.get(projectDir.getPath(), "closest-branch");
 
-    try (Repository repo = GitUtils.getRepositoryForDir(path)) {
+    try (Repository repo = GitUtils.getRepositoryForDir(path, fakeClientLogger)) {
 
       Set<String> serverCandidateNames = Set.of("foo", "closest_branch", "master");
 
-      String branch = GitUtils.electBestMatchingServerBranchForCurrentHead(repo, serverCandidateNames, null);
+      String branch = GitUtils.electBestMatchingServerBranchForCurrentHead(repo, serverCandidateNames, null, fakeClientLogger);
       assertThat(branch).isEqualTo("closest_branch");
     }
   }
@@ -122,11 +120,11 @@ class GitUtilsTests {
   void shouldElectMainBranchForNonAnalyzedChildBranch(@TempDir File projectDir) throws IOException {
     javaUnzip("child-from-non-analyzed.zip", projectDir);
     Path path = Paths.get(projectDir.getPath(), "child-from-non-analyzed");
-    try (Repository repo = GitUtils.getRepositoryForDir(path)) {
+    try (Repository repo = GitUtils.getRepositoryForDir(path, fakeClientLogger)) {
 
       Set<String> serverCandidateNames = Set.of("foo", "branch_to_analyze", "master");
 
-      String branch = GitUtils.electBestMatchingServerBranchForCurrentHead(repo, serverCandidateNames, "master");
+      String branch = GitUtils.electBestMatchingServerBranchForCurrentHead(repo, serverCandidateNames, "master", fakeClientLogger);
       assertThat(branch).isEqualTo("master");
     }
   }
@@ -138,7 +136,7 @@ class GitUtilsTests {
     when(repo.getRefDatabase()).thenReturn(db);
     when(db.exactRef(anyString())).thenThrow(new IOException());
 
-    String branch = GitUtils.electBestMatchingServerBranchForCurrentHead(repo, Set.of("foo", "bar", "master"), "master");
+    String branch = GitUtils.electBestMatchingServerBranchForCurrentHead(repo, Set.of("foo", "bar", "master"), "master", fakeClientLogger);
 
     assertThat(branch).isNull();
   }
@@ -148,11 +146,11 @@ class GitUtilsTests {
     // Both main and same-as-master branches are pointing to HEAD, but same-as-master is the currently checked out branch
     javaUnzip("two-branches-for-head.zip", projectDir);
     Path path = Paths.get(projectDir.getPath(), "two-branches-for-head");
-    try (Repository repo = GitUtils.getRepositoryForDir(path)) {
+    try (Repository repo = GitUtils.getRepositoryForDir(path, fakeClientLogger)) {
 
       Set<String> serverCandidateNames = Set.of("main", "same-as-master", "another");
 
-      String branch = GitUtils.electBestMatchingServerBranchForCurrentHead(repo, serverCandidateNames, "main");
+      String branch = GitUtils.electBestMatchingServerBranchForCurrentHead(repo, serverCandidateNames, "main", fakeClientLogger);
       assertThat(branch).isEqualTo("same-as-master");
     }
   }
