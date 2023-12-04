@@ -61,7 +61,7 @@
     <artifactsToPublish>${project.groupId}:sonarlint-core:jar</artifactsToPublish>
     <jdk.min.version>11</jdk.min.version>
     <gson.version>2.10</gson.version>
-    <mockito.version>5.6.0</mockito.version>
+    <mockito.version>5.8.0</mockito.version>
     <kotlin.version>1.6.21</kotlin.version>
     <lsp4j.version>0.21.1</lsp4j.version>
     <version.surefire.plugin>3.1.2</version.surefire.plugin>
@@ -141,7 +141,13 @@
       <dependency>
         <groupId>org.assertj</groupId>
         <artifactId>assertj-core</artifactId>
-        <version>3.23.1</version>
+        <version>3.24.2</version>
+      </dependency>
+      <!-- Resolve dependency conflict between assertj and mockito -->
+      <dependency>
+        <groupId>net.bytebuddy</groupId>
+        <artifactId>byte-buddy</artifactId>
+        <version>1.14.10</version>
       </dependency>
       <dependency>
         <groupId>org.mockito</groupId>
