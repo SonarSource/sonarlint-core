@@ -68,11 +68,6 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>sonarlint-vcs</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
       <artifactId>sonarlint-server-connection</artifactId>
       <version>${project.version}</version>
     </dependency>
