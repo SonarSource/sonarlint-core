@@ -64,9 +64,7 @@ import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader.Configuration
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
-import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 import org.sonarsource.sonarlint.core.serverconnection.ServerConnection;
-import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;

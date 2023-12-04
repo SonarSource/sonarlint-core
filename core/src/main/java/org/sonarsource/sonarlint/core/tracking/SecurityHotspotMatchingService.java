@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.tracking;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -41,8 +40,7 @@ import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
-import org.sonarsource.sonarlint.core.issuetracking.Trackable;
-import org.sonarsource.sonarlint.core.issuetracking.Tracker;
+import org.sonarsource.sonarlint.core.issue.matching.IssueMatcher;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
@@ -104,8 +102,7 @@ public class SecurityHotspotMatchingService {
     return clientTrackedHotspotsByServerRelativePath.entrySet().stream().map(e -> {
       var serverRelativePath = e.getKey();
       var serverHotspots = storageService.binding(binding).findings().loadHotspots(activeBranch, serverRelativePath);
-      var clientHotspotTrackables = toTrackables(e.getValue());
-      var matches = matchSecurityHotspots(serverHotspots, clientHotspotTrackables)
+      var matches = matchSecurityHotspots(serverHotspots, e.getValue())
         .stream().map(result -> {
           if (result.isLeft()) {
             var serverSecurityHotspot = result.getLeft();
@@ -139,25 +136,17 @@ public class SecurityHotspotMatchingService {
   }
 
   private static List<Either<ServerHotspot, LocalOnlySecurityHotspot>> matchSecurityHotspots(Collection<ServerHotspot> serverHotspots,
-    Collection<ClientTrackedFindingTrackable> clientTrackedHotspotTrackables) {
-    var tracker = new Tracker<>();
-    var trackingResult = tracker.track(() -> new ArrayList<>(clientTrackedHotspotTrackables), () -> toServerHotspotTrackables(serverHotspots));
-    return clientTrackedHotspotTrackables.stream().<Either<ServerHotspot, LocalOnlySecurityHotspot>>map(clientTrackedFindingTrackable -> {
-      var match = trackingResult.getMatch(clientTrackedFindingTrackable);
+    List<ClientTrackedFindingDto> clientTrackedHotspots) {
+    var matcher = new IssueMatcher<>(new ClientTrackedFindingMatchingAttributeMapper(), new ServerHotspotMatchingAttributesMapper());
+    var matchingResult = matcher.match(clientTrackedHotspots, serverHotspots);
+    return clientTrackedHotspots.stream().<Either<ServerHotspot, LocalOnlySecurityHotspot>>map(clientTrackedHotspot -> {
+      var match = matchingResult.getMatch(clientTrackedHotspot);
       if (match != null) {
-        return Either.forLeft(((ServerHotspotTrackable) match).getServerHotspot());
+        return Either.forLeft(match);
       } else {
         return Either.forRight(new LocalOnlySecurityHotspot(UUID.randomUUID()));
       }
     }).collect(Collectors.toList());
-  }
-
-  private static Collection<ClientTrackedFindingTrackable> toTrackables(List<ClientTrackedFindingDto> clientTrackedFindings) {
-    return clientTrackedFindings.stream().map(ClientTrackedFindingTrackable::new).collect(Collectors.toList());
-  }
-
-  private static Collection<Trackable> toServerHotspotTrackables(Collection<ServerHotspot> serverHotspots) {
-    return serverHotspots.stream().map(ServerHotspotTrackable::new).collect(Collectors.toList());
   }
 
   @EventListener

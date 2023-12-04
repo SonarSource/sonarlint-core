@@ -38,7 +38,7 @@ public interface ProjectServerIssueStore {
   /**
    * Store issues for a branch by replacing existing ones.
    */
-  void replaceAllIssuesOfBranch(String branchName, List<ServerIssue> issues);
+  void replaceAllIssuesOfBranch(String branchName, List<ServerIssue<?>> issues);
 
   void replaceAllHotspotsOfBranch(String branchName, Collection<ServerHotspot> serverHotspots);
 
@@ -53,7 +53,7 @@ public interface ProjectServerIssueStore {
   /**
    * Store issues for a single file by replacing existing ones and moving issues if necessary.
    */
-  void replaceAllIssuesOfFile(String branchName, String serverFilePath, List<ServerIssue> issues);
+  void replaceAllIssuesOfFile(String branchName, String serverFilePath, List<ServerIssue<?>> issues);
 
   /**
    * Merge provided issues to stored ones for the given project:
@@ -61,7 +61,7 @@ public interface ProjectServerIssueStore {
    *  - existing issues are updated
    *  - closed issues are removed from the store
    */
-  void mergeIssues(String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp, Set<Language> enabledLanguages);
+  void mergeIssues(String branchName, List<ServerIssue<?>> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp, Set<Language> enabledLanguages);
 
   /**
    * Merge provided taint issues to stored ones for the given project:
@@ -123,7 +123,7 @@ public interface ProjectServerIssueStore {
    * @param sqFilePath the relative path to the base of project, in SonarQube
    * @return issues, possibly empty
    */
-  List<ServerIssue> load(String branchName, String sqFilePath);
+  List<ServerIssue<?>> load(String branchName, String sqFilePath);
 
   /**
    * Store taint issues for a branch.
@@ -152,14 +152,14 @@ public interface ProjectServerIssueStore {
    * @param issueUpdater
    * @return true if the issue with the corresponding key exists in the store and has been updated
    */
-  boolean updateIssue(String issueKey, Consumer<ServerIssue> issueUpdater);
+  boolean updateIssue(String issueKey, Consumer<ServerIssue<?>> issueUpdater);
 
   /**
    * Retrieve an issue from the store
    * @param issueKey
    * @return the server issue if found, null otherwise
    */
-  ServerIssue getIssue(String issueKey);
+  ServerIssue<?> getIssue(String issueKey);
 
   /**
    * Retrieve a hotspot from the store
