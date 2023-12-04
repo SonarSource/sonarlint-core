@@ -41,6 +41,7 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    */
   AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener, @Nullable ClientLogOutput logOutput, @Nullable ClientProgressMonitor monitor);
 
+
   // REQUIRES SERVER TO BE REACHABLE
 
   /**

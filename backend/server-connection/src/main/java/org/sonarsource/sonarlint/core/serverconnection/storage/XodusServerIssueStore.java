@@ -252,7 +252,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       textRange, (String) storedIssue.getProperty(RULE_DESCRIPTION_CONTEXT_KEY_PROPERTY_NAME),
       Optional.ofNullable(cleanCodeAttribute).map(CleanCodeAttribute::valueOf).orElse(null),
       readImpacts(storedIssue.getBlob(IMPACTS_BLOB_NAME)))
-        .setFlows(readFlows(storedIssue.getBlob(FLOWS_BLOB_NAME)));
+      .setFlows(readFlows(storedIssue.getBlob(FLOWS_BLOB_NAME)));
   }
 
   private static ServerHotspot adaptHotspot(Entity storedHotspot) {
@@ -306,7 +306,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public List<ServerIssue> load(String branchName, String filePath) {
+  public List<ServerIssue<?>> load(String branchName, String filePath) {
     return loadIssue(branchName, filePath, FILE_TO_ISSUES_LINK_NAME, XodusServerIssueStore::adapt);
   }
 
@@ -336,7 +336,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void replaceAllIssuesOfFile(String branchName, String serverFilePath, List<ServerIssue> issues) {
+  public void replaceAllIssuesOfFile(String branchName, String serverFilePath, List<ServerIssue<?>> issues) {
     timed(wroteMessage(issues.size(), ISSUES), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
       var fileEntity = getOrCreateFile(branch, serverFilePath, txn);
@@ -345,7 +345,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void mergeIssues(String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp, Set<Language> enabledLanguages) {
+  public void mergeIssues(String branchName, List<ServerIssue<?>> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp, Set<Language> enabledLanguages) {
     var issuesByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
     timed(mergedMessage(issuesToMerge.size(), closedIssueKeysToDelete.size(), ISSUES), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
@@ -449,7 +449,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void replaceAllIssuesOfBranch(String branchName, List<ServerIssue> issues) {
+  public void replaceAllIssuesOfBranch(String branchName, List<ServerIssue<?>> issues) {
     var issuesByFile = issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
     timed(wroteMessage(issues.size(), ISSUES), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
@@ -573,7 +573,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     LOG.debug("{} | took {}ms", msg, duration.toMillis());
   }
 
-  private static void replaceAllIssuesOfFile(List<ServerIssue> issues, @NotNull StoreTransaction txn, Entity fileEntity) {
+  private static void replaceAllIssuesOfFile(List<ServerIssue<?>> issues, @NotNull StoreTransaction txn, Entity fileEntity) {
     fileEntity.getLinks(FILE_TO_ISSUES_LINK_NAME).forEach(Entity::delete);
     fileEntity.deleteLinks(FILE_TO_ISSUES_LINK_NAME);
 
@@ -758,7 +758,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public boolean updateIssue(String issueKey, Consumer<ServerIssue> issueUpdater) {
+  public boolean updateIssue(String issueKey, Consumer<ServerIssue<?>> issueUpdater) {
     return entityStore.computeInTransaction(txn -> {
       var optionalEntity = findUnique(txn, ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issueKey);
       if (optionalEntity.isPresent()) {
@@ -773,7 +773,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public ServerIssue getIssue(String issueKey) {
+  public ServerIssue<?> getIssue(String issueKey) {
     return entityStore.computeInTransaction(txn -> {
       var optionalEntity = findUnique(txn, ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issueKey);
       if (optionalEntity.isPresent()) {

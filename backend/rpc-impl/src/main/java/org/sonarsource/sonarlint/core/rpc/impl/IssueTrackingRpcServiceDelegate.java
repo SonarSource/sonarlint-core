@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.IssueTrackingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesResponse;
-import org.sonarsource.sonarlint.core.tracking.IssueTrackingService;
+import org.sonarsource.sonarlint.core.tracking.IssueMatchingService;
 
 public class IssueTrackingRpcServiceDelegate extends AbstractRpcServiceDelegate implements IssueTrackingRpcService {
   public IssueTrackingRpcServiceDelegate(SonarLintRpcServerImpl server) {
@@ -32,7 +32,7 @@ public class IssueTrackingRpcServiceDelegate extends AbstractRpcServiceDelegate 
 
   @Override
   public CompletableFuture<TrackWithServerIssuesResponse> trackWithServerIssues(TrackWithServerIssuesParams params) {
-    return requestAsync(cancelChecker -> new TrackWithServerIssuesResponse(getBean(IssueTrackingService.class).trackWithServerIssues(params.getConfigurationScopeId(),
+    return requestAsync(cancelChecker -> new TrackWithServerIssuesResponse(getBean(IssueMatchingService.class).trackWithServerIssues(params.getConfigurationScopeId(),
       params.getClientTrackedIssuesByServerRelativePath(), params.shouldFetchIssuesFromServer(), cancelChecker)), params.getConfigurationScopeId());
   }
 }
