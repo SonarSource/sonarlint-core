@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
-import java.util.List;
 import java.util.Set;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
@@ -29,8 +28,6 @@ import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
-import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
-import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 
 /**
  * Entry point for SonarLint.
@@ -43,17 +40,6 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * Trigger an analysis
    */
   AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener, @Nullable ClientLogOutput logOutput, @Nullable ClientProgressMonitor monitor);
-
-  /**
-   * Gets locally stored server issues for a given file.
-   *
-   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ClientProgressMonitor)})
-   * @param filePath       relative to the project.
-   * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
-   * @deprecated tracking is managed by the new backend
-   */
-  @Deprecated(since = "9.3")
-  List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String branchName, String filePath);
 
   // REQUIRES SERVER TO BE REACHABLE
 

@@ -708,11 +708,15 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       resolveIssueAsWontFix(adminWsClient, issueKey);
 
       waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
-        var serverIssues = engine.getServerIssues(new ProjectBinding(projectKey, "", ""), MAIN_BRANCH_NAME, "src/main/java/foo/Foo.java");
+        var issuesResponse = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams(CONFIG_SCOPE_ID, Map.of(
+          "src/main/java/foo/Foo.java",
+          List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(14, 4, 14, 14, "hashedHash"),
+            null, "java:S106", "Replace this use of System.out by a logger."))), true)).get();
 
-        assertThat(serverIssues)
-          .extracting(ServerIssue::getRuleKey, ServerIssue::isResolved)
-          .contains(tuple("java:S106", true));
+        var fooIssues = issuesResponse.getIssuesByServerRelativePath().get("src/main/java/foo/Foo.java");
+        assertThat(fooIssues).hasSize(1);
+        assertThat(fooIssues.get(0).isLeft()).isTrue();
+        assertThat(fooIssues.get(0).getLeft().isResolved()).isTrue();
       });
     }
   }
