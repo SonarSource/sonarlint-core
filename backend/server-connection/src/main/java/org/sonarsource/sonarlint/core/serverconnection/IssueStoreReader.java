@@ -30,7 +30,7 @@ public class IssueStoreReader {
     this.storage = storage;
   }
 
-  public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String branchName, String ideFilePath) {
+  public List<ServerIssue<?>> getServerIssues(ProjectBinding projectBinding, String branchName, String ideFilePath) {
     var sqPath = IssueStorePaths.idePathToServerPath(projectBinding, ideFilePath);
     if (sqPath == null) {
       return Collections.emptyList();

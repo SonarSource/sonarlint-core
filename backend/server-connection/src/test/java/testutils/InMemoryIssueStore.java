@@ -44,7 +44,7 @@ import static java.util.Optional.ofNullable;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.StorageUtils.deserializeLanguages;
 
 public class InMemoryIssueStore implements ProjectServerIssueStore {
-  private final Map<String, Map<String, List<ServerIssue>>> issuesByFileByBranch = new HashMap<>();
+  private final Map<String, Map<String, List<ServerIssue<?>>>> issuesByFileByBranch = new HashMap<>();
   private final Map<String, Map<String, Collection<ServerHotspot>>> hotspotsByFileByBranch = new HashMap<>();
   private final Map<String, Instant> lastHotspotSyncByBranch = new HashMap<>();
   private final Map<String, ServerHotspot> hotspotsByKey = new HashMap<>();
@@ -53,13 +53,13 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   private final Map<String, String> lastIssueEnabledLanguagesByBranch = new HashMap<>();
   private final Map<String, String> lastTaintEnabledLanguagesByBranch = new HashMap<>();
   private final Map<String, String> lastHotspotEnabledLanguagesByBranch = new HashMap<>();
-  private final Map<String, ServerIssue> issuesByKey = new HashMap<>();
+  private final Map<String, ServerIssue<?>> issuesByKey = new HashMap<>();
   private final Map<String, Map<String, List<ServerTaintIssue>>> taintIssuesByFileByBranch = new HashMap<>();
   private final Map<String, Instant> lastTaintSyncByBranch = new HashMap<>();
   private final Map<String, ServerTaintIssue> taintIssuesByKey = new HashMap<>();
 
   @Override
-  public void replaceAllIssuesOfFile(String branchName, String serverFilePath, List<ServerIssue> issues) {
+  public void replaceAllIssuesOfFile(String branchName, String serverFilePath, List<ServerIssue<?>> issues) {
     issuesByFileByBranch
       .computeIfAbsent(branchName, __ -> new HashMap<>())
       .put(serverFilePath, issues);
@@ -67,7 +67,7 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void mergeIssues(String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp, Set<Language> enabledLanguages) {
+  public void mergeIssues(String branchName, List<ServerIssue<?>> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp, Set<Language> enabledLanguages) {
     var issuesToMergeByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
     // does not handle issue moving file (e.g. file renaming)
     issuesByFileByBranch
@@ -157,7 +157,7 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void replaceAllIssuesOfBranch(String branchName, List<ServerIssue> issues) {
+  public void replaceAllIssuesOfBranch(String branchName, List<ServerIssue<?>> issues) {
     issuesByFileByBranch.put(branchName, issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath)));
     issues.forEach(issue -> issuesByKey.put(issue.getKey(), issue));
   }
@@ -202,7 +202,7 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public List<ServerIssue> load(String branchName, String sqFilePath) {
+  public List<ServerIssue<?>> load(String branchName, String sqFilePath) {
     return issuesByFileByBranch
       .getOrDefault(branchName, Map.of())
       .getOrDefault(sqFilePath, List.of());
@@ -230,7 +230,7 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public boolean updateIssue(String issueKey, Consumer<ServerIssue> issueUpdater) {
+  public boolean updateIssue(String issueKey, Consumer<ServerIssue<?>> issueUpdater) {
     if (issuesByKey.containsKey(issueKey)) {
       issueUpdater.accept(issuesByKey.get(issueKey));
       return true;
@@ -239,7 +239,7 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public ServerIssue getIssue(String issueKey) {
+  public ServerIssue<?> getIssue(String issueKey) {
     return issuesByKey.get(issueKey);
   }
 

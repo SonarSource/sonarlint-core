@@ -77,7 +77,7 @@ class ServerIssueUpdaterTest {
   @Test
   void update_project_issues_no_pull() {
     var issue = aServerIssue();
-    List<ServerIssue> issues = Collections.singletonList(issue);
+    List<ServerIssue<?>> issues = Collections.singletonList(issue);
     when(downloader.downloadFromBatch(serverApi, "module:file", null)).thenReturn(issues);
 
     updater.update(serverApi, projectBinding.projectKey(), "branch", false, Version.create("8.9"));
@@ -88,7 +88,7 @@ class ServerIssueUpdaterTest {
   @Test
   void update_project_issues_sonarcloud() {
     var issue = aServerIssue();
-    List<ServerIssue> issues = Collections.singletonList(issue);
+    List<ServerIssue<?>> issues = Collections.singletonList(issue);
     when(downloader.downloadFromBatch(serverApi, "module:file", null)).thenReturn(issues);
 
     updater.update(serverApi, projectBinding.projectKey(), "branch", true, Version.create("99.9"));
@@ -99,7 +99,7 @@ class ServerIssueUpdaterTest {
   @Test
   void update_project_issues_with_pull_first_time() {
     var issue = aServerIssue();
-    List<ServerIssue> issues = Collections.singletonList(issue);
+    List<ServerIssue<?>> issues = Collections.singletonList(issue);
     var queryTimestamp = Instant.now();
     var lastSync = Optional.<Instant>empty();
     when(issueStore.getLastIssueSyncTimestamp("master")).thenReturn(lastSync);
@@ -113,7 +113,7 @@ class ServerIssueUpdaterTest {
   @Test
   void update_project_issues_with_pull_using_last_sync() {
     var issue = aServerIssue();
-    List<ServerIssue> issues = Collections.singletonList(issue);
+    List<ServerIssue<?>> issues = Collections.singletonList(issue);
     var queryTimestamp = Instant.now();
     var lastSync = Optional.of(Instant.ofEpochMilli(123456789));
     var lastIssueEnabledLanguages = Set.of(Language.C, Language.GO);
@@ -130,7 +130,7 @@ class ServerIssueUpdaterTest {
   @Test
   void update_project_issues_with_pull_when_there_were_no_enabled_languages() {
     var issue = aServerIssue();
-    List<ServerIssue> issues = Collections.singletonList(issue);
+    List<ServerIssue<?>> issues = Collections.singletonList(issue);
     var queryTimestamp = Instant.now();
     var lastSync = Optional.of(Instant.ofEpochMilli(123456789));
     var lastIssueEnabledLanguages = new HashSet<Language>();
@@ -145,7 +145,7 @@ class ServerIssueUpdaterTest {
   @Test
   void update_project_issues_with_pull_when_enabled_language_changed() {
     var issue = aServerIssue();
-    List<ServerIssue> issues = Collections.singletonList(issue);
+    List<ServerIssue<?>> issues = Collections.singletonList(issue);
     var queryTimestamp = Instant.now();
     var lastSync = Optional.of(Instant.ofEpochMilli(123456789));
     var lastIssueEnabledLanguages = Set.of(Language.C, Language.GO);
@@ -160,7 +160,7 @@ class ServerIssueUpdaterTest {
   @Test
   void update_project_issues_with_pull_when_enabled_language_not_changed() {
     var issue = aServerIssue();
-    List<ServerIssue> issues = Collections.singletonList(issue);
+    List<ServerIssue<?>> issues = Collections.singletonList(issue);
     var queryTimestamp = Instant.now();
     var lastSync = Optional.of(Instant.ofEpochMilli(123456789));
     var lastIssueEnabledLanguages = Set.of(Language.C, Language.GO);
@@ -238,7 +238,7 @@ class ServerIssueUpdaterTest {
   @Test
   void update_file_issues_sq_no_pull() {
     var issue = aServerIssue();
-    List<ServerIssue> issues = Collections.singletonList(issue);
+    List<ServerIssue<?>> issues = Collections.singletonList(issue);
 
     when(downloader.downloadFromBatch(serverApi, projectBinding.projectKey() + ":src/main/Foo.java", null)).thenReturn(issues);
 
@@ -250,7 +250,7 @@ class ServerIssueUpdaterTest {
   @Test
   void update_file_issues_sonarcloud() {
     var issue = aServerIssue();
-    List<ServerIssue> issues = Collections.singletonList(issue);
+    List<ServerIssue<?>> issues = Collections.singletonList(issue);
 
     when(downloader.downloadFromBatch(serverApi, projectBinding.projectKey() + ":src/main/Foo.java", null)).thenReturn(issues);
 

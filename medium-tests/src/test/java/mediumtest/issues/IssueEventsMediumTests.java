@@ -146,7 +146,7 @@ class IssueEventsMediumTests {
     }
   }
 
-  private List<ServerIssue> readIssues(String connectionId, String projectKey, String branchName, String filePath) {
+  private List<ServerIssue<?>> readIssues(String connectionId, String projectKey, String branchName, String filePath) {
     return backend.getIssueStorageService().connection(connectionId).project(projectKey).findings().load(branchName, filePath);
   }
 

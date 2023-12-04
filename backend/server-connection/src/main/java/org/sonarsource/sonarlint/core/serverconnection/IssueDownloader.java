@@ -58,14 +58,14 @@ public class IssueDownloader {
    * Fetch all issues of the component with specified key.
    * If the component doesn't exist or it exists but has no issues, an empty iterator is returned.
    *
-   * @param key project key, or file key.
+   * @param key        project key, or file key.
    * @param branchName name of the branch.
    * @return List of issues. It can be empty but never null.
    */
-  public List<ServerIssue> downloadFromBatch(ServerApi serverApi, String key, @Nullable String branchName) {
+  public List<ServerIssue<?>> downloadFromBatch(ServerApi serverApi, String key, @Nullable String branchName) {
     var issueApi = serverApi.issue();
 
-    List<ServerIssue> result = new ArrayList<>();
+    List<ServerIssue<?>> result = new ArrayList<>();
 
     var batchIssues = issueApi.downloadAllFromBatchIssues(key, branchName);
 
@@ -91,7 +91,7 @@ public class IssueDownloader {
 
     var apiResult = issueApi.pullIssues(projectKey, branchName, enabledLanguages, lastSync.map(Instant::toEpochMilli).orElse(null));
     // Ignore project level issues
-    var changedIssues = apiResult.getIssues()
+    List<ServerIssue<?>> changedIssues = apiResult.getIssues()
       .stream()
       // Ignore project level issues
       .filter(i -> i.getMainLocation().hasFilePath())
@@ -109,7 +109,7 @@ public class IssueDownloader {
     return new PullResult(Instant.ofEpochMilli(apiResult.getTimestamp().getQueryTimestamp()), changedIssues, closedIssueKeys);
   }
 
-  private static ServerIssue convertBatchIssue(ScannerInput.ServerIssue batchIssueFromWs) {
+  private static ServerIssue<?> convertBatchIssue(ScannerInput.ServerIssue batchIssueFromWs) {
     var ruleKey = batchIssueFromWs.getRuleRepository() + ":" + batchIssueFromWs.getRuleKey();
     // We have filtered out issues without file path earlier
     var filePath = batchIssueFromWs.getPath();
@@ -125,7 +125,7 @@ public class IssueDownloader {
     }
   }
 
-  private static ServerIssue convertLiteIssue(IssueLite liteIssueFromWs) {
+  private static ServerIssue<?> convertLiteIssue(IssueLite liteIssueFromWs) {
     var mainLocation = liteIssueFromWs.getMainLocation();
     // We have filtered out issues without file path earlier
     var filePath = mainLocation.getFilePath();
@@ -148,10 +148,10 @@ public class IssueDownloader {
 
   public static class PullResult {
     private final Instant queryTimestamp;
-    private final List<ServerIssue> changedIssues;
+    private final List<ServerIssue<?>> changedIssues;
     private final Set<String> closedIssueKeys;
 
-    public PullResult(Instant queryTimestamp, List<ServerIssue> changedIssues, Set<String> closedIssueKeys) {
+    public PullResult(Instant queryTimestamp, List<ServerIssue<?>> changedIssues, Set<String> closedIssueKeys) {
       this.queryTimestamp = queryTimestamp;
       this.changedIssues = changedIssues;
       this.closedIssueKeys = closedIssueKeys;
@@ -161,7 +161,7 @@ public class IssueDownloader {
       return queryTimestamp;
     }
 
-    public List<ServerIssue> getChangedIssues() {
+    public List<ServerIssue<?>> getChangedIssues() {
       return changedIssues;
     }
 
