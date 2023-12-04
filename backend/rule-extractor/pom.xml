@@ -5,6 +5,7 @@
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-parent</artifactId>
     <version>10.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>sonarlint-rule-extractor</artifactId>
   <name>SonarLint Core - Rule Extractor</name>
