@@ -27,7 +27,7 @@
     <module>backend/analysis-engine</module>
     <module>backend-cli</module>
     <module>backend-embedded</module>
-    <module>commons</module>
+    <module>backend/commons</module>
     <module>core</module>
     <module>backend/http</module>
     <module>backend/issue-tracking</module>
