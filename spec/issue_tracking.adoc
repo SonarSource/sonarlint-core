@@ -1,0 +1,33 @@
+[#issue_tracking]
+= Issue Tracking
+
+Sonar analyzers are stateless. Or to be precise, the plugin API we use to interact with analyzers to collect issues is designed in a stateless way. Each analysis is independent of the previous one, in the sense that issues don't have an identity allowing to know that this is conceptually the same issue as the previous analysis.
+But a big value of Sonar solution is the ability to track issues over time, especially when code changes, in order to know when the issue has been introduced, and also to attach some metadata to issues (status, comments, ...). So we need a strategy to track a set of issues, while code changes, new analysis results are available, and other external factors can affect this list of issues.
+
+=== 1. Raw issues
+
+Raw issues are the outcome of a fresh analysis. They are "valid" for a fixed input (source code, analysis settings, ...). Raw issues have no identity.
+
+=== 2. Tracked issues
+
+Tracked issues is the collection of all issues currently "known" for a given analysis scope, and that we follow over time, even if the source code changes. Tracked issues have attributes.
+
+=== 3. Closed issues
+
+Issues that have been previously detected, but not anymore can either be totally removed from the collection of tracked issues, or transitioned to a "closed" state, and kept for a while. The benefit is that in case the issue reappear quickly (user deleted some code, but then Ctrl+Z), we can restore the previous state from the closed issue, and not classify the issues as new.
+To avoid growing the list of closed issues indefinitely, a purge strategy should be defined.
+NB: This is currently implemented in SonarQube/SonarCLoud, but not in SonarLint.
+
+[#matching_heuristic]
+== Matching heuristic
+
+The issue matching heuristic relies on the following attributes:
+
+* the rule key
+* line number (the first line of the primary location). May be absent for project or file-level issues.
+* a digest (aka hash) of the text content of the primary location. May be absent for project or file-level issues.
+* a digest (aka hash) of the text content of the entire line. May be absent for project or file-level issues. Deprecated in favor of the text range digest.
+* the issue message (primary message)
+* the server issue key (optional, only when matching against server issues)
+
+Those attributes will be compared between the two set of issues in multiple passes, trying first to pair issues that have the strongest similarity, then progressively relaxing the matching criteria.

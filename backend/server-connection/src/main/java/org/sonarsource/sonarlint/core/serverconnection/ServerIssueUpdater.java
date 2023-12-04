@@ -54,7 +54,7 @@ public class ServerIssueUpdater {
     if (IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
       sync(serverApi, projectKey, branchName, issueDownloader.getEnabledLanguages());
     } else {
-      List<ServerIssue> issues = issueDownloader.downloadFromBatch(serverApi, projectKey, branchName);
+      var issues = issueDownloader.downloadFromBatch(serverApi, projectKey, branchName);
       storage.project(projectKey).findings().replaceAllIssuesOfBranch(branchName, issues);
     }
   }
@@ -101,7 +101,7 @@ public class ServerIssueUpdater {
   public void updateFileIssues(ServerApi serverApi, String projectKey, String serverFileRelativePath, String branchName, boolean isSonarCloud, Version serverVersion) {
     var fileKey = IssueStorePaths.componentKey(projectKey, serverFileRelativePath);
     if (!IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
-      List<ServerIssue> issues = new ArrayList<>();
+      List<ServerIssue<?>> issues = new ArrayList<>();
       try {
         issues.addAll(issueDownloader.downloadFromBatch(serverApi, fileKey, branchName));
       } catch (Exception e) {

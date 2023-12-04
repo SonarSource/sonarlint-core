@@ -30,7 +30,6 @@
     <module>backend/commons</module>
     <module>core</module>
     <module>backend/http</module>
-    <module>backend/issue-tracking</module>
     <module>client/java-client-utils</module>
     <module>medium-tests</module>
     <module>osgi</module>
@@ -46,6 +45,7 @@
     <module>backend/server-connection</module>
     <module>backend/slf4j-sonar-log</module>
     <module>backend/telemetry</module>
+    <module>legacy/java-client-legacy</module>
   </modules>
 
   <properties>

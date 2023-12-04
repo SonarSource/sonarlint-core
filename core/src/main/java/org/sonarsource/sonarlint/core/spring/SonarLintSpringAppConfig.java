@@ -77,7 +77,7 @@ import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationTimestampRepository;
 import org.sonarsource.sonarlint.core.sync.TaintSynchronizationService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
-import org.sonarsource.sonarlint.core.tracking.IssueTrackingService;
+import org.sonarsource.sonarlint.core.tracking.IssueMatchingService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 import org.sonarsource.sonarlint.core.tracking.SecurityHotspotMatchingService;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
@@ -126,7 +126,7 @@ import org.springframework.scheduling.support.TaskUtils;
   IssueService.class,
   AnalysisService.class,
   SmartNotifications.class,
-  IssueTrackingService.class,
+  IssueMatchingService.class,
   LocalOnlyIssueRepository.class,
   WebSocketService.class,
   ServerEventsService.class,
