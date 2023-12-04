@@ -20,17 +20,14 @@
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.function.Supplier;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.usertoken.RevokeTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.usertoken.UserTokenRpcService;
 import org.sonarsource.sonarlint.core.usertoken.UserTokenService;
-import org.springframework.beans.factory.BeanFactory;
 
 public class UserTokenRpcServiceDelegate extends AbstractRpcServiceDelegate implements UserTokenRpcService {
 
-  public UserTokenRpcServiceDelegate(Supplier<BeanFactory> beanFactory, ExecutorService requestsExecutor, ExecutorService notificationsExecutor) {
-    super(beanFactory, requestsExecutor, notificationsExecutor);
+  public UserTokenRpcServiceDelegate(SonarLintRpcServerImpl server) {
+    super(server);
   }
 
   @Override

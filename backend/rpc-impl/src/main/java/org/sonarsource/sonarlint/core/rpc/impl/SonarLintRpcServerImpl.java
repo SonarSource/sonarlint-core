@@ -195,7 +195,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
 
   @Override
   public UserTokenRpcService getUserTokenService() {
-    return new UserTokenRpcServiceDelegate(this::getInitializedApplicationContext, requestsExecutor, requestAndNotificationsSequentialExecutor);
+    return new UserTokenRpcServiceDelegate(this);
   }
 
   @Override
