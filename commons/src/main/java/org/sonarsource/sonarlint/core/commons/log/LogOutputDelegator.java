@@ -57,16 +57,9 @@ class LogOutputDelegator {
     }
 
     if (t != null) {
-      var stacktrace = stackTraceToString(t);
+      var stacktrace = ClientLogOutput.stackTraceToString(t);
       log(stacktrace, level);
     }
-  }
-
-  private static String stackTraceToString(Throwable t) {
-    var stringWriter = new StringWriter();
-    var printWriter = new PrintWriter(stringWriter);
-    t.printStackTrace(printWriter);
-    return stringWriter.toString();
   }
 
   void setTarget(@Nullable ClientLogOutput target) {
