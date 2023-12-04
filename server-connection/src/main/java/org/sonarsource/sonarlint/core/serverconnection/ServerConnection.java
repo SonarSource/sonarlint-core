@@ -20,29 +20,22 @@
 package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.commons.io.FilenameUtils;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
-import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
-import org.sonarsource.sonarlint.core.serverconnection.prefix.FileTreeMatcher;
 
 public class ServerConnection {
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final Version SECRET_ANALYSIS_MIN_SQ_VERSION = Version.create("9.9");
 
   private static final Version CLEAN_CODE_TAXONOMY_MIN_SQ_VERSION = Version.create("10.2");
@@ -52,7 +45,6 @@ public class ServerConnection {
   private final LocalStorageSynchronizer storageSynchronizer;
   private final ProjectStorageUpdateExecutor projectStorageUpdateExecutor;
   private final ServerIssueUpdater issuesUpdater;
-  private final ServerHotspotUpdater hotspotsUpdater;
   private final boolean isSonarCloud;
   private final ServerInfoSynchronizer serverInfoSynchronizer;
   private final ConnectionStorage storage;
@@ -68,7 +60,6 @@ public class ServerConnection {
     this.storage = storageFacade.connection(connectionId);
     this.issueStoreReader = new IssueStoreReader(storage);
     this.issuesUpdater = new ServerIssueUpdater(storage, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
-    this.hotspotsUpdater = new ServerHotspotUpdater(storage, new HotspotDownloader(enabledLanguagesToSync));
     serverInfoSynchronizer = new ServerInfoSynchronizer(storage);
     this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguagesToSync, embeddedPluginKeys, serverInfoSynchronizer, storage);
     this.projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(storage);
@@ -103,26 +94,6 @@ public class ServerConnection {
     return issueStoreReader.getServerIssues(projectBinding, branchName, ideFilePath);
   }
 
-  public ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> ideFilePaths) {
-    List<Path> idePathList = ideFilePaths.stream()
-      .map(Paths::get)
-      .collect(Collectors.toList());
-    List<Path> sqPathList = storage.project(projectKey).components().read()
-      .getComponentList().stream()
-      .map(Paths::get)
-      .collect(Collectors.toList());
-    var fileMatcher = new FileTreeMatcher();
-    var match = fileMatcher.match(sqPathList, idePathList);
-    return new ProjectBinding(projectKey, FilenameUtils.separatorsToUnix(match.sqPrefix().toString()),
-      FilenameUtils.separatorsToUnix(match.idePrefix().toString()));
-  }
-
-  public void downloadServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName) {
-    var serverApi = new ServerApi(new ServerApiHelper(endpoint, client));
-    var serverVersion = readOrSynchronizeServerVersion(serverApi);
-    issuesUpdater.updateFileIssues(serverApi, projectBinding, ideFilePath, branchName, isSonarCloud, serverVersion);
-  }
-
   public Version readOrSynchronizeServerVersion(ServerApi serverApi) {
     return serverInfoSynchronizer.readOrSynchronizeServerInfo(serverApi).getVersion();
   }
@@ -155,30 +126,6 @@ public class ServerConnection {
     return !isSonarCloud && storage.serverInfo().read()
       .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(CLEAN_CODE_TAXONOMY_MIN_SQ_VERSION) < 0)
       .orElse(false);
-  }
-
-  public void syncServerIssuesForProject(EndpointParams endpoint, HttpClient client, String projectKey, String branchName) {
-    syncServerIssuesForProject(new ServerApi(new ServerApiHelper(endpoint, client)), projectKey, branchName);
-  }
-
-  public void syncServerIssuesForProject(ServerApi serverApi, String projectKey, String branchName) {
-    var serverVersion = readOrSynchronizeServerVersion(serverApi);
-    if (IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
-      LOG.info("[SYNC] Synchronizing issues for project '{}' on branch '{}'", projectKey, branchName);
-      issuesUpdater.sync(serverApi, projectKey, branchName, enabledLanguagesToSync);
-    } else {
-      LOG.debug("Incremental issue sync is not supported. Skipping.");
-    }
-  }
-
-  public void syncServerHotspotsForProject(ServerApi serverApi, String projectKey, String branchName) {
-    var serverVersion = readOrSynchronizeServerVersion(serverApi);
-    if (HotspotApi.supportHotspotsPull(isSonarCloud, serverVersion)) {
-      LOG.info("[SYNC] Synchronizing hotspots for project '{}' on branch '{}'", projectKey, branchName);
-      hotspotsUpdater.sync(serverApi.hotspot(), projectKey, branchName, enabledLanguagesToSync);
-    } else {
-      LOG.debug("Incremental hotspot sync is not supported. Skipping.");
-    }
   }
 
   public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, ProgressMonitor monitor) {
