@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.nio.file.Path;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -33,7 +32,6 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
-import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 
 public class ServerConnection {
   private static final Version SECRET_ANALYSIS_MIN_SQ_VERSION = Version.create("9.9");
@@ -41,10 +39,8 @@ public class ServerConnection {
   private static final Version CLEAN_CODE_TAXONOMY_MIN_SQ_VERSION = Version.create("10.2");
 
   private final Set<Language> enabledLanguagesToSync;
-  private final IssueStoreReader issueStoreReader;
   private final LocalStorageSynchronizer storageSynchronizer;
   private final ProjectStorageUpdateExecutor projectStorageUpdateExecutor;
-  private final ServerIssueUpdater issuesUpdater;
   private final boolean isSonarCloud;
   private final ServerInfoSynchronizer serverInfoSynchronizer;
   private final ConnectionStorage storage;
@@ -58,8 +54,6 @@ public class ServerConnection {
     this.enabledLanguagesToSync = enabledLanguages.stream().filter(Language::shouldSyncInConnectedMode).collect(Collectors.toCollection(LinkedHashSet::new));
 
     this.storage = storageFacade.connection(connectionId);
-    this.issueStoreReader = new IssueStoreReader(storage);
-    this.issuesUpdater = new ServerIssueUpdater(storage, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
     serverInfoSynchronizer = new ServerInfoSynchronizer(storage);
     this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguagesToSync, embeddedPluginKeys, serverInfoSynchronizer, storage);
     this.projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(storage);
@@ -90,21 +84,8 @@ public class ServerConnection {
     return storageSynchronizer.synchronize(serverApi, projectKeys, monitor);
   }
 
-  public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String branchName, String ideFilePath) {
-    return issueStoreReader.getServerIssues(projectBinding, branchName, ideFilePath);
-  }
-
   public Version readOrSynchronizeServerVersion(ServerApi serverApi) {
     return serverInfoSynchronizer.readOrSynchronizeServerInfo(serverApi).getVersion();
-  }
-
-  public void downloadServerIssuesForProject(EndpointParams endpoint, HttpClient client, String projectKey, String branchName) {
-    downloadServerIssuesForProject(new ServerApi(new ServerApiHelper(endpoint, client)), projectKey, branchName);
-  }
-
-  public void downloadServerIssuesForProject(ServerApi serverApi, String projectKey, String branchName) {
-    var serverVersion = readOrSynchronizeServerVersion(serverApi);
-    issuesUpdater.update(serverApi, projectKey, branchName, isSonarCloud, serverVersion);
   }
 
   public boolean permitsHotspotTracking() {
@@ -130,5 +111,9 @@ public class ServerConnection {
 
   public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, ProgressMonitor monitor) {
     projectStorageUpdateExecutor.update(new ServerApi(new ServerApiHelper(endpoint, client)), projectKey, monitor);
+  }
+
+  public Set<Language> getEnabledLanguagesToSync() {
+    return enabledLanguagesToSync;
   }
 }
