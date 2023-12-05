@@ -20,7 +20,6 @@
 package its;
 
 import com.sonar.orchestrator.build.MavenBuild;
-import com.sonar.orchestrator.build.SonarScanner;
 import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
@@ -31,7 +30,6 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -369,15 +367,6 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, PROJECT_KEY_JAVASCRIPT, "src/Person.js"), issueListener, null, null);
       assertThat(issueListener.getIssues()).hasSize(1);
     }
-  }
-
-  private static void analyzeProject(String projectDirName, String projectKey) {
-    var projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
-    ORCHESTRATOR.executeBuild(SonarScanner.create(projectDir.toFile())
-      .setProjectKey(projectKey)
-      .setSourceDirs("src")
-      .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
-      .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
   }
 
   private static SonarLintRpcClientDelegate newDummySonarLintClient() {

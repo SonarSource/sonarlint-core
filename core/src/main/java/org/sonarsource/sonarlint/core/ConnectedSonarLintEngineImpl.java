@@ -321,18 +321,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
-  public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String branchName, String ideFilePath) {
-    setLogging(null);
-    return serverConnection.getServerIssues(projectBinding, branchName, ideFilePath);
-  }
-
-  @Override
-  public void downloadAllServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor) {
-    setLogging(null);
-    serverConnection.downloadServerIssuesForProject(endpoint, client, projectKey, branchName);
-  }
-
-  @Override
   public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable ClientProgressMonitor monitor) {
     requireNonNull(endpoint);
     requireNonNull(projectKey);

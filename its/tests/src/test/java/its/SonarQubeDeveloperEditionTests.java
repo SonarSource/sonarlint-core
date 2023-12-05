@@ -60,14 +60,11 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarqube.ws.Issues.Issue;
 import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsRequest;
 import org.sonarqube.ws.client.issues.DoTransitionRequest;
 import org.sonarqube.ws.client.issues.SearchRequest;
-import org.sonarqube.ws.client.issues.SetSeverityRequest;
-import org.sonarqube.ws.client.issues.SetTypeRequest;
 import org.sonarqube.ws.client.settings.ResetRequest;
 import org.sonarqube.ws.client.settings.SetRequest;
 import org.sonarqube.ws.client.users.CreateRequest;
@@ -75,7 +72,6 @@ import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -106,6 +102,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParam
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.MatchWithServerSecurityHotspotsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
@@ -710,142 +708,119 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       resolveIssueAsWontFix(adminWsClient, issueKey);
 
       waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
-        var serverIssues = engine.getServerIssues(new ProjectBinding(projectKey, "", ""), MAIN_BRANCH_NAME, "src/main/java/foo/Foo.java");
+        var issuesResponse = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams(CONFIG_SCOPE_ID, Map.of(
+          "src/main/java/foo/Foo.java",
+          List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(14, 4, 14, 14, "hashedHash"),
+            null, "java:S106", "Replace this use of System.out by a logger."))), true)).get();
 
-        assertThat(serverIssues)
-          .extracting(ServerIssue::getRuleKey, ServerIssue::isResolved)
-          .contains(tuple("java:S106", true));
+        var fooIssues = issuesResponse.getIssuesByServerRelativePath().get("src/main/java/foo/Foo.java");
+        assertThat(fooIssues).hasSize(1);
+        assertThat(fooIssues.get(0).isLeft()).isTrue();
+        assertThat(fooIssues.get(0).getLeft().isResolved()).isTrue();
       });
     }
   }
 
   @Nested
-  // TODO Can be removed when switching to Java 16+ and changing prepare() to static
-  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   class BranchTests {
-    // Use the pattern of long living branches in SQ 7.9, else we only have issues on changed files
-    private static final String SHORT_BRANCH = "feature/short_living";
-    private static final String LONG_BRANCH = "branch-1.x";
-    private static final String PROJECT_KEY = "sample-xoo";
-    private ConnectedSonarLintEngine engine;
-
-    private Issue wfIssue;
-    private Issue fpIssue;
-    private Issue overridenSeverityIssue;
-    private Issue overridenTypeIssue;
-
-    @BeforeAll
-    void prepare() {
-      engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
-        .setLogOutput(new ConsoleLogOutput(false))
-        .setConnectionId(CONNECTION_ID)
-        .setSonarLintUserHome(sonarUserHome)
-        .setExtraProperties(new HashMap<>())
-        .build());
-
-      provisionProject(ORCHESTRATOR, PROJECT_KEY, "Sample Xoo");
-      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/xoo-sonarlint.xml"));
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY, "xoo", "SonarLint IT Xoo");
-
-      engine.updateProject(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), PROJECT_KEY, null);
-
-      // main branch
-      analyzeProject("sample-xoo-v1");
-
-      // short living branch
-      analyzeProject("sample-xoo-v1", "sonar.branch.name", SHORT_BRANCH);
-
-      // long living branch
-      analyzeProject("sample-xoo-v1", "sonar.branch.name", LONG_BRANCH);
-      // Second analysis with fewer issues to have some closed issues on the branch
-      analyzeProject("sample-xoo-v2", "sonar.branch.name", LONG_BRANCH);
-
-      // Mark a few issues as closed WF and closed FP on the branch
-      var issueSearchResponse = adminWsClient.issues()
-        .search(new SearchRequest().setStatuses(List.of("OPEN")).setTypes(List.of("CODE_SMELL")).setComponentKeys(List.of(PROJECT_KEY)).setBranch(LONG_BRANCH));
-      wfIssue = issueSearchResponse.getIssues(0);
-      fpIssue = issueSearchResponse.getIssues(1);
-      // Change severity and type
-      overridenSeverityIssue = issueSearchResponse.getIssues(2);
-      overridenTypeIssue = issueSearchResponse.getIssues(3);
-
-      adminWsClient.issues().doTransition(new DoTransitionRequest().setIssue(wfIssue.getKey()).setTransition("wontfix"));
-      adminWsClient.issues().doTransition(new DoTransitionRequest().setIssue(fpIssue.getKey()).setTransition("falsepositive"));
-
-      adminWsClient.issues().setSeverity(new SetSeverityRequest().setIssue(overridenSeverityIssue.getKey()).setSeverity("BLOCKER"));
-      adminWsClient.issues().setType(new SetTypeRequest().setIssue(overridenTypeIssue.getKey()).setType("BUG"));
-
-      // Ensure an hostpot has been reported on server side
-      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 2)) {
-        assertThat(adminWsClient.hotspots().search(new org.sonarqube.ws.client.hotspots.SearchRequest().setProjectKey(PROJECT_KEY).setBranch(LONG_BRANCH)).getHotspotsList())
-          .isNotEmpty();
-      } else {
-        assertThat(
-          adminWsClient.issues().search(new SearchRequest().setTypes(List.of("SECURITY_HOTSPOT")).setComponentKeys(List.of(PROJECT_KEY))).getIssuesList())
-            .isNotEmpty();
-      }
-    }
-
-    @AfterAll
-    public void stop() {
-      engine.stop();
-    }
 
     @Test
-    void shouldSyncBranchesFromServer() throws ExecutionException, InterruptedException {
-      bindProject("projectName", PROJECT_KEY, true);
+    void should_sync_branches_from_server() throws ExecutionException, InterruptedException {
+      var short_branch = "feature/short_living";
+      var long_branch = "branch-1.x";
+      var project_key = "sample-xoo";
+      provisionProject(ORCHESTRATOR, project_key, "Sample Xoo");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/xoo-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(project_key, "xoo", "SonarLint IT Xoo");
+      // Use the pattern of long living branches in SQ 7.9, else we only have issues on changed files
+
+      // main branch
+      analyzeProject("sample-xoo-v1", project_key);
+      // short living branch
+      analyzeProject("sample-xoo-v1", project_key, "sonar.branch.name", short_branch);
+      // long living branch
+      analyzeProject("sample-xoo-v1", project_key, "sonar.branch.name", long_branch);
+
+      bindProject("projectName", project_key, true);
 
       var sonarProjectBranch = backend.getSonarProjectBranchService().getMatchedSonarProjectBranch(new GetMatchedSonarProjectBranchParams(CONFIG_SCOPE_ID)).get();
       assertThat(sonarProjectBranch.getMatchedSonarProjectBranch()).isEqualTo(MAIN_BRANCH_NAME);
 
-      matchedBranchNameForProject = SHORT_BRANCH;
+      matchedBranchNameForProject = short_branch;
       backend.getSonarProjectBranchService().didVcsRepositoryChange(new DidVcsRepositoryChangeParams(CONFIG_SCOPE_ID));
 
       await().untilAsserted(() -> assertThat(backend.getSonarProjectBranchService()
         .getMatchedSonarProjectBranch(new GetMatchedSonarProjectBranchParams(CONFIG_SCOPE_ID))
         .get().getMatchedSonarProjectBranch())
-        .isEqualTo(SHORT_BRANCH));
+        .isEqualTo(short_branch));
 
       // Starting from SQ 8.1, concept of short vs long living branch has been removed
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 1)) {
-        await().untilAsserted(() -> assertThat(allBranchNamesForProject).contains(MAIN_BRANCH_NAME, SHORT_BRANCH, LONG_BRANCH));
+        await().untilAsserted(() -> assertThat(allBranchNamesForProject).contains(MAIN_BRANCH_NAME, short_branch, long_branch));
       } else {
-        await().untilAsserted(() -> assertThat(allBranchNamesForProject).contains(MAIN_BRANCH_NAME, LONG_BRANCH));
+        await().untilAsserted(() -> assertThat(allBranchNamesForProject).contains(MAIN_BRANCH_NAME, long_branch));
       }
     }
 
     @Test
-    void shouldSyncIssuesFromBranch() {
-      engine.downloadAllServerIssues(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), PROJECT_KEY, LONG_BRANCH, null);
+    void should_match_issues_from_branch() throws ExecutionException, InterruptedException {
+      var projectKey = "sample-java";
+      var projectName = "my-sample-java";
+      var featureBranch = "branch-1.x";
+      var ruleKey_s1172 = "java:S1172";
 
-      var file1Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), LONG_BRANCH, "src/500lines.xoo");
-      var file2Issues = engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), LONG_BRANCH, "src/10000lines.xoo");
+      provisionProject(ORCHESTRATOR, projectKey, projectName);
+      analyzeProject(projectKey, projectKey);
+      analyzeProject(projectKey, projectKey, "sonar.branch.name", featureBranch);
 
-      // Number of issues is not limited to 10k
-      assertThat(file1Issues.size() + file2Issues.size()).isEqualTo(10_500);
+      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
+        var issuesBranch = adminWsClient.issues().search(new SearchRequest().setBranch(featureBranch).setComponentKeys(List.of(projectKey)));
+        var issue_s1172 = issuesBranch.getIssuesList().stream().filter(issue -> issue.getRule().equals(ruleKey_s1172)).findFirst().orElseThrow();
+        adminWsClient.issues().doTransition(new DoTransitionRequest().setIssue(issue_s1172.getKey()).setTransition("falsepositive"));
+      }
 
-      Map<String, ServerIssue> allIssues = new HashMap<>();
-      engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), LONG_BRANCH, "src/500lines.xoo").forEach(i -> allIssues.put(i.getKey(), i));
-      engine.getServerIssues(new ProjectBinding(PROJECT_KEY, "", ""), LONG_BRANCH, "src/10000lines.xoo").forEach(i -> allIssues.put(i.getKey(), i));
+      bindProject("projectName", projectKey, true);
 
-      assertThat(allIssues).hasSize(10_500);
-      assertThat(allIssues.get(wfIssue.getKey()).isResolved()).isTrue();
-      assertThat(allIssues.get(fpIssue.getKey()).isResolved()).isTrue();
-      assertThat(allIssues.get(overridenSeverityIssue.getKey()).getUserSeverity()).isEqualTo(IssueSeverity.BLOCKER);
-      assertThat(allIssues.get(overridenTypeIssue.getKey()).getType()).isEqualTo(RuleType.BUG);
+      var clientTrackedDto_s100 = new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(4, 14, 4, 23, "hashedHash"),
+        null, "java:S100", "Rename this method name to match the regular expression '^[a-z][a-zA-Z0-9]*$'."); //this one is not matched but its on the server
+      var clientTrackedDto_s1172 = new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(8, 23, 8, 24, "hashedHash"),
+        null, ruleKey_s1172, "Remove this unused method parameter \"i\".");
+      var clientTrackedDto_s106 = new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(14, 4, 14, 14, "hashedHash"),
+        null, "java:S106", "Replace this use of System.out by a logger."); //not resolved on both branches
+      var trackWithServerIssuesParams = new TrackWithServerIssuesParams(CONFIG_SCOPE_ID, Map.of("src/main/java/foo/Foo.java",
+        List.of(clientTrackedDto_s100, clientTrackedDto_s1172, clientTrackedDto_s106)), true);
+      var issuesOnMainBranch = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByServerRelativePath();
 
-      // No hotspots
-      assertThat(allIssues.values()).allSatisfy(i -> assertThat(i.getType()).isIn(RuleType.CODE_SMELL, RuleType.BUG, RuleType.VULNERABILITY));
-    }
+      var fooIssuesMainBranch = issuesOnMainBranch.get("src/main/java/foo/Foo.java");
+      assertThat(fooIssuesMainBranch).hasSize(3);
+      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
+        // On main branch, all issues were matched and no issues are resolved
+        assertThat(fooIssuesMainBranch.stream().filter(TrackWithServerIssuesResponse.ServerOrLocalIssueDto::isLeft).count()).isEqualTo(3);
+        assertThat(fooIssuesMainBranch.stream().filter(issue -> issue.getLeft().isResolved()).count()).isZero();
+      } else {
+        assertThat(fooIssuesMainBranch.stream().filter(TrackWithServerIssuesResponse.ServerOrLocalIssueDto::isRight).count()).isEqualTo(3);
+      }
 
-    private void analyzeProject(String projectDirName, String... properties) {
-      var projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
-      ORCHESTRATOR.executeBuild(SonarScanner.create(projectDir.toFile())
-        .setProjectKey(PROJECT_KEY)
-        .setSourceDirs("src")
-        .setProperties(properties)
-        .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
-        .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
+      didSynchronizeConfigurationScopes.clear();
+      matchedBranchNameForProject =  featureBranch;
+      backend.getSonarProjectBranchService().didVcsRepositoryChange(new DidVcsRepositoryChangeParams(CONFIG_SCOPE_ID));
+      await().untilAsserted(() -> assertThat(backend.getSonarProjectBranchService()
+        .getMatchedSonarProjectBranch(new GetMatchedSonarProjectBranchParams(CONFIG_SCOPE_ID))
+        .get().getMatchedSonarProjectBranch())
+        .isEqualTo(featureBranch));
+      await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+
+      var issuesOnFeatureBranch = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByServerRelativePath();
+
+      var fooIssuesFeatureBranch = issuesOnFeatureBranch.get("src/main/java/foo/Foo.java");
+      assertThat(fooIssuesFeatureBranch).hasSize(3);
+      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
+        // On feature branch, all issues were matched and one issue is resolved
+        assertThat(fooIssuesFeatureBranch.stream().filter(TrackWithServerIssuesResponse.ServerOrLocalIssueDto::isLeft).count()).isEqualTo(3);
+        assertThat(fooIssuesFeatureBranch.stream().filter(issue -> issue.getLeft().isResolved()).count()).isEqualTo(1);
+      } else {
+        assertThat(fooIssuesFeatureBranch.stream().filter(TrackWithServerIssuesResponse.ServerOrLocalIssueDto::isRight).count()).isEqualTo(3);
+      }
     }
   }
 
@@ -1453,6 +1428,15 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
   }
 
+  private void analyzeProject(String projectDirName, String projectKey, String... properties) {
+    var projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
+    ORCHESTRATOR.executeBuild(SonarScanner.create(projectDir.toFile())
+      .setProjectKey(projectKey)
+      .setSourceDirs("src")
+      .setProperties(properties)
+      .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
+      .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
+  }
 
   private static SonarLintRpcClientDelegate newDummySonarLintClient() {
     return new MockSonarLintRpcClientDelegate() {
