@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetStandaloneRuleDescriptionResponse;
@@ -98,17 +99,23 @@ public class RulesService {
   }
 
   public EffectiveRuleDetailsDto getEffectiveRuleDetails(String configurationScopeId, String ruleKey, @Nullable String contextKey) throws RuleNotFoundException {
+    var ruleDetails = getRuleDetails(configurationScopeId, ruleKey);
+    return buildResponse(ruleDetails, contextKey);
+  }
+
+  private RuleDetails getRuleDetails(String configurationScopeId, String ruleKey) throws RuleNotFoundException {
     var effectiveBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
+    RuleDetails ruleDetails;
     if (effectiveBinding.isEmpty()) {
       var embeddedRule = rulesRepository.getEmbeddedRule(ruleKey);
       if (embeddedRule.isEmpty()) {
         throw new RuleNotFoundException(COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules", ruleKey);
       }
-      var ruleDetails = RuleDetails.from(embeddedRule.get(), standaloneRuleConfig.get(ruleKey));
-      return buildResponse(ruleDetails, contextKey);
+      ruleDetails = RuleDetails.from(embeddedRule.get(), standaloneRuleConfig.get(ruleKey));
+    } else {
+      ruleDetails = getActiveRuleForBinding(ruleKey, effectiveBinding.get());
     }
-    var ruleDetails = getActiveRuleForBinding(ruleKey, effectiveBinding.get());
-    return buildResponse(ruleDetails, contextKey);
+    return ruleDetails;
   }
 
   private RuleDetails getActiveRuleForBinding(String ruleKey, Binding binding) {
@@ -126,7 +133,7 @@ public class RulesService {
         .map(r -> RuleDetails.from(r, standaloneRuleConfig.get(ruleKey)))
         .orElseThrow(() -> {
           var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in plugins loaded from '" + connectionId + "'",
-            new Object[] {connectionId, ruleKey});
+            new Object[]{connectionId, ruleKey});
           return new ResponseErrorException(error);
         }));
   }
@@ -183,7 +190,7 @@ public class RulesService {
 
   private static ResponseErrorException ruleNotFound(String connectionId, String ruleKey, Exception e) {
     LOG.error("Failed to fetch rule details from server", e);
-    var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' on '" + connectionId + "'", new Object[] {ruleKey, connectionId});
+    var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' on '" + connectionId + "'", new Object[]{ruleKey, connectionId});
     return new ResponseErrorException(error);
   }
 
@@ -257,7 +264,7 @@ public class RulesService {
   public GetStandaloneRuleDescriptionResponse getStandaloneRuleDetails(String ruleKey) {
     var embeddedRule = rulesRepository.getEmbeddedRule(ruleKey);
     if (embeddedRule.isEmpty()) {
-      var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules", new Object[] {ruleKey});
+      var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules", new Object[]{ruleKey});
       throw new ResponseErrorException(error);
     }
     var ruleDefinition = embeddedRule.get();
@@ -326,4 +333,12 @@ public class RulesService {
     }
   }
 
+  public Map<String, StandaloneRuleConfigDto> getStandaloneRuleConfig() {
+    return Map.copyOf(standaloneRuleConfig);
+  }
+
+  public GetRuleDetailsResponse getRuleDetailsForAnalysis(String configScopeId, String ruleKey) throws RuleNotFoundException {
+    var ruleDetails = getRuleDetails(configScopeId, ruleKey);
+    return RuleDetailsAdapter.transform(ruleDetails);
+  }
 }

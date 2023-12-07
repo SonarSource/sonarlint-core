@@ -27,7 +27,8 @@ public enum TestPlugin {
   JAVA(Language.JAVA, PluginLocator.getJavaPluginPath(), PluginLocator.SONAR_JAVA_PLUGIN_VERSION, PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH),
   PHP(Language.PHP, PluginLocator.getPhpPluginPath(), PluginLocator.SONAR_PHP_PLUGIN_VERSION, PluginLocator.SONAR_PHP_PLUGIN_JAR_HASH),
   PYTHON(Language.PYTHON, PluginLocator.getPythonPluginPath(), PluginLocator.SONAR_PYTHON_PLUGIN_VERSION, PluginLocator.SONAR_PYTHON_PLUGIN_JAR_HASH),
-  JAVASCRIPT(Language.JS, PluginLocator.getJavaScriptPluginPath(), PluginLocator.SONAR_JAVASCRIPT_PLUGIN_VERSION, PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR_HASH);
+  JAVASCRIPT(Language.JS, PluginLocator.getJavaScriptPluginPath(), PluginLocator.SONAR_JAVASCRIPT_PLUGIN_VERSION, PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR_HASH),
+  TEXT(Language.SECRETS, PluginLocator.getTextPluginPath(), PluginLocator.SONAR_TEXT_PLUGIN_VERSION, PluginLocator.SONAR_TEXT_PLUGIN_JAR_HASH);
 
   private final Language language;
   private final Path path;

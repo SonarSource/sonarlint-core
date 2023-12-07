@@ -35,4 +35,19 @@ public interface AnalysisRpcService {
    */
   @JsonRequest
   CompletableFuture<GetSupportedFilePatternsResponse> getSupportedFilePatterns(GetSupportedFilePatternsParams params);
+
+  @JsonRequest
+  CompletableFuture<GetGlobalConfigurationResponse> getGlobalStandaloneConfiguration();
+
+  @JsonRequest
+  CompletableFuture<GetGlobalConfigurationResponse> getGlobalConnectedConfiguration(GetGlobalConnectedConfigurationParams params);
+
+  @JsonRequest
+  CompletableFuture<GetAnalysisConfigResponse> getAnalysisConfig(GetAnalysisConfigParams params);
+
+  /**
+   * @return Extra attributes that used to be returned on the Issue from Standalone/Connected engines.
+   */
+  @JsonRequest
+  CompletableFuture<GetRuleDetailsResponse> getRuleDetails(GetRuleDetailsParams params);
 }

@@ -37,8 +37,10 @@ public class PluginLocator {
   public static final String SONAR_PYTHON_PLUGIN_JAR = "sonar-python-plugin-" + SONAR_PYTHON_PLUGIN_VERSION + ".jar";
   public static final String SONAR_PYTHON_PLUGIN_JAR_HASH = "e1cff9e38811ab71e6efbff087743367";
   public static final String SONAR_XML_PLUGIN_JAR = "sonar-xml-plugin-2.6.1.3686.jar";
-  public static final String SONAR_TEXT_PLUGIN_JAR = "sonar-text-plugin-2.0.1.611.jar";
   public static final String SONAR_KOTLIN_PLUGIN_JAR = "sonar-kotlin-plugin-2.20.0.4382.jar";
+  public static final String SONAR_TEXT_PLUGIN_VERSION = "2.0.1.611";
+  public static final String SONAR_TEXT_PLUGIN_JAR = "sonar-text-plugin-" + SONAR_TEXT_PLUGIN_VERSION + ".jar";
+  public static final String SONAR_TEXT_PLUGIN_JAR_HASH = "f679af4c0e2992c3cec281d6a9cd5062";
 
   public static Path getJavaPluginPath() {
     return getPluginPath(SONAR_JAVA_PLUGIN_JAR);
