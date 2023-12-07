@@ -34,10 +34,11 @@ public abstract class AbstractRuleDto {
   private final CleanCodeAttributeDto cleanCodeAttributeDetails;
   private final List<ImpactDto> defaultImpacts;
   private final Language language;
+  private final VulnerabilityProbability vulnerabilityProbability;
 
   AbstractRuleDto(String key, String name, IssueSeverity severity, RuleType type,
     @Nullable CleanCodeAttributeDto cleanCodeAttributeDetails, List<ImpactDto> defaultImpacts,
-    Language language) {
+    Language language, @Nullable VulnerabilityProbability vulnerabilityProbability) {
     this.key = key;
     this.name = name;
     this.severity = severity;
@@ -45,6 +46,7 @@ public abstract class AbstractRuleDto {
     this.cleanCodeAttributeDetails = cleanCodeAttributeDetails;
     this.defaultImpacts = defaultImpacts;
     this.language = language;
+    this.vulnerabilityProbability = vulnerabilityProbability;
   }
 
   public String getKey() {
@@ -74,5 +76,10 @@ public abstract class AbstractRuleDto {
 
   public Language getLanguage() {
     return language;
+  }
+
+  @CheckForNull
+  public VulnerabilityProbability getVulnerabilityProbability() {
+    return vulnerabilityProbability;
   }
 }

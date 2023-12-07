@@ -32,8 +32,8 @@ public class RuleDefinitionDto extends AbstractRuleDto {
 
   public RuleDefinitionDto(String key, String name, IssueSeverity defaultSeverity, RuleType type,
     @Nullable CleanCodeAttributeDto cleanCodeAttributeDetails, List<ImpactDto> defaultImpacts,
-    Map<String, RuleParamDefinitionDto> paramsByKey, boolean isActiveByDefault, Language language) {
-    super(key, name, defaultSeverity, type, cleanCodeAttributeDetails, defaultImpacts, language);
+    Map<String, RuleParamDefinitionDto> paramsByKey, boolean isActiveByDefault, Language language, @Nullable VulnerabilityProbability vulnerabilityProbability) {
+    super(key, name, defaultSeverity, type, cleanCodeAttributeDetails, defaultImpacts, language, vulnerabilityProbability);
     this.paramsByKey = paramsByKey;
     this.isActiveByDefault = isActiveByDefault;
   }
