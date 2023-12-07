@@ -39,7 +39,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesDto;
 import org.springframework.context.event.EventListener;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -55,12 +55,15 @@ public class TelemetryService {
   private final TelemetryLocalStorageManager telemetryLocalStorageManager;
   private final ScheduledExecutorService scheduledExecutor;
   private final TelemetryManager telemetryManager;
+  private final TelemetryServerLiveAttributesProvider telemetryServerLiveAttributesProvider;
   private final SonarLintRpcClient client;
   private final Path userHome;
 
-  public TelemetryService(InitializeParams initializeParams, SonarLintRpcClient sonarlintClient, HttpClientProvider httpClientProvider, @Named("userHome") Path userHome) {
+  public TelemetryService(InitializeParams initializeParams, SonarLintRpcClient sonarlintClient, HttpClientProvider httpClientProvider,
+    TelemetryServerLiveAttributesProvider telemetryServerLiveAttributesProvider, @Named("userHome") Path userHome) {
     this.userHome = userHome;
     this.client = sonarlintClient;
+    this.telemetryServerLiveAttributesProvider = telemetryServerLiveAttributesProvider;
     var telemetryInitParams = initializeParams.getTelemetryConstantAttributes();
     var storagePath = getStoragePath(telemetryInitParams.getProductKey());
     this.telemetryLocalStorageManager = new TelemetryLocalStorageManager(storagePath);
@@ -113,9 +116,11 @@ public class TelemetryService {
   }
 
   @Nullable
-  private TelemetryLiveAttributesResponse getTelemetryLiveAttributes() {
+  private TelemetryLiveAttributesDto getTelemetryLiveAttributes() {
     try {
-      return client.getTelemetryLiveAttributes().get(10, TimeUnit.SECONDS);
+      var serverLiveAttributes = telemetryServerLiveAttributesProvider.getTelemetryServerLiveAttributes();
+      var clientLiveAttributes = client.getTelemetryLiveAttributes().get(10, TimeUnit.SECONDS);
+      return new TelemetryLiveAttributesDto(serverLiveAttributes, clientLiveAttributes);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       if (InternalDebug.isEnabled()) {

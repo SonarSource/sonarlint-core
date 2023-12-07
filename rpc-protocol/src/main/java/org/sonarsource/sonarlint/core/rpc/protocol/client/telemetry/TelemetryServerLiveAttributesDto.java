@@ -20,11 +20,8 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
 
 import java.util.List;
-import java.util.Map;
-import javax.annotation.Nullable;
 
-
-public class TelemetryLiveAttributesResponse {
+public class TelemetryServerLiveAttributesDto {
   /**
    * At least one project in the IDE is bound to a SQ server or SC
    */
@@ -33,14 +30,7 @@ public class TelemetryLiveAttributesResponse {
   /**
    * At least one project in the IDE is bound to SC
    */
-  private final boolean useSonarCloud;
-
-  /**
-   * Node.js version used by analyzers (detected or configured by the user).
-   * Empty if no node present/detected/configured
-   */
-  @Nullable
-  private final String nodeVersion;
+  private final boolean usesSonarCloud;
 
   /**
    * Are dev notifications disabled (if multiple connections are configured, return true if feature is disabled for at least one connection)
@@ -57,34 +47,21 @@ public class TelemetryLiveAttributesResponse {
    */
   private final List<String> defaultDisabledRules;
 
-  /**
-   * Map of additional attributes to be passed to the telemetry. Values types can be {@link String}, {@link Boolean} or {@link Number}. You can also pass a Map for nested objects.
-   */
-  private final Map<String, Object> additionalAttributes;
-
-  public TelemetryLiveAttributesResponse(boolean usesConnectedMode, boolean useSonarCloud, @Nullable String nodeVersion,
-    boolean devNotificationsDisabled, List<String> nonDefaultEnabledRules, List<String> defaultDisabledRules,
-    Map<String, Object> additionalAttributes) {
+  public TelemetryServerLiveAttributesDto(boolean usesConnectedMode, boolean usesSonarCloud, boolean devNotificationsDisabled,
+    List<String> nonDefaultEnabledRules, List<String> defaultDisabledRules) {
     this.usesConnectedMode = usesConnectedMode;
-    this.useSonarCloud = useSonarCloud;
-    this.nodeVersion = nodeVersion;
+    this.usesSonarCloud = usesSonarCloud;
     this.devNotificationsDisabled = devNotificationsDisabled;
     this.nonDefaultEnabledRules = nonDefaultEnabledRules;
     this.defaultDisabledRules = defaultDisabledRules;
-    this.additionalAttributes = additionalAttributes;
   }
 
-  public boolean isUsesConnectedMode() {
+  public boolean usesConnectedMode() {
     return usesConnectedMode;
   }
 
-  public boolean isUseSonarCloud() {
-    return useSonarCloud;
-  }
-
-  @Nullable
-  public String getNodeVersion() {
-    return nodeVersion;
+  public boolean usesSonarCloud() {
+    return usesSonarCloud;
   }
 
   public boolean isDevNotificationsDisabled() {
@@ -97,9 +74,5 @@ public class TelemetryLiveAttributesResponse {
 
   public List<String> getDefaultDisabledRules() {
     return defaultDisabledRules;
-  }
-
-  public Map<String, Object> getAdditionalAttributes() {
-    return additionalAttributes;
   }
 }
