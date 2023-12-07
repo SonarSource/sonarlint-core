@@ -2,7 +2,11 @@
 load("cirrus", "yaml", "fs")
 # RE
 load("github.com/SonarSource/cirrus-modules@v2", "load_features")
-
+# Languages
+load(
+    "github.com/SonarSource/cirrus-modules/languages/lib.star@experimental/osc/sonarsec-4714-module",
+    "inject_3rd_apis_conf"
+)
 
 def merge_conf_into(target, spec):
     for key in spec.keys():
@@ -13,79 +17,227 @@ def merge_conf_into(target, spec):
 
 
 def env_conf():
-    return {
-        "env": {'CIRRUS_CLONE_DEPTH': '50', 'CIRRUS_SHELL': 'bash', 'ARTIFACTORY_URL': 'VAULT[development/kv/data/repox data.url]', 'ARTIFACTORY_PRIVATE_USERNAME': 'vault-${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-private-reader', 'ARTIFACTORY_PRIVATE_PASSWORD': 'VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-private-reader access_token]', 'ARTIFACTORY_ACCESS_TOKEN': 'VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-private-reader access_token]', 'BURGR_URL': 'VAULT[development/kv/data/burgr data.url]', 'BURGR_USERNAME': 'VAULT[development/kv/data/burgr data.cirrus_username]', 'BURGR_PASSWORD': 'VAULT[development/kv/data/burgr data.cirrus_password]', 'SONAR_HOST_URL': 'VAULT[development/kv/data/next data.url]', 'SONAR_TOKEN': 'VAULT[development/kv/data/next data.token]'}
-    }
+    values = dict()
+    inject_3rd_apis_conf(values, requires_burgr=True, requires_next=True)
+    values.update({
+        'CIRRUS_CLONE_DEPTH': '50',
+        'CIRRUS_SHELL': 'bash',
+        'SONAR_HOST_URL': '${SONARQUBE_NEXT_HOST_URL}',
+        'SONAR_TOKEN': '${SONARQUBE_NEXT_TOKEN}'
+    })
+    return {"env": values}
 
 
 def auto_cancellation():
-    
     return "$CIRRUS_BRANCH != $CIRRUS_DEFAULT_BRANCH"
-    
+
 
 def only_if_with_nightly():
-    
-    return {'skip': "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')", 'only_if': '$CIRRUS_USER_COLLABORATOR == \'true\' && $CIRRUS_TAG == "" && ($CIRRUS_PR != "" || $CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-.*" || $CIRRUS_BRANCH =~ "dogfood-on-.*")'}
-    
+    return {'skip': "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')",
+            'only_if': '$CIRRUS_USER_COLLABORATOR == \'true\' && $CIRRUS_TAG == "" && ($CIRRUS_PR != "" || $CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-.*" || $CIRRUS_BRANCH =~ "dogfood-on-.*")'}
+
 
 def only_if_except_nightly():
-    
-    return {'skip': "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')", 'only_if': '$CIRRUS_USER_COLLABORATOR == \'true\' && $CIRRUS_TAG == "" && $CIRRUS_BUILD_SOURCE != "cron" && ($CIRRUS_PR != "" || $CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-.*" || $CIRRUS_BRANCH =~ "dogfood-on-.*")'}
-    
+    return {'skip': "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')",
+            'only_if': '$CIRRUS_USER_COLLABORATOR == \'true\' && $CIRRUS_TAG == "" && $CIRRUS_BUILD_SOURCE != "cron" && ($CIRRUS_PR != "" || $CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-.*" || $CIRRUS_BRANCH =~ "dogfood-on-.*")'}
+
 
 def only_main_branches():
-    
-    return {'skip': "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')", 'only_if': '$CIRRUS_USER_COLLABORATOR == \'true\' && $CIRRUS_TAG == "" && ($CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-.*")'}
-    
+    return {'skip': "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')",
+            'only_if': '$CIRRUS_USER_COLLABORATOR == \'true\' && $CIRRUS_TAG == "" && ($CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-.*")'}
+
 
 def maven_cache_definition():
-    
-    return {'maven_cache': {'folder': '${CIRRUS_WORKING_DIR}/.m2/repository', 'fingerprint_script': ["find . -name pom.xml -not -path './its/*' -exec cat {} \\+"]}}
-    
+    return {'maven_cache': {'folder': '${CIRRUS_WORKING_DIR}/.m2/repository',
+                            'fingerprint_script': [
+                                "find . -name pom.xml -not -path './its/*' -exec cat {} \\+"]}}
+
 
 def eks_container():
-    
-    return {'dockerfile': '.cirrus/Dockerfile', 'docker_arguments': {'CIRRUS_AWS_ACCOUNT': '${CIRRUS_AWS_ACCOUNT}', 'JDK_VERSION': '${JDK_VERSION}'}, 'region': 'eu-central-1', 'cluster_name': '${CIRRUS_CLUSTER_NAME}', 'builder_role': 'cirrus-builder', 'builder_image': 'docker-builder-v*', 'builder_instance_type': 't3.xlarge', 'builder_subnet_id': '${CIRRUS_AWS_SUBNET}', 'namespace': 'default', 'cpu': 4, 'memory': '2G'}
-    
+    return {'dockerfile': '.cirrus/Dockerfile',
+            'docker_arguments': {'CIRRUS_AWS_ACCOUNT': '${CIRRUS_AWS_ACCOUNT}',
+                                 'JDK_VERSION': '${JDK_VERSION}'}, 'region': 'eu-central-1',
+            'cluster_name': '${CIRRUS_CLUSTER_NAME}', 'builder_role': 'cirrus-builder',
+            'builder_image': 'docker-builder-v*', 'builder_instance_type': 't3.xlarge',
+            'builder_subnet_id': '${CIRRUS_AWS_SUBNET}', 'namespace': 'default', 'cpu': 4,
+            'memory': '2G'}
+
 
 def ec2_instance():
-    
-    return {'experimental': True, 'image': 'base-windows-jdk17-v*', 'platform': 'windows', 'region': 'eu-central-1', 'subnet_id': '${CIRRUS_AWS_SUBNET}', 'type': 't3.xlarge'}
-    
-
+    return {'experimental': True, 'image': 'base-windows-jdk17-v*', 'platform': 'windows',
+            'region': 'eu-central-1', 'subnet_id': '${CIRRUS_AWS_SUBNET}', 'type': 't3.xlarge'}
 
 
 def build_task_conf():
-    
-    return { "build_task": {'skip': "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')", 'only_if': '$CIRRUS_USER_COLLABORATOR == \'true\' && $CIRRUS_TAG == "" && ($CIRRUS_PR != "" || $CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-.*" || $CIRRUS_BRANCH =~ "dogfood-on-.*")', 'maven_cache': {'folder': '${CIRRUS_WORKING_DIR}/.m2/repository', 'fingerprint_script': ["find . -name pom.xml -not -path './its/*' -exec cat {} \\+"]}, 'env': {'JDK_VERSION': '11', 'DEPLOY_PULL_REQUEST': 'true', 'ARTIFACTORY_DEPLOY_REPO': 'sonarsource-public-qa', 'ARTIFACTORY_DEPLOY_USERNAME': 'vault-${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-qa-deployer', 'ARTIFACTORY_DEPLOY_PASSWORD': 'VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-qa-deployer access_token]', 'SIGN_KEY': 'VAULT[development/kv/data/sign data.key]', 'PGP_PASSPHRASE': 'VAULT[development/kv/data/sign data.passphrase]'}, 'eks_container': {'dockerfile': '.cirrus/Dockerfile', 'docker_arguments': {'CIRRUS_AWS_ACCOUNT': '${CIRRUS_AWS_ACCOUNT}', 'JDK_VERSION': '${JDK_VERSION}'}, 'region': 'eu-central-1', 'cluster_name': '${CIRRUS_CLUSTER_NAME}', 'builder_role': 'cirrus-builder', 'builder_image': 'docker-builder-v*', 'builder_instance_type': 't3.xlarge', 'builder_subnet_id': '${CIRRUS_AWS_SUBNET}', 'namespace': 'default', 'cpu': 4, 'memory': '1G'}, 'build_script': ['source cirrus-env BUILD', 'regular_mvn_build_deploy_analyze -Dmaven.test.skip=true -Dsonar.skip=true'], 'cache_script': ['mvn -B -e -V -Pits dependency:go-offline'], 'cleanup_before_cache_script': 'cleanup_maven_repository'} }
-    
+    return {"build_task": {'skip': "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')",
+                           'only_if': '$CIRRUS_USER_COLLABORATOR == \'true\' && $CIRRUS_TAG == "" && ($CIRRUS_PR != "" || $CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-.*" || $CIRRUS_BRANCH =~ "dogfood-on-.*")',
+                           'maven_cache': {'folder': '${CIRRUS_WORKING_DIR}/.m2/repository',
+                                           'fingerprint_script': [
+                                               "find . -name pom.xml -not -path './its/*' -exec cat {} \\+"]},
+                           'env': {'JDK_VERSION': '11', 'DEPLOY_PULL_REQUEST': 'true',
+                                   'ARTIFACTORY_DEPLOY_REPO': 'sonarsource-public-qa',
+                                   'ARTIFACTORY_DEPLOY_USERNAME': 'vault-${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-qa-deployer',
+                                   'ARTIFACTORY_DEPLOY_PASSWORD': 'VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-qa-deployer access_token]',
+                                   'SIGN_KEY': 'VAULT[development/kv/data/sign data.key]',
+                                   'PGP_PASSPHRASE': 'VAULT[development/kv/data/sign data.passphrase]'},
+                           'eks_container': {'dockerfile': '.cirrus/Dockerfile',
+                                             'docker_arguments': {
+                                                 'CIRRUS_AWS_ACCOUNT': '${CIRRUS_AWS_ACCOUNT}',
+                                                 'JDK_VERSION': '${JDK_VERSION}'},
+                                             'region': 'eu-central-1',
+                                             'cluster_name': '${CIRRUS_CLUSTER_NAME}',
+                                             'builder_role': 'cirrus-builder',
+                                             'builder_image': 'docker-builder-v*',
+                                             'builder_instance_type': 't3.xlarge',
+                                             'builder_subnet_id': '${CIRRUS_AWS_SUBNET}',
+                                             'namespace': 'default', 'cpu': 4, 'memory': '1G'},
+                           'build_script': ['source cirrus-env BUILD',
+                                            'regular_mvn_build_deploy_analyze -Dmaven.test.skip=true -Dsonar.skip=true'],
+                           'cache_script': ['mvn -B -e -V -Pits dependency:go-offline'],
+                           'cleanup_before_cache_script': 'cleanup_maven_repository'}}
+
 
 def test_linux_task_conf():
-    
-    return { "test_linux_task": {'skip': "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')", 'only_if': '$CIRRUS_USER_COLLABORATOR == \'true\' && $CIRRUS_TAG == "" && $CIRRUS_BUILD_SOURCE != "cron" && ($CIRRUS_PR != "" || $CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-.*" || $CIRRUS_BRANCH =~ "dogfood-on-.*")', 'maven_cache': {'folder': '${CIRRUS_WORKING_DIR}/.m2/repository', 'fingerprint_script': ["find . -name pom.xml -not -path './its/*' -exec cat {} \\+"]}, 'depends_on': ['build'], 'eks_container': {'dockerfile': '.cirrus/Dockerfile', 'docker_arguments': {'CIRRUS_AWS_ACCOUNT': '${CIRRUS_AWS_ACCOUNT}', 'JDK_VERSION': '${JDK_VERSION}'}, 'region': 'eu-central-1', 'cluster_name': '${CIRRUS_CLUSTER_NAME}', 'builder_role': 'cirrus-builder', 'builder_image': 'docker-builder-v*', 'builder_instance_type': 't3.xlarge', 'builder_subnet_id': '${CIRRUS_AWS_SUBNET}', 'namespace': 'default', 'cpu': 4, 'memory': '2G'}, 'env': {'JDK_VERSION': '17', 'DEPLOY_PULL_REQUEST': 'false'}, 'script': ['source cirrus-env QA', 'PULL_REQUEST_SHA=$GIT_SHA1 regular_mvn_build_deploy_analyze -P-deploy-sonarsource,-release,-sign -Dcommercial -Dmaven.shade.skip=true -Dmaven.install.skip=true -Dmaven.deploy.skip=true -Dsonar.coverage.jacoco.xmlReportPaths=$CIRRUS_WORKING_DIR/report-aggregate/target/site/jacoco-aggregate/jacoco.xml'], 'cleanup_before_cache_script': 'cleanup_maven_repository', 'on_failure': {'junit_artifacts': {'path': '**/target/surefire-reports/TEST-*.xml', 'format': 'junit'}}} }
-    
+    return {
+        "test_linux_task": {'skip': "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')",
+                            'only_if': '$CIRRUS_USER_COLLABORATOR == \'true\' && $CIRRUS_TAG == "" && $CIRRUS_BUILD_SOURCE != "cron" && ($CIRRUS_PR != "" || $CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-.*" || $CIRRUS_BRANCH =~ "dogfood-on-.*")',
+                            'maven_cache': {'folder': '${CIRRUS_WORKING_DIR}/.m2/repository',
+                                            'fingerprint_script': [
+                                                "find . -name pom.xml -not -path './its/*' -exec cat {} \\+"]},
+                            'depends_on': ['build'],
+                            'eks_container': {'dockerfile': '.cirrus/Dockerfile',
+                                              'docker_arguments': {
+                                                  'CIRRUS_AWS_ACCOUNT': '${CIRRUS_AWS_ACCOUNT}',
+                                                  'JDK_VERSION': '${JDK_VERSION}'},
+                                              'region': 'eu-central-1',
+                                              'cluster_name': '${CIRRUS_CLUSTER_NAME}',
+                                              'builder_role': 'cirrus-builder',
+                                              'builder_image': 'docker-builder-v*',
+                                              'builder_instance_type': 't3.xlarge',
+                                              'builder_subnet_id': '${CIRRUS_AWS_SUBNET}',
+                                              'namespace': 'default', 'cpu': 4, 'memory': '2G'},
+                            'env': {'JDK_VERSION': '17', 'DEPLOY_PULL_REQUEST': 'false'},
+                            'script': ['source cirrus-env QA',
+                                       'PULL_REQUEST_SHA=$GIT_SHA1 regular_mvn_build_deploy_analyze -P-deploy-sonarsource,-release,-sign -Dcommercial -Dmaven.shade.skip=true -Dmaven.install.skip=true -Dmaven.deploy.skip=true -Dsonar.coverage.jacoco.xmlReportPaths=$CIRRUS_WORKING_DIR/report-aggregate/target/site/jacoco-aggregate/jacoco.xml'],
+                            'cleanup_before_cache_script': 'cleanup_maven_repository',
+                            'on_failure': {'junit_artifacts': {
+                                'path': '**/target/surefire-reports/TEST-*.xml',
+                                'format': 'junit'}}}}
+
 
 def test_windows_task_conf():
-    
-    return { "test_windows_task": {'skip': "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')", 'only_if': '$CIRRUS_USER_COLLABORATOR == \'true\' && $CIRRUS_TAG == "" && $CIRRUS_BUILD_SOURCE != "cron" && ($CIRRUS_PR != "" || $CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-.*" || $CIRRUS_BRANCH =~ "dogfood-on-.*")', 'depends_on': ['build'], 'ec2_instance': {'experimental': True, 'image': 'base-windows-jdk17-v*', 'platform': 'windows', 'region': 'eu-central-1', 'subnet_id': '${CIRRUS_AWS_SUBNET}', 'type': 't3.xlarge'}, 'env': {'MAVEN_OPTS': '-Xmx4G'}, 'maven_cache': {'folder': '${CIRRUS_WORKING_DIR}/.m2/repository'}, 'script': ['source cirrus-env QA', 'source set_maven_build_version $BUILD_NUMBER', 'mvn -B -e -V verify -Dcommercial -Dmaven.test.redirectTestOutputToFile=false'], 'cleanup_before_cache_script': 'cleanup_maven_repository', 'on_failure': {'junit_artifacts': {'path': '**/target/surefire-reports/TEST-*.xml', 'format': 'junit'}}} }
-    
+    return {
+        "test_windows_task": {'skip': "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')",
+                              'only_if': '$CIRRUS_USER_COLLABORATOR == \'true\' && $CIRRUS_TAG == "" && $CIRRUS_BUILD_SOURCE != "cron" && ($CIRRUS_PR != "" || $CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-.*" || $CIRRUS_BRANCH =~ "dogfood-on-.*")',
+                              'depends_on': ['build'], 'ec2_instance': {'experimental': True,
+                                                                        'image': 'base-windows-jdk17-v*',
+                                                                        'platform': 'windows',
+                                                                        'region': 'eu-central-1',
+                                                                        'subnet_id': '${CIRRUS_AWS_SUBNET}',
+                                                                        'type': 't3.xlarge'},
+                              'env': {'MAVEN_OPTS': '-Xmx4G'},
+                              'maven_cache': {'folder': '${CIRRUS_WORKING_DIR}/.m2/repository'},
+                              'script': ['source cirrus-env QA',
+                                         'source set_maven_build_version $BUILD_NUMBER',
+                                         'mvn -B -e -V verify -Dcommercial -Dmaven.test.redirectTestOutputToFile=false'],
+                              'cleanup_before_cache_script': 'cleanup_maven_repository',
+                              'on_failure': {'junit_artifacts': {
+                                  'path': '**/target/surefire-reports/TEST-*.xml',
+                                  'format': 'junit'}}}}
+
 
 def mend_scan_task_conf():
-    
-    return { "mend_scan_task": {'skip': "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')", 'only_if': '$CIRRUS_USER_COLLABORATOR == \'true\' && $CIRRUS_TAG == "" && ($CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-.*")', 'maven_cache': {'folder': '${CIRRUS_WORKING_DIR}/.m2/repository', 'fingerprint_script': ["find . -name pom.xml -not -path './its/*' -exec cat {} \\+"]}, 'depends_on': ['build'], 'eks_container': {'dockerfile': '.cirrus/Dockerfile', 'docker_arguments': {'CIRRUS_AWS_ACCOUNT': '${CIRRUS_AWS_ACCOUNT}', 'JDK_VERSION': '${JDK_VERSION}'}, 'region': 'eu-central-1', 'cluster_name': '${CIRRUS_CLUSTER_NAME}', 'builder_role': 'cirrus-builder', 'builder_image': 'docker-builder-v*', 'builder_instance_type': 't3.xlarge', 'builder_subnet_id': '${CIRRUS_AWS_SUBNET}', 'namespace': 'default', 'cpu': 4, 'memory': '2G'}, 'env': {'WS_APIKEY': 'VAULT[development/kv/data/mend data.apikey]', 'JDK_VERSION': '11'}, 'whitesource_script': ['source cirrus-env QA', 'source set_maven_build_version $BUILD_NUMBER', 'mvn clean install -DskipTests', 'source ws_scan.sh'], 'cleanup_before_cache_script': 'cleanup_maven_repository', 'allow_failures': 'true', 'always': {'ws_artifacts': {'path': 'whitesource/**/*'}}} }
-    
+    return {"mend_scan_task": {'skip': "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')",
+                               'only_if': '$CIRRUS_USER_COLLABORATOR == \'true\' && $CIRRUS_TAG == "" && ($CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-.*")',
+                               'maven_cache': {'folder': '${CIRRUS_WORKING_DIR}/.m2/repository',
+                                               'fingerprint_script': [
+                                                   "find . -name pom.xml -not -path './its/*' -exec cat {} \\+"]},
+                               'depends_on': ['build'],
+                               'eks_container': {'dockerfile': '.cirrus/Dockerfile',
+                                                 'docker_arguments': {
+                                                     'CIRRUS_AWS_ACCOUNT': '${CIRRUS_AWS_ACCOUNT}',
+                                                     'JDK_VERSION': '${JDK_VERSION}'},
+                                                 'region': 'eu-central-1',
+                                                 'cluster_name': '${CIRRUS_CLUSTER_NAME}',
+                                                 'builder_role': 'cirrus-builder',
+                                                 'builder_image': 'docker-builder-v*',
+                                                 'builder_instance_type': 't3.xlarge',
+                                                 'builder_subnet_id': '${CIRRUS_AWS_SUBNET}',
+                                                 'namespace': 'default', 'cpu': 4, 'memory': '2G'},
+                               'env': {'WS_APIKEY': 'VAULT[development/kv/data/mend data.apikey]',
+                                       'JDK_VERSION': '11'},
+                               'whitesource_script': ['source cirrus-env QA',
+                                                      'source set_maven_build_version $BUILD_NUMBER',
+                                                      'mvn clean install -DskipTests',
+                                                      'source ws_scan.sh'],
+                               'cleanup_before_cache_script': 'cleanup_maven_repository',
+                               'allow_failures': 'true',
+                               'always': {'ws_artifacts': {'path': 'whitesource/**/*'}}}}
+
 
 def qa_task_conf():
-    
-    return { "qa_task": {'skip': "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')", 'only_if': '$CIRRUS_USER_COLLABORATOR == \'true\' && $CIRRUS_TAG == "" && $CIRRUS_BUILD_SOURCE != "cron" && ($CIRRUS_PR != "" || $CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-.*" || $CIRRUS_BRANCH =~ "dogfood-on-.*")', 'maven_cache': {'folder': '${CIRRUS_WORKING_DIR}/.m2/repository', 'fingerprint_script': ["find . -name pom.xml -not -path './its/*' -exec cat {} \\+"]}, 'depends_on': ['build'], 'eks_container': {'dockerfile': '.cirrus/Dockerfile', 'docker_arguments': {'CIRRUS_AWS_ACCOUNT': '${CIRRUS_AWS_ACCOUNT}', 'JDK_VERSION': '${JDK_VERSION}'}, 'region': 'eu-central-1', 'cluster_name': '${CIRRUS_CLUSTER_NAME}', 'builder_role': 'cirrus-builder', 'builder_image': 'docker-builder-v*', 'builder_instance_type': 't3.xlarge', 'builder_subnet_id': '${CIRRUS_AWS_SUBNET}', 'namespace': 'default', 'cpu': 4, 'memory': '8G'}, 'env': {'ARTIFACTORY_API_KEY': 'VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-private-reader access_token]', 'GITHUB_TOKEN': 'VAULT[development/github/token/licenses-ro token]', 'MAVEN_OPTS': '-Xmx4G'}, 'matrix': [{'env': {'SQ_VERSION': 'SonarCloud', 'JDK_VERSION': '11', 'CATEGORY': '-Dgroups=SonarCloud', 'SONARCLOUD_IT_PASSWORD': 'VAULT[development/team/sonarlint/kv/data/sonarcloud-it data.password]', 'QA_CATEGORY': 'SonarCloud'}}, {'env': {'SQ_VERSION': 'DEV', 'JDK_VERSION': '17', 'CATEGORY': '-DexcludedGroups=SonarCloud', 'QA_CATEGORY': 'SQDogfood'}}, {'env': {'SQ_VERSION': 'LATEST_RELEASE', 'JDK_VERSION': '17', 'CATEGORY': '-DexcludedGroups=SonarCloud', 'QA_CATEGORY': 'SQLatest'}}, {'env': {'SQ_VERSION': 'LATEST_RELEASE[8.9]', 'JDK_VERSION': '11', 'CATEGORY': '-DexcludedGroups=SonarCloud', 'QA_CATEGORY': 'SQLts89'}}, {'env': {'SQ_VERSION': 'LATEST_RELEASE[7.9]', 'JDK_VERSION': '11', 'CATEGORY': '-DexcludedGroups=SonarCloud', 'QA_CATEGORY': 'SQLts79'}}], 'qa_script': 'source cirrus-env QA\nsource set_maven_build_version $BUILD_NUMBER\nif [[ ${CIRRUS_PR:-} != "" || $CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-".* || $CIRRUS_BRANCH =~ "dogfood-on-".* ]]; then\n  mvn -f its/pom.xml -Dsonar.runtimeVersion=${SQ_VERSION} ${CATEGORY} -B -e -V verify surefire-report:report\nelse\n  mvn clean install -DskipTests\n  mvn -rf its -Pits -Dsonar.runtimeVersion=${SQ_VERSION} ${CATEGORY} -B -e -V verify surefire-report:report\nfi\n', 'cleanup_before_cache_script': ['cleanup_maven_repository'], 'on_failure': {'junit_artifacts': {'path': '**/target/surefire-reports/TEST-*.xml', 'format': 'junit'}}} }
-    
+    return {"qa_task": {'skip': "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')",
+                        'only_if': '$CIRRUS_USER_COLLABORATOR == \'true\' && $CIRRUS_TAG == "" && $CIRRUS_BUILD_SOURCE != "cron" && ($CIRRUS_PR != "" || $CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-.*" || $CIRRUS_BRANCH =~ "dogfood-on-.*")',
+                        'maven_cache': {'folder': '${CIRRUS_WORKING_DIR}/.m2/repository',
+                                        'fingerprint_script': [
+                                            "find . -name pom.xml -not -path './its/*' -exec cat {} \\+"]},
+                        'depends_on': ['build'],
+                        'eks_container': {'dockerfile': '.cirrus/Dockerfile', 'docker_arguments': {
+                            'CIRRUS_AWS_ACCOUNT': '${CIRRUS_AWS_ACCOUNT}',
+                            'JDK_VERSION': '${JDK_VERSION}'}, 'region': 'eu-central-1',
+                                          'cluster_name': '${CIRRUS_CLUSTER_NAME}',
+                                          'builder_role': 'cirrus-builder',
+                                          'builder_image': 'docker-builder-v*',
+                                          'builder_instance_type': 't3.xlarge',
+                                          'builder_subnet_id': '${CIRRUS_AWS_SUBNET}',
+                                          'namespace': 'default', 'cpu': 4, 'memory': '8G'},
+                        'env': {
+                            'ARTIFACTORY_API_KEY': 'VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-private-reader access_token]',
+                            'GITHUB_TOKEN': 'VAULT[development/github/token/licenses-ro token]',
+                            'MAVEN_OPTS': '-Xmx4G'}, 'matrix': [{'env': {
+            'SQ_VERSION': 'SonarCloud', 'JDK_VERSION': '11', 'CATEGORY': '-Dgroups=SonarCloud',
+            'SONARCLOUD_IT_PASSWORD': 'VAULT[development/team/sonarlint/kv/data/sonarcloud-it data.password]',
+            'QA_CATEGORY': 'SonarCloud'}}, {'env': {'SQ_VERSION': 'DEV', 'JDK_VERSION': '17',
+                                                    'CATEGORY': '-DexcludedGroups=SonarCloud',
+                                                    'QA_CATEGORY': 'SQDogfood'}}, {'env': {
+            'SQ_VERSION': 'LATEST_RELEASE', 'JDK_VERSION': '17',
+            'CATEGORY': '-DexcludedGroups=SonarCloud', 'QA_CATEGORY': 'SQLatest'}}, {'env': {
+            'SQ_VERSION': 'LATEST_RELEASE[8.9]', 'JDK_VERSION': '11',
+            'CATEGORY': '-DexcludedGroups=SonarCloud', 'QA_CATEGORY': 'SQLts89'}}, {'env': {
+            'SQ_VERSION': 'LATEST_RELEASE[7.9]', 'JDK_VERSION': '11',
+            'CATEGORY': '-DexcludedGroups=SonarCloud', 'QA_CATEGORY': 'SQLts79'}}],
+                        'qa_script': 'source cirrus-env QA\nsource set_maven_build_version $BUILD_NUMBER\nif [[ ${CIRRUS_PR:-} != "" || $CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-".* || $CIRRUS_BRANCH =~ "dogfood-on-".* ]]; then\n  mvn -f its/pom.xml -Dsonar.runtimeVersion=${SQ_VERSION} ${CATEGORY} -B -e -V verify surefire-report:report\nelse\n  mvn clean install -DskipTests\n  mvn -rf its -Pits -Dsonar.runtimeVersion=${SQ_VERSION} ${CATEGORY} -B -e -V verify surefire-report:report\nfi\n',
+                        'cleanup_before_cache_script': ['cleanup_maven_repository'],
+                        'on_failure': {
+                            'junit_artifacts': {'path': '**/target/surefire-reports/TEST-*.xml',
+                                                'format': 'junit'}}}}
+
 
 def promote_task_conf():
-    
-    return { "promote_task": {'skip': "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')", 'only_if': '$CIRRUS_USER_COLLABORATOR == \'true\' && $CIRRUS_TAG == "" && $CIRRUS_BUILD_SOURCE != "cron" && ($CIRRUS_PR != "" || $CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-.*" || $CIRRUS_BRANCH =~ "dogfood-on-.*")', 'maven_cache': {'folder': '${CIRRUS_WORKING_DIR}/.m2/repository', 'fingerprint_script': ["find . -name pom.xml -not -path './its/*' -exec cat {} \\+"]}, 'depends_on': ['build', 'test_linux', 'test_windows', 'mend_scan', 'qa'], 'eks_container': {'dockerfile': '.cirrus/Dockerfile', 'docker_arguments': {'CIRRUS_AWS_ACCOUNT': '${CIRRUS_AWS_ACCOUNT}', 'JDK_VERSION': '${JDK_VERSION}'}, 'region': 'eu-central-1', 'cluster_name': '${CIRRUS_CLUSTER_NAME}', 'builder_role': 'cirrus-builder', 'builder_image': 'docker-builder-v*', 'builder_instance_type': 't3.xlarge', 'builder_subnet_id': '${CIRRUS_AWS_SUBNET}', 'namespace': 'default', 'cpu': 1, 'memory': '1G'}, 'env': {'JDK_VERSION': '11', 'ARTIFACTORY_PROMOTE_ACCESS_TOKEN': 'VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-promoter access_token]', 'GITHUB_TOKEN': 'VAULT[development/github/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-promotion token]', 'ARTIFACTS': 'org.sonarsource.sonarlint.core:sonarlint-core:jar'}, 'script': 'cirrus_promote_maven', 'cleanup_before_cache_script': 'cleanup_maven_repository'} }
-    
-
-
+    return {"promote_task": {'skip': "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')",
+                             'only_if': '$CIRRUS_USER_COLLABORATOR == \'true\' && $CIRRUS_TAG == "" && $CIRRUS_BUILD_SOURCE != "cron" && ($CIRRUS_PR != "" || $CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-.*" || $CIRRUS_BRANCH =~ "dogfood-on-.*")',
+                             'maven_cache': {'folder': '${CIRRUS_WORKING_DIR}/.m2/repository',
+                                             'fingerprint_script': [
+                                                 "find . -name pom.xml -not -path './its/*' -exec cat {} \\+"]},
+                             'depends_on': ['build', 'test_linux', 'test_windows', 'mend_scan',
+                                            'qa'],
+                             'eks_container': {'dockerfile': '.cirrus/Dockerfile',
+                                               'docker_arguments': {
+                                                   'CIRRUS_AWS_ACCOUNT': '${CIRRUS_AWS_ACCOUNT}',
+                                                   'JDK_VERSION': '${JDK_VERSION}'},
+                                               'region': 'eu-central-1',
+                                               'cluster_name': '${CIRRUS_CLUSTER_NAME}',
+                                               'builder_role': 'cirrus-builder',
+                                               'builder_image': 'docker-builder-v*',
+                                               'builder_instance_type': 't3.xlarge',
+                                               'builder_subnet_id': '${CIRRUS_AWS_SUBNET}',
+                                               'namespace': 'default', 'cpu': 1, 'memory': '1G'},
+                             'env': {'JDK_VERSION': '11',
+                                     'ARTIFACTORY_PROMOTE_ACCESS_TOKEN': 'VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-promoter access_token]',
+                                     'GITHUB_TOKEN': 'VAULT[development/github/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-promotion token]',
+                                     'ARTIFACTS': 'org.sonarsource.sonarlint.core:sonarlint-core:jar'},
+                             'script': 'cirrus_promote_maven',
+                             'cleanup_before_cache_script': 'cleanup_maven_repository'}}
 
 
 def main(ctx):
@@ -99,5 +251,5 @@ def main(ctx):
     merge_conf_into(conf, mend_scan_task_conf())
     merge_conf_into(conf, qa_task_conf())
     merge_conf_into(conf, promote_task_conf())
-    
+
     return conf
