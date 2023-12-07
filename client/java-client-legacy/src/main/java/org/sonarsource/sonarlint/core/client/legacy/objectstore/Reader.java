@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Commons
+ * SonarLint Core - Java Client Legacy
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,16 +17,11 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons.objectstore;
+package org.sonarsource.sonarlint.core.client.legacy.objectstore;
 
-import java.nio.file.Path;
+import java.io.InputStream;
 import java.util.function.Function;
 
-/**
- * Map objects to unique relative filesystem paths.
- *
- * @param <T>
- */
 @FunctionalInterface
-public interface PathMapper<T> extends Function<T, Path> {
+public interface Reader<V> extends Function<InputStream, V> {
 }
