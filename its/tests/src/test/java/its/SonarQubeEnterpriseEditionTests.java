@@ -32,17 +32,18 @@ import java.io.PipedOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -61,14 +62,29 @@ import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.emptySet;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.APEX;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.C;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.COBOL;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.TSQL;
 
 class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   public static final String CONNECTION_ID = "orchestrator";
@@ -94,7 +110,9 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
   private static SonarLintRpcServer backend;
 
-  private static BackendJsonRpcLauncher serverLauncher;
+  private static final List<String> didSynchronizeConfigurationScopes = new CopyOnWriteArrayList<>();
+
+  private static final Collection<LogParams> clientLogs = new ConcurrentLinkedDeque<>();
 
   @BeforeAll
   static void startBackend() throws IOException {
@@ -104,18 +122,22 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     var serverToClientOutputStream = new PipedOutputStream();
     var serverToClientInputStream = new PipedInputStream(serverToClientOutputStream);
 
-    serverLauncher = new BackendJsonRpcLauncher(clientToServerInputStream, serverToClientOutputStream);
+    new BackendJsonRpcLauncher(clientToServerInputStream, serverToClientOutputStream);
     var clientLauncher = new ClientJsonRpcLauncher(serverToClientInputStream, clientToServerOutputStream, newDummySonarLintClient());
 
     backend = clientLauncher.getServerProxy();
     try {
+      var languages = Set.of(JAVA, COBOL, C, TSQL, APEX);
+      var featureFlags = new FeatureFlagsDto(true, true, true, false, true, true, false, true);
       backend.initialize(
-        new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, new FeatureFlagsDto(false, true, false, false, false, false, false, false), sonarUserHome.resolve("storage"),
-          sonarUserHome.resolve("workDir"),
-          Collections.emptySet(),
-          Collections.emptyMap(), Set.of(JAVA), Collections.emptySet(),
-          List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), Collections.emptyList(), sonarUserHome.toString(),
-          Map.of(), false))
+          new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, featureFlags,
+            sonarUserHome.resolve("storage"),
+            sonarUserHome.resolve("work"),
+            emptySet(),
+            emptyMap(), languages, emptySet(),
+            List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), emptyList(),
+            sonarUserHome.toString(),
+            Map.of(), false))
         .get();
     } catch (Exception e) {
       throw new IllegalStateException("Cannot initialize the backend", e);
@@ -131,7 +153,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   private static String singlePointOfExitRuleKey;
 
   @BeforeAll
-  static void prepare() throws Exception {
+  static void prepare() {
     adminWsClient = newAdminWsClient(ORCHESTRATOR);
     adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("true"));
 
@@ -157,6 +179,9 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
   @AfterEach
   void stop() {
+    didSynchronizeConfigurationScopes.forEach(s -> backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(s)));
+    didSynchronizeConfigurationScopes.clear();
+    clientLogs.clear();
     try {
       engine.stop();
     } catch (Exception e) {
@@ -167,9 +192,9 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   @Nested
   class CommercialAnalyzers {
 
-    @BeforeEach
-    void start() {
-      FileUtils.deleteQuietly(sonarUserHome.toFile());
+    void start(String projectKey) {
+      bindProject("project-" + projectKey, projectKey);
+
       engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
         .setConnectionId("orchestrator")
         .setSonarLintUserHome(sonarUserHome)
@@ -183,7 +208,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
     @Test
     void analysisC_old_build_wrapper_prop(@TempDir File buildWrapperOutput) throws Exception {
-      updateProject(PROJECT_KEY_C);
+      start(PROJECT_KEY_C);
       var issueListener = new SaveIssueListener();
 
       var buildWrapperContent = "{\"version\":0,\"captures\":[" +
@@ -204,7 +229,8 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
         "\",\"executable\":\"compiler\",\"cmd\":[\"cc\",\"src/file.c\"]}]}";
 
       FileUtils.write(new File(buildWrapperOutput, "build-wrapper-dump.json"), buildWrapperContent, StandardCharsets.UTF_8);
-      var analysisConfiguration = createAnalysisConfiguration(PROJECT_KEY_C, PROJECT_KEY_C, "src/file.c", "sonar.cfamily.build-wrapper-output",
+      var analysisConfiguration = createAnalysisConfiguration(PROJECT_KEY_C, PROJECT_KEY_C, "src/file.c", "sonar.cfamily" +
+          ".build-wrapper-output",
         buildWrapperOutput.getAbsolutePath());
 
       engine.analyze(analysisConfiguration, issueListener, null, null);
@@ -216,8 +242,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     // New property was introduced in SonarCFamily 6.18 part of SQ 8.8
     @OnlyOnSonarQube(from = "8.8")
     void analysisC_new_prop() throws Exception {
-
-      updateProject(PROJECT_KEY_C);
+      start(PROJECT_KEY_C);
       var issueListener = new SaveIssueListener();
 
       var buildWrapperContent = "{\"version\":0,\"captures\":[" +
@@ -237,7 +262,8 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
         Paths.get("projects/" + PROJECT_KEY_C).toAbsolutePath().toString().replace("\\", "\\\\") +
         "\",\"executable\":\"compiler\",\"cmd\":[\"cc\",\"src/file.c\"]}]}";
 
-      var analysisConfiguration = createAnalysisConfiguration(PROJECT_KEY_C, PROJECT_KEY_C, "src/file.c", "sonar.cfamily.build-wrapper-content",
+      var analysisConfiguration = createAnalysisConfiguration(PROJECT_KEY_C, PROJECT_KEY_C, "src/file.c", "sonar.cfamily" +
+          ".build-wrapper-content",
         buildWrapperContent);
 
       engine.analyze(analysisConfiguration, issueListener, null, null);
@@ -247,7 +273,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
     @Test
     void analysisCobol() throws Exception {
-      updateProject(PROJECT_KEY_COBOL);
+      start(PROJECT_KEY_COBOL);
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_COBOL, PROJECT_KEY_COBOL, "src/Custmnt2.cbl",
         "sonar.cobol.file.suffixes", "cbl"), issueListener, null, null);
@@ -256,8 +282,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
     @Test
     void analysisTsql() throws IOException {
-      updateProject(PROJECT_KEY_TSQL);
-
+      start(PROJECT_KEY_TSQL);
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_TSQL, PROJECT_KEY_TSQL, "src/file.tsql"), issueListener, null, null);
       assertThat(issueListener.getIssues()).hasSize(1);
@@ -265,8 +290,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
     @Test
     void analysisApex() throws IOException {
-      updateProject(PROJECT_KEY_APEX);
-
+      start(PROJECT_KEY_APEX);
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_APEX, PROJECT_KEY_APEX, "src/file.cls"), issueListener, null, null);
       assertThat(issueListener.getIssues()).hasSize(1);
@@ -276,9 +300,9 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   @Nested
   class WithEmbeddedAnalyzer {
 
-    @BeforeEach
-    void start() {
-      FileUtils.deleteQuietly(sonarUserHome.toFile());
+    void start(String projectKey) {
+      bindProject("project-" + projectKey, projectKey);
+
       engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
         .setConnectionId("orchestrator")
         .setSonarLintUserHome(sonarUserHome)
@@ -289,12 +313,13 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     }
 
     /**
-     * SLCORE-365 c:FunctionSinglePointOfExit has been deprecated in SonarCFamily 6.32.0.44918 (SQ 9.4) so older versions of SQ will return a QP with rule c:FunctionSinglePointOfExit,
+     * SLCORE-365 c:FunctionSinglePointOfExit has been deprecated in SonarCFamily 6.32.0.44918 (SQ 9.4) so older versions of SQ will
+     * return a QP with rule c:FunctionSinglePointOfExit,
      * while embedded analyzer contains the new rule key. So SLCORE should do the translation.
      */
     @Test
     void analysisWithDeprecatedRuleKey() throws Exception {
-      updateProject(PROJECT_KEY_C);
+      start(PROJECT_KEY_C);
       var issueListener = new SaveIssueListener();
 
       var buildWrapperContent = "{\"version\":0,\"captures\":[" +
@@ -314,7 +339,8 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
         Paths.get("projects/" + PROJECT_KEY_C).toAbsolutePath().toString().replace("\\", "\\\\") +
         "\",\"executable\":\"compiler\",\"cmd\":[\"cc\",\"src/file.c\"]}]}";
 
-      var analysisConfiguration = createAnalysisConfiguration(PROJECT_KEY_C, PROJECT_KEY_C, "src/file.c", "sonar.cfamily.build-wrapper-content",
+      var analysisConfiguration = createAnalysisConfiguration(PROJECT_KEY_C, PROJECT_KEY_C, "src/file.c", "sonar.cfamily" +
+          ".build-wrapper-content",
         buildWrapperContent);
 
       engine.analyze(analysisConfiguration, issueListener, null, null);
@@ -322,9 +348,14 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     }
   }
 
-  private void updateProject(String projectKey) {
-    engine.updateProject(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), projectKey, null);
-    engine.sync(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), Set.of(projectKey), null);
+  private static void bindProject(String projectName, String projectKey) {
+    backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+      List.of(new ConfigurationScopeDto("configScope-" + projectName, null, true, projectName,
+        new BindingConfigurationDto(CONNECTION_ID, projectKey,true)))));
+    await().atMost(30, SECONDS).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains("configScope-" + projectName));
+    // TODO FIX ME and remove this check for a log after https://sonarsource.atlassian.net/browse/SLCORE-396 is fixed
+    await().untilAsserted(() ->
+      assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
   }
 
   private static void removeGroupPermission(String groupName, String permission) {
@@ -342,6 +373,17 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
           return Either.forRight(new UsernamePasswordDto(SONARLINT_USER, SONARLINT_PWD));
         }
         return super.getCredentials(connectionId);
+      }
+
+      @Override
+      public void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params) {
+        didSynchronizeConfigurationScopes.addAll(params.getConfigurationScopeIds());
+      }
+
+      @Override
+      public void log(LogParams params) {
+        clientLogs.add(params);
+        System.out.println("ClientLog: " + params.getMessage());
       }
 
     };

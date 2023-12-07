@@ -19,15 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
-import java.util.Set;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
-import org.sonarsource.sonarlint.core.http.HttpClient;
-import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
 /**
  * Entry point for SonarLint.
@@ -40,22 +37,4 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * Trigger an analysis
    */
   AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener, @Nullable ClientLogOutput logOutput, @Nullable ClientProgressMonitor monitor);
-
-
-  // REQUIRES SERVER TO BE REACHABLE
-
-  /**
-   * @deprecated synchronization is managed by the new backend
-   */
-  @Deprecated(since = "10.0")
-  void sync(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, @Nullable ClientProgressMonitor monitor);
-
-  /**
-   * Update given project.
-   *
-   * @since 2.0
-   * @deprecated synchronization is managed by the new backend
-   */
-  @Deprecated(since = "10.0")
-  void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable ClientProgressMonitor monitor);
 }
