@@ -275,6 +275,10 @@ public class RulesService {
     this.standaloneRuleConfig.putAll(standaloneRuleConfig);
   }
 
+  public Map<String, StandaloneRuleConfigDto> getStandaloneRuleConfig() {
+    return Collections.unmodifiableMap(standaloneRuleConfig);
+  }
+
   @EventListener
   public void onServerEventReceived(SonarServerEventReceivedEvent eventReceived) {
     var connectionId = eventReceived.getConnectionId();

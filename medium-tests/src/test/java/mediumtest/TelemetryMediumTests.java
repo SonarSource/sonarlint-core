@@ -35,7 +35,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddReportedR
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.telemetry.InternalDebug;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorageManager;
@@ -46,7 +46,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
@@ -163,7 +162,7 @@ class TelemetryMediumTests {
     System.setProperty("sonarlint.internal.telemetry.initialDelay", "0");
     System.clearProperty("sonarlint.telemetry.disabled");
     var fakeClient = newFakeClient().build();
-    when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap()));
+    when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryClientLiveAttributesResponse(null, emptyMap()));
 
     backend = newBackend()
       .withSonarQubeConnection("connectionId")
@@ -179,7 +178,7 @@ class TelemetryMediumTests {
         "  \"ide_version\" : \"4.5.6\",\n" +
         "  \"platform\" : \"linux\",\n" +
         "  \"architecture\" : \"x64\",\n" +
-        "  \"connected_mode_used\" : true,\n" +
+        "  \"connected_mode_used\" : false,\n" +
         "  \"connected_mode_sonarcloud\" : false\n" +
         "}", true, true)));
     System.clearProperty("sonarlint.internal.telemetry.initialDelay");
@@ -190,7 +189,7 @@ class TelemetryMediumTests {
     System.setProperty("sonarlint.internal.telemetry.initialDelay", "0");
 
     var fakeClient = newFakeClient().build();
-    when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap()));
+    when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryClientLiveAttributesResponse(null, emptyMap()));
 
     backend = newBackend()
       .withSonarQubeConnection("connectionId")
@@ -206,7 +205,7 @@ class TelemetryMediumTests {
         "  \"ide_version\" : \"4.5.6\",\n" +
         "  \"platform\" : \"linux\",\n" +
         "  \"architecture\" : \"x64\",\n" +
-        "  \"connected_mode_used\" : true,\n" +
+        "  \"connected_mode_used\" : false,\n" +
         "  \"connected_mode_sonarcloud\" : false\n" +
         "}", true, true)));
 
@@ -221,7 +220,7 @@ class TelemetryMediumTests {
     System.setProperty("sonarlint.internal.telemetry.initialDelay", "0");
 
     var fakeClient = newFakeClient().build();
-    when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap()));
+    when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryClientLiveAttributesResponse(null, emptyMap()));
 
     backend = newBackend()
       .withSonarQubeConnection("connectionId")
@@ -364,6 +363,8 @@ class TelemetryMediumTests {
     backend.getTelemetryService().analysisDoneOnMultipleFiles();
     await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"numUseDays\":1"));
   }
+
+  //todo add tests for the server live attributes
 
   private void setupClientAndBackend() {
     var fakeClient = newFakeClient().build();

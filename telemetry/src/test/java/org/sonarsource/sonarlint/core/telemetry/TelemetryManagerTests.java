@@ -24,16 +24,17 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryServerLiveAttributesDto;
 
-import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -68,7 +69,7 @@ class TelemetryManagerTests {
 
   @Test
   void enable_should_trigger_upload_once_per_day() {
-    var telemetryPayload = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+    var telemetryPayload = getTelemetryLiveAttributesDto();
 
     manager.enable(telemetryPayload);
     manager.enable(telemetryPayload);
@@ -81,7 +82,7 @@ class TelemetryManagerTests {
   void disable_should_trigger_optout(@TempDir Path temp) {
     var storage = mockTelemetryStorage();
     var manager = stubbedTelemetryManager(temp, storage);
-    var telemetryPayload = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+    var telemetryPayload = getTelemetryLiveAttributesDto();
 
     manager.disable(telemetryPayload);
 
@@ -91,7 +92,7 @@ class TelemetryManagerTests {
 
   @Test
   void uploadLazily_should_trigger_upload_once_per_day() {
-    var telemetryPayload = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+    var telemetryPayload = getTelemetryLiveAttributesDto();
 
     storage.tryUpdateAtomically(d -> d.setUsedAnalysis("java", 1000));
 
@@ -120,7 +121,7 @@ class TelemetryManagerTests {
 
   @Test
   void uploadLazily_should_trigger_upload_if_day_changed_and_hours_elapsed() {
-    var telemetryPayload = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+    var telemetryPayload = getTelemetryLiveAttributesDto();
 
     createAndSaveSampleData(storage);
     manager.uploadLazily(telemetryPayload);
@@ -140,7 +141,7 @@ class TelemetryManagerTests {
 
   @Test
   void enable_should_not_wipe_out_more_recent_data() {
-    var telemetryPayload = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+    var telemetryPayload = getTelemetryLiveAttributesDto();
 
     createAndSaveSampleData(storage);
 
@@ -160,7 +161,7 @@ class TelemetryManagerTests {
 
   @Test
   void disable_should_not_wipe_out_more_recent_data() {
-    var telemetryPayload = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+    var telemetryPayload = getTelemetryLiveAttributesDto();
 
     createAndSaveSampleData(storage);
     storage.tryUpdateAtomically(data -> data.setEnabled(true));
@@ -201,7 +202,7 @@ class TelemetryManagerTests {
 
   @Test
   void uploadLazily_should_clear_accumulated_data() {
-    var telemetryPayload = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
+    var telemetryPayload = getTelemetryLiveAttributesDto();
 
     createAndSaveSampleData(storage);
     storage.tryUpdateAtomically(data -> {
@@ -248,13 +249,10 @@ class TelemetryManagerTests {
   private TelemetryLocalStorageManager mockTelemetryStorage() {
     var storage = mock(TelemetryLocalStorageManager.class);
     when(storage.tryRead()).thenReturn(new TelemetryLocalStorage());
-    doAnswer(new Answer<Void>() {
-      @Override
-      public Void answer(InvocationOnMock invocation) throws Throwable {
-        var args = invocation.getArguments();
-        ((Consumer) args[0]).accept(mock(TelemetryLocalStorage.class));
-        return null;
-      }
+    doAnswer((Answer<Void>) invocation -> {
+      var args = invocation.getArguments();
+      ((Consumer) args[0]).accept(mock(TelemetryLocalStorage.class));
+      return null;
     }).when(storage).tryUpdateAtomically(any(Consumer.class));
     return storage;
   }
@@ -266,5 +264,11 @@ class TelemetryManagerTests {
         return storage;
       }
     };
+  }
+
+  private static TelemetryLiveAttributesDto getTelemetryLiveAttributesDto() {
+    var serverAttributes = new TelemetryServerLiveAttributesDto(true, true, false, Collections.emptyList(), Collections.emptyList());
+    var clientAttributes = new TelemetryClientLiveAttributesResponse(null, emptyMap());
+    return new TelemetryLiveAttributesDto(serverAttributes, clientAttributes);
   }
 }
