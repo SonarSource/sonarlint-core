@@ -25,27 +25,27 @@
 
   <modules>
     <module>backend/analysis-engine</module>
-    <module>backend-cli</module>
-    <module>backend-embedded</module>
     <module>backend/commons</module>
-    <module>core</module>
     <module>backend/http</module>
-    <module>client/java-client-utils</module>
-    <module>medium-tests</module>
-    <module>osgi</module>
     <module>backend/plugin-api</module>
     <module>backend/plugin-commons</module>
-    <module>report-aggregate</module>
     <module>backend/rpc-impl</module>
-    <module>client/rpc-java-client</module>
-    <module>rpc-protocol</module>
     <module>backend/rule-extractor</module>
-    <module>rule-extractor-cli</module>
     <module>backend/server-api</module>
     <module>backend/server-connection</module>
     <module>backend/slf4j-sonar-log</module>
     <module>backend/telemetry</module>
-    <module>legacy/java-client-legacy</module>
+    <module>client/java-client-legacy</module>
+    <module>client/java-client-utils</module>
+    <module>client/rpc-java-client</module>
+    <module>backend-embedded</module>
+    <module>backend-cli</module>
+    <module>core</module>
+    <module>medium-tests</module>
+    <module>osgi</module>
+    <module>report-aggregate</module>
+    <module>rpc-protocol</module>
+    <module>rule-extractor-cli</module>
   </modules>
 
   <properties>
