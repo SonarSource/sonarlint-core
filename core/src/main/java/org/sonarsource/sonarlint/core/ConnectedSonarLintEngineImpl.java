@@ -300,31 +300,8 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
   }
 
   @Override
-  public void sync(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, @Nullable ClientProgressMonitor monitor) {
-    setLogging(null);
-    var result = serverConnection.sync(endpoint, client, projectKeys, new ProgressMonitor(monitor));
-    if (result.hasAnalyzerBeenUpdated()) {
-      restartAnalysisEngine();
-    }
-  }
-
-  private void restartAnalysisEngine() {
-    var oldAnalysisContext = start();
-    oldAnalysisContext.finishGracefully();
-  }
-
-  @Override
   public Collection<PluginDetails> getPluginDetails() {
     return analysisContext.get().pluginDetails;
-  }
-
-  @Override
-  public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable ClientProgressMonitor monitor) {
-    requireNonNull(endpoint);
-    requireNonNull(projectKey);
-    setLogging(null);
-
-    serverConnection.updateProject(endpoint, client, projectKey, new ProgressMonitor(monitor));
   }
 
   @Override
@@ -354,10 +331,6 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
 
     public void destroy() {
       analysisEngine.stop();
-    }
-
-    public void finishGracefully() {
-      analysisEngine.finishGracefully();
     }
 
     public Optional<SonarLintRuleDefinition> findRule(String ruleKey) {
