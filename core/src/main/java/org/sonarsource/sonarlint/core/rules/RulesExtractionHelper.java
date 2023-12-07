@@ -25,7 +25,7 @@ import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
-import org.sonarsource.sonarlint.core.plugin.PluginsServiceImpl;
+import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 
@@ -35,12 +35,12 @@ public class RulesExtractionHelper {
 
   private final SonarLintLogger logger = SonarLintLogger.get();
 
-  private final PluginsServiceImpl pluginsService;
+  private final PluginsService pluginsService;
   private final LanguageSupportRepository languageSupportRepository;
   private final RulesDefinitionExtractor ruleExtractor = new RulesDefinitionExtractor();
   private final boolean enableSecurityHotspots;
 
-  public RulesExtractionHelper(PluginsServiceImpl pluginsService, LanguageSupportRepository languageSupportRepository, InitializeParams params) {
+  public RulesExtractionHelper(PluginsService pluginsService, LanguageSupportRepository languageSupportRepository, InitializeParams params) {
     this.pluginsService = pluginsService;
     this.languageSupportRepository = languageSupportRepository;
     this.enableSecurityHotspots = params.getFeatureFlags().isEnableSecurityHotspots();

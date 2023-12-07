@@ -60,7 +60,7 @@ import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
-import org.sonarsource.sonarlint.core.plugin.PluginsServiceImpl;
+import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
@@ -106,7 +106,7 @@ import org.springframework.scheduling.support.TaskUtils;
   ConnectionConfigurationRepository.class,
   RulesRepository.class,
   RulesExtractionHelper.class,
-  PluginsServiceImpl.class,
+  PluginsService.class,
   PluginsRepository.class,
   LanguageSupportRepository.class,
   ConnectionService.class,
