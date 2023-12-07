@@ -50,11 +50,9 @@ import static org.assertj.core.api.Assertions.tuple;
 import static testutils.TestUtils.protobufBody;
 
 class ConnectedFileExclusionsMediumTests {
-  @RegisterExtension
-  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
-  public static final String MYSONAR = "mysonar";
-  public static final String CONFIG_SCOPE_ID = "myProject1";
+  private static final String MYSONAR = "mysonar";
+  private static final String CONFIG_SCOPE_ID = "myProject1";
   private static final String PROJECT_KEY = "test-project-2";
 
   private SonarLintRpcServer backend;
