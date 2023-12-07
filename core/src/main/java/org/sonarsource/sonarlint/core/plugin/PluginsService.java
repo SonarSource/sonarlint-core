@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.plugin;
 
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.inject.Named;
@@ -79,6 +79,12 @@ public class PluginsService {
   }
 
   private PluginsLoadResult loadPlugins(String connectionId) {
+    var pluginPaths = getPluginPathsForConnection(connectionId);
+
+    return loadPlugins(languageSupportRepository.getEnabledLanguagesInConnectedMode(), pluginPaths, enableDataflowBugDetection);
+  }
+
+  private Set<Path> getPluginPathsForConnection(String connectionId) {
     // for now assume the sync already happened and the plugins are stored
     var pluginsStorage = storageService.connection(connectionId).plugins();
 
@@ -86,9 +92,7 @@ public class PluginsService {
     // order is important as e.g. embedded takes precedence over stored
     pluginsToLoadByKey.putAll(pluginsStorage.getStoredPluginPathsByKey());
     pluginsToLoadByKey.putAll(connectedModeEmbeddedPluginPathsByKey);
-    Set<Path> pluginPaths = new HashSet<>(pluginsToLoadByKey.values());
-
-    return loadPlugins(languageSupportRepository.getEnabledLanguagesInConnectedMode(), pluginPaths, enableDataflowBugDetection);
+    return Set.copyOf(pluginsToLoadByKey.values());
   }
 
   private static PluginsLoadResult loadPlugins(Set<Language> enabledLanguages, Set<Path> pluginPaths, boolean enableDataflowBugDetection) {
@@ -107,4 +111,11 @@ public class PluginsService {
     pluginsRepository.unload(connectionId);
   }
 
+  public List<Path> getEmbeddedPluginPaths() {
+    return List.copyOf(embeddedPluginPaths);
+  }
+
+  public List<Path> getConnectedPluginPaths(String connectionId) {
+    return List.copyOf(getPluginPathsForConnection(connectionId));
+  }
 }
