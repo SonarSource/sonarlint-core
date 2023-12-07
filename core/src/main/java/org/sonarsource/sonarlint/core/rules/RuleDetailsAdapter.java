@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDescription
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleMonolithicDescriptionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleNonContextualSectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleSplitDescriptionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttributeCategory;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
@@ -73,7 +74,17 @@ public class RuleDetailsAdapter {
       toDto(ruleDetails.getDefaultImpacts()),
       transformDescriptions(ruleDetails, contextKey),
       transform(ruleDetails.getParams()),
-      adapt(ruleDetails.getLanguage()));
+      adapt(ruleDetails.getLanguage()),
+      adapt(ruleDetails.getVulnerabilityProbability()));
+  }
+
+  public static GetRuleDetailsResponse transform(RuleDetails ruleDetails) {
+    return new GetRuleDetailsResponse(
+      adapt(ruleDetails.getDefaultSeverity()),
+      adapt(ruleDetails.getType()),
+      RuleDetailsAdapter.adapt(ruleDetails.getCleanCodeAttribute().orElse(defaultCleanCodeAttribute())),
+      toDto(ruleDetails.getDefaultImpacts()),
+      adapt(ruleDetails.getVulnerabilityProbability()));
   }
 
   static Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> transformDescriptions(RuleDetails ruleDetails, @Nullable String contextKey) {
@@ -141,10 +152,10 @@ public class RuleDetailsAdapter {
         } else {
           // if there is more than one section, they should all have a context (verified in sonar-plugin-api)
           var contextualSectionContents = tabContents.stream().map(s -> {
-            var context = s.getContext().get();
-            return new RuleContextualSectionDto(getTabContent(s, ruleDetails.getExtendedDescription(), ruleDetails.getCleanCodePrincipleKeys()), context.getKey(),
-              context.getDisplayName());
-          })
+              var context = s.getContext().get();
+              return new RuleContextualSectionDto(getTabContent(s, ruleDetails.getExtendedDescription(), ruleDetails.getCleanCodePrincipleKeys()), context.getKey(),
+                context.getDisplayName());
+            })
             .sorted(Comparator.comparing(RuleContextualSectionDto::getDisplayName))
             .collect(Collectors.toList());
           contextualSectionContents.add(
@@ -237,6 +248,11 @@ public class RuleDetailsAdapter {
 
   public static SoftwareQuality adapt(org.sonarsource.sonarlint.core.commons.SoftwareQuality sq) {
     return SoftwareQuality.valueOf(sq.name());
+  }
+
+  @CheckForNull
+  public static VulnerabilityProbability adapt(@Nullable org.sonarsource.sonarlint.core.commons.VulnerabilityProbability v) {
+    return v != null ? VulnerabilityProbability.valueOf(v.name()) : null;
   }
 
   public static ImpactSeverity adapt(org.sonarsource.sonarlint.core.commons.ImpactSeverity is) {

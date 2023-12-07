@@ -38,8 +38,8 @@ public class EffectiveRuleDetailsDto extends AbstractRuleDto {
   public EffectiveRuleDetailsDto(String key, String name, IssueSeverity severity, RuleType type,
     @Nullable CleanCodeAttributeDto cleanCodeAttributeDetails, List<ImpactDto> defaultImpacts,
     Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> description, Collection<EffectiveRuleParamDto> params,
-    Language language) {
-    super(key, name, severity, type, cleanCodeAttributeDetails, defaultImpacts, language);
+    Language language, @Nullable VulnerabilityProbability vulnerabilityProbability) {
+    super(key, name, severity, type, cleanCodeAttributeDetails, defaultImpacts, language, vulnerabilityProbability);
     this.description = description;
     this.params = params;
   }
