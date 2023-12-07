@@ -32,9 +32,11 @@ import java.io.PipedOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import org.apache.commons.io.FileUtils;
@@ -110,7 +112,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
   private static final List<String> didSynchronizeConfigurationScopes = new CopyOnWriteArrayList<>();
 
-  private static final List<LogParams> clientLogs = new CopyOnWriteArrayList<>();
+  private static final Collection<LogParams> clientLogs = new ConcurrentLinkedDeque<>();
 
   @BeforeAll
   static void startBackend() throws IOException {

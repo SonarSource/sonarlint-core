@@ -37,12 +37,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -184,7 +186,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   private static final List<String> allBranchNamesForProject = new CopyOnWriteArrayList<>();
   private static String matchedBranchNameForProject = null;
   private static final List<String> didSynchronizeConfigurationScopes = new CopyOnWriteArrayList<>();
-  private static final List<LogParams> clientLogs = new CopyOnWriteArrayList<>();
+  private static final Collection<LogParams> clientLogs = new ConcurrentLinkedDeque<>();
 
   @BeforeAll
   static void start() throws IOException {

@@ -27,12 +27,14 @@ import java.io.PipedOutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -157,7 +159,7 @@ class SonarCloudTests extends AbstractConnectedTests {
   private static String sonarcloudUserToken;
   private static BackendJsonRpcLauncher serverLauncher;
   private static final List<String> didSynchronizeConfigurationScopes = new CopyOnWriteArrayList<>();
-  private static final List<LogParams> clientLogs = new CopyOnWriteArrayList<>();
+  private static final Collection<LogParams> clientLogs = new ConcurrentLinkedDeque<>();
 
   @BeforeAll
   static void prepare() throws Exception {
@@ -671,7 +673,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
   private static void runMaven(Path workDir, String... args) throws IOException {
     CommandLine cmdLine;
-    if(SystemUtils.IS_OS_WINDOWS) {
+    if (SystemUtils.IS_OS_WINDOWS) {
       cmdLine = CommandLine.parse("cmd.exe");
       cmdLine.addArguments("/c");
       cmdLine.addArguments("mvn");
