@@ -233,7 +233,7 @@ public class RulesService {
     return new RuleDefinitionDto(r.getKey(), r.getName(), adapt(r.getDefaultSeverity()), adapt(r.getType()),
       r.getCleanCodeAttribute().map(RuleDetailsAdapter::toDto).orElse(null),
       toDto(r.getDefaultImpacts()),
-      convert(r.getParams()), r.isActiveByDefault(), adapt(r.getLanguage()));
+      convert(r.getParams()), r.isActiveByDefault(), adapt(r.getLanguage()), r.getVulnerabilityProbability().map(RuleDetailsAdapter::adapt).orElse(null));
   }
 
   private static Map<String, RuleParamDefinitionDto> convert(Map<String, SonarLintRuleParamDefinition> params) {
