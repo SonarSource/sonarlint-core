@@ -34,12 +34,9 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
-import org.apache.commons.io.FileUtils;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -54,13 +51,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarqube.ws.client.usertokens.GenerateRequest;
-import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.NodeJsHelper;
-import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
@@ -85,10 +75,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
 import static its.utils.ItUtils.SONAR_VERSION;
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.CODE_SMELL;
@@ -281,114 +268,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     }
   }
 
-  @Nested
-  // TODO Can be removed when switching to Java 16+ and changing prepare() to static
-  @TestInstance(Lifecycle.PER_CLASS)
-  class PluginRequirementsAndDependencies {
-
-    private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
-    private static final String CUSTOM_JAVA_PLUGIN_KEY = "custom";
-    private static final String PROJECT_KEY_JAVASCRIPT = "sample-javascript";
-    private static final String PROJECT_KEY_TYPESCRIPT = "sample-typescript";
-
-    @BeforeAll
-    void prepare() {
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVASCRIPT, "Sample Javascript");
-      provisionProject(ORCHESTRATOR, PROJECT_KEY_TYPESCRIPT, "Sample Typescript");
-      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/javascript-sonarlint.xml"));
-      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/typescript-sonarlint.xml"));
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVASCRIPT, "js", "SonarLint IT Javascript");
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_TYPESCRIPT, "ts", "SonarLint IT Typescript");
-    }
-
-    @TempDir
-    private Path sonarUserHome;
-
-    private ConnectedSonarLintEngine engine;
-    private final List<String> logs = new CopyOnWriteArrayList<>();
-
-    @BeforeEach
-    void start() {
-      FileUtils.deleteQuietly(sonarUserHome.toFile());
-    }
-
-    private ConnectedSonarLintEngine createEngine(Consumer<ConnectedGlobalConfiguration.Builder> configurator) {
-      var nodeJsHelper = new NodeJsHelper((m, l) -> System.out.println(l + " " + m));
-      nodeJsHelper.detect(null);
-
-      var builder = ConnectedGlobalConfiguration.sonarQubeBuilder()
-        .setConnectionId("orchestrator")
-        .setSonarLintUserHome(sonarUserHome)
-        .setLogOutput((msg, level) -> logs.add(msg))
-        .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion());
-      configurator.accept(builder);
-      return new ConnectedSonarLintEngineImpl(builder.build());
-    }
-
-    @AfterEach
-    void stop() {
-      try {
-        engine.stop();
-      } catch (Exception e) {
-        // Ignore
-      }
-    }
-
-    @Test
-    void dontDownloadPluginIfNotEnabledLanguage() {
-      engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP, Language.TS));
-      engine.sync(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), emptySet(), null);
-      assertThat(logs).contains("[SYNC] Code analyzer 'java' is disabled in SonarLint (language not enabled). Skip downloading it.");
-      // TypeScript plugin has been merged in SonarJS in SQ 8.5
-      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 5)) {
-        assertThat(engine.getPluginDetails().stream().map(PluginDetails::key))
-          .containsOnly(Language.JS.getPluginKey(), Language.PHP.getPluginKey(), CUSTOM_JAVA_PLUGIN_KEY, XOO_PLUGIN_KEY);
-      } else {
-        assertThat(engine.getPluginDetails().stream().map(PluginDetails::key))
-          .containsOnly(Language.JS.getPluginKey(), Language.PHP.getPluginKey(), OLD_SONARTS_PLUGIN_KEY, CUSTOM_JAVA_PLUGIN_KEY, XOO_PLUGIN_KEY);
-      }
-    }
-
-    @Test
-    void dontFailIfMissingDependentPlugin() {
-      engine = createEngine(e -> e.addEnabledLanguages(Language.PHP));
-      engine.sync(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), emptySet(), null);
-      assertThat(logs).contains("Plugin 'Java Custom Rules Plugin' dependency on 'java' is unsatisfied. Skip loading it.");
-      assertThat(engine.getPluginDetails()).extracting(PluginDetails::key, PluginDetails::skipReason)
-        .contains(tuple(CUSTOM_JAVA_PLUGIN_KEY, Optional.of(new SkipReason.UnsatisfiedDependency("java"))));
-    }
-
-    @Test
-    void dontLoadExcludedPlugin() {
-      engine = createEngine(e -> e.addEnabledLanguages(Language.JAVA, Language.JS, Language.PHP));
-      engine.sync(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), emptySet(), null);
-      assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains(Language.JAVA.getPluginKey());
-      engine.stop();
-
-      engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP));
-      // The description of SonarJava changed in 6.3, embedded in SQ 8.3
-      var javaDescription = ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 3) ? "Java Code Quality and Security" : "SonarJava";
-      var expectedLog = String.format("Plugin '%s' is excluded because language 'Java' is not enabled. Skip loading it.", javaDescription);
-      assertThat(logs).contains(expectedLog);
-      assertThat(engine.getPluginDetails()).extracting(PluginDetails::key, PluginDetails::skipReason)
-        .contains(tuple(Language.JAVA.getPluginKey(), Optional.of(new SkipReason.LanguagesNotEnabled(asList(Language.JAVA)))));
-    }
-
-    // SLCORE-259
-    @Test
-    void analysisJavascriptWithoutTypescript() throws Exception {
-      engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP));
-      engine.sync(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), Set.of(PROJECT_KEY_JAVASCRIPT), null);
-      assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains("javascript");
-      assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).doesNotContain(OLD_SONARTS_PLUGIN_KEY);
-
-      engine.updateProject(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), PROJECT_KEY_JAVASCRIPT, null);
-      engine.sync(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID), Set.of(PROJECT_KEY_JAVASCRIPT), null);
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, PROJECT_KEY_JAVASCRIPT, "src/Person.js"), issueListener, null, null);
-      assertThat(issueListener.getIssues()).hasSize(1);
-    }
-  }
+  //TODO Possibly add tests for a method which will replace SonarLintEngine.getPluginDetails()
 
   private static SonarLintRpcClientDelegate newDummySonarLintClient() {
     return new MockSonarLintRpcClientDelegate() {

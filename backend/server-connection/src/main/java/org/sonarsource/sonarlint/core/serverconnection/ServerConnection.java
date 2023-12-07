@@ -27,10 +27,7 @@ import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.http.HttpClient;
-import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 
 public class ServerConnection {
@@ -40,7 +37,6 @@ public class ServerConnection {
 
   private final Set<Language> enabledLanguagesToSync;
   private final LocalStorageSynchronizer storageSynchronizer;
-  private final ProjectStorageUpdateExecutor projectStorageUpdateExecutor;
   private final boolean isSonarCloud;
   private final ServerInfoSynchronizer serverInfoSynchronizer;
   private final ConnectionStorage storage;
@@ -56,7 +52,6 @@ public class ServerConnection {
     this.storage = storageFacade.connection(connectionId);
     serverInfoSynchronizer = new ServerInfoSynchronizer(storage);
     this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguagesToSync, embeddedPluginKeys, serverInfoSynchronizer, storage);
-    this.projectStorageUpdateExecutor = new ProjectStorageUpdateExecutor(storage);
     storage.plugins().cleanUp();
   }
 
@@ -66,10 +61,6 @@ public class ServerConnection {
 
   public AnalyzerConfiguration getAnalyzerConfiguration(String projectKey) {
     return storage.project(projectKey).analyzerConfiguration().read();
-  }
-
-  public SynchronizationResult sync(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, ProgressMonitor monitor) {
-    return sync(new ServerApi(new ServerApiHelper(endpoint, client)), projectKeys, monitor);
   }
 
   public boolean sync(ServerApi serverApi) {
@@ -107,10 +98,6 @@ public class ServerConnection {
     return !isSonarCloud && storage.serverInfo().read()
       .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(CLEAN_CODE_TAXONOMY_MIN_SQ_VERSION) < 0)
       .orElse(false);
-  }
-
-  public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, ProgressMonitor monitor) {
-    projectStorageUpdateExecutor.update(new ServerApi(new ServerApiHelper(endpoint, client)), projectKey, monitor);
   }
 
   public Set<Language> getEnabledLanguagesToSync() {
