@@ -29,12 +29,10 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 
@@ -45,8 +43,6 @@ public class SloopLauncher {
   private final SonarLintRpcClientDelegate rpcClient;
   private final Function<List<String>, ProcessBuilder> processBuilderFactory;
   private final Supplier<String> osNameSupplier;
-  private Process process;
-  private SonarLintRpcServer serverProxy;
 
   public SloopLauncher(SonarLintRpcClientDelegate rpcClient) {
     this(rpcClient, ProcessBuilder::new, () -> System.getProperty("os.name"));
@@ -58,14 +54,13 @@ public class SloopLauncher {
     this.osNameSupplier = osNameSupplier;
   }
 
-  public void start(Path distPath) {
-    start(distPath, null);
+  public Sloop start(Path distPath) {
+    return start(distPath, null);
   }
 
-
-  public void start(Path distPath, @Nullable Path jrePath) {
+  public Sloop start(Path distPath, @Nullable Path jrePath) {
     try {
-      execute(distPath, jrePath);
+      return execute(distPath, jrePath);
     } catch (Exception e) {
       logToClient(LogLevel.ERROR, "Unable to start the SonarLint backend", stackTraceToString(e));
       throw new IllegalStateException("Unable to start the SonarLint backend", e);
@@ -90,7 +85,7 @@ public class SloopLauncher {
     return osName.startsWith("Windows");
   }
 
-  private void execute(Path distPath, @Nullable Path jrePath) throws IOException {
+  private Sloop execute(Path distPath, @Nullable Path jrePath) throws IOException {
     var binDirPath = distPath.resolve("bin");
     List<String> commands = new ArrayList<>();
     if (isWindows()) {
@@ -113,7 +108,7 @@ public class SloopLauncher {
     processBuilder.redirectInput(ProcessBuilder.Redirect.PIPE);
     processBuilder.redirectError(ProcessBuilder.Redirect.PIPE);
 
-    this.process = processBuilder.start();
+    var process = processBuilder.start();
 
     // redirect process.getErrorStream() to the client logs
     new StreamGobbler(process.getErrorStream(), stdErrLogConsumer()).start();
@@ -123,7 +118,8 @@ public class SloopLauncher {
     var clientToServerOutputStream = process.getOutputStream();
     var clientLauncher = new ClientJsonRpcLauncher(serverToClientInputStream, clientToServerOutputStream, rpcClient);
 
-    serverProxy = clientLauncher.getServerProxy();
+    var serverProxy = clientLauncher.getServerProxy();
+    return new Sloop(serverProxy, process);
   }
 
   private Consumer<String> stdErrLogConsumer() {
@@ -133,20 +129,6 @@ public class SloopLauncher {
   private void logToClient(LogLevel level, @Nullable String message, @Nullable String stacktrace) {
     rpcClient.log(new LogParams(level, message, null, Thread.currentThread().getName(),
       SloopLauncher.class.getName(), stacktrace, Instant.now()));
-  }
-
-  public SonarLintRpcServer getServerProxy() {
-    return serverProxy;
-  }
-
-  public int waitFor() throws InterruptedException {
-    if (process.waitFor(1, TimeUnit.MINUTES)) {
-      return process.exitValue();
-    } else {
-      logToClient(LogLevel.ERROR, "Unable to stop the SonarLint process in a timely manner. Killing it.", null);
-      process.destroyForcibly();
-      return -1;
-    }
   }
 
   private static class StreamGobbler extends Thread {

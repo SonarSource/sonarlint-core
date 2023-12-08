@@ -40,7 +40,7 @@ class NodeJsMediumTests {
   @AfterEach
   void stop() {
     if (backend != null) {
-      backend.shutdown();
+      backend.shutdown().join();
     }
   }
 

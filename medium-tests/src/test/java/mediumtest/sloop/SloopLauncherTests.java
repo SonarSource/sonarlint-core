@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - ITs - Tests
+ * SonarLint Core - Medium Tests
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,13 +17,12 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package its;
+package mediumtest.sloop;
 
-import its.utils.PluginLocator;
-import its.utils.SloopDistLocator;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -32,15 +31,16 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutionException;
 import org.apache.commons.lang3.SystemUtils;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
+import org.sonarsource.sonarlint.core.rpc.client.Sloop;
 import org.sonarsource.sonarlint.core.rpc.client.SloopLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
@@ -73,10 +73,12 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryCli
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
+import testutils.PluginLocator;
 
-import static its.utils.UnArchiveUtils.unarchiveDistribution;
+import static mediumtest.sloop.UnArchiveUtils.unarchiveDistribution;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.GO;
+import static org.awaitility.Awaitility.await;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.PHP;
 
 class SloopLauncherTests {
 
@@ -86,24 +88,33 @@ class SloopLauncherTests {
   @TempDir
   private static Path unarchiveTmpDir;
 
+  private static Sloop sloop;
   private static SonarLintRpcServer server;
-  private static SloopLauncher sloopLauncher;
+  private static Path sloopOutDirPath;
+  private Integer exitValue;
+  private boolean shutdownRequested;
 
   @BeforeAll
   static void setup() {
     var sloopDistPath = SystemUtils.IS_OS_WINDOWS ? SloopDistLocator.getWindowsDistPath() : SloopDistLocator.getLinux64DistPath();
-    var sloopOutDirPath = unarchiveTmpDir.resolve("sloopDistOut");
+    sloopOutDirPath = unarchiveTmpDir.resolve("sloopDistOut");
     unarchiveDistribution(sloopDistPath.toString(), sloopOutDirPath);
-    sloopLauncher = new SloopLauncher(new DummySonarLintRpcClient());
-    sloopLauncher.start(sloopOutDirPath.toAbsolutePath());
-    server = sloopLauncher.getServerProxy();
   }
 
-  @AfterAll
-  static void tearDown() throws ExecutionException, InterruptedException {
-    server.shutdown().get();
-    var exitCode = sloopLauncher.waitFor();
-    assertThat(exitCode).isZero();
+  @BeforeEach
+  void start() {
+    shutdownRequested = false;
+    exitValue = null;
+    var sloopLauncher = new SloopLauncher(new DummySonarLintRpcClient());
+    sloop = sloopLauncher.start(sloopOutDirPath.toAbsolutePath());
+    server = sloop.getRpcServer();
+  }
+
+  @AfterEach
+  void tearDown() {
+    if (!shutdownRequested) {
+      sloop.shutdown().join();
+    }
   }
 
   @Test
@@ -114,15 +125,35 @@ class SloopLauncherTests {
     var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false, false);
 
     server.initialize(new InitializeParams(clientInfo, telemetryInitDto, featureFlags, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
-      Set.of(PluginLocator.getGoPluginPath().toAbsolutePath()), Collections.emptyMap(), Set.of(GO), Collections.emptySet(), Collections.emptyList(),
+      Set.of(PluginLocator.getPhpPluginPath().toAbsolutePath()), Collections.emptyMap(), Set.of(PHP), Collections.emptySet(), Collections.emptyList(),
       Collections.emptyList(), sonarUserHome.toString(), Map.of(), false, null)).get();
 
     var result = server.getRulesService().listAllStandaloneRulesDefinitions().get();
-    assertThat(result.getRulesByKey()).hasSize(36);
+    assertThat(result.getRulesByKey()).hasSize(219);
 
-    server.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto("myConfigScope", null, true, "My Config Scope", null))));
+    server.getConfigurationService()
+      .didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto("myConfigScope", null, true, "My Config Scope", null))));
 
-    var result2 = server.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("myConfigScope", "go:S100", null)).join();
+    var result2 = server.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("myConfigScope", "php:S100", null)).join();
+    assertThat(result2.details().getName()).isEqualTo("Method and function names should comply with a naming convention");
+  }
+
+  @Test
+  void it_should_complete_onExit_future_when_process_exits() {
+    var telemetryInitDto = new TelemetryClientConstantAttributesDto("SonarLint ITs", "SonarLint ITs",
+      "1.2.3", "4.5.6", Collections.emptyMap());
+    var clientInfo = new ClientConstantInfoDto("clientName", "integrationTests");
+    var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false, false);
+    server.initialize(new InitializeParams(clientInfo, telemetryInitDto, featureFlags, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
+      Set.of(PluginLocator.getPhpPluginPath().toAbsolutePath()), Collections.emptyMap(), Set.of(PHP), Collections.emptySet(), Collections.emptyList(),
+      Collections.emptyList(), sonarUserHome.toString(), Map.of(), false, null)).join();
+    sloop.onExit().thenAccept(exitValue -> this.exitValue = exitValue);
+
+    shutdownRequested = true;
+    sloop.shutdown().join();
+
+    // it can take some time for the process to finish
+    await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(exitValue).isZero());
   }
 
   static class DummySonarLintRpcClient implements SonarLintRpcClientDelegate {
@@ -130,10 +161,6 @@ class SloopLauncherTests {
 
     public Queue<LogParams> getLogs() {
       return logs;
-    }
-
-    public void clearLogs() {
-      logs.clear();
     }
 
     @Override

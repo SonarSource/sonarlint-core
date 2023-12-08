@@ -81,6 +81,12 @@
       <version>10.1.12</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-archiver</artifactId>
+      <version>4.8.0</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -168,7 +174,7 @@
       </plugin>
     </plugins>
   </build>
-<profiles>
+  <profiles>
     <profile>
       <id>commercial</id>
       <activation>
@@ -208,8 +214,8 @@
         </plugins>
       </build>
     </profile>
-  <!-- Workaround for https://issues.apache.org/jira/projects/MJAR/issues/MJAR-138 -->
-  <profile>
+    <!-- Workaround for https://issues.apache.org/jira/projects/MJAR/issues/MJAR-138 -->
+    <profile>
       <id>conditionally-add-commons-tests-if-tests-not-skipped</id>
       <activation>
         <property>
@@ -228,5 +234,124 @@
         </dependency>
       </dependencies>
     </profile>
+    <profile>
+      <activation>
+        <os>
+          <family>Windows</family>
+        </os>
+      </activation>
+      <id>its-windows</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.googlecode.maven-download-plugin</groupId>
+            <artifactId>download-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>unpack-windows-jre</id>
+                <phase>generate-test-resources</phase>
+                <goals>
+                  <goal>wget</goal>
+                </goals>
+                <configuration>
+                  <url>https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.7%2B7/OpenJDK17U-jre_x64_windows_hotspot_17.0.7_7.zip</url>
+                  <unpack>true</unpack>
+                  <outputDirectory>${project.build.directory}/jre-windows</outputDirectory>
+                  <sha256>62e82c1afa7509424813e9cb22d8becfec4346d7505e6d2fc8770af4dcd5b9a0</sha256>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>fetch-sloop-win-distribution</id>
+                <phase>generate-test-resources</phase>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.sonarsource.sonarlint.core</groupId>
+                      <artifactId>sonarlint-backend-cli</artifactId>
+                      <version>${project.version}</version>
+                      <classifier>windows_x64</classifier>
+                      <type>zip</type>
+                    </artifactItem>
+                  </artifactItems>
+                  <overWriteReleases>false</overWriteReleases>
+                  <overWriteSnapshots>true</overWriteSnapshots>
+                  <stripVersion>false</stripVersion>
+                  <outputDirectory>${project.build.directory}</outputDirectory>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <activation>
+        <os>
+          <family>unix</family>
+        </os>
+      </activation>
+      <id>its-linux</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.googlecode.maven-download-plugin</groupId>
+            <artifactId>download-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>unpack-linux-jre</id>
+                <phase>generate-test-resources</phase>
+                <goals>
+                  <goal>wget</goal>
+                </goals>
+                <configuration>
+                  <url>https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.7%2B7/OpenJDK17U-jre_x64_linux_hotspot_17.0.7_7.tar.gz</url>
+                  <unpack>true</unpack>
+                  <outputDirectory>${project.build.directory}/jre-linux</outputDirectory>
+                  <sha256>bb025133b96266f6415d5084bb9b260340a813968007f1d2d14690f20bd021ca</sha256>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>fetch-sloop-linux-distribution</id>
+                <phase>generate-test-resources</phase>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.sonarsource.sonarlint.core</groupId>
+                      <artifactId>sonarlint-backend-cli</artifactId>
+                      <version>${project.version}</version>
+                      <classifier>linux_x64</classifier>
+                      <type>tar.gz</type>
+                    </artifactItem>
+                  </artifactItems>
+                  <overWriteReleases>false</overWriteReleases>
+                  <overWriteSnapshots>true</overWriteSnapshots>
+                  <stripVersion>false</stripVersion>
+                  <outputDirectory>${project.build.directory}</outputDirectory>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
+
 </project>

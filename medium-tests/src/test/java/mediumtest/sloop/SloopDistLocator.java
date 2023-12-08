@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - ITs - Tests
+ * SonarLint Core - Medium Tests
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package its.utils;
+package mediumtest.sloop;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -27,8 +27,8 @@ import org.apache.commons.io.filefilter.RegexFileFilter;
 
 public class SloopDistLocator {
 
-  private static final String SLOOP_DIST_PATH = "../../backend/cli/target";
-  private static final String WINDOWS_DIST_REGEXP = "^sonarlint-backend-cli-([0-9.]+)(-SNAPSHOT)*-windows.zip$";
+  private static final String SLOOP_DIST_PATH = "target";
+  private static final String WINDOWS_DIST_REGEXP = "^sonarlint-backend-cli-([0-9.]+)(-SNAPSHOT)*-windows_x64.zip$";
   private static final String LINUX_64_DIST_REGEXP = "^sonarlint-backend-cli-([0-9.]+)(-SNAPSHOT)*-linux_x64.tar.gz$";
 
   public static Path getLinux64DistPath() {
