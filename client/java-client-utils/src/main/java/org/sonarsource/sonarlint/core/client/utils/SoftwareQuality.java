@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Commons
+ * SonarLint Core - Java Client Utils
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,11 +17,33 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons;
+package org.sonarsource.sonarlint.core.client.utils;
 
 public enum SoftwareQuality {
-  MAINTAINABILITY,
-  RELIABILITY,
-  SECURITY;
+  MAINTAINABILITY("Maintainability"),
+  RELIABILITY("Reliability"),
+  SECURITY("Security");
 
+  private final String label;
+
+  SoftwareQuality(String label) {
+    this.label = label;
+  }
+
+  public String getLabel() {
+    return label;
+  }
+
+  public static SoftwareQuality fromDto(org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality rpcEnum) {
+    switch (rpcEnum) {
+      case MAINTAINABILITY:
+        return MAINTAINABILITY;
+      case RELIABILITY:
+        return RELIABILITY;
+      case SECURITY:
+        return SECURITY;
+      default:
+        throw new IllegalArgumentException("Unknown quality: " + rpcEnum);
+    }
+  }
 }

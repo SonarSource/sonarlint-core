@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.rules;
 import java.util.List;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttributeCategory;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
@@ -31,19 +33,21 @@ public abstract class AbstractRuleDto {
   private final String name;
   private final IssueSeverity severity;
   private final RuleType type;
-  private final CleanCodeAttributeDto cleanCodeAttributeDetails;
+  private final CleanCodeAttribute cleanCodeAttribute;
+  private final CleanCodeAttributeCategory cleanCodeAttributeCategory;
   private final List<ImpactDto> defaultImpacts;
   private final Language language;
   private final VulnerabilityProbability vulnerabilityProbability;
 
   AbstractRuleDto(String key, String name, IssueSeverity severity, RuleType type,
-    @Nullable CleanCodeAttributeDto cleanCodeAttributeDetails, List<ImpactDto> defaultImpacts,
-    Language language, @Nullable VulnerabilityProbability vulnerabilityProbability) {
+    @Nullable CleanCodeAttribute cleanCodeAttribute, @Nullable CleanCodeAttributeCategory cleanCodeAttributeCategory,
+    List<ImpactDto> defaultImpacts, Language language, @Nullable VulnerabilityProbability vulnerabilityProbability) {
     this.key = key;
     this.name = name;
     this.severity = severity;
     this.type = type;
-    this.cleanCodeAttributeDetails = cleanCodeAttributeDetails;
+    this.cleanCodeAttribute = cleanCodeAttribute;
+    this.cleanCodeAttributeCategory = cleanCodeAttributeCategory;
     this.defaultImpacts = defaultImpacts;
     this.language = language;
     this.vulnerabilityProbability = vulnerabilityProbability;
@@ -66,8 +70,13 @@ public abstract class AbstractRuleDto {
   }
 
   @CheckForNull
-  public CleanCodeAttributeDto getCleanCodeAttributeDetails() {
-    return cleanCodeAttributeDetails;
+  public CleanCodeAttribute getCleanCodeAttribute() {
+    return cleanCodeAttribute;
+  }
+
+  @CheckForNull
+  public CleanCodeAttributeCategory getCleanCodeAttributeCategory() {
+    return cleanCodeAttributeCategory;
   }
 
   public List<ImpactDto> getDefaultImpacts() {
