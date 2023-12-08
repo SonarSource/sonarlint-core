@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -89,16 +90,16 @@ public class ServerIssueUpdater {
     return new UpdateSummary<>(deletedTaintVulnerabilityIds, addedTaintVulnerabilities, updatedTaintVulnerabilities);
   }
 
-  public void updateFileIssues(ServerApi serverApi, ProjectBinding projectBinding, String ideFilePath, String branchName, boolean isSonarCloud,
+  public void updateFileIssues(ServerApi serverApi, ProjectBinding projectBinding, Path ideFilePath, String branchName, boolean isSonarCloud,
     Version serverVersion) {
-    String serverFilePath = IssueStorePaths.idePathToServerPath(projectBinding, ideFilePath);
+    var serverFilePath = IssueStorePaths.idePathToServerPath(projectBinding, ideFilePath);
     if (serverFilePath == null) {
       return;
     }
     updateFileIssues(serverApi, projectBinding.projectKey(), serverFilePath, branchName, isSonarCloud, serverVersion);
   }
 
-  public void updateFileIssues(ServerApi serverApi, String projectKey, String serverFileRelativePath, String branchName, boolean isSonarCloud, Version serverVersion) {
+  public void updateFileIssues(ServerApi serverApi, String projectKey, Path serverFileRelativePath, String branchName, boolean isSonarCloud, Version serverVersion) {
     var fileKey = IssueStorePaths.componentKey(projectKey, serverFileRelativePath);
     if (!IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
       List<ServerIssue<?>> issues = new ArrayList<>();

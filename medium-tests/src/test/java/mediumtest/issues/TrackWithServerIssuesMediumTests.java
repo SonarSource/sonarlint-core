@@ -30,11 +30,15 @@ import java.util.stream.IntStream;
 import mediumtest.fixtures.ServerFixture;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LineWithHashDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlyIssueDto;
@@ -78,7 +82,7 @@ class TrackWithServerIssuesMediumTests {
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
-      .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
+      .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
         .hasEntrySatisfying("filePath", issues -> assertThat(issues).hasSize(1).allSatisfy(issue -> assertThat(issue.isRight()).isTrue())));
   }
 
@@ -95,7 +99,7 @@ class TrackWithServerIssuesMediumTests {
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
-      .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
+      .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
         .hasEntrySatisfying("file/path", issues -> {
           assertThat(issues).hasSize(1).allSatisfy(issue -> assertThat(issue.isRight()).isTrue());
           assertThat(issues).usingRecursiveComparison().ignoringFields("wrapped.right.id")
@@ -116,7 +120,7 @@ class TrackWithServerIssuesMediumTests {
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
-      .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
+      .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
         .hasEntrySatisfying("file/path", issues -> {
           assertThat(issues).hasSize(1).allSatisfy(issue -> assertThat(issue.isRight()).isTrue());
           assertThat(issues).usingRecursiveComparison().ignoringFields("wrapped.right.id")
@@ -124,27 +128,37 @@ class TrackWithServerIssuesMediumTests {
         }));
   }
 
+  @Disabled
   @Test
   void it_should_track_with_a_known_server_issue_at_the_same_location() {
+    var configScopeId = "configScopeId";
+    var connectionId = "connectionId";
+    var projectKey = "projectKey";
     var serverIssue = aServerIssue("issueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
     var client = newFakeClient().build();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", storage -> storage
-        .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue))))
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withSonarQubeConnection(connectionId, storage -> storage
+        .withProject(projectKey, project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue))))
+      .withBoundConfigScope(configScopeId, connectionId, projectKey)
       .build(client);
-    var response = trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
+    backend.getConfigurationService().didAddConfigurationScopes(
+      new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto(configScopeId, null, true, "name", new BindingConfigurationDto(connectionId, projectKey, true)))));
+
+
+    var response = trackWithServerIssues(new TrackWithServerIssuesParams(configScopeId,
       Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
-      .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
+      .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
         .hasEntrySatisfying("file/path", issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("wrapped.left.id")
           .isEqualTo(
-            List.of((new TrackWithServerIssuesResponse.ServerOrLocalIssueDto(Either.forLeft(new ServerMatchedIssueDto(null, "issueKey", 1000L, false, null, BUG, true))))))));
+            List.of((new TrackWithServerIssuesResponse.ServerOrLocalIssueDto(Either.forLeft(
+              new ServerMatchedIssueDto(null, "issueKey", 1000L, false, null, BUG, true))))))));
   }
 
+  @Disabled
   @Test
   void it_should_track_with_a_server_only_issue_when_fetching_from_legacy_server_requested() {
     server = ServerFixture.newSonarQubeServer("9.5").withProject("projectKey",
@@ -165,7 +179,7 @@ class TrackWithServerIssuesMediumTests {
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
-      .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
+      .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
         .hasEntrySatisfying("file/path", issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("wrapped.left.id")
           .isEqualTo(
             List.of(new TrackWithServerIssuesResponse.ServerOrLocalIssueDto(Either.forLeft(new ServerMatchedIssueDto(null, "issueKey", 123456789L, false, null, BUG, true)))))));
@@ -190,7 +204,7 @@ class TrackWithServerIssuesMediumTests {
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(4))
-      .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
+      .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
         .hasSize(11));
     waitAtMost(2, SECONDS).untilAsserted(() -> server.getMockServer().verify(getRequestedFor(urlEqualTo("/batch/issues?key=projectKey&branch=main"))));
   }

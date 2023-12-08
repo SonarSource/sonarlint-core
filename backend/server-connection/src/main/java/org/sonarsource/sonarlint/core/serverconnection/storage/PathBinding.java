@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Server API
+ * SonarLint Core - Server Connection
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,29 +17,26 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverapi.push;
+package org.sonarsource.sonarlint.core.serverconnection.storage;
 
+import java.io.ByteArrayInputStream;
 import java.nio.file.Path;
+import jetbrains.exodus.bindings.BindingUtils;
+import jetbrains.exodus.bindings.ComparableBinding;
+import jetbrains.exodus.util.LightOutputStream;
+import org.jetbrains.annotations.NotNull;
 
-public class SecurityHotspotClosedEvent implements ServerHotspotEvent {
-  private final String projectKey;
-  private final String hotspotKey;
-  private Path filePath;
+public class PathBinding extends ComparableBinding {
 
-  public SecurityHotspotClosedEvent(String projectKey, String hotspotKey, Path filePath) {
-    this.projectKey = projectKey;
-    this.hotspotKey = hotspotKey;
-    this.filePath = filePath;
-  }
   @Override
-  public String getProjectKey() {
-    return projectKey;
+  public Comparable readObject(@NotNull ByteArrayInputStream stream) {
+    return Path.of(BindingUtils.readString(stream));
   }
-  public String getHotspotKey() {
-    return hotspotKey;
-  }
+
   @Override
-  public Path getFilePath() {
-    return filePath;
+  public void writeObject(@NotNull LightOutputStream output, @NotNull Comparable object) {
+    final var path = (Path) object;
+    output.writeString(path.toString());
   }
+
 }

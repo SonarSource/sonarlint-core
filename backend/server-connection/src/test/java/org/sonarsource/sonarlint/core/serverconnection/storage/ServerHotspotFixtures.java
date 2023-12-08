@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
@@ -28,14 +29,14 @@ import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 public class ServerHotspotFixtures {
 
   public static ServerHotspot aServerHotspot() {
-    return aServerHotspot("key", "file/path");
+    return aServerHotspot("key", Path.of("file/path"));
   }
 
   public static ServerHotspot aServerHotspot(String key) {
-    return aServerHotspot(key, "file/path");
+    return aServerHotspot(key, Path.of("file/path"));
   }
 
-  public static ServerHotspot aServerHotspot(String key, String filePath) {
+  public static ServerHotspot aServerHotspot(String key, Path filePath) {
     return new ServerHotspot(
       key,
       "repo:key",

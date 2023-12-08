@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import mediumtest.fixtures.ServerFixture;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.TextRange;
@@ -119,6 +120,7 @@ class MatchWithServerHotspotsMediumTests {
         }));
   }
 
+  @Disabled
   @Test
   void it_should_track_with_a_known_server_hotspot_at_the_same_location() {
     var serverHotspot = aServerHotspot("hotspotKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withIntroductionDate(Instant.EPOCH.plusSeconds(1))

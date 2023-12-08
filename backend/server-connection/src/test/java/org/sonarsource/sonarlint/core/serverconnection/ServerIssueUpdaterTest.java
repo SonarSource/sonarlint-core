@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashSet;
@@ -39,6 +40,7 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -221,7 +223,7 @@ class ServerIssueUpdaterTest {
   void update_file_issues_for_unknown_file() {
     projectBinding = new ProjectBinding(PROJECT_KEY, "", "ide_prefix");
 
-    updater.updateFileIssues(serverApi, projectBinding, "not_ide_prefix", null, false, Version.create("8.9"));
+    updater.updateFileIssues(serverApi, projectBinding, Path.of("not_ide_prefix"), null, false, Version.create("8.9"));
 
     verifyNoInteractions(downloader);
     verifyNoInteractions(issueStore);
@@ -232,7 +234,7 @@ class ServerIssueUpdaterTest {
     when(downloader.downloadFromBatch(serverApi, "module:file", null)).thenThrow(IllegalArgumentException.class);
     // when(issueStorePaths.idePathToFileKey(projectBinding, "file")).thenReturn("module:file");
 
-    assertThrows(DownloadException.class, () -> updater.updateFileIssues(serverApi, projectBinding, "file", null, false, Version.create("8.9")));
+    assertThrows(DownloadException.class, () -> updater.updateFileIssues(serverApi, projectBinding, Path.of("file"), null, false, Version.create("8.9")));
   }
 
   @Test
@@ -242,9 +244,9 @@ class ServerIssueUpdaterTest {
 
     when(downloader.downloadFromBatch(serverApi, projectBinding.projectKey() + ":src/main/Foo.java", null)).thenReturn(issues);
 
-    updater.updateFileIssues(serverApi, projectBinding, "src/main/Foo.java", "branch", false, Version.create("8.9"));
+    updater.updateFileIssues(serverApi, projectBinding, Path.of("src/main/Foo.java"), "branch", false, Version.create("8.9"));
 
-    verify(issueStore).replaceAllIssuesOfFile(eq("branch"), eq("src/main/Foo.java"), anyList());
+    verify(issueStore).replaceAllIssuesOfFile(eq("branch"), eq(Path.of("src/main/Foo.java")), anyList());
   }
 
   @Test
@@ -254,15 +256,15 @@ class ServerIssueUpdaterTest {
 
     when(downloader.downloadFromBatch(serverApi, projectBinding.projectKey() + ":src/main/Foo.java", null)).thenReturn(issues);
 
-    updater.updateFileIssues(serverApi, projectBinding, "src/main/Foo.java", "branch", true, Version.create("99.9"));
+    updater.updateFileIssues(serverApi, projectBinding, Path.of("src/main/Foo.java"), "branch", true, Version.create("99.9"));
 
-    verify(issueStore).replaceAllIssuesOfFile(eq("branch"), eq("src/main/Foo.java"), anyList());
+    verify(issueStore).replaceAllIssuesOfFile(eq("branch"), eq(Path.of("src/main/Foo.java")), anyList());
   }
 
   @Test
   void dont_update_file_issues_with_pull() {
-    updater.updateFileIssues(serverApi, projectBinding, "src/main/Foo.java", "branch", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
+    updater.updateFileIssues(serverApi, projectBinding, Path.of("src/main/Foo.java"), "branch", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
 
-    verify(issueStore, never()).replaceAllIssuesOfFile(eq("branch"), anyString(), anyList());
+    verify(issueStore, never()).replaceAllIssuesOfFile(eq("branch"), any(), anyList());
   }
 }

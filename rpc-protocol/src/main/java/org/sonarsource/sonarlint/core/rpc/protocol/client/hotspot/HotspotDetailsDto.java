@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot;
 
+import java.nio.file.Path;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 
@@ -26,7 +27,7 @@ public class HotspotDetailsDto {
   private final String key;
   @Deprecated(forRemoval = true)
   private final String message;
-  private final String filePath;
+  private final Path ideFilePath;
   @Deprecated(forRemoval = true)
   private final TextRangeDto textRange;
   @Deprecated(forRemoval = true)
@@ -42,11 +43,11 @@ public class HotspotDetailsDto {
   @Nullable
   private final String codeSnippet;
 
-  public HotspotDetailsDto(String key, String message, String filePath, TextRangeDto textRange, String author, String status, @Nullable String resolution, HotspotRule rule,
+  public HotspotDetailsDto(String key, String message, Path ideFilePath, TextRangeDto textRange, String author, String status, @Nullable String resolution, HotspotRule rule,
     @Nullable String codeSnippet) {
     this.key = key;
     this.message = message;
-    this.filePath = filePath;
+    this.ideFilePath = ideFilePath;
     this.textRange = textRange;
     this.author = author;
     this.status = status;
@@ -63,8 +64,8 @@ public class HotspotDetailsDto {
     return message;
   }
 
-  public String getFilePath() {
-    return filePath;
+  public Path getIdeFilePath() {
+    return ideFilePath;
   }
 
   public TextRangeDto getTextRange() {

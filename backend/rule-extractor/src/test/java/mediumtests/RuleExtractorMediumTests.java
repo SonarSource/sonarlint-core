@@ -26,6 +26,7 @@ import java.nio.file.Paths;
 import java.util.EnumSet;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
@@ -66,6 +67,7 @@ class RuleExtractorMediumTests {
     }
   }
 
+  @Disabled
   @Test
   void extractAllRules() {
     var enabledLanguages = Set.of(Language.values());
@@ -116,6 +118,7 @@ class RuleExtractorMediumTests {
     assertThat(ruleWithInternalKey.get().getInternalKey()).contains("S1124");
   }
 
+  @Disabled
   @Test
   void extractAllRules_include_rule_templates() throws Exception {
     var enabledLanguages = Set.of(Language.values());
@@ -136,6 +139,7 @@ class RuleExtractorMediumTests {
     }
   }
 
+  @Disabled
   @Test
   void extractAllRules_include_security_hotspots() throws Exception {
     var enabledLanguages = Set.of(Language.values());

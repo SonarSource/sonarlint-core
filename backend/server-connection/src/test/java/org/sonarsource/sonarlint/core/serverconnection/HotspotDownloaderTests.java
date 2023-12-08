@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
@@ -101,7 +102,7 @@ class HotspotDownloaderTests {
 
     var serverHotspot1 = result.getChangedHotspots().get(0);
     assertThat(serverHotspot1.getKey()).isEqualTo("someHotspotKey");
-    assertThat(serverHotspot1.getFilePath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(serverHotspot1.getFilePath()).isEqualTo(Path.of("foo/bar/Hello.java"));
     assertThat(serverHotspot1.getVulnerabilityProbability()).isEqualTo(VulnerabilityProbability.LOW);
     assertThat(serverHotspot1.getStatus()).isEqualTo(HotspotReviewStatus.TO_REVIEW);
     assertThat(serverHotspot1.getMessage()).isEqualTo("This is security sensitive");
@@ -115,7 +116,7 @@ class HotspotDownloaderTests {
 
     var serverHotspot2 = result.getChangedHotspots().get(1);
     assertThat(serverHotspot2.getKey()).isEqualTo("otherHotspotKey");
-    assertThat(serverHotspot2.getFilePath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(serverHotspot2.getFilePath()).isEqualTo(Path.of("foo/bar/Hello.java"));
     assertThat(serverHotspot2.getVulnerabilityProbability()).isEqualTo(VulnerabilityProbability.LOW);
     assertThat(serverHotspot2.getStatus()).isEqualTo(HotspotReviewStatus.SAFE);
     assertThat(serverHotspot2.getMessage()).isEqualTo("This is security sensitive");

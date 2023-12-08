@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +43,7 @@ public class ServerIssueFixtures {
       "repo:key",
       "message",
       "hash",
-      "file/path",
+      Path.of("file/path"),
       Instant.now(),
       IssueSeverity.MINOR,
       RuleType.BUG,
@@ -55,7 +56,7 @@ public class ServerIssueFixtures {
       true,
       "repo:key",
       "message",
-      "file/path",
+      Path.of("file/path"),
       Instant.now(),
       IssueSeverity.MINOR,
       RuleType.BUG);
@@ -67,7 +68,7 @@ public class ServerIssueFixtures {
       true,
       "repo:key",
       "message",
-      "file/path",
+      Path.of("file/path"),
       Instant.now(),
       IssueSeverity.MINOR,
       RuleType.BUG,
@@ -81,7 +82,7 @@ public class ServerIssueFixtures {
       false,
       "repo:key",
       "message",
-      "file/path",
+      Path.of("file/path"),
       Instant.now(),
       IssueSeverity.MINOR,
       RuleType.VULNERABILITY,
@@ -96,7 +97,7 @@ public class ServerIssueFixtures {
 
   private static ServerTaintIssue.ServerIssueLocation aServerTaintIssueFlowLocation() {
     return new ServerTaintIssue.ServerIssueLocation(
-      "file/path",
+      Path.of("file/path"),
       new TextRangeWithHash(5, 6, 7, 8, "rangeHash"),
       "message");
   }

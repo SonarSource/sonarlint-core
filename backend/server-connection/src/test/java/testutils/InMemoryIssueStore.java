@@ -19,6 +19,7 @@
  */
 package testutils;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,8 +45,8 @@ import static java.util.Optional.ofNullable;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.StorageUtils.deserializeLanguages;
 
 public class InMemoryIssueStore implements ProjectServerIssueStore {
-  private final Map<String, Map<String, List<ServerIssue<?>>>> issuesByFileByBranch = new HashMap<>();
-  private final Map<String, Map<String, Collection<ServerHotspot>>> hotspotsByFileByBranch = new HashMap<>();
+  private final Map<String, Map<Path, List<ServerIssue<?>>>> issuesByFileByBranch = new HashMap<>();
+  private final Map<String, Map<Path, Collection<ServerHotspot>>> hotspotsByFileByBranch = new HashMap<>();
   private final Map<String, Instant> lastHotspotSyncByBranch = new HashMap<>();
   private final Map<String, ServerHotspot> hotspotsByKey = new HashMap<>();
 
@@ -54,12 +55,12 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   private final Map<String, String> lastTaintEnabledLanguagesByBranch = new HashMap<>();
   private final Map<String, String> lastHotspotEnabledLanguagesByBranch = new HashMap<>();
   private final Map<String, ServerIssue<?>> issuesByKey = new HashMap<>();
-  private final Map<String, Map<String, List<ServerTaintIssue>>> taintIssuesByFileByBranch = new HashMap<>();
+  private final Map<String, Map<Path, List<ServerTaintIssue>>> taintIssuesByFileByBranch = new HashMap<>();
   private final Map<String, Instant> lastTaintSyncByBranch = new HashMap<>();
   private final Map<String, ServerTaintIssue> taintIssuesByKey = new HashMap<>();
 
   @Override
-  public void replaceAllIssuesOfFile(String branchName, String serverFilePath, List<ServerIssue<?>> issues) {
+  public void replaceAllIssuesOfFile(String branchName, Path serverFilePath, List<ServerIssue<?>> issues) {
     issuesByFileByBranch
       .computeIfAbsent(branchName, __ -> new HashMap<>())
       .put(serverFilePath, issues);
@@ -85,7 +86,7 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   @Override
   public void mergeTaintIssues(String branchName, List<ServerTaintIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp,
     Set<Language> enabledLanguages) {
-    var issuesToMergeByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerTaintIssue::getFilePath));
+    var issuesToMergeByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(serverTaintIssue -> serverTaintIssue.getFilePath()));
     // does not handle issue moving file (e.g. file renaming)
     taintIssuesByFileByBranch
       .computeIfAbsent(branchName, __ -> new HashMap<>())
@@ -173,7 +174,7 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void replaceAllHotspotsOfFile(String branchName, String serverFilePath, Collection<ServerHotspot> serverHotspots) {
+  public void replaceAllHotspotsOfFile(String branchName, Path serverFilePath, Collection<ServerHotspot> serverHotspots) {
     var branchHotspots = hotspotsByFileByBranch.get(branchName);
     if (branchHotspots != null) {
       var fileHotspots = branchHotspots.get(serverFilePath);
@@ -202,7 +203,7 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public List<ServerIssue<?>> load(String branchName, String sqFilePath) {
+  public List<ServerIssue<?>> load(String branchName, Path sqFilePath) {
     return issuesByFileByBranch
       .getOrDefault(branchName, Map.of())
       .getOrDefault(sqFilePath, List.of());
@@ -214,7 +215,7 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public Collection<ServerHotspot> loadHotspots(String branchName, String serverFilePath) {
+  public Collection<ServerHotspot> loadHotspots(String branchName, Path serverFilePath) {
     return hotspotsByFileByBranch
       .getOrDefault(branchName, Map.of())
       .getOrDefault(serverFilePath, List.of());

@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.sync;
 
+import java.nio.file.Path;
 import java.util.LinkedHashSet;
 import java.util.stream.Collectors;
 import javax.inject.Named;
@@ -106,12 +107,12 @@ public class HotspotSynchronizationService {
     hotspotsUpdater.updateAll(serverApi.hotspot(), projectKey, branchName, () -> serverVersion, progress);
   }
 
-  public void fetchFileHotspots(Binding binding, String activeBranch, String serverFilePath) {
+  public void fetchFileHotspots(Binding binding, String activeBranch, Path serverFilePath) {
     serverApiProvider.getServerApi(binding.getConnectionId())
       .ifPresent(serverApi -> downloadAllServerHotspotsForFile(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), serverFilePath, activeBranch));
   }
 
-  private void downloadAllServerHotspotsForFile(String connectionId, ServerApi serverApi, String projectKey, String serverRelativeFilePath, String branchName) {
+  private void downloadAllServerHotspotsForFile(String connectionId, ServerApi serverApi, String projectKey, Path serverRelativeFilePath, String branchName) {
     var storage = storageService.getStorageFacade().connection(connectionId);
     var serverVersion = getSonarServerVersion(serverApi, storage);
     var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(Language::shouldSyncInConnectedMode)

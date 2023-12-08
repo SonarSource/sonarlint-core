@@ -30,14 +30,14 @@ import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherServerOrLocalIs
 
 public class TrackWithServerIssuesResponse {
 
-  private final Map<String, List<ServerOrLocalIssueDto>> issuesByServerRelativePath;
+  private final Map<String, List<ServerOrLocalIssueDto>> issuesByIdeRelativePath;
 
-  public TrackWithServerIssuesResponse(Map<String, List<ServerOrLocalIssueDto>> issuesByServerRelativePath) {
-    this.issuesByServerRelativePath = issuesByServerRelativePath;
+  public TrackWithServerIssuesResponse(Map<String, List<ServerOrLocalIssueDto>> issuesByIdeRelativePath) {
+    this.issuesByIdeRelativePath = issuesByIdeRelativePath;
   }
 
-  public Map<String, List<ServerOrLocalIssueDto>> getIssuesByServerRelativePath() {
-    return issuesByServerRelativePath;
+  public Map<String, List<ServerOrLocalIssueDto>> getIssuesByIdeRelativePath() {
+    return issuesByIdeRelativePath;
   }
 
   @JsonAdapter(EitherServerOrLocalIssueDtoAdapter.Factory.class)

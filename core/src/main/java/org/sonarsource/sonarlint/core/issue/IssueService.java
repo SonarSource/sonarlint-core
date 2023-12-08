@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.issue;
 
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
@@ -238,14 +239,14 @@ public class IssueService {
 
   public boolean reopenAllIssuesForFile(ReopenAllIssuesForFileParams params, CancelChecker cancelChecker) {
     var configurationScopeId = params.getConfigurationScopeId();
-    var filePath = params.getRelativePath();
+    var filePath = Path.of(params.getRelativePath());
     var localOnlyIssueStore = localOnlyIssueStorageService.get();
     removeAllIssuesForFile(localOnlyIssueStore, configurationScopeId, filePath, cancelChecker);
     return localOnlyIssueStorageService.get().removeAllIssuesForFile(configurationScopeId, filePath);
   }
 
   private void removeAllIssuesForFile(XodusLocalOnlyIssueStore localOnlyIssueStore,
-    String configurationScopeId, String filePath, CancelChecker cancelChecker) {
+    String configurationScopeId, Path filePath, CancelChecker cancelChecker) {
     var allIssues = localOnlyIssueStore.loadAll(configurationScopeId);
     var issuesForFile = localOnlyIssueStore.loadForFile(configurationScopeId, filePath);
     var issuesToSync = subtract(allIssues, issuesForFile);

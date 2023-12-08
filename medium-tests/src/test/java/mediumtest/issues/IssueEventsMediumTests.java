@@ -19,6 +19,7 @@
  */
 package mediumtest.issues;
 
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -147,7 +148,7 @@ class IssueEventsMediumTests {
   }
 
   private List<ServerIssue<?>> readIssues(String connectionId, String projectKey, String branchName, String filePath) {
-    return backend.getIssueStorageService().connection(connectionId).project(projectKey).findings().load(branchName, filePath);
+    return backend.getIssueStorageService().connection(connectionId).project(projectKey).findings().load(branchName, Path.of(filePath));
   }
 
   private static void mockEvent(ServerFixture.Server server, String projectKey, String eventPayload) {

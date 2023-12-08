@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.push;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -405,14 +406,14 @@ class PushApiTests {
     assertThat(receivedEvents)
       .extracting("mainLocation")
       .extracting("filePath", "message", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "textRange.hash")
-      .containsOnly(tuple("functions/taint.js", "blah blah", 17, 10, 3, 2, "hash"));
+      .containsOnly(tuple(Path.of("functions/taint.js"), "blah blah", 17, 10, 3, 2, "hash"));
     assertThat(receivedEvents)
       .flatExtracting("flows")
       .flatExtracting("locations")
       .extracting("filePath", "message", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "textRange.hash")
       .containsOnly(
-        tuple("functions/taint.js", "sink: tainted value is used to perform a security-sensitive operation", 17, 10, 3, 2, "hash1"),
-        tuple("functions/taint2.js", "sink: tainted value is used to perform a security-sensitive operation", 18, 11, 4, 3, "hash2"));
+        tuple(Path.of("functions/taint.js"), "sink: tainted value is used to perform a security-sensitive operation", 17, 10, 3, 2, "hash1"),
+        tuple(Path.of("functions/taint2.js"), "sink: tainted value is used to perform a security-sensitive operation", 18, 11, 4, 3, "hash2"));
   }
 
   @Test
