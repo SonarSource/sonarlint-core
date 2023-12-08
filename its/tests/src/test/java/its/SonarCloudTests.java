@@ -65,11 +65,11 @@ import org.sonarqube.ws.client.settings.SetRequest;
 import org.sonarqube.ws.client.usertokens.GenerateRequest;
 import org.sonarqube.ws.client.usertokens.RevokeRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
@@ -109,6 +109,7 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
@@ -181,7 +182,7 @@ class SonarCloudTests extends AbstractConnectedTests {
       new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, featureFlags, sonarUserHome.resolve("storage"),
         sonarUserHome.resolve("work"), emptySet(), emptyMap(), languages, emptySet(), emptyList(),
         List.of(new SonarCloudConnectionConfigurationDto(CONNECTION_ID, SONARCLOUD_ORGANIZATION, true)), sonarUserHome.toString(),
-        emptyMap(), false));
+        emptyMap(), false, null));
     randomPositiveInt = new Random().nextInt() & Integer.MAX_VALUE;
 
     adminWsClient = newAdminWsClient();
@@ -238,7 +239,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     ALL_PROJECTS.forEach(projectKey -> {
       clientLogs.clear();
       didSynchronizeConfigurationScopes.clear();
-      bindProject(projectKey, CONFIG_SCOPE_ID+projectKey);
+      bindProject(projectKey, CONFIG_SCOPE_ID + projectKey);
     });
 
     Map<String, String> globalProps = new HashMap<>();
@@ -246,8 +247,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     var logOutput = new ConsoleLogOutput(false);
 
-    var nodeJsHelper = new NodeJsHelper(logOutput);
-    nodeJsHelper.detect(null);
+    var globalAnalysisConfig = backend.getAnalysisService().getGlobalStandaloneConfiguration().join();
 
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarCloudBuilder()
       .setLogOutput(logOutput)
@@ -263,7 +263,7 @@ class SonarCloudTests extends AbstractConnectedTests {
       .addEnabledLanguage(Language.KOTLIN)
       .addEnabledLanguage(Language.SCALA)
       .addEnabledLanguage(Language.XML)
-      .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
+      .setNodeJs(requireNonNull(globalAnalysisConfig.getNodeJsPath()), Version.create(requireNonNull(globalAnalysisConfig.getNodeJsVersion())))
       .setExtraProperties(globalProps)
       .build());
   }
@@ -531,8 +531,8 @@ class SonarCloudTests extends AbstractConnectedTests {
     void reportHotspots() throws Exception {
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(projectKey(PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT,
-        "src/main/java/foo/Foo.java",
-        "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath()),
+          "src/main/java/foo/Foo.java",
+          "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath()),
         issueListener, null, null);
 
       assertThat(issueListener.getIssues()).hasSize(1)

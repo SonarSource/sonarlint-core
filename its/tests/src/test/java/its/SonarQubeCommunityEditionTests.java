@@ -113,14 +113,14 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
       var featureFlags = new FeatureFlagsDto(true, true, true, false, true, true, false, true);
       var enabledLanguages = Set.of(JAVA);
       backend.initialize(
-        new InitializeParams(IT_CLIENT_INFO,
-          IT_TELEMETRY_ATTRIBUTES, featureFlags, sonarUserHome.resolve("storage"),
-          sonarUserHome.resolve("work"),
-          Collections.emptySet(), Collections.emptyMap(), enabledLanguages, Collections.emptySet(),
-          List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)),
-          Collections.emptyList(),
-          sonarUserHome.toString(),
-          Map.of(), false))
+          new InitializeParams(IT_CLIENT_INFO,
+            IT_TELEMETRY_ATTRIBUTES, featureFlags, sonarUserHome.resolve("storage"),
+            sonarUserHome.resolve("work"),
+            Collections.emptySet(), Collections.emptyMap(), enabledLanguages, Collections.emptySet(),
+            List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)),
+            Collections.emptyList(),
+            sonarUserHome.toString(),
+            Map.of(), false, null))
         .get();
     } catch (Exception e) {
       throw new IllegalStateException("Cannot initialize the backend", e);
