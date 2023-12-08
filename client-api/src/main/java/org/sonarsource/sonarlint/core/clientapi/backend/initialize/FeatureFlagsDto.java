@@ -32,15 +32,17 @@ public class FeatureFlagsDto {
   private final boolean shouldManageLocalServer;
   private final boolean enableSecurityHotspots;
   private final boolean shouldManageServerSentEvents;
+  private final boolean enableDataflowBugDetection;
 
   public FeatureFlagsDto(boolean shouldManageSmartNotifications, boolean taintVulnerabilitiesEnabled, boolean shouldSynchronizeProjects, boolean shouldManageLocalServer,
-    boolean enableSecurityHotspots, boolean shouldManageServerSentEvents) {
+    boolean enableSecurityHotspots, boolean shouldManageServerSentEvents, boolean enableDataflowBugDetection) {
     this.shouldManageSmartNotifications = shouldManageSmartNotifications;
     this.taintVulnerabilitiesEnabled = taintVulnerabilitiesEnabled;
     this.shouldSynchronizeProjects = shouldSynchronizeProjects;
     this.shouldManageLocalServer = shouldManageLocalServer;
     this.enableSecurityHotspots = enableSecurityHotspots;
     this.shouldManageServerSentEvents = shouldManageServerSentEvents;
+    this.enableDataflowBugDetection = enableDataflowBugDetection;
   }
 
   public boolean shouldManageSmartNotifications() {
@@ -72,4 +74,7 @@ public class FeatureFlagsDto {
     return enableSecurityHotspots;
   }
 
+  public boolean isEnableDataflowBugDetection() {
+    return enableDataflowBugDetection;
+  }
 }

@@ -48,6 +48,7 @@ public class PluginsServiceImpl implements PluginsService {
   private final StorageService storageService;
   private final Set<Path> embeddedPluginPaths;
   private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
+  private final boolean enableDataflowBugDetection;
 
   public PluginsServiceImpl(PluginsRepository pluginsRepository, LanguageSupportRepository languageSupportRepository, StorageService storageService, InitializeParams params) {
     this.pluginsRepository = pluginsRepository;
@@ -55,12 +56,13 @@ public class PluginsServiceImpl implements PluginsService {
     this.storageService = storageService;
     this.embeddedPluginPaths = params.getEmbeddedPluginPaths();
     this.connectedModeEmbeddedPluginPathsByKey = params.getConnectedModeEmbeddedPluginPathsByKey();
+    this.enableDataflowBugDetection = params.getFeatureFlags().isEnableDataflowBugDetection();
   }
 
   public LoadedPlugins getEmbeddedPlugins() {
     var loadedEmbeddedPlugins = pluginsRepository.getLoadedEmbeddedPlugins();
     if (loadedEmbeddedPlugins == null) {
-      var result = loadPlugins(languageSupportRepository.getEnabledLanguagesInStandaloneMode(), embeddedPluginPaths);
+      var result = loadPlugins(languageSupportRepository.getEnabledLanguagesInStandaloneMode(), embeddedPluginPaths, enableDataflowBugDetection);
       loadedEmbeddedPlugins = result.getLoadedPlugins();
       pluginsRepository.setLoadedEmbeddedPlugins(loadedEmbeddedPlugins);
     }
@@ -87,12 +89,12 @@ public class PluginsServiceImpl implements PluginsService {
     pluginsToLoadByKey.putAll(connectedModeEmbeddedPluginPathsByKey);
     Set<Path> pluginPaths = new HashSet<>(pluginsToLoadByKey.values());
 
-    return loadPlugins(languageSupportRepository.getEnabledLanguagesInConnectedMode(), pluginPaths);
+    return loadPlugins(languageSupportRepository.getEnabledLanguagesInConnectedMode(), pluginPaths, enableDataflowBugDetection);
   }
 
-  private static PluginsLoadResult loadPlugins(Set<Language> enabledLanguages, Set<Path> pluginPaths) {
+  private static PluginsLoadResult loadPlugins(Set<Language> enabledLanguages, Set<Path> pluginPaths, boolean enableDataflowBugDetection) {
     // not interested in the Node.js path at the moment
-    var config = new PluginsLoader.Configuration(pluginPaths, enabledLanguages);
+    var config = new PluginsLoader.Configuration(pluginPaths, enabledLanguages, enableDataflowBugDetection);
     return new PluginsLoader().load(config);
   }
 

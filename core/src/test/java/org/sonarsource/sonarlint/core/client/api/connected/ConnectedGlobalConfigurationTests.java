@@ -45,7 +45,6 @@ class ConnectedGlobalConfigurationTests {
     assertThat(config.extraProperties()).isEmpty();
     assertThat(config.getEmbeddedPluginPathsByKey()).isEmpty();
     assertThat(config.getClientPid()).isZero();
-    assertThat(config.getAllowedPluginIds()).isEmpty();
   }
 
   @Test
@@ -80,16 +79,6 @@ class ConnectedGlobalConfigurationTests {
       .addEnabledLanguage(Language.C)
       .build();
     assertThat(config.getEnabledLanguages()).containsOnly(Language.JAVA, Language.ABAP, Language.C);
-  }
-
-  @Test
-  void addAllowedPlugins() {
-    var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
-      .addEnabledLanguages(Language.PYTHON)
-      .addAllowedPluginIds("dbd")
-      .build();
-    assertThat(config.getEnabledLanguages()).containsOnly(Language.PYTHON);
-    assertThat(config.getAllowedPluginIds()).containsOnly("dbd");
   }
 
   @Test
