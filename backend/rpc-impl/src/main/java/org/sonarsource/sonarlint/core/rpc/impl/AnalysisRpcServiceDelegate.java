@@ -23,8 +23,10 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.analysis.AnalysisService;
+import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeClientNodeJsPathParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetGlobalConnectedConfigurationParams;
@@ -78,5 +80,10 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
           throw new ResponseErrorException(error);
         }
       }, params.getConfigScopeId());
+  }
+
+  @Override
+  public void didChangeClientNodeJsPath(DidChangeClientNodeJsPathParams params) {
+    notify(() -> getBean(NodeJsService.class).didChangeClientNodeJsPath(params.getClientNodeJsPath()));
   }
 }

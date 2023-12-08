@@ -137,7 +137,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
             emptyMap(), languages, emptySet(),
             List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), emptyList(),
             sonarUserHome.toString(),
-            Map.of(), false))
+            Map.of(), false, null))
         .get();
     } catch (Exception e) {
       throw new IllegalStateException("Cannot initialize the backend", e);
@@ -351,7 +351,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   private static void bindProject(String projectName, String projectKey) {
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
       List.of(new ConfigurationScopeDto("configScope-" + projectName, null, true, projectName,
-        new BindingConfigurationDto(CONNECTION_ID, projectKey,true)))));
+        new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
     await().atMost(30, SECONDS).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains("configScope-" + projectName));
     // TODO FIX ME and remove this check for a log after https://sonarsource.atlassian.net/browse/SLCORE-396 is fixed
     await().untilAsserted(() ->

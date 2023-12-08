@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
 
@@ -50,4 +51,10 @@ public interface AnalysisRpcService {
    */
   @JsonRequest
   CompletableFuture<GetRuleDetailsResponse> getRuleDetails(GetRuleDetailsParams params);
+
+  /**
+   * Inform the backend that the client has changed the location of the nodejs executable to be used by analyzer
+   */
+  @JsonNotification
+  void didChangeClientNodeJsPath(DidChangeClientNodeJsPathParams params);
 }

@@ -48,17 +48,18 @@ public class InitializeParams {
   private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey;
   private final boolean isFocusOnNewCode;
   private final TelemetryConstantAttributesDto telemetryConstantAttributes;
+  private final Path clientNodeJsPath;
 
   /**
    * @param telemetryConstantAttributes Static information about the client, that will be sent with the telemetry payload
-   * @param workDir                   Path to work directory. If null, will default to [sonarlintUserHome]/work
-   * @param sonarlintUserHome         Path to SonarLint user home directory. If null, will default to ~/.sonarlint
-   * @param standaloneRuleConfigByKey Local rule configuration for standalone analysis. This configuration will override defaults rule activation and parameters.
+   * @param workDir                     Path to work directory. If null, will default to [sonarlintUserHome]/work
+   * @param sonarlintUserHome           Path to SonarLint user home directory. If null, will default to ~/.sonarlint
+   * @param standaloneRuleConfigByKey   Local rule configuration for standalone analysis. This configuration will override defaults rule activation and parameters.
    */
   public InitializeParams(ClientConstantInfoDto clientConstantInfo, TelemetryConstantAttributesDto telemetryConstantAttributes, FeatureFlagsDto featureFlags, Path storageRoot, @Nullable Path workDir, Set<Path> embeddedPluginPaths,
     Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> extraEnabledLanguagesInConnectedMode,
     List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections, @Nullable String sonarlintUserHome,
-    Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey, boolean isFocusOnNewCode) {
+    Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey, boolean isFocusOnNewCode, @Nullable Path clientNodeJsPath) {
     this.clientConstantInfo = clientConstantInfo;
     this.telemetryConstantAttributes = telemetryConstantAttributes;
     this.featureFlags = featureFlags;
@@ -73,6 +74,7 @@ public class InitializeParams {
     this.sonarlintUserHome = sonarlintUserHome;
     this.standaloneRuleConfigByKey = standaloneRuleConfigByKey;
     this.isFocusOnNewCode = isFocusOnNewCode;
+    this.clientNodeJsPath = clientNodeJsPath;
   }
 
   public ClientConstantInfoDto getClientConstantInfo() {
@@ -131,5 +133,9 @@ public class InitializeParams {
 
   public boolean isFocusOnNewCode() {
     return isFocusOnNewCode;
+  }
+
+  public Path getClientNodeJsPath() {
+    return clientNodeJsPath;
   }
 }

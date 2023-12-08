@@ -74,10 +74,11 @@ public class AnalysisService {
   private final RulesRepository rulesRepository;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final boolean hotspotEnabled;
+  private final NodeJsService nodeJsService;
 
   public AnalysisService(ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository, StorageService storageService,
     PluginsService pluginsService, RulesService rulesService, RulesRepository rulesRepository, ConnectionConfigurationRepository connectionConfigurationRepository,
-    InitializeParams initializeParams) {
+    InitializeParams initializeParams, NodeJsService nodeJsService) {
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
     this.storageService = storageService;
@@ -86,6 +87,7 @@ public class AnalysisService {
     this.rulesRepository = rulesRepository;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.hotspotEnabled = initializeParams.getFeatureFlags().isEnableSecurityHotspots();
+    this.nodeJsService = nodeJsService;
   }
 
   public List<String> getSupportedFilePatterns(String configScopeId) {
@@ -127,13 +129,19 @@ public class AnalysisService {
   public GetGlobalConfigurationResponse getGlobalStandaloneConfiguration() {
     var enabledLanguages = languageSupportRepository.getEnabledLanguagesInStandaloneMode();
     var pluginPaths = pluginsService.getEmbeddedPluginPaths();
-    return new GetGlobalConfigurationResponse(pluginPaths, enabledLanguages.stream().map(AnalysisService::toDto).collect(Collectors.toList()));
+    var nodeJsPath = nodeJsService.getNodeJsPath();
+    var nodeJsVersion = nodeJsService.getNodeJsVersion();
+    return new GetGlobalConfigurationResponse(pluginPaths, enabledLanguages.stream().map(AnalysisService::toDto).collect(Collectors.toList()),
+      nodeJsPath, nodeJsVersion != null ? nodeJsVersion.toString() : null);
   }
 
   public GetGlobalConfigurationResponse getGlobalConnectedConfiguration(String connectionId) {
     var enabledLanguages = languageSupportRepository.getEnabledLanguagesInConnectedMode();
     var pluginPaths = pluginsService.getConnectedPluginPaths(connectionId);
-    return new GetGlobalConfigurationResponse(pluginPaths, enabledLanguages.stream().map(AnalysisService::toDto).collect(Collectors.toList()));
+    var nodeJsPath = nodeJsService.getNodeJsPath();
+    var nodeJsVersion = nodeJsService.getNodeJsVersion();
+    return new GetGlobalConfigurationResponse(pluginPaths, enabledLanguages.stream().map(AnalysisService::toDto).collect(Collectors.toList()),
+      nodeJsPath, nodeJsVersion != null ? nodeJsVersion.toString() : null);
   }
 
   @NotNull

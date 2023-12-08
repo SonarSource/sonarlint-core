@@ -34,6 +34,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeNodeJsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
@@ -278,6 +279,11 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   public void didChangeTaintVulnerabilities(DidChangeTaintVulnerabilitiesParams params) {
     notify(() -> delegate.didChangeTaintVulnerabilities(params.getConfigurationScopeId(), params.getClosedTaintVulnerabilityIds(), params.getAddedTaintVulnerabilities(),
       params.getUpdatedTaintVulnerabilities()));
+  }
+
+  @Override
+  public void didChangeNodeJs(DidChangeNodeJsParams params) {
+    notify(() -> delegate.didChangeNodeJs(params.getNodeJsPath(), params.getVersion()));
   }
 
   private class CancelCheckerWrapper implements CancelChecker {

@@ -76,6 +76,7 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
@@ -121,6 +122,7 @@ import static its.utils.ItUtils.SONAR_VERSION;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.lang3.StringUtils.abbreviate;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -212,7 +214,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
               new SonarQubeConnectionConfigurationDto(CONNECTION_ID_WRONG_CREDENTIALS, ORCHESTRATOR.getServer().getUrl(), false)),
             Collections.emptyList(),
             sonarUserHome.toString(),
-            Map.of(), false))
+            Map.of(), false, null))
         .get();
     } catch (Exception e) {
       throw new IllegalStateException("Cannot initialize the backend", e);
@@ -250,8 +252,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       globalProps.put("sonar.global.label", "It works");
       logs = new CopyOnWriteArrayList<>();
 
-      var nodeJsHelper = new NodeJsHelper((m, l) -> System.out.println(l + " " + m));
-      nodeJsHelper.detect(null);
+      var globalAnalysisConfig = backend.getAnalysisService().getGlobalStandaloneConfiguration().join();
 
       var globalConfig = ConnectedGlobalConfiguration.sonarQubeBuilder()
         .enableHotspots()
@@ -279,7 +280,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           logs.add(msg);
           System.out.println(msg);
         })
-        .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
+        .setNodeJs(requireNonNull(globalAnalysisConfig.getNodeJsPath()), Version.create(requireNonNull(globalAnalysisConfig.getNodeJsVersion())))
         .setExtraProperties(globalProps)
         .build();
       engine = new ConnectedSonarLintEngineImpl(globalConfig);
