@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.event;
 
-import org.sonarsource.sonarlint.core.commons.push.SonarServerEvent;
+import org.sonarsource.sonarlint.core.serverapi.push.SonarServerEvent;
 
 public class SonarServerEventReceivedEvent {
   private final String connectionId;
