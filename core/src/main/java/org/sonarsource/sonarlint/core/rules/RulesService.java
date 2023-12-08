@@ -284,7 +284,7 @@ public class RulesService {
     this.standaloneRuleConfig.putAll(standaloneRuleConfig);
   }
 
-  public Map<String, StandaloneRuleConfigDto> getStandaloneRuleConfig() {
+  public synchronized Map<String, StandaloneRuleConfigDto> getStandaloneRuleConfig() {
     return Collections.unmodifiableMap(standaloneRuleConfig);
   }
 
