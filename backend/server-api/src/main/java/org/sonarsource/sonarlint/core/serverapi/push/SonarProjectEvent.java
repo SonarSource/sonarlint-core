@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.push;
 
-import org.sonarsource.sonarlint.core.commons.push.SonarServerEvent;
-
 public interface SonarProjectEvent extends SonarServerEvent {
   String getProjectKey();
 }
