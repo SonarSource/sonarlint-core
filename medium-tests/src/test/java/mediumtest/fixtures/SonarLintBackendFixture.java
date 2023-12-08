@@ -124,6 +124,7 @@ public class SonarLintBackendFixture {
     private final Map<String, StandaloneRuleConfigDto> standaloneConfigByKey = new HashMap<>();
     private final List<StorageFixture.StorageBuilder> storages = new ArrayList<>();
     private boolean isFocusOnNewCode;
+    private boolean enableDataflowBugDetection;
 
     public SonarLintBackendBuilder withSonarQubeConnection() {
       return withSonarQubeConnection("connectionId");
@@ -276,6 +277,11 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintBackendBuilder withDataflowBugDetectionEnabled() {
+      this.enableDataflowBugDetection = true;
+      return this;
+    }
+
     /**
      * Also used to enable Web Sockets
      */
@@ -336,7 +342,7 @@ public class SonarLintBackendFixture {
       var sonarLintBackend = new SonarLintTestBackend(client);
       client.setBackend(sonarLintBackend);
       var clientInfo = new ClientInfoDto(clientName, "mediumTests", userAgent);
-      var featureFlags = new FeatureFlagsDto(manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, startEmbeddedServer, areSecurityHotspotsEnabled, manageServerSentEvents);
+      var featureFlags = new FeatureFlagsDto(manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, startEmbeddedServer, areSecurityHotspotsEnabled, manageServerSentEvents, enableDataflowBugDetection);
       try {
         sonarLintBackend
           .initialize(new InitializeParams(clientInfo, featureFlags,

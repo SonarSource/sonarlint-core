@@ -140,7 +140,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     pluginsToLoadByKey.putAll(globalConfig.getEmbeddedPluginPathsByKey());
     Set<Path> plugins = new HashSet<>(pluginsToLoadByKey.values());
 
-    var config = new Configuration(plugins, globalConfig.getEnabledLanguages(), Optional.ofNullable(globalConfig.getNodeJsVersion()), globalConfig.getAllowedPluginIds());
+    var config = new Configuration(plugins, globalConfig.getEnabledLanguages(), globalConfig.isDataflowBugDetectionEnabled(), Optional.ofNullable(globalConfig.getNodeJsVersion()));
     return new PluginsLoader().load(config);
   }
 

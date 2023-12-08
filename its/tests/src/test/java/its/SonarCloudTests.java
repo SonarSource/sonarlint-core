@@ -149,7 +149,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     backend = new SonarLintBackendImpl(newDummySonarLintClient());
     backend.initialize(
-      new InitializeParams(IT_CLIENT_INFO, new FeatureFlagsDto(false, true, false, false, false, false), sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
+      new InitializeParams(IT_CLIENT_INFO, new FeatureFlagsDto(false, true, false, false, false, false, false), sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
         Collections.emptySet(), Collections.emptyMap(), Set.of(Language.JAVA), Collections.emptySet(),
         Collections.emptyList(), List.of(new SonarCloudConnectionConfigurationDto(CONNECTION_ID, SONARCLOUD_ORGANIZATION, true)), sonarUserHome.toString(),
         Map.of(), false));

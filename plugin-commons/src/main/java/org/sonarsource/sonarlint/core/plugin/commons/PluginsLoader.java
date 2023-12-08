@@ -49,22 +49,22 @@ public class PluginsLoader {
     private final Set<Language> enabledLanguages;
     private final boolean shouldCheckNodeVersion;
     private final Optional<Version> nodeCurrentVersion;
-    private final Set<String> additionalAllowedPlugins;
+    private final boolean enableDataflowBugDetection;
 
-    public Configuration(Set<Path> pluginJarLocations, Set<Language> enabledLanguages) {
+    public Configuration(Set<Path> pluginJarLocations, Set<Language> enabledLanguages, boolean enableDataflowBugDetection) {
       this.pluginJarLocations = pluginJarLocations;
       this.enabledLanguages = enabledLanguages;
       this.nodeCurrentVersion = Optional.empty();
+      this.enableDataflowBugDetection = enableDataflowBugDetection;
       this.shouldCheckNodeVersion = false;
-      this.additionalAllowedPlugins = Set.of();
     }
 
-    public Configuration(Set<Path> pluginJarLocations, Set<Language> enabledLanguages, Optional<Version> nodeCurrentVersion, Set<String> additionalAllowedPlugins) {
+    public Configuration(Set<Path> pluginJarLocations, Set<Language> enabledLanguages, boolean enableDataflowBugDetection, Optional<Version> nodeCurrentVersion) {
       this.pluginJarLocations = pluginJarLocations;
       this.enabledLanguages = enabledLanguages;
       this.nodeCurrentVersion = nodeCurrentVersion;
+      this.enableDataflowBugDetection = enableDataflowBugDetection;
       this.shouldCheckNodeVersion = true;
-      this.additionalAllowedPlugins = additionalAllowedPlugins;
     }
   }
 
@@ -79,7 +79,12 @@ public class PluginsLoader {
     var instancesLoader = new PluginInstancesLoader();
     var pluginInstancesByKeys = instancesLoader.instantiatePluginClasses(nonSkippedPlugins);
 
-    return new PluginsLoadResult(new LoadedPlugins(pluginInstancesByKeys, instancesLoader, configuration.additionalAllowedPlugins), pluginCheckResultByKeys);
+    return new PluginsLoadResult(new LoadedPlugins(pluginInstancesByKeys, instancesLoader, maybeDbdAllowedPlugins(configuration.enableDataflowBugDetection)),
+      pluginCheckResultByKeys);
+  }
+
+  private static Set<String> maybeDbdAllowedPlugins(boolean enableDataflowBugDetection) {
+    return DataflowBugDetection.getPluginAllowList(enableDataflowBugDetection);
   }
 
   private static void logPlugins(Collection<PluginInfo> nonSkippedPlugins) {

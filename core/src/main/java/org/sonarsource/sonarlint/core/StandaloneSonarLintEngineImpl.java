@@ -85,7 +85,7 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
   }
 
   private static PluginsLoadResult loadPlugins(StandaloneGlobalConfiguration globalConfig) {
-    var config = new Configuration(globalConfig.getPluginPaths(), globalConfig.getEnabledLanguages(), Optional.ofNullable(globalConfig.getNodeJsVersion()), Set.of());
+    var config = new Configuration(globalConfig.getPluginPaths(), globalConfig.getEnabledLanguages(), false, Optional.ofNullable(globalConfig.getNodeJsVersion()));
     return new PluginsLoader().load(config);
   }
 
