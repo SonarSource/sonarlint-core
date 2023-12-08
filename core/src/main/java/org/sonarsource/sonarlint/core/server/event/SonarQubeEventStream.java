@@ -24,7 +24,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.push.SonarServerEvent;
+import org.sonarsource.sonarlint.core.serverapi.push.SonarServerEvent;
 import org.sonarsource.sonarlint.core.serverapi.stream.EventStream;
 
 public class SonarQubeEventStream {
