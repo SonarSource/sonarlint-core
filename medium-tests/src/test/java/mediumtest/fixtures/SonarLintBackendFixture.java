@@ -436,8 +436,8 @@ public class SonarLintBackendFixture {
   }
 
   public static class FakeSonarLintRpcClient implements SonarLintRpcClientDelegate {
-    private final List<ShowSoonUnsupportedMessageParams> soonUnsupportedMessagesToShow = new ArrayList<>();
-    private final List<ShowSmartNotificationParams> smartNotificationsToShow = new ArrayList<>();
+    private final Queue<ShowSoonUnsupportedMessageParams> soonUnsupportedMessagesToShow = new ConcurrentLinkedQueue<>();
+    private final Queue<ShowSmartNotificationParams> smartNotificationsToShow = new ConcurrentLinkedQueue<>();
     private final Map<String, List<HotspotDetailsDto>> hotspotToShowByConfigScopeId = new ConcurrentHashMap<>();
     private final Map<String, List<IssueDetailsDto>> issueToShowByConfigScopeId = new ConcurrentHashMap<>();
     private final Map<String, ProgressReport> progressReportsByTaskId = new ConcurrentHashMap<>();
@@ -616,7 +616,7 @@ public class SonarLintBackendFixture {
 
     }
 
-    public List<ShowSmartNotificationParams> getSmartNotificationsToShow() {
+    public Queue<ShowSmartNotificationParams> getSmartNotificationsToShow() {
       return smartNotificationsToShow;
     }
 
