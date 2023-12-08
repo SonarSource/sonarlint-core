@@ -34,20 +34,17 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class SloopLauncherTests {
-
   private Process mockProcess;
   private SloopLauncher underTest;
+  private Sloop sloop;
   private Function<List<String>, ProcessBuilder> mockPbFactory;
   private SonarLintRpcClientDelegate rpcClient;
 
@@ -71,45 +68,45 @@ class SloopLauncherTests {
 
   @Test
   void test_command_on_linux(@TempDir Path distPath) {
-    underTest.start(distPath);
+    sloop = underTest.start(distPath);
 
     verify(mockPbFactory).apply(List.of("sh", "sonarlint-backend"));
-    assertThat(underTest.getServerProxy()).isNotNull();
+    assertThat(sloop.getRpcServer()).isNotNull();
   }
 
   @Test
   void test_command_on_windows(@TempDir Path distPath) {
     osName = "Windows";
 
-    underTest.start(distPath);
+    sloop = underTest.start(distPath);
 
     verify(mockPbFactory).apply(List.of("cmd.exe", "/c", "sonarlint-backend.bat"));
-    assertThat(underTest.getServerProxy()).isNotNull();
+    assertThat(sloop.getRpcServer()).isNotNull();
   }
 
   @Test
   void test_command_on_linux_and_provide_jre(@TempDir Path distPath, @TempDir Path jreDir) {
-    underTest.start(distPath, jreDir);
+    sloop = underTest.start(distPath, jreDir);
 
     verify(mockPbFactory).apply(List.of("sh", "sonarlint-backend", "-j", jreDir.toString()));
-    assertThat(underTest.getServerProxy()).isNotNull();
+    assertThat(sloop.getRpcServer()).isNotNull();
   }
 
   @Test
   void test_command_on_windows_and_provide_jre(@TempDir Path distPath, @TempDir Path jreDir) {
     osName = "Windows";
 
-    underTest.start(distPath, jreDir);
+    sloop = underTest.start(distPath, jreDir);
 
     verify(mockPbFactory).apply(List.of("cmd.exe", "/c", "sonarlint-backend.bat", "-j", jreDir.toString()));
-    assertThat(underTest.getServerProxy()).isNotNull();
+    assertThat(sloop.getRpcServer()).isNotNull();
   }
 
   @Test
   void test_redirect_stderr_to_client(@TempDir Path distPath) {
     when(mockProcess.getErrorStream()).thenReturn(new ByteArrayInputStream("Some errors\nSome other error".getBytes()));
 
-    underTest.start(distPath);
+    sloop = underTest.start(distPath);
 
     ArgumentCaptor<LogParams> captor = ArgumentCaptor.captor();
     verify(rpcClient, timeout(1000).times(2)).log(captor.capture());
@@ -120,37 +117,10 @@ class SloopLauncherTests {
   }
 
   @Test
-  void test_wait_for_successful(@TempDir Path distPath) throws InterruptedException {
-    when(mockProcess.exitValue()).thenReturn(0);
-    doReturn(true).when(mockProcess).waitFor(anyLong(), any());
-    underTest.start(distPath);
-
-    assertThat(underTest.waitFor()).isZero();
-
-    verifyNoInteractions(rpcClient);
-  }
-
-  @Test
-  void test_wait_for_timed_out(@TempDir Path distPath) throws InterruptedException {
-    doReturn(false).when(mockProcess).waitFor(anyLong(), any());
-    underTest.start(distPath);
-
-    assertThat(underTest.waitFor()).isEqualTo(-1);
-
-    ArgumentCaptor<LogParams> captor = ArgumentCaptor.captor();
-    verify(rpcClient, times(1)).log(captor.capture());
-
-    assertThat(captor.getAllValues())
-      .extracting(LogParams::getMessage)
-      .containsExactly("Unable to stop the SonarLint process in a timely manner. Killing it.");
-    verify(mockProcess).destroyForcibly();
-  }
-
-  @Test
   void test_log_stacktrace(@TempDir Path distPath) {
     doThrow(new IllegalStateException("Some error")).when(mockProcess).getInputStream();
 
-    assertThrows(IllegalStateException.class, () -> underTest.start(distPath));
+    assertThrows(IllegalStateException.class, () -> sloop = underTest.start(distPath));
 
     ArgumentCaptor<LogParams> captor = ArgumentCaptor.captor();
     verify(rpcClient).log(captor.capture());
