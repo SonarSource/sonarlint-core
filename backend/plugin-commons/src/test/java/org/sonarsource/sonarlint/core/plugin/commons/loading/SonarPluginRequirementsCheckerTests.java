@@ -158,7 +158,7 @@ class SonarPluginRequirementsCheckerTests {
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("cpp", true, new SkipReason.LanguagesNotEnabled(new HashSet<>(asList(Language.C, Language.CPP, Language.OBJC)))));
-    assertThat(logsWithoutStartStop()).contains("Plugin 'cpp' is excluded because none of languages 'C,C++,Objective-C' are enabled. Skip loading it.");
+    assertThat(logsWithoutStartStop()).contains("Plugin 'cpp' is excluded because none of languages 'C,CPP,OBJC' are enabled. Skip loading it.");
   }
 
   @Test

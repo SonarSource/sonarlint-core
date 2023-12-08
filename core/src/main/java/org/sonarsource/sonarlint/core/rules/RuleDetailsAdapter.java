@@ -33,7 +33,6 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.CleanCodeAttributeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleParamDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
@@ -74,7 +73,8 @@ public class RuleDetailsAdapter {
       ruleDetails.getName(),
       adapt(ruleDetails.getDefaultSeverity()),
       adapt(ruleDetails.getType()),
-      ruleDetails.getCleanCodeAttribute().map(RuleDetailsAdapter::toDto).orElse(null),
+      ruleDetails.getCleanCodeAttribute().map(RuleDetailsAdapter::adapt).orElse(null),
+      ruleDetails.getCleanCodeAttribute().map(org.sonarsource.sonarlint.core.commons.CleanCodeAttribute::getAttributeCategory).map(RuleDetailsAdapter::adapt).orElse(null),
       toDto(ruleDetails.getDefaultImpacts()),
       transformDescriptions(ruleDetails, contextKey),
       transform(ruleDetails.getParams()),
@@ -220,13 +220,9 @@ public class RuleDetailsAdapter {
     return Either.forLeft(new RuleNonContextualSectionDto(getTabContent(matchingContext, ruleDetails.getExtendedDescription(), ruleDetails.getCleanCodePrincipleKeys())));
   }
 
-  public static CleanCodeAttributeDto toDto(org.sonarsource.sonarlint.core.commons.CleanCodeAttribute cca) {
-    return new CleanCodeAttributeDto(adapt(cca), cca.getLabel(), adapt(cca.getAttributeCategory()), cca.getAttributeCategory().getLabel());
-  }
-
   public static List<ImpactDto> toDto(Map<org.sonarsource.sonarlint.core.commons.SoftwareQuality, org.sonarsource.sonarlint.core.commons.ImpactSeverity> defaultImpacts) {
     return defaultImpacts.entrySet().stream()
-      .map(e -> new ImpactDto(adapt(e.getKey()), e.getKey().getLabel(), adapt(e.getValue()), e.getValue().getLabel()))
+      .map(e -> new ImpactDto(adapt(e.getKey()), adapt(e.getValue())))
       .collect(Collectors.toList());
   }
 

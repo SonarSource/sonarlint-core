@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Commons
+ * SonarLint Core - Java Client Utils
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,11 +17,33 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons;
+package org.sonarsource.sonarlint.core.client.utils;
 
-public enum SoftwareQuality {
-  MAINTAINABILITY,
-  RELIABILITY,
-  SECURITY;
+public enum ImpactSeverity {
+  LOW("Low"),
+  MEDIUM("Medium"),
+  HIGH("High");
 
+  private final String label;
+
+  ImpactSeverity(String label) {
+    this.label = label;
+  }
+
+  public String getLabel() {
+    return label;
+  }
+
+  public static ImpactSeverity fromDto(org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity rpcEnum) {
+    switch (rpcEnum) {
+      case LOW:
+        return LOW;
+      case MEDIUM:
+        return MEDIUM;
+      case HIGH:
+        return HIGH;
+      default:
+        throw new IllegalArgumentException("Unknown severity: " + rpcEnum);
+    }
+  }
 }

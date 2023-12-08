@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Commons
+ * SonarLint Core - Java Client Utils
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,11 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons;
+package org.sonarsource.sonarlint.core.client.utils;
 
-public enum SoftwareQuality {
-  MAINTAINABILITY,
-  RELIABILITY,
-  SECURITY;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+class CleanCodeAttributeCategoryTests {
+
+  @Test
+  void should_convert_all_enum_values() {
+    for (var rpcEnum : org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttributeCategory.values()) {
+      var converted = CleanCodeAttributeCategory.fromDto(rpcEnum);
+      assertEquals(rpcEnum.name(), converted.name());
+    }
+  }
 
 }

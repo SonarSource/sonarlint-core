@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.rules;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttributeCategory;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
@@ -31,9 +33,9 @@ public class RuleDefinitionDto extends AbstractRuleDto {
   private final boolean isActiveByDefault;
 
   public RuleDefinitionDto(String key, String name, IssueSeverity defaultSeverity, RuleType type,
-    @Nullable CleanCodeAttributeDto cleanCodeAttributeDetails, List<ImpactDto> defaultImpacts,
+    @Nullable CleanCodeAttribute cleanCodeAttribute, @Nullable CleanCodeAttributeCategory cleanCodeAttributeCategory, List<ImpactDto> defaultImpacts,
     Map<String, RuleParamDefinitionDto> paramsByKey, boolean isActiveByDefault, Language language, @Nullable VulnerabilityProbability vulnerabilityProbability) {
-    super(key, name, defaultSeverity, type, cleanCodeAttributeDetails, defaultImpacts, language, vulnerabilityProbability);
+    super(key, name, defaultSeverity, type, cleanCodeAttribute, cleanCodeAttributeCategory, defaultImpacts, language, vulnerabilityProbability);
     this.paramsByKey = paramsByKey;
     this.isActiveByDefault = isActiveByDefault;
   }

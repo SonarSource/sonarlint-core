@@ -91,10 +91,10 @@ class StandaloneRulesMediumTests {
 
     var ruleDetails = backend.getRulesService().getStandaloneRuleDetails(new GetStandaloneRuleDescriptionParams("java:S1176")).get();
 
-    assertThat(ruleDetails.getRuleDefinition().getCleanCodeAttributeDetails().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.CONVENTIONAL);
+    assertThat(ruleDetails.getRuleDefinition().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.CONVENTIONAL);
     assertThat(ruleDetails.getRuleDefinition().getDefaultImpacts())
-      .extracting(ImpactDto::getSoftwareQuality, ImpactDto::getSoftwareQualityLabel, ImpactDto::getImpactSeverity, ImpactDto::getImpactSeverityLabel)
-      .containsExactly(tuple(SoftwareQuality.MAINTAINABILITY, "Maintainability", ImpactSeverity.MEDIUM, "Medium"));
+      .extracting(ImpactDto::getSoftwareQuality, ImpactDto::getImpactSeverity)
+      .containsExactly(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM));
     assertThat(ruleDetails.getRuleDefinition().getName()).isEqualTo("Public types, methods and fields (API) should be documented with Javadoc");
     assertThat(ruleDetails.getRuleDefinition().getSeverity()).isEqualTo(IssueSeverity.MAJOR);
     assertThat(ruleDetails.getRuleDefinition().getType()).isEqualTo(RuleType.CODE_SMELL);
