@@ -60,6 +60,11 @@
           </build>
       </profile>
       <profile>
+        <activation>
+          <os>
+            <family>windows</family>
+          </os>
+        </activation>
         <id>dist-windows</id>
           <build>
             <plugins>
@@ -105,6 +110,11 @@
           </build>
       </profile>
       <profile>
+        <activation>
+          <os>
+            <family>unix</family>
+          </os>
+        </activation>
         <id>dist-linux_x64</id>
           <build>
             <plugins>
