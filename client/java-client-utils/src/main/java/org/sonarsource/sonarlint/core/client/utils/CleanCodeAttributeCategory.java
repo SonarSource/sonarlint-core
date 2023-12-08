@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Commons
+ * SonarLint Core - Java Client Utils
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,11 +17,36 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons;
+package org.sonarsource.sonarlint.core.client.utils;
 
 public enum CleanCodeAttributeCategory {
-  ADAPTABLE,
-  CONSISTENT,
-  INTENTIONAL,
-  RESPONSIBLE;
+  ADAPTABLE("Adaptability"),
+  CONSISTENT("Consistency"),
+  INTENTIONAL("Intentionality"),
+  RESPONSIBLE("Responsibility");
+
+  private final String label;
+
+  CleanCodeAttributeCategory(String label) {
+    this.label = label;
+  }
+
+  public String getLabel() {
+    return label;
+  }
+
+  public static CleanCodeAttributeCategory fromDto(org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttributeCategory rpcEnum) {
+    switch (rpcEnum) {
+      case ADAPTABLE:
+        return ADAPTABLE;
+      case CONSISTENT:
+        return CONSISTENT;
+      case INTENTIONAL:
+        return INTENTIONAL;
+      case RESPONSIBLE:
+        return RESPONSIBLE;
+      default:
+        throw new IllegalArgumentException("Unknown category: " + rpcEnum);
+    }
+  }
 }

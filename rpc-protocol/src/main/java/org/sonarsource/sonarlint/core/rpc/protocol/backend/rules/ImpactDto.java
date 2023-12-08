@@ -24,30 +24,19 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
 
 public class ImpactDto {
   private final SoftwareQuality softwareQuality;
-  private final String softwareQualityLabel;
   private final ImpactSeverity impactSeverity;
-  private final String impactSeverityLabel;
 
-  public ImpactDto(SoftwareQuality softwareQuality, String softwareQualityLabel, ImpactSeverity impactSeverity, String impactSeverityLabel) {
+  public ImpactDto(SoftwareQuality softwareQuality, ImpactSeverity impactSeverity) {
     this.softwareQuality = softwareQuality;
-    this.softwareQualityLabel = softwareQualityLabel;
     this.impactSeverity = impactSeverity;
-    this.impactSeverityLabel = impactSeverityLabel;
   }
 
   public SoftwareQuality getSoftwareQuality() {
     return softwareQuality;
   }
 
-  public String getSoftwareQualityLabel() {
-    return softwareQualityLabel;
-  }
-
   public ImpactSeverity getImpactSeverity() {
     return impactSeverity;
   }
 
-  public String getImpactSeverityLabel() {
-    return impactSeverityLabel;
-  }
 }

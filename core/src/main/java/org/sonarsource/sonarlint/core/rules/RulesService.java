@@ -38,6 +38,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.Binding;
+import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
@@ -238,7 +239,8 @@ public class RulesService {
   @NotNull
   private static RuleDefinitionDto convert(SonarLintRuleDefinition r) {
     return new RuleDefinitionDto(r.getKey(), r.getName(), adapt(r.getDefaultSeverity()), adapt(r.getType()),
-      r.getCleanCodeAttribute().map(RuleDetailsAdapter::toDto).orElse(null),
+      r.getCleanCodeAttribute().map(RuleDetailsAdapter::adapt).orElse(null),
+      r.getCleanCodeAttribute().map(CleanCodeAttribute::getAttributeCategory).map(RuleDetailsAdapter::adapt).orElse(null),
       toDto(r.getDefaultImpacts()),
       convert(r.getParams()), r.isActiveByDefault(), adapt(r.getLanguage()), r.getVulnerabilityProbability().map(RuleDetailsAdapter::adapt).orElse(null));
   }

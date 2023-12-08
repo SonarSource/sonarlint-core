@@ -25,6 +25,8 @@ import java.util.List;
 import javax.annotation.Nullable;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherRuleDescriptionAdapterFactory;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttributeCategory;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
@@ -36,10 +38,10 @@ public class EffectiveRuleDetailsDto extends AbstractRuleDto {
   private final Collection<EffectiveRuleParamDto> params;
 
   public EffectiveRuleDetailsDto(String key, String name, IssueSeverity severity, RuleType type,
-    @Nullable CleanCodeAttributeDto cleanCodeAttributeDetails, List<ImpactDto> defaultImpacts,
+    @Nullable CleanCodeAttribute cleanCodeAttribute, @Nullable CleanCodeAttributeCategory cleanCodeAttributeCategory, List<ImpactDto> defaultImpacts,
     Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> description, Collection<EffectiveRuleParamDto> params,
     Language language, @Nullable VulnerabilityProbability vulnerabilityProbability) {
-    super(key, name, severity, type, cleanCodeAttributeDetails, defaultImpacts, language, vulnerabilityProbability);
+    super(key, name, severity, type, cleanCodeAttribute, cleanCodeAttributeCategory, defaultImpacts, language, vulnerabilityProbability);
     this.description = description;
     this.params = params;
   }

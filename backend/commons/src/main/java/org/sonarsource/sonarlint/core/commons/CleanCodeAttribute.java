@@ -26,36 +26,31 @@ import static org.sonarsource.sonarlint.core.commons.CleanCodeAttributeCategory.
 
 public enum CleanCodeAttribute {
 
-  CONVENTIONAL("Not conventional", CONSISTENT),
-  FORMATTED("Not formatted", CONSISTENT),
-  IDENTIFIABLE("Not identifiable", CONSISTENT),
+  CONVENTIONAL(CONSISTENT),
+  FORMATTED(CONSISTENT),
+  IDENTIFIABLE(CONSISTENT),
 
-  CLEAR("Not clear", INTENTIONAL),
-  COMPLETE("Not complete", INTENTIONAL),
-  EFFICIENT("Not efficient", INTENTIONAL),
-  LOGICAL("Not logical", INTENTIONAL),
+  CLEAR(INTENTIONAL),
+  COMPLETE(INTENTIONAL),
+  EFFICIENT(INTENTIONAL),
+  LOGICAL(INTENTIONAL),
 
-  DISTINCT("Not distinct", ADAPTABLE),
-  FOCUSED("Not focused", ADAPTABLE),
-  MODULAR("Not modular", ADAPTABLE),
-  TESTED("Not tested", ADAPTABLE),
+  DISTINCT(ADAPTABLE),
+  FOCUSED(ADAPTABLE),
+  MODULAR(ADAPTABLE),
+  TESTED(ADAPTABLE),
 
-  LAWFUL("Not lawful", RESPONSIBLE),
-  RESPECTFUL("Not respectful", RESPONSIBLE),
-  TRUSTWORTHY("Not trustworthy", RESPONSIBLE);
+  LAWFUL(RESPONSIBLE),
+  RESPECTFUL(RESPONSIBLE),
+  TRUSTWORTHY(RESPONSIBLE);
 
   private final CleanCodeAttributeCategory attributeCategory;
 
-  private final String label;
 
-  CleanCodeAttribute(String label, CleanCodeAttributeCategory attributeCategory) {
-    this.label = label;
+  CleanCodeAttribute(CleanCodeAttributeCategory attributeCategory) {
     this.attributeCategory = attributeCategory;
   }
 
-  public String getLabel() {
-    return label;
-  }
 
   public CleanCodeAttributeCategory getAttributeCategory() {
     return attributeCategory;
