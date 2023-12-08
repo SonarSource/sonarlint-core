@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package mediumtest;
+package mediumtest.analysis;
 
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.TestPlugin;
@@ -31,7 +31,7 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 
-class AnalysisServiceMediumTests {
+class SupportedFilePatternsMediumTests {
 
   private SonarLintRpcServer backend;
 
