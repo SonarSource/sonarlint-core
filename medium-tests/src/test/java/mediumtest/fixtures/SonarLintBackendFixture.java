@@ -129,6 +129,8 @@ public class SonarLintBackendFixture {
     private final List<StorageFixture.StorageBuilder> storages = new ArrayList<>();
     private boolean isFocusOnNewCode;
 
+    private Path clientNodeJsPath;
+
     public SonarLintBackendBuilder withSonarQubeConnection() {
       return withSonarQubeConnection("connectionId");
     }
@@ -328,6 +330,11 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintBackendBuilder withClientNodeJsPath(Path path) {
+      clientNodeJsPath = path;
+      return this;
+    }
+
     public SonarLintTestRpcServer build(FakeSonarLintRpcClient client) {
       var sonarlintUserHome = tempDirectory("slUserHome");
       var workDir = tempDirectory("work");
@@ -349,7 +356,7 @@ public class SonarLintBackendFixture {
           .initialize(new InitializeParams(clientInfo, telemetryInitDto, featureFlags,
             storageRoot, workDir, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
             enabledLanguages, extraEnabledLanguagesInConnectedMode, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
-            standaloneConfigByKey, isFocusOnNewCode))
+            standaloneConfigByKey, isFocusOnNewCode, clientNodeJsPath))
           .get();
         sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
         return sonarLintBackend;
@@ -596,6 +603,11 @@ public class SonarLintBackendFixture {
     @Override
     public List<ClientFileDto> listFiles(String configScopeId) throws ConfigScopeNotFoundException {
       return initialFilesByConfigScope.getOrDefault(configScopeId, List.of());
+    }
+
+    @Override
+    public void didChangeNodeJs(@org.jetbrains.annotations.Nullable Path nodeJsPath, @org.jetbrains.annotations.Nullable String version) {
+
     }
 
     public List<ShowSmartNotificationParams> getSmartNotificationsToShow() {

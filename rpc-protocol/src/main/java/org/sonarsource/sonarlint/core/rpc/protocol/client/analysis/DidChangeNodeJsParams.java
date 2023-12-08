@@ -17,44 +17,27 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis;
+package org.sonarsource.sonarlint.core.rpc.protocol.client.analysis;
 
 import java.nio.file.Path;
-import java.util.List;
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 
-public class GetGlobalConfigurationResponse {
+public class DidChangeNodeJsParams {
 
-  private final List<Path> pluginPaths;
-  private final List<Language> enabledLanguages;
   private final Path nodeJsPath;
-  private final String nodeJsVersion;
 
+  private final String version;
 
-  public GetGlobalConfigurationResponse(List<Path> pluginPaths, List<Language> enabledLanguages, @Nullable Path nodeJsPath, @Nullable String nodeJsVersion) {
-    this.pluginPaths = pluginPaths;
-    this.enabledLanguages = enabledLanguages;
+  public DidChangeNodeJsParams(@Nullable Path nodeJsPath, @Nullable String version) {
     this.nodeJsPath = nodeJsPath;
-    this.nodeJsVersion = nodeJsVersion;
+    this.version = version;
   }
 
-  public List<Path> getPluginPaths() {
-    return pluginPaths;
-  }
-
-  public List<Language> getEnabledLanguages() {
-    return enabledLanguages;
-  }
-
-  @CheckForNull
   public Path getNodeJsPath() {
     return nodeJsPath;
   }
 
-  @CheckForNull
-  public String getNodeJsVersion() {
-    return nodeJsVersion;
+  public String getVersion() {
+    return version;
   }
 }
