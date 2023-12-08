@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Commons
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,33 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+@ParametersAreNonnullByDefault
 package org.sonarsource.sonarlint.core.commons;
 
-/**
- * A configuration scope that is bound to a connection and a Sonar project.
- */
-public class BoundScope {
-
-  private final String configScopeId;
-  private final String connectionId;
-  private final String sonarProjectKey;
-
-  public BoundScope(String configScopeId, String connectionId, String sonarProjectKey) {
-    this.configScopeId = configScopeId;
-    this.connectionId = connectionId;
-    this.sonarProjectKey = sonarProjectKey;
-  }
-
-  public String getConfigScopeId() {
-    return configScopeId;
-  }
-
-  public String getConnectionId() {
-    return connectionId;
-  }
-
-  public String getSonarProjectKey() {
-    return sonarProjectKey;
-  }
-
-}
+import javax.annotation.ParametersAreNonnullByDefault;
