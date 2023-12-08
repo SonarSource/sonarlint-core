@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.TokenGeneratorHelper;
 import org.sonarsource.sonarlint.core.VersionSoonUnsupportedHelper;
 import org.sonarsource.sonarlint.core.analysis.AnalysisService;
+import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
@@ -146,7 +147,8 @@ import org.springframework.scheduling.support.TaskUtils;
   HotspotSynchronizationService.class,
   ClientFileSystemService.class,
   PathTranslationService.class,
-  FileExclusionService.class
+  FileExclusionService.class,
+  NodeJsService.class
 })
 public class SonarLintSpringAppConfig {
 

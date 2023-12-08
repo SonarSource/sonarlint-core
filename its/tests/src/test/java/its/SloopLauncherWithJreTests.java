@@ -80,7 +80,7 @@ class SloopLauncherWithJreTests {
 
     server.initialize(new InitializeParams(clientInfo, telemetryInitDto, featureFlags, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
       Set.of(PluginLocator.getGoPluginPath().toAbsolutePath()), Collections.emptyMap(), Set.of(GO), Collections.emptySet(), Collections.emptyList(),
-      Collections.emptyList(), sonarUserHome.toString(), Map.of(), false)).get();
+      Collections.emptyList(), sonarUserHome.toString(), Map.of(), false, null)).get();
 
     var result = server.getRulesService().listAllStandaloneRulesDefinitions().get();
     assertThat(result.getRulesByKey()).hasSize(36);

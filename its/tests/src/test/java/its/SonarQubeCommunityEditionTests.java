@@ -123,7 +123,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
             List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)),
             Collections.emptyList(),
             sonarUserHome.toString(),
-            Map.of(), false))
+            Map.of(), false, null))
         .get();
     } catch (Exception e) {
       throw new IllegalStateException("Cannot initialize the backend", e);

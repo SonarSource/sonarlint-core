@@ -55,7 +55,7 @@ class InitializationMediumTests {
       .initialize(new InitializeParams(new ClientConstantInfoDto("name", "productKey"), telemetryInitDto, new FeatureFlagsDto(false, false, false, false, false, false, false, false),
         Path.of("unused"), Path.of("unused"),
         emptySet(), emptyMap(), emptySet(), emptySet(),
-        emptyList(), emptyList(), "home", emptyMap(), false));
+        emptyList(), emptyList(), "home", emptyMap(), false, null));
 
     assertThat(future)
       .failsWithin(Duration.ofSeconds(1))

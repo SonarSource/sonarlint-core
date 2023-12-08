@@ -35,6 +35,7 @@ import java.util.concurrent.ExecutionException;
 import org.apache.commons.lang3.SystemUtils;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -110,7 +111,7 @@ class SloopLauncherTests {
 
     server.initialize(new InitializeParams(clientInfo, telemetryInitDto, featureFlags, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
       Set.of(PluginLocator.getGoPluginPath().toAbsolutePath()), Collections.emptyMap(), Set.of(GO), Collections.emptySet(), Collections.emptyList(),
-      Collections.emptyList(), sonarUserHome.toString(), Map.of(), false)).get();
+      Collections.emptyList(), sonarUserHome.toString(), Map.of(), false, null)).get();
 
     var result = server.getRulesService().listAllStandaloneRulesDefinitions().get();
     assertThat(result.getRulesByKey()).hasSize(36);
@@ -251,6 +252,11 @@ class SloopLauncherTests {
     @Override
     public List<ClientFileDto> listFiles(String configScopeId) throws ConfigScopeNotFoundException {
       return List.of();
+    }
+
+    @Override
+    public void didChangeNodeJs(@Nullable Path nodeJsPath, @Nullable String version) {
+
     }
   }
 }

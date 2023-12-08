@@ -20,41 +20,19 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis;
 
 import java.nio.file.Path;
-import java.util.List;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 
-public class GetGlobalConfigurationResponse {
+public class DidChangeClientNodeJsPathParams {
 
-  private final List<Path> pluginPaths;
-  private final List<Language> enabledLanguages;
-  private final Path nodeJsPath;
-  private final String nodeJsVersion;
+  private final Path clientNodeJsPath;
 
-
-  public GetGlobalConfigurationResponse(List<Path> pluginPaths, List<Language> enabledLanguages, @Nullable Path nodeJsPath, @Nullable String nodeJsVersion) {
-    this.pluginPaths = pluginPaths;
-    this.enabledLanguages = enabledLanguages;
-    this.nodeJsPath = nodeJsPath;
-    this.nodeJsVersion = nodeJsVersion;
-  }
-
-  public List<Path> getPluginPaths() {
-    return pluginPaths;
-  }
-
-  public List<Language> getEnabledLanguages() {
-    return enabledLanguages;
+  public DidChangeClientNodeJsPathParams(@Nullable Path clientNodeJsPath) {
+    this.clientNodeJsPath = clientNodeJsPath;
   }
 
   @CheckForNull
-  public Path getNodeJsPath() {
-    return nodeJsPath;
-  }
-
-  @CheckForNull
-  public String getNodeJsVersion() {
-    return nodeJsVersion;
+  public Path getClientNodeJsPath() {
+    return clientNodeJsPath;
   }
 }
