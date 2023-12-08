@@ -62,7 +62,7 @@
       <profile>
         <activation>
           <os>
-            <family>Windows</family>
+            <family>windows</family>
           </os>
         </activation>
         <id>dist-windows</id>
