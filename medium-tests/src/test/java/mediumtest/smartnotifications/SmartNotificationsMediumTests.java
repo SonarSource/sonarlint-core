@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mockwebserver3.MockResponse;
-import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -148,7 +147,7 @@ class SmartNotificationsMediumTests {
 
     var notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(1);
-    assertThat(notificationsResult.get(0).getScopeIds()).hasSize(2).containsExactlyInAnyOrder("scopeId", "scopeId2");
+    assertThat(notificationsResult.element().getScopeIds()).hasSize(2).containsExactlyInAnyOrder("scopeId", "scopeId2");
   }
 
   @Test
@@ -171,7 +170,7 @@ class SmartNotificationsMediumTests {
 
     var notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(1);
-    assertThat(notificationsResult.get(0).getScopeIds()).hasSize(2).containsExactlyInAnyOrder("parentScopeId", "childScopeId");
+    assertThat(notificationsResult.element().getScopeIds()).hasSize(2).containsExactlyInAnyOrder("parentScopeId", "childScopeId");
   }
 
   @Test
@@ -237,7 +236,7 @@ class SmartNotificationsMediumTests {
 
     var notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(1);
-    assertThat(notificationsResult.get(0).getScopeIds()).hasSize(1).contains("scopeId2");
+    assertThat(notificationsResult.element().getScopeIds()).hasSize(1).contains("scopeId2");
   }
 
   @Test
@@ -266,7 +265,7 @@ class SmartNotificationsMediumTests {
 
     var notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(1);
-    assertThat(notificationsResult.get(0).getScopeIds()).hasSize(1).contains("scopeId");
+    assertThat(notificationsResult.element().getScopeIds()).hasSize(1).contains("scopeId");
   }
 
   @Test
@@ -287,7 +286,7 @@ class SmartNotificationsMediumTests {
 
     var notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(1);
-    assertThat(notificationsResult.get(0).getScopeIds()).hasSize(1).contains("scopeId");
+    assertThat(notificationsResult.element().getScopeIds()).hasSize(1).contains("scopeId");
   }
 
   @Test
@@ -320,7 +319,7 @@ class SmartNotificationsMediumTests {
 
     notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(1);
-    assertThat(notificationsResult.get(0).getScopeIds()).hasSize(1).contains("scopeId");
+    assertThat(notificationsResult.element().getScopeIds()).hasSize(1).contains("scopeId");
   }
 
   @Test
@@ -341,6 +340,6 @@ class SmartNotificationsMediumTests {
 
     var notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(1);
-    assertThat(notificationsResult.get(0).getScopeIds()).hasSize(1).contains("scopeId");
+    assertThat(notificationsResult.element().getScopeIds()).hasSize(1).contains("scopeId");
   }
 }
