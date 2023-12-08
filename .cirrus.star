@@ -35,6 +35,7 @@ def env_conf():
     values.update({
         'CIRRUS_CLONE_DEPTH': '50',
         'CIRRUS_SHELL': 'bash',
+        # BUG ? Those are not solved properly despite the fact SONARQUBE_NEXT_ are injected before
         #'SONAR_HOST_URL': '${SONARQUBE_NEXT_HOST_URL}',
         #'SONAR_TOKEN': '${SONARQUBE_NEXT_TOKEN}'
         "SONAR_HOST_URL": "VAULT[development/kv/data/next data.url]",
