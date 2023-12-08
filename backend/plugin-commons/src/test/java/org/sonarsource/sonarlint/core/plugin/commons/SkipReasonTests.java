@@ -49,7 +49,7 @@ class SkipReasonTests {
       .hasSameHashCodeAs(underTest)
       .hasSameHashCodeAs(new LanguagesNotEnabled(asList(Language.JAVA)))
       // To String
-      .hasToString("LanguagesNotEnabled [languages=[Java]]");
+      .hasToString("LanguagesNotEnabled [languages=[JAVA]]");
   }
 
   @Test
