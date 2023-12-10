@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.clientapi.backend.issue;
 
 public enum ResolutionStatus {
-  // order is important here, it will be applied in the UI
+  ACCEPT("Accept", "The issue is valid but will not be fixed now. It represents accepted technical debt."),
   WONT_FIX("Won't Fix", "The issue is valid but does not need fixing. It represents accepted technical debt."),
   FALSE_POSITIVE("False Positive", "The issue is raised unexpectedly on code that should not trigger an issue.");
 

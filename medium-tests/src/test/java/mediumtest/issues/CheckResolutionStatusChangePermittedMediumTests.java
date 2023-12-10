@@ -90,9 +90,10 @@ class CheckResolutionStatusChangePermittedMediumTests {
   }
 
   @Test
-  void it_should_allow_2_statuses_when_user_has_permission_for_sonarqube() {
+  void it_should_allow_2_statuses_when_user_has_permission_for_sonarqube_103() {
     fakeServerWithIssue("issueKey", List.of("wontfix", "falsepositive"));
     backend = newBackend()
+      .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("10.3"))
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
       .build();
 
@@ -105,6 +106,26 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .extracting(ResolutionStatus::getTitle, ResolutionStatus::getDescription)
       .containsExactly(
         tuple("Won't Fix", "The issue is valid but does not need fixing. It represents accepted technical debt."),
+        tuple("False Positive", "The issue is raised unexpectedly on code that should not trigger an issue."));
+  }
+
+  @Test
+  void it_should_allow_2_statuses_when_user_has_permission_for_sonarqube_104() {
+    fakeServerWithIssue("issueKey", List.of("accept", "falsepositive"));
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("10.4"))
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
+      .build();
+
+    var response = checkStatusChangePermitted("connectionId", "issueKey");
+
+    assertThat(response)
+      .succeedsWithin(Duration.ofSeconds(2))
+      .extracting(CheckStatusChangePermittedResponse::getAllowedStatuses)
+      .asInstanceOf(InstanceOfAssertFactories.list(ResolutionStatus.class))
+      .extracting(ResolutionStatus::getTitle, ResolutionStatus::getDescription)
+      .containsExactly(
+        tuple("Accept", "The issue is valid but will not be fixed now. It represents accepted technical debt."),
         tuple("False Positive", "The issue is raised unexpectedly on code that should not trigger an issue."));
   }
 
@@ -132,6 +153,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   void it_should_not_permit_status_change_when_issue_misses_required_transitions() {
     fakeServerWithIssue("issueKey", List.of("confirm"));
     backend = newBackend()
+      .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("10.3"))
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
       .build();
 
@@ -141,13 +163,14 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .succeedsWithin(Duration.ofSeconds(2))
       .extracting(CheckStatusChangePermittedResponse::isPermitted, CheckStatusChangePermittedResponse::getNotPermittedReason,
         CheckStatusChangePermittedResponse::getAllowedStatuses)
-      .containsExactly(false, "Marking an issue as resolved requires the 'Administer Issues' permission", List.of(ResolutionStatus.WONT_FIX, ResolutionStatus.FALSE_POSITIVE));
+      .containsExactly(false, "Marking an issue as resolved requires the 'Administer Issues' permission", List.of());
   }
 
   @Test
   void it_should_fail_if_no_issue_is_returned_wy_web_api() {
     fakeServerWithResponse("issueKey", null, Issues.SearchWsResponse.newBuilder().build());
     backend = newBackend()
+      .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("10.3"))
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
       .build();
 
@@ -164,6 +187,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   @Test
   void it_should_fail_if_web_api_returns_an_error() {
     backend = newBackend()
+      .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("10.3"))
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
       .build();
 
@@ -180,6 +204,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   void it_should_fail_if_web_api_returns_unexpected_body() {
     fakeServerWithWrongBody("issueKey");
     backend = newBackend()
+      .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("10.3"))
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
       .build();
 
@@ -218,7 +243,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .succeedsWithin(Duration.ofSeconds(2))
       .extracting(CheckStatusChangePermittedResponse::isPermitted, CheckStatusChangePermittedResponse::getNotPermittedReason,
         CheckStatusChangePermittedResponse::getAllowedStatuses)
-      .containsExactly(false, "Marking a local-only issue as resolved requires SonarQube 10.2+", List.of(ResolutionStatus.WONT_FIX, ResolutionStatus.FALSE_POSITIVE));
+      .containsExactly(false, "Marking a local-only issue as resolved requires SonarQube 10.2+", List.of());
   }
 
   @Test
@@ -246,7 +271,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .succeedsWithin(Duration.ofSeconds(2))
       .extracting(CheckStatusChangePermittedResponse::isPermitted, CheckStatusChangePermittedResponse::getNotPermittedReason,
         CheckStatusChangePermittedResponse::getAllowedStatuses)
-      .containsExactly(false, "Marking a local-only issue as resolved requires SonarQube 10.2+", List.of(ResolutionStatus.WONT_FIX, ResolutionStatus.FALSE_POSITIVE));
+      .containsExactly(false, "Marking a local-only issue as resolved requires SonarQube 10.2+", List.of());
   }
 
   @Test
@@ -275,6 +300,34 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .extracting(CheckStatusChangePermittedResponse::isPermitted, CheckStatusChangePermittedResponse::getNotPermittedReason,
         CheckStatusChangePermittedResponse::getAllowedStatuses)
       .containsExactly(true, null, List.of(ResolutionStatus.WONT_FIX, ResolutionStatus.FALSE_POSITIVE));
+  }
+
+  @Test
+  void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_4_plus() {
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("10.4"))
+      .withActiveBranch("configScopeId", "branch")
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .build();
+
+    var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
+      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      false));
+
+    LocalOnlyIssueDto localOnlyIssue = null;
+    try {
+      localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get("file/path").get(0).getRight();
+    } catch (Exception e) {
+      fail();
+    }
+
+    var response = checkStatusChangePermitted("connectionId", localOnlyIssue.getId().toString());
+
+    assertThat(response)
+      .succeedsWithin(Duration.ofSeconds(2))
+      .extracting(CheckStatusChangePermittedResponse::isPermitted, CheckStatusChangePermittedResponse::getNotPermittedReason,
+        CheckStatusChangePermittedResponse::getAllowedStatuses)
+      .containsExactly(true, null, List.of(ResolutionStatus.ACCEPT, ResolutionStatus.FALSE_POSITIVE));
   }
 
   private void fakeServerWithIssue(String issueKey, List<String> transitions) {

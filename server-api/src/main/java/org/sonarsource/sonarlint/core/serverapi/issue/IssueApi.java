@@ -60,6 +60,7 @@ public class IssueApi {
   public static final Version MIN_SQ_VERSION_SUPPORTING_PULL = Version.create("9.6");
 
   private static final Map<IssueStatus, Transition> transitionByStatus = Map.of(
+    IssueStatus.ACCEPT, Transition.ACCEPT,
     IssueStatus.WONT_FIX, Transition.WONT_FIX,
     IssueStatus.FALSE_POSITIVE, Transition.FALSE_POSITIVE
   );
