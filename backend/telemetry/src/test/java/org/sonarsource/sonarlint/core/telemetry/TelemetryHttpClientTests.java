@@ -20,13 +20,16 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryServerLiveAttributesDto;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
@@ -36,7 +39,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -62,8 +64,7 @@ class TelemetryHttpClientTests {
     sonarqubeMock.stubFor(delete("/")
       .willReturn(aResponse()));
 
-    var telemetryLiveAttributesResponse = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
-    underTest.optOut(new TelemetryLocalStorage(), telemetryLiveAttributesResponse);
+    underTest.optOut(new TelemetryLocalStorage(), getTelemetryLiveAttributesDto());
 
     sonarqubeMock.verify(deleteRequestedFor(urlEqualTo("/"))
       .withRequestBody(
@@ -76,9 +77,7 @@ class TelemetryHttpClientTests {
   void upload() {
     sonarqubeMock.stubFor(post("/")
       .willReturn(aResponse()));
-
-    var telemetryLiveAttributesResponse = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
-    underTest.upload(new TelemetryLocalStorage(), telemetryLiveAttributesResponse);
+    underTest.upload(new TelemetryLocalStorage(), getTelemetryLiveAttributesDto());
 
     sonarqubeMock.verify(postRequestedFor(urlEqualTo("/"))
       .withRequestBody(
@@ -92,8 +91,7 @@ class TelemetryHttpClientTests {
     sonarqubeMock.stubFor(post("/")
       .willReturn(aResponse().withStatus(500)));
 
-    var telemetryLiveAttributesResponse = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
-    underTest.upload(new TelemetryLocalStorage(), telemetryLiveAttributesResponse);
+    underTest.upload(new TelemetryLocalStorage(), getTelemetryLiveAttributesDto());
 
     sonarqubeMock.verify(postRequestedFor(urlEqualTo("/")));
   }
@@ -103,8 +101,7 @@ class TelemetryHttpClientTests {
     sonarqubeMock.stubFor(delete("/")
       .willReturn(aResponse().withStatus(500)));
 
-    var telemetryLiveAttributesResponse = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
-    underTest.optOut(new TelemetryLocalStorage(), telemetryLiveAttributesResponse);
+    underTest.optOut(new TelemetryLocalStorage(), getTelemetryLiveAttributesDto());
 
     sonarqubeMock.verify(deleteRequestedFor(urlEqualTo("/")));
   }
@@ -113,8 +110,7 @@ class TelemetryHttpClientTests {
   void failed_upload_should_log_if_debug() {
     InternalDebug.setEnabled(true);
 
-    var telemetryLiveAttributesResponse = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
-    underTest.upload(new TelemetryLocalStorage(), telemetryLiveAttributesResponse);
+    underTest.upload(new TelemetryLocalStorage(), getTelemetryLiveAttributesDto());
 
     assertThat(logTester.logs(Level.ERROR)).anyMatch(l -> l.matches("Failed to upload telemetry data: .*404.*"));
   }
@@ -123,9 +119,14 @@ class TelemetryHttpClientTests {
   void failed_optout_should_log_if_debug() {
     InternalDebug.setEnabled(true);
 
-    var telemetryLiveAttributesResponse = new TelemetryLiveAttributesResponse(true, false, null, false, emptyList(), emptyList(), emptyMap());
-    underTest.optOut(new TelemetryLocalStorage(), telemetryLiveAttributesResponse);
+    underTest.optOut(new TelemetryLocalStorage(), getTelemetryLiveAttributesDto());
 
     assertThat(logTester.logs(Level.ERROR)).anyMatch(l -> l.matches("Failed to upload telemetry opt-out: .*404.*"));
+  }
+
+  private static TelemetryLiveAttributesDto getTelemetryLiveAttributesDto() {
+    var serverAttributes = new TelemetryServerLiveAttributesDto(true, true, false, Collections.emptyList(), Collections.emptyList());
+    var clientAttributes = new TelemetryClientLiveAttributesResponse(null, emptyMap());
+    return new TelemetryLiveAttributesDto(serverAttributes, clientAttributes);
   }
 }

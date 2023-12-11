@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
 
 import java.util.Map;
 
-public class TelemetryConstantAttributesDto {
+public class TelemetryClientConstantAttributesDto {
 
   private final String productKey;
   private final String productName;
@@ -31,7 +31,7 @@ public class TelemetryConstantAttributesDto {
   private final String architecture;
   private final Map<String, Object> additionalAttributes;
 
-  public TelemetryConstantAttributesDto(String productKey,
+  public TelemetryClientConstantAttributesDto(String productKey,
     String productName, String productVersion, String ideVersion,
     String platform, String architecture, Map<String, Object> additionalAttributes) {
     this.productKey = productKey;

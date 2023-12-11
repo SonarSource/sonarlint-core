@@ -118,7 +118,7 @@ public class ConfigurationRepository {
     return configScopePerId.get(configScopeId);
   }
 
-  private Collection<BoundScope> getAllBoundScopes() {
+  public Collection<BoundScope> getAllBoundScopes() {
     return configScopePerId.keySet()
       .stream()
       .map(scopeId -> {
