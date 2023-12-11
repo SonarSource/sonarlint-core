@@ -34,8 +34,9 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterAll;
@@ -69,6 +70,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTracke
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.usertoken.RevokeTokenParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
@@ -81,6 +83,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.CODE_SMELL;
 
 class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
+
   private static final String CONNECTION_ID = "orchestrator";
   private static final String CONFIG_SCOPE_ID = "my-ide-project-name";
 
@@ -96,7 +99,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
   private static Path sonarUserHome;
   private static WsClient adminWsClient;
   private static SonarLintRpcServer backend;
-  private static final List<String> didSynchronizeConfigurationScopes = new CopyOnWriteArrayList<>();
+  private static final Queue<String> didSynchronizeConfigurationScopes = new ConcurrentLinkedQueue<>();
   private static BackendJsonRpcLauncher serverLauncher;
 
   @BeforeAll
@@ -283,6 +286,11 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
       @Override
       public void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params) {
         didSynchronizeConfigurationScopes.addAll(params.getConfigurationScopeIds());
+      }
+
+      @Override
+      public void log(LogParams params) {
+        rpcClientLogs.add(params);
       }
 
     };

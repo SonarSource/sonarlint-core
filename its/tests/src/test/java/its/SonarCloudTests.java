@@ -164,7 +164,6 @@ class SonarCloudTests extends AbstractConnectedTests {
   private static String sonarcloudUserToken;
   private static BackendJsonRpcLauncher serverLauncher;
   private static final List<String> didSynchronizeConfigurationScopes = new CopyOnWriteArrayList<>();
-  private static final Collection<LogParams> clientLogs = new ConcurrentLinkedDeque<>();
 
   @BeforeAll
   static void prepare() throws Exception {
@@ -241,7 +240,7 @@ class SonarCloudTests extends AbstractConnectedTests {
       projectKey(PROJECT_KEY_XML));
 
     ALL_PROJECTS.forEach(projectKey -> {
-      clientLogs.clear();
+      rpcClientLogs.clear();
       didSynchronizeConfigurationScopes.clear();
       bindProject(projectKey, CONFIG_SCOPE_ID + projectKey);
     });
@@ -332,7 +331,7 @@ class SonarCloudTests extends AbstractConnectedTests {
   void cleanup_after_each() {
     backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(CONFIG_SCOPE_ID));
     didSynchronizeConfigurationScopes.clear();
-    clientLogs.clear();
+    rpcClientLogs.clear();
     // This property is altered in analysisUseConfiguration test
     adminWsClient.settings().reset(new ResetRequest()
       .setKeys(Collections.singletonList(SONAR_JAVA_FILE_SUFFIXES))
@@ -700,7 +699,7 @@ class SonarCloudTests extends AbstractConnectedTests {
         false)))));
     await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(configurationScopeId));
     // TODO FIX ME and remove this check for a log after https://sonarsource.atlassian.net/browse/SLCORE-396 is fixed
-    await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer " +
+    await().untilAsserted(() -> assertThat(rpcClientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer " +
       "configuration"))).isTrue());
   }
 
@@ -748,8 +747,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
       @Override
       public void log(LogParams params) {
-        clientLogs.add(params);
-        System.out.println("ClientLog: " + params.getMessage());
+        rpcClientLogs.add(params);
       }
     };
   }
