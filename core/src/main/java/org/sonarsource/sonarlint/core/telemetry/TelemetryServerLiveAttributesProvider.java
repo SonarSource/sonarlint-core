@@ -22,8 +22,11 @@ package org.sonarsource.sonarlint.core.telemetry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.jetbrains.annotations.NotNull;
+import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
@@ -54,11 +57,9 @@ public class TelemetryServerLiveAttributesProvider {
 
     var usesConnectedMode = !allBindings.isEmpty();
 
-    var usesSonarCloud = allBindings.stream()
-      .anyMatch(binding -> connectionConfigurationRepository.getConnectionById(binding.getConnectionId()) instanceof SonarCloudConnectionConfiguration);
+    var usesSonarCloud = allBindings.stream().anyMatch(isSonarCloudConnectionConfiguration());
 
-    var devNotificationsDisabled = allBindings.stream()
-      .anyMatch(binding -> Objects.requireNonNull(connectionConfigurationRepository.getConnectionById(binding.getConnectionId())).isDisableNotifications());
+    var devNotificationsDisabled = allBindings.stream().anyMatch(this::hasDisableNotifications);
 
     List<String> nonDefaultEnabledRules = new ArrayList<>();
     List<String> defaultDisabledRules = new ArrayList<>();
@@ -79,5 +80,14 @@ public class TelemetryServerLiveAttributesProvider {
 
     return new TelemetryServerLiveAttributesDto(usesConnectedMode, usesSonarCloud, devNotificationsDisabled, nonDefaultEnabledRules,
       defaultDisabledRules);
+  }
+
+  private boolean hasDisableNotifications(BoundScope binding) {
+    return Objects.requireNonNull(connectionConfigurationRepository.getConnectionById(binding.getConnectionId())).isDisableNotifications();
+  }
+
+  @NotNull
+  private Predicate<BoundScope> isSonarCloudConnectionConfiguration() {
+    return binding -> connectionConfigurationRepository.getConnectionById(binding.getConnectionId()) instanceof SonarCloudConnectionConfiguration;
   }
 }
