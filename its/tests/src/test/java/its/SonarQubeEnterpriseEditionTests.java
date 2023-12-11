@@ -32,11 +32,9 @@ import java.io.PipedOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import org.apache.commons.io.FileUtils;
@@ -112,8 +110,6 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
   private static final List<String> didSynchronizeConfigurationScopes = new CopyOnWriteArrayList<>();
 
-  private static final Collection<LogParams> clientLogs = new ConcurrentLinkedDeque<>();
-
   @BeforeAll
   static void startBackend() throws IOException {
     var clientToServerOutputStream = new PipedOutputStream();
@@ -181,7 +177,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   void stop() {
     didSynchronizeConfigurationScopes.forEach(s -> backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(s)));
     didSynchronizeConfigurationScopes.clear();
-    clientLogs.clear();
+    rpcClientLogs.clear();
     try {
       engine.stop();
     } catch (Exception e) {
@@ -355,7 +351,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     await().atMost(30, SECONDS).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains("configScope-" + projectName));
     // TODO FIX ME and remove this check for a log after https://sonarsource.atlassian.net/browse/SLCORE-396 is fixed
     await().untilAsserted(() ->
-      assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
+      assertThat(rpcClientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
   }
 
   private static void removeGroupPermission(String groupName, String permission) {
@@ -382,8 +378,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
       @Override
       public void log(LogParams params) {
-        clientLogs.add(params);
-        System.out.println("ClientLog: " + params.getMessage());
+        rpcClientLogs.add(params);
       }
 
     };

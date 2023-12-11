@@ -37,14 +37,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -71,7 +69,6 @@ import org.sonarqube.ws.client.settings.ResetRequest;
 import org.sonarqube.ws.client.settings.SetRequest;
 import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -188,7 +185,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   private static final List<String> allBranchNamesForProject = new CopyOnWriteArrayList<>();
   private static String matchedBranchNameForProject = null;
   private static final List<String> didSynchronizeConfigurationScopes = new CopyOnWriteArrayList<>();
-  private static final Collection<LogParams> clientLogs = new ConcurrentLinkedDeque<>();
 
   @BeforeAll
   static void start() throws IOException {
@@ -226,7 +222,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     didSynchronizeConfigurationScopes.clear();
     allBranchNamesForProject.clear();
     matchedBranchNameForProject = null;
-    clientLogs.clear();
   }
 
   @AfterAll
@@ -565,26 +560,26 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         issueListener, null, null);
       assertThat(issueListener.getIssues()).hasSize(2);
 
-      clientLogs.clear();
+      rpcClientLogs.clear();
       didSynchronizeConfigurationScopes.clear();
       // Override default file suffixes in global props so that input file is not considered as a Java file
       setSettingsMultiValue(null, "sonar.java.file.suffixes", ".foo");
       backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID, new BindingConfigurationDto(CONNECTION_ID, projectKey, false)));
       await().atMost(20, SECONDS).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
-      await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
+      await().untilAsserted(() -> assertThat(rpcClientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
       issueListener.clear();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-java", "src/main/java/foo/Foo.java"),
         issueListener, null, null);
       assertThat(issueListener.getIssues()).isEmpty();
 
-      clientLogs.clear();
+      rpcClientLogs.clear();
       didSynchronizeConfigurationScopes.clear();
       // Override default file suffixes in project props so that input file is considered as a Java file again
       setSettingsMultiValue(projectKey, "sonar.java.file.suffixes", ".java");
       backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)));
       await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
-      await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
+      await().untilAsserted(() -> assertThat(rpcClientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
       issueListener.clear();
       engine.analyze(createAnalysisConfiguration(projectKey, "sample-java", "src/main/java/foo/Foo.java"),
@@ -1095,7 +1090,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     @Test
     void reportHotspots() throws Exception {
       bindProject("Project", PROJECT_KEY_JAVA_HOTSPOT, false);
-      await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored server info"))).isTrue());
+      await().untilAsserted(() -> assertThat(rpcClientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored server info"))).isTrue());
 
       var issueListener = new SaveIssueListener();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_HOTSPOT, PROJECT_KEY_JAVA_HOTSPOT,
@@ -1419,7 +1414,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         bindingSuggestionDisabled)))));
     await().atMost(20, SECONDS).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
     // TODO FIX ME and remove this check for a log after https://sonarsource.atlassian.net/browse/SLCORE-396 is fixed
-    await().untilAsserted(() -> assertThat(clientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
+    await().untilAsserted(() -> assertThat(rpcClientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
   }
 
   private void analyzeProject(String projectDirName, String projectKey, String... properties) {
@@ -1467,8 +1462,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       @Override
       public void log(LogParams params) {
-        clientLogs.add(params);
-        System.out.println("ClientLog: " + params.getMessage());
+        rpcClientLogs.add(params);
       }
     };
   }
