@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.telemetry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -51,10 +50,7 @@ public class TelemetryServerLiveAttributesProvider {
   }
 
   public TelemetryServerLiveAttributesDto getTelemetryServerLiveAttributes() {
-    var allBindings = configurationRepository.getConfigScopeIds().stream()
-      .map(configurationRepository::getBindingConfiguration)
-      .filter(bindingConfiguration -> bindingConfiguration != null && bindingConfiguration.getConnectionId() != null)
-      .collect(Collectors.toList());
+    var allBindings = configurationRepository.getAllBoundScopes();
 
     var usesConnectedMode = !allBindings.isEmpty();
 

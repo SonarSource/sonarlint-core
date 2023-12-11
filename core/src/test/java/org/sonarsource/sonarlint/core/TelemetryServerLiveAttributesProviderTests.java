@@ -24,7 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
+import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
@@ -48,8 +48,7 @@ class TelemetryServerLiveAttributesProviderTests {
     var projectKey = "projectKey";
 
     var configurationRepository = mock(ConfigurationRepository.class);
-    when(configurationRepository.getConfigScopeIds()).thenReturn(Set.of(configurationScopeId));
-    when(configurationRepository.getBindingConfiguration(configurationScopeId)).thenReturn(new BindingConfiguration(connectionId, projectKey, true));
+    when(configurationRepository.getAllBoundScopes()).thenReturn(Set.of(new BoundScope(configurationScopeId, connectionId, projectKey)));
 
     var connectionConfigurationRepository = mock(ConnectionConfigurationRepository.class);
     when(connectionConfigurationRepository.getConnectionById(connectionId)).thenReturn(new SonarCloudConnectionConfiguration(connectionId, "myTestOrg", false));
@@ -72,9 +71,9 @@ class TelemetryServerLiveAttributesProviderTests {
     var projectKey = "projectKey";
 
     var configurationRepository = mock(ConfigurationRepository.class);
-    when(configurationRepository.getConfigScopeIds()).thenReturn(Set.of(configurationScopeId_1, configurationScopeId_2));
-    when(configurationRepository.getBindingConfiguration(configurationScopeId_1)).thenReturn(new BindingConfiguration(connectionId_1, projectKey, true));
-    when(configurationRepository.getBindingConfiguration(configurationScopeId_2)).thenReturn(new BindingConfiguration(connectionId_2, projectKey, true));
+    when(configurationRepository.getAllBoundScopes()).thenReturn(Set.of(
+      new BoundScope(configurationScopeId_1, connectionId_1, projectKey),
+      new BoundScope(configurationScopeId_2, connectionId_2, projectKey)));
 
     var connectionConfigurationRepository = mock(ConnectionConfigurationRepository.class);
     when(connectionConfigurationRepository.getConnectionById(connectionId_1)).thenReturn(new SonarQubeConnectionConfiguration(connectionId_1, "www.squrl1.org", false));
@@ -110,7 +109,6 @@ class TelemetryServerLiveAttributesProviderTests {
 
     var underTest = new TelemetryServerLiveAttributesProvider(mock(ConfigurationRepository.class), mock(ConnectionConfigurationRepository.class), rulesService, rulesRepository);
     var telemetryLiveAttributes = underTest.getTelemetryServerLiveAttributes();
-
 
     assertThat(telemetryLiveAttributes.getNonDefaultEnabledRules()).containsExactly("ruleKey_2");
     assertThat(telemetryLiveAttributes.getDefaultDisabledRules()).containsExactly("ruleKey_3");

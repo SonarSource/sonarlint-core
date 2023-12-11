@@ -164,10 +164,7 @@ class TelemetryMediumTests {
     var fakeClient = newFakeClient().build();
     when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryClientLiveAttributesResponse(null, emptyMap()));
 
-    backend = newBackend()
-      .withSonarQubeConnection("connectionId")
-      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .build(fakeClient);
+    backend = newBackend().build(fakeClient);
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isTrue();
 
@@ -191,10 +188,7 @@ class TelemetryMediumTests {
     var fakeClient = newFakeClient().build();
     when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryClientLiveAttributesResponse(null, emptyMap()));
 
-    backend = newBackend()
-      .withSonarQubeConnection("connectionId")
-      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .build(fakeClient);
+    backend = newBackend().build(fakeClient);
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isTrue();
 

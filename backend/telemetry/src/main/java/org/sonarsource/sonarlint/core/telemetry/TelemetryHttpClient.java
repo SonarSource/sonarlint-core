@@ -64,9 +64,9 @@ public class TelemetryHttpClient {
     this.endpoint = System.getProperty("sonarlint.internal.telemetry.endpoint", endpoint);
   }
 
-  void upload(TelemetryLocalStorage data, TelemetryLiveAttributesDto telemetryPayload) {
+  void upload(TelemetryLocalStorage data, TelemetryLiveAttributesDto telemetryLiveAttributes) {
     try {
-      sendPost(createPayload(data, telemetryPayload));
+      sendPost(createPayload(data, telemetryLiveAttributes));
     } catch (Throwable catchEmAll) {
       if (InternalDebug.isEnabled()) {
         LOG.error("Failed to upload telemetry data", catchEmAll);
