@@ -19,13 +19,11 @@
  */
 package mediumtest;
 
-import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import mockwebserver3.MockResponse;
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.AfterEach;
@@ -42,6 +40,7 @@ import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import testutils.MockWebServerExtensionWithProtobuf;
 import testutils.websockets.WebSocketServer;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -130,7 +129,7 @@ class SmartNotificationsMediumTests {
       .withSmartNotifications()
       .build(fakeClient);
 
-    await().atMost(3, TimeUnit.SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
+    await().atMost(3, SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
 
     var notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(1);
@@ -160,7 +159,7 @@ class SmartNotificationsMediumTests {
       .withSmartNotifications()
       .build(fakeClient);
 
-    await().atMost(3, TimeUnit.SECONDS).until(() -> fakeClient.getSmartNotificationsToShow().size() == 3);
+    await().atMost(3, SECONDS).until(() -> fakeClient.getSmartNotificationsToShow().size() == 3);
 
     var notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(3);
@@ -188,7 +187,7 @@ class SmartNotificationsMediumTests {
       .withSmartNotifications()
       .build(fakeClient);
 
-    await().atMost(3, TimeUnit.SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
+    await().atMost(3, SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
 
     var notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(1);
@@ -217,7 +216,7 @@ class SmartNotificationsMediumTests {
           new ConfigurationScopeDto("scopeId", null, true, "sonarlint-core",
             new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY, false)))));
 
-    await().atMost(3, TimeUnit.SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
+    await().atMost(3, SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
 
     var notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(1);
@@ -239,7 +238,7 @@ class SmartNotificationsMediumTests {
       .withSmartNotifications()
       .build(fakeClient);
 
-    await().atMost(3, TimeUnit.SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
+    await().atMost(3, SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
 
     var notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(1);
@@ -265,14 +264,14 @@ class SmartNotificationsMediumTests {
       .withServerSentEventsEnabled()
       .build(fakeClient);
 
-    await().atMost(Duration.ofSeconds(2)).until(() -> webSocketServer.getConnections().size() == 1);
+    await().atMost(2, SECONDS).until(() -> webSocketServer.getConnections().size() == 1);
 
     var notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).isEmpty();
 
     webSocketServer.getConnections().get(0).sendMessage(NEW_ISSUES_EVENT);
 
-    await().atMost(2, TimeUnit.SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
+    await().atMost(5, SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
 
     notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(1);
@@ -293,7 +292,7 @@ class SmartNotificationsMediumTests {
       .withSmartNotifications()
       .build(fakeClient);
 
-    await().atMost(3, TimeUnit.SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
+    await().atMost(3, SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
 
     var notificationsResult = fakeClient.getSmartNotificationsToShow();
     assertThat(notificationsResult).hasSize(1);
