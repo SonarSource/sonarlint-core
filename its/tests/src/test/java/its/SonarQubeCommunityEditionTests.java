@@ -84,7 +84,6 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
   private static final String CONNECTION_ID = "orchestrator";
   private static final String CONFIG_SCOPE_ID = "my-ide-project-name";
 
-  public static final String XOO_PLUGIN_KEY = "xoo";
   @RegisterExtension
   static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
     .addPlugin(MavenLocation.of("org.sonarsource.sonarqube", "sonar-xoo-plugin", SONAR_VERSION))
@@ -183,12 +182,11 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    void should_translate_path_prefixes_for_idePath_with_prefix() throws ExecutionException, InterruptedException {
-      didSynchronizeConfigurationScopes.clear();
-
+    void should_translate_path_prefixes_for_idePath_with_prefix() {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID,
           MULTI_MODULE_PROJECT_KEY, true)))));
+      await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
 
       var idePath = Path.of("src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
       var clientFileDto = new ClientFileDto(idePath.toUri(), idePath, CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(),
@@ -201,10 +199,11 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    void should_translate_path_prefixes_for_idePath_without_prefix() throws ExecutionException, InterruptedException {
+    void should_translate_path_prefixes_for_idePath_without_prefix() {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID,
           MULTI_MODULE_PROJECT_KEY, true)))));
+      await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
 
       var entireIdePath = Path.of("module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
       var clientFileDto = new ClientFileDto(entireIdePath.toUri(), entireIdePath, CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(),

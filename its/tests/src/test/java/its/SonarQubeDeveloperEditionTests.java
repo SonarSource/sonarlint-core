@@ -1205,8 +1205,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         expected = "<h1>Title\n</h1><strong>my dummy extended description</strong>";
       }
 
-      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, projectName, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
+      bindProject(projectName, projectKey, true);
 
       await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
 
@@ -1230,10 +1229,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       provisionProject(ORCHESTRATOR, projectKey, projectName);
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint-with-markdown.xml"));
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Java Markdown");
-      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, projectName, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
-
-      await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+      bindProject(projectName, projectKey, true);
 
       var ruleDetailsResponse =
         backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, "mycompany-java:markdown",
@@ -1250,8 +1246,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var projectName = "Java With Taint Vulnerabilities";
       provisionProject(ORCHESTRATOR, projectKey, projectName);
-      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, projectName, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
+      bindProject(projectName, projectKey, true);
 
       var activeRuleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, "javasecurity:S2083", null)).get();
 
@@ -1286,10 +1281,9 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     @Test
     void shouldReturnAllContextsWithTheMatchingOneSelectedIfContextProvided() throws ExecutionException, InterruptedException {
       var projectKey = "sample-java-taint-rule-context-new-backend";
-
-      provisionProject(ORCHESTRATOR, projectKey, "Java With Taint Vulnerabilities And Multiple Contexts");
-      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, projectKey, false)))));
+      var projectName = "Java With Taint Vulnerabilities And Multiple Contexts";
+      provisionProject(ORCHESTRATOR, projectKey, projectName);
+      bindProject(projectName, projectKey, true);
 
       var activeRuleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, "javasecurity:S5131", "spring")).get();
 
@@ -1336,10 +1330,9 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     @OnlyOnSonarQube(from = "9.7")
     void shouldEmulateDescriptionSectionsForHotspotRules() throws ExecutionException, InterruptedException {
       var projectKey = "sample-java-hotspot-new-backend";
-
-      provisionProject(ORCHESTRATOR, projectKey, "Java With Security Hotspots");
-      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "Project", new BindingConfigurationDto(CONNECTION_ID, projectKey, false)))));
+      var projectName = "Java With Security Hotspots";
+      provisionProject(ORCHESTRATOR, projectKey, projectName);
+      bindProject(projectName, projectKey, true);
 
       var activeRuleDetailsResponse = backend.getRulesService()
         .getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, javaRuleKey(ORCHESTRATOR, "S4792"), null))
