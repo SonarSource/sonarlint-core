@@ -339,10 +339,6 @@ public class RulesService {
     }
   }
 
-  public Map<String, StandaloneRuleConfigDto> getStandaloneRuleConfig() {
-    return Map.copyOf(standaloneRuleConfig);
-  }
-
   public GetRuleDetailsResponse getRuleDetailsForAnalysis(String configScopeId, String ruleKey) throws RuleNotFoundException {
     var ruleDetails = getRuleDetails(configScopeId, ruleKey);
     return RuleDetailsAdapter.transform(ruleDetails);
