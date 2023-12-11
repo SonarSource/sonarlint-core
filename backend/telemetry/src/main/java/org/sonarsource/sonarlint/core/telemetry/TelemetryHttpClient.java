@@ -24,7 +24,7 @@ import java.time.temporal.ChronoUnit;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.http.HttpClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesDto;
 import org.sonarsource.sonarlint.core.telemetry.payload.HotspotPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.IssuePayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.ShowHotspotPayload;
@@ -64,9 +64,9 @@ public class TelemetryHttpClient {
     this.endpoint = System.getProperty("sonarlint.internal.telemetry.endpoint", endpoint);
   }
 
-  void upload(TelemetryLocalStorage data, TelemetryLiveAttributesResponse telemetryPayload) {
+  void upload(TelemetryLocalStorage data, TelemetryLiveAttributesDto telemetryLiveAttributes) {
     try {
-      sendPost(createPayload(data, telemetryPayload));
+      sendPost(createPayload(data, telemetryLiveAttributes));
     } catch (Throwable catchEmAll) {
       if (InternalDebug.isEnabled()) {
         LOG.error("Failed to upload telemetry data", catchEmAll);
@@ -74,7 +74,7 @@ public class TelemetryHttpClient {
     }
   }
 
-  void optOut(TelemetryLocalStorage data, TelemetryLiveAttributesResponse telemetryPayload) {
+  void optOut(TelemetryLocalStorage data, TelemetryLiveAttributesDto telemetryPayload) {
     try {
       sendDelete(createPayload(data, telemetryPayload));
     } catch (Throwable catchEmAll) {
@@ -84,7 +84,7 @@ public class TelemetryHttpClient {
     }
   }
 
-  private TelemetryPayload createPayload(TelemetryLocalStorage data, TelemetryLiveAttributesResponse telemetryPayload) {
+  private TelemetryPayload createPayload(TelemetryLocalStorage data, TelemetryLiveAttributesDto telemetryPayload) {
     var systemTime = OffsetDateTime.now();
     var daysSinceInstallation = data.installTime().until(systemTime, ChronoUnit.DAYS);
     var analyzers = TelemetryUtils.toPayload(data.analyzers());
@@ -102,7 +102,7 @@ public class TelemetryHttpClient {
     var helpAndFeedbackPayload = new TelemetryHelpAndFeedbackPayload(data.getHelpAndFeedbackLinkClickedCounter());
     var cleanAsYouCodePayload = new CleanAsYouCodePayload(new NewCodeFocusPayload(data.isFocusOnNewCode(), data.getCodeFocusChangedCount()));
     return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version, ideVersion, platform, architecture,
-      telemetryPayload.isUsesConnectedMode(), telemetryPayload.isUseSonarCloud(), systemTime, data.installTime(), os, jre,
+      telemetryPayload.usesConnectedMode(), telemetryPayload.usesSonarCloud(), systemTime, data.installTime(), os, jre,
       telemetryPayload.getNodeVersion(), analyzers, notifications, showHotspotPayload,
       showIssuePayload, taintVulnerabilitiesPayload, telemetryRulesPayload,
       hotspotPayload, issuePayload, helpAndFeedbackPayload, cleanAsYouCodePayload, telemetryPayload.getAdditionalAttributes());
