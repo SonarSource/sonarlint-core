@@ -24,6 +24,7 @@ import com.google.common.collect.Maps;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.http.HttpMethod;
+import its.utils.LogOnTestFailure;
 import its.utils.TestClientInputFile;
 import java.io.File;
 import java.io.IOException;
@@ -33,11 +34,14 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.assertj.core.internal.Failures;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarqube.ws.Issues;
 import org.sonarqube.ws.Qualityprofiles.SearchWsResponse.QualityProfile;
 import org.sonarqube.ws.client.HttpConnector;
@@ -49,6 +53,7 @@ import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientConstantAttributesDto;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
@@ -57,6 +62,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public abstract class AbstractConnectedTests {
   public static final TelemetryClientConstantAttributesDto IT_TELEMETRY_ATTRIBUTES = new TelemetryClientConstantAttributesDto("SonarLint ITs", "SonarLint ITs",
     "1.2.3", "4.5.6", Collections.emptyMap());
+  protected static final Queue<LogParams> rpcClientLogs = new ConcurrentLinkedQueue<>();
+
+  @RegisterExtension
+  static LogOnTestFailure logOnTestFailure = new LogOnTestFailure(rpcClientLogs);
+
   public static final ClientConstantInfoDto IT_CLIENT_INFO = new ClientConstantInfoDto("clientName", "integrationTests");
   protected static final String SONARLINT_USER = "sonarlint";
   protected static final String SONARLINT_PWD = "sonarlintpwd";
