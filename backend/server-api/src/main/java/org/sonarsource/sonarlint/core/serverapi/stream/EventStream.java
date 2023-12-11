@@ -90,7 +90,10 @@ public class EventStream {
         cancelPendingFutureIfAny();
         eventBuffer.append(message)
           .drainCompleteEvents()
-          .forEach(stringEvent -> eventConsumer.accept(EventParser.parse(stringEvent)));
+          .forEach(stringEvent -> {
+            LOG.debug("Received event: " + stringEvent);
+            eventConsumer.accept(EventParser.parse(stringEvent));
+          });
       }));
     return this;
   }
