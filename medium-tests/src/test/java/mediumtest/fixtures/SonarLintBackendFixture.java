@@ -81,14 +81,13 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgress
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryConstantAttributesDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientConstantAttributesDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
-import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static mediumtest.fixtures.storage.StorageFixture.newStorage;
 import static org.mockito.ArgumentMatchers.any;
@@ -346,7 +345,7 @@ public class SonarLintBackendFixture {
       }
       try {
         var sonarLintBackend = createTestBackend(client);
-        var telemetryInitDto = new TelemetryConstantAttributesDto("mediumTests", "mediumTests",
+        var telemetryInitDto = new TelemetryClientConstantAttributesDto("mediumTests", "mediumTests",
           "1.2.3", "4.5.6", "linux", "x64", emptyMap());
         var clientInfo = new ClientConstantInfoDto(clientName, userAgent);
         var featureFlags = new FeatureFlagsDto(manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, startEmbeddedServer, areSecurityHotspotsEnabled,
@@ -576,8 +575,8 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public TelemetryLiveAttributesResponse getTelemetryLiveAttributes() {
-      return new TelemetryLiveAttributesResponse(false, false, null, false, emptyList(), emptyList(), emptyMap());
+    public TelemetryClientLiveAttributesResponse getTelemetryLiveAttributes() {
+      return new TelemetryClientLiveAttributesResponse(null, emptyMap());
     }
 
     @Override

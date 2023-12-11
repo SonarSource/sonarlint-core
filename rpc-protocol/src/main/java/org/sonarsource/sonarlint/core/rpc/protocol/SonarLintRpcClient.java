@@ -58,7 +58,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgress
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 
 /**
  * This interface defines the RPC requests or notifications the backend can call on the client.
@@ -153,7 +153,7 @@ public interface SonarLintRpcClient {
   CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params);
 
   @JsonRequest
-  CompletableFuture<TelemetryLiveAttributesResponse> getTelemetryLiveAttributes();
+  CompletableFuture<TelemetryClientLiveAttributesResponse> getTelemetryLiveAttributes();
 
   @JsonRequest
   CompletableFuture<SelectProxiesResponse> selectProxies(SelectProxiesParams params);

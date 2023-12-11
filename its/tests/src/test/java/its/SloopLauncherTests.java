@@ -67,8 +67,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgres
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryConstantAttributesDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientConstantAttributesDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
@@ -104,7 +104,7 @@ class SloopLauncherTests {
 
   @Test
   void test_all_rules_returns() throws Exception {
-    var telemetryInitDto = new TelemetryConstantAttributesDto("SonarLint ITs", "SonarLint ITs",
+    var telemetryInitDto = new TelemetryClientConstantAttributesDto("SonarLint ITs", "SonarLint ITs",
       "1.2.3", "4.5.6", "linux", "x64", Collections.emptyMap());
     var clientInfo = new ClientConstantInfoDto("clientName", "integrationTests");
     var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false);
@@ -239,7 +239,7 @@ class SloopLauncherTests {
     }
 
     @Override
-    public TelemetryLiveAttributesResponse getTelemetryLiveAttributes() {
+    public TelemetryClientLiveAttributesResponse getTelemetryLiveAttributes() {
       System.err.println("Telemetry should be disabled in tests");
       throw new CancellationException("Telemetry should be disabled in tests");
     }
