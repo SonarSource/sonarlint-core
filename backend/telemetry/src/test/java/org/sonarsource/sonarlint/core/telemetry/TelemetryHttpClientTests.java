@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.util.Collections;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -28,8 +29,6 @@ import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryServerLiveAttributesDto;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
@@ -56,7 +55,8 @@ class TelemetryHttpClientTests {
 
   @BeforeEach
   void setUp() {
-    underTest = new TelemetryHttpClient("product", "version", "ideversion", "platform", "architecture", HttpClientProvider.forTesting().getHttpClient(), sonarqubeMock.baseUrl());
+    underTest = new TelemetryHttpClient("product", "version", "ideversion", "platform", "architecture",
+      HttpClientProvider.forTesting().getHttpClient(), sonarqubeMock.baseUrl(), Map.of("additionalKey", "additionalValue"));
   }
 
   @Test
@@ -82,7 +82,7 @@ class TelemetryHttpClientTests {
     sonarqubeMock.verify(postRequestedFor(urlEqualTo("/"))
       .withRequestBody(
         equalToJson(
-          "{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"platform\",\"architecture\":\"architecture\"}",
+          "{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"platform\",\"architecture\":\"architecture\",\"additionalKey\" : \"additionalValue\"}",
           true, true)));
   }
 
@@ -124,9 +124,9 @@ class TelemetryHttpClientTests {
     assertThat(logTester.logs(Level.ERROR)).anyMatch(l -> l.matches("Failed to upload telemetry opt-out: .*404.*"));
   }
 
-  private static TelemetryLiveAttributesDto getTelemetryLiveAttributesDto() {
-    var serverAttributes = new TelemetryServerLiveAttributesDto(true, true, false, Collections.emptyList(), Collections.emptyList());
-    var clientAttributes = new TelemetryClientLiveAttributesResponse(null, emptyMap());
-    return new TelemetryLiveAttributesDto(serverAttributes, clientAttributes);
+  private static TelemetryLiveAttributes getTelemetryLiveAttributesDto() {
+    var serverAttributes = new TelemetryServerLiveAttributes(true, true, false, Collections.emptyList(), Collections.emptyList(), "3.1.7");
+    var clientAttributes = new TelemetryClientLiveAttributesResponse(emptyMap());
+    return new TelemetryLiveAttributes(serverAttributes, clientAttributes);
   }
 }

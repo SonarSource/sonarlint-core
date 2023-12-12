@@ -25,7 +25,9 @@ import java.util.Set;
 import org.apache.commons.lang3.SystemUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
@@ -53,7 +55,7 @@ class TelemetryServerAttributesProviderTests {
 
     var connectionConfigurationRepository = mock(ConnectionConfigurationRepository.class);
     when(connectionConfigurationRepository.getConnectionById(connectionId)).thenReturn(new SonarCloudConnectionConfiguration(connectionId, "myTestOrg", false));
-    var underTest = new TelemetryServerAttributesProvider(configurationRepository, connectionConfigurationRepository, mock(RulesService.class), mock(RulesRepository.class));
+    var underTest = new TelemetryServerAttributesProvider(configurationRepository, connectionConfigurationRepository, mock(RulesService.class), mock(RulesRepository.class), mock(NodeJsService.class));
 
     var telemetryLiveAttributes = underTest.getTelemetryServerLiveAttributes();
     assertThat(telemetryLiveAttributes.usesConnectedMode()).isTrue();
@@ -79,7 +81,7 @@ class TelemetryServerAttributesProviderTests {
     var connectionConfigurationRepository = mock(ConnectionConfigurationRepository.class);
     when(connectionConfigurationRepository.getConnectionById(connectionId_1)).thenReturn(new SonarQubeConnectionConfiguration(connectionId_1, "www.squrl1.org", false));
     when(connectionConfigurationRepository.getConnectionById(connectionId_2)).thenReturn(new SonarQubeConnectionConfiguration(connectionId_2, "www.squrl2.org", true));
-    var underTest = new TelemetryServerAttributesProvider(configurationRepository, connectionConfigurationRepository, mock(RulesService.class), mock(RulesRepository.class));
+    var underTest = new TelemetryServerAttributesProvider(configurationRepository, connectionConfigurationRepository, mock(RulesService.class), mock(RulesRepository.class), mock(NodeJsService.class));
 
     var telemetryLiveAttributes = underTest.getTelemetryServerLiveAttributes();
     assertThat(telemetryLiveAttributes.usesConnectedMode()).isTrue();
@@ -108,7 +110,7 @@ class TelemetryServerAttributesProviderTests {
     when(rulesRepository.getEmbeddedRule("ruleKey_3")).thenReturn(sonarLintRuleDefinition_3);
     when(rulesRepository.getEmbeddedRule("ruleKey_4")).thenReturn(sonarLintRuleDefinition_4);
 
-    var underTest = new TelemetryServerAttributesProvider(mock(ConfigurationRepository.class), mock(ConnectionConfigurationRepository.class), rulesService, rulesRepository);
+    var underTest = new TelemetryServerAttributesProvider(mock(ConfigurationRepository.class), mock(ConnectionConfigurationRepository.class), rulesService, rulesRepository, mock(NodeJsService.class));
     var telemetryLiveAttributes = underTest.getTelemetryServerLiveAttributes();
 
     assertThat(telemetryLiveAttributes.getNonDefaultEnabledRules()).containsExactly("ruleKey_2");
@@ -120,10 +122,20 @@ class TelemetryServerAttributesProviderTests {
 
   @Test
   void it_should_calculate_constant_telemetry_attrs(){
-    var underTest = new TelemetryServerAttributesProvider(mock(ConfigurationRepository.class), mock(ConnectionConfigurationRepository.class),  mock(RulesService.class), mock(RulesRepository.class));
+    var underTest = new TelemetryServerAttributesProvider(mock(ConfigurationRepository.class), mock(ConnectionConfigurationRepository.class),  mock(RulesService.class), mock(RulesRepository.class), mock(NodeJsService.class));
 
     assertThat(underTest.getTelemetryServerConstantAttributes().getArchitecture()).isEqualTo(SystemUtils.OS_ARCH);
     assertThat(underTest.getTelemetryServerConstantAttributes().getPlatform()).isEqualTo(SystemUtils.OS_NAME);
+  }
+
+  @Test
+  void it_should_test_nodejs_version_telemetry_attr() {
+    var nodeJsService = mock(NodeJsService.class);
+    var version = "3.1.4.159";
+    when(nodeJsService.getNodeJsVersion()).thenReturn(Version.create(version));
+    var underTest = new TelemetryServerAttributesProvider(mock(ConfigurationRepository.class), mock(ConnectionConfigurationRepository.class),  mock(RulesService.class), mock(RulesRepository.class), nodeJsService);
+
+    assertThat(underTest.getTelemetryServerLiveAttributes().getNodeVersion()).isEqualTo(version);
   }
 
   @NotNull
