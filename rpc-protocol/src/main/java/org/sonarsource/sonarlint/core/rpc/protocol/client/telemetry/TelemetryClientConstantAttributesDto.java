@@ -27,19 +27,14 @@ public class TelemetryClientConstantAttributesDto {
   private final String productName;
   private final String productVersion;
   private final String ideVersion;
-  private final String platform;
-  private final String architecture;
   private final Map<String, Object> additionalAttributes;
 
-  public TelemetryClientConstantAttributesDto(String productKey,
-    String productName, String productVersion, String ideVersion,
-    String platform, String architecture, Map<String, Object> additionalAttributes) {
+  public TelemetryClientConstantAttributesDto(String productKey, String productName, String productVersion, String ideVersion,
+    Map<String, Object> additionalAttributes) {
     this.productKey = productKey;
     this.productName = productName;
     this.productVersion = productVersion;
     this.ideVersion = ideVersion;
-    this.platform = platform;
-    this.architecture = architecture;
     this.additionalAttributes = additionalAttributes;
   }
 
@@ -57,14 +52,6 @@ public class TelemetryClientConstantAttributesDto {
 
   public String getIdeVersion() {
     return ideVersion;
-  }
-
-  public String getPlatform() {
-    return platform;
-  }
-
-  public String getArchitecture() {
-    return architecture;
   }
 
   public Map<String, Object> getAdditionalAttributes() {

@@ -55,21 +55,22 @@ public class TelemetryService {
   private final TelemetryLocalStorageManager telemetryLocalStorageManager;
   private final ScheduledExecutorService scheduledExecutor;
   private final TelemetryManager telemetryManager;
-  private final TelemetryServerLiveAttributesProvider telemetryServerLiveAttributesProvider;
+  private final TelemetryServerAttributesProvider telemetryServerAttributesProvider;
   private final SonarLintRpcClient client;
   private final Path userHome;
 
   public TelemetryService(InitializeParams initializeParams, SonarLintRpcClient sonarlintClient, HttpClientProvider httpClientProvider,
-    TelemetryServerLiveAttributesProvider telemetryServerLiveAttributesProvider, @Named("userHome") Path userHome) {
+    TelemetryServerAttributesProvider telemetryServerAttributesProvider, @Named("userHome") Path userHome) {
     this.userHome = userHome;
     this.client = sonarlintClient;
-    this.telemetryServerLiveAttributesProvider = telemetryServerLiveAttributesProvider;
+    this.telemetryServerAttributesProvider = telemetryServerAttributesProvider;
     var telemetryInitParams = initializeParams.getTelemetryConstantAttributes();
     var storagePath = getStoragePath(telemetryInitParams.getProductKey());
     this.telemetryLocalStorageManager = new TelemetryLocalStorageManager(storagePath);
+    var telemetryServerConstantAttributes = telemetryServerAttributesProvider.getTelemetryServerConstantAttributes();
     var telemetryClient = new TelemetryHttpClient(telemetryInitParams.getProductName(), telemetryInitParams.getProductVersion(),
       telemetryInitParams.getIdeVersion(),
-      telemetryInitParams.getPlatform(), telemetryInitParams.getArchitecture(), httpClientProvider.getHttpClient());
+      telemetryServerConstantAttributes.getPlatform(), telemetryServerConstantAttributes.getArchitecture(), httpClientProvider.getHttpClient());
 
     this.telemetryManager = new TelemetryManager(storagePath, telemetryClient);
     this.scheduledExecutor = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SonarLint Telemetry"));
@@ -118,7 +119,7 @@ public class TelemetryService {
   @Nullable
   private TelemetryLiveAttributesDto getTelemetryLiveAttributes() {
     try {
-      var serverLiveAttributes = telemetryServerLiveAttributesProvider.getTelemetryServerLiveAttributes();
+      var serverLiveAttributes = telemetryServerAttributesProvider.getTelemetryServerLiveAttributes();
       var clientLiveAttributes = client.getTelemetryLiveAttributes().get(10, TimeUnit.SECONDS);
       return new TelemetryLiveAttributesDto(serverLiveAttributes, clientLiveAttributes);
     } catch (InterruptedException e) {
