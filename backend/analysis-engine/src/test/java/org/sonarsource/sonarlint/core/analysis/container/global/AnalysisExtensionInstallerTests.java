@@ -33,7 +33,7 @@ import org.sonar.api.utils.Version;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentContainer;
@@ -181,7 +181,7 @@ class AnalysisExtensionInstallerTests {
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
 
-    assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).contains("Error loading components for plugin 'foo'");
+    assertThat(logTester.logs(LogOutput.Level.ERROR)).contains("Error loading components for plugin 'foo'");
   }
 
   private static class FakePlugin implements Plugin {

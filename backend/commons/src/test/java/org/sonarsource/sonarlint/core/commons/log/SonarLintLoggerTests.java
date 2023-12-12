@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.commons.log;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
+import org.sonarsource.sonarlint.core.commons.log.LogOutput.Level;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;

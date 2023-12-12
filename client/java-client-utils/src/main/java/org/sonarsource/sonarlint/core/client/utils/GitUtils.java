@@ -62,7 +62,8 @@ public class GitUtils {
   }
 
   @CheckForNull
-  public static String electBestMatchingServerBranchForCurrentHead(Repository repo, Set<String> serverCandidateNames, @Nullable String serverMainBranch, ClientLogOutput clientLogOutput) {
+  public static String electBestMatchingServerBranchForCurrentHead(Repository repo, Set<String> serverCandidateNames, @Nullable String serverMainBranch,
+    ClientLogOutput clientLogOutput) {
     try {
 
       String currentBranch = repo.getBranch();

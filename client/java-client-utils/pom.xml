@@ -11,10 +11,6 @@
   <name>SonarLint Core - Java Client Utils</name>
   <description>Utility classes for Java clients</description>
 
-  <properties>
-    <!-- The library is shaded into sonarlint-core -->
-    <maven.deploy.skip>true</maven.deploy.skip>
-  </properties>
   <dependencies>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>

@@ -71,13 +71,14 @@ class RulesInConnectedModeMediumTests {
         new BindingConfigurationDto(CONNECTION_ID, JAVA_MODULE_KEY, true)))));
 
     var activeRules = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).get().getActiveRules();
-    assertThat(activeRules).extracting(ActiveRuleDto::getRuleKey, ActiveRuleDto::getLanguageKey, ActiveRuleDto::getParams, ActiveRuleDto::getTemplateRuleKey).containsExactlyInAnyOrder(
-      // Deprecated key has been converted
-      tuple("java:S106", "java", Map.of(), null),
-      // Unknown parameters have been removed
-      tuple("java:S3776", "java", Map.of("Threshold", "15"), null),
-      // Deprecated template key has been converted
-      tuple("java:myCustomRule", "java", Map.of("message", "Needs to be reviewed", "regularExpression", ".*REVIEW.*"), "java:S124"));
+    assertThat(activeRules).extracting(ActiveRuleDto::getRuleKey, ActiveRuleDto::getLanguageKey, ActiveRuleDto::getParams, ActiveRuleDto::getTemplateRuleKey)
+      .containsExactlyInAnyOrder(
+        // Deprecated key has been converted
+        tuple("java:S106", "java", Map.of(), null),
+        // Unknown parameters have been removed
+        tuple("java:S3776", "java", Map.of("Threshold", "15"), null),
+        // Deprecated template key has been converted
+        tuple("java:myCustomRule", "java", Map.of("message", "Needs to be reviewed", "regularExpression", ".*REVIEW.*"), "java:S124"));
   }
 
   @Test
@@ -100,6 +101,37 @@ class RulesInConnectedModeMediumTests {
     var activeRules = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).get().getActiveRules();
     assertThat(activeRules).extracting(ActiveRuleDto::getRuleKey, ActiveRuleDto::getLanguageKey).contains(
       tuple("secrets:S6292", "secrets"));
+  }
+
+  @Test
+  void hotspot_rules_should_be_active_when_feature_flag_is_enabled() throws Exception {
+    backend = newBackend()
+      .withSecurityHotspotsEnabled()
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .withSonarQubeConnection(CONNECTION_ID,
+        storage -> storage.withServerVersion("9.7").withProject(JAVA_MODULE_KEY, project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S4792", "INFO"))))
+      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, JAVA_MODULE_KEY)
+      .build();
+
+    var activeRules = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).get().getActiveRules();
+
+    assertThat(activeRules)
+      .extracting(ActiveRuleDto::getRuleKey)
+      .contains("java:S4792");
+  }
+
+  @Test
+  void hotspot_rules_should_not_be_active_when_feature_flag_is_disabled() throws Exception {
+    backend = newBackend()
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .withSonarQubeConnection(CONNECTION_ID,
+        storage -> storage.withServerVersion("9.7").withProject(JAVA_MODULE_KEY, project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S4792", "INFO"))))
+      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, JAVA_MODULE_KEY)
+      .build();
+
+    var activeRules = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).get().getActiveRules();
+
+    assertThat(activeRules).isEmpty();
   }
 
 }

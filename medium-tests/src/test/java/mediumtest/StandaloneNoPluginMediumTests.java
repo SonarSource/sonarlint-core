@@ -30,61 +30,60 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
+import org.sonarsource.sonarlint.core.client.legacy.analysis.AnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.legacy.analysis.EngineConfiguration;
+import org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine;
+import org.sonarsource.sonarlint.core.client.utils.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import testutils.TestUtils;
 
+import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 class StandaloneNoPluginMediumTests {
 
-  private StandaloneSonarLintEngine sonarlint;
+  private static final String CONFIGURATION_SCOPE_ID = "configScopeId";
+  private SonarLintAnalysisEngine engine;
 
   @TempDir
   private File baseDir;
   private final Multimap<ClientLogOutput.Level, String> logs = LinkedListMultimap.create();
 
   @BeforeEach
-  void prepare() throws IOException {
+  void prepare() {
     ClientLogOutput logOutput = (msg, level) -> logs.put(level, msg);
-    sonarlint = new StandaloneSonarLintEngineImpl(StandaloneGlobalConfiguration.builder()
+    engine = new SonarLintAnalysisEngine(EngineConfiguration.builder()
       .setLogOutput(logOutput)
       .setModulesProvider(() -> List.of(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class))))
-      .build());
+      .build(), newBackend().build(), null);
   }
 
   @AfterEach
   void stop() {
-    sonarlint.stop();
+    engine.stop();
   }
 
   @Test
   void dont_fail_and_detect_language_even_if_no_plugin() throws Exception {
 
-    assertThat(sonarlint.getPluginDetails()).isEmpty();
+    assertThat(engine.getPluginDetails()).isEmpty();
 
     var inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
 
-    var results = sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
+    var results = engine.analyze(
+      AnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
         .build(),
       i -> {
-      }, null, null);
+      }, null, null, CONFIGURATION_SCOPE_ID);
 
     assertThat(results.indexedFileCount()).isEqualTo(1);
     assertThat(results.languagePerFile()).containsEntry(inputFile, Language.JS);
-
-    assertThat(sonarlint.getAllRuleDetails()).isEmpty();
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {

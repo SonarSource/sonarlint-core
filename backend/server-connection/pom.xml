@@ -11,8 +11,6 @@
   <description>Manage connections with SonarQube or SonarCloud</description>
 
   <properties>
-    <!-- The library is shaded into sonarlint-core -->
-    <maven.deploy.skip>true</maven.deploy.skip>
     <xodus.version>2.0.1</xodus.version>
   </properties>
 

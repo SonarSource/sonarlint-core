@@ -49,6 +49,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetai
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetStandaloneRuleDescriptionResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDefinitionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleParamDefinitionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleParamType;
@@ -136,7 +137,7 @@ public class RulesService {
         .map(r -> RuleDetails.from(r, standaloneRuleConfig.get(ruleKey)))
         .orElseThrow(() -> {
           var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in plugins loaded from '" + connectionId + "'",
-            new Object[]{connectionId, ruleKey});
+            new Object[] {connectionId, ruleKey});
           return new ResponseErrorException(error);
         }));
   }
@@ -193,7 +194,7 @@ public class RulesService {
 
   private static ResponseErrorException ruleNotFound(String connectionId, String ruleKey, Exception e) {
     LOG.error("Failed to fetch rule details from server", e);
-    var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' on '" + connectionId + "'", new Object[]{ruleKey, connectionId});
+    var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' on '" + connectionId + "'", new Object[] {ruleKey, connectionId});
     return new ResponseErrorException(error);
   }
 
@@ -268,7 +269,7 @@ public class RulesService {
   public GetStandaloneRuleDescriptionResponse getStandaloneRuleDetails(String ruleKey) {
     var embeddedRule = rulesRepository.getEmbeddedRule(ruleKey);
     if (embeddedRule.isEmpty()) {
-      var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules", new Object[]{ruleKey});
+      var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules", new Object[] {ruleKey});
       throw new ResponseErrorException(error);
     }
     var ruleDefinition = embeddedRule.get();
@@ -342,7 +343,46 @@ public class RulesService {
   }
 
   public GetRuleDetailsResponse getRuleDetailsForAnalysis(String configScopeId, String ruleKey) throws RuleNotFoundException {
-    var ruleDetails = getRuleDetails(configScopeId, ruleKey);
-    return RuleDetailsAdapter.transform(ruleDetails);
+    var effectiveBinding = configurationRepository.getEffectiveBinding(configScopeId);
+    return effectiveBinding.isEmpty() ? getRuleDetailsForStandaloneAnalysis(ruleKey) : getRuleDetailsForConnectedAnalysis(effectiveBinding.get(), ruleKey);
+  }
+
+  private GetRuleDetailsResponse getRuleDetailsForStandaloneAnalysis(String ruleKey) throws RuleNotFoundException {
+    var embeddedRule = rulesRepository.getEmbeddedRule(ruleKey);
+    if (embeddedRule.isEmpty()) {
+      throw new RuleNotFoundException(COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules", ruleKey);
+    }
+    var ruleDefinition = embeddedRule.get();
+    return new GetRuleDetailsResponse(
+      RuleDetailsAdapter.adapt(ruleDefinition.getDefaultSeverity()),
+      RuleDetailsAdapter.adapt(ruleDefinition.getType()),
+      ruleDefinition.getCleanCodeAttribute().map(RuleDetailsAdapter::adapt).orElse(org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute.CONVENTIONAL),
+      ruleDefinition.getDefaultImpacts().entrySet().stream().map(entry -> new ImpactDto(RuleDetailsAdapter.adapt(entry.getKey()), RuleDetailsAdapter.adapt(entry.getValue())))
+        .collect(Collectors.toList()),
+      ruleDefinition.getVulnerabilityProbability().map(RuleDetailsAdapter::adapt).orElse(null));
+  }
+
+  public GetRuleDetailsResponse getRuleDetailsForConnectedAnalysis(Binding binding, String ruleKey) throws RuleNotFoundException {
+    var activeRuleOpt = findServerActiveRuleInStorage(binding, ruleKey);
+    if (activeRuleOpt.isEmpty()) {
+      throw new RuleNotFoundException(COULD_NOT_FIND_RULE + ruleKey + "' in active rules", ruleKey);
+    }
+    var activeRule = activeRuleOpt.get();
+    var actualRuleKey = ruleKey;
+    if (StringUtils.isNotBlank(activeRule.getTemplateKey())) {
+      actualRuleKey = activeRule.getTemplateKey();
+    }
+    var ruleDefinitionOpt = rulesRepository.getRule(binding.getConnectionId(), actualRuleKey);
+    if (ruleDefinitionOpt.isEmpty()) {
+      throw new RuleNotFoundException(COULD_NOT_FIND_RULE + actualRuleKey + "' in embedded rules", actualRuleKey);
+    }
+    var ruleDefinition = ruleDefinitionOpt.get();
+    return new GetRuleDetailsResponse(
+      RuleDetailsAdapter.adapt(activeRule.getSeverity()),
+      RuleDetailsAdapter.adapt(ruleDefinition.getType()),
+      ruleDefinition.getCleanCodeAttribute().map(RuleDetailsAdapter::adapt).orElse(org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute.CONVENTIONAL),
+      ruleDefinition.getDefaultImpacts().entrySet().stream().map(entry -> new ImpactDto(RuleDetailsAdapter.adapt(entry.getKey()), RuleDetailsAdapter.adapt(entry.getValue())))
+        .collect(Collectors.toList()),
+      ruleDefinition.getVulnerabilityProbability().map(RuleDetailsAdapter::adapt).orElse(null));
   }
 }

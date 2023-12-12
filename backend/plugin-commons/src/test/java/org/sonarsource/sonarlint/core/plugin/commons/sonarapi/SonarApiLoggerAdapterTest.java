@@ -23,7 +23,7 @@ import java.io.PrintWriter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonar.api.utils.log.LoggerLevel;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,7 +63,7 @@ class SonarApiLoggerAdapterTest {
     var args = new Object[] {"b"};
     underTest.trace("msg6 {}", args);
 
-    assertThat(logTester.logs(ClientLogOutput.Level.TRACE)).containsExactly("msg1", "msg2", "msg3", "msg4 a", "msg5 a a", "msg6 b");
+    assertThat(logTester.logs(LogOutput.Level.TRACE)).containsExactly("msg1", "msg2", "msg3", "msg4 a", "msg5 a a", "msg6 b");
   }
 
   @Test
@@ -79,7 +79,7 @@ class SonarApiLoggerAdapterTest {
     var args = new Object[] {"b"};
     underTest.debug("msg6 {}", args);
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).containsExactly("msg1", "msg2", "msg3", "msg4 a", "msg5 a a", "msg6 b");
+    assertThat(logTester.logs(LogOutput.Level.DEBUG)).containsExactly("msg1", "msg2", "msg3", "msg4 a", "msg5 a a", "msg6 b");
   }
 
   @Test
@@ -95,7 +95,7 @@ class SonarApiLoggerAdapterTest {
     var args = new Object[] {"b"};
     underTest.info("msg6 {}", args);
 
-    assertThat(logTester.logs(ClientLogOutput.Level.INFO)).containsExactly("msg1", "msg2", "msg3", "msg4 a", "msg5 a a", "msg6 b");
+    assertThat(logTester.logs(LogOutput.Level.INFO)).containsExactly("msg1", "msg2", "msg3", "msg4 a", "msg5 a a", "msg6 b");
   }
 
   @Test
@@ -112,7 +112,7 @@ class SonarApiLoggerAdapterTest {
     underTest.warn("msg6 {}", args);
     underTest.warn("msg with ex", THROWN);
 
-    assertThat(logTester.logs(ClientLogOutput.Level.WARN)).containsExactly("msg1", "msg2", "msg3", "msg4 a", "msg5 a a", "msg6 b", "msg with ex",
+    assertThat(logTester.logs(LogOutput.Level.WARN)).containsExactly("msg1", "msg2", "msg3", "msg4 a", "msg5 a a", "msg6 b", "msg with ex",
       "stacktrace");
   }
 
@@ -130,7 +130,7 @@ class SonarApiLoggerAdapterTest {
     underTest.error("msg6 {}", args);
     underTest.error("msg with ex", THROWN);
 
-    assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).containsExactly("msg1", "msg2", "msg3", "msg4 a", "msg5 a a", "msg6 b", "msg with ex",
+    assertThat(logTester.logs(LogOutput.Level.ERROR)).containsExactly("msg1", "msg2", "msg3", "msg4 a", "msg5 a a", "msg6 b", "msg with ex",
       "stacktrace");
   }
 

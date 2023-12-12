@@ -75,6 +75,7 @@ public class AnalysisService {
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final boolean hotspotEnabled;
   private final NodeJsService nodeJsService;
+  private final boolean isDataflowBugDetectionEnabled;
 
   public AnalysisService(ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository, StorageService storageService,
     PluginsService pluginsService, RulesService rulesService, RulesRepository rulesRepository, ConnectionConfigurationRepository connectionConfigurationRepository,
@@ -87,6 +88,7 @@ public class AnalysisService {
     this.rulesRepository = rulesRepository;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.hotspotEnabled = initializeParams.getFeatureFlags().isEnableSecurityHotspots();
+    this.isDataflowBugDetectionEnabled = initializeParams.getFeatureFlags().isEnableDataflowBugDetection();
     this.nodeJsService = nodeJsService;
   }
 
@@ -132,7 +134,7 @@ public class AnalysisService {
     var nodeJsPath = nodeJsService.getNodeJsPath();
     var nodeJsVersion = nodeJsService.getNodeJsVersion();
     return new GetGlobalConfigurationResponse(pluginPaths, enabledLanguages.stream().map(AnalysisService::toDto).collect(Collectors.toList()),
-      nodeJsPath, nodeJsVersion != null ? nodeJsVersion.toString() : null);
+      nodeJsPath, nodeJsVersion != null ? nodeJsVersion.toString() : null, false);
   }
 
   public GetGlobalConfigurationResponse getGlobalConnectedConfiguration(String connectionId) {
@@ -141,7 +143,7 @@ public class AnalysisService {
     var nodeJsPath = nodeJsService.getNodeJsPath();
     var nodeJsVersion = nodeJsService.getNodeJsVersion();
     return new GetGlobalConfigurationResponse(pluginPaths, enabledLanguages.stream().map(AnalysisService::toDto).collect(Collectors.toList()),
-      nodeJsPath, nodeJsVersion != null ? nodeJsVersion.toString() : null);
+      nodeJsPath, nodeJsVersion != null ? nodeJsVersion.toString() : null, isDataflowBugDetectionEnabled);
   }
 
   @NotNull

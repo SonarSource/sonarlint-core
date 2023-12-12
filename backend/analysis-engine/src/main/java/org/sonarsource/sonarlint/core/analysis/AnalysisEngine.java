@@ -30,7 +30,7 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.command.Command;
 import org.sonarsource.sonarlint.core.analysis.container.global.GlobalAnalysisContainer;
 import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
@@ -43,11 +43,11 @@ public class AnalysisEngine {
   private final GlobalAnalysisContainer globalAnalysisContainer;
   private final BlockingQueue<AsyncCommand<?>> commandQueue = new LinkedBlockingQueue<>();
   private final Thread analysisThread = new Thread(this::executeQueuedCommands, "sonarlint-analysis-engine");
-  private final ClientLogOutput logOutput;
+  private final LogOutput logOutput;
   private final AtomicReference<Runnable> termination = new AtomicReference<>();
   private final AtomicReference<AsyncCommand<?>> executingCommand = new AtomicReference<>();
 
-  public AnalysisEngine(AnalysisEngineConfiguration analysisGlobalConfig, LoadedPlugins loadedPlugins, @Nullable ClientLogOutput logOutput) {
+  public AnalysisEngine(AnalysisEngineConfiguration analysisGlobalConfig, LoadedPlugins loadedPlugins, @Nullable LogOutput logOutput) {
     globalAnalysisContainer = new GlobalAnalysisContainer(analysisGlobalConfig, loadedPlugins);
     this.logOutput = logOutput;
     start();

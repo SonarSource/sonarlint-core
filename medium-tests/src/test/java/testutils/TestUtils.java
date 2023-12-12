@@ -24,24 +24,21 @@ import com.github.tomakehurst.wiremock.http.ContentTypeHeader;
 import com.google.protobuf.Message;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssue;
+import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssueListener;
+import org.sonarsource.sonarlint.core.client.utils.ClientLogOutput;
 
 public class TestUtils {
 
-  public static class NoOpIssueListener implements IssueListener {
+  public static class NoOpIssueListener implements RawIssueListener {
     @Override
-    public void handle(Issue issue) {
+    public void handle(RawIssue rawIssue) {
     }
-  }
-
-  ;
+  };
 
   public static NoOpIssueListener createNoOpIssueListener() {
     return new NoOpIssueListener();
@@ -86,31 +83,6 @@ public class TestUtils {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  public static String generateThreadDump() {
-    final var dump = new StringBuilder();
-    final var threadMXBean = ManagementFactory.getThreadMXBean();
-    final var threadInfos = threadMXBean.getThreadInfo(threadMXBean.getAllThreadIds(), 100);
-    for (var threadInfo : threadInfos) {
-      dump.append('"');
-      dump.append(threadInfo.getThreadName());
-      dump.append("\" ");
-      final var state = threadInfo.getThreadState();
-      dump.append("\n   java.lang.Thread.State: ");
-      dump.append(state);
-      final var stackTraceElements = threadInfo.getStackTrace();
-      for (final var stackTraceElement : stackTraceElements) {
-        dump.append("\n        at ");
-        dump.append(stackTraceElement);
-      }
-      dump.append("\n\n");
-    }
-    return dump.toString();
-  }
-
-  public static void printThreadDump() {
-    System.out.println(generateThreadDump());
   }
 
 }

@@ -34,22 +34,22 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
+import org.sonarsource.sonarlint.core.client.legacy.analysis.AnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.legacy.analysis.EngineConfiguration;
+import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssue;
+import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssueListener;
+import org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import testutils.MockWebServerExtensionWithProtobuf;
 import testutils.TestUtils;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
-import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.mock;
@@ -61,9 +61,9 @@ class ConnectedHotspotMediumTests {
 
   @AfterEach
   void stop() {
-    if (sonarlint != null) {
-      sonarlint.stop();
-      sonarlint = null;
+    if (engine != null) {
+      engine.stop();
+      engine = null;
     }
   }
 
@@ -81,14 +81,13 @@ class ConnectedHotspotMediumTests {
     createStorageAndEngine(null);
     var inputFile = prepareJavaInputFile(baseDir);
 
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
-      .setProjectKey(JAVA_MODULE_KEY)
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(AnalysisConfiguration.builder()
       .setBaseDir(baseDir)
       .addInputFile(inputFile)
       .setModuleKey("key")
       .build(),
-      new StoreIssueListener(issues), null, null);
+      new StoreIssueListener(issues), null, null, CONFIG_SCOPE_ID);
 
     assertThat(issues).isEmpty();
   }
@@ -98,14 +97,13 @@ class ConnectedHotspotMediumTests {
     createStorageAndEngine("9.6");
     var inputFile = prepareJavaInputFile(baseDir);
 
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
-      .setProjectKey(JAVA_MODULE_KEY)
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(AnalysisConfiguration.builder()
       .setBaseDir(baseDir)
       .addInputFile(inputFile)
       .setModuleKey("key")
       .build(),
-      new StoreIssueListener(issues), null, null);
+      new StoreIssueListener(issues), null, null, CONFIG_SCOPE_ID);
 
     assertThat(issues).isEmpty();
   }
@@ -115,42 +113,38 @@ class ConnectedHotspotMediumTests {
     createStorageAndEngine("9.7");
     var inputFile = prepareJavaInputFile(baseDir);
 
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
-      .setProjectKey(JAVA_MODULE_KEY)
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(AnalysisConfiguration.builder()
       .setBaseDir(baseDir)
       .addInputFile(inputFile)
       .setModuleKey("key")
       .build(),
-      new StoreIssueListener(issues), null, null);
+      new StoreIssueListener(issues), null, null, CONFIG_SCOPE_ID);
 
-    assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path", "severity").containsOnly(
-      tuple("java:S5852", 3, inputFile.getPath(), IssueSeverity.BLOCKER));
+    assertThat(issues).extracting("ruleKey", "textRange", "inputFile.path", "severity")
+      .usingRecursiveFieldByFieldElementComparator()
+      .containsOnly(tuple("java:S5852", new TextRangeDto(3, 28, 3, 35), inputFile.getPath(), IssueSeverity.BLOCKER));
   }
 
   private void createStorageAndEngine(String serverVersion) {
-    var fakeClient = newFakeClient()
-      .build();
     backend = newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, mockWebServer.url("/"))
-      .withStorage(CONNECTION_ID, b -> b
+      .withSonarQubeConnection(CONNECTION_ID, mockWebServer.url("/"), storage -> storage
         .withServerVersion(serverVersion)
         .withPlugin(TestPlugin.JAVA)
         .withProject(JAVA_MODULE_KEY, project -> project
           .withRuleSet("java", ruleSet -> ruleSet
             .withActiveRule("java:S5852", "BLOCKER"))))
-      .build(fakeClient);
+      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, JAVA_MODULE_KEY)
+      .withSecurityHotspotsEnabled()
+      .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+      .build();
 
-    var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
-      .setConnectionId(CONNECTION_ID)
+    var config = EngineConfiguration.builder()
       .setSonarLintUserHome(backend.getUserHome())
-      .setStorageRoot(backend.getStorageRoot())
       .setLogOutput(createNoOpLogOutput())
-      .addEnabledLanguages(Language.JAVA)
-      .enableHotspots()
       .setModulesProvider(() -> List.of(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class))))
       .build();
-    sonarlint = new ConnectedSonarLintEngineImpl(config);
+    engine = new SonarLintAnalysisEngine(config, backend, CONNECTION_ID);
   }
 
   private ClientInputFile prepareJavaInputFile(Path baseDir) throws IOException {
@@ -169,16 +163,16 @@ class ConnectedHotspotMediumTests {
     return TestUtils.createInputFile(file.toPath(), relativePath, isTest);
   }
 
-  static class StoreIssueListener implements IssueListener {
-    private final List<Issue> issues;
+  static class StoreIssueListener implements RawIssueListener {
+    private final List<RawIssue> issues;
 
-    StoreIssueListener(List<Issue> issues) {
+    StoreIssueListener(List<RawIssue> issues) {
       this.issues = issues;
     }
 
     @Override
-    public void handle(Issue issue) {
-      issues.add(issue);
+    public void handle(RawIssue rawIssue) {
+      issues.add(rawIssue);
     }
   }
 
@@ -186,7 +180,8 @@ class ConnectedHotspotMediumTests {
   private final MockWebServerExtensionWithProtobuf mockWebServer = new MockWebServerExtensionWithProtobuf();
 
   private static final String CONNECTION_ID = StringUtils.repeat("very-long-id", 30);
+  private static final String CONFIG_SCOPE_ID = "configScopeId";
   private static final String JAVA_MODULE_KEY = "test-project-2";
-  private static ConnectedSonarLintEngineImpl sonarlint;
+  private static SonarLintAnalysisEngine engine;
 
 }

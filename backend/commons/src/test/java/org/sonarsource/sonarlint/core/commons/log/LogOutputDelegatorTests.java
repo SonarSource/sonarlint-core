@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.commons.log;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
+import org.sonarsource.sonarlint.core.commons.log.LogOutput.Level;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -32,7 +32,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 class LogOutputDelegatorTests {
   private final LogOutputDelegator delegator = new LogOutputDelegator();
-  private final ClientLogOutput output = mock(ClientLogOutput.class);
+  private final LogOutput output = mock(LogOutput.class);
 
   @Test
   void should_throw_exception_when_not_set() {

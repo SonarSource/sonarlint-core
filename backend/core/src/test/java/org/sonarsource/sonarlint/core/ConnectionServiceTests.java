@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
@@ -39,7 +39,6 @@ import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnection
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
@@ -124,7 +123,7 @@ class ConnectionServiceTests {
         SonarQubeConnectionConfiguration::getKind)
       .containsOnly("sq1", "url1_dup", true, ConnectionKind.SONARQUBE);
 
-    assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).containsExactly("Duplicate connection registered: sq1");
+    assertThat(logTester.logs(LogOutput.Level.ERROR)).containsExactly("Duplicate connection registered: sq1");
   }
 
   @Test
@@ -156,7 +155,7 @@ class ConnectionServiceTests {
 
     underTest.didUpdateConnections(List.of(), List.of());
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).containsExactly("Attempt to remove connection 'id' that was not registered. Possibly a race condition?");
+    assertThat(logTester.logs(LogOutput.Level.DEBUG)).containsExactly("Attempt to remove connection 'id' that was not registered. Possibly a race condition?");
   }
 
   @Test
@@ -189,7 +188,7 @@ class ConnectionServiceTests {
 
     underTest.didUpdateConnections(List.of(SQ_DTO_2), List.of());
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).containsExactly("Attempt to update connection 'sq2' that was not registered. Possibly a race condition?");
+    assertThat(logTester.logs(LogOutput.Level.DEBUG)).containsExactly("Attempt to update connection 'sq2' that was not registered. Possibly a race condition?");
   }
 
   @Test

@@ -27,7 +27,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class WebSocketClient {
@@ -59,9 +59,9 @@ public class WebSocketClient {
   private static class MessageConsumerWrapper implements WebSocket.Listener {
     private final Consumer<String> messageConsumer;
     private final Runnable onWebSocketInputClosedRunnable;
-    private final ClientLogOutput currentThreadOutput;
+    private final LogOutput currentThreadOutput;
 
-    public MessageConsumerWrapper(Consumer<String> messageConsumer, Runnable onWebSocketInputClosedRunnable, @Nullable ClientLogOutput currentThreadOutput) {
+    public MessageConsumerWrapper(Consumer<String> messageConsumer, Runnable onWebSocketInputClosedRunnable, @Nullable LogOutput currentThreadOutput) {
       this.messageConsumer = messageConsumer;
       this.onWebSocketInputClosedRunnable = onWebSocketInputClosedRunnable;
       this.currentThreadOutput = currentThreadOutput;
