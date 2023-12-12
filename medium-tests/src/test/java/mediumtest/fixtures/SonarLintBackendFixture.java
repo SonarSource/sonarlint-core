@@ -576,7 +576,7 @@ public class SonarLintBackendFixture {
 
     @Override
     public TelemetryClientLiveAttributesResponse getTelemetryLiveAttributes() {
-      return new TelemetryClientLiveAttributesResponse(null, emptyMap());
+      return new TelemetryClientLiveAttributesResponse(emptyMap());
     }
 
     @Override

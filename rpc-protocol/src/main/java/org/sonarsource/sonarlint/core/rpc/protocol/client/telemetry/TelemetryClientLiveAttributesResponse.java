@@ -20,31 +20,16 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
 
 import java.util.Map;
-import javax.annotation.Nullable;
 
 
 public class TelemetryClientLiveAttributesResponse {
-  /**
-   * Node.js version used by analyzers (detected or configured by the user).
-   * Empty if no node present/detected/configured
-   */
-  @Nullable
-  private final String nodeVersion;
-
   /**
    * Map of additional attributes to be passed to the telemetry. Values types can be {@link String}, {@link Boolean} or {@link Number}. You can also pass a Map for nested objects.
    */
   private final Map<String, Object> additionalAttributes;
 
-  public TelemetryClientLiveAttributesResponse(@Nullable String nodeVersion,
-    Map<String, Object> additionalAttributes) {
-    this.nodeVersion = nodeVersion;
+  public TelemetryClientLiveAttributesResponse(Map<String, Object> additionalAttributes) {
     this.additionalAttributes = additionalAttributes;
-  }
-
-  @Nullable
-  public String getNodeVersion() {
-    return nodeVersion;
   }
 
   public Map<String, Object> getAdditionalAttributes() {

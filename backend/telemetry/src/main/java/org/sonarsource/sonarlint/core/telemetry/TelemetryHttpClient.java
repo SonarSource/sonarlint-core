@@ -21,10 +21,11 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+import java.util.Map;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.http.HttpClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesDto;
 import org.sonarsource.sonarlint.core.telemetry.payload.HotspotPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.IssuePayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.ShowHotspotPayload;
@@ -49,12 +50,15 @@ public class TelemetryHttpClient {
   private final String architecture;
   private final HttpClient client;
   private final String endpoint;
+  private final Map<String, Object> additionalAttributes;
 
-  public TelemetryHttpClient(String product, String version, String ideVersion, @Nullable String platform, @Nullable String architecture, HttpClient client) {
-    this(product, version, ideVersion, platform, architecture, client, TELEMETRY_ENDPOINT);
+  public TelemetryHttpClient(String product, String version, String ideVersion, @Nullable String platform, @Nullable String architecture,
+    HttpClient client, Map<String, Object> additionalAttributes) {
+    this(product, version, ideVersion, platform, architecture, client, TELEMETRY_ENDPOINT, additionalAttributes);
   }
 
-  TelemetryHttpClient(String product, String version, String ideVersion, @Nullable String platform, @Nullable String architecture, HttpClient client, String endpoint) {
+  TelemetryHttpClient(String product, String version, String ideVersion, @Nullable String platform, @Nullable String architecture,
+    HttpClient client, String endpoint, Map<String, Object> additionalAttributes) {
     this.product = product;
     this.version = version;
     this.ideVersion = ideVersion;
@@ -62,9 +66,10 @@ public class TelemetryHttpClient {
     this.architecture = architecture;
     this.client = client;
     this.endpoint = System.getProperty("sonarlint.internal.telemetry.endpoint", endpoint);
+    this.additionalAttributes = additionalAttributes;
   }
 
-  void upload(TelemetryLocalStorage data, TelemetryLiveAttributesDto telemetryLiveAttributes) {
+  void upload(TelemetryLocalStorage data, TelemetryLiveAttributes telemetryLiveAttributes) {
     try {
       sendPost(createPayload(data, telemetryLiveAttributes));
     } catch (Throwable catchEmAll) {
@@ -74,9 +79,9 @@ public class TelemetryHttpClient {
     }
   }
 
-  void optOut(TelemetryLocalStorage data, TelemetryLiveAttributesDto telemetryPayload) {
+  void optOut(TelemetryLocalStorage data, TelemetryLiveAttributes telemetryLiveAttributes) {
     try {
-      sendDelete(createPayload(data, telemetryPayload));
+      sendDelete(createPayload(data, telemetryLiveAttributes));
     } catch (Throwable catchEmAll) {
       if (InternalDebug.isEnabled()) {
         LOG.error("Failed to upload telemetry opt-out", catchEmAll);
@@ -84,11 +89,11 @@ public class TelemetryHttpClient {
     }
   }
 
-  private TelemetryPayload createPayload(TelemetryLocalStorage data, TelemetryLiveAttributesDto telemetryPayload) {
+  private TelemetryPayload createPayload(TelemetryLocalStorage data, TelemetryLiveAttributes telemetryLiveAttrs) {
     var systemTime = OffsetDateTime.now();
     var daysSinceInstallation = data.installTime().until(systemTime, ChronoUnit.DAYS);
     var analyzers = TelemetryUtils.toPayload(data.analyzers());
-    var notifications = TelemetryUtils.toPayload(telemetryPayload.isDevNotificationsDisabled(), data.notifications());
+    var notifications = TelemetryUtils.toPayload(telemetryLiveAttrs.isDevNotificationsDisabled(), data.notifications());
     var showHotspotPayload = new ShowHotspotPayload(data.showHotspotRequestsCount());
     var showIssuePayload = new ShowIssuePayload(data.getShowIssueRequestsCount());
     var hotspotPayload = new HotspotPayload(data.openHotspotInBrowserCount(), data.hotspotStatusChangedCount());
@@ -97,15 +102,17 @@ public class TelemetryHttpClient {
     var issuePayload = new IssuePayload(data.issueStatusChangedRuleKeys());
     var os = System.getProperty("os.name");
     var jre = System.getProperty("java.version");
-    var telemetryRulesPayload = new TelemetryRulesPayload(telemetryPayload.getNonDefaultEnabledRules(),
-      telemetryPayload.getDefaultDisabledRules(), data.getRaisedIssuesRules(), data.getQuickFixesApplied());
+    var telemetryRulesPayload = new TelemetryRulesPayload(telemetryLiveAttrs.getNonDefaultEnabledRules(),
+      telemetryLiveAttrs.getDefaultDisabledRules(), data.getRaisedIssuesRules(), data.getQuickFixesApplied());
     var helpAndFeedbackPayload = new TelemetryHelpAndFeedbackPayload(data.getHelpAndFeedbackLinkClickedCounter());
     var cleanAsYouCodePayload = new CleanAsYouCodePayload(new NewCodeFocusPayload(data.isFocusOnNewCode(), data.getCodeFocusChangedCount()));
+    var mergedAdditionalAttributes = new HashMap<>(telemetryLiveAttrs.getAdditionalAttributes());
+    mergedAdditionalAttributes.putAll(additionalAttributes);
     return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version, ideVersion, platform, architecture,
-      telemetryPayload.usesConnectedMode(), telemetryPayload.usesSonarCloud(), systemTime, data.installTime(), os, jre,
-      telemetryPayload.getNodeVersion(), analyzers, notifications, showHotspotPayload,
+      telemetryLiveAttrs.usesConnectedMode(), telemetryLiveAttrs.usesSonarCloud(), systemTime, data.installTime(), os, jre,
+      telemetryLiveAttrs.getNodeVersion(), analyzers, notifications, showHotspotPayload,
       showIssuePayload, taintVulnerabilitiesPayload, telemetryRulesPayload,
-      hotspotPayload, issuePayload, helpAndFeedbackPayload, cleanAsYouCodePayload, telemetryPayload.getAdditionalAttributes());
+      hotspotPayload, issuePayload, helpAndFeedbackPayload, cleanAsYouCodePayload, mergedAdditionalAttributes);
   }
 
   private void sendDelete(TelemetryPayload payload) {
