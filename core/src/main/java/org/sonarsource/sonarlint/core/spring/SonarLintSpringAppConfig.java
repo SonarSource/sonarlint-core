@@ -76,7 +76,7 @@ import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationSe
 import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationTimestampRepository;
 import org.sonarsource.sonarlint.core.sync.TaintSynchronizationService;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryServerLiveAttributesProvider;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryServerAttributesProvider;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.tracking.IssueMatchingService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
@@ -138,7 +138,7 @@ import org.springframework.scheduling.support.TaskUtils;
   SynchronizationTimestampRepository.class,
   TaintVulnerabilityTrackingService.class,
   TelemetryService.class,
-  TelemetryServerLiveAttributesProvider.class,
+  TelemetryServerAttributesProvider.class,
   SonarProjectBranchesSynchronizationService.class,
   TaintSynchronizationService.class,
   IssueSynchronizationService.class,

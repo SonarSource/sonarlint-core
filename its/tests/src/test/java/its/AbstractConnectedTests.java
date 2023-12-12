@@ -56,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class AbstractConnectedTests {
   public static final TelemetryClientConstantAttributesDto IT_TELEMETRY_ATTRIBUTES = new TelemetryClientConstantAttributesDto("SonarLint ITs", "SonarLint ITs",
-    "1.2.3", "4.5.6", "linux", "x64", Collections.emptyMap());
+    "1.2.3", "4.5.6", Collections.emptyMap());
   public static final ClientConstantInfoDto IT_CLIENT_INFO = new ClientConstantInfoDto("clientName", "integrationTests");
   protected static final String SONARLINT_USER = "sonarlint";
   protected static final String SONARLINT_PWD = "sonarlintpwd";

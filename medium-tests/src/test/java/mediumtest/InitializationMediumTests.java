@@ -50,7 +50,7 @@ class InitializationMediumTests {
   void it_should_fail_to_initialize_the_backend_twice() {
     backend = newBackend()
       .build();
-    var telemetryInitDto = new TelemetryClientConstantAttributesDto("mediumTests", "mediumTests", "1.2.3", "4.5.6", "linux", "x64", emptyMap());
+    var telemetryInitDto = new TelemetryClientConstantAttributesDto("mediumTests", "mediumTests", "1.2.3", "4.5.6", emptyMap());
     var future = backend
       .initialize(new InitializeParams(new ClientConstantInfoDto("name", "productKey"), telemetryInitDto, new FeatureFlagsDto(false, false, false, false, false, false, false),
         Path.of("unused"), Path.of("unused"),

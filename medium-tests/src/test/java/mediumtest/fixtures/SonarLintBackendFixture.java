@@ -346,7 +346,7 @@ public class SonarLintBackendFixture {
       try {
         var sonarLintBackend = createTestBackend(client);
         var telemetryInitDto = new TelemetryClientConstantAttributesDto("mediumTests", "mediumTests",
-          "1.2.3", "4.5.6", "linux", "x64", emptyMap());
+          "1.2.3", "4.5.6", emptyMap());
         var clientInfo = new ClientConstantInfoDto(clientName, userAgent);
         var featureFlags = new FeatureFlagsDto(manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, startEmbeddedServer, areSecurityHotspotsEnabled,
           manageServerSentEvents, shouldManageFullSynchronization);

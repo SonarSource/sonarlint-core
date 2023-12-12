@@ -74,7 +74,7 @@ class SloopLauncherWithJreTests {
   @Test
   void test_all_rules_returns() throws Exception {
     var telemetryInitDto = new TelemetryClientConstantAttributesDto("SonarLint ITs", "SonarLint ITs",
-      "1.2.3", "4.5.6", "linux", "x64", Collections.emptyMap());
+      "1.2.3", "4.5.6", Collections.emptyMap());
     var clientInfo = new ClientConstantInfoDto("clientName", "integrationTests");
     var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false);
 

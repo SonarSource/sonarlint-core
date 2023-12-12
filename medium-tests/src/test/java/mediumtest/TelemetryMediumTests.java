@@ -23,6 +23,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.SonarLintTestRpcServer;
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -130,8 +131,8 @@ class TelemetryMediumTests {
         "  \"sonarlint_version\" : \"1.2.3\",\n" +
         "  \"sonarlint_product\" : \"mediumTests\",\n" +
         "  \"ide_version\" : \"4.5.6\",\n" +
-        "  \"platform\" : \"linux\",\n" +
-        "  \"architecture\" : \"x64\",\n" +
+        "  \"platform\" : \""+ SystemUtils.OS_NAME +"\",\n" +
+        "  \"architecture\" : \"" + SystemUtils.OS_ARCH + "\",\n" +
         "  \"connected_mode_used\" : false,\n" +
         "  \"connected_mode_sonarcloud\" : false\n" +
         "}", true, true))));
@@ -173,8 +174,8 @@ class TelemetryMediumTests {
         "  \"sonarlint_version\" : \"1.2.3\",\n" +
         "  \"sonarlint_product\" : \"mediumTests\",\n" +
         "  \"ide_version\" : \"4.5.6\",\n" +
-        "  \"platform\" : \"linux\",\n" +
-        "  \"architecture\" : \"x64\",\n" +
+        "  \"platform\" : \""+ SystemUtils.OS_NAME +"\",\n" +
+        "  \"architecture\" : \"" + SystemUtils.OS_ARCH + "\",\n" +
         "  \"connected_mode_used\" : false,\n" +
         "  \"connected_mode_sonarcloud\" : false\n" +
         "}", true, true)));
@@ -197,8 +198,8 @@ class TelemetryMediumTests {
         "  \"sonarlint_version\" : \"1.2.3\",\n" +
         "  \"sonarlint_product\" : \"mediumTests\",\n" +
         "  \"ide_version\" : \"4.5.6\",\n" +
-        "  \"platform\" : \"linux\",\n" +
-        "  \"architecture\" : \"x64\",\n" +
+        "  \"platform\" : \""+ SystemUtils.OS_NAME +"\",\n" +
+        "  \"architecture\" : \"" + SystemUtils.OS_ARCH + "\",\n" +
         "  \"connected_mode_used\" : false,\n" +
         "  \"connected_mode_sonarcloud\" : false\n" +
         "}", true, true)));
@@ -357,8 +358,6 @@ class TelemetryMediumTests {
     backend.getTelemetryService().analysisDoneOnMultipleFiles();
     await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"numUseDays\":1"));
   }
-
-  //todo add tests for the server live attributes
 
   private void setupClientAndBackend() {
     var fakeClient = newFakeClient().build();
