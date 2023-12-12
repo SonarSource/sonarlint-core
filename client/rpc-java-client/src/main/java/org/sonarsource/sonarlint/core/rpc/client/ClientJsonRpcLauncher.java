@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.rpc.client;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.ExecutorService;
@@ -74,7 +73,7 @@ public class ClientJsonRpcLauncher implements Closeable {
   }
 
   @Override
-  public void close() throws IOException {
+  public void close() {
     requestsExecutor.shutdown();
     requestAndNotificationsSequentialExecutor.shutdown();
     // Stop the MessageProducer thread

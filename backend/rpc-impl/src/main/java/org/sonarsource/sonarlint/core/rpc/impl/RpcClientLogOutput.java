@@ -20,12 +20,12 @@
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 
-class RpcClientLogOutput implements ClientLogOutput {
+class RpcClientLogOutput implements LogOutput {
 
   private final SonarLintRpcClient client;
 

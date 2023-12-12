@@ -34,7 +34,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
 import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
@@ -66,9 +66,9 @@ public class RuleExtractorCli implements Callable<Integer> {
   public Integer call() throws Exception {
     try {
       SonarLintLogger.setTarget((formattedMessage, level) -> {
-        if (level == ClientLogOutput.Level.ERROR) {
+        if (level == LogOutput.Level.ERROR) {
           System.err.println(level + " " + formattedMessage);
-        } else if (level == ClientLogOutput.Level.WARN || level == ClientLogOutput.Level.INFO || verbose) {
+        } else if (level == LogOutput.Level.WARN || level == LogOutput.Level.INFO || verbose) {
           System.out.println(level + " " + formattedMessage);
         }
       });

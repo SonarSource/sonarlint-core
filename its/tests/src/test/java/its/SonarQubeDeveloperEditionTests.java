@@ -26,13 +26,18 @@ import com.sonar.orchestrator.junit5.OnlyOnSonarQube;
 import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
-import its.utils.ConsoleLogOutput;
 import its.utils.OrchestratorUtils;
 import its.utils.PluginLocator;
 import java.io.File;
 import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -53,13 +58,13 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
 import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsRequest;
@@ -68,13 +73,9 @@ import org.sonarqube.ws.client.issues.SearchRequest;
 import org.sonarqube.ws.client.settings.ResetRequest;
 import org.sonarqube.ws.client.settings.SetRequest;
 import org.sonarqube.ws.client.users.CreateRequest;
-import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.commons.RuleType;
-import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
-import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.client.legacy.analysis.EngineConfiguration;
+import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssue;
+import org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
@@ -104,22 +105,23 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnera
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
-import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspotDetails;
 
 import static its.utils.ItUtils.SONAR_VERSION;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
-import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.lang3.StringUtils.abbreviate;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -129,6 +131,10 @@ import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.CLOUDFORMATION;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.COBOL;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.DOCKER;
@@ -167,6 +173,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     .build();
 
   private static WsClient adminWsClient;
+  private static SonarLintRpcClientDelegate client;
 
   @BeforeAll
   static void createSonarLintUser() {
@@ -186,6 +193,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   private static String matchedBranchNameForProject = null;
   private static final List<String> didSynchronizeConfigurationScopes = new CopyOnWriteArrayList<>();
 
+  private static SonarLintAnalysisEngine engine;
+
   @BeforeAll
   static void start() throws IOException {
     var clientToServerOutputStream = new PipedOutputStream();
@@ -195,22 +204,24 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     var serverToClientInputStream = new PipedInputStream(serverToClientOutputStream);
 
     serverLauncher = new BackendJsonRpcLauncher(clientToServerInputStream, serverToClientOutputStream);
-    var clientLauncher = new ClientJsonRpcLauncher(serverToClientInputStream, clientToServerOutputStream, newDummySonarLintClient());
+    client = spy(newDummySonarLintClient());
+    var clientLauncher = new ClientJsonRpcLauncher(serverToClientInputStream, clientToServerOutputStream, client);
 
     backend = clientLauncher.getServerProxy();
     try {
-      var languages = Set.of(JAVA, GO, PHP, JS, PYTHON, HTML, RUBY, KOTLIN, SCALA, XML,COBOL, CLOUDFORMATION, DOCKER, KUBERNETES, TERRAFORM);
-      var featureFlags = new FeatureFlagsDto(true, true, true, false, true, true, false, true);
+      var languages = Set.of(JAVA, GO, PHP, JS, PYTHON, HTML, RUBY, KOTLIN, SCALA, XML, COBOL, CLOUDFORMATION, DOCKER, KUBERNETES, TERRAFORM);
+      var featureFlags = new FeatureFlagsDto(true, true, true, true, true, true, false, true);
       backend.initialize(
-          new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, featureFlags,
-            sonarUserHome.resolve("storage"),
-            sonarUserHome.resolve("work"),
-            Collections.emptySet(), Map.of(), languages, Collections.emptySet(),
-            List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), false),
-              new SonarQubeConnectionConfigurationDto(CONNECTION_ID_WRONG_CREDENTIALS, ORCHESTRATOR.getServer().getUrl(), false)),
-            Collections.emptyList(),
-            sonarUserHome.toString(),
-            Map.of(), false, null))
+        new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, featureFlags,
+          sonarUserHome.resolve("storage"),
+          sonarUserHome.resolve("work"),
+          Collections.emptySet(), Map.of("go", PluginLocator.getGoPluginPath(), "iac", PluginLocator.getIacPluginPath()),
+          languages, Collections.emptySet(),
+          List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), false),
+            new SonarQubeConnectionConfigurationDto(CONNECTION_ID_WRONG_CREDENTIALS, ORCHESTRATOR.getServer().getUrl(), false)),
+          Collections.emptyList(),
+          sonarUserHome.toString(),
+          Map.of(), false, null))
         .get();
     } catch (Exception e) {
       throw new IllegalStateException("Cannot initialize the backend", e);
@@ -239,46 +250,21 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     private List<String> logs;
 
-    private ConnectedSonarLintEngine engine;
-
     @BeforeEach
     void start() {
       Map<String, String> globalProps = new HashMap<>();
       globalProps.put("sonar.global.label", "It works");
       logs = new CopyOnWriteArrayList<>();
 
-      var globalAnalysisConfig = backend.getAnalysisService().getGlobalStandaloneConfiguration().join();
-
-      var globalConfig = ConnectedGlobalConfiguration.sonarQubeBuilder()
-        .enableHotspots()
-        .setConnectionId(CONNECTION_ID)
+      var globalConfig = EngineConfiguration.builder()
         .setSonarLintUserHome(sonarUserHome)
-        .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.JAVA)
-        .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.PHP)
-        .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.JS)
-        .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.PYTHON)
-        .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.HTML)
-        .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.RUBY)
-        .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.KOTLIN)
-        .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.SCALA)
-        .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.XML)
-        // Needed to have the global extension plugin loaded
-        .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.COBOL)
-        .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.GO)
-        .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.CLOUDFORMATION)
-        .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.DOCKER)
-        .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.KUBERNETES)
-        .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.TERRAFORM)
-        .useEmbeddedPlugin(org.sonarsource.sonarlint.core.commons.Language.GO.getPluginKey(), PluginLocator.getGoPluginPath())
-        .useEmbeddedPlugin(org.sonarsource.sonarlint.core.commons.Language.CLOUDFORMATION.getPluginKey(), PluginLocator.getIacPluginPath())
         .setLogOutput((msg, level) -> {
           logs.add(msg);
           System.out.println(msg);
         })
-        .setNodeJs(requireNonNull(globalAnalysisConfig.getNodeJsPath()), Version.create(requireNonNull(globalAnalysisConfig.getNodeJsVersion())))
         .setExtraProperties(globalProps)
         .build();
-      engine = new ConnectedSonarLintEngineImpl(globalConfig);
+      engine = new SonarLintAnalysisEngine(globalConfig, backend, CONNECTION_ID);
 
       // This profile is altered in a test
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint.xml"));
@@ -292,7 +278,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     // TODO should be moved to a separate class, not related to analysis
     @Test
-    void shouldRaiseIssuesOnAJavaScriptProject() throws Exception {
+    void shouldRaiseIssuesOnAJavaScriptProject() {
       var projectKey = "sample-javascript";
       provisionProject(ORCHESTRATOR, projectKey, "Sample Javascript");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/javascript-sonarlint.xml"));
@@ -300,13 +286,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       bindProject("projectName", projectKey, true);
 
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(projectKey, "sample-javascript", "src/Person.js"), issueListener, null, null);
-      assertThat(issueListener.getIssues()).hasSize(1);
+      var rawIssues = analyzeFile("sample-javascript", "src/Person.js");
+
+      assertThat(rawIssues).hasSize(1);
     }
 
     @Test
-    void shouldRaiseIssuesFromACustomRule() throws Exception {
+    void shouldRaiseIssuesFromACustomRule() {
       var projectKey = "sample-java-custom";
       provisionProject(ORCHESTRATOR, projectKey, "Sample Java Custom");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-custom.xml"));
@@ -314,15 +300,15 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       bindProject("projectName", projectKey, true);
 
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(projectKey, "sample-java-custom", "src/main/java/foo/Foo.java"),
-        issueListener, null, null);
-      assertThat(issueListener.getIssues()).extracting("ruleKey", "startLine").containsOnly(
-        tuple("mycompany-java:AvoidAnnotation", 12));
+      var rawIssues = analyzeFile("sample-java-custom", "src/main/java/foo/Foo.java");
+
+      assertThat(rawIssues).extracting("ruleKey", "textRange")
+        .usingRecursiveFieldByFieldElementComparator()
+        .containsOnly(tuple("mycompany-java:AvoidAnnotation", new TextRangeDto(12, 3, 12, 19)));
     }
 
     @Test
-    void shouldRaiseIssuesOnAPhpProject() throws Exception {
+    void shouldRaiseIssuesOnAPhpProject() {
       var projectKey = "sample-php";
       provisionProject(ORCHESTRATOR, projectKey, "Sample PHP");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/php-sonarlint.xml"));
@@ -330,13 +316,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       bindProject("projectName", projectKey, true);
 
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(projectKey, "sample-php", "src/Math.php"), issueListener, null, null);
-      assertThat(issueListener.getIssues()).hasSize(1);
+      var rawIssues = analyzeFile("sample-php", "src/Math.php");
+
+      assertThat(rawIssues).hasSize(1);
     }
 
     @Test
-    void shouldRaiseIssuesOnAPythonProject() throws Exception {
+    void shouldRaiseIssuesOnAPythonProject() {
       var projectKey = "sample-python";
       var projectName = "Sample Python";
       provisionProject(ORCHESTRATOR, projectKey, projectName);
@@ -345,13 +331,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       bindProject(projectName, projectKey, true);
 
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(projectKey, "sample-python", "src/hello.py"), issueListener, null, null);
-      assertThat(issueListener.getIssues()).hasSize(1);
+      var rawIssues = analyzeFile("sample-python", "src/hello.py");
+
+      assertThat(rawIssues).hasSize(1);
     }
 
     @Test
-    void shouldRaiseIssuesOnAHtmlProject() throws IOException {
+    void shouldRaiseIssuesOnAHtmlProject() {
       var projectKey = "sample-web";
       provisionProject(ORCHESTRATOR, projectKey, "Sample Web");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/web-sonarlint.xml"));
@@ -359,13 +345,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       bindProject("projectName", projectKey, true);
 
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(projectKey, "sample-web", "src/file.html"), issueListener, null, null);
-      assertThat(issueListener.getIssues()).hasSize(1);
+      var rawIssues = analyzeFile("sample-web", "src/file.html");
+
+      assertThat(rawIssues).hasSize(1);
     }
 
     @Test
-    void shouldRaiseIssuesOnAGoProject() throws IOException {
+    void shouldRaiseIssuesOnAGoProject() {
       var projectKey = "sample-go";
       provisionProject(ORCHESTRATOR, projectKey, "Sample Go");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/go-sonarlint.xml"));
@@ -373,14 +359,14 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       bindProject("projectName", projectKey, true);
 
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(projectKey, "sample-go", "src/sample.go"), issueListener, null, null);
-      assertThat(issueListener.getIssues()).hasSize(1);
+      var rawIssues = analyzeFile("sample-go", "src/sample.go");
+
+      assertThat(rawIssues).hasSize(1);
     }
 
     @Test
     @OnlyOnSonarQube(from = "9.2")
-    void shouldRaiseIssuesOnACloudFormationProject() throws IOException {
+    void shouldRaiseIssuesOnACloudFormationProject() {
       var projectKey = "sample-cloudformation";
       provisionProject(ORCHESTRATOR, projectKey, "Sample CloudFormation");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/cloudformation-sonarlint.xml"));
@@ -388,14 +374,14 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       bindProject("projectName", projectKey, true);
 
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(projectKey, "sample-cloudformation", "src/sample.yaml"), issueListener, null, null);
-      assertThat(issueListener.getIssues()).hasSize(2);
+      var rawIssues = analyzeFile("sample-cloudformation", "src/sample.yaml");
+
+      assertThat(rawIssues).hasSize(2);
     }
 
     @Test
     @OnlyOnSonarQube(from = "9.2")
-    void shouldRaiseIssuesOnADockerProject() throws IOException {
+    void shouldRaiseIssuesOnADockerProject() {
       var projectKey = "sample-docker";
       provisionProject(ORCHESTRATOR, projectKey, "Sample Docker");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/docker-sonarlint.xml"));
@@ -403,14 +389,14 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       bindProject("projectName", projectKey, true);
 
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(projectKey, "sample-docker", "src/Dockerfile"), issueListener, null, null);
-      assertThat(issueListener.getIssues()).hasSize(2);
+      var rawIssues = analyzeFile("sample-docker", "src/Dockerfile");
+
+      assertThat(rawIssues).hasSize(2);
     }
 
     @Test
     @OnlyOnSonarQube(from = "9.2")
-    void shouldRaiseIssuesOnAKubernetesProject() throws IOException {
+    void shouldRaiseIssuesOnAKubernetesProject() {
       var projectKey = "sample-kubernetes";
       provisionProject(ORCHESTRATOR, projectKey, "Sample Kubernetes");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/kubernetes-sonarlint.xml"));
@@ -418,14 +404,14 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       bindProject("projectName", projectKey, true);
 
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(projectKey, "sample-kubernetes", "src/sample.yaml"), issueListener, null, null);
-      assertThat(issueListener.getIssues()).hasSize(1);
+      var rawIssues = analyzeFile("sample-kubernetes", "src/sample.yaml");
+
+      assertThat(rawIssues).hasSize(1);
     }
 
     @Test
     @OnlyOnSonarQube(from = "9.2")
-    void shouldRaiseIssuesOnATerraformProject() throws IOException {
+    void shouldRaiseIssuesOnATerraformProject() {
       var projectKey = "sample-terraform";
       provisionProject(ORCHESTRATOR, projectKey, "Sample Terraform");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/terraform-sonarlint.xml"));
@@ -433,13 +419,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       bindProject("projectName", projectKey, true);
 
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(projectKey, "sample-terraform", "src/sample.tf"), issueListener, null, null);
-      assertThat(issueListener.getIssues()).hasSize(1);
+      var rawIssues = analyzeFile("sample-terraform", "src/sample.tf");
+
+      assertThat(rawIssues).hasSize(1);
     }
 
     @Test
-    void customSensorsShouldNotBeExecuted() throws Exception {
+    void customSensorsShouldNotBeExecuted() {
       var projectKey = "sample-java-custom-sensor";
       provisionProject(ORCHESTRATOR, projectKey, "Sample Java Custom");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/custom-sensor.xml"));
@@ -447,16 +433,14 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       bindProject("projectName", projectKey, true);
 
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(projectKey, "sample-java", "src/main/java/foo/Foo.java"),
-        issueListener, null, null);
+      var rawIssues = analyzeFile("sample-java", "src/main/java/foo/Foo.java");
 
-      assertThat(issueListener.getIssues()).isEmpty();
+      assertThat(rawIssues).isEmpty();
     }
 
     // TODO should be moved to a medium test
     @Test
-    void globalExtension() throws Exception {
+    void globalExtension() {
       var projectKey = "sample-global-extension";
       provisionProject(ORCHESTRATOR, projectKey, "Sample Global Extension");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/global-extension.xml"));
@@ -466,22 +450,12 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       assertThat(logs).contains("Start Global Extension It works");
 
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(projectKey, "sample-global-extension",
-        "src/foo.glob",
-        "sonar.cobol.file.suffixes", "glob"),
-        issueListener, null, null);
-
-      assertThat(issueListener.getIssues()).extracting("ruleKey", "message").containsOnly(
+      var rawIssues = analyzeFile("sample-global-extension", "src/foo.glob", "sonar.cobol.file.suffixes", "glob");
+      assertThat(rawIssues).extracting("ruleKey", "message").containsOnly(
         tuple("global:inc", "Issue number 0"));
 
-      issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(projectKey, "sample-global-extension",
-        "src/foo.glob",
-        "sonar.cobol.file.suffixes", "glob"),
-        issueListener, null, null);
-
-      assertThat(issueListener.getIssues()).extracting("ruleKey", "message").containsOnly(
+      rawIssues = analyzeFile("sample-global-extension", "src/foo.glob", "sonar.cobol.file.suffixes", "glob");
+      assertThat(rawIssues).extracting("ruleKey", "message").containsOnly(
         tuple("global:inc", "Issue number 1"));
 
       engine.stop();
@@ -525,11 +499,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       try {
         bindProject("projectName", projectKey, true);
 
-        var issueListener = new SaveIssueListener();
-        engine.analyze(createAnalysisConfiguration(projectKey, "sample-java", "src/main/java/foo/Foo.java"),
-          issueListener, null, null);
-
-        assertThat(issueListener.getIssues()).hasSize(3);
+        var rawIssues = analyzeFile("sample-java", "src/main/java/foo/Foo.java");
+        assertThat(rawIssues).hasSize(3);
 
         var ruleDetails = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, javaRuleKey("myrule"), null)).get();
         assertThat(ruleDetails.details().getDescription().getLeft().getHtmlContent()).contains("my_rule_description");
@@ -546,7 +517,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    void shouldHonorServerSideSettings() throws Exception {
+    void shouldHonorServerSideSettings() {
       var projectKey = "sample-java-configured";
       var projectName = "Sample Java";
       provisionProject(ORCHESTRATOR, projectKey, projectName);
@@ -555,10 +526,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       bindProject(projectName, projectKey, true);
 
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(projectKey, "sample-java", "src/main/java/foo/Foo.java"),
-        issueListener, null, null);
-      assertThat(issueListener.getIssues()).hasSize(2);
+      var rawIssues = analyzeFile("sample-java", "src/main/java/foo/Foo.java");
+      assertThat(rawIssues).hasSize(2);
 
       rpcClientLogs.clear();
       didSynchronizeConfigurationScopes.clear();
@@ -568,10 +537,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       await().atMost(20, SECONDS).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
       await().untilAsserted(() -> assertThat(rpcClientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
-      issueListener.clear();
-      engine.analyze(createAnalysisConfiguration(projectKey, "sample-java", "src/main/java/foo/Foo.java"),
-        issueListener, null, null);
-      assertThat(issueListener.getIssues()).isEmpty();
+      rawIssues = analyzeFile("sample-java", "src/main/java/foo/Foo.java");
+      assertThat(rawIssues).isEmpty();
 
       rpcClientLogs.clear();
       didSynchronizeConfigurationScopes.clear();
@@ -581,15 +548,12 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
       await().untilAsserted(() -> assertThat(rpcClientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
-      issueListener.clear();
-      engine.analyze(createAnalysisConfiguration(projectKey, "sample-java", "src/main/java/foo/Foo.java"),
-        issueListener, null, null);
-      assertThat(issueListener.getIssues()).hasSize(2);
-
+      rawIssues = analyzeFile("sample-java", "src/main/java/foo/Foo.java");
+      assertThat(rawIssues).hasSize(2);
     }
 
     @Test
-    void shouldRaiseIssuesOnARubyProject() throws Exception {
+    void shouldRaiseIssuesOnARubyProject() {
       var projectKey = "sample-ruby";
       provisionProject(ORCHESTRATOR, projectKey, "Sample Ruby");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/ruby-sonarlint.xml"));
@@ -597,13 +561,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       bindProject("projectName", projectKey, true);
 
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(projectKey, "sample-ruby", "src/hello.rb"), issueListener, null, null);
-      assertThat(issueListener.getIssues()).hasSize(1);
+      var rawIssues = analyzeFile("sample-ruby", "src/hello.rb");
+
+      assertThat(rawIssues).hasSize(1);
     }
 
     @Test
-    void shouldRaiseIssuesOnAKotlinProject() throws Exception {
+    void shouldRaiseIssuesOnAKotlinProject() {
       var projectKey = "sample-kotlin";
       provisionProject(ORCHESTRATOR, projectKey, "Sample Kotlin");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/kotlin-sonarlint.xml"));
@@ -611,13 +575,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       bindProject("projectName", projectKey, true);
 
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(projectKey, "sample-kotlin", "src/hello.kt"), issueListener, null, null);
-      assertThat(issueListener.getIssues()).hasSize(1);
+      var rawIssues = analyzeFile("sample-kotlin", "src/hello.kt");
+
+      assertThat(rawIssues).hasSize(1);
     }
 
     @Test
-    void shouldRaiseIssuesOnAScalaProject() throws Exception {
+    void shouldRaiseIssuesOnAScalaProject() {
       var projectKey = "sample-scala";
       provisionProject(ORCHESTRATOR, projectKey, "Sample Scala");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/scala-sonarlint.xml"));
@@ -625,13 +589,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       bindProject("projectName", projectKey, true);
 
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(projectKey, "sample-scala", "src/Hello.scala"), issueListener, null, null);
-      assertThat(issueListener.getIssues()).hasSize(1);
+      var rawIssues = analyzeFile("sample-scala", "src/Hello.scala");
+
+      assertThat(rawIssues).hasSize(1);
     }
 
     @Test
-    void shouldRaiseIssuesOnAnXmlProject() throws Exception {
+    void shouldRaiseIssuesOnAnXmlProject() {
       var projectKey = "sample-xml";
       provisionProject(ORCHESTRATOR, projectKey, "Sample XML");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/xml-sonarlint.xml"));
@@ -639,26 +603,22 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       bindProject("projectName", projectKey, true);
 
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(projectKey, "sample-xml", "src/foo.xml"), issueListener, (m, l) -> System.out.println(m), null);
-      assertThat(issueListener.getIssues()).hasSize(1);
+      var rawIssues = analyzeFile("sample-xml", "src/foo.xml");
+
+      assertThat(rawIssues).hasSize(1);
     }
   }
 
   @Nested
   class ServerSentEvents {
 
-    private ConnectedSonarLintEngine engine;
-
     @BeforeEach
     void start() {
-      var globalConfig = ConnectedGlobalConfiguration.sonarQubeBuilder()
-        .setConnectionId(CONNECTION_ID)
+      var globalConfig = EngineConfiguration.builder()
         .setSonarLintUserHome(sonarUserHome)
-        .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.JAVA)
         .setLogOutput((msg, level) -> System.out.println(msg))
         .build();
-      engine = new ConnectedSonarLintEngineImpl(globalConfig);
+      engine = new SonarLintAnalysisEngine(globalConfig, backend, CONNECTION_ID);
 
     }
 
@@ -680,10 +640,10 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var qualityProfile = getQualityProfile(adminWsClient, "SonarLint IT Java");
       deactivateRule(adminWsClient, qualityProfile, "java:S106");
       waitAtMost(1, TimeUnit.MINUTES).pollDelay(Duration.ofSeconds(10)).untilAsserted(() -> {
-        var issueListener = new SaveIssueListener();
-        engine.analyze(createAnalysisConfiguration(projectKey, "sample-java", "src/main/java/foo/Foo.java"), issueListener, null, null);
-        assertThat(issueListener.getIssues())
-          .extracting(org.sonarsource.sonarlint.core.client.api.common.analysis.Issue::getRuleKey)
+        var rawIssues = analyzeFile("sample-java", "src/main/java/foo/Foo.java");
+
+        assertThat(rawIssues)
+          .extracting(RawIssue::getRuleKey)
           .containsOnly("java:S2325");
       });
     }
@@ -707,7 +667,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         var issuesResponse = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams(CONFIG_SCOPE_ID, Map.of(
           "src/main/java/foo/Foo.java",
           List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(14, 4, 14, 14, "hashedHash"),
-            null, "java:S106", "Replace this use of System.out by a logger."))), true)).get();
+            null, "java:S106", "Replace this use of System.out by a logger."))),
+          true)).get();
 
         var fooIssues = issuesResponse.getIssuesByServerRelativePath().get("src/main/java/foo/Foo.java");
         assertThat(fooIssues).hasSize(1);
@@ -748,7 +709,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       await().untilAsserted(() -> assertThat(backend.getSonarProjectBranchService()
         .getMatchedSonarProjectBranch(new GetMatchedSonarProjectBranchParams(CONFIG_SCOPE_ID))
         .get().getMatchedSonarProjectBranch())
-        .isEqualTo(short_branch));
+          .isEqualTo(short_branch));
 
       // Starting from SQ 8.1, concept of short vs long living branch has been removed
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 1)) {
@@ -778,11 +739,11 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       bindProject("projectName", projectKey, true);
 
       var clientTrackedDto_s100 = new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(4, 14, 4, 23, "hashedHash"),
-        null, "java:S100", "Rename this method name to match the regular expression '^[a-z][a-zA-Z0-9]*$'."); //this one is not matched but its on the server
+        null, "java:S100", "Rename this method name to match the regular expression '^[a-z][a-zA-Z0-9]*$'."); // this one is not matched but its on the server
       var clientTrackedDto_s1172 = new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(8, 23, 8, 24, "hashedHash"),
         null, ruleKey_s1172, "Remove this unused method parameter \"i\".");
       var clientTrackedDto_s106 = new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(14, 4, 14, 14, "hashedHash"),
-        null, "java:S106", "Replace this use of System.out by a logger."); //not resolved on both branches
+        null, "java:S106", "Replace this use of System.out by a logger."); // not resolved on both branches
       var trackWithServerIssuesParams = new TrackWithServerIssuesParams(CONFIG_SCOPE_ID, Map.of("src/main/java/foo/Foo.java",
         List.of(clientTrackedDto_s100, clientTrackedDto_s1172, clientTrackedDto_s106)), true);
       var issuesOnMainBranch = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByServerRelativePath();
@@ -798,12 +759,12 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       }
 
       didSynchronizeConfigurationScopes.clear();
-      matchedBranchNameForProject =  featureBranch;
+      matchedBranchNameForProject = featureBranch;
       backend.getSonarProjectBranchService().didVcsRepositoryChange(new DidVcsRepositoryChangeParams(CONFIG_SCOPE_ID));
       await().untilAsserted(() -> assertThat(backend.getSonarProjectBranchService()
         .getMatchedSonarProjectBranch(new GetMatchedSonarProjectBranchParams(CONFIG_SCOPE_ID))
         .get().getMatchedSonarProjectBranch())
-        .isEqualTo(featureBranch));
+          .isEqualTo(featureBranch));
       await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
 
       var issuesOnFeatureBranch = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByServerRelativePath();
@@ -825,21 +786,17 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     private static final String PROJECT_KEY_JAVA_TAINT = "sample-java-taint";
 
-    private ConnectedSonarLintEngine engine;
-
     @BeforeEach
     void prepare() {
       provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_TAINT, "Java With Taint Vulnerabilities");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint-with-taint.xml"));
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_TAINT, "java", "SonarLint Taint Java");
 
-      engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
-        .setConnectionId(CONNECTION_ID)
-        .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.JAVA)
+      engine = new SonarLintAnalysisEngine(EngineConfiguration.builder()
         .setSonarLintUserHome(sonarUserHome)
         .setLogOutput((msg, level) -> System.out.println(msg))
         .setExtraProperties(new HashMap<>())
-        .build());
+        .build(), backend, CONNECTION_ID);
     }
 
     @AfterEach
@@ -999,8 +956,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   class Hotspots {
 
-    public static final String HOTSPOT_FEATURE_DISABLED = "hotspotFeatureDisabled";
-
     private static final String PROJECT_KEY_JAVA_HOTSPOT = "sample-java-hotspot";
 
     @BeforeAll
@@ -1011,26 +966,22 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       // Build project to have bytecode and analyze
       analyzeMavenProject("sample-java-hotspot", PROJECT_KEY_JAVA_HOTSPOT);
+
+      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
+        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY_JAVA_HOTSPOT, true)))));
     }
 
-    private ConnectedSonarLintEngine engine;
-
     @BeforeEach
-    void start(TestInfo info) {
+    void start() {
       var globalProps = new HashMap<String, String>();
       globalProps.put("sonar.global.label", "It works");
 
-      var globalConfigBuilder = ConnectedGlobalConfiguration.sonarQubeBuilder()
-        .setConnectionId(CONNECTION_ID)
+      var globalConfigBuilder = EngineConfiguration.builder()
         .setSonarLintUserHome(sonarUserHome)
-        .addEnabledLanguage(org.sonarsource.sonarlint.core.commons.Language.JAVA)
         .setLogOutput((msg, level) -> System.out.println(msg))
         .setExtraProperties(globalProps);
-      if (!info.getTags().contains(HOTSPOT_FEATURE_DISABLED)) {
-        globalConfigBuilder.enableHotspots();
-      }
       var globalConfig = globalConfigBuilder.build();
-      engine = new ConnectedSonarLintEngineImpl(globalConfig);
+      engine = new SonarLintAnalysisEngine(globalConfig, backend, CONNECTION_ID);
     }
 
     @AfterEach
@@ -1044,37 +995,45 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    @Tag(HOTSPOT_FEATURE_DISABLED)
-    void dontReportHotspotsIfNotEnabled() throws Exception {
-      bindProject("Project", PROJECT_KEY_JAVA_HOTSPOT, true);
-
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_HOTSPOT, PROJECT_KEY_JAVA_HOTSPOT,
-        "src/main/java/foo/Foo.java",
-        "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
-        issueListener, null, null);
-
-      assertThat(issueListener.getIssues()).isEmpty();
-    }
-
-    @Test
     // SonarQube should support opening security hotspots
     @OnlyOnSonarQube(from = "8.6")
-    void canFetchHotspot() throws InvalidProtocolBufferException {
+    @Disabled
+    void shouldShowHotspotWhenOpenedFromSonarQube() throws InvalidProtocolBufferException {
       analyzeMavenProject("sample-java-hotspot", PROJECT_KEY_JAVA_HOTSPOT);
-      var securityHotspotsService = new ServerApi(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID)).hotspot();
+      var hotspotKey = getFirstHotspotKey(PROJECT_KEY_JAVA_HOTSPOT);
 
-      var remoteHotspot = securityHotspotsService.fetch(getFirstHotspotKey(PROJECT_KEY_JAVA_HOTSPOT));
+      requestOpenHotspotWithParams(PROJECT_KEY_JAVA_HOTSPOT, hotspotKey);
 
-      assertThat(remoteHotspot).isNotEmpty();
-      var actualHotspot = remoteHotspot.get();
-      assertThat(actualHotspot.message).isEqualTo("Make sure that this logger's configuration is safe.");
-      assertThat(actualHotspot.filePath).isEqualTo("src/main/java/foo/Foo.java");
-      assertThat(actualHotspot.textRange).usingRecursiveComparison().isEqualTo(new TextRangeWithHash(9, 4, 9, 45, ""));
-      assertThat(actualHotspot.author).isEmpty();
-      assertThat(actualHotspot.status).isEqualTo(ServerHotspotDetails.Status.TO_REVIEW);
-      assertThat(actualHotspot.resolution).isNull();
-      assertThat(actualHotspot.rule.key).isEqualTo("java:S4792");
+      var captor = ArgumentCaptor.forClass(HotspotDetailsDto.class);
+      verify(client, timeout(1000)).showHotspot(eq(CONFIG_SCOPE_ID), captor.capture());
+
+      var actualHotspot = captor.getValue();
+      assertThat(actualHotspot.getKey()).isEqualTo(hotspotKey);
+      assertThat(actualHotspot.getMessage()).isEqualTo("Make sure that this logger's configuration is safe.");
+      assertThat(actualHotspot.getFilePath()).isEqualTo("src/main/java/foo/Foo.java");
+      assertThat(actualHotspot.getTextRange()).usingRecursiveComparison().isEqualTo(new TextRangeDto(9, 4, 9, 45));
+      assertThat(actualHotspot.getAuthor()).isEmpty();
+      assertThat(actualHotspot.getStatus()).isEqualTo("TO_REVIEW");
+      assertThat(actualHotspot.getResolution()).isNull();
+      assertThat(actualHotspot.getRule().getKey()).isEqualTo("java:S4792");
+    }
+
+    private int requestOpenHotspotWithParams(String projectKey, String hotspotKey) {
+      var request = HttpRequest.newBuilder()
+        .GET()
+        .uri(URI.create("http://localhost:" + serverLauncher.getJavaImpl().getEmbeddedServerPort() + "/sonarlint/api/hotspots/show?server=" + URLEncoder.encode(ORCHESTRATOR.getServer().getUrl(), StandardCharsets.UTF_8) + "&project="
+          + projectKey + "&hotspot=" + hotspotKey))
+        .build();
+      HttpResponse<String> response;
+      try {
+        response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        return -1;
+      }
+      return response.statusCode();
     }
 
     private String getFirstHotspotKey(String projectKey) throws InvalidProtocolBufferException {
@@ -1088,24 +1047,20 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    void reportHotspots() throws Exception {
+    void reportHotspots() {
       bindProject("Project", PROJECT_KEY_JAVA_HOTSPOT, false);
       await().untilAsserted(() -> assertThat(rpcClientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored server info"))).isTrue());
 
-      var issueListener = new SaveIssueListener();
-      engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_HOTSPOT, PROJECT_KEY_JAVA_HOTSPOT,
-          "src/main/java/foo/Foo.java",
-          "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath()),
-        issueListener, null, null);
+      var rawIssues = analyzeFile(PROJECT_KEY_JAVA_HOTSPOT, "src/main/java/foo/Foo.java", "sonar.java.binaries",
+        new File("projects/sample-java-hotspot/target/classes").getAbsolutePath());
 
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
-        assertThat(issueListener.getIssues()).hasSize(1)
-          .extracting(org.sonarsource.sonarlint.core.client.api.common.analysis.Issue::getRuleKey,
-            org.sonarsource.sonarlint.core.client.api.common.analysis.Issue::getType)
+        assertThat(rawIssues)
+          .extracting(RawIssue::getRuleKey, RawIssue::getType)
           .containsExactly(tuple(javaRuleKey(ORCHESTRATOR, "S4792"), RuleType.SECURITY_HOTSPOT));
       } else {
         // no hotspot detection when connected to SQ < 9.7
-        assertThat(issueListener.getIssues()).isEmpty();
+        assertThat(rawIssues).isEmpty();
       }
     }
 
@@ -1126,12 +1081,12 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var textRangeWithHash = new TextRangeWithHashDto(9, 4, 9, 45, "qwer");
       var clientTrackedHotspotsByServerRelativePath = Map.of(
-        "src/main/java/foo/Foo.java", List.of(new ClientTrackedFindingDto(null, null, textRangeWithHash, null, "java:S4792", "Make sure that this logger's configuration is safe.")),
-        "src/main/java/bar/Bar.java", List.of(new ClientTrackedFindingDto(null, null, textRangeWithHash, null, "java:S1234", "Some other rule"))
-      );
+        "src/main/java/foo/Foo.java",
+        List.of(new ClientTrackedFindingDto(null, null, textRangeWithHash, null, "java:S4792", "Make sure that this logger's configuration is safe.")),
+        "src/main/java/bar/Bar.java", List.of(new ClientTrackedFindingDto(null, null, textRangeWithHash, null, "java:S1234", "Some other rule")));
 
-      var matchWithServerSecurityHotspotsResponse =
-        backend.getSecurityHotspotMatchingService().matchWithServerSecurityHotspots(new MatchWithServerSecurityHotspotsParams(CONFIG_SCOPE_ID, clientTrackedHotspotsByServerRelativePath, true)).get();
+      var matchWithServerSecurityHotspotsResponse = backend.getSecurityHotspotMatchingService()
+        .matchWithServerSecurityHotspots(new MatchWithServerSecurityHotspotsParams(CONFIG_SCOPE_ID, clientTrackedHotspotsByServerRelativePath, true)).get();
       assertThat(matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByServerRelativePath()).hasSize(2);
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
         var fooSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByServerRelativePath().get("src/main/java/foo/Foo.java");
@@ -1147,7 +1102,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         assertThat(fooSecurityHotspots.get(0).isRight()).isTrue();
         var barSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByServerRelativePath().get("src/main/java/bar/Bar.java");
         assertThat(barSecurityHotspots).hasSize(1);
-        assertThat(barSecurityHotspots.get(0).isRight()).isTrue();      }
+        assertThat(barSecurityHotspots.get(0).isRight()).isTrue();
+      }
 
     }
   }
@@ -1226,9 +1182,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Java Markdown");
       bindProject(projectName, projectKey, true);
 
-      var ruleDetailsResponse =
-        backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, "mycompany-java:markdown",
-          null)).get();
+      var ruleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, "mycompany-java:markdown",
+        null)).get();
 
       assertThat(ruleDetailsResponse.details().getDescription().getLeft().getHtmlContent())
         .isEqualTo("<h1>Title</h1><ul><li>one</li>\n"
@@ -1369,14 +1324,17 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   class SonarProjectService {
 
     @Test
-    void getProject() {
+    void getProject() throws ExecutionException, InterruptedException {
       var projectKey = "sample-project";
       provisionProject(ORCHESTRATOR, projectKey, "Sample Project");
 
-      SonarLintLogger.setTarget(new ConsoleLogOutput(false));
-      var api = new ServerApi(endpointParams(ORCHESTRATOR), serverLauncher.getJavaImpl().getHttpClient(CONNECTION_ID)).component();
-      assertThat(api.getProject("non-existing")).isNotPresent();
-      assertThat(api.getProject(projectKey)).isPresent();
+      var allProjects = backend.getConnectionService()
+        .getAllProjects(
+          new GetAllProjectsParams(new TransientSonarQubeConnectionDto(ORCHESTRATOR.getServer().getUrl(), Either.forRight(new UsernamePasswordDto(SONARLINT_USER, SONARLINT_PWD)))))
+        .get().getSonarProjects();
+
+      assertThat(allProjects).extracting(SonarProjectDto::getKey).doesNotContain("non-existing");
+      assertThat(allProjects).extracting(SonarProjectDto::getKey).contains(projectKey);
     }
 
     @Test
@@ -1410,9 +1368,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
   private static void bindProject(String projectName, String projectKey, boolean bindingSuggestionDisabled) {
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-      List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, projectName, new BindingConfigurationDto(CONNECTION_ID, projectKey,
-        bindingSuggestionDisabled)))));
-    await().atMost(20, SECONDS).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+      List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, projectName, new BindingConfigurationDto(CONNECTION_ID, projectKey, bindingSuggestionDisabled)))));
+    await().atMost(1, MINUTES).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
     // TODO FIX ME and remove this check for a log after https://sonarsource.atlassian.net/browse/SLCORE-396 is fixed
     await().untilAsserted(() -> assertThat(rpcClientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
   }
@@ -1425,6 +1382,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       .setProperties(properties)
       .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
       .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
+  }
+
+  private List<RawIssue> analyzeFile(String projectDir, String filePath, String... properties) {
+    var issueListener = new SaveIssueListener();
+    engine.analyze(createAnalysisConfiguration(projectDir, filePath, properties),
+      issueListener, null, null, CONFIG_SCOPE_ID);
+    return issueListener.issues;
   }
 
   private static SonarLintRpcClientDelegate newDummySonarLintClient() {
@@ -1454,7 +1418,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       }
 
       @Override
-      public String matchSonarProjectBranch(String configurationScopeId, String mainBranchName, Set<String> allBranchesNames, CancelChecker cancelChecker) throws ConfigScopeNotFoundException {
+      public String matchSonarProjectBranch(String configurationScopeId, String mainBranchName, Set<String> allBranchesNames, CancelChecker cancelChecker)
+        throws ConfigScopeNotFoundException {
         allBranchNamesForProject.addAll(allBranchesNames);
         return matchedBranchNameForProject == null ? super.matchSonarProjectBranch(configurationScopeId, mainBranchName, allBranchesNames, cancelChecker)
           : matchedBranchNameForProject;
@@ -1463,6 +1428,16 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       @Override
       public void log(LogParams params) {
         rpcClientLogs.add(params);
+      }
+
+      @Override
+      public void didUpdatePlugins(String connectionId) {
+        engine.restartAsync();
+      }
+
+      @Override
+      public void didChangeNodeJs(@org.jetbrains.annotations.Nullable Path nodeJsPath, @org.jetbrains.annotations.Nullable String version) {
+        engine.restartAsync();
       }
     };
   }

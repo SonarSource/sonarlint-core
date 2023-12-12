@@ -209,7 +209,6 @@ public class RuleDetails {
     return extendedDescription;
   }
 
-  @CheckForNull
   public VulnerabilityProbability getVulnerabilityProbability() {
     return vulnerabilityProbability;
   }

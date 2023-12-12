@@ -25,7 +25,7 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
@@ -34,9 +34,9 @@ public class AnalyzeCommand implements Command<AnalysisResults> {
   private final Object moduleKey;
   private final AnalysisConfiguration configuration;
   private final Consumer<Issue> issueListener;
-  private final ClientLogOutput logOutput;
+  private final LogOutput logOutput;
 
-  public AnalyzeCommand(@Nullable Object moduleKey, AnalysisConfiguration configuration, Consumer<Issue> issueListener, @Nullable ClientLogOutput logOutput) {
+  public AnalyzeCommand(@Nullable Object moduleKey, AnalysisConfiguration configuration, Consumer<Issue> issueListener, @Nullable LogOutput logOutput) {
     this.moduleKey = moduleKey;
     this.configuration = configuration;
     this.issueListener = issueListener;

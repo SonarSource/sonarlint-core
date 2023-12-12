@@ -19,7 +19,8 @@
  */
 package its.utils;
 
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+
+import org.sonarsource.sonarlint.core.client.utils.ClientLogOutput;
 
 public class ConsoleLogOutput implements ClientLogOutput {
 

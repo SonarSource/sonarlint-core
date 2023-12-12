@@ -27,19 +27,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import javax.annotation.Nullable;
+import mediumtest.fixtures.SonarLintBackendFixture;
+import mediumtest.fixtures.TestPlugin;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.AfterAll;
@@ -49,7 +48,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
-import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFileEdit;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
@@ -57,44 +55,60 @@ import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
 import org.sonarsource.sonarlint.core.analysis.api.TextEdit;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.SonarLintModuleFileSystem;
-import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
-import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
-import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
-import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.client.legacy.analysis.AnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.legacy.analysis.EngineConfiguration;
+import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssue;
+import org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.RuleKey;
-import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.CanceledException;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDefinitionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.UpdateStandaloneRulesConfigurationParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import testutils.ConsoleConsumer;
 import testutils.OnDiskTestClientInputFile;
-import testutils.PluginLocator;
 import testutils.TestUtils;
 
-import static java.util.Collections.singleton;
+import static java.util.Collections.emptyMap;
 import static mediumtest.fixtures.ClientFileSystemFixtures.aClientFileSystemWith;
+import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.C;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JS;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.PHP;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.PYTHON;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.TS;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.XML;
 
 class StandaloneIssueMediumTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private static final CanceledProgressMonitor CANCELED_PROGRESS_MONITOR = new CanceledProgressMonitor();
+  private static final SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient = newFakeClient().build();
   private static Path sonarlintUserHome;
   private static Path fakeTypeScriptProjectPath;
 
   private static final String A_JAVA_FILE_PATH = "Foo.java";
-  private static StandaloneSonarLintEngineImpl sonarlint;
+  private static SonarLintAnalysisEngine engine;
+  private static final String CONFIGURATION_SCOPE_ID = "configScopeId";
+  private static final List<String> logs = new CopyOnWriteArrayList<>();
+  private static SonarLintRpcServer backend;
   private File baseDir;
   // commercial plugins might not be available
   // (if you pass -Dcommercial to maven, a profile will be activated that downloads the commercial plugins)
@@ -128,27 +142,31 @@ class StandaloneIssueMediumTests {
     var nodeJsHelper = new NodeJsHelper(logTester.getLogOutput());
     nodeJsHelper.detect(null);
 
-    var configBuilder = StandaloneGlobalConfiguration.builder()
+    var configBuilder = EngineConfiguration.builder()
       .setLogOutput(TestUtils.createNoOpLogOutput())
-      .addPlugin(PluginLocator.getJavaScriptPluginPath())
-      .addPlugin(PluginLocator.getJavaPluginPath())
-      .addPlugin(PluginLocator.getPhpPluginPath())
-      .addPlugin(PluginLocator.getPythonPluginPath())
-      .addPlugin(PluginLocator.getXmlPluginPath())
-      .addEnabledLanguages(Language.JS, Language.JAVA, Language.PHP, Language.PYTHON, Language.TS, Language.C, Language.YAML, Language.XML)
       .setSonarLintUserHome(sonarlintUserHome)
-      .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
       .setExtraProperties(extraProperties);
 
+    var backendBuilder = newBackend()
+      .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
+      .withClientNodeJsPath(nodeJsHelper.getNodeJsPath())
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVASCRIPT)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PHP)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML);
+
     if (COMMERCIAL_ENABLED) {
-      configBuilder.addPlugin(PluginLocator.getCppPluginPath());
+      backendBuilder = backendBuilder.withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.CFAMILY);
     }
-    sonarlint = new StandaloneSonarLintEngineImpl(configBuilder.build());
+    backend = backendBuilder.build(fakeClient);
+    engine = new SonarLintAnalysisEngine(configBuilder.build(), backend, null);
   }
 
   @AfterAll
-  static void stop() throws IOException {
-    sonarlint.stop();
+  static void stop() throws IOException, ExecutionException, InterruptedException {
+    engine.stop();
+    backend.shutdown().get();
   }
 
   @BeforeEach
@@ -158,41 +176,36 @@ class StandaloneIssueMediumTests {
 
   @Test
   void simpleJavaScript() throws Exception {
-
-    var ruleDetails = sonarlint.getRuleDetails("javascript:S1481").get();
-    assertThat(ruleDetails.getName()).isEqualTo("Unused local variables and functions should be removed");
-    assertThat(ruleDetails.getLanguage()).isEqualTo(Language.JS);
-    assertThat(ruleDetails.getDefaultSeverity()).isEqualTo(IssueSeverity.MINOR);
-    assertThat(ruleDetails.getTags()).containsOnly("unused");
-    assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "If a local variable or a local function is declared but not used");
-
     var content = "function foo() {\n"
       + "  let x;\n"
       + "  let y; //NOSONAR\n"
       + "}";
     var inputFile = prepareInputFile("foo.js", content, false);
 
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(
+      AnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
         .build(),
       issues::add, null,
-      null);
+      null, CONFIGURATION_SCOPE_ID);
     assertThat(issues)
-      .extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getRuleDescriptionContextKey, Issue::getCleanCodeAttribute, Issue::getImpacts)
-      .containsOnly(tuple("javascript:S1481", 2, "foo.js", Optional.empty(), Optional.of(CleanCodeAttribute.defaultCleanCodeAttribute()), Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)));
+      .extracting(RawIssue::getRuleKey, i -> i.getTextRange().getStartLine(), i -> i.getInputFile().relativePath(), RawIssue::getRuleDescriptionContextKey,
+        RawIssue::getCleanCodeAttribute,
+        RawIssue::getImpacts)
+      .containsOnly(tuple("javascript:S1481", 2, "foo.js", Optional.empty(), Optional.of(CleanCodeAttribute.CONVENTIONAL),
+        Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)));
 
     // SLCORE-160
     inputFile = prepareInputFile("node_modules/foo.js", content, false);
 
     issues.clear();
-    sonarlint.analyze(StandaloneAnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(), issues::add, null,
-      null);
+    engine.analyze(AnalysisConfiguration.builder()
+      .setBaseDir(baseDir.toPath())
+      .addInputFile(inputFile)
+      .build(), issues::add, null,
+      null, CONFIGURATION_SCOPE_ID);
     assertThat(issues).isEmpty();
   }
 
@@ -204,44 +217,37 @@ class StandaloneIssueMediumTests {
       + "}";
     var inputFile = prepareInputFile("foo.js", content, false);
 
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
+    backend.getRulesService()
+      .updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("javascript:S3827", new StandaloneRuleConfigDto(true, emptyMap()))));
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(
+      AnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
-        .addIncludedRule(RuleKey.parse("javascript:S3827"))
         .build(),
       issues::add, null,
-      null);
+      null, CONFIGURATION_SCOPE_ID);
     assertThat(issues.stream().filter(i -> i.getRuleKey().equals("javascript:S3827")))
-      .extracting(Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      .extracting(i -> i.getTextRange().getStartLine(), i -> i.getInputFile().relativePath()).containsOnly(
         tuple(2, "foo.js"));
 
     // Change globals using analysis property
     issues.clear();
-    sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
+    engine.analyze(
+      AnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
         .putExtraProperty("sonar.javascript.globals", "LOCAL1")
-        .addIncludedRule(RuleKey.parse("javascript:S3827"))
         .build(),
       issues::add, null,
-      null);
+      null, CONFIGURATION_SCOPE_ID);
     assertThat(issues.stream().filter(i -> i.getRuleKey().equals("javascript:S3827")))
-      .extracting(Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      .extracting(i -> i.getTextRange().getStartLine(), i -> i.getInputFile().relativePath()).containsOnly(
         tuple(3, "foo.js"));
   }
 
   @Test
   void simpleTypeScript() throws Exception {
-    var ruleDetails = sonarlint.getRuleDetails("typescript:S1764").get();
-    assertThat(ruleDetails.getName()).isEqualTo("Identical expressions should not be used on both sides of a binary operator");
-    assertThat(ruleDetails.getLanguage()).isEqualTo(Language.TS);
-    assertThat(ruleDetails.getDefaultSeverity()).isEqualTo(IssueSeverity.MAJOR);
-    assertThat(ruleDetails.getTags()).isEmpty();
-    assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "Using the same value on either side of a binary operator is almost always a mistake");
-
     final var tsConfig = new File(baseDir, "tsconfig.json");
     FileUtils.write(tsConfig, "{}", StandardCharsets.UTF_8);
 
@@ -249,13 +255,13 @@ class StandaloneIssueMediumTests {
       + "  if(bar() && bar()) { return 42; }\n"
       + "}", false);
 
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(StandaloneAnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(), issues::add, null,
-      null);
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(AnalysisConfiguration.builder()
+      .setBaseDir(baseDir.toPath())
+      .addInputFile(inputFile)
+      .build(), issues::add, null,
+      null, CONFIGURATION_SCOPE_ID);
+    assertThat(issues).extracting(RawIssue::getRuleKey, i -> i.getTextRange().getStartLine(), i -> i.getInputFile().relativePath()).containsOnly(
       tuple("typescript:S1764", 2, "foo.ts"));
 
   }
@@ -275,15 +281,15 @@ class StandaloneIssueMediumTests {
 
     var inputFile = prepareInputFile("foo.yaml", content, false);
 
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(
+      AnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
         .build(),
       issues::add, null,
-      null);
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      null, CONFIGURATION_SCOPE_ID);
+    assertThat(issues).extracting(RawIssue::getRuleKey, i -> i.getTextRange().getStartLine(), i -> i.getInputFile().relativePath()).containsOnly(
       tuple("javascript:S1481", 8, "foo.yaml"));
   }
 
@@ -312,18 +318,19 @@ class StandaloneIssueMediumTests {
       baseDir.toString().replace("\\", "\\\\") +
       "\",\"executable\":\"compiler\",\"cmd\":[\"cc\",\"foo.c\"]}]}";
 
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(
+      AnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
         .putExtraProperty("sonar.cfamily.build-wrapper-content", buildWrapperContent)
         .build(),
-      issues::add, null, null);
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, i -> i.getInputFile().relativePath()).containsOnly(
-      tuple("c:S3805", 1, 0, "foo.c"),
-      // FIXME no sonar is not supported by the CFamily analyzer
-      tuple("c:S3805", 2, 0, "foo.c"));
+      issues::add, null, null, CONFIGURATION_SCOPE_ID);
+    assertThat(issues).extracting(RawIssue::getRuleKey, i -> i.getTextRange().getStartLine(), i -> i.getTextRange().getStartLineOffset(), i -> i.getInputFile().relativePath())
+      .containsOnly(
+        tuple("c:S3805", 1, 0, "foo.c"),
+        // FIXME no sonar is not supported by the CFamily analyzer
+        tuple("c:S3805", 2, 0, "foo.c"));
   }
 
   @Test
@@ -335,13 +342,13 @@ class StandaloneIssueMediumTests {
       + "}\n"
       + "?>", false);
 
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(StandaloneAnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(), issues::add,
-      null, null);
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(AnalysisConfiguration.builder()
+      .setBaseDir(baseDir.toPath())
+      .addInputFile(inputFile)
+      .build(), issues::add,
+      null, null, CONFIGURATION_SCOPE_ID);
+    assertThat(issues).extracting(RawIssue::getRuleKey, i -> i.getTextRange().getStartLine(), i -> i.getInputFile().relativePath()).containsOnly(
       tuple("php:S1172", 2, "foo.php"));
   }
 
@@ -353,14 +360,14 @@ class StandaloneIssueMediumTests {
       + "}\n"
       + "?>", false, StandardCharsets.UTF_16, null);
 
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(
+      AnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
         .build(),
-      issues::add, null, null);
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      issues::add, null, null, CONFIGURATION_SCOPE_ID);
+    assertThat(issues).extracting(RawIssue::getRuleKey, i -> i.getTextRange().getStartLine(), i -> i.getInputFile().relativePath()).containsOnly(
       tuple("php:S1172", 2, "foo.php"));
   }
 
@@ -372,13 +379,13 @@ class StandaloneIssueMediumTests {
       + "}\n"
       + "?>", false);
 
-    final List<Issue> issues = new ArrayList<>();
-    var results = sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
+    final List<RawIssue> issues = new ArrayList<>();
+    var results = engine.analyze(
+      AnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
         .build(),
-      issues::add, null, null);
+      issues::add, null, null, CONFIGURATION_SCOPE_ID);
     assertThat(results.languagePerFile()).containsExactly(entry(inputFile, Language.PHP));
   }
 
@@ -390,13 +397,13 @@ class StandaloneIssueMediumTests {
       + "}\n"
       + "?>", false);
 
-    final List<Issue> issues = new ArrayList<>();
-    var results = sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
+    final List<RawIssue> issues = new ArrayList<>();
+    var results = engine.analyze(
+      AnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
         .build(),
-      issues::add, null, null);
+      issues::add, null, null, CONFIGURATION_SCOPE_ID);
     assertThat(results.failedAnalysisFiles()).containsExactly(inputFile);
     assertThat(issues).isEmpty();
   }
@@ -409,13 +416,13 @@ class StandaloneIssueMediumTests {
       + "    print \"world!\" # NOSONAR\n"
       + "\n", false);
 
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(StandaloneAnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(), issues::add,
-      null, null);
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(AnalysisConfiguration.builder()
+      .setBaseDir(baseDir.toPath())
+      .addInputFile(inputFile)
+      .build(), issues::add,
+      null, null, CONFIGURATION_SCOPE_ID);
+    assertThat(issues).extracting(RawIssue::getRuleKey, i -> i.getTextRange().getStartLine(), i -> i.getInputFile().relativePath()).containsOnly(
       tuple("python:S1172", 1, "foo.py"),
       tuple("python:PrintStatementUsage", 2, "foo.py"));
   }
@@ -431,13 +438,13 @@ class StandaloneIssueMediumTests {
       + "\n", StandardCharsets.UTF_8);
     ClientInputFile inputFile = new OnDiskTestClientInputFile(file.toPath(), "foo.py", false, StandardCharsets.UTF_8, null);
 
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(StandaloneAnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(), issues::add,
-      null, null);
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(AnalysisConfiguration.builder()
+      .setBaseDir(baseDir.toPath())
+      .addInputFile(inputFile)
+      .build(), issues::add,
+      null, null, CONFIGURATION_SCOPE_ID);
+    assertThat(issues).extracting(RawIssue::getRuleKey, i -> i.getTextRange().getStartLine(), i -> i.getInputFile().relativePath()).containsOnly(
       tuple("python:S1172", 1, "foo.py"),
       tuple("python:PrintStatementUsage", 2, "foo.py"));
   }
@@ -454,19 +461,20 @@ class StandaloneIssueMediumTests {
         + "}",
       false);
 
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(StandaloneAnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(), issues::add,
-      null, null);
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(AnalysisConfiguration.builder()
+      .setBaseDir(baseDir.toPath())
+      .addInputFile(inputFile)
+      .build(), issues::add,
+      null, null, CONFIGURATION_SCOPE_ID);
 
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, Issue::getEndLine, Issue::getEndLineOffset,
-      i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S1220", null, null, null, null, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
-      tuple("java:S1481", 3, 8, 3, 9, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
-      tuple("java:S106", 4, 4, 4, 14, A_JAVA_FILE_PATH, IssueSeverity.MAJOR),
-      tuple("java:S1135", 5, 0, 5, 27, A_JAVA_FILE_PATH, IssueSeverity.INFO));
+    assertThat(issues).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath(), RawIssue::getSeverity)
+      .usingRecursiveFieldByFieldElementComparator()
+      .containsOnly(
+        tuple("java:S1220", null, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
+        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), A_JAVA_FILE_PATH, IssueSeverity.MINOR),
+        tuple("java:S106", new TextRangeDto(4, 4, 4, 14), A_JAVA_FILE_PATH, IssueSeverity.MAJOR),
+        tuple("java:S1135", new TextRangeDto(5, 0, 5, 27), A_JAVA_FILE_PATH, IssueSeverity.INFO));
   }
 
   @Test
@@ -479,28 +487,29 @@ class StandaloneIssueMediumTests {
         + "}",
       false);
 
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(StandaloneAnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(), issues::add,
-      null, null);
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(AnalysisConfiguration.builder()
+      .setBaseDir(baseDir.toPath())
+      .addInputFile(inputFile)
+      .build(), issues::add,
+      null, null, CONFIGURATION_SCOPE_ID);
 
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, Issue::getEndLine, Issue::getEndLineOffset,
-      i -> i.getInputFile().relativePath(), Issue::getSeverity).contains(
-      tuple("java:S1186", 2, 14, 2, 17, A_JAVA_FILE_PATH, IssueSeverity.CRITICAL));
+    assertThat(issues).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath(), RawIssue::getSeverity)
+      .usingRecursiveFieldByFieldElementComparator()
+      .contains(
+        tuple("java:S1186", new TextRangeDto(2, 14, 2, 17), A_JAVA_FILE_PATH, IssueSeverity.CRITICAL));
 
     assertThat(issues)
-      .flatExtracting(Issue::quickFixes)
+      .flatExtracting(RawIssue::quickFixes)
       .extracting(QuickFix::message)
       .containsOnly("Insert placeholder comment");
     assertThat(issues)
-      .flatExtracting(Issue::quickFixes)
+      .flatExtracting(RawIssue::quickFixes)
       .flatExtracting(QuickFix::inputFileEdits)
       .extracting(ClientInputFileEdit::target)
       .containsOnly(inputFile);
     assertThat(issues)
-      .flatExtracting(Issue::quickFixes)
+      .flatExtracting(RawIssue::quickFixes)
       .flatExtracting(QuickFix::inputFileEdits)
       .flatExtracting(ClientInputFileEdit::textEdits)
       .extracting(TextEdit::range, TextEdit::newText)
@@ -518,49 +527,43 @@ class StandaloneIssueMediumTests {
         + "}",
       false);
 
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(StandaloneAnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .putExtraProperty("sonar.java.libraries", "\"" + Paths.get("target/lib/guava,with,comma.jar").toAbsolutePath().toString() + "\"")
-        .build(), issues::add,
-      null, null);
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(AnalysisConfiguration.builder()
+      .setBaseDir(baseDir.toPath())
+      .addInputFile(inputFile)
+      .putExtraProperty("sonar.java.libraries", "\"" + Paths.get("target/lib/guava,with,comma.jar").toAbsolutePath().toString() + "\"")
+      .build(), issues::add,
+      null, null, CONFIGURATION_SCOPE_ID);
 
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, Issue::getStartLineOffset, Issue::getEndLine, Issue::getEndLineOffset,
-      i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S1220", null, null, null, null, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
-      tuple("java:S1481", 3, 8, 3, 9, A_JAVA_FILE_PATH, IssueSeverity.MINOR));
+    assertThat(issues).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath(), RawIssue::getSeverity)
+      .usingRecursiveFieldByFieldElementComparator()
+      .containsOnly(
+        tuple("java:S1220", null, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
+        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), A_JAVA_FILE_PATH, IssueSeverity.MINOR));
   }
 
   // SLCORE-251
   @Test
   void noRuleTemplates() throws Exception {
-    assertThat(sonarlint.getAllRuleDetails()).extracting(RuleDetails::getKey).doesNotContain("python:XPath");
-    assertThat(sonarlint.getRuleDetails("python:XPath")).isEmpty();
+    var response = backend.getRulesService().listAllStandaloneRulesDefinitions().get();
+    assertThat(response.getRulesByKey()).doesNotContainKey("python:XPath");
   }
 
   @Test
-  void onlyLoadRulesOfEnabledLanguages() {
-    Set<Language> enabledLanguages = EnumSet.of(
-      Language.JAVA,
-      Language.JS,
-      Language.PHP,
-      Language.PYTHON,
-      Language.TS,
-      Language.XML);
+  void onlyLoadRulesOfEnabledLanguages() throws ExecutionException, InterruptedException {
+    var enabledLanguages = EnumSet.of(JAVA, JS, PHP, PYTHON, TS, XML);
 
     if (COMMERCIAL_ENABLED) {
-      enabledLanguages.add(Language.C);
+      enabledLanguages.add(C);
     }
-    assertThat(sonarlint.getAllRuleDetails().stream().map(RuleDetails::getLanguage))
-      .hasSameElementsAs(enabledLanguages);
+    var response = backend.getRulesService().listAllStandaloneRulesDefinitions().get();
+    assertThat(response.getRulesByKey().values())
+      .flatExtracting(RuleDefinitionDto::getLanguage)
+      .containsAll(enabledLanguages);
   }
 
   @Test
   void simpleJavaNoHotspots() throws Exception {
-    assertThat(sonarlint.getAllRuleDetails()).extracting(RuleDetails::getKey).doesNotContain("java:S1313");
-    assertThat(sonarlint.getRuleDetails("java:S1313")).isEmpty();
-
     var inputFile = prepareInputFile("foo/Foo.java",
       "package foo;\n"
         + "public class Foo {\n"
@@ -568,15 +571,16 @@ class StandaloneIssueMediumTests {
         + "}",
       false);
 
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
+    backend.getRulesService()
+      .updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("java:S1313", new StandaloneRuleConfigDto(true, emptyMap()))));
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(
+      AnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
-        .addIncludedRule(new RuleKey("java", "S1313"))
         .build(),
       issues::add,
-      null, null);
+      null, null, CONFIGURATION_SCOPE_ID);
 
     assertThat(issues).isEmpty();
   }
@@ -593,14 +597,14 @@ class StandaloneIssueMediumTests {
         + "</project>",
       false);
 
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(StandaloneAnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(), issues::add,
-      null, null);
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(AnalysisConfiguration.builder()
+      .setBaseDir(baseDir.toPath())
+      .addInputFile(inputFile)
+      .build(), issues::add,
+      null, null, CONFIGURATION_SCOPE_ID);
 
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
+    assertThat(issues).extracting(RawIssue::getRuleKey, i -> i.getTextRange().getStartLine(), i -> i.getInputFile().relativePath(), RawIssue::getSeverity).containsOnly(
       tuple("xml:S3421", 6, "pom.xml", IssueSeverity.MINOR));
   }
 
@@ -617,16 +621,18 @@ class StandaloneIssueMediumTests {
         + "}",
       false);
 
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(StandaloneAnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(), issues::add,
-      null, null);
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(AnalysisConfiguration.builder()
+      .setBaseDir(baseDir.toPath())
+      .addInputFile(inputFile)
+      .build(), issues::add,
+      null, null, CONFIGURATION_SCOPE_ID);
 
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S1220", null, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
-      tuple("java:S1481", 4, A_JAVA_FILE_PATH, IssueSeverity.MINOR));
+    assertThat(issues).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath(), RawIssue::getSeverity)
+      .usingRecursiveFieldByFieldElementComparator()
+      .containsOnly(
+        tuple("java:S1220", null, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
+        tuple("java:S1481", new TextRangeDto(4, 8, 4, 9), A_JAVA_FILE_PATH, IssueSeverity.MINOR));
   }
 
   @Test
@@ -634,20 +640,22 @@ class StandaloneIssueMediumTests {
     var projectWithByteCode = new File("src/test/projects/java-with-bytecode").getAbsoluteFile().toPath();
     var inputFile = TestUtils.createInputFile(projectWithByteCode.resolve("src/Foo.java"), "src/Foo.java", false);
 
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(
+      AnalysisConfiguration.builder()
         .setBaseDir(projectWithByteCode)
         .addInputFile(inputFile)
         .putExtraProperty("sonar.java.binaries", projectWithByteCode.resolve("bin").toString())
         .build(),
-      issues::add, null, null);
+      issues::add, null, null, CONFIGURATION_SCOPE_ID);
 
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
-      tuple("java:S106", 5, "src/Foo.java"),
-      tuple("java:S1220", null, "src/Foo.java"),
-      tuple("java:S1144", 8, "src/Foo.java"),
-      tuple("java:S1186", 8, "src/Foo.java"));
+    assertThat(issues).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath())
+      .usingRecursiveFieldByFieldElementComparator()
+      .containsOnly(
+        tuple("java:S106", new TextRangeDto(5, 2, 5, 12), "src/Foo.java"),
+        tuple("java:S1220", null, "src/Foo.java"),
+        tuple("java:S1144", new TextRangeDto(8, 14, 8, 17), "src/Foo.java"),
+        tuple("java:S1186", new TextRangeDto(8, 14, 8, 17), "src/Foo.java"));
   }
 
   @Test
@@ -661,19 +669,21 @@ class StandaloneIssueMediumTests {
         + "}",
       false);
 
-    final Collection<RuleKey> excludedRules = singleton(new RuleKey("java", "S106"));
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
+    backend.getRulesService()
+      .updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("java:S106", new StandaloneRuleConfigDto(false, emptyMap()))));
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(
+      AnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
-        .addExcludedRules(excludedRules)
         .build(),
-      issues::add, null, null);
+      issues::add, null, null, CONFIGURATION_SCOPE_ID);
 
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S1220", null, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
-      tuple("java:S1481", 3, A_JAVA_FILE_PATH, IssueSeverity.MINOR));
+    assertThat(issues).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath(), RawIssue::getSeverity)
+      .usingRecursiveFieldByFieldElementComparator()
+      .containsOnly(
+        tuple("java:S1220", null, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
+        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), A_JAVA_FILE_PATH, IssueSeverity.MINOR));
   }
 
   @Test
@@ -687,22 +697,23 @@ class StandaloneIssueMediumTests {
         + "}",
       false);
 
-    final Collection<RuleKey> excludedRules = singleton(new RuleKey("squid", "S106"));
-    List<String> logs = new ArrayList<>();
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
+    backend.getRulesService()
+      .updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("squid:S106", new StandaloneRuleConfigDto(false, emptyMap()))));
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(
+      AnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
-        .addExcludedRules(excludedRules)
         .build(),
-      issues::add, (msg, lvl) -> logs.add(msg), null);
+      issues::add, (msg, lvl) -> logs.add(msg), null, CONFIGURATION_SCOPE_ID);
 
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S1220", null, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
-      tuple("java:S1481", 3, A_JAVA_FILE_PATH, IssueSeverity.MINOR));
+    assertThat(issues).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath(), RawIssue::getSeverity)
+      .usingRecursiveFieldByFieldElementComparator()
+      .containsOnly(
+        tuple("java:S1220", null, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
+        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), A_JAVA_FILE_PATH, IssueSeverity.MINOR));
 
-    assertThat(logs).contains("Rule 'java:S106' was excluded using its deprecated key 'squid:S106'. Please fix your configuration.");
+    assertThat(fakeClient.getLogMessages()).contains("Rule 'java:S106' was excluded using its deprecated key 'squid:S106'. Please fix your configuration.");
   }
 
   @Test
@@ -717,21 +728,23 @@ class StandaloneIssueMediumTests {
         + "}",
       false);
 
-    final Collection<RuleKey> includedRules = singleton(new RuleKey("java", "S3553"));
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
+    backend.getRulesService()
+      .updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("java:S3553", new StandaloneRuleConfigDto(true, emptyMap()))));
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(
+      AnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
-        .addIncludedRules(includedRules)
         .build(),
-      issues::add, null, null);
+      issues::add, null, null, CONFIGURATION_SCOPE_ID);
 
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S3553", 3, A_JAVA_FILE_PATH, IssueSeverity.MAJOR),
-      tuple("java:S106", 5, A_JAVA_FILE_PATH, IssueSeverity.MAJOR),
-      tuple("java:S1220", null, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
-      tuple("java:S1481", 4, A_JAVA_FILE_PATH, IssueSeverity.MINOR));
+    assertThat(issues).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath(), RawIssue::getSeverity)
+      .usingRecursiveFieldByFieldElementComparator()
+      .containsOnly(
+        tuple("java:S3553", new TextRangeDto(3, 18, 3, 34), A_JAVA_FILE_PATH, IssueSeverity.MAJOR),
+        tuple("java:S106", new TextRangeDto(5, 4, 5, 14), A_JAVA_FILE_PATH, IssueSeverity.MAJOR),
+        tuple("java:S1220", null, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
+        tuple("java:S1481", new TextRangeDto(4, 8, 4, 9), A_JAVA_FILE_PATH, IssueSeverity.MINOR));
   }
 
   @Test
@@ -746,24 +759,26 @@ class StandaloneIssueMediumTests {
         + "}",
       false);
 
-    final Collection<RuleKey> includedRules = singleton(new RuleKey("squid", "S3553"));
+    backend.getRulesService()
+      .updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("squid:S3553", new StandaloneRuleConfigDto(true, emptyMap()))));
     List<String> logs = new CopyOnWriteArrayList<>();
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(
+      AnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
-        .addIncludedRules(includedRules)
         .build(),
-      issues::add, (msg, lvl) -> logs.add(msg), null);
+      issues::add, (msg, lvl) -> logs.add(msg), null, CONFIGURATION_SCOPE_ID);
 
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S3553", 3, A_JAVA_FILE_PATH, IssueSeverity.MAJOR),
-      tuple("java:S106", 5, A_JAVA_FILE_PATH, IssueSeverity.MAJOR),
-      tuple("java:S1220", null, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
-      tuple("java:S1481", 4, A_JAVA_FILE_PATH, IssueSeverity.MINOR));
+    assertThat(issues).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath(), RawIssue::getSeverity)
+      .usingRecursiveFieldByFieldElementComparator()
+      .containsOnly(
+        tuple("java:S3553", new TextRangeDto(3, 18, 3, 34), A_JAVA_FILE_PATH, IssueSeverity.MAJOR),
+        tuple("java:S106", new TextRangeDto(5, 4, 5, 14), A_JAVA_FILE_PATH, IssueSeverity.MAJOR),
+        tuple("java:S1220", null, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
+        tuple("java:S1481", new TextRangeDto(4, 8, 4, 9), A_JAVA_FILE_PATH, IssueSeverity.MINOR));
 
-    assertThat(logs).contains("Rule 'java:S3553' was included using its deprecated key 'squid:S3553'. Please fix your configuration.");
+    assertThat(fakeClient.getLogMessages()).contains("Rule 'java:S3553' was included using its deprecated key 'squid:S3553'. Please fix your configuration.");
   }
 
   @Test
@@ -774,50 +789,53 @@ class StandaloneIssueMediumTests {
         + "}",
       false);
 
-    final Collection<RuleKey> includedRules = singleton(new RuleKey("java", "S1228"));
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
+    backend.getRulesService()
+      .updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("java:S1228", new StandaloneRuleConfigDto(true, emptyMap()))));
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(
+      AnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
-        .addIncludedRules(includedRules)
         .build(),
-      issues::add, null, null);
+      issues::add, null, null, CONFIGURATION_SCOPE_ID);
 
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile() != null ? i.getInputFile().relativePath() : null, Issue::getSeverity).containsOnly(
-      tuple("java:S2094", 2, "foo/Foo.java", IssueSeverity.MINOR),
-      tuple("java:S1228", null, null, IssueSeverity.MINOR));
+    assertThat(issues)
+      .extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile() != null ? i.getInputFile().relativePath() : null, RawIssue::getSeverity)
+      .usingRecursiveFieldByFieldElementComparator()
+      .containsOnly(
+        tuple("java:S2094", new TextRangeDto(2, 13, 2, 16), "foo/Foo.java", IssueSeverity.MINOR),
+        tuple("java:S1228", null, null, IssueSeverity.MINOR));
   }
 
   @Test
-  void simpleJavaWithIncludedAndExcludedRules() throws Exception {
-    var inputFile = prepareInputFile(A_JAVA_FILE_PATH,
-      "import java.util.Optional;\n"
+  void simpleJavaWithSecondaryLocations() throws Exception {
+    var inputFile = prepareInputFile("foo/Foo.java",
+      "package foo;\n"
         + "public class Foo {\n"
-        + "  public void foo(Optional<String> name) {  // for squid:S3553, not in Sonar Way\n"
-        + "    int x;\n"
-        + "    System.out.println(\"Foo\" + name.isPresent());\n"
-        + "  }\n"
+        + "  public void method() {\n"
+        + "    String S1 = \"duplicated\";\n"
+        + "    String S2 = \"duplicated\";\n"
+        + "    String S3 = \"duplicated\";\n"
+        + "  }"
         + "}",
       false);
 
-    // exclusion wins
-    final Collection<RuleKey> excludedRules = Collections.singleton(new RuleKey("squid", "S3553"));
-    final Collection<RuleKey> includedRules = Collections.singleton(new RuleKey("squid", "S3553"));
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
+    final List<RawIssue> issues = new ArrayList<>();
+    engine.analyze(
+      AnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
-        .addExcludedRules(excludedRules)
-        .addIncludedRules(includedRules)
         .build(),
-      issues::add, null, null);
+      issues::add, null, null, CONFIGURATION_SCOPE_ID);
 
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath(), Issue::getSeverity).containsOnly(
-      tuple("java:S106", 5, A_JAVA_FILE_PATH, IssueSeverity.MAJOR),
-      tuple("java:S1220", null, A_JAVA_FILE_PATH, IssueSeverity.MINOR),
-      tuple("java:S1481", 4, A_JAVA_FILE_PATH, IssueSeverity.MINOR));
+    assertThat(issues)
+      .extracting(RawIssue::getRuleKey, RawIssue::getTextRange)
+      .usingRecursiveFieldByFieldElementComparator()
+      .contains(tuple("java:S1192", new TextRangeDto(4, 16, 4, 28)));
+    assertThat(issues)
+      .filteredOn(issue -> issue.getRuleKey().equals("java:S1192"))
+      .flatExtracting(RawIssue::getFlows)
+      .hasSize(3);
   }
 
   @Test
@@ -846,22 +864,24 @@ class StandaloneIssueMediumTests {
         + "}",
       true);
 
-    final List<Issue> issues = new ArrayList<>();
-    var results = sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
+    final List<RawIssue> issues = new ArrayList<>();
+    var results = engine.analyze(
+      AnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFiles(inputFile, inputFileTest)
         .putExtraProperty("sonar.junit.reportsPath", "reports/")
         .build(),
-      issues::add, null, null);
+      issues::add, null, null, CONFIGURATION_SCOPE_ID);
 
     assertThat(results.indexedFileCount()).isEqualTo(2);
 
-    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
-      tuple("java:S106", 4, A_JAVA_FILE_PATH),
-      tuple("java:S1220", null, A_JAVA_FILE_PATH),
-      tuple("java:S1481", 3, A_JAVA_FILE_PATH),
-      tuple("java:S2187", 1, "FooTest.java"));
+    assertThat(issues).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath())
+      .usingRecursiveFieldByFieldElementComparator()
+      .containsOnly(
+        tuple("java:S106", new TextRangeDto(4, 4, 4, 14), A_JAVA_FILE_PATH),
+        tuple("java:S1220", null, A_JAVA_FILE_PATH),
+        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), A_JAVA_FILE_PATH),
+        tuple("java:S2187", new TextRangeDto(1, 13, 1, 20), "FooTest.java"));
   }
 
   @Test
@@ -883,13 +903,13 @@ class StandaloneIssueMediumTests {
     List<Future<?>> results = new ArrayList<>();
     for (var i = 0; i < parallelExecutions; i++) {
 
-      Runnable worker = () -> sonarlint.analyze(
-        StandaloneAnalysisConfiguration.builder()
+      Runnable worker = () -> engine.analyze(
+        AnalysisConfiguration.builder()
           .setBaseDir(baseDir.toPath())
           .addInputFile(inputFile)
           .build(),
         issue -> {
-        }, null, null);
+        }, null, null, CONFIGURATION_SCOPE_ID);
       results.add(executor.submit(worker));
     }
     executor.shutdown();
@@ -921,15 +941,15 @@ class StandaloneIssueMediumTests {
     assertThat(unexistingPath).doesNotExist();
     ClientInputFile inputFile2 = new OnDiskTestClientInputFile(unexistingPath.toPath(), "missing.bin", false, StandardCharsets.UTF_8, null);
 
-    final List<Issue> issues = new ArrayList<>();
+    final List<RawIssue> issues = new ArrayList<>();
     final List<String> logs = new CopyOnWriteArrayList<>();
-    var analysisResults = sonarlint.analyze(
-      StandaloneAnalysisConfiguration.builder()
+    var analysisResults = engine.analyze(
+      AnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFiles(inputFile1, inputFile2)
         .build(),
       issues::add,
-      (m, l) -> logs.add(m), null);
+      (m, l) -> logs.add(m), null, CONFIGURATION_SCOPE_ID);
 
     assertThat(analysisResults.failedAnalysisFiles()).isEmpty();
     assertThat(analysisResults.indexedFileCount()).isEqualTo(2);
@@ -940,10 +960,10 @@ class StandaloneIssueMediumTests {
 
   @Test
   void declare_module_should_create_a_module_container_with_loaded_extensions() throws Exception {
-    sonarlint
+    engine
       .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null)))).get();
 
-    ModuleContainer moduleContainer = sonarlint.getAnalysisEngine().getModuleRegistry().getContainerFor("key");
+    ModuleContainer moduleContainer = engine.getAnalysisEngine().getModuleRegistry().getContainerFor("key");
 
     assertThat(moduleContainer).isNotNull();
     assertThat(moduleContainer.getComponentsByType(SonarLintModuleFileSystem.class)).isNotEmpty();
@@ -951,11 +971,11 @@ class StandaloneIssueMediumTests {
 
   @Test
   void stop_module_should_stop_the_module_container() throws Exception {
-    sonarlint
+    engine
       .declareModule(new ClientModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null)))).get();
-    ModuleContainer moduleContainer = sonarlint.getAnalysisEngine().getModuleRegistry().getContainerFor("key");
+    ModuleContainer moduleContainer = engine.getAnalysisEngine().getModuleRegistry().getContainerFor("key");
 
-    sonarlint.stopModule("key").get();
+    engine.stopModule("key").get();
 
     assertThat(moduleContainer.getSpringContext().isActive()).isFalse();
   }
@@ -969,12 +989,12 @@ class StandaloneIssueMediumTests {
       + "}\n"
       + "?>", false);
 
-    final List<Issue> issues = new ArrayList<>();
-    StandaloneAnalysisConfiguration analysisConfiguration = StandaloneAnalysisConfiguration.builder()
+    final List<RawIssue> issues = new ArrayList<>();
+    AnalysisConfiguration analysisConfiguration = AnalysisConfiguration.builder()
       .setBaseDir(baseDir.toPath())
       .addInputFile(inputFile)
       .build();
-    assertThrows(CanceledException.class, () -> sonarlint.analyze(analysisConfiguration, issues::add, null, CANCELED_PROGRESS_MONITOR));
+    assertThrows(CanceledException.class, () -> engine.analyze(analysisConfiguration, issues::add, null, CANCELED_PROGRESS_MONITOR, CONFIGURATION_SCOPE_ID));
   }
 
   private static final class CanceledProgressMonitor implements ClientProgressMonitor {

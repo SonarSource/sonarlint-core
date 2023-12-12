@@ -31,7 +31,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
 import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
@@ -76,7 +76,7 @@ class RuleExtractorMediumTests {
     if (COMMERCIAL_ENABLED) {
       assertThat(allJars).hasSize(19);
       assertThat(allRules).hasSize(ALL_RULES_COUNT_WITH_COMMERCIAL);
-      assertThat(logTester.logs(ClientLogOutput.Level.WARN)).containsExactlyInAnyOrder(
+      assertThat(logTester.logs(LogOutput.Level.WARN)).containsExactlyInAnyOrder(
         "Plugin 'rpg' embeds dependencies. This will be deprecated soon. Plugin should be updated.",
         "Plugin 'cobol' embeds dependencies. This will be deprecated soon. Plugin should be updated.",
         "Plugin 'swift' embeds dependencies. This will be deprecated soon. Plugin should be updated.");
@@ -126,7 +126,7 @@ class RuleExtractorMediumTests {
     if (COMMERCIAL_ENABLED) {
       assertThat(allJars).hasSize(19);
       assertThat(allRules).hasSize(ALL_RULES_COUNT_WITH_COMMERCIAL + NON_COMMERCIAL_RULE_TEMPLATES_COUNT + COMMERCIAL_RULE_TEMPLATES_COUNT);
-      assertThat(logTester.logs(ClientLogOutput.Level.WARN)).containsExactlyInAnyOrder(
+      assertThat(logTester.logs(LogOutput.Level.WARN)).containsExactlyInAnyOrder(
         "Plugin 'rpg' embeds dependencies. This will be deprecated soon. Plugin should be updated.",
         "Plugin 'cobol' embeds dependencies. This will be deprecated soon. Plugin should be updated.",
         "Plugin 'swift' embeds dependencies. This will be deprecated soon. Plugin should be updated.");
@@ -146,7 +146,7 @@ class RuleExtractorMediumTests {
     if (COMMERCIAL_ENABLED) {
       assertThat(allJars).hasSize(19);
       assertThat(allRules).hasSize(ALL_RULES_COUNT_WITH_COMMERCIAL + NON_COMMERCIAL_SECURITY_HOTSPOTS_COUNT + COMMERCIAL_SECURITY_HOTSPOTS_COUNT);
-      assertThat(logTester.logs(ClientLogOutput.Level.WARN)).containsExactlyInAnyOrder(
+      assertThat(logTester.logs(LogOutput.Level.WARN)).containsExactlyInAnyOrder(
         "Plugin 'rpg' embeds dependencies. This will be deprecated soon. Plugin should be updated.",
         "Plugin 'cobol' embeds dependencies. This will be deprecated soon. Plugin should be updated.",
         "Plugin 'swift' embeds dependencies. This will be deprecated soon. Plugin should be updated.");

@@ -24,9 +24,9 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
@@ -88,7 +88,7 @@ class VersionSoonUnsupportedHelperTests {
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID, CONFIG_SCOPE_ID_2)));
 
-    await().untilAsserted(() -> assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
+    await().untilAsserted(() -> assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .containsOnly("Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getMinimalSupportedVersion().getName() + "' is detected to be soon unsupported"));
   }
 
@@ -113,7 +113,7 @@ class VersionSoonUnsupportedHelperTests {
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID, CONFIG_SCOPE_ID_2)));
 
-    await().untilAsserted(() -> assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
+    await().untilAsserted(() -> assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .containsOnly(
         "Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getMinimalSupportedVersion().getName() + "' is detected to be soon unsupported",
         "Connection '" + SQ_CONNECTION_ID_2 + "' with version '" + VersionUtils.getMinimalSupportedVersion() + ".9' is detected to be soon unsupported"
@@ -139,7 +139,7 @@ class VersionSoonUnsupportedHelperTests {
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID, null,
       new BindingConfiguration(SQ_CONNECTION_ID, "", false)));
 
-    await().untilAsserted(() -> assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
+    await().untilAsserted(() -> assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .containsOnly("Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getMinimalSupportedVersion().getName() + "' is detected to be soon unsupported"));
   }
 
@@ -157,7 +157,7 @@ class VersionSoonUnsupportedHelperTests {
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID, null,
       new BindingConfiguration(SQ_CONNECTION_ID, "", false)));
 
-    await().untilAsserted(() -> assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
+    await().untilAsserted(() -> assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .containsOnly("Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getMinimalSupportedVersion().getName() + "' is detected to be soon unsupported"));
   }
 
@@ -173,7 +173,7 @@ class VersionSoonUnsupportedHelperTests {
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID, null,
       new BindingConfiguration(SQ_CONNECTION_ID, "", false)));
 
-    await().untilAsserted(() -> assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
+    await().untilAsserted(() -> assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .containsOnly("Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getMinimalSupportedVersion().getName() + ".9' is detected to be soon unsupported"));
   }
 

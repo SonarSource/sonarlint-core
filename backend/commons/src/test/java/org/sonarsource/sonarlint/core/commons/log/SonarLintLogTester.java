@@ -30,7 +30,7 @@ import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
+import org.sonarsource.sonarlint.core.commons.log.LogOutput.Level;
 
 /**
  * <b>For tests only</b>
@@ -66,7 +66,7 @@ public class SonarLintLogTester implements BeforeTestExecutionCallback, AfterTes
 
   private final Queue<String> logs = new ConcurrentLinkedQueue<>();
   private final Map<Level, Queue<String>> logsByLevel = new ConcurrentHashMap<>();
-  private final ClientLogOutput logOutput;
+  private final LogOutput logOutput;
 
   public SonarLintLogTester(boolean writeToStdOut) {
     logOutput = (formattedMessage, level) -> {
@@ -96,7 +96,7 @@ public class SonarLintLogTester implements BeforeTestExecutionCallback, AfterTes
     logsByLevel.clear();
   }
 
-  public ClientLogOutput getLogOutput() {
+  public LogOutput getLogOutput() {
     return logOutput;
   }
 

@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
@@ -75,7 +75,7 @@ class ServerHotspotUpdaterTest {
     updater.updateAll(hotspotApi, PROJECT_KEY, "branch", () -> null, null);
 
     verifyNoInteractions(issueStore);
-    assertThat(logTester.logs(ClientLogOutput.Level.INFO)).contains("Skip downloading hotspots from server, not supported");
+    assertThat(logTester.logs(LogOutput.Level.INFO)).contains("Skip downloading hotspots from server, not supported");
   }
 
   @Test
