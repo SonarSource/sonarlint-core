@@ -26,61 +26,59 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import mediumtest.fixtures.TestPlugin;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.StandaloneSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
-import testutils.PluginLocator;
+import org.sonarsource.sonarlint.core.client.legacy.analysis.AnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.legacy.analysis.EngineConfiguration;
+import org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine;
+import org.sonarsource.sonarlint.core.client.utils.ClientLogOutput;
 import testutils.TestUtils;
 
+import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static testutils.TestUtils.createNoOpIssueListener;
 
 class LogMediumTests {
 
-  private StandaloneSonarLintEngine sonarlint;
+  private static final String CONFIGURATION_SCOPE_ID = "configScopeId";
+  private SonarLintAnalysisEngine engine;
 
   @TempDir
   private File baseDir;
   private Multimap<ClientLogOutput.Level, String> logs;
 
   @BeforeEach
-  void prepare() throws IOException {
+  void prepare() {
     logs = Multimaps.synchronizedListMultimap(LinkedListMultimap.create());
-    var config = StandaloneGlobalConfiguration.builder()
-      .addPlugin(PluginLocator.getJavaScriptPluginPath())
+    var config = EngineConfiguration.builder()
       .setLogOutput(createLogOutput(logs))
       .setModulesProvider(() -> List.of(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class))))
       .build();
-    sonarlint = new StandaloneSonarLintEngineImpl(config);
+    var backend = newBackend()
+      .withStandaloneEmbeddedPlugin(TestPlugin.JAVASCRIPT)
+      .build();
+    engine = new SonarLintAnalysisEngine(config, backend, null);
   }
 
   @AfterEach
   void stop() {
-    sonarlint.stop();
+    engine.stop();
   }
 
   private ClientLogOutput createLogOutput(final Multimap<ClientLogOutput.Level, String> logs) {
-    return new ClientLogOutput() {
-      @Override
-      public void log(String formattedMessage, Level level) {
-        logs.put(level, formattedMessage);
-      }
-    };
+    return (formattedMessage, level) -> logs.put(level, formattedMessage);
   }
 
-  private StandaloneAnalysisConfiguration createConfig(ClientInputFile inputFile) {
-    return StandaloneAnalysisConfiguration.builder()
+  private AnalysisConfiguration createConfig(ClientInputFile inputFile) {
+    return AnalysisConfiguration.builder()
       .setBaseDir(baseDir.toPath())
       .addInputFile(inputFile)
       .build();
@@ -94,13 +92,13 @@ class LogMediumTests {
   void changeLogOutputForAnalysis() throws IOException {
     logs.clear();
     var inputFile = prepareInputFile("foo.js", "function foo() {var x;}");
-    sonarlint.analyze(createConfig(inputFile), createNoOpIssueListener(), null, null);
+    engine.analyze(createConfig(inputFile), createNoOpIssueListener(), null, null, CONFIGURATION_SCOPE_ID);
     assertThat(logs.get(ClientLogOutput.Level.DEBUG)).isNotEmpty();
     logs.clear();
 
     final Multimap<ClientLogOutput.Level, String> logs2 = Multimaps.synchronizedListMultimap(LinkedListMultimap.create());
 
-    sonarlint.analyze(createConfig(inputFile), createNoOpIssueListener(), createLogOutput(logs2), null);
+    engine.analyze(createConfig(inputFile), createNoOpIssueListener(), createLogOutput(logs2), null, CONFIGURATION_SCOPE_ID);
     assertThat(logs.get(ClientLogOutput.Level.DEBUG)).isEmpty();
     assertThat(logs2.get(ClientLogOutput.Level.DEBUG)).isNotEmpty();
   }

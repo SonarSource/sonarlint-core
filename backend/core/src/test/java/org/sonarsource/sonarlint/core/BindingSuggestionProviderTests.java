@@ -30,8 +30,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
-import org.sonarsource.sonarlint.core.client.api.util.TextSearchIndex;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
@@ -93,7 +92,7 @@ class BindingSuggestionProviderTests {
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID_1, new BindingConfiguration(null, null, true),
       new BindingConfiguration(null, null, false)));
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).contains("Binding suggestion computation queued for config scopes '" + CONFIG_SCOPE_ID_1 + "'...");
+    assertThat(logTester.logs(LogOutput.Level.DEBUG)).contains("Binding suggestion computation queued for config scopes '" + CONFIG_SCOPE_ID_1 + "'...");
   }
 
   @Test
@@ -112,7 +111,7 @@ class BindingSuggestionProviderTests {
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(ImmutableSortedSet.of(CONFIG_SCOPE_ID_1, CONFIG_SCOPE_ID_2)));
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
+    assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .contains("Binding suggestion computation queued for config scopes '" + CONFIG_SCOPE_ID_1 + "," + CONFIG_SCOPE_ID_2 + "'...");
   }
 
@@ -122,7 +121,7 @@ class BindingSuggestionProviderTests {
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(ImmutableSortedSet.of(CONFIG_SCOPE_ID_1, CONFIG_SCOPE_ID_2)));
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
+    assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .contains("No connections configured, skipping binding suggestions.");
   }
 
@@ -132,7 +131,7 @@ class BindingSuggestionProviderTests {
     when(configRepository.getConfigScopeIds()).thenReturn(Set.of("id1"));
     underTest.connectionAdded(new ConnectionConfigurationAddedEvent(SQ_1_ID));
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).contains("Binding suggestions computation queued for connection '" + SQ_1_ID + "'...");
+    assertThat(logTester.logs(LogOutput.Level.DEBUG)).contains("Binding suggestions computation queued for connection '" + SQ_1_ID + "'...");
   }
 
   @Test
@@ -151,7 +150,7 @@ class BindingSuggestionProviderTests {
 
     underTest.connectionAdded(new ConnectionConfigurationAddedEvent(SQ_1_ID));
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).isEmpty();
+    assertThat(logTester.logs(LogOutput.Level.DEBUG)).isEmpty();
   }
 
   @Test
@@ -174,7 +173,7 @@ class BindingSuggestionProviderTests {
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(ImmutableSortedSet.of("configScopeWithNoBinding", "configScopeWithNoConfig", "configScopeNotBindable", "alreadyBound", "suggestionsDisabled")));
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
+    assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .contains(
         "Configuration scope 'configScopeWithNoBinding' is gone.",
         "Configuration scope 'configScopeWithNoConfig' is gone.",
@@ -199,7 +198,7 @@ class BindingSuggestionProviderTests {
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(ImmutableSortedSet.of("brokenBinding1", "brokenBinding2", "connectionGone")));
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
+    assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .contains(
         "Found 0 suggestions for configuration scope 'brokenBinding1'",
         "Found 0 suggestions for configuration scope 'brokenBinding2'",
@@ -221,7 +220,7 @@ class BindingSuggestionProviderTests {
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID_1)));
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
+    assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .containsExactly(
         "Binding suggestion computation queued for config scopes '" + CONFIG_SCOPE_ID_1 + "'...",
         "Found 1 suggestion for configuration scope '" + CONFIG_SCOPE_ID_1 + "'");
@@ -258,7 +257,7 @@ class BindingSuggestionProviderTests {
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID_1)));
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
+    assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .containsExactlyInAnyOrder(
         "Binding suggestion computation queued for config scopes '" + CONFIG_SCOPE_ID_1 + "'...",
         "Attempt to find a good match for 'KEYWORD' on connection '" + SQ_1_ID + "'...",
@@ -296,7 +295,7 @@ class BindingSuggestionProviderTests {
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID_1)));
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
+    assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .containsExactlyInAnyOrder(
         "Binding suggestion computation queued for config scopes '" + CONFIG_SCOPE_ID_1 + "'...",
         "Attempt to find a good match for 'KEYWORD' on connection '" + SQ_1_ID + "'...",
@@ -397,7 +396,7 @@ class BindingSuggestionProviderTests {
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID_1)));
 
-    assertThat(logTester.logs(ClientLogOutput.Level.DEBUG))
+    assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .containsExactly(
         "Binding suggestion computation queued for config scopes '" + CONFIG_SCOPE_ID_1 + "'...",
         "Attempt to find a good match for 'foo-bar' on connection '" + SC_1_ID + "'...",

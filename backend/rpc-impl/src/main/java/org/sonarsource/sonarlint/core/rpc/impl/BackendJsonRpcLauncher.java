@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.ExecutorService;
@@ -54,7 +53,7 @@ public class BackendJsonRpcLauncher implements Closeable {
   }
 
   @Override
-  public void close() throws IOException {
+  public void close() {
     messageReaderExecutor.shutdownNow();
     messageWriterExecutor.shutdownNow();
     try {

@@ -11,10 +11,6 @@
   <name>SonarLint Core - Java Client Legacy</name>
   <description>Legacy classes for Java clients</description>
 
-  <properties>
-    <!-- The library is shaded into sonarlint-core -->
-    <maven.deploy.skip>true</maven.deploy.skip>
-  </properties>
   <dependencies>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
@@ -22,8 +18,27 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+    </dependency>
+    <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>sonarlint-commons</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>sonarlint-analysis-engine</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>sonarlint-rpc-protocol</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>sonarlint-java-client-utils</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -41,6 +56,11 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.github.tomakehurst</groupId>
+      <artifactId>wiremock-jre8</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

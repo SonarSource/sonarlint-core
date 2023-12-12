@@ -42,7 +42,7 @@ import org.sonar.api.utils.command.Command;
 import org.sonar.api.utils.command.CommandExecutor;
 import org.sonar.api.utils.command.StreamConsumer;
 import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
+import org.sonarsource.sonarlint.core.commons.log.LogOutput.Level;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;

@@ -37,41 +37,50 @@ public class PluginLocator {
   public static final String SONAR_PYTHON_PLUGIN_VERSION = "4.1.0.11333";
   public static final String SONAR_PYTHON_PLUGIN_JAR = "sonar-python-plugin-" + SONAR_PYTHON_PLUGIN_VERSION + ".jar";
   public static final String SONAR_PYTHON_PLUGIN_JAR_HASH = "e1cff9e38811ab71e6efbff087743367";
-  public static final String SONAR_XML_PLUGIN_JAR = "sonar-xml-plugin-2.6.1.3686.jar";
+  public static final String SONAR_XML_PLUGIN_VERSION = "2.6.1.3686";
+  public static final String SONAR_XML_PLUGIN_JAR = "sonar-xml-plugin-" + SONAR_XML_PLUGIN_VERSION + ".jar";
+  public static final String SONAR_XML_PLUGIN_JAR_HASH = "XXX";
   public static final String SONAR_TEXT_PLUGIN_VERSION = "2.0.1.611";
   public static final String SONAR_TEXT_PLUGIN_JAR = "sonar-text-plugin-" + SONAR_TEXT_PLUGIN_VERSION + ".jar";
   public static final String SONAR_TEXT_PLUGIN_JAR_HASH = "f679af4c0e2992c3cec281d6a9cd5062";
+  private static final String SONAR_CFAMILY_PLUGIN_VERSION = "6.18.0.29274";
+  private static final String SONAR_CFAMILY_PLUGIN_JAR = "sonar-cfamily-plugin-" + SONAR_CFAMILY_PLUGIN_VERSION + ".jar";
+  private static final String SONAR_CFAMILY_PLUGIN_HASH = "XXX";
 
   public static Path getJavaPluginPath() {
-    return getPluginPath(SONAR_JAVA_PLUGIN_JAR);
+    return getValidPluginPath(SONAR_JAVA_PLUGIN_JAR);
   }
 
   public static Path getJavaScriptPluginPath() {
-    return getPluginPath(SONAR_JAVASCRIPT_PLUGIN_JAR);
+    return getValidPluginPath(SONAR_JAVASCRIPT_PLUGIN_JAR);
   }
 
   public static Path getPhpPluginPath() {
-    return getPluginPath(SONAR_PHP_PLUGIN_JAR);
+    return getValidPluginPath(SONAR_PHP_PLUGIN_JAR);
   }
 
   public static Path getPythonPluginPath() {
-    return getPluginPath(SONAR_PYTHON_PLUGIN_JAR);
+    return getValidPluginPath(SONAR_PYTHON_PLUGIN_JAR);
   }
 
   public static Path getCppPluginPath() {
-    return getPluginPath("sonar-cfamily-plugin-6.18.0.29274.jar");
+    return getPluginPath(SONAR_CFAMILY_PLUGIN_JAR);
   }
 
   public static Path getXmlPluginPath() {
-    return getPluginPath(SONAR_XML_PLUGIN_JAR);
+    return getValidPluginPath(SONAR_XML_PLUGIN_JAR);
   }
 
   public static Path getTextPluginPath() {
-    return getPluginPath(SONAR_TEXT_PLUGIN_JAR);
+    return getValidPluginPath(SONAR_TEXT_PLUGIN_JAR);
   }
 
   private static Path getPluginPath(String file) {
-    var path = Paths.get("target/plugins/").resolve(file);
+    return Paths.get("target/plugins/").resolve(file);
+  }
+
+  private static Path getValidPluginPath(String file) {
+    var path = getPluginPath(file);
     if (!Files.isRegularFile(path)) {
       throw new IllegalStateException("Unable to find file " + path);
     }

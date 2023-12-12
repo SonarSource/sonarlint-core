@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.commons.log;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
+import org.sonarsource.sonarlint.core.commons.log.LogOutput.Level;
 
 /**
  * This is the logging facade to be used in SonarLint core.
@@ -34,7 +34,7 @@ public class SonarLintLogger {
     return logger;
   }
 
-  public static void setTarget(@Nullable ClientLogOutput output) {
+  public static void setTarget(@Nullable LogOutput output) {
     logger.logOutput.setTarget(output);
   }
 
@@ -43,7 +43,7 @@ public class SonarLintLogger {
    * We have to copy the log output manually, in a similar way to https://logback.qos.ch/manual/mdc.html#managedThreads
    */
   @CheckForNull
-  public static ClientLogOutput getTargetForCopy() {
+  public static LogOutput getTargetForCopy() {
     return logger.logOutput.getTarget();
   }
 

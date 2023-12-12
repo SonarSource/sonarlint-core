@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.push.SonarServerEvent;
 import org.sonarsource.sonarlint.core.http.WebSocketClient;
@@ -148,7 +148,7 @@ public class SonarCloudWebSocket {
     try {
       var wsEvent = gson.fromJson(message, WebSocketEvent.class);
       parse(wsEvent).ifPresent(serverEventConsumer);
-      LOG.debug("Server event received: " + message, ClientLogOutput.Level.DEBUG);
+      LOG.debug("Server event received: " + message, LogOutput.Level.DEBUG);
     } catch (Exception e) {
       LOG.error("Malformed event received: " + message, e);
     }

@@ -67,5 +67,4 @@ public class TextRange {
     TextRange other = (TextRange) obj;
     return endLine == other.endLine && endLineOffset == other.endLineOffset && startLine == other.startLine && startLineOffset == other.startLineOffset;
   }
-
 }

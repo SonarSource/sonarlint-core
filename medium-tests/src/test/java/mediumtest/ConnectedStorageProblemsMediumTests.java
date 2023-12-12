@@ -22,6 +22,7 @@ package mediumtest;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,89 +33,77 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
+import org.sonarsource.sonarlint.core.client.legacy.analysis.AnalysisConfiguration;
+import org.sonarsource.sonarlint.core.client.legacy.analysis.EngineConfiguration;
+import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssue;
+import org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 import testutils.TestUtils;
 
-import static mediumtest.fixtures.storage.StorageFixture.newStorage;
+import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static testutils.TestUtils.createNoOpIssueListener;
 
 class ConnectedStorageProblemsMediumTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
+  private static final String CONNECTION_ID = "localhost";
+  private final String CONFIG_SCOPE_ID = "myProject";
 
-  private ConnectedSonarLintEngine sonarlint;
+  private SonarLintAnalysisEngine engine;
 
   @AfterEach
   void stop() {
-    sonarlint.stop();
+    engine.stop();
   }
 
   @Test
   void test_no_storage(@TempDir Path slHome, @TempDir Path baseDir) {
-
-    var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
-      .setConnectionId("localhost")
+    var config = EngineConfiguration.builder()
       .setSonarLintUserHome(slHome)
       .setLogOutput((msg, level) -> {
       })
       .build();
-    sonarlint = new ConnectedSonarLintEngineImpl(config);
+    engine = new SonarLintAnalysisEngine(config, newBackend().build(), CONNECTION_ID);
 
-    var analysisConfig = ConnectedAnalysisConfiguration.builder()
+    var analysisConfig = AnalysisConfiguration.builder()
       .setBaseDir(baseDir)
-      .setProjectKey("myProject")
       .build();
 
-    var thrown2 = assertThrows(StorageException.class, () -> sonarlint.analyze(analysisConfig, i -> {
-    }, null, null));
-    assertThat(thrown2).hasMessageContaining("Failed to read file");
+    var rawIssues = new ArrayList<RawIssue>();
+    engine.analyze(analysisConfig, rawIssues::add, null, null, CONFIG_SCOPE_ID);
+
+    assertThat(rawIssues).isEmpty();
   }
 
   @Test
   void corrupted_plugin_should_not_prevent_startup(@TempDir Path slHome, @TempDir Path baseDir) throws Exception {
-    var storageId = "localhost";
-    var storage = newStorage(storageId)
-      .withPlugins(TestPlugin.JAVASCRIPT, TestPlugin.JAVA)
-      .withProject("myProject",
-        project -> project.withRuleSet(Language.JS.getLanguageKey(),
-          ruleSet -> ruleSet.withActiveRule("java:S106", "BLOCKER")))
-      .create(slHome);
-
-    var cachedJSPlugin = storage.getPluginPaths().stream().filter(pluginPath -> pluginPath.getFileName().toString().contains("javascript")).findFirst().get();
-
-    FileUtils.write(cachedJSPlugin.toFile(), "corrupted jar", StandardCharsets.UTF_8);
-
     List<String> logs = new CopyOnWriteArrayList<>();
 
-    var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
-      .setConnectionId(storageId)
+    var config = EngineConfiguration.builder()
       .setSonarLintUserHome(slHome)
-      .setStorageRoot(storage.getPath())
       .setLogOutput((m, l) -> logs.add(m))
-      .addEnabledLanguage(Language.JAVA)
-      .addEnabledLanguage(Language.JS)
       .build();
-    sonarlint = new ConnectedSonarLintEngineImpl(config);
-
-    assertThat(logs).contains("Unable to load plugin " + cachedJSPlugin);
+    var backend = newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, storage -> storage
+        .withPlugin(TestPlugin.JAVA)
+        .withPlugin(Language.JS.getPluginKey(), createFakePlugin(), "hash")
+        .withProject(CONFIG_SCOPE_ID,
+          project -> project.withRuleSet(Language.JS.getLanguageKey(),
+            ruleSet -> ruleSet.withActiveRule("java:S106", "BLOCKER"))))
+      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, CONFIG_SCOPE_ID)
+      .withEnabledLanguageInStandaloneMode(org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA)
+      .withEnabledLanguageInStandaloneMode(org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JS).build();
+    engine = new SonarLintAnalysisEngine(config, backend, CONNECTION_ID);
 
     var inputFile = prepareJavaInputFile(baseDir);
 
-    final List<Issue> issues = new ArrayList<>();
-    sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
-      .setProjectKey("myProject")
+    engine.analyze(AnalysisConfiguration.builder()
       .setBaseDir(baseDir)
       .addInputFile(inputFile).build(),
-      issues::add, null, null);
+      createNoOpIssueListener(), null, null, CONFIG_SCOPE_ID);
 
     assertThat(logs).contains("Execute Sensor: JavaSensor");
   }
@@ -134,8 +123,15 @@ class ConnectedStorageProblemsMediumTests {
   private ClientInputFile prepareInputFile(Path baseDir, String relativePath, String content, final boolean isTest) throws IOException {
     final var file = new File(baseDir.toFile(), relativePath);
     FileUtils.write(file, content, StandardCharsets.UTF_8);
-    var inputFile = TestUtils.createInputFile(file.toPath(), relativePath, isTest);
-    return inputFile;
+    return TestUtils.createInputFile(file.toPath(), relativePath, isTest);
+  }
+
+  private static Path createFakePlugin() {
+    try {
+      return Files.createTempFile("fakePlugin", "jar");
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
 }

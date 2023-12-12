@@ -32,7 +32,7 @@ import jetbrains.exodus.core.execution.ThreadJobProcessorPool;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
@@ -89,7 +89,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
 
     this.launcherFuture = launcher.startListening();
 
-    logOutput.log("SonarLint backend started", ClientLogOutput.Level.INFO);
+    logOutput.log("SonarLint backend started", LogOutput.Level.INFO);
   }
 
   public Future<Void> getLauncherFuture() {

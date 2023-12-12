@@ -35,7 +35,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.Plugin;
 import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -71,7 +71,7 @@ class PluginInstancesLoaderTests {
 
     loader.instantiatePluginClasses(Map.of(def, getClass().getClassLoader()));
 
-    assertThat(logTester.logs(ClientLogOutput.Level.ERROR))
+    assertThat(logTester.logs(LogOutput.Level.ERROR))
       .contains("Fail to instantiate class [org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInstancesLoaderTests$IncorrectPlugin] of plugin [fake]");
   }
 

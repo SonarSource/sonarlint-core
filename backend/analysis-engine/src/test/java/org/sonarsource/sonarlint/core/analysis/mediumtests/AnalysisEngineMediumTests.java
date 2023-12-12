@@ -51,7 +51,7 @@ import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.analysis.command.Command;
 import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
@@ -216,7 +216,7 @@ class AnalysisEngineMediumTests {
 
     // let the engine stop properly
     pause(1000);
-    assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).isEmpty();
+    assertThat(logTester.logs(LogOutput.Level.ERROR)).isEmpty();
   }
 
   private ClientInputFile preparePythonInputFile(Path baseDir, String content) throws IOException {

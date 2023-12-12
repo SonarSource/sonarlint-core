@@ -19,22 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
-
 public class GetGlobalConnectedConfigurationParams {
 
   private final String connectionId;
 
-  /**
-   *
-   * @param connectionId null for standalone mode
-   */
-  public GetGlobalConnectedConfigurationParams(@Nullable String connectionId) {
+  public GetGlobalConnectedConfigurationParams(String connectionId) {
     this.connectionId = connectionId;
   }
 
-  @CheckForNull
   public String getConnectionId() {
     return connectionId;
   }

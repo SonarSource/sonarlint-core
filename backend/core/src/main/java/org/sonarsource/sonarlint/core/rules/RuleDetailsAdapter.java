@@ -156,10 +156,10 @@ public class RuleDetailsAdapter {
         } else {
           // if there is more than one section, they should all have a context (verified in sonar-plugin-api)
           var contextualSectionContents = tabContents.stream().map(s -> {
-              var context = s.getContext().get();
-              return new RuleContextualSectionDto(getTabContent(s, ruleDetails.getExtendedDescription(), ruleDetails.getCleanCodePrincipleKeys()), context.getKey(),
-                context.getDisplayName());
-            })
+            var context = s.getContext().get();
+            return new RuleContextualSectionDto(getTabContent(s, ruleDetails.getExtendedDescription(), ruleDetails.getCleanCodePrincipleKeys()), context.getKey(),
+              context.getDisplayName());
+          })
             .sorted(Comparator.comparing(RuleContextualSectionDto::getDisplayName))
             .collect(Collectors.toList());
           contextualSectionContents.add(

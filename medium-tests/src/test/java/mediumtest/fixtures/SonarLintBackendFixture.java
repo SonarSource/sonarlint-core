@@ -247,8 +247,11 @@ public class SonarLintBackendFixture {
     }
 
     public SonarLintBackendBuilder withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin plugin) {
-      return withStandaloneEmbeddedPlugin(plugin)
-        .withEnabledLanguageInStandaloneMode(plugin.getLanguage());
+      var builder = withStandaloneEmbeddedPlugin(plugin);
+      for (var language : plugin.getLanguages()) {
+        builder = builder.withEnabledLanguageInStandaloneMode(language);
+      }
+      return builder;
     }
 
     public SonarLintBackendBuilder withStandaloneEmbeddedPlugin(TestPlugin plugin) {
@@ -259,7 +262,11 @@ public class SonarLintBackendFixture {
     public SonarLintBackendBuilder withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin plugin) {
       this.embeddedPluginPaths.add(plugin.getPath());
       this.connectedModeEmbeddedPluginPathsByKey.put(plugin.getPluginKey(), plugin.getPath());
-      return withEnabledLanguageInStandaloneMode(plugin.getLanguage());
+      var builder = this;
+      for (var language : plugin.getLanguages()) {
+        builder = builder.withEnabledLanguageInStandaloneMode(language);
+      }
+      return builder;
     }
 
     public SonarLintBackendBuilder withEnabledLanguageInStandaloneMode(Language language) {
@@ -340,7 +347,7 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintTestRpcServer build(FakeSonarLintRpcClient client) {
+    public SonarLintTestRpcServer build(SonarLintRpcClientDelegate client) {
       var sonarlintUserHome = tempDirectory("slUserHome");
       var workDir = tempDirectory("work");
       var storageParentPath = tempDirectory("storage");
@@ -370,7 +377,7 @@ public class SonarLintBackendFixture {
       }
     }
 
-    private static SonarLintTestRpcServer createTestBackend(FakeSonarLintRpcClient client) throws IOException {
+    private static SonarLintTestRpcServer createTestBackend(SonarLintRpcClientDelegate client) throws IOException {
       var clientToServerOutputStream = new PipedOutputStream();
       var clientToServerInputStream = new PipedInputStream(clientToServerOutputStream);
 

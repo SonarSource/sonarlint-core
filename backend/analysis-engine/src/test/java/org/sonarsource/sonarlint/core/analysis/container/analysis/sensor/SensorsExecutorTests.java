@@ -21,15 +21,13 @@ package org.sonarsource.sonarlint.core.analysis.container.analysis.sensor;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.logging.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.SensorDescriptor;
 import org.sonar.api.scanner.sensor.ProjectSensor;
-import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -74,7 +72,7 @@ class SensorsExecutorTests {
 
     executor.execute();
 
-    assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).contains("Error executing sensor: 'Throwing sensor'");
+    assertThat(logTester.logs(LogOutput.Level.ERROR)).contains("Error executing sensor: 'Throwing sensor'");
   }
 
   @Test
@@ -90,7 +88,7 @@ class SensorsExecutorTests {
 
     executor.execute();
 
-    assertThat(logTester.logs(ClientLogOutput.Level.INFO)).containsExactly("Executing 'Regular sensor'", "Executing 'Global sensor'", "Executing 'Old Global sensor'");
+    assertThat(logTester.logs(LogOutput.Level.INFO)).containsExactly("Executing 'Regular sensor'", "Executing 'Global sensor'", "Executing 'Old Global sensor'");
   }
 
   private static class ThrowingSensor implements Sensor {
