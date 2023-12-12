@@ -61,8 +61,14 @@ public class NodeJsHelper {
     detectedNodePath = locateNode(configuredNodejsPath);
     if (detectedNodePath != null) {
       logOutput.log("Checking node version...", ClientLogOutput.Level.DEBUG);
-      var command = Command.create(detectedNodePath.toString()).addArgument("-v");
-      var nodeVersionStr = runSimpleCommand(command);
+      String nodeVersionStr;
+      var forcedNodeVersion = System.getProperty("sonarlint.internal.nodejs.forcedVersion");
+      if (forcedNodeVersion != null) {
+        nodeVersionStr = forcedNodeVersion;
+      } else {
+        var command = Command.create(detectedNodePath.toString()).addArgument("-v");
+        nodeVersionStr = runSimpleCommand(command);
+      }
       if (nodeVersionStr != null) {
         var matcher = NODEJS_VERSION_PATTERN.matcher(nodeVersionStr);
         if (matcher.matches()) {
@@ -97,8 +103,11 @@ public class NodeJsHelper {
     }
     logOutput.log("Looking for node in the PATH", ClientLogOutput.Level.DEBUG);
 
+    var forcedPath = System.getProperty("sonarlint.internal.nodejs.forcedPath");
     String result;
-    if (system2.isOsWindows()) {
+    if (forcedPath != null) {
+      result = forcedPath;
+    } else if (system2.isOsWindows()) {
       result = runSimpleCommand(Command.create("C:\\Windows\\System32\\where.exe").addArgument("$PATH:node.exe"));
     } else {
       // INFO: Based on the Linux / macOS shell we require the full path as "which" is a built-in on some shells!

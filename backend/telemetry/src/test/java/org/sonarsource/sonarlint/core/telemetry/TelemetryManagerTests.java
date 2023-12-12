@@ -32,8 +32,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.stubbing.Answer;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryServerLiveAttributesDto;
 
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -266,9 +264,9 @@ class TelemetryManagerTests {
     };
   }
 
-  private static TelemetryLiveAttributesDto getTelemetryLiveAttributesDto() {
-    var serverAttributes = new TelemetryServerLiveAttributesDto(true, true, false, Collections.emptyList(), Collections.emptyList());
-    var clientAttributes = new TelemetryClientLiveAttributesResponse(null, emptyMap());
-    return new TelemetryLiveAttributesDto(serverAttributes, clientAttributes);
+  private static TelemetryLiveAttributes getTelemetryLiveAttributesDto() {
+    var serverAttributes = new TelemetryServerLiveAttributes(true, true, false, Collections.emptyList(), Collections.emptyList(), "3.1.7");
+    var clientAttributes = new TelemetryClientLiveAttributesResponse(emptyMap());
+    return new TelemetryLiveAttributes(serverAttributes, clientAttributes);
   }
 }

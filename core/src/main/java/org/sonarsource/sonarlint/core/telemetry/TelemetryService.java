@@ -39,7 +39,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryLiveAttributesDto;
 import org.springframework.context.event.EventListener;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -69,8 +68,8 @@ public class TelemetryService {
     this.telemetryLocalStorageManager = new TelemetryLocalStorageManager(storagePath);
     var telemetryServerConstantAttributes = telemetryServerAttributesProvider.getTelemetryServerConstantAttributes();
     var telemetryClient = new TelemetryHttpClient(telemetryInitParams.getProductName(), telemetryInitParams.getProductVersion(),
-      telemetryInitParams.getIdeVersion(),
-      telemetryServerConstantAttributes.getPlatform(), telemetryServerConstantAttributes.getArchitecture(), httpClientProvider.getHttpClient());
+      telemetryInitParams.getIdeVersion(), telemetryServerConstantAttributes.getPlatform(), telemetryServerConstantAttributes.getArchitecture(),
+      httpClientProvider.getHttpClient(), telemetryInitParams.getAdditionalAttributes());
 
     this.telemetryManager = new TelemetryManager(storagePath, telemetryClient);
     this.scheduledExecutor = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SonarLint Telemetry"));
@@ -117,11 +116,11 @@ public class TelemetryService {
   }
 
   @Nullable
-  private TelemetryLiveAttributesDto getTelemetryLiveAttributes() {
+  private TelemetryLiveAttributes getTelemetryLiveAttributes() {
     try {
       var serverLiveAttributes = telemetryServerAttributesProvider.getTelemetryServerLiveAttributes();
       var clientLiveAttributes = client.getTelemetryLiveAttributes().get(10, TimeUnit.SECONDS);
-      return new TelemetryLiveAttributesDto(serverLiveAttributes, clientLiveAttributes);
+      return new TelemetryLiveAttributes(serverLiveAttributes, clientLiveAttributes);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       if (InternalDebug.isEnabled()) {

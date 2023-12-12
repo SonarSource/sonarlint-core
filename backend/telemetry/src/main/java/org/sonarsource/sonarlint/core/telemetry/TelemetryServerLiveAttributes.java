@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - Telemetry
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,11 +17,12 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
+package org.sonarsource.sonarlint.core.telemetry;
 
 import java.util.List;
+import javax.annotation.Nullable;
 
-public class TelemetryServerLiveAttributesDto {
+public class TelemetryServerLiveAttributes {
   /**
    * At least one project in the IDE is bound to a SQ server or SC
    */
@@ -47,13 +48,21 @@ public class TelemetryServerLiveAttributesDto {
    */
   private final List<String> defaultDisabledRules;
 
-  public TelemetryServerLiveAttributesDto(boolean usesConnectedMode, boolean usesSonarCloud, boolean devNotificationsDisabled,
-    List<String> nonDefaultEnabledRules, List<String> defaultDisabledRules) {
+  /**
+   * Node.js version used by analyzers (detected or configured by the user).
+   * Empty if no node present/detected/configured
+   */
+  @Nullable
+  private final String nodeVersion;
+
+  public TelemetryServerLiveAttributes(boolean usesConnectedMode, boolean usesSonarCloud, boolean devNotificationsDisabled,
+    List<String> nonDefaultEnabledRules, List<String> defaultDisabledRules, @Nullable String nodeVersion) {
     this.usesConnectedMode = usesConnectedMode;
     this.usesSonarCloud = usesSonarCloud;
     this.devNotificationsDisabled = devNotificationsDisabled;
     this.nonDefaultEnabledRules = nonDefaultEnabledRules;
     this.defaultDisabledRules = defaultDisabledRules;
+    this.nodeVersion = nodeVersion;
   }
 
   public boolean usesConnectedMode() {
@@ -74,5 +83,10 @@ public class TelemetryServerLiveAttributesDto {
 
   public List<String> getDefaultDisabledRules() {
     return defaultDisabledRules;
+  }
+
+  @Nullable
+  public String getNodeVersion() {
+    return nodeVersion;
   }
 }

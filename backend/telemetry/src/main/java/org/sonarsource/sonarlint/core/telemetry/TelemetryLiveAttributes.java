@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - Telemetry
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,18 +17,19 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
+package org.sonarsource.sonarlint.core.telemetry;
 
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 
-public class TelemetryLiveAttributesDto {
+public class TelemetryLiveAttributes {
 
-  private final TelemetryServerLiveAttributesDto serverAttributes;
+  private final TelemetryServerLiveAttributes serverAttributes;
   private final TelemetryClientLiveAttributesResponse clientAttributes;
 
-  public TelemetryLiveAttributesDto(TelemetryServerLiveAttributesDto serverAttributes,
+  public TelemetryLiveAttributes(TelemetryServerLiveAttributes serverAttributes,
     TelemetryClientLiveAttributesResponse clientAttributes) {
     this.serverAttributes = serverAttributes;
     this.clientAttributes = clientAttributes;
@@ -56,7 +57,7 @@ public class TelemetryLiveAttributesDto {
 
   @Nullable
   public String getNodeVersion() {
-    return clientAttributes.getNodeVersion();
+    return serverAttributes.getNodeVersion();
   }
 
   public Map<String, Object> getAdditionalAttributes() {

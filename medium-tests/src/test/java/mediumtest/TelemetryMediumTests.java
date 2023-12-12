@@ -67,6 +67,8 @@ class TelemetryMediumTests {
 
   @BeforeAll
   static void mockTelemetryEndpoint() {
+    System.setProperty("sonarlint.internal.nodejs.forcedPath", "/path/to/nodeJS");
+    System.setProperty("sonarlint.internal.nodejs.forcedVersion", "v3.1.4");
     System.setProperty("sonarlint.internal.telemetry.endpoint", telemetryEndpointMock.baseUrl() + "/sonarlint-telemetry");
     telemetryEndpointMock.stubFor(post("/sonarlint-telemetry").willReturn(aResponse().withStatus(200)));
   }
@@ -75,6 +77,8 @@ class TelemetryMediumTests {
   static void clearTelemetryEndpoint() {
     System.clearProperty("sonarlint.internal.telemetry.endpoint");
     System.clearProperty("sonarlint.internal.telemetry.initialDelay");
+    System.clearProperty("sonarlint.internal.nodejs.forcedPath");
+    System.clearProperty("sonarlint.internal.nodejs.forcedVersion");
   }
 
   @BeforeEach
@@ -131,8 +135,9 @@ class TelemetryMediumTests {
         "  \"sonarlint_version\" : \"1.2.3\",\n" +
         "  \"sonarlint_product\" : \"mediumTests\",\n" +
         "  \"ide_version\" : \"4.5.6\",\n" +
-        "  \"platform\" : \""+ SystemUtils.OS_NAME +"\",\n" +
+        "  \"platform\" : \"" + SystemUtils.OS_NAME + "\",\n" +
         "  \"architecture\" : \"" + SystemUtils.OS_ARCH + "\",\n" +
+        "  \"nodejs\" : \"3.1.4\",\n" +
         "  \"connected_mode_used\" : false,\n" +
         "  \"connected_mode_sonarcloud\" : false\n" +
         "}", true, true))));
@@ -163,7 +168,7 @@ class TelemetryMediumTests {
     System.setProperty("sonarlint.internal.telemetry.initialDelay", "0");
     System.clearProperty("sonarlint.telemetry.disabled");
     var fakeClient = newFakeClient().build();
-    when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryClientLiveAttributesResponse(null, emptyMap()));
+    when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryClientLiveAttributesResponse(emptyMap()));
 
     backend = newBackend().build(fakeClient);
 
@@ -174,8 +179,9 @@ class TelemetryMediumTests {
         "  \"sonarlint_version\" : \"1.2.3\",\n" +
         "  \"sonarlint_product\" : \"mediumTests\",\n" +
         "  \"ide_version\" : \"4.5.6\",\n" +
-        "  \"platform\" : \""+ SystemUtils.OS_NAME +"\",\n" +
+        "  \"platform\" : \"" + SystemUtils.OS_NAME + "\",\n" +
         "  \"architecture\" : \"" + SystemUtils.OS_ARCH + "\",\n" +
+        "  \"nodejs\" : \"3.1.4\",\n" +
         "  \"connected_mode_used\" : false,\n" +
         "  \"connected_mode_sonarcloud\" : false\n" +
         "}", true, true)));
@@ -187,7 +193,7 @@ class TelemetryMediumTests {
     System.setProperty("sonarlint.internal.telemetry.initialDelay", "0");
 
     var fakeClient = newFakeClient().build();
-    when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryClientLiveAttributesResponse(null, emptyMap()));
+    when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryClientLiveAttributesResponse(emptyMap()));
 
     backend = newBackend().build(fakeClient);
 
@@ -198,8 +204,9 @@ class TelemetryMediumTests {
         "  \"sonarlint_version\" : \"1.2.3\",\n" +
         "  \"sonarlint_product\" : \"mediumTests\",\n" +
         "  \"ide_version\" : \"4.5.6\",\n" +
-        "  \"platform\" : \""+ SystemUtils.OS_NAME +"\",\n" +
+        "  \"platform\" : \"" + SystemUtils.OS_NAME + "\",\n" +
         "  \"architecture\" : \"" + SystemUtils.OS_ARCH + "\",\n" +
+        "  \"nodejs\" : \"3.1.4\",\n" +
         "  \"connected_mode_used\" : false,\n" +
         "  \"connected_mode_sonarcloud\" : false\n" +
         "}", true, true)));
@@ -215,7 +222,7 @@ class TelemetryMediumTests {
     System.setProperty("sonarlint.internal.telemetry.initialDelay", "0");
 
     var fakeClient = newFakeClient().build();
-    when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryClientLiveAttributesResponse(null, emptyMap()));
+    when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryClientLiveAttributesResponse(emptyMap()));
 
     backend = newBackend()
       .withSonarQubeConnection("connectionId")
@@ -293,12 +300,12 @@ class TelemetryMediumTests {
     var notificationEvent = "myNotification";
 
     backend.getTelemetryService().devNotificationsClicked(new DevNotificationsClickedParams(notificationEvent));
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"notificationsCountersByEventType" +
-      "\":{\"" + notificationEvent + "\":{\"devNotificationsCount\":0,\"devNotificationsClicked\":1}}"));
+    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains(
+      "\"notificationsCountersByEventType\":{\"" + notificationEvent + "\":{\"devNotificationsCount\":0,\"devNotificationsClicked\":1}}"));
 
     backend.getTelemetryService().devNotificationsClicked(new DevNotificationsClickedParams(notificationEvent));
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"notificationsCountersByEventType" +
-      "\":{\"" + notificationEvent + "\":{\"devNotificationsCount\":0,\"devNotificationsClicked\":2}}"));
+    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains(
+      "\"notificationsCountersByEventType\":{\"" + notificationEvent + "\":{\"devNotificationsCount\":0,\"devNotificationsClicked\":2}}"));
   }
 
   @Test
@@ -306,8 +313,8 @@ class TelemetryMediumTests {
     setupClientAndBackend();
 
     backend.getTelemetryService().helpAndFeedbackLinkClicked(new HelpAndFeedbackClickedParams("itemId"));
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"helpAndFeedbackLinkClickedCount" +
-      "\":{\"itemId\":{\"helpAndFeedbackLinkClickedCount\":1}}"));
+    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains(
+      "\"helpAndFeedbackLinkClickedCount\":{\"itemId\":{\"helpAndFeedbackLinkClickedCount\":1}}"));
   }
 
   @Test
@@ -347,8 +354,8 @@ class TelemetryMediumTests {
     setupClientAndBackend();
 
     backend.getTelemetryService().analysisDoneOnSingleLanguage(new AnalysisDoneOnSingleLanguageParams(Language.JAVA, 1000));
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"analyzers\":{\"java\":{\"analysisCount\":1," +
-      "\"frequencies\":{\"0-300\":0,\"300-500\":0,\"500-1000\":0,\"1000-2000\":1,\"2000-4000\":0,\"4000+\":0}}"));
+    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"analyzers" +
+      "\":{\"java\":{\"analysisCount\":1,\"frequencies\":{\"0-300\":0,\"300-500\":0,\"500-1000\":0,\"1000-2000\":1,\"2000-4000\":0,\"4000+\":0}}"));
   }
 
   @Test

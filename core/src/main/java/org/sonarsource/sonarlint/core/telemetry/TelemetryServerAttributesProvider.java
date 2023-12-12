@@ -23,17 +23,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
+import javax.annotation.CheckForNull;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.SystemUtils;
-import org.jetbrains.annotations.NotNull;
+import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryServerConstantAttributesDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryServerLiveAttributesDto;
 import org.sonarsource.sonarlint.core.rules.RulesService;
 
 @Named
@@ -44,23 +43,25 @@ public class TelemetryServerAttributesProvider {
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final RulesService rulesService;
   private final RulesRepository rulesRepository;
+  private final NodeJsService nodeJsService;
 
   public TelemetryServerAttributesProvider(ConfigurationRepository configurationRepository,
     ConnectionConfigurationRepository connectionConfigurationRepository,
-    RulesService rulesService, RulesRepository rulesRepository) {
+    RulesService rulesService, RulesRepository rulesRepository, NodeJsService nodeJsService) {
     this.configurationRepository = configurationRepository;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.rulesService = rulesService;
     this.rulesRepository = rulesRepository;
+    this.nodeJsService = nodeJsService;
   }
 
-  public TelemetryServerConstantAttributesDto getTelemetryServerConstantAttributes() {
+  public TelemetryServerConstantAttributes getTelemetryServerConstantAttributes() {
     var architecture = SystemUtils.OS_ARCH;
     var platform = SystemUtils.OS_NAME;
-    return  new TelemetryServerConstantAttributesDto(platform, architecture);
+    return new TelemetryServerConstantAttributes(platform, architecture);
   }
 
-  public TelemetryServerLiveAttributesDto getTelemetryServerLiveAttributes() {
+  public TelemetryServerLiveAttributes getTelemetryServerLiveAttributes() {
     var allBindings = configurationRepository.getAllBoundScopes();
 
     var usesConnectedMode = !allBindings.isEmpty();
@@ -86,15 +87,22 @@ public class TelemetryServerAttributesProvider {
       }
     });
 
-    return new TelemetryServerLiveAttributesDto(usesConnectedMode, usesSonarCloud, devNotificationsDisabled, nonDefaultEnabledRules,
-      defaultDisabledRules);
+    var nodeJsVersion = getNodeJsVersion();
+
+    return new TelemetryServerLiveAttributes(usesConnectedMode, usesSonarCloud, devNotificationsDisabled, nonDefaultEnabledRules,
+      defaultDisabledRules, nodeJsVersion);
+  }
+
+  @CheckForNull
+  private String getNodeJsVersion() {
+    var nodeJsVersion = nodeJsService.getNodeJsVersion();
+    return nodeJsVersion == null ? null : nodeJsVersion.toString();
   }
 
   private boolean hasDisableNotifications(BoundScope binding) {
     return Objects.requireNonNull(connectionConfigurationRepository.getConnectionById(binding.getConnectionId())).isDisableNotifications();
   }
 
-  @NotNull
   private Predicate<BoundScope> isSonarCloudConnectionConfiguration() {
     return binding -> connectionConfigurationRepository.getConnectionById(binding.getConnectionId()) instanceof SonarCloudConnectionConfiguration;
   }
