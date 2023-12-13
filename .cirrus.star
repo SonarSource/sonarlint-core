@@ -38,8 +38,8 @@ def env_conf():
         # BUG ? Those are not solved properly despite the fact SONARQUBE_NEXT_ are injected before
         #'SONAR_HOST_URL': '${SONARQUBE_NEXT_HOST_URL}',
         #'SONAR_TOKEN': '${SONARQUBE_NEXT_TOKEN}'
-        "SONAR_HOST_URL": "VAULT[development/kv/data/next data.url]",
-        "SONAR_TOKEN": "VAULT[development/kv/data/next data.token]"
+        #"SONAR_HOST_URL": "VAULT[development/kv/data/next data.url]",
+        #"SONAR_TOKEN": "VAULT[development/kv/data/next data.token]"
     })
     return {"env": values}
 
@@ -78,6 +78,8 @@ def build_task_conf():
             'JDK_VERSION': '11',
             'DEPLOY_PULL_REQUEST': 'true',
             'ARTIFACTORY_DEPLOY_REPO': 'sonarsource-public-qa',
+            'SONAR_HOST_URL': '${SONARQUBE_NEXT_HOST_URL}',
+            'SONAR_TOKEN': '${SONARQUBE_NEXT_TOKEN}'
         },
         eks_container=eks_container_conf_factory(),
         before_build={
@@ -102,7 +104,11 @@ def test_linux_task_conf():
             'maven_cache': maven_cache_conf(),
             'depends_on': ['build'],
             'eks_container': eks_container_conf_factory(),
-            'env': {'JDK_VERSION': '17', 'DEPLOY_PULL_REQUEST': 'false'},
+            'env': {
+                'JDK_VERSION': '17', 'DEPLOY_PULL_REQUEST': 'false',
+                'SONAR_HOST_URL': '${SONARQUBE_NEXT_HOST_URL}',
+                'SONAR_TOKEN': '${SONARQUBE_NEXT_TOKEN}'
+            },
             'script': [
                 'source cirrus-env QA',
                 'PULL_REQUEST_SHA=$GIT_SHA1 regular_mvn_build_deploy_analyze -P-deploy-sonarsource,-release,-sign -Dcommercial -Dmaven.shade.skip=true -Dmaven.install.skip=true -Dmaven.deploy.skip=true -Dsonar.coverage.jacoco.xmlReportPaths=$CIRRUS_WORKING_DIR/report-aggregate/target/site/jacoco-aggregate/jacoco.xml'
