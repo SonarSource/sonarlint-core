@@ -30,7 +30,6 @@ import java.util.stream.IntStream;
 import mediumtest.fixtures.ServerFixture;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRange;
@@ -50,6 +49,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithSer
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static mediumtest.fixtures.storage.ServerIssueFixtures.aServerIssue;
@@ -135,8 +135,9 @@ class TrackWithServerIssuesMediumTests {
     var projectKey = "projectKey";
     var serverIssue = aServerIssue("issueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
     var client = newFakeClient().build();
+    server = newSonarQubeServer().withProject("projectKey").start();
     backend = newBackend()
-      .withSonarQubeConnection(connectionId, storage -> storage
+      .withSonarQubeConnection(connectionId, server, storage -> storage
         .withProject(projectKey, project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue))))
       .withBoundConfigScope(configScopeId, connectionId, projectKey)
       .build(client);
@@ -159,7 +160,7 @@ class TrackWithServerIssuesMediumTests {
 
   @Test
   void it_should_track_with_a_server_only_issue_when_fetching_from_legacy_server_requested() {
-    server = ServerFixture.newSonarQubeServer("9.5").withProject("projectKey",
+    server = newSonarQubeServer("9.5").withProject("projectKey",
       project -> project.withBranch("main",
         branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, Instant.now(), new TextRange(1, 2, 3, 4))))
       .start();
@@ -185,7 +186,7 @@ class TrackWithServerIssuesMediumTests {
 
   @Test
   void it_should_download_all_issues_at_once_when_tracking_issues_from_more_than_10_files() {
-    server = ServerFixture.newSonarQubeServer("9.5").withProject("projectKey",
+    server = newSonarQubeServer("9.5").withProject("projectKey",
       project -> project.withBranch("main",
         branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, Instant.now(), new TextRange(1, 2, 3, 4))))
       .start();

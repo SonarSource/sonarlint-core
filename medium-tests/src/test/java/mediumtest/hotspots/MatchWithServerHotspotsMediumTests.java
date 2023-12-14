@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import mediumtest.fixtures.ServerFixture;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.TextRange;
@@ -44,6 +43,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.MatchWithSer
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ServerMatchedSecurityHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
 
+import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static mediumtest.fixtures.storage.ServerSecurityHotspotFixture.aServerHotspot;
@@ -125,8 +125,10 @@ class MatchWithServerHotspotsMediumTests {
     var serverHotspot = aServerHotspot("hotspotKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withIntroductionDate(Instant.EPOCH.plusSeconds(1))
       .withStatus(HotspotReviewStatus.SAFE);
     var client = newFakeClient().build();
+    server = newSonarQubeServer()
+      .withProject("projectKey").start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", storage -> storage
+      .withSonarQubeConnection("connectionId", server, storage -> storage
         .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withHotspot(serverHotspot))))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build(client);
@@ -145,7 +147,7 @@ class MatchWithServerHotspotsMediumTests {
 
   @Test
   void it_should_track_with_a_server_only_hotspot_when_fetching_from_legacy_server_requested() {
-    server = ServerFixture.newSonarQubeServer("10.0").withProject("projectKey",
+    server = newSonarQubeServer("10.0").withProject("projectKey",
       project -> project.withBranch("main", branch -> branch.withHotspot("hotspotKey",
         hotspot -> hotspot.withRuleKey("rule:key").withMessage("message").withFilePath("file/path").withAuthor("author").withStatus(HotspotReviewStatus.TO_REVIEW)
           .withCreationDate(Instant.ofEpochMilli(123456789))
@@ -173,7 +175,7 @@ class MatchWithServerHotspotsMediumTests {
 
   @Test
   void it_should_download_all_hotspots_at_once_when_tracking_hotspots_from_more_than_10_files() {
-    server = ServerFixture.newSonarQubeServer("10.0").withProject("projectKey",
+    server = newSonarQubeServer("10.0").withProject("projectKey",
       project -> project.withBranch("main",
         branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, Instant.now(), new TextRange(1, 2, 3, 4))))
       .start();

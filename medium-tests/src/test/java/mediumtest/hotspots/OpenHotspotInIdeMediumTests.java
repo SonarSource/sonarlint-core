@@ -173,6 +173,7 @@ class OpenHotspotInIdeMediumTests {
     mockAssistCreatingConnection(fakeClient, CONNECTION_ID);
     mockAssistBinding(fakeClient, SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
+    // TODO fixme
     backend = newBackend()
       .withUnboundConfigScope(SCOPE_ID)
       .withEmbeddedServer()
@@ -258,7 +259,7 @@ class OpenHotspotInIdeMediumTests {
       .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/hotspots/show?" + query))
       .method(method, bodyPublisher)
       .build();
-    HttpResponse<String> response = null;
+    HttpResponse<String> response;
     try {
       response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
     } catch (IOException e) {
