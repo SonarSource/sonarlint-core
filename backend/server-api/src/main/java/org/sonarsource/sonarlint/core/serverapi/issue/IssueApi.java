@@ -99,7 +99,8 @@ public class IssueApi {
       r -> {
         componentsPathByKey.clear();
         // Ignore project level issues
-        componentsPathByKey.putAll(r.getComponentsList().stream().filter(Component::hasPath).collect(Collectors.toMap(Component::getKey, component -> Path.of(component.getPath()))));
+        componentsPathByKey.putAll(r.getComponentsList().stream().filter(Component::hasPath)
+          .collect(Collectors.toMap(Component::getKey, component -> Path.of(component.getPath()))));
         return r.getIssuesList();
       },
       result::add,

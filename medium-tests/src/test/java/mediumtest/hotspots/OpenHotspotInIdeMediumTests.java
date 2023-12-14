@@ -167,7 +167,6 @@ class OpenHotspotInIdeMediumTests {
         .contains("\"showHotspotRequestsCount\":1"));
   }
 
-  @Disabled("Unstable test - TODO fix")
   @Test
   void it_should_assist_creating_the_connection_when_server_url_unknown() throws InterruptedException {
     var fakeClient = newFakeClient().build();

@@ -120,7 +120,6 @@ class MatchWithServerHotspotsMediumTests {
         }));
   }
 
-  @Disabled
   @Test
   void it_should_track_with_a_known_server_hotspot_at_the_same_location() {
     var serverHotspot = aServerHotspot("hotspotKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withIntroductionDate(Instant.EPOCH.plusSeconds(1))

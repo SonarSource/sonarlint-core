@@ -955,7 +955,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
 
   private static Location toProtoLocation(ServerIssueLocation l) {
     var location = Location.newBuilder();
-    Path filePath = l.getFilePath();
+    var filePath = l.getFilePath();
     if (filePath != null) {
       location.setFilePath(filePath.toString());
     }

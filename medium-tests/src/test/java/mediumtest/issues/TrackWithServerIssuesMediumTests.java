@@ -128,7 +128,6 @@ class TrackWithServerIssuesMediumTests {
         }));
   }
 
-  @Disabled
   @Test
   void it_should_track_with_a_known_server_issue_at_the_same_location() {
     var configScopeId = "configScopeId";
@@ -158,7 +157,6 @@ class TrackWithServerIssuesMediumTests {
               new ServerMatchedIssueDto(null, "issueKey", 1000L, false, null, BUG, true))))))));
   }
 
-  @Disabled
   @Test
   void it_should_track_with_a_server_only_issue_when_fetching_from_legacy_server_requested() {
     server = ServerFixture.newSonarQubeServer("9.5").withProject("projectKey",

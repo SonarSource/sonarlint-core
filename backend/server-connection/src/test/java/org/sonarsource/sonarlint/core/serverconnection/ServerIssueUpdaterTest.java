@@ -141,7 +141,7 @@ class ServerIssueUpdaterTest {
     when(downloader.getEnabledLanguages()).thenReturn(Set.of(Language.C));
     when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty())).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
     updater.update(serverApi, projectBinding.projectKey(), "master", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
-    verify(downloader).downloadFromPull(eq(serverApi), eq(projectBinding.projectKey()), eq("master"), eq(Optional.empty()));
+    verify(downloader).downloadFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty());
   }
 
   @Test
@@ -156,7 +156,7 @@ class ServerIssueUpdaterTest {
     when(downloader.getEnabledLanguages()).thenReturn(Set.of(Language.C));
     when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty())).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
     updater.update(serverApi, projectBinding.projectKey(), "master", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
-    verify(downloader).downloadFromPull(eq(serverApi), eq(projectBinding.projectKey()), eq("master"), eq(Optional.empty()));
+    verify(downloader).downloadFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty());
   }
 
   @Test
@@ -171,7 +171,7 @@ class ServerIssueUpdaterTest {
     when(downloader.getEnabledLanguages()).thenReturn(Set.of(Language.C, Language.GO));
     when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", lastSync)).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
     updater.update(serverApi, projectBinding.projectKey(), "master", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
-    verify(downloader).downloadFromPull(eq(serverApi), eq(projectBinding.projectKey()), eq("master"), eq(lastSync));
+    verify(downloader).downloadFromPull(serverApi, projectBinding.projectKey(), "master", lastSync);
   }
 
   @Test
@@ -186,7 +186,7 @@ class ServerIssueUpdaterTest {
     when(taintDownloader.downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty())).thenReturn(new TaintIssueDownloader.PullTaintResult(queryTimestamp, issues, Set.of()));
 
     updater.syncTaints(serverApi, projectBinding.projectKey(), "master", Set.of(Language.C));
-    verify(taintDownloader).downloadTaintFromPull(eq(serverApi), eq(projectBinding.projectKey()), eq("master"), eq(Optional.empty()));
+    verify(taintDownloader).downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty());
   }
 
   @Test
@@ -201,7 +201,7 @@ class ServerIssueUpdaterTest {
     when(taintDownloader.downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty())).thenReturn(new TaintIssueDownloader.PullTaintResult(queryTimestamp, issues, Set.of()));
 
     updater.syncTaints(serverApi, projectBinding.projectKey(), "master", Set.of(Language.C));
-    verify(taintDownloader).downloadTaintFromPull(eq(serverApi), eq(projectBinding.projectKey()), eq("master"), eq(Optional.empty()));
+    verify(taintDownloader).downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty());
   }
 
   @Test
@@ -216,7 +216,7 @@ class ServerIssueUpdaterTest {
     when(taintDownloader.downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", lastSync)).thenReturn(new TaintIssueDownloader.PullTaintResult(queryTimestamp, issues, Set.of()));
 
     updater.syncTaints(serverApi, projectBinding.projectKey(), "master", Set.of(Language.C, Language.GO));
-    verify(taintDownloader).downloadTaintFromPull(eq(serverApi), eq(projectBinding.projectKey()), eq("master"), eq(lastSync));
+    verify(taintDownloader).downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", lastSync);
   }
 
   @Test
@@ -233,8 +233,9 @@ class ServerIssueUpdaterTest {
   void error_downloading_file_issues() {
     when(downloader.downloadFromBatch(serverApi, "module:file", null)).thenThrow(IllegalArgumentException.class);
     // when(issueStorePaths.idePathToFileKey(projectBinding, "file")).thenReturn("module:file");
-
-    assertThrows(DownloadException.class, () -> updater.updateFileIssues(serverApi, projectBinding, Path.of("file"), null, false, Version.create("8.9")));
+    var filePath = Path.of("file");
+    var version = Version.create("8.9");
+    assertThrows(DownloadException.class, () -> updater.updateFileIssues(serverApi, projectBinding, filePath, null, false, version));
   }
 
   @Test

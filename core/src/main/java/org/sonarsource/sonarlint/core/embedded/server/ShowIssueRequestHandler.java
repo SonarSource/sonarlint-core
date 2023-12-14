@@ -136,7 +136,7 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     return RulesApi.TAINT_REPOS.stream().anyMatch(ruleKey::startsWith);
   }
 
-  private Optional<IssueApi.ServerIssueDetails> tryFetchIssue(String connectionId, String issueKey, String projectKey, String branch, String pullRequest) {
+  private Optional<IssueApi.ServerIssueDetails> tryFetchIssue(String connectionId, String issueKey, String projectKey, String branch, @Nullable String pullRequest) {
     var serverApi = serverApiProvider.getServerApiOrThrow(connectionId);
     return serverApi.issue().fetchServerIssue(issueKey, projectKey, branch, pullRequest);
   }

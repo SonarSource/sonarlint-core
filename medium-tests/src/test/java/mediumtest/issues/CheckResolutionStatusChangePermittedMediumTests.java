@@ -232,7 +232,6 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .containsExactly(false, "Marking a local-only issue as resolved requires SonarQube 10.2+", List.of());
   }
 
-  @Disabled
   @Test
   void it_should_not_permit_status_change_on_local_only_issues_for_sonarqube_prior_to_10_2() throws ExecutionException, InterruptedException {
     var client = newFakeClient().build();
@@ -257,7 +256,6 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .containsExactly(false, "Marking a local-only issue as resolved requires SonarQube 10.2+", List.of());
   }
 
-  @Disabled
   @Test
   void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_2_plus() throws ExecutionException, InterruptedException {
     var client = newFakeClient().build();
