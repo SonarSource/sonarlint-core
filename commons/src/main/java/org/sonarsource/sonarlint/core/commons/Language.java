@@ -43,7 +43,7 @@ public enum Language {
   IPYTHON("ipynb", "python", "IPython Notebooks", new String[] {".ipynb"}, "sonar.ipython.file.suffixes"),
   JAVA("java", "java", "Java", new String[] {".java", ".jav"}, "sonar.java.file.suffixes"),
   JS("js", Constants.JAVASCRIPT_PLUGIN_KEY, "JavaScript", new String[] {".js", ".jsx", ".vue"}, "sonar.javascript.file.suffixes"),
-  KOTLIN("kotlin", "kotlin", "Kotlin", new String[] {".kt"}, "sonar.kotlin.file.suffixes"),
+  KOTLIN("kotlin", "kotlin", "Kotlin", new String[] {".kt", ".kts"}, "sonar.kotlin.file.suffixes"),
   PHP("php", "php", "PHP", new String[] {"php", "php3", "php4", "php5", "phtml", "inc"}, "sonar.php.file.suffixes"),
   PLI("pli", "pli", "PL/I", new String[] {".pli"}, "sonar.pli.file.suffixes"),
   PLSQL("plsql", "plsql", "PL/SQL", new String[] {".sql", ".pks", ".pkb"}, "sonar.plsql.file.suffixes"),
