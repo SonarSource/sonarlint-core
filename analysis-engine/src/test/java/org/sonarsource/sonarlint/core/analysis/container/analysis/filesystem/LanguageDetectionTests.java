@@ -74,7 +74,16 @@ class LanguageDetectionTests {
 
     assertThat(detection.language(newInputFile("wrong.ylm"))).isNull();
     assertThat(detection.language(newInputFile("config.js"))).isNotEqualTo(org.sonarsource.sonarlint.core.commons.Language.YAML);
+  }
 
+  @Test
+  void recognise_kts_files() throws IOException {
+    var detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
+
+    assertThat(detection.language(newInputFile("settings.kts"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.KOTLIN);
+
+    assertThat(detection.language(newInputFile("settings.kms"))).isNull();
+    assertThat(detection.language(newInputFile("settings.js"))).isNotEqualTo(org.sonarsource.sonarlint.core.commons.Language.KOTLIN);
   }
 
   @Test
