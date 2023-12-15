@@ -130,7 +130,8 @@ class StandaloneIssueMediumTests {
       .addPlugin(PluginLocator.getPhpPluginPath())
       .addPlugin(PluginLocator.getPythonPluginPath())
       .addPlugin(PluginLocator.getXmlPluginPath())
-      .addEnabledLanguages(Language.JS, Language.JAVA, Language.PHP, Language.PYTHON, Language.TS, Language.C, Language.YAML, Language.XML)
+      .addPlugin(PluginLocator.getKotlinPluginPath())
+      .addEnabledLanguages(Language.JS, Language.JAVA, Language.PHP, Language.PYTHON, Language.TS, Language.C, Language.YAML, Language.XML, Language.KOTLIN)
       .setSonarLintUserHome(sonarlintUserHome)
       .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
       .setExtraProperties(extraProperties);
@@ -397,7 +398,6 @@ class StandaloneIssueMediumTests {
 
   @Test
   void simplePython() throws Exception {
-
     var inputFile = prepareInputFile("foo.py", "def my_function(name):\n"
       + "    print \"Hello\"\n"
       + "    print \"world!\" # NOSONAR\n"
@@ -412,6 +412,20 @@ class StandaloneIssueMediumTests {
     assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
       tuple("python:S1172", 1, "foo.py"),
       tuple("python:PrintStatementUsage", 2, "foo.py"));
+  }
+
+  @Test
+  void simpleKotlinKts() throws Exception {
+    var inputFile = prepareInputFile("settings.gradle.kts", "description = \"SonarLint for IntelliJ IDEA\"", false);
+
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(StandaloneAnalysisConfiguration.builder()
+        .setBaseDir(baseDir.toPath())
+        .addInputFile(inputFile)
+        .build(), issues::add,
+      null, null);
+    assertThat(issues).extracting(Issue::getRuleKey, Issue::getStartLine, i -> i.getInputFile().relativePath()).containsOnly(
+      tuple("kotlin:S6625", null, "settings.gradle.kts"));
   }
 
   // SLCORE-162
@@ -541,7 +555,8 @@ class StandaloneIssueMediumTests {
       Language.PHP,
       Language.PYTHON,
       Language.TS,
-      Language.XML);
+      Language.XML,
+      Language.KOTLIN);
 
     if (COMMERCIAL_ENABLED) {
       enabledLanguages.add(Language.C);

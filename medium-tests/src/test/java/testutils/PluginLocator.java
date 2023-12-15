@@ -33,6 +33,7 @@ public class PluginLocator {
   public static final String SONAR_PYTHON_PLUGIN_JAR = "sonar-python-plugin-4.1.0.11333.jar";
   public static final String SONAR_XML_PLUGIN_JAR = "sonar-xml-plugin-2.6.1.3686.jar";
   public static final String SONAR_TEXT_PLUGIN_JAR = "sonar-text-plugin-2.0.1.611.jar";
+  public static final String SONAR_KOTLIN_PLUGIN_JAR = "sonar-kotlin-plugin-2.20.0.4382.jar";
 
   public static Path getJavaPluginPath() {
     return getPluginPath(SONAR_JAVA_PLUGIN_JAR);
@@ -60,6 +61,10 @@ public class PluginLocator {
 
   public static Path getTextPluginPath() {
     return getPluginPath(SONAR_TEXT_PLUGIN_JAR);
+  }
+
+  public static Path getKotlinPluginPath() {
+    return getPluginPath(SONAR_KOTLIN_PLUGIN_JAR);
   }
 
   private static Path getPluginPath(String file) {
